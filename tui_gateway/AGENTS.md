@@ -44,7 +44,7 @@ shape) and `gateway-contract.openrpc.json` are rendered by `scripts/gen_gateway_
 `tests/tui_gateway/contracts/test_generated.py` fails when they are stale, so the loop is: change the model →
 regenerate → `tsc` shows every consumer the field moved. `apps/shared/src/gateway-events.ts` only adds
 the client-local synthetic events and the `GatewayEvent` envelope on top.
-The native `hermes-gateway-v1` transport has a separate `CANONICAL_METHODS` catalog in
+The native `moor-gateway-v1` transport has a separate `CANONICAL_METHODS` catalog in
 `contracts/canonical*.py`, declared with `canonical_method(...)`. `gateway/session_controls.py::
 AuthorityConnection` validates parameters and successful results against it; unknown/missing
 parameter keys return `4001 invalid_params`. Reuse a standalone model only when its wire is
@@ -136,7 +136,7 @@ retains its legacy unscoped contract.
 and skill-derived commands. `complete.slash` uses the existing CLI completer (registry, plugins,
 skills/bundles, argument completions); quick commands remain catalog-only. Shared data builders
 live in `tui_gateway/command_discovery.py`, without importing the legacy server. Definitions
-come from `hermes_cli/commands.py` (`hermes_cli/AGENTS.md`).
+come from `moor_cli/commands.py` (`moor_cli/AGENTS.md`).
 
 The canonical gateway exposes the same two discovery RPCs through `gateway/session_discovery.py`.
 It requires authenticated `session:read` capability and the authority's exact profile before any

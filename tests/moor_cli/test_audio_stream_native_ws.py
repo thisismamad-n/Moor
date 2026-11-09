@@ -10,8 +10,8 @@ from __future__ import annotations
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
-from hermes_cli import web_server
-from tests.hermes_cli import test_plugin_api_consent_gate as consent_gate
+from moor_cli import web_server
+from tests.moor_cli import test_plugin_api_consent_gate as consent_gate
 
 daemon = consent_gate.daemon  # the multiplexed daemon stand-in fixture
 
@@ -21,20 +21,20 @@ SPEAK, TRANSCRIBE = "/api/audio/speak-stream", "/api/audio/transcribe-stream"
 def _dial(home, purpose="interactive"):
     ticket = web_server.app.state.gateway_runner.session_ticket_store.mint(
         profile_id=str(home), subject="desktop", purpose=purpose)
-    return ["hermes-gateway-v1", f"hermes-gateway-ticket.{ticket}"]
+    return ["moor-gateway-v1", f"moor-gateway-ticket.{ticket}"]
 
 
 @pytest.fixture
 def scopes(daemon, monkeypatch):
     """Fake live providers recording (stage, home, profile secret) at each provider stage."""
     from agent.secret_scope import get_secret
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from tools import transcription_streaming, tts_streaming
     (daemon.beta / ".env").write_text("VOICE_KEY=beta\n")
     seen = []
 
     def record(stage):
-        seen.append((stage, get_hermes_home(), get_secret("VOICE_KEY")))
+        seen.append((stage, get_moor_home(), get_secret("VOICE_KEY")))
 
     class Session:
         set_input_rate = push_audio = cancel = lambda self, *_: None
@@ -65,7 +65,7 @@ def scopes(daemon, monkeypatch):
 
 def test_spoken_reply_runs_in_the_grant_profile(daemon, scopes):
     with daemon.client.websocket_connect(SPEAK, subprotocols=_dial(daemon.beta)) as ws:
-        assert ws.accepted_subprotocol == "hermes-gateway-v1"  # the browser fails the handshake otherwise
+        assert ws.accepted_subprotocol == "moor-gateway-v1"  # the browser fails the handshake otherwise
         ws.send_json({"text": "Hello there.", "done": True})
         assert ws.receive_json()["type"] == "start"
         assert ws.receive_bytes() == b"\0\0"
@@ -76,7 +76,7 @@ def test_spoken_reply_runs_in_the_grant_profile(daemon, scopes):
 
 def test_dictation_runs_in_the_grant_profile(daemon, scopes):
     with daemon.client.websocket_connect(TRANSCRIBE, subprotocols=_dial(daemon.beta)) as ws:
-        assert ws.accepted_subprotocol == "hermes-gateway-v1"
+        assert ws.accepted_subprotocol == "moor-gateway-v1"
         ws.send_json({"sample_rate": 16000})
         ws.send_bytes(b"\0\0")
         ws.send_json({"eos": True})

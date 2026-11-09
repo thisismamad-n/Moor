@@ -17,9 +17,9 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.gateway_client import rpc_error
-from hermes_cli.gateway_connection import GatewayConnection
-from hermes_cli.gateway_session_store import GatewaySessionStore
+from moor_cli.gateway_client import rpc_error
+from moor_cli.gateway_connection import GatewayConnection
+from moor_cli.gateway_session_store import GatewaySessionStore
 
 TEXT = "N5 queued while the turn runs"
 
@@ -72,7 +72,7 @@ class _Owners:
         yield await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(self._open(), self.loop))
 
     def rows(self):
-        from hermes_state_runtime import list_session_admissions
+        from moor_state_runtime import list_session_admissions
         return [row for row in list_session_admissions(self.store._db, session_id=self.sid, pending_only=False)
                 if row['payload'].get('text') == TEXT]
 
@@ -84,8 +84,8 @@ class _Owners:
 
 
 def _busy_cli(store, sid):
-    from cli import HermesCLI
-    cli = HermesCLI.__new__(HermesCLI)
+    from cli import MoorCLI
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id = sid
     cli._pending_input = queue.Queue()
     cli._pending_resume_sessions = None
@@ -152,9 +152,9 @@ async def test_queue_rm_and_clear_retire_the_gateway_admissions(tmp_path, monkey
 def test_the_owner_claim_of_a_queued_prompt_runs_as_a_typed_turn_without_a_second_submit():
     """When the owner starts the queued admission, the idle CLI paints it as the user's turn and
     ``run_conversation`` pumps that admission (no new ``prompt.submit``: it runs exactly once)."""
-    from hermes_cli.gateway_agent import GatewayAgent
-    from tests.hermes_cli.test_gateway_agent import SID, frame
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
+    from moor_cli.gateway_agent import GatewayAgent
+    from tests.moor_cli.test_gateway_agent import SID, frame
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -181,9 +181,9 @@ def test_an_adopted_queued_prompt_never_submits_a_second_admission():
     input path's cleanup rewrites (a leaked CPR, a bracketed-paste marker) must still be pumped as the
     admission the owner is running, never sent again as a new ``prompt.submit``."""
     from cli import _strip_leaked_bracketed_paste_wrappers, _strip_leaked_terminal_responses_with_meta
-    from hermes_cli.gateway_agent import GatewayAgent
-    from tests.hermes_cli.test_gateway_agent import SID, frame
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
+    from moor_cli.gateway_agent import GatewayAgent
+    from tests.moor_cli.test_gateway_agent import SID, frame
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
     text = "compare cursor log ^[[12;40R with the expected rows [200~"
     conn, client = _connected()
     try:
@@ -211,9 +211,9 @@ def test_an_adopted_queued_prompt_never_submits_a_second_admission():
 def test_a_typed_turn_with_the_same_text_is_never_taken_for_the_adopted_admission():
     """Identity cuts both ways: a typed input that happens to equal an adopted queued text, run before the
     adopted item was unwrapped, is its own new submit."""
-    from hermes_cli.gateway_agent import GatewayAgent
-    from tests.hermes_cli.test_gateway_agent import SID, frame
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
+    from moor_cli.gateway_agent import GatewayAgent
+    from tests.moor_cli.test_gateway_agent import SID, frame
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -231,8 +231,8 @@ def test_a_typed_turn_with_the_same_text_is_never_taken_for_the_adopted_admissio
 
 def _run_adopted(cli, conn):
     """The input loop takes the adopted item and chat() runs it: ``run_conversation`` result."""
-    from hermes_cli.gateway_agent import GatewayAgent
-    from tests.hermes_cli.test_gateway_agent import SID
+    from moor_cli.gateway_agent import GatewayAgent
+    from tests.moor_cli.test_gateway_agent import SID
     item = cli._pending_input.get_nowait()
     text, _, seeded = cli._tui_unwrap_input(item)
     assert seeded and item.admission_id
@@ -246,9 +246,9 @@ def test_a_local_turn_does_not_swallow_the_start_of_a_cli_queued_admission():
     a /goal continuation) reached run_conversation before the idle tick adopted it. Its drain must not
     lose that turn: the idle tick after the local turn paints it from its receipt (no second submit),
     and only then is its ``queued_inputs`` entry cleared."""
-    from hermes_cli.gateway_agent import GatewayAgent
-    from tests.hermes_cli.test_gateway_agent import SID, frame
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
+    from moor_cli.gateway_agent import GatewayAgent
+    from tests.moor_cli.test_gateway_agent import SID, frame
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -275,8 +275,8 @@ def test_a_local_turn_does_not_swallow_the_start_of_a_cli_queued_admission():
 def test_a_queued_admission_another_client_cancelled_is_forgotten_not_painted():
     """A remembered admission that settled without running (cancelled by Ink/Desktop) is dropped from
     ``queued_inputs`` on the next published list; nothing is painted for it."""
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -301,9 +301,9 @@ def test_queue_list_never_erases_a_finished_queued_turn_this_viewer_has_not_pain
     """Greptile P1 (gateway_queue.py:62): a fast queued turn settles while this CLI is still busy.
     ``/queue list`` reads its receipt as terminal; that must not drop the tracking the idle tick needs
     to paint the turn whose frames are still buffered."""
-    from hermes_cli import gateway_queue
-    from tests.hermes_cli.test_gateway_agent import SID, frame
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
+    from moor_cli import gateway_queue
+    from tests.moor_cli.test_gateway_agent import SID, frame
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli, _play
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -327,8 +327,8 @@ def test_a_queued_turn_the_owner_ran_before_this_viewer_reattached_is_still_pain
     admission before this CLI resubscribes; ``session.resume`` replays no frames. The resumed pending
     list no longer lists it, so the idle tick reads its receipt and paints the saved reply (no pump,
     no submit)."""
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -348,9 +348,9 @@ def test_a_queued_turn_the_owner_ran_before_this_viewer_reattached_is_still_pain
 def test_dock_drops_a_cli_queued_admission_another_client_cancelled():
     """Review N5-F1: another client retired the CLI's queued admission (prompt.cancel, replace, steer).
     The owner's next published pending list omits it; the dock must stop listing it as queued."""
-    from hermes_cli.cli_session_dock import queued_prompts
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from moor_cli.cli_session_dock import queued_prompts
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, _client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -368,10 +368,10 @@ def test_dock_drops_a_cli_queued_admission_another_client_cancelled():
 def test_dock_shows_a_fresh_submit_until_the_owner_publishes_its_list():
     """The gap between the submit's receipt and the owner's next pending list: the new admission is shown;
     the first list published after it decides."""
-    from hermes_cli import gateway_queue
-    from hermes_cli.cli_session_dock import queued_prompts
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from moor_cli import gateway_queue
+    from moor_cli.cli_session_dock import queued_prompts
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, _client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -395,8 +395,8 @@ def _queue_command(cli, fn, *args):
 
 
 def _owned_cli():
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, _client = _connected()
     cli = _idle_cli(conn)
     cli._agent_running = True
@@ -409,12 +409,12 @@ def _owned_cli():
 def test_a_refused_queue_rm_or_edit_says_what_was_refused(verb, args):
     """Review N5-F4: an rm/edit the owner refuses (unsupported_control, ...) gets its own message, never
     the submit refusal's "Nothing was queued; send it again"."""
-    from hermes_cli.gateway_client import GatewayRPCError
+    from moor_cli.gateway_client import GatewayRPCError
     conn, cli = _owned_cli()
     try:
-        with patch("hermes_cli.gateway_queue.queued_rows", lambda c, s: [("adm-q", TEXT)]), \
-             patch("hermes_cli.gateway_queue.cancel", side_effect=GatewayRPCError("unsupported_control")), \
-             patch("hermes_cli.gateway_queue.replace", side_effect=GatewayRPCError("unsupported_control")):
+        with patch("moor_cli.gateway_queue.queued_rows", lambda c, s: [("adm-q", TEXT)]), \
+             patch("moor_cli.gateway_queue.cancel", side_effect=GatewayRPCError("unsupported_control")), \
+             patch("moor_cli.gateway_queue.replace", side_effect=GatewayRPCError("unsupported_control")):
             out = _queue_command(cli, getattr(cli, verb), *args)
         assert "Nothing was queued" not in out and "send it again" not in out, out
         assert "queue item 1" in out.lower() and "unsupported_control" in out, out
@@ -426,13 +426,13 @@ def test_a_refused_queue_rm_or_edit_says_what_was_refused(verb, args):
 def test_an_rm_or_edit_of_a_row_the_drain_already_started_says_it_started(verb, args):
     """The drain claimed the row between the list and the verb (stale_generation): the user is told it
     already started; its turn is still owed a paint."""
-    from hermes_cli.gateway_client import GatewayRPCError
-    from tests.hermes_cli.test_gateway_agent import SID
+    from moor_cli.gateway_client import GatewayRPCError
+    from tests.moor_cli.test_gateway_agent import SID
     conn, cli = _owned_cli()
     try:
-        with patch("hermes_cli.gateway_queue.queued_rows", lambda c, s: [("adm-q", TEXT)]), \
-             patch("hermes_cli.gateway_queue.cancel", side_effect=GatewayRPCError("stale_generation")), \
-             patch("hermes_cli.gateway_queue.replace", side_effect=GatewayRPCError("stale_generation")):
+        with patch("moor_cli.gateway_queue.queued_rows", lambda c, s: [("adm-q", TEXT)]), \
+             patch("moor_cli.gateway_queue.cancel", side_effect=GatewayRPCError("stale_generation")), \
+             patch("moor_cli.gateway_queue.replace", side_effect=GatewayRPCError("stale_generation")):
             out = _queue_command(cli, getattr(cli, verb), *args)
         assert "already started" in out, out
         assert "adm-q" in conn.state(SID).queued_inputs
@@ -443,7 +443,7 @@ def test_an_rm_or_edit_of_a_row_the_drain_already_started_says_it_started(verb, 
 def test_an_rm_racing_the_drain_claim_tells_the_user_the_gateway_stopped_it():
     """Owner ``prompt.cancel`` interrupts a row the drain claimed between its read and the cancel commit and
     answers a non-terminal receipt. That rm used to print nothing and forget the admission."""
-    from tests.hermes_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_agent import SID
     conn, cli = _owned_cli()
     try:
         real = cli._session_db.connection.call
@@ -453,7 +453,7 @@ def test_an_rm_racing_the_drain_claim_tells_the_user_the_gateway_stopped_it():
                 return {"admission_id": "adm-q", "status": "started"}
             return real(method, **params)
         cli._session_db.connection.call = call
-        with patch("hermes_cli.gateway_queue.queued_rows", lambda c, s: [("adm-q", TEXT)]):
+        with patch("moor_cli.gateway_queue.queued_rows", lambda c, s: [("adm-q", TEXT)]):
             out = _queue_command(cli, cli._queue_remove, "1")
         assert "already started" in out and "stopped" in out, out
         assert "adm-q" in conn.state(SID).queued_inputs  # its interrupted turn is still painted
@@ -463,7 +463,7 @@ def test_an_rm_racing_the_drain_claim_tells_the_user_the_gateway_stopped_it():
 
 def _flaky_submit(client, failures):
     """``prompt.submit`` loses its answer ``failures`` times (sent, no reply), then admits ``adm-q``."""
-    from hermes_cli.gateway_client import GatewayClientError
+    from moor_cli.gateway_client import GatewayClientError
     real, seen = client.rpc, []
 
     async def rpc(method, **params):
@@ -482,8 +482,8 @@ def test_a_queue_submit_whose_answer_was_lost_is_retried_under_the_same_identity
     """Greptile P1 (cli_loops_mixin.py:383): a timeout or disconnect after the submit was sent is not a
     refusal; the owner may already hold the prompt. The CLI asks again with the SAME submission id (the
     owner answers the existing admission), so the prompt is queued exactly once."""
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -499,8 +499,8 @@ def test_a_queue_submit_whose_answer_was_lost_is_retried_under_the_same_identity
 
 
 def test_a_queue_submit_with_no_answer_at_all_never_says_nothing_was_queued():
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -516,8 +516,8 @@ def test_a_queue_submit_with_no_answer_at_all_never_says_nothing_was_queued():
 
 
 def test_a_queue_submit_the_owner_refused_still_says_nothing_was_queued():
-    from hermes_cli.gateway_client import GatewayRPCError
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from moor_cli.gateway_client import GatewayRPCError
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -569,8 +569,8 @@ async def test_probe_queue_mode_enter_then_queue_keep_entry_order(tmp_path, monk
 def test_a_steer_that_falls_back_to_queue_is_a_gateway_admission_and_images_stay_local():
     """The steer fallback inherits the queue-mode path; an image follow-up (no text-only admission) and
     a run with no gateway store keep main's ``_pending_input``."""
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -620,8 +620,8 @@ def test_probe_slash_command_typed_after_queue_runs_after_it():
     ``_pending_input`` in that order; with X in the owner's FIFO the input loop must still run X first,
     not let ``/new`` detach the session before the owner claims X."""
     from tests.waiting import wait_until
-    from tests.hermes_cli.test_gateway_agent import SID, frame
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from tests.moor_cli.test_gateway_agent import SID, frame
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     conn, client = _connected()
     try:
         cli = _idle_cli(conn)
@@ -661,9 +661,9 @@ def test_typing_stays_responsive_when_the_owner_queue_is_paused(pending, running
     that never claims this viewer's admission (idle, or busy with someone else's turn) delays it by at
     most ``OWN_QUEUE_HOLD_S``; the admission stays queued, never dropped."""
     import time
-    from hermes_cli.gateway_queue import OWN_QUEUE_HOLD_S
-    from tests.hermes_cli.test_gateway_agent import SID
-    from tests.hermes_cli.test_gateway_tools_notify import _connected, _idle_cli
+    from moor_cli.gateway_queue import OWN_QUEUE_HOLD_S
+    from tests.moor_cli.test_gateway_agent import SID
+    from tests.moor_cli.test_gateway_tools_notify import _connected, _idle_cli
     assert OWN_QUEUE_HOLD_S >= 2.0
     conn, _client = _connected()
     try:

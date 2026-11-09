@@ -2,7 +2,7 @@
 
 A unified package keeps its agent half in ``<home>/plugins/<name>/`` (the default home and every
 profile). Its desktop half is loaded from ``<root>/desktop-plugins/<name>/``, with a
-``.hermes-package.json`` marker that pairs it back to the agent row. Native Desktop does this copy
+``.moor-package.json`` marker that pairs it back to the agent row. Native Desktop does this copy
 in Electron (``reconcileUnifiedDesktopHalves`` in ``apps/desktop/electron/desktop-plugins-root.ts``),
 so a host that Desktop only reaches over SSH never gets it. The Webapp serves that host's folder,
 so its routes (``web_routers/desktop_plugins.py``) run this pass at the same points Electron does:
@@ -31,7 +31,7 @@ from utils import rmtree_readonly
 
 logger = logging.getLogger(__name__)
 
-PACKAGE_MARKER = ".hermes-package.json"
+PACKAGE_MARKER = ".moor-package.json"
 #: The whole published folder; the loader reads at most a 16 MB ``plugin.js`` from it.
 TREE_MAX_BYTES = 64 * 1024 * 1024
 #: Folders a root-layout half never publishes (Electron's ``ROOT_LAYOUT_SKIP`` matches).
@@ -51,7 +51,7 @@ def _is_link(path: Path) -> bool:
 
 def _list_dirs(folder: Path, *, follow_links: bool = False) -> list[str]:
     """Folder names in *folder*. A package root follows links to folders (``ln -s ~/src/pkg
-    ~/.hermes/plugins/`` is how a package is developed in place), the app root does not."""
+    ~/.moor/plugins/`` is how a package is developed in place), the app root does not."""
     try:
         entries = list(os.scandir(folder))
     except OSError:
@@ -69,7 +69,7 @@ def _list_dirs(folder: Path, *, follow_links: bool = False) -> list[str]:
 def _package_origin(package_dir: Path) -> dict:
     """Where the package came from (catalog sidecar first, then the git remote), for "Install here"."""
     try:
-        sidecar = json.loads((package_dir / ".hermes-catalog.json").read_text(encoding="utf-8-sig"))
+        sidecar = json.loads((package_dir / ".moor-catalog.json").read_text(encoding="utf-8-sig"))
         if sidecar.get("repo"):
             origin = {"catalogName": sidecar.get("catalog_name"), "repo": sidecar["repo"], "sha": sidecar.get("sha")}
             return {key: value for key, value in origin.items() if value is not None}
@@ -275,14 +275,14 @@ def _source_gone(name: str, entry: Path) -> bool:
     return False
 
 
-def reconcile_desktop_halves(hermes_root: Path, app_root: Path) -> list[str]:
+def reconcile_desktop_halves(moor_root: Path, app_root: Path) -> list[str]:
     """Materialize every local home's desktop halves into *app_root* (first home wins for a name in
     several profiles, the default home first) and drop copies whose package is gone. Returns the
     folders it wrote or removed."""
-    return reconcile_desktop_halves_report(hermes_root, app_root)["touched"]
+    return reconcile_desktop_halves_report(moor_root, app_root)["touched"]
 
 
-def reconcile_desktop_halves_report(hermes_root: Path, app_root: Path) -> dict:
+def reconcile_desktop_halves_report(moor_root: Path, app_root: Path) -> dict:
     """:func:`reconcile_desktop_halves`, also naming each package whose desktop half it refused or could not
     read (``refused``: ``{"name", "reason"}``), as Electron's ``reconcileDesktopPluginsReport`` does. A refused
     half leaves its name to a later home's half, and is not reported once that half is published."""
@@ -290,7 +290,7 @@ def reconcile_desktop_halves_report(hermes_root: Path, app_root: Path) -> dict:
         touched: list[str] = []
         refused: list[dict[str, str]] = []
         seen: set[str] = set()
-        homes = [hermes_root, *(hermes_root / "profiles" / name for name in _list_dirs(hermes_root / "profiles"))]
+        homes = [moor_root, *(moor_root / "profiles" / name for name in _list_dirs(moor_root / "profiles"))]
         for home in homes:
             plugins_root = home / "plugins"
             for name in _list_dirs(plugins_root, follow_links=True):

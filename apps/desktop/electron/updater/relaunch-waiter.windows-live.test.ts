@@ -100,7 +100,7 @@ exit $LASTEXITCODE
       expect(result.status, result.stdout + result.stderr).toBe(1)
 
       const lines = fs
-        .readFileSync(path.join(root, 'hermes-relaunch-waiter.log'), 'utf8')
+        .readFileSync(path.join(root, 'moor-relaunch-waiter.log'), 'utf8')
         .split('\n')
         .filter(line => line.trim())
 

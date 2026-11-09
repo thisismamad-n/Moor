@@ -54,7 +54,7 @@ def make_cron_provider():
 def _no_managed_store(tmp_path, monkeypatch):
     """Point PM's store at an empty dir: script runs must not select the host install's
     dependency venv (POSIX cron scripts run on it when a store is committed)."""
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "no-pm-store"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "no-pm-store"))
 
 
 @pytest.fixture(autouse=True)
@@ -92,12 +92,12 @@ def owner_execution_runner():
     """
     from gateway.session_contract import SessionRef
     from gateway.session_cron import current_execution, execute
-    from hermes_state_registry import acquire, release
+    from moor_state_registry import acquire, release
 
     def run(job, *, extra_prompt=None, cancel_event=None, execution_id=None):
-        from cron.scheduler import _get_hermes_home
+        from cron.scheduler import _get_moor_home
 
-        db = acquire(_get_hermes_home() / "state.db")
+        db = acquire(_get_moor_home() / "state.db")
         identity = uuid4().hex
         ref = SessionRef("test-profile", "cron-" + identity)
         db.create_session(ref.session_id, source="cron")

@@ -270,4 +270,4 @@ def setup_tts(config: dict):
     _setup_tts_provider(config)
 
 
-import hermes_cli.setup as _setup
+import moor_cli.setup as _setup

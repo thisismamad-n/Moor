@@ -1,6 +1,6 @@
-"""LIVE Windows E2E: ``hermes plugins uninstall`` while a real gateway has the plugin loaded.
+"""LIVE Windows E2E: ``moor plugins uninstall`` while a real gateway has the plugin loaded.
 
-A real ``hermes gateway run`` child (temp HOME / HERMES_HOME) loads three enabled user plugins:
+A real ``moor gateway run`` child (temp HOME / MOOR_HOME) loads three enabled user plugins:
 pure Python, one that keeps a file in its own directory open, and one that imports a native
 ``.pyd`` shipped inside its directory. Windows refuses to delete a file another process holds
 (WinError 32) or a mapped DLL (WinError 5), so removing those trees under the live gateway is the
@@ -55,15 +55,15 @@ def _native_extension() -> Path:
 
 def _child_env(home: Path) -> dict:
     env = {k: v for k, v in os.environ.items()
-           if not k.startswith(("HERMES_", "PYTEST_")) and not k.endswith(("_API_KEY", "_TOKEN"))}
-    env.update(HOME=str(home.parent), USERPROFILE=str(home.parent), HERMES_HOME=str(home),
-               HERMES_GATEWAY_LOCK_DIR=str(home.parent / "locks"), PYTHONPATH=str(PROJECT_ROOT),
-               PYTHONUTF8="1", NO_COLOR="1", HERMES_ACCEPT_HOOKS="1")
+           if not k.startswith(("MOOR_", "PYTEST_")) and not k.endswith(("_API_KEY", "_TOKEN"))}
+    env.update(HOME=str(home.parent), USERPROFILE=str(home.parent), MOOR_HOME=str(home),
+               MOOR_GATEWAY_LOCK_DIR=str(home.parent / "locks"), PYTHONPATH=str(PROJECT_ROOT),
+               PYTHONUTF8="1", NO_COLOR="1", MOOR_ACCEPT_HOOKS="1")
     return env
 
 
-def _hermes(home: Path, *argv: str, timeout: float = 180) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "hermes_cli.main", *argv], cwd=str(home),
+def _moor(home: Path, *argv: str, timeout: float = 180) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-m", "moor_cli.main", *argv], cwd=str(home),
                           env=_child_env(home), stdin=subprocess.DEVNULL, capture_output=True,
                           encoding="utf-8", errors="replace", timeout=timeout, check=False)
 
@@ -80,7 +80,7 @@ def _wait(pred, timeout: float) -> bool:
 @pytest.fixture(scope="module")
 def live_gateway(tmp_path_factory):
     root = tmp_path_factory.mktemp("uninstall-live")
-    home = root / "fakehome" / ".hermes"
+    home = root / "fakehome" / ".moor"
     plugins = home / "plugins"
     plugins.mkdir(parents=True)
     (root / "fakehome" / "locks").mkdir()
@@ -99,7 +99,7 @@ def live_gateway(tmp_path_factory):
         "{" + ", ".join(f'"{n}": {{"source": "local", "sha": "0"}}' for n in _HEADS) + "}", encoding="utf-8")
 
     log = open(root / "gateway.log", "w", encoding="utf-8")
-    proc = subprocess.Popen([sys.executable, "-m", "hermes_cli.main", "gateway", "run", "--force"],
+    proc = subprocess.Popen([sys.executable, "-m", "moor_cli.main", "gateway", "run", "--force"],
                             cwd=str(home), env=_child_env(home), stdin=subprocess.DEVNULL, stdout=log,
                             stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
     from gateway.control_socket import identify_gateway, reload_gateway_plugins
@@ -120,13 +120,13 @@ def live_gateway(tmp_path_factory):
 @pytest.mark.parametrize("name", list(_HEADS))
 def test_uninstall_while_gateway_has_plugin_loaded(live_gateway, name):
     home, proc = live_gateway
-    result = _hermes(home, "plugins", "uninstall", name)
+    result = _moor(home, "plugins", "uninstall", name)
     print(f"UNINSTALL {name}: rc={result.returncode}\n{result.stdout[-1500:]}\n{result.stderr[-1500:]}")
 
     assert proc.poll() is None, "the gateway died during uninstall"
     assert result.returncode == 0, f"uninstall failed: {result.stdout[-800:]} {result.stderr[-800:]}"
     leftovers = sorted(str(p.relative_to(home / "plugins")) for p in (home / "plugins").rglob("plugin.yaml"))
     assert not any(name in p for p in leftovers), f"a loadable copy stayed under plugins/: {leftovers}"
-    listing = _hermes(home, "plugins", "list")
+    listing = _moor(home, "plugins", "list")
     assert name not in listing.stdout, f"the next process still sees {name}:\n{listing.stdout[-1500:]}"
     assert name not in (home / "config.yaml").read_text(encoding="utf-8")

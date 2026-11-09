@@ -1,4 +1,4 @@
-"""`hermes gateway setup` → Mattermost must name a user-ID lookup that exists.
+"""`moor gateway setup` → Mattermost must name a user-ID lookup that exists.
 
 The profile dialog does not show the ID. System Console → User Management →
 Users and GET /api/v4/users/username/<username> do; /users/me with the bot
@@ -9,8 +9,8 @@ import io
 
 
 def test_gateway_setup_points_at_a_documented_user_id(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    from hermes_cli import gateway as gw
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    from moor_cli import gateway as gw
 
     platform = next(p for p in gw._PLATFORMS if p["key"] == "mattermost")
     monkeypatch.setattr(

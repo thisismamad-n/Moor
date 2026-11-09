@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { DelegationModelMap, DelegationRouting } from '@/api/delegation'
-import type { HermesApiRequest } from '@/global'
+import type { MoorApiRequest } from '@/global'
 import { queryClient } from '@/lib/query-client'
 
 import { routingQueryKey, saveModelRoutes } from './routing-data'
@@ -25,9 +25,9 @@ beforeEach(() => {
     profiles: []
   })
   // Each PUT waits until the test settles it, so the test picks the order answers come back in.
-  window.hermesDesktop = {
-    ...window.hermesDesktop,
-    api: (request: HermesApiRequest) => {
+  window.moorDesktop = {
+    ...window.moorDesktop,
+    api: (request: MoorApiRequest) => {
       if (request.path === '/api/delegation/routing') {
         return Promise.resolve({ ...queryClient.getQueryData(routingQueryKey(undefined)), model_map: server })
       }
@@ -48,7 +48,7 @@ beforeEach(() => {
         })
       )
     }
-  } as typeof window.hermesDesktop
+  } as typeof window.moorDesktop
 })
 
 afterEach(() => queryClient.clear())

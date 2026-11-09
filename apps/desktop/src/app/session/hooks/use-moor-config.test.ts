@@ -25,10 +25,10 @@ import { deferred } from '../../../test/deferred'
 
 import { useMoorConfig } from './use-moor-config'
 
-vi.mock('@/hermes', () => ({
-  getHermesConfig: vi.fn(),
+vi.mock('@/moor', () => ({
+  getMoorConfig: vi.fn(),
   setApiRequestProfile: vi.fn(),
-  getHermesConfigDefaults: vi.fn().mockResolvedValue({})
+  getMoorConfigDefaults: vi.fn().mockResolvedValue({})
 }))
 
 const WORKSPACE_CWD_KEY = 'moor.desktop.workspace-cwd'
@@ -71,16 +71,16 @@ describe('useMoorConfig refreshMoorConfig', () => {
 
   it('mirrors display.tool_progress independently of show_reasoning', async () => {
     mockConfig({ display: { show_reasoning: false, tool_progress: 'off' } })
-    const { result } = renderHook(() => useHermesConfig({ activeSessionIdRef: { current: null } }))
+    const { result } = renderHook(() => useMoorConfig({ activeSessionIdRef: { current: null } }))
 
     await act(async () => {
-      await result.current.refreshHermesConfig()
+      await result.current.refreshMoorConfig()
     })
     expect($showToolActivity.get()).toBe(false)
 
     mockConfig({ display: { show_reasoning: false } })
     await act(async () => {
-      await result.current.refreshHermesConfig()
+      await result.current.refreshMoorConfig()
     })
     expect($showToolActivity.get()).toBe(true)
   })

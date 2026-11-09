@@ -13,7 +13,7 @@ import { translateBots } from './i18n-test-helper'
 // on the room's message-body wrapper — growing a scrollbar under the room log,
 // or worse, clipping with no scroll affordance (#91706). The wrapper now
 // soft-wraps `pre` content; the room body itself never scrolls sideways.
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   const base = await pluginSdkMock(createGroupGateway().host)
 

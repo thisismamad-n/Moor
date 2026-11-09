@@ -1,5 +1,5 @@
-name: hermes-speech
-repo: https://github.com/allmodels-io/hermes-speech
+name: moor-speech
+repo: https://github.com/allmodels-io/moor-speech
 sha: 6efecc359aa4c091b41ad530575943657ee259de
 description: Give your agent the voice it deserves. Guided TTS and STT setup for
   Moor, with voice search and previews, model switching, testing, and native
@@ -8,10 +8,10 @@ description: Give your agent the voice it deserves. Guided TTS and STT setup for
 maintainer: moeadham
 tier: community
 category: voice
-requires_hermes: ">=0.20.0"
-docs_url: https://github.com/allmodels-io/hermes-speech#readme
+requires_moor: ">=0.20.0"
+docs_url: https://github.com/allmodels-io/moor-speech#readme
 version: "0.3.3"
-image: https://raw.githubusercontent.com/allmodels-io/hermes-speech/6efecc359aa4c091b41ad530575943657ee259de/.github/social-preview.png
+image: https://raw.githubusercontent.com/allmodels-io/moor-speech/6efecc359aa4c091b41ad530575943657ee259de/.github/social-preview.png
 platforms: []
 capabilities:
   provides_tools:

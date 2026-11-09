@@ -1,4 +1,4 @@
-"""``hermes webapp`` opens the browser-hosted Desktop that the gateway serves.
+"""``moor webapp`` opens the browser-hosted Desktop that the gateway serves.
 
 It builds the Webapp bundle when stale, starts the gateway that serves the current profile (the default
 gateway for a profile it serves, else the profile's own), asks that gateway for a one-use launch link
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import webapp_launcher as launcher
+from moor_cli import webapp_launcher as launcher
 
 LINK = "http://127.0.0.1:9120/webapp/launch#ticket=" + "t" * 43
 
@@ -62,13 +62,13 @@ def world(monkeypatch, tmp_path):
                         raising=False)
     monkeypatch.setattr("time.sleep", lambda seconds: calls.setdefault("slept", []).append(seconds))
     root = _home(tmp_path / "root", "webapp:\n  enabled: true\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     return {"calls": calls, "answers": answers, "root": root, "tmp": tmp_path, "monkeypatch": monkeypatch,
             "states": states}
 
 
 def _use_home(world, home):
-    world["monkeypatch"].setenv("HERMES_HOME", str(home))
+    world["monkeypatch"].setenv("MOOR_HOME", str(home))
 
 
 def test_the_webapp_opens_from_a_one_use_link_its_gateway_mints(world, capsys):
@@ -119,7 +119,7 @@ def test_a_gateway_started_before_the_webapp_was_turned_on_asks_for_a_restart(wo
     world["answers"]["webapp-status"] = {"ok": True, "result": {"state": "off", "url": None, "reason": None}}
     assert launcher.cmd_webapp(_args()) == 1
     out = capsys.readouterr().out
-    assert "hermes gateway restart" in out
+    assert "moor gateway restart" in out
     assert world["calls"]["opened"] == []
 
 
@@ -132,14 +132,14 @@ def test_a_webapp_the_gateway_could_not_serve_reports_why_and_how_to_retry(world
                                                                "reason": reason}}
     assert launcher.cmd_webapp(_args()) == 1
     out = capsys.readouterr().out
-    assert reason in out and "hermes gateway restart" in out
+    assert reason in out and "moor gateway restart" in out
     assert launcher.cmd_webapp(_args(status=True)) == 0
     out = capsys.readouterr().out
-    assert reason in out and "hermes gateway restart" in out
+    assert reason in out and "moor gateway restart" in out
 
 
 def test_a_launch_refused_for_a_stale_bundle_asks_for_a_build_not_a_restart(world, capsys):
-    """A bundle that is missing or that hermes update could not rebuild is served as soon as it is
+    """A bundle that is missing or that moor update could not rebuild is served as soon as it is
     built, and a restart keeps the stale mark: the refusal says to build it and never sends the user
     to restart the gateway, as --status already does."""
     from gateway.webapp_listener import NOT_REBUILT
@@ -148,7 +148,7 @@ def test_a_launch_refused_for_a_stale_bundle_asks_for_a_build_not_a_restart(worl
                                                                "reason": NOT_REBUILT}}
     assert launcher.cmd_webapp(_args(skip_build=True)) == 1
     out = capsys.readouterr().out
-    assert "Run hermes webapp to rebuild it." in out and launcher.RESTART_COMMAND not in out
+    assert "Run moor webapp to rebuild it." in out and launcher.RESTART_COMMAND not in out
 
 
 SERVING = {"ok": True, "result": {"state": "serving", "url": "http://127.0.0.1:9120", "reason": None}}
@@ -156,7 +156,7 @@ SERVING = {"ok": True, "result": {"state": "serving", "url": "http://127.0.0.1:9
 
 def test_a_webapp_turned_off_in_config_but_still_served_says_a_restart_stops_it(world, capsys):
     """The gateway reads webapp: only when it starts. After the config turns the Webapp off, the running
-    gateway still serves it (on the LAN for a wildcard host) until it restarts: hermes webapp says so,
+    gateway still serves it (on the LAN for a wildcard host) until it restarts: moor webapp says so,
     instead of "The Webapp is off", and opens nothing."""
     (world["root"] / "config.yaml").write_text("webapp:\n  enabled: false\n  host: 0.0.0.0\n", encoding="utf-8")
     world["answers"]["webapp-status"] = SERVING
@@ -250,7 +250,7 @@ def test_status_with_no_gateway_running_and_the_webapp_off_says_how_to_turn_it_o
     assert launcher.cmd_webapp(_args(status=True)) == 1
     out = capsys.readouterr().out
     assert "webapp.enabled: true" in out and str(world["root"] / "config.yaml") in out
-    assert "Run hermes webapp" not in out
+    assert "Run moor webapp" not in out
 
 
 def test_sign_out_replaces_the_browser_credential_on_the_running_gateway(world, capsys):
@@ -283,7 +283,7 @@ def test_sign_out_on_a_gateway_not_serving_the_webapp_says_no_browser_was_connec
 
 
 def test_sign_out_on_a_gateway_that_does_not_report_what_it_closed_asks_for_a_restart(world, capsys):
-    # A gateway started before this Hermes signs out loopback tabs only.
+    # A gateway started before this Moor signs out loopback tabs only.
     world["answers"]["webapp-sign-out"]["result"] = {"signed_out": True}
     assert launcher.cmd_webapp(_args(sign_out=True)) == 0
     out = capsys.readouterr().out
@@ -382,11 +382,11 @@ def test_a_home_whose_gateway_never_ran_reads_as_having_none(tmp_path):
 
 @pytest.mark.parametrize("deleted", ["removed", "tombstoned"])
 @pytest.mark.parametrize("action", [{"sign_out": True}, {"status": True}, {}])
-def test_a_hermes_home_at_a_deleted_profile_is_refused_like_its_profile_flag(world, capsys, deleted, action):
-    """``HERMES_HOME`` naming a deleted profile is refused exactly as ``-p <name>`` is, so signing
+def test_a_moor_home_at_a_deleted_profile_is_refused_like_its_profile_flag(world, capsys, deleted, action):
+    """``MOOR_HOME`` naming a deleted profile is refused exactly as ``-p <name>`` is, so signing
     out never replaces the default gateway's credential instead."""
     from gateway.webapp_listener import TOKEN_PATH, browser_session_token
-    from hermes_constants import mark_named_profile_deleted
+    from moor_constants import mark_named_profile_deleted
 
     gone = world["root"] / "profiles" / "gone"
     if deleted == "tombstoned":
@@ -396,7 +396,7 @@ def test_a_hermes_home_at_a_deleted_profile_is_refused_like_its_profile_flag(wor
     _use_home(world, gone)
     assert launcher.cmd_webapp(_args(**action)) == 1
     refused = capsys.readouterr()
-    assert "Error: Profile 'gone' does not exist. Create it with: hermes profile create gone" in refused.err
+    assert "Error: Profile 'gone' does not exist. Create it with: moor profile create gone" in refused.err
     assert "Signed out" not in refused.out
     assert (world["calls"]["control"], world["calls"]["ensure"], world["calls"]["build"]) == ([], [], 0)
     assert (world["root"] / TOKEN_PATH).read_text().strip() == before
@@ -404,7 +404,7 @@ def test_a_hermes_home_at_a_deleted_profile_is_refused_like_its_profile_flag(wor
 
 def test_the_webapp_command_takes_one_action_at_a_time():
     import argparse
-    from hermes_cli.subcommands.webapp import build_webapp_parser
+    from moor_cli.subcommands.webapp import build_webapp_parser
     parser = argparse.ArgumentParser()
     seen = []
     build_webapp_parser(parser.add_subparsers(), cmd_webapp=seen.append)
@@ -447,8 +447,8 @@ def test_a_webapp_opened_over_plain_http_on_the_lan_says_what_the_browser_loses(
 
 
 def _register_lan_sign_in(world, address: str, port: int = 9120) -> None:
-    """Web Access Start registered Nous sign-in for ``http://<address>:<port>``, this machine's LAN address."""
-    from hermes_cli import webapp_access
+    """Web Access Start registered Moor sign-in for ``http://<address>:<port>``, this machine's LAN address."""
+    from moor_cli import webapp_access
     record = world["root"] / "webapp" / "sign-in-registration.json"
     record.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     record.write_text(json.dumps({"portal": "https://portal.example", "client_id": "agent:x",
@@ -460,7 +460,7 @@ def _register_lan_sign_in(world, address: str, port: int = 9120) -> None:
 def test_status_of_a_webapp_browsers_open_over_plain_http_on_the_lan_says_what_the_browser_loses(
         world, capsys, browser_address):
     """The gateway reports its loopback dial origin; browsers open webapp.public_url, else the LAN address
-    Web Access registered sign-in for, as hermes webapp does. --status warns about that address."""
+    Web Access registered sign-in for, as moor webapp does. --status warns about that address."""
     if browser_address == "public_url":
         _home(world["root"], "webapp:\n  enabled: true\n  host: 0.0.0.0\n  public_url: http://192.168.1.20:9120\n")
     else:
@@ -472,7 +472,7 @@ def test_status_of_a_webapp_browsers_open_over_plain_http_on_the_lan_says_what_t
     assert _says_what_plain_http_loses(out)
 
 
-@pytest.mark.parametrize("public_url", ["", "https://hermes.example.ts.net"])
+@pytest.mark.parametrize("public_url", ["", "https://moor.example.ts.net"])
 def test_status_gets_no_plain_http_warning_when_browsers_open_a_secure_address(world, capsys, public_url):
     """A wildcard bind with no public URL or LAN sign-in opens loopback; an HTTPS public URL is secure."""
     _home(world["root"], "webapp:\n  enabled: true\n  host: 0.0.0.0\n"
@@ -484,7 +484,7 @@ def test_status_gets_no_plain_http_warning_when_browsers_open_a_secure_address(w
 @pytest.mark.parametrize("host", ["127.0.0.1", "localhost"])
 def test_status_of_a_private_webapp_ignores_a_lan_sign_in_registration_it_kept(world, capsys, host):
     """Web Access keeps its LAN sign-in registration after webapp.host goes back to loopback. With no
-    sign-in gate, hermes webapp opens the loopback launch link, so --status does not warn."""
+    sign-in gate, moor webapp opens the loopback launch link, so --status does not warn."""
     _home(world["root"], f"webapp:\n  enabled: true\n  host: {host}\n")
     _register_lan_sign_in(world, "192.168.1.20")
     assert launcher.cmd_webapp(_args(status=True)) == 0
@@ -494,8 +494,8 @@ def test_status_of_a_private_webapp_ignores_a_lan_sign_in_registration_it_kept(w
 
 
 @pytest.mark.parametrize("url", ["http://127.0.0.1:9120/", "http://127.0.0.2:9120/", "http://localhost:9120/",
-                                 "http://hermes.localhost:9120/", "http://[::1]:9120/",
-                                 "https://hermes.example.ts.net/"])
+                                 "http://moor.localhost:9120/", "http://[::1]:9120/",
+                                 "https://moor.example.ts.net/"])
 def test_loopback_and_https_addresses_are_secure_contexts_and_get_no_warning(world, capsys, url):
     world["answers"]["webapp-launch"] = {"ok": True, "result": {
         "url": url, "private": False, "expires_in_seconds": None, "sign_in": True}}

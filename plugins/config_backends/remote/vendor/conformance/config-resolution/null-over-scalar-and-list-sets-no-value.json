@@ -8,7 +8,7 @@
       "values": {
         "model": {
           "default": "hermes-4-405b",
-          "provider": "nous"
+          "provider": "moor"
         },
         "tools": {
           "disabled": [
@@ -50,7 +50,7 @@
     "effective": {
       "model": {
         "default": null,
-        "provider": "nous"
+        "provider": "moor"
       },
       "tools": {
         "disabled": null
@@ -87,7 +87,7 @@
     "expect": {
       "model": {
         "default": null,
-        "provider": "nous"
+        "provider": "moor"
       },
       "tools": {
         "disabled": null

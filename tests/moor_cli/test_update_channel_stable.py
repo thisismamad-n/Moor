@@ -40,7 +40,7 @@ class TestSourceUpdateChannel:
         config = {
             "update": {"installs": {install_id(root): {"path": str(root), "channel": "stable"}}}
         }
-        from hermes_cli import update_cmd
+        from moor_cli import update_cmd
 
         monkeypatch.setattr(update_cmd._m(), "PROJECT_ROOT", root)
         home = tmp_path / "home"
@@ -55,7 +55,7 @@ class TestSourceUpdateChannel:
         (root / "install-stamp.json").write_text(
             '{"schemaVersion": 2, "updateMechanism": "self"}'
         )
-        from hermes_cli import update_cmd
+        from moor_cli import update_cmd
 
         monkeypatch.setattr(update_cmd._m(), "PROJECT_ROOT", root)
         monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))

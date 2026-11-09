@@ -92,21 +92,21 @@ describe('onboarding Picker', () => {
     expect(window.localStorage.getItem('moor-onboarding-skipped-v1')).toBe('1')
   })
 
-  it('keeps Nous Portal on top of the key form when the provider list failed to load', () => {
+  it('keeps Moor Portal on top of the key form when the provider list failed to load', () => {
     // A failed/empty OAuth list drops the picker onto the key form with no way back.
     setProviders([])
     $desktopOnboarding.set({ ...$desktopOnboarding.get(), mode: 'apikey' })
     render(<Picker ctx={ctx} />)
 
-    expect(screen.getByText('Nous Portal')).toBeTruthy()
+    expect(screen.getByText('Moor Portal')).toBeTruthy()
     expect(screen.getByText('Recommended')).toBeTruthy()
     expect(screen.getByText('Fireworks AI')).toBeTruthy()
     cleanup()
 
-    // The custom-endpoint form is a deliberate destination: no Nous row there.
+    // The custom-endpoint form is a deliberate destination: no Moor row there.
     $desktopOnboarding.set({ ...$desktopOnboarding.get(), localEndpoint: true })
     render(<Picker ctx={ctx} />)
-    expect(screen.queryByText('Nous Portal')).toBeNull()
+    expect(screen.queryByText('Moor Portal')).toBeNull()
   })
 
   it('hides "choose later" in manual (add-provider) mode', () => {

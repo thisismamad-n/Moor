@@ -85,14 +85,14 @@ def _stop_session_voice_capture(session_id) -> None:
             return
         _voice_capture_gen += 1
     with contextlib.suppress(Exception):
-        from hermes_cli.voice import stop_continuous
+        from moor_cli.voice import stop_continuous
         stop_continuous()
     _resume_voice_wake()
 
 
 def _capture_live() -> bool:
     try:
-        from hermes_cli.voice import is_continuous_active
+        from moor_cli.voice import is_continuous_active
     except ImportError:  # an older voice wrapper without the probe
         return False
     return bool(is_continuous_active())
@@ -524,7 +524,7 @@ def _(rid, params: dict) -> dict:
     """What the calling client handles. ``server_requests: true`` marks this connection as one that answers
     server→client requests; a WebSocket client that never sends it gets every such request failed fast
     instead of stalling the agent for the deadline (#112548)."""
-    from hermes_cli.process_identity import local_desktop_client
+    from moor_cli.process_identity import local_desktop_client
     from tui_gateway import server_requests
     from tui_gateway.contracts import registry as contracts
     transport = _caller_transport()
@@ -839,7 +839,7 @@ def _(rid, params: dict) -> dict:
         # user_barge=True also marks the speech interrupted for the next turn's
         # model note, and stop_playback() releases the file player.
         _tts_stream_stop(user_barge=True)
-        from hermes_cli.voice import start_continuous
+        from moor_cli.voice import start_continuous
         # Busy probe holds the no-speech counter during long agent turns; safe to re-register every
         # start (older wrappers lack the setter).
         with contextlib.suppress(Exception):
@@ -889,7 +889,7 @@ def _(rid, params: dict) -> dict:
     if not text:
         return _err(rid, 4020, "text required")
     try:
-        import hermes_cli.voice
+        import moor_cli.voice
     except Exception as e:
         return _err(rid, 5026, "voice module not available" if isinstance(e, ImportError) else str(e))
     threading.Thread(target=_speak_text_with_barge, args=(text,), daemon=True).start()

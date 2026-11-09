@@ -57,12 +57,12 @@ function applyStatus(status: QuickEntryStatus | undefined): void {
   })
 }
 
-type QuickEntryBridge = NonNullable<Window['hermesDesktop']['quickEntry']>
+type QuickEntryBridge = NonNullable<Window['moorDesktop']['quickEntry']>
 
 /** The shell's Quick Entry settings call, or undefined where there is none
  *  (outside Electron, the Webapp's bridge). */
 function quickEntrySettingsCall<K extends 'getSettings' | 'setSettings'>(name: K): QuickEntryBridge[K] | undefined {
-  const call = typeof window === 'undefined' ? undefined : window.hermesDesktop?.quickEntry?.[name]
+  const call = typeof window === 'undefined' ? undefined : window.moorDesktop?.quickEntry?.[name]
 
   return typeof call === 'function' ? call : undefined
 }
@@ -211,7 +211,7 @@ export function quickEntryResultEvent(result: QuickEntrySubmitResult, submitId: 
 
   if (result.code === 'timeout') {
     return {
-      message: result.message || 'Hermes has not confirmed the prompt yet — it may still be delivered.',
+      message: result.message || 'Moor has not confirmed the prompt yet — it may still be delivered.',
       submitId,
       type: 'submit-unknown'
     }

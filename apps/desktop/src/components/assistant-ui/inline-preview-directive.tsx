@@ -70,9 +70,9 @@ export function directiveFrameHeight(raw: string | undefined): number | null {
   return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, parsed))
 }
 
-const SIZE_MESSAGE_TYPE = 'hermes-inline-preview-size'
-const INTENT_MESSAGE_TYPE = 'hermes-inline-preview-intent'
-const INTENT_ACK_MESSAGE_TYPE = 'hermes-inline-preview-intent-ack'
+const SIZE_MESSAGE_TYPE = 'moor-inline-preview-size'
+const INTENT_MESSAGE_TYPE = 'moor-inline-preview-intent'
+const INTENT_ACK_MESSAGE_TYPE = 'moor-inline-preview-intent-ack'
 
 /** Prompt length cap for a widget intent — a sentence, not a payload dump.
  *  Over-length intents are REJECTED back to the widget, never truncated: a
@@ -82,24 +82,24 @@ export const MAX_INTENT_LENGTH = 500
 /** One intent per frame per second; clicks are human-speed. A faster intent
  *  is rejected with `retryAfterMs`, not dropped silently. */
 export const INTENT_THROTTLE_MS = 1000
-/** How long `hermes.send()` waits for the parent's ack before resolving
+/** How long `moor.send()` waits for the parent's ack before resolving
  *  `timeout` (the parent acks synchronously; this only fires if it's gone). */
 const INTENT_ACK_TIMEOUT_MS = 5000
 
 export type IntentError = 'invalid' | 'too_long' | 'throttled' | 'undelivered'
 
-/** What `hermes.send()` resolves to inside the frame. `ok` means the prompt
+/** What `moor.send()` resolves to inside the frame. `ok` means the prompt
  *  was handed to the owning composer's send path — not that the agent has
  *  answered. */
 export type IntentAck = { ok: true } | { error: IntentError; maxLength?: number; ok: false; retryAfterMs?: number }
 
-/** The script that gives the widget its ONE voice: `hermes.send(prompt)`.
+/** The script that gives the widget its ONE voice: `moor.send(prompt)`.
  *  Posts the prompt up tagged with the mount token and a per-call id; the
  *  parent validates, throttles, routes it through the composer, and posts an
  *  ack back, so `send()` returns a Promise of an `IntentAck` — a widget can
- *  show "saved" only when it was. Also wires `data-hermes-send` so
+ *  show "saved" only when it was. Also wires `data-moor-send` so
  *  declarative HTML works with zero script:
- *  `<button data-hermes-send="get-price eth">ETH</button>`. */
+ *  `<button data-moor-send="get-price eth">ETH</button>`. */
 export function intentScript(token: string): string {
   return (
     '<script>(function(){var t=' +
@@ -119,7 +119,7 @@ export function intentScript(token: string): string {
     'parent.postMessage({type:' +
     JSON.stringify(INTENT_MESSAGE_TYPE) +
     ',token:t,id:id,prompt:p},"*")})}' +
-    'window.hermes={send:send,maxLength:' +
+    'window.moor={send:send,maxLength:' +
     String(MAX_INTENT_LENGTH) +
     '};' +
     'addEventListener("click",function(e){var el=e.target&&e.target.closest?' +
@@ -202,7 +202,7 @@ function resolvedColorScheme(): 'light' | 'dark' {
     return 'light'
   }
 
-  const mode = document.documentElement.dataset.hermesMode
+  const mode = document.documentElement.dataset.moorMode
 
   if (mode === 'light' || mode === 'dark') {
     return mode

@@ -1,7 +1,7 @@
-"""``hermes_cli.desktop_plugin_install``: cloning a desktop plugin onto the host that serves the Webapp.
+"""``moor_cli.desktop_plugin_install``: cloning a desktop plugin onto the host that serves the Webapp.
 
 Real local Git repositories behind an https identifier (only the clone's network leg is pointed at the
-local repository), a throwaway ``HERMES_HOME``: the folder lands where the Webapp's read routes serve
+local repository), a throwaway ``MOOR_HOME``: the folder lands where the Webapp's read routes serve
 it, at exactly the commit the dialog reviewed; a package's half carries the marker that pairs it to its
 agent row, a standalone plugin carries none, and nothing installs twice without ``force``.
 """
@@ -15,8 +15,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import desktop_plugin_halves as halves
-from hermes_cli import desktop_plugin_install as install
+from moor_cli import desktop_plugin_halves as halves
+from moor_cli import desktop_plugin_install as install
 
 URL = "https://example.invalid/acme/gizmo.git"
 
@@ -38,18 +38,18 @@ def _commit(path: Path, files: dict[str, str]) -> str:
 
 @pytest.fixture()
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "home"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    import hermes_constants
-    hermes_constants._default_hermes_root_memo = None
-    return hermes_home
+    moor_home = tmp_path / "home"
+    moor_home.mkdir()
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    import moor_constants
+    moor_constants._default_moor_root_memo = None
+    return moor_home
 
 
 @pytest.fixture()
 def repo(tmp_path, monkeypatch):
     """A local repository the https identifier clones from."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     path = tmp_path / "gizmo"
     path.mkdir()
     _git(path, "init", "-q", "-b", "main")
@@ -66,7 +66,7 @@ def _root(home: Path) -> Path:
 def test_desktop_only_repo_lands_under_its_own_name_without_a_marker(home, repo):
     # The repository ships its own package marker naming another package: only an installer writes one.
     sha = _commit(repo, {"plugin.js": "export default { id: 'gizmo' }\n", "panel.js": "export const x = 1\n",
-                         ".hermes-package.json": json.dumps({"package": "victim", "source": "/x"})})
+                         ".moor-package.json": json.dumps({"package": "victim", "source": "/x"})})
 
     result = install.install_desktop_plugin(URL, ref=sha)
 
@@ -75,7 +75,7 @@ def test_desktop_only_repo_lands_under_its_own_name_without_a_marker(home, repo)
     folder = _root(home) / "gizmo"
     assert (folder / "plugin.js").read_text(encoding="utf-8").startswith("export default")
     assert (folder / "panel.js").is_file()
-    assert not (folder / ".hermes-package.json").exists()
+    assert not (folder / ".moor-package.json").exists()
 
 
 def test_package_lands_its_desktop_half_under_the_agent_name_with_a_marker(home, repo):
@@ -90,7 +90,7 @@ def test_package_lands_its_desktop_half_under_the_agent_name_with_a_marker(home,
     assert (folder / "plugin.js").is_file()
     # Only the desktop half is copied: the agent payload stays in the repository.
     assert not (folder / "plugin.yaml").exists()
-    marker = json.loads((folder / ".hermes-package.json").read_text(encoding="utf-8"))
+    marker = json.loads((folder / ".moor-package.json").read_text(encoding="utf-8"))
     assert (marker["package"], marker["repo"], marker["source"]) == ("pkg", URL, str(folder))
     assert marker["sourceMtimeMs"] > 0
 
@@ -262,7 +262,7 @@ def test_a_package_named_like_a_windows_drive_path_is_refused(home, repo):
 
 
 def _catalog(monkeypatch, sha: str) -> None:
-    from hermes_cli import plugins_cmd_catalog
+    from moor_cli import plugins_cmd_catalog
     entry = SimpleNamespace(install_identifier=URL, sha=sha)
     monkeypatch.setattr(plugins_cmd_catalog, "get_live_catalog_entry", lambda name: entry if name == "gizmo" else None)
 

@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { resolveDesktopHermesHome } from './data-paths'
+import { resolveDesktopMoorHome } from './data-paths'
 
 // macOS apps launched from Finder/Dock inherit only /usr/bin:/bin:/usr/sbin:/sbin,
 // which misses Homebrew and user-installed CLI tools (codex, git credential
@@ -184,12 +184,12 @@ function profileBackendParentEnv({
 }
 
 /**
- * PATH with the entries under the PM store (HERMES_RUNTIME_DIR, else
- * <hermes home>/tools, as pm.environments.store_root resolves it) moved to the
- * front, every other entry kept in order. Hermes's own children must run the
+ * PATH with the entries under the PM store (MOOR_RUNTIME_DIR, else
+ * <moor home>/tools, as pm.environments.store_root resolves it) moved to the
+ * front, every other entry kept in order. Moor's own children must run the
  * store's uv/node/npm, but shell-path.ts puts the user's login-shell entries
  * (nvm, Homebrew, ~/.local/bin) ahead of the inherited PATH, which is where
- * `hermes desktop` put the store dirs.
+ * `moor desktop` put the store dirs.
  */
 function storeFirstPath(
   pathValue: string,
@@ -197,8 +197,8 @@ function storeFirstPath(
 ) {
   const pathModule = pathModuleForPlatform(platform)
   const delimiter = delimiterForPlatform(platform)
-  const hermesHome = resolveDesktopHermesHome({ home: homedir, env: currentEnv, platform })
-  const roots = [currentEnv?.HERMES_RUNTIME_DIR, pathModule.join(hermesHome, 'tools')].filter(Boolean)
+  const moorHome = resolveDesktopMoorHome({ home: homedir, env: currentEnv, platform })
+  const roots = [currentEnv?.MOOR_RUNTIME_DIR, pathModule.join(moorHome, 'tools')].filter(Boolean)
 
   const owned = (entry: string) =>
     roots.some(root => {

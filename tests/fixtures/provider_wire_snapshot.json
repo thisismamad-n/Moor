@@ -2842,7 +2842,7 @@
    ]
   }
  },
- "base-url:nous": {
+ "base-url:moor": {
   "api_mode": "chat_completions",
   "base_url": "https://inference-api.nousresearch.com/v1",
   "high": {
@@ -7704,7 +7704,7 @@
    ]
   }
  },
- "nous": {
+ "moor": {
   "api_mode": "chat_completions",
   "base_url": "https://inference-api.nousresearch.com/v1",
   "high": {
@@ -7715,8 +7715,8 @@
     },
     "session_id": "wire-snapshot",
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>",
+     "product=moor-agent",
+     "client=moor-client-v<VERSION>",
      "conversation=wire-snapshot"
     ]
    },
@@ -7813,8 +7813,8 @@
    "extra_body": {
     "session_id": "wire-snapshot",
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>",
+     "product=moor-agent",
+     "client=moor-client-v<VERSION>",
      "conversation=wire-snapshot"
     ]
    },
@@ -7914,8 +7914,8 @@
     },
     "session_id": "wire-snapshot",
     "tags": [
-     "product=hermes-agent",
-     "client=hermes-client-v<VERSION>",
+     "product=moor-agent",
+     "client=moor-client-v<VERSION>",
      "conversation=wire-snapshot"
     ]
    },

@@ -21,7 +21,7 @@ def _write_display_sections(*, sections=None, drop_sections=(), **display_fields
     """Persist ``display.<field>`` + ``display.sections`` edits via the raw (uncached) write-back.
     Without a config file (remote backend) they are explicit keyed edits, refused as a whole when
     any key is locked (never the bulk save's silent omission of the locked part)."""
-    from hermes_cli.config_backend import supports_file_tooling
+    from moor_cli.config_backend import supports_file_tooling
     if not supports_file_tooling():
         sets = {f"display.{field}": v for field, v in display_fields.items()}
         sets.update({f"display.sections.{name}": v for name, v in (sections or {}).items()})
@@ -111,7 +111,7 @@ def _cfgset_guarded(fn):
     """Setter whose uncaught exception becomes ``_err(rid, 5001, str(e))``. A config backend's
     refusal (locked key, refused value) passes through to ``config.set``'s 4002 answer, like the
     unguarded setters'."""
-    from hermes_cli.config_backend import ConfigWriteError
+    from moor_cli.config_backend import ConfigWriteError
 
     def setter(rid, params, key, value, session):
         try:
@@ -206,7 +206,7 @@ def _set_fast(rid, params, key, value, session):
         return _err(rid, 4002, f"unknown fast mode: {value}")
     overrides = None
     if nv in ("fast", "ultrafast"):
-        from hermes_cli.models import resolve_fast_mode_overrides
+        from moor_cli.models import resolve_fast_mode_overrides
         if agent is not None:
             target_model = getattr(agent, "model", None)
         else:  # a pre-build session may carry a picked model (desktop draft): validate against THAT
@@ -468,7 +468,7 @@ def _set_cwd(rid, params, key, value, session):
 
 @_cfgset_guarded
 def _set_prompt(rid, params, key, value, session):
-    from hermes_cli.config_backend import supports_file_tooling
+    from moor_cli.config_backend import supports_file_tooling
     if not supports_file_tooling():  # one explicit key: refused when locked, never silently dropped
         _write_config_changes({}, ("custom_prompt",)) if value == "clear" else _write_config_changes({"custom_prompt": value})
         return _kv(rid, key, "" if value == "clear" else value)
@@ -542,7 +542,7 @@ def _(rid, params: dict) -> dict:
         handler = _set_display_toggle
     if handler is None:
         return _err(rid, 4002, f"unknown config key: {key}")
-    from hermes_cli.config_backend import ConfigWriteError
+    from moor_cli.config_backend import ConfigWriteError
     try:
         return handler(rid, params, key, value, session)
     except ConfigWriteError as exc:  # a locked key or a value the config backend refused: nothing saved

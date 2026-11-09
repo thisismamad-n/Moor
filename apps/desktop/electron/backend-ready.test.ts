@@ -333,11 +333,11 @@ test('a completion banner re-arms the deadline past the original timeout', async
   // while the repair is in progress, then resolve on the late announcement.
   const child = makeFakeChild()
   const p = waitForDashboardPort(child, 40)
-  child.stdout.emit('data', 'hermes: finishing an interrupted source update...\n')
+  child.stdout.emit('data', 'moor: finishing an interrupted source update...\n')
   // Past the original 40ms deadline: without the banner grace this wait has
   // already rejected. Give the "repair" a moment, then announce.
   await new Promise(resolve => setTimeout(resolve, 80))
-  child.stdout.emit('data', 'HERMES_BACKEND_READY port=4455\n')
+  child.stdout.emit('data', 'MOOR_BACKEND_READY port=4455\n')
   assert.equal(await p, 4455)
 })
 
@@ -353,10 +353,10 @@ test(
     const wait = waitForDashboardPort(child, 20)
     wait.catch(() => {}) // mark handled; the assertion below re-awaits
 
-    child.stdout.emit('data', 'hermes: finishing an interrupted source update...\n')
+    child.stdout.emit('data', 'moor: finishing an interrupted source update...\n')
     await assert.rejects(
       wait,
-      /Timed out waiting for Hermes backend port announcement .* while an update completion was in progress/
+      /Timed out waiting for Moor backend port announcement .* while an update completion was in progress/
     )
   },
   6 * 60_000
@@ -371,10 +371,10 @@ test('a banner already in the spawn-time tail also re-arms', async () => {
     child,
     40,
     () => '',
-    () => 'hermes: completing source-update dependencies...\n'
+    () => 'moor: completing source-update dependencies...\n'
   )
 
   await new Promise(resolve => setTimeout(resolve, 80))
-  child.stdout.emit('data', 'HERMES_BACKEND_READY port=4471\n')
+  child.stdout.emit('data', 'MOOR_BACKEND_READY port=4471\n')
   assert.equal(await p, 4471)
 }, 10_000)

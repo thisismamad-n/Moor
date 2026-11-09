@@ -1,6 +1,6 @@
 """Content registrars on ``PluginContext``: plugin skills and Automation Blueprints.
 
-Bound into the class body (``from hermes_cli.plugins_content import ...``), so they are ordinary
+Bound into the class body (``from moor_cli.plugins_content import ...``), so they are ordinary
 ``ctx.register_*`` methods and get the same abandoned-load guard as every other registrar.
 """
 
@@ -10,11 +10,11 @@ import logging
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
 
-from hermes_cli.plugins_ledger import PluginRegistration
-from hermes_cli.plugins_loader import _serialized_replacement
+from moor_cli.plugins_ledger import PluginRegistration
+from moor_cli.plugins_loader import _serialized_replacement
 
 # Same logger as the rest of the ctx surface, so plugin-load diagnostics stay in one place.
-logger = logging.getLogger("hermes_cli.plugins")
+logger = logging.getLogger("moor_cli.plugins")
 
 __all__ = ["register_automation_blueprint", "register_skill"]
 
@@ -35,10 +35,10 @@ def register_skill(
 ) -> PluginRegistration:
     """Register a read-only skill resolvable as ``'<plugin_name>:<name>'`` via ``skill_view()``,
     listed by ``skills_list`` and in the system prompt's ``<available_skills>`` while the plugin
-    is enabled. Not copied into ``~/.hermes/skills/``. Raises ``ValueError`` (``':'``/invalid
+    is enabled. Not copied into ``~/.moor/skills/``. Raises ``ValueError`` (``':'``/invalid
     chars) or ``FileNotFoundError``."""
     from agent.skill_utils import _NAMESPACE_RE
-    from hermes_cli.plugins_manifest import _portable_slug
+    from moor_cli.plugins_manifest import _portable_slug
     if ":" in name:
         raise ValueError(f"Skill name '{name}' must not contain ':' (the namespace is derived from the "
                          f"plugin name '{self.manifest.name}' automatically).")

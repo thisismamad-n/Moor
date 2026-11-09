@@ -149,7 +149,7 @@ def _models_probe_host(monkeypatch, content_type, body):
     """A custom-endpoint ``/models`` probe answering 200 with the given body/content type.
     The transport POST answers 200 too — an SPA catch-all serves every route, so the
     transport probe alone cannot catch it."""
-    import hermes_cli.web_routers.config_env as mod
+    import moor_cli.web_routers.config_env as mod
 
     class _Resp:
         status_code = 200
@@ -189,8 +189,8 @@ def test_custom_endpoint_probe_warns_when_no_models_parse(name, content_type, bo
     """A 200 ``/models`` answer is only a pass when it is JSON with a usable model list: an SPA
     catch-all (200 + HTML), a non-JSON body, or an empty list must be ``ok:false`` with a
     message naming the cause, not a green check (#83128)."""
-    import hermes_cli.web_routers.config_env as mod
-    from hermes_cli.web_models import CustomEndpointUpdate
+    import moor_cli.web_routers.config_env as mod
+    from moor_cli.web_models import CustomEndpointUpdate
 
     _models_probe_host(monkeypatch, content_type, body)
     req = CustomEndpointUpdate(id="", name="x", base_url="https://spa.example.com/v1",
@@ -207,8 +207,8 @@ def test_custom_endpoint_probe_warns_when_no_models_parse(name, content_type, bo
 def test_custom_endpoint_probe_passes_on_a_json_models_reply(monkeypatch):
     """A genuine OpenAI-compatible reply (200, JSON, ``{"data": [...]}``) still passes — the
     no-models guard classifies only empty/unparseable answers, never honest ones."""
-    import hermes_cli.web_routers.config_env as mod
-    from hermes_cli.web_models import CustomEndpointUpdate
+    import moor_cli.web_routers.config_env as mod
+    from moor_cli.web_models import CustomEndpointUpdate
 
     _models_probe_host(monkeypatch, "application/json",
                        {"data": [{"id": "gpt-4o"}, {"id": "gpt-4o-mini"}], "object": "list"})

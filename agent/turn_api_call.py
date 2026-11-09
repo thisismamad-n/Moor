@@ -52,7 +52,7 @@ def _should_stream(agent: Any) -> bool:
     if _base.startswith(("acp://", "acp+tcp://")):
         return False
     from providers import get_provider_profile
-    from hermes_cli.runtime_provider_backends import _is_external_process_provider
+    from moor_cli.runtime_provider_backends import _is_external_process_provider
 
     profile = get_provider_profile(agent.provider)
     streaming = getattr(profile, "supports_streaming", None)
@@ -237,8 +237,8 @@ def moor_rate_limit_guard(
     SDK retries) counts against RPH. Never lets the guard itself break the agent loop."""
     from agent.conversation_loop import _arm_fallback_restart
 
-    def _verdict(action: str, result: Optional[dict[str, Any]] = None) -> NousRateGuardVerdict:
-        return NousRateGuardVerdict(
+    def _verdict(action: str, result: Optional[dict[str, Any]] = None) -> MoorRateGuardVerdict:
+        return MoorRateGuardVerdict(
             action=action, active_system_prompt=active_system_prompt, retry_count=retry_count,
             compression_attempts=compression_attempts, result=result,
         )

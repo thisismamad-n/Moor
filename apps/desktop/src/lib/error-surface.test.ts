@@ -180,7 +180,7 @@ describe('free-tier refusals', () => {
   })!
 
   it('carries the backend sentence and offers the free sign-in, never an OAuth re-login', () => {
-    expect(surface.message).toBe('Using Hermes without signing in is switched off right now. To sign in: /login.')
+    expect(surface.message).toBe('Using Moor without signing in is switched off right now. To sign in: /login.')
     expect(errorCardActions(surface)).toEqual({ primary: 'sign_in_free_tier' })
   })
 
@@ -231,11 +231,11 @@ describe('managed local model server down', () => {
 
     expect(card(true).body).toMatch(/retry/i)
     expect(card(false).body).not.toMatch(/retry/i)
-    expect(card(false).body).toContain('hermes model')
+    expect(card(false).body).toContain('moor model')
 
     for (const copy of Object.values(TRANSLATIONS)) {
       expect(card(false, copy.assistant.thread).body).not.toBe(card(true, copy.assistant.thread).body)
-      expect(card(false, copy.assistant.thread).body).toContain('hermes model')
+      expect(card(false, copy.assistant.thread).body).toContain('moor model')
     }
   })
 })
@@ -247,7 +247,7 @@ describe('usage-window refusal', () => {
     const { body, title } = errorCardText(en.assistant.thread, surface)
     expect(title).toBe(en.assistant.thread.errorCodes.usage_window.title)
     expect(body).toBe(message)
-    const plain = parseErrorSurface({ code: 'billing', layer: 'billing', provider: 'nous', retryable: false })!
+    const plain = parseErrorSurface({ code: 'billing', layer: 'billing', provider: 'moor', retryable: false })!
     expect(body).not.toBe(errorCardText(en.assistant.thread, plain).body)
   })
 
@@ -276,7 +276,7 @@ describe('usage-window refusal', () => {
       usage_limit: {
         credits: { action: 'use_credits' },
         suggestions: [
-          { label: 'Model A', model: 'example/model-a', note: 'included', provider: 'nous' },
+          { label: 'Model A', model: 'example/model-a', note: 'included', provider: 'moor' },
           { model: 'bad' },
           { label: 'x' }
         ]
@@ -286,8 +286,8 @@ describe('usage-window refusal', () => {
     expect(surface.usageLimit).toEqual({
       credits: 'use_credits',
       suggestions: [
-        { label: 'Model A', model: 'example/model-a', note: 'included', provider: 'nous' },
-        { label: 'bad', model: 'bad', note: '', provider: 'nous' }
+        { label: 'Model A', model: 'example/model-a', note: 'included', provider: 'moor' },
+        { label: 'bad', model: 'bad', note: '', provider: 'moor' }
       ]
     })
     expect(errorCardActions(surface)).toEqual({ primary: 'switch_to_model', secondary: 'use_credits' })
@@ -348,8 +348,8 @@ describe('limit reset (#98852)', () => {
 })
 
 describe('out of credits (not a window plan)', () => {
-  it('offers Billing, then another provider, for Nous and other providers alike', () => {
-    for (const provider of ['nous', 'example']) {
+  it('offers Billing, then another provider, for Moor and other providers alike', () => {
+    for (const provider of ['moor', 'example']) {
       const surface = parseErrorSurface({ code: 'billing', layer: 'billing', provider, retryable: false })
 
       expect(errorCardActions(surface)).toEqual({ primary: 'open_billing', secondary: 'switch_provider' })
@@ -370,7 +370,7 @@ describe('error card actions: one main action, at most one second option', () =>
       usage_limit: { credits: { action: credits }, suggestions }
     })
 
-    const suggestion = { label: 'Model Free', model: 'example/free', provider: 'nous' }
+    const suggestion = { label: 'Model Free', model: 'example/free', provider: 'moor' }
 
     expect(at(limit('add_credits', [suggestion]))).toEqual({ primary: 'switch_to_model', secondary: 'open_billing' })
     expect(at(limit('use_credits', [suggestion]))).toEqual({ primary: 'switch_to_model', secondary: 'use_credits' })

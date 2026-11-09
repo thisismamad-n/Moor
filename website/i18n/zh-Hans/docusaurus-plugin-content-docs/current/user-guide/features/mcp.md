@@ -489,24 +489,24 @@ mcp_servers:
 
 ## 将 Moor 作为 MCP 服务器运行
 
-Hermes 也可以**作为** MCP 服务器运行，让 Claude Code、Claude Desktop、Cursor、Codex 或任何 MCP 客户端列出和读取你的消息会话、等待新消息、跨所有已连接平台发送消息，并可选地调用 Hermes 自己的网页、浏览器、视觉、图像生成、技能和 TTS 工具。该功能现由官方 **mcp-serve** 插件提供：
+Moor 也可以**作为** MCP 服务器运行，让 Claude Code、Claude Desktop、Cursor、Codex 或任何 MCP 客户端列出和读取你的消息会话、等待新消息、跨所有已连接平台发送消息，并可选地调用 Moor 自己的网页、浏览器、视觉、图像生成、技能和 TTS 工具。该功能现由官方 **mcp-serve** 插件提供：
 
 ```bash
-hermes plugins install mcp-serve
+moor plugins install mcp-serve
 ```
 
 ```json
 {
   "mcpServers": {
-    "hermes": {
-      "command": "hermes",
+    "moor": {
+      "command": "moor",
       "args": ["mcp-serve"]
     }
   }
 }
 ```
 
-它以前内置为 `hermes mcp serve`。配置了 `"args": ["mcp", "serve"]` 的 MCP 客户端需改为 `["mcp-serve"]`；工具名称和参数保持不变，`hermes mcp serve` 现在会提示新的写法和安装命令。工具列表、`--tools` 模式及其安全限制见[插件 README](https://github.com/NousResearch/hermes-official-plugins/tree/main/mcp-serve)。
+它以前内置为 `moor mcp serve`。配置了 `"args": ["mcp", "serve"]` 的 MCP 客户端需改为 `["mcp-serve"]`；工具名称和参数保持不变，`moor mcp serve` 现在会提示新的写法和安装命令。工具列表、`--tools` 模式及其安全限制见[插件 README](https://github.com/NousResearch/hermes-official-plugins/tree/main/mcp-serve)。
 
 ## 相关文档
 

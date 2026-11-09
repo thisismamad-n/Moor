@@ -25,18 +25,18 @@ from typing import Any, Callable, NamedTuple, Optional
 # Several of these look unused here but are resolved BARE by split-module bodies rebound onto this
 # namespace (method_ctx.bind_module) — deleting one breaks a handler at call time, not import time.
 from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-from hermes_constants import (
-    get_hermes_home, get_hermes_home_override, get_process_hermes_home, profile_name_for_home,
-    reset_hermes_home_override, set_hermes_home_override)
-from hermes_cli import config_backend as _config_backend
-from hermes_cli.config_backend import Changes, ConfigBackendUnavailable, config_exists, supports_file_tooling
-from hermes_cli.env_loader import load_hermes_dotenv
+from moor_constants import (
+    get_moor_home, get_moor_home_override, get_process_moor_home, profile_name_for_home,
+    reset_moor_home_override, set_moor_home_override)
+from moor_cli import config_backend as _config_backend
+from moor_cli.config_backend import Changes, ConfigBackendUnavailable, config_exists, supports_file_tooling
+from moor_cli.env_loader import load_moor_dotenv
 # The slash-worker client (slash_worker_client.py) runs on these globals; tests patch them here.
-from hermes_cli.process_identity import release_process_group_once_empty, spawn_owned
+from moor_cli.process_identity import release_process_group_once_empty, spawn_owned
 from tui_gateway.pet_sheet import _clone_pet_payload, _pet_row_frame_counts, _pet_sheet_revision, _pet_state_rows
 from utils import is_truthy_value
-from hermes_state_ids import new_session_id
-from tools.environments.local import hermes_subprocess_env
+from moor_state_ids import new_session_id
+from tools.environments.local import moor_subprocess_env
 from agent.fast_mode import STATIC_TIERS
 from agent.replay_cleanup import canonicalize_replay_history
 from agent.reasoning_effort import clamp_effort, route_supported_efforts
@@ -370,7 +370,7 @@ def _bootstrap_served_profile_store(db_path: Path) -> None:
             return
     except FileNotFoundError:
         pass
-    from hermes_state_registry import acquire, release_or_close
+    from moor_state_registry import acquire, release_or_close
     release_or_close(acquire(db_path))
 
 
@@ -393,7 +393,7 @@ def _profile_db(params: dict | None = None, *, writer: bool = False):
                 from moor_state_registry import acquire
                 db = acquire(Path(profile_home) / "state.db")
             else:
-                from hermes_cli.web_server_sessions import _open_session_db_at_path
+                from moor_cli.web_server_sessions import _open_session_db_at_path
                 _bootstrap_served_profile_store(Path(profile_home) / "state.db")
                 db = _open_session_db_at_path(Path(profile_home) / "state.db", read_only=True)
             owns = True
@@ -542,7 +542,7 @@ def _profile_configured_cwd(profile_home: Path | None) -> str | None:
         return None
     try:
         with contextlib.suppress(Exception):
-            from hermes_cli.config_effective import load_user_config_effective
+            from moor_cli.config_effective import load_user_config_effective
             p = Path(profile_home) / "config.yaml"
             return _configured_cwd_from_cfg(load_user_config_effective(p)) if config_exists(p) else None
     except ConfigBackendUnavailable as exc:  # a SystemExit: the agent build reports it; the cwd is a hint
@@ -866,9 +866,9 @@ def _load_cfg_raw() -> dict:
     expansion applied here would be persisted on the next save). Behavioral reads use :func:`_load_cfg`.
     Cache keyed on the resolved path so profiles don't clobber."""
     global _cfg_cache, _cfg_sig, _cfg_path
-    from hermes_cli.config_backend import config_cache_version, config_exists
-    from hermes_cli.config import read_user_config_raw
-    from hermes_cli.config_read_errors import FailedConfigRead
+    from moor_cli.config_backend import config_cache_version, config_exists
+    from moor_cli.config import read_user_config_raw
+    from moor_cli.config_read_errors import FailedConfigRead
     try:
         p = _active_config_path()
         try:
@@ -899,8 +899,8 @@ def _load_cfg() -> dict:
 
 def _save_cfg(cfg: dict):
     global _cfg_cache, _cfg_sig, _cfg_path
-    from hermes_cli.config import atomic_config_replace
-    from hermes_cli.config_backend import config_cache_version, supports_file_tooling
+    from moor_cli.config import atomic_config_replace
+    from moor_cli.config_backend import config_cache_version, supports_file_tooling
     path = _active_config_path()
     atomic_config_replace(path, cfg)
     if not supports_file_tooling():
@@ -937,7 +937,7 @@ def _set_session_context(session_key: str, cwd: str | None = None, *, ui_session
         resolved = cwd if cwd is not None else (str(sess.get("cwd") or "") if sess is not None else "")
         source = _resolve_session_platform()
         profile = _current_profile_name()
-        # Live conversation id for subprocess HERMES_SESSION_ID: an explicitly empty contextvar is authoritative
+        # Live conversation id for subprocess MOOR_SESSION_ID: an explicitly empty contextvar is authoritative
         # (no os.environ fallback), so never leave it "" — agent's durable session_id, then session_key.
         session_id = session_key
         if sess is not None:
@@ -1049,10 +1049,10 @@ _PREVIEW_ACTION_REPROBE_COOLDOWN_S = 30
 
 _PREVIEW_ACTION_BRIDGE_UNAVAILABLE = json.dumps({
     "success": False,
-    "error": ("No Hermes Desktop window answered the preview action request. The drive_preview / "
+    "error": ("No Moor Desktop window answered the preview action request. The drive_preview / "
               "annotate_preview bridge is served by the desktop app's renderer, which updates "
               "separately from this backend, so an app build older than the tool has nothing "
-              "listening. Update the Hermes Desktop app, open a page with open_preview, and try "
+              "listening. Update the Moor Desktop app, open a page with open_preview, and try "
               "again in this session after a short cooldown.")})
 
 # One in-flight cooldown-expiry reprobe per session: concurrent callers fail fast.
@@ -1439,7 +1439,7 @@ def _fast_tier_applies(agent, model: str, provider: str, *, route_known: bool, t
     profile-wide ``service_tier: fast`` sends nothing to a local server or a proxy, and the session must not
     report Fast there either. ``route_known`` is False while a switch is pending: the agent's base URL still
     belongs to the old route."""
-    from hermes_cli.models import resolve_fast_mode_overrides
+    from moor_cli.models import resolve_fast_mode_overrides
     base_url = None
     if route_known and agent is not None:
         if getattr(agent, "api_mode", None) == "anthropic_messages":
@@ -1652,7 +1652,7 @@ def _hydrate_session_cwd(sid: str, key: str, session_db, profile_home: str | Non
             elif (not (row and row.get("cwd")) or _is_other_profiles_cwd(row["cwd"], profile_home)) and hasattr(
                 db, "update_session_cwd"
             ) and not _is_remote_launch_cwd(_sessions.get(sid)):
-                # A stored cwd that was set aside (Hermes's own host tree) stays as stored: only an empty row is filled,
+                # A stored cwd that was set aside (Moor's own host tree) stays as stored: only an empty row is filled,
                 # or a named profile's row holding another profile's dir (#87584), repaired to this session's own.
                 try:
                     _persist_session_cwd_and_schedule_git_meta(_sessions[sid], _sessions[sid]["cwd"], db=db)
@@ -1997,7 +1997,7 @@ from .mcp_rpc_helpers import summarize_server as _mcp_summarize_server
 
 # ── Split @method handler modules (see method_ctx.py): imported last so every global the handlers close
 # over exists; register() rebinds them onto this namespace.
-from hermes_state import _BARE_BILLING_PROVIDERS
+from moor_state import _BARE_BILLING_PROVIDERS
 
 from . import (
     session_registry as _session_registry, agent_factory as _agent_factory,

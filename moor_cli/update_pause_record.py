@@ -1,8 +1,8 @@
-"""Durable record of the gateways and services ``hermes update`` paused on Windows.
+"""Durable record of the gateways and services ``moor update`` paused on Windows.
 
 The pause token used to live only in the updater's memory (plus an ``atexit`` resume), so a
 killed updater (console closed, ``taskkill``, power loss) left every paused gateway and SCM
-service stopped with nothing on disk saying so. The record is written under the ROOT Hermes
+service stopped with nothing on disk saying so. The record is written under the ROOT Moor
 home BEFORE anything is stopped, names its owner (pid + creation time, the update-marker
 identity format), is rewritten as the token changes, and is removed only after a verified
 resume. A later launch whose owner check finds the updater dead (and no update live) resumes it.
@@ -19,7 +19,7 @@ Otherwise the record stays for the next launch, which runs after the interrupted
 the dependency sync.
 
 Custody: every mutation (write, claim, retire, discharge) happens while holding a kernel lock on
-``<record dir>/.hermes-update-paused-gateways.lock`` (flock / msvcrt, released by the kernel when
+``<record dir>/.moor-update-paused-gateways.lock`` (flock / msvcrt, released by the kernel when
 the holder dies; the file is never deleted), and the read → judge → mutate decision is made
 inside that hold. A recovering launch claims a record by publishing ``<record>.<pid>.<nonce>.claim``
 with its own identity already inside (atomic replace), then retires the source; a crash between the
@@ -50,7 +50,7 @@ import uuid
 from contextlib import contextmanager, redirect_stdout, suppress
 from pathlib import Path
 
-RECORD_STEM = ".hermes-update-paused-gateways"
+RECORD_STEM = ".moor-update-paused-gateways"
 MUTEX_NAME = RECORD_STEM + ".lock"
 _MUTEX_WAIT_S = 10.0
 # Re-entry depth per THREAD: another thread of this process (a gateway's consumer, a watcher)
@@ -67,8 +67,8 @@ def _install_key(root: Path | None = None) -> str:
 
 
 def record_path() -> Path:
-    from hermes_constants import get_default_hermes_root
-    return get_default_hermes_root() / f"{RECORD_STEM}.{_install_key()}.json"
+    from moor_constants import get_default_moor_root
+    return get_default_moor_root() / f"{RECORD_STEM}.{_install_key()}.json"
 
 
 def identity(pid: int | None = None) -> dict:
@@ -77,7 +77,7 @@ def identity(pid: int | None = None) -> dict:
     The creation time comes from the probe :func:`identity_is_live` judges with
     (``update_lock.process_create_time``: psutil, else stdlib), so a host without psutil still
     writes a provable identity instead of ``ct=None``."""
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
     pid = os.getpid() if pid is None else int(pid)
     created = update_lock.process_create_time(pid)
     return {"pid": pid, "ct": None if created is None else f"ct:{created:.3f}"}
@@ -89,7 +89,7 @@ def identity_is_live(ident: dict | None) -> bool:
     Unprovable (alive, no readable creation time) counts as live: a record is never taken from, nor
     a paused process restarted over, a process that may still be the one recorded.
     """
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
     ident = ident or {}
     return update_lock.incarnation_live(ident.get("pid") or 0, ident.get("ct") or None) is not False
 
@@ -122,7 +122,7 @@ def _mutex(wait_s: float = _MUTEX_WAIT_S):
         finally:
             _mutex_held.depth -= 1
         return
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
     path = record_path().with_name(MUTEX_NAME)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0), 0o644)
@@ -143,7 +143,7 @@ def _mutex(wait_s: float = _MUTEX_WAIT_S):
 
 
 def _git_executable() -> str:
-    """The git ``hermes update`` runs, found without installing anything: PATH's, else the copy
+    """The git ``moor update`` runs, found without installing anything: PATH's, else the copy
     install.ps1 staged in PM's store (``_subprocess_compat.expose_pm_git`` puts it on PATH only
     inside the updater). A bare ``git`` on such an install dies with WinError 2, so every gate
     read would fail and the paused gateways would never be restarted."""
@@ -169,7 +169,7 @@ def _git_executable() -> str:
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess | None:
     """A read-only git query in the updater's custody (``update_custody.run_git``: job-bound on
     Windows inside an update, custody config in argv); ``None`` when git cannot run."""
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
     try:
         return run_git([_git_executable(), "-C", str(root)], args, capture_output=True, text=True,
                        encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL, timeout=30, check=False)
@@ -343,11 +343,11 @@ def _deps_hold_resume(root: Path) -> bool:
     did before the pause was durable, and a currency the probe cannot establish never holds it
     either — the restarted gateway's own launch syncs or reports the remedy.
     """
-    if (os.environ.get("HERMES_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
+    if (os.environ.get("MOOR_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
             or not (root / ".git").exists() or not (root / "pyproject.toml").is_file()):
         return False  # prepare_launch skips the sync: waiting would never end
     try:
-        from hermes_cli.steward import read_install_stamp
+        from moor_cli.steward import read_install_stamp
         if read_install_stamp(root).get("updateMechanism") != "self":
             return False
         import pm
@@ -372,7 +372,7 @@ def _paused_on_unreadable_head(token: dict) -> bool:
 
 def tree_is_whole(token: dict, root: Path | None = None) -> tuple[bool, str]:
     """May paused gateways start on this checkout now? ``(verdict, reason when not)``."""
-    from hermes_cli._early_recovery import interrupted_pull_marker
+    from moor_cli._early_recovery import interrupted_pull_marker
     root = root or install_root()
     if (root / ".git").exists():
         if interrupted_pull_marker(root).exists():
@@ -493,14 +493,14 @@ def mark_stop_consumed(path: Path, marker: dict) -> None:
     Called under the pause mutex by the consumer. Preserve the holder's identity;
     this is evidence of a stop, not a transfer of the updater's custody.
     """
-    from gateway.status import _same_hermes_home
+    from gateway.status import _same_moor_home
     pid = str(marker["target_pid"])
     for src, body in _files(record_path()):
         token = body["token"]
         recorded_path = (token.get("stop_markers") or {}).get(pid)
         if (str(token.get("stopper_pid")) != str(marker.get("stopper_pid"))
                 or pid not in (token.get("stop_requested") or [])
-                or not recorded_path or not _same_hermes_home(recorded_path, path)):
+                or not recorded_path or not _same_moor_home(recorded_path, path)):
             continue
         token["stop_sent"] = sorted({*map(str, token.get("stop_sent") or []), pid})
         _atomic_write(src, body)  # Failure leaves the request intact for recovery.
@@ -560,7 +560,7 @@ def sync(token: dict) -> None:
 def _live_update_elsewhere() -> bool:
     """A live update other than the one this process belongs to. The update tree holding the
     checkout lock (this process plus the partner whose marker it adopted) is not "elsewhere"."""
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
     root = install_root()
     return not update_lock.holds_checkout_lock(root) and update_lock.update_in_progress(root)
 
@@ -738,7 +738,7 @@ def claim(src: Path) -> tuple[Path, dict] | None:
 
 
 def adopt_orphans() -> tuple[dict | None, list[Path]]:
-    """For ``hermes update``: claim every orphaned pause and merge their sets. The caller records the
+    """For ``moor update``: claim every orphaned pause and merge their sets. The caller records the
     merged set durably (its ``absorbed`` ids name the claims), then :func:`release_claims`."""
     retire_redundant()
     adopted, claims = None, []
@@ -812,7 +812,7 @@ def _request_on_disk(token: dict, pid: str) -> bool | None:
     """The planned-stop marker this update's stopper wrote for *pid* is still on disk (the gateway's
     watcher has not consumed it yet): the request was issued even if the updater died before
     :func:`mark_stop_sent` — or the gateway's receipt of accepting it (:func:`mark_stop_accepted`).
-    A marker naming another stopper (a user's ``hermes gateway stop``) is not. ``None``: one of them
+    A marker naming another stopper (a user's ``moor gateway stop``) is not. ``None``: one of them
     exists but cannot be read or parsed — the stop may have been accepted, so it is unknown."""
     path = (token.get("stop_markers") or {}).get(str(pid))
     if not path:
@@ -857,7 +857,7 @@ def _asked(token: dict) -> tuple[set[str], set[str]]:
 def drop_never_stopped(token: dict) -> dict:
     """Drop entries whose recorded process is the same live incarnation AND was never actually asked
     to stop (the update died before issuing its request, even with the intent on disk): it is still
-    serving, and a later exit — a user's ``hermes gateway stop`` included — is not this update's to
+    serving, and a later exit — a user's ``moor gateway stop`` included — is not this update's to
     undo. One it asked may be draining: it keeps its restart debt (:func:`split_draining`). The
     evidence is resolved here, once, into ``stop_sent`` (a merge carries it under another stopper).
     Evidence that cannot be read keeps the entry too (it may be draining) but resolves nothing: it is
@@ -935,7 +935,7 @@ def _has_work(token: dict) -> bool:
 def _resume_claimed(claim_path: Path, body: dict) -> None:
     """Resume under the checkout lock, so no update mutates the tree between the gate and the
     verified start; an update that took the checkout after our claim gets the set back untouched."""
-    from hermes_cli.update_lock import UpdateLock
+    from moor_cli.update_lock import UpdateLock
     fence = UpdateLock()
     if not fence.acquire_checkout(install_root()):
         with suppress(OSError), _mutex():
@@ -958,16 +958,16 @@ def _resume_fenced(claim_path: Path, body: dict) -> None:
     token.update(resume_needed=True, recovery=True)
     try:
         if _has_work(token):
-            print("→ Restarting gateway(s) paused by an interrupted `hermes update`...", file=sys.stderr)
-            from hermes_cli.update_cmd_windows import _resume_windows_gateways_after_update
+            print("→ Restarting gateway(s) paused by an interrupted `moor update`...", file=sys.stderr)
+            from moor_cli.update_cmd_windows import _resume_windows_gateways_after_update
             # Whatever command this launch runs owns stdout (``--json`` output, a Desktop pipe).
             with redirect_stdout(sys.stderr):
                 _resume_windows_gateways_after_update(token)
         else:
             token["resume_needed"] = False
     except Exception as exc:  # health: allow BLE001 -- recovery boundary: any resume error is reported and the claim handed back (finally), never raised into the launch
-        print(f"  ⚠ Could not restart every paused gateway: {exc}. Run `hermes update` or "
-              "`hermes gateway start`.", file=sys.stderr)
+        print(f"  ⚠ Could not restart every paused gateway: {exc}. Run `moor update` or "
+              "`moor gateway start`.", file=sys.stderr)
     finally:
         _back_off_unready(token, attempted, draining)
         _hand_back(claim_path, body, token, draining)
@@ -976,7 +976,7 @@ def _resume_fenced(claim_path: Path, body: dict) -> None:
 # A recovering launch runs before every command (chat, doctor, a Desktop-spawned serve) and waits
 # for each relaunched gateway to become ready. One that does not is re-launched only after this
 # backoff (``relaunch_retry``), so an interactive command pays that wait at most once per window;
-# the debt itself stays owed, and ``hermes update`` (which drops the backoff) retries at once.
+# the debt itself stays owed, and ``moor update`` (which drops the backoff) retries at once.
 _RELAUNCH_RETRY_BASE_S = 60.0
 _RELAUNCH_RETRY_MAX_S = 3600.0
 
@@ -1039,7 +1039,7 @@ def _hand_back(claim_path: Path, body: dict, token: dict, draining: dict) -> Non
 
 def recover(argv: list[str] | None = None) -> None:
     """Start-of-run recovery: resume every orphaned pause. Never raises."""
-    from hermes_cli._parser import command_argv
+    from moor_cli._parser import command_argv
     command = command_argv(list(sys.argv[1:] if argv is None else argv))
     if command[:1] == ["update"] or command[:2] == ["gateway", "run"]:
         return  # the update adopts it itself; a booting gateway must not block on its siblings

@@ -23,7 +23,7 @@ import uuid
 from collections import deque
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 from moor_constants import get_moor_home, mkdir_under_moor_home
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
@@ -34,9 +34,9 @@ from moor_state_common import (
     escape_like as _escape_like, _placeholders,
     stat_db_file_identity as _stat_db_file_identity,
 )
-from hermes_state_holders import read_only_db_uri
-from hermes_state_pidns import holder_pid_checkable
-from hermes_state_health import (
+from moor_state_holders import read_only_db_uri
+from moor_state_pidns import holder_pid_checkable
+from moor_state_health import (
     STORAGE_CORRUPT, mark_storage_corrupt, note_storage_error, storage_corrupt_reason, storage_state,
 )
 from moor_state_errors import (
@@ -66,22 +66,22 @@ from moor_state_dbfile import (
     quarantine_invalid_state_db,
     RetiredGenerationCaptureError, capture_retired_wal_generation, refuse_deleted_wal_generation,
 )
-from hermes_state_messages import SessionMessagesMixin
-from hermes_state_prune_rewrite import SessionPruneRewriteMixin
-from hermes_state_api_content import SessionApiContentMixin
-from hermes_state_coverage import SessionCoverageMixin
-from hermes_state_rewind import SessionRewindMixin
-from hermes_state_wal import (
+from moor_state_messages import SessionMessagesMixin
+from moor_state_prune_rewrite import SessionPruneRewriteMixin
+from moor_state_api_content import SessionApiContentMixin
+from moor_state_coverage import SessionCoverageMixin
+from moor_state_rewind import SessionRewindMixin
+from moor_state_wal import (
     _WAL_INCOMPAT_MARKERS, _on_disk_journal_mode, apply_database_pragmas, apply_wal_with_fallback,
 )
-from hermes_state_repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
-from hermes_state_titles import SessionTitlesMixin
-from hermes_state_prompt_refresh import SessionPromptRefreshMixin
-from hermes_state_usage import SessionUsageMixin
-from hermes_state_maintenance import SessionMaintenanceMixin
-from hermes_state_gateway import SessionGatewayMixin
-from hermes_state_compression import SessionCompressionMixin
-from hermes_state_search import SessionSearchMixin
+from moor_state_repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
+from moor_state_titles import SessionTitlesMixin
+from moor_state_prompt_refresh import SessionPromptRefreshMixin
+from moor_state_usage import SessionUsageMixin
+from moor_state_maintenance import SessionMaintenanceMixin
+from moor_state_gateway import SessionGatewayMixin
+from moor_state_compression import SessionCompressionMixin
+from moor_state_search import SessionSearchMixin
 
 try:  # Hard dependency, but tolerate scaffold-phase imports before pip install.
     import psutil
@@ -123,8 +123,8 @@ class SessionResumeTooLargeError(ValueError):
         super().__init__(
             f"This session is too long to reload safely ({message_count} messages; limit {limit}). "
             "Start a fresh chat and keep a copy with the dashboard Sessions page's Export action or "
-            "`hermes sessions export --format md --session-id <id>` (neither is capped), or raise the limit "
-            "with `hermes config set sessions.max_resume_messages 0`."
+            "`moor sessions export --format md --session-id <id>` (neither is capped), or raise the limit "
+            "with `moor config set sessions.max_resume_messages 0`."
         )
 
 
@@ -144,7 +144,7 @@ def _compression_lock_holder_process_is_dead(holder: str) -> bool:
     Reclaim on kernel proof only: unstructured/same-process holders (another
     thread's live lease) and any probe doubt keep the lease until TTL expiry
     (PID reuse must never steal a live lease; a wrongly-kept one self-heals).
-    Foreign/unstamped PID namespaces defer to TTL: see ``hermes_state_pidns``."""
+    Foreign/unstamped PID namespaces defer to TTL: see ``moor_state_pidns``."""
     match = re.search(r"(?:^|:)pid=(\d+)(?::|$)", holder or "")
     pid = int(match.group(1)) if match else 0
     if pid <= 0 or pid == os.getpid():
@@ -432,12 +432,12 @@ def _close_time_checkpoint_configurable() -> bool:
 
 
 def divert_session_transcript_jsonl(session_id: str, messages) -> Optional[Path]:
-    """Append pending messages to HERMES_HOME/sessions/<id>.jsonl (state.db was replaced under a
+    """Append pending messages to MOOR_HOME/sessions/<id>.jsonl (state.db was replaced under a
     live process). Returns the path, or None if nothing to write."""
     sid = str(session_id or "").strip()
     if not sid or not messages:
         return None
-    sessions_dir = get_hermes_home() / "sessions"
+    sessions_dir = get_moor_home() / "sessions"
     make_user_dir(sessions_dir, parents=True, exist_ok=True)
     path = sessions_dir / f"{sid}.jsonl"
     with path.open("a", encoding="utf-8") as handle:
@@ -449,7 +449,7 @@ def divert_session_transcript_jsonl(session_id: str, messages) -> Optional[Path]
 
 
 # Process-wide shared SessionDB registry: long-lived in-process callers share ONE writer
-# connection per resolved path via hermes_state_registry.acquire(); one-shots use SessionDB() + close().
+# connection per resolved path via moor_state_registry.acquire(); one-shots use SessionDB() + close().
 def _foreign_state_db_holders(db_path: Path) -> list[tuple[int, str]]:
     """Compatibility delegate to the state-holder authority."""
     return _state_holders.foreign_state_db_holders(db_path)
@@ -683,7 +683,7 @@ class SessionDB(
         malformed sqlite_master), generation stamp."""
         # Never materialize a deleted/archived named profile's home: a multiplexer or Desktop backend
         # still holding the profile's route would otherwise re-scaffold it on the next turn (#94590).
-        mkdir_under_hermes_home(self.db_path.parent)
+        mkdir_under_moor_home(self.db_path.parent)
         try:
             # Serialize zero-byte check, quarantine, connect and schema commit so concurrent
             # openers don't race the absent-path -> schema-commit window.
@@ -1464,7 +1464,7 @@ class SessionDB(
         return True
 
     def _foreign_state_db_holders(self) -> list[tuple[int, str]]:
-        """Foreign processes holding this DB or its WAL sidecars (see hermes_state_holders)."""
+        """Foreign processes holding this DB or its WAL sidecars (see moor_state_holders)."""
         return _foreign_state_db_holders(self.db_path)
 
     def _quarantine_reason(self) -> Optional[str]:
@@ -1691,12 +1691,12 @@ class SessionDB(
         ``'kanban'``): the transcript of a worker run, not a human conversation (#68779).
 
         Both columns are checked: ``source`` is live routing state the dispatcher tags
-        (``HERMES_SESSION_SOURCE=kanban``) and the legacy retag rewrites, while immutable
+        (``MOOR_SESSION_SOURCE=kanban``) and the legacy retag rewrites, while immutable
         ``created_source`` survives later surface flips. The lineage is the VERIFIED
         compression chain (``_resume_lineage_ids``) — exactly the rows a resume loads — so a
         worker transcript stays kanban-owned across rotations, while a delegate/branch child
         of a worker (a DIFFERENT conversation) is not swept in. Plain classification, not a
-        gate: the resume-time guard (``hermes_cli/kanban_resume_guard.py``) owns the decision
+        gate: the resume-time guard (``moor_cli/kanban_resume_guard.py``) owns the decision
         and the dispatcher-owned exemption."""
         lineage = self._resume_lineage_ids(session_id)
         if not lineage:

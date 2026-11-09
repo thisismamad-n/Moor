@@ -287,7 +287,7 @@ def _upscale_image(image_url: str, original_prompt: str) -> Optional[dict[str, A
 _CONTAINER_HOME_ENVS = {"DockerEnvironment", "ModalEnvironment"}
 # No env yet: only deterministic cache roots translate side-effect free (SSH: tilde path; its
 # first sync uploads the cache file).
-_CACHE_BASE_BY_BACKEND = {"docker": "/root/.hermes", "modal": "/root/.hermes", "ssh": "~/.hermes"}
+_CACHE_BASE_BY_BACKEND = {"docker": "/root/.moor", "modal": "/root/.moor", "ssh": "~/.moor"}
 
 
 def _looks_like_absolute_file_path(value: str) -> bool:
@@ -744,7 +744,7 @@ def _managed_model_plugin() -> Optional[tuple]:
     from tools.image_generation_managed import KREA, PORTAL, managed_route
 
     model_id = _read_configured_image_model()
-    return {KREA: ("krea", model_id), PORTAL: ("nous", model_id)}.get(
+    return {KREA: ("krea", model_id), PORTAL: ("moor", model_id)}.get(
         managed_route(_read_configured_image_provider(), model_id))
 
 
@@ -775,8 +775,8 @@ def _maybe_route_managed_model(
         if plugin_name == "krea":
             return None
         return _provider_error(
-            f"image_gen.model='{model_id}' is a Nous Portal model but the Portal image backend is not "
-            f"available. Pick another model via `hermes tools` → Image Generation.", "provider_not_registered")
+            f"image_gen.model='{model_id}' is a Moor Portal model but the Portal image backend is not "
+            f"available. Pick another model via `moor tools` → Image Generation.", "provider_not_registered")
     kwargs: dict[str, Any] = {"prompt": prompt, "aspect_ratio": aspect_ratio, "model": model_id}
     try:
         _add_provider_kwargs(kwargs, image_url, reference_image_urls, upscale,

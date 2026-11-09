@@ -23,7 +23,7 @@ from moor_cli.auth_constants import (
     _decode_jwt_claims, AUTH_LOCK_TIMEOUT_SECONDS, AuthError,
     CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS, CODEX_OAUTH_CLIENT_ID, CODEX_OAUTH_TOKEN_URL,
     CODEX_RATE_LIMITED_CODE, DEFAULT_CODEX_BASE_URL, _codex_err, httpx)
-from hermes_cli.version_info import hermes_user_agent
+from moor_cli.version_info import moor_user_agent
 from utils import env_float, normalize_proxy_env_vars
 
 if TYPE_CHECKING:  # annotation-only; the runtime import would be a cycle
@@ -74,13 +74,13 @@ def _codex_base_url() -> str:
 
 def _codex_pool_route_base_url(entry_base_url: Optional[str] = "") -> str:
     """Base URL the chat route sends a pooled Codex credential to — the same rule
-    ``runtime_provider._pool_entry_mode_and_url`` applies (``HERMES_CODEX_BASE_URL`` > ``model.base_url``
+    ``runtime_provider._pool_entry_mode_and_url`` applies (``MOOR_CODEX_BASE_URL`` > ``model.base_url``
     while the row still carries the canonical URL > the row's own URL). A pooled gateway key belongs to
     that host only; composing it with the ambient default sends it to chatgpt.com (#121486)."""
     base = _stripped(entry_base_url).rstrip("/")
     try:
-        from hermes_cli.config import load_config_readonly
-        from hermes_cli.runtime_provider import _pool_entry_mode_and_url
+        from moor_cli.config import load_config_readonly
+        from moor_cli.runtime_provider import _pool_entry_mode_and_url
         model_cfg = load_config_readonly().get("model")
         return _pool_entry_mode_and_url(
             "openai-codex", None, model_cfg if isinstance(model_cfg, dict) else {}, "", base)[1]
@@ -89,7 +89,7 @@ def _codex_pool_route_base_url(entry_base_url: Optional[str] = "") -> str:
         # Profile-scoped override only (never the raw process env: a multiplexed sibling's gateway).
         with suppress(Exception):
             from agent.secret_scope import get_secret_str
-            base = _stripped(get_secret_str("HERMES_CODEX_BASE_URL", "")).rstrip("/") or base
+            base = _stripped(get_secret_str("MOOR_CODEX_BASE_URL", "")).rstrip("/") or base
         return base or DEFAULT_CODEX_BASE_URL
 
 
@@ -110,8 +110,8 @@ def _load_auth_store_maybe_locked(lock: bool) -> dict[str, Any]:
 
 
 def _read_codex_tokens(*, _lock: bool = True) -> dict[str, Any]:
-    """Read Codex OAuth tokens from Hermes auth store (~/.hermes/auth.json)."""
-    from hermes_cli.auth import _load_provider_state, _nonempty_str
+    """Read Codex OAuth tokens from Moor auth store (~/.moor/auth.json)."""
+    from moor_cli.auth import _load_provider_state, _nonempty_str
     auth_store = _load_auth_store_maybe_locked(_lock)
     state = _load_provider_state(auth_store, "openai-codex")
     if not state:
@@ -217,7 +217,7 @@ def _save_codex_tokens(
 
 def _recover_codex_tokens_from_cli(
         reason: str, observed_access_token: Optional[str] = None) -> Optional[dict[str, str]]:
-    """Adopt a valid Codex CLI token pair into Hermes auth, if available.
+    """Adopt a valid Codex CLI token pair into Moor auth, if available.
 
     Automatic adoption only; the interactive import offer in ``_login_openai_codex`` asks first and is
     not subject to ``auth.adopt_external_logins``.
@@ -482,15 +482,15 @@ def _codex_refresh_failure_error(response: httpx.Response) -> AuthError:
 
 def refresh_codex_oauth_pure(
     access_token: str, refresh_token: str, *, timeout_seconds: float = 20.0) -> dict[str, Any]:
-    """Refresh Codex OAuth tokens without mutating Hermes auth state."""
-    from hermes_cli.auth import _nonempty_str, _utc_now_z
+    """Refresh Codex OAuth tokens without mutating Moor auth state."""
+    from moor_cli.auth import _nonempty_str, _utc_now_z
     del access_token  # Access token is only used by callers to decide whether to refresh.
     if not _nonempty_str(refresh_token):
         raise _codex_err(_MISSING_REFRESH_TOKEN_MSG.format(relogin=_codex_relogin_command()),
                          "codex_auth_missing_refresh_token", relogin=True)
     with _codex_http_client(
         timeout=httpx.Timeout(max(5.0, float(timeout_seconds))),
-        headers={"Accept": "application/json", "User-Agent": hermes_user_agent()}) as client:
+        headers={"Accept": "application/json", "User-Agent": moor_user_agent()}) as client:
         response = client.post(
             CODEX_OAUTH_TOKEN_URL, headers={"Content-Type": "application/x-www-form-urlencoded"},
             data={
@@ -591,7 +591,7 @@ def resolve_codex_runtime_credentials(
     *, force_refresh: bool = False, refresh_if_expiring: bool = True,
     refresh_skew_seconds: int = CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     read_only: bool = False) -> dict[str, Any]:
-    """Resolve runtime credentials from Hermes's own Codex token store.
+    """Resolve runtime credentials from Moor's own Codex token store.
 
     ``read_only=True`` (status / doctor / pickers) reports the stored state as-is: no Codex CLI
     adoption, no token refresh, no auth-store write — and it wins over ``force_refresh``. A

@@ -20,9 +20,9 @@ from dataclasses import dataclass
 from typing import Any, Callable, Iterator, Literal
 from urllib.parse import urlsplit
 
-from hermes_platform.resolver import known_dirs
-from hermes_platform.resolver.base import Effort, Inspection, Probe
-from hermes_platform.resolver.core import (
+from moor_platform.resolver import known_dirs
+from moor_platform.resolver.base import Effort, Inspection, Probe
+from moor_platform.resolver.core import (
     Candidate,
     CheckState,
     Kind,

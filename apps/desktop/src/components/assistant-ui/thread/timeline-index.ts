@@ -1,4 +1,4 @@
-import { capabilityScoped, hermesApi, type ProfileScope, sessionReadOwnerPin } from '@/api/client'
+import { capabilityScoped, moorApi, type ProfileScope, sessionReadOwnerPin } from '@/api/client'
 
 import type { TimelineEntry } from './timeline-data'
 

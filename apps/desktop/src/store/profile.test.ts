@@ -27,7 +27,7 @@ vi.mock('@/store/gateway', () => ({
   openGatewayForProfile,
   openSecondaryCount
 }))
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getProfiles: vi.fn(async () => ({ profiles: [] })),
   setApiRequestProfile: vi.fn()
 }))

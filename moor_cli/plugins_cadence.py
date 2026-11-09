@@ -38,7 +38,7 @@ def _results_path() -> Path:
 def snapshot_installs(plugins_dir: Path) -> dict:
     """The install records an update check is about to compare against. Take it BEFORE the check runs:
     a record read afterwards may already include an update that finished during the check."""
-    from hermes_cli.plugins_provenance import read_sidecar_rows
+    from moor_cli.plugins_provenance import read_sidecar_rows
 
     return read_sidecar_rows(plugins_dir)
 

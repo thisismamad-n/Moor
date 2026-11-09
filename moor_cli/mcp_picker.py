@@ -159,7 +159,7 @@ def _handle_row(row: _Row) -> None:
 
 
 def _print_rows_text(rows: list[_Row]) -> None:
-    """Plain-text catalog dump: `hermes mcp catalog` output and the non-curses fallback."""
+    """Plain-text catalog dump: `moor mcp catalog` output and the non-curses fallback."""
     print()
     if not rows:
         _say("  No MCPs in the catalog or configured.", Colors.DIM)

@@ -97,13 +97,13 @@ export const ga: Translations = {
     activeProvider: "Soláthraí cuimhne gníomhach",
     noProvider: "dada — ionsuite amháin",
     builtinLayer: "Ciseal ionsuite",
-    builtinNote: "Is iad MEMORY.md agus USER.md cuimhne Hermes féin, ar leith ó aon soláthraí seachtrach. Luchtaítear an dá cheann i seisiúin de réir réamhshocraithe; múchann na lasca cumraíochta (memory.memory_enabled / memory.user_profile_enabled) gach ceann acu. Cuireann soláthraí leo; ní chuireann sé ina n-áit riamh.",
+    builtinNote: "Is iad MEMORY.md agus USER.md cuimhne Moor féin, ar leith ó aon soláthraí seachtrach. Luchtaítear an dá cheann i seisiúin de réir réamhshocraithe; múchann na lasca cumraíochta (memory.memory_enabled / memory.user_profile_enabled) gach ceann acu. Cuireann soláthraí leo; ní chuireann sé ina n-áit riamh.",
   },
 
   status: {
     actionFailed: "Theip ar an ngníomh",
     actionFinished: "Críochnaithe",
-    actionFinishedOwed: "Nuashonraithe, ach fós le críochnú (rith `hermes update` arís chun é a chríochnú)",
+    actionFinishedOwed: "Nuashonraithe, ach fós le críochnú (rith `moor update` arís chun é a chríochnú)",
     actions: "Gníomhartha",
     agent: "Agent",
     activeSessions: "Seisiúin ghníomhacha",

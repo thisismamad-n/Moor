@@ -1,13 +1,13 @@
-"""Nous free tier: the browser challenge the account service may put in front of a token exchange.
+"""Moor free tier: the browser challenge the account service may put in front of a token exchange.
 
 NAS can answer ``POST /api/anonymous/token`` with **428** ``challenge_required`` and a list of
-challenges. Hermes implements exactly one primitive, ``browser-v1``: *open this portal URL, poll
+challenges. Moor implements exactly one primitive, ``browser-v1``: *open this portal URL, poll
 until it clears, exchange again*. Everything the page does (bot detection, an in-browser proof of
-work, an interactive fallback, its copy) belongs to the portal and changes without a Hermes release.
+work, an interactive fallback, its copy) belongs to the portal and changes without a Moor release.
 
 Who opens the URL depends on the surface:
 
-* **desktop** (``HERMES_DESKTOP=1``): this process never opens anything. It publishes the challenge
+* **desktop** (``MOOR_DESKTOP=1``): this process never opens anything. It publishes the challenge
   (``free_tier.challenge`` global event, and ``free_tier.status``'s ``challenge`` field for a client
   that connects later); the renderer hands it to the Electron main process, which loads it in a
   HIDDEN window and reveals that window only if the page asks for the human.
@@ -43,11 +43,11 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Dict, Optional, TypeVar
 from urllib.parse import urlparse
 
-from hermes_cli.anon_auth import (
+from moor_cli.anon_auth import (
     ANON_CHALLENGE_REQUIRED, ANON_FAILURE_COPY, ANON_SIGNIN_REQUIRED, _anon_headers, _mint_memo_key)
-from hermes_cli.auth_constants import AuthError, httpx
+from moor_cli.auth_constants import AuthError, httpx
 
-logger = logging.getLogger("hermes_cli.auth")
+logger = logging.getLogger("moor_cli.auth")
 
 BROWSER_CAPABILITY = "browser-v1"
 CHALLENGE_EVENT = "free_tier.challenge"
@@ -64,7 +64,7 @@ _MESSAGE_MAX_CHARS = 300
 # instead of each parking for another full wait (boot fires a burst of token reads).
 _GAVE_UP_COOLDOWN_SECONDS = 30.0
 
-CHALLENGE_COPY = "Nous needs to run a quick check before starting your free session."
+CHALLENGE_COPY = "Moor needs to run a quick check before starting your free session."
 
 T = TypeVar("T")
 
@@ -89,7 +89,7 @@ class AnonChallengeRequired(AuthError):
 
     def __init__(self, challenge: BrowserChallenge, *, portal_base_url: str, anon_token: str,
                  auth_state: dict[str, Any]) -> None:
-        super().__init__(challenge.message, provider="nous", code=ANON_CHALLENGE_REQUIRED, retryable=True)
+        super().__init__(challenge.message, provider="moor", code=ANON_CHALLENGE_REQUIRED, retryable=True)
         self.challenge = challenge
         self.portal_base_url = portal_base_url
         self.anon_token = anon_token
@@ -99,7 +99,7 @@ class AnonChallengeRequired(AuthError):
 def signin_required_error(message: Any = None) -> AuthError:
     """The service will not serve this client without an account (or asked for something this
     version cannot do). Terminal for the process, like a closed gate."""
-    return AuthError(server_message(message) or ANON_FAILURE_COPY[ANON_SIGNIN_REQUIRED], provider="nous",
+    return AuthError(server_message(message) or ANON_FAILURE_COPY[ANON_SIGNIN_REQUIRED], provider="moor",
                      code=ANON_SIGNIN_REQUIRED, retryable=False)
 
 
@@ -119,9 +119,9 @@ def server_message(value: Any) -> str:
 def client_surface() -> str:
     """``gateway`` in the process that holds the messaging gateway's runtime lock (nobody is at its
     console) unless it is serving the local Desktop app, ``desktop`` for that and for the backend the
-    desktop app spawned, else ``cli``. ``HERMES_DESKTOP``
+    desktop app spawned, else ``cli``. ``MOOR_DESKTOP``
     alone is inherited by every terminal-pane shell, so desktop ownership needs the spawn credential."""
-    from hermes_cli.process_identity import is_desktop_owned_backend, serves_local_desktop_now
+    from moor_cli.process_identity import is_desktop_owned_backend, serves_local_desktop_now
     if serves_local_desktop_now():
         return "desktop"
     status = sys.modules.get("gateway.status")
@@ -133,14 +133,14 @@ def client_surface() -> str:
 def client_info() -> dict[str, Any]:
     """The self-reported ``client`` block on a token exchange. It sorts honest clients (which
     surface, which challenge primitives) for the service's rules; it proves nothing, by design."""
-    from hermes_cli.version_info import get_version_info
-    return {"name": "hermes-agent", "version": get_version_info().base_version, "surface": client_surface(),
+    from moor_cli.version_info import get_version_info
+    return {"name": "moor-agent", "version": get_version_info().base_version, "surface": client_surface(),
             "platform": sys.platform, "capabilities": [BROWSER_CAPABILITY]}
 
 
 def user_agent() -> str:
-    from hermes_cli.version_info import get_version_info
-    return (f"hermes-agent/{get_version_info().base_version} "
+    from moor_cli.version_info import get_version_info
+    return (f"moor-agent/{get_version_info().base_version} "
             f"({client_surface()}; {sys.platform}; {platform.machine() or 'unknown'})")
 
 
@@ -175,7 +175,7 @@ def parse_browser_challenge(payload: dict[str, Any], portal_base_url: str) -> Op
             continue
         url = entry.get("url")
         if not isinstance(url, str) or not url.isprintable() or not _same_origin(url, portal_base_url):
-            logger.info("Nous free tier: ignoring a challenge URL outside the portal origin")
+            logger.info("Moor free tier: ignoring a challenge URL outside the portal origin")
             continue
         return BrowserChallenge(
             url=url, required=entry.get("required") is not False,
@@ -322,7 +322,7 @@ def reset_for_tests() -> None:
 
 def _announce(challenge: BrowserChallenge) -> bool:
     """Broadcast to connected desktop clients. False when this process is not a gateway at all
-    (``HERMES_DESKTOP`` is an env var, and a CLI the desktop spawned inherits it): importing the
+    (``MOOR_DESKTOP`` is an env var, and a CLI the desktop spawned inherits it): importing the
     gateway here just to find nobody listening would also write an event frame to stdout."""
     server = sys.modules.get("tui_gateway.server")
     if server is None:
@@ -338,7 +338,7 @@ def _announce(challenge: BrowserChallenge) -> bool:
 
 
 def _present_in_terminal(challenge: BrowserChallenge) -> None:
-    from hermes_cli.auth_device_flow import _can_open_graphical_browser, _is_remote_session
+    from moor_cli.auth_device_flow import _can_open_graphical_browser, _is_remote_session
     opened = False
     # One tab per ticket, however many attempts resume it: a user who has not got to it yet is
     # not helped by a second copy. A gateway has no console of its own: it logs the link only.
@@ -408,8 +408,8 @@ def wait_for_challenge(exc: AnonChallengeRequired) -> bool:
 
     Called under the profile's work lock. A caller that queued behind another finds the ticket
     already settled on its first status read and returns without presenting anything."""
-    from hermes_cli.auth import _resolve_verify
-    from hermes_cli.auth_nous import _nous_http_client
+    from moor_cli.auth import _resolve_verify
+    from moor_cli.auth_moor import _moor_http_client
     if _gave_up_recently():
         return False
     challenge = exc.challenge
@@ -418,7 +418,7 @@ def wait_for_challenge(exc: AnonChallengeRequired) -> bool:
     # the mint's own verify, so this is the context the 428 exchange just used, not a narrowing.
     verify = _resolve_verify(auth_state=exc.auth_state)
     told_interactive = False
-    with _nous_http_client(10.0, verify) as client:
+    with _moor_http_client(10.0, verify) as client:
         if _poll_status(client, exc.portal_base_url, exc.anon_token) not in _WAITING:
             return True
         challenge = exc.challenge = _record(challenge, new_attempt=True)
@@ -441,7 +441,7 @@ def wait_for_challenge(exc: AnonChallengeRequired) -> bool:
 def _still_pending(cause: AnonChallengeRequired) -> AuthError:
     message = ("The quick check couldn't finish. Try again." if _host_outcome(cause.challenge)
                else ANON_FAILURE_COPY[ANON_CHALLENGE_REQUIRED])
-    error = AuthError(message, provider="nous", code=ANON_CHALLENGE_REQUIRED, retryable=True)
+    error = AuthError(message, provider="moor", code=ANON_CHALLENGE_REQUIRED, retryable=True)
     error.__cause__ = cause
     return error
 

@@ -70,7 +70,7 @@ def test_run_job_bounds_sessiondb_finalization(tmp_path):
 
     try:
         with _owner_execution(fake_db, job), \
-             patch("cron.scheduler._hermes_home", tmp_path), \
+             patch("cron.scheduler._moor_home", tmp_path), \
              patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
              patch("moor_cli.env_loader.load_moor_dotenv"), \
              patch("moor_cli.env_loader.reset_secret_source_cache"), \
@@ -162,7 +162,7 @@ def test_dispatch_guard_releases_after_sessiondb_finalization_hang(tmp_path):
         with jobs.use_cron_store(tmp_path), \
              patch("cron.scheduler_authority.run_canonical_job", side_effect=admitted), \
              patch("cron.scheduler_authority.reconcile_pending"), \
-             patch("cron.scheduler._hermes_home", tmp_path), \
+             patch("cron.scheduler._moor_home", tmp_path), \
              patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
              patch("moor_cli.env_loader.load_moor_dotenv"), \
              patch("moor_cli.env_loader.reset_secret_source_cache"), \

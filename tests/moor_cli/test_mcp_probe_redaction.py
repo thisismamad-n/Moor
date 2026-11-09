@@ -378,8 +378,8 @@ class TestDashboardMcpTestRedaction:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
-        from hermes_cli import mcp_config
+        from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+        from moor_cli import mcp_config
 
         _seed_config(tmp_path, {
             "ink": {"url": "https://mcp.example/mcp"},
@@ -409,8 +409,8 @@ class TestDashboardMcpTestRedaction:
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
-        from hermes_cli import mcp_config
+        from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+        from moor_cli import mcp_config
 
         _seed_config(tmp_path, {
             "ink": {"url": "https://mcp.example/mcp"},

@@ -282,9 +282,9 @@ def test_real_db_openers_honor_configured_delete(monkeypatch, tmp_path):
     from cron import executions
     from gateway import delivery_ledger
     from gateway.platforms.api_server import ResponseStore
-    from hermes_cli import projects_db
-    from hermes_cli import kanban_db_connect as kbc
-    from hermes_state import SessionDB
+    from moor_cli import projects_db
+    from moor_cli import kanban_db_connect as kbc
+    from moor_state import SessionDB
     from plugins.platforms.discord.recovery import DiscordRecoveryStore
     from tools import async_delegation
 

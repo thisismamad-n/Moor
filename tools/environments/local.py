@@ -20,11 +20,11 @@ from pathlib import Path
 from moor_constants import get_process_moor_home
 from tools.environments.base import BaseEnvironment
 from tools.environments.base_output import _pipe_stdin
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.process_identity import own_process_groups, release_process_groups
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_cli.process_identity import own_process_groups, release_process_groups
 from tools.environments.local_env_policy import (
-    _ALWAYS_STRIP_FOLDED, _ALWAYS_STRIP_KEYS, _HERMES_PROVIDER_ENV_BLOCKLIST, _HERMES_PROVIDER_ENV_FORCE_PREFIX,
-    _is_hermes_internal_secret, _is_provider_env_blocklisted, _is_terminal_first_party_env,
+    _ALWAYS_STRIP_FOLDED, _ALWAYS_STRIP_KEYS, _MOOR_PROVIDER_ENV_BLOCKLIST, _MOOR_PROVIDER_ENV_FORCE_PREFIX,
+    _is_moor_internal_secret, _is_provider_env_blocklisted, _is_terminal_first_party_env,
     _home_adapter_secret_env, _matches_terminal_first_party_prefix, _plugin_terminal_env_strip_keys,
     _registered_adapter_secret_env, _registry_adapter_secret_env,
     strip_profile_gate_env, strip_supervised_process_identity)
@@ -51,7 +51,7 @@ _BG_GROUP_RE = re.compile(r"^(moor_bg_[A-Za-z0-9_-]+)\.(log|pid|exit)$")
 
 
 def _default_terminal_temp_dir() -> Path | None:
-    """Return HERMES_HOME/cache/terminal, or None if unresolvable."""
+    """Return MOOR_HOME/cache/terminal, or None if unresolvable."""
     try:
         from moor_constants import get_moor_home
         return get_moor_home() / "cache" / "terminal"
@@ -301,7 +301,7 @@ def _finalize_child_env(env: dict) -> dict:
     Kanban scrub. Returns the (possibly new) dict."""
     _apply_profile_home(env)
     _inject_session_context_env(env)
-    _strip_hermes_owned_pythonpath_and_runtime_markers(env)
+    _strip_moor_owned_pythonpath_and_runtime_markers(env)
     strip_supervised_process_identity(env)
     _apply_windows_msys_bash_env_defaults(env)
     from agent.delegation_context import delegated_child_subprocess_env
@@ -345,7 +345,7 @@ def _terminal_env(env: dict) -> dict:
     return env
 
 
-def hermes_subprocess_env(
+def moor_subprocess_env(
     *, inherit_credentials: bool = False, base_env: dict[str, str] | None = None
 ) -> dict[str, str]:
     """Sanitize a non-terminal child's environment (no skill passthrough).
@@ -372,8 +372,8 @@ def _scrub_credentials(env: dict, *, inherit_credentials: bool) -> dict:
     for key in list(env):
         if (key.upper() in strip_folded
                 or (not inherit_credentials and _is_provider_env_blocklisted(key, registered))
-                or key.startswith(_HERMES_PROVIDER_ENV_FORCE_PREFIX)
-                or _is_hermes_internal_secret(key)):
+                or key.startswith(_MOOR_PROVIDER_ENV_FORCE_PREFIX)
+                or _is_moor_internal_secret(key)):
             del env[key]
     return env
 
@@ -386,7 +386,7 @@ def build_subprocess_env(
     ``scrub_secrets=True`` -> :func:`_sanitize_subprocess_env` (profile home inherent,
     ``inherit_profile_home`` ignored). ``scrub_secrets=False`` keeps the base's secrets
     (git credential flows, ``bws``/``op``); ``inherit_profile_home``
-    bridges HERMES_HOME + HOME and ``extra`` is applied last so caller overrides win. Both modes
+    bridges MOOR_HOME + HOME and ``extra`` is applied last so caller overrides win. Both modes
     drop the supervised process's own identity (:func:`strip_supervised_process_identity`).
     ``strip_launch_profile`` drops the LAUNCH profile's ``.env`` residue from the base first
     (:func:`strip_launch_profile_env`; a no-op unless a routed home is active) so a child that
@@ -469,9 +469,9 @@ def host_gateway_child_env(
     (desktop, fleet restart, detached watcher) must not donate its dotenv to the
     multiplexer that owns the primary adapter map.
     """
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
     return served_profile_child_env(
-        base=base, target_home=get_default_hermes_root(), inherit_credentials=True,
+        base=base, target_home=get_default_moor_root(), inherit_credentials=True,
     )
 
 
@@ -499,12 +499,12 @@ def strip_launch_profile_env(env: dict, target_home: str | Path | None = None) -
     gateway-wide multiplex flag on": the Desktop/dashboard backend serves ``?profile=B`` by
     installing a MOOR_HOME override without that flag."""
     from agent.secret_scope import _is_global_env, load_env_file
-    from hermes_constants import get_hermes_home_override, get_routing_process_hermes_home
-    target = target_home or get_hermes_home_override()
+    from moor_constants import get_moor_home_override, get_routing_process_moor_home
+    target = target_home or get_moor_home_override()
     if not target or not _is_routed_home(target):
         return env
-    launch_home = get_routing_process_hermes_home()
-    from hermes_cli.config import TERMINAL_CONFIG_ENV_MAP
+    launch_home = get_routing_process_moor_home()
+    from moor_cli.config import TERMINAL_CONFIG_ENV_MAP
     # Folded strip: on Windows the env block is case-insensitive, so residue
     # stored under a variant casing is the same variable and must go too. The
     # selection folds the same way so a lowercase ``path`` in .env is still
@@ -519,8 +519,8 @@ def strip_launch_profile_env(env: dict, target_home: str | Path | None = None) -
     # it last, with override, so it beats the user's own .env) — leave them in place. Neither is
     # the config backend's deployment (which backend, which plane, which instance): it is the
     # instance's, and a child without it reads the target profile's config from another backend.
-    from hermes_cli.config_backend import deployment_env_names
-    from hermes_cli.env_loader import launch_dotenv_keys, managed_dotenv_keys, source_supplied_names
+    from moor_cli.config_backend import deployment_env_names
+    from moor_cli.env_loader import launch_dotenv_keys, managed_dotenv_keys, source_supplied_names
     managed_names = {key.upper() for key in managed_dotenv_keys()} | set(deployment_env_names())
     residue_names = {
         key.upper() for key in
@@ -540,7 +540,7 @@ def restore_managed_env(env: dict) -> dict:
     has been overlaid. ``_apply_managed_env`` gives those keys precedence over the user's own ``.env`` in
     the launch process; a routed child must see the same precedence, or the routed user's value for a
     managed key (``ORG_POLICY_FLAG=user-value``) silently wins over policy."""
-    from hermes_cli.env_loader import managed_dotenv_keys
+    from moor_cli.env_loader import managed_dotenv_keys
     for key in managed_dotenv_keys():
         if key in os.environ:
             env[key] = os.environ[key]
@@ -598,7 +598,7 @@ def _prepend_missing_path_entries(existing_path: str, dirs: list[str]) -> str:
 
 
 def _user_tools_first(existing_path: str) -> str:
-    """*existing_path* with the user's tools before Hermes's (``pm.user_facing``) and, on
+    """*existing_path* with the user's tools before Moor's (``pm.user_facing``) and, on
     Windows, Git Bash's dirs first. They go first even when already listed: they are store
     dirs that now sit behind the user's entries, and a non-login ``bash -c`` needs its
     coreutils ahead of System32's lookalikes."""
@@ -639,29 +639,29 @@ _SANE_PATH = ("/opt/homebrew/bin:/opt/homebrew/sbin:"
 # Cached directory containing the ``moor`` console-script.
 # ``_SENTINEL`` distinguishes "not resolved yet" from a resolved ``None``.
 _SENTINEL = object()
-_HERMES_BIN_DIR: str | None | object = _SENTINEL
+_MOOR_BIN_DIR: str | None | object = _SENTINEL
 # True when the cached dir is a sealed payload's own launcher dir (see below).
-_HERMES_BIN_DIR_IS_PAYLOAD = False
+_MOOR_BIN_DIR_IS_PAYLOAD = False
 
 
 def _resolve_moor_bin_dir() -> str | None:
     """Directory holding the ``moor`` console-script, or None (cached). A gateway
     launched by systemd/cron/a desktop launcher lacks the install dir on PATH and bare
-    ``hermes`` exits 127. Order: a sealed payload's own launcher dir; ``which``; absolute
-    ``sys.argv[0]`` naming a real hermes executable; ``sys.executable``'s dir if it holds
+    ``moor`` exits 127. Order: a sealed payload's own launcher dir; ``which``; absolute
+    ``sys.argv[0]`` naming a real moor executable; ``sys.executable``'s dir if it holds
     the shim."""
-    global _HERMES_BIN_DIR, _HERMES_BIN_DIR_IS_PAYLOAD
-    if _HERMES_BIN_DIR is not _SENTINEL:
-        return _HERMES_BIN_DIR  # type: ignore[return-value]
+    global _MOOR_BIN_DIR, _MOOR_BIN_DIR_IS_PAYLOAD
+    if _MOOR_BIN_DIR is not _SENTINEL:
+        return _MOOR_BIN_DIR  # type: ignore[return-value]
     from pm.environments import payload_command_dir
 
-    # A payload's venv also holds a `hermes`, but on Windows its redirector names the
+    # A payload's venv also holds a `moor`, but on Windows its redirector names the
     # build machine's interpreter, so PATH order must not decide which copy children get.
     payload_dir = payload_command_dir(Path(__file__).resolve().parents[2])
     if payload_dir is not None and payload_dir.is_dir():
-        _HERMES_BIN_DIR, _HERMES_BIN_DIR_IS_PAYLOAD = str(payload_dir), True
-        return _HERMES_BIN_DIR
-    which = shutil.which("hermes")
+        _MOOR_BIN_DIR, _MOOR_BIN_DIR_IS_PAYLOAD = str(payload_dir), True
+        return _MOOR_BIN_DIR
+    which = shutil.which("moor")
     argv0 = sys.argv[0] if sys.argv else ""
     base = os.path.basename(argv0).lower()
     exe_dir = os.path.dirname(sys.executable) if sys.executable else ""
@@ -673,17 +673,17 @@ def _resolve_moor_bin_dir() -> str | None:
         candidate = os.path.dirname(argv0)
     else:
         candidate = exe_dir if exe_dir and os.path.isfile(os.path.join(exe_dir, shim)) else None
-    _HERMES_BIN_DIR = candidate if candidate and os.path.isdir(candidate) else None
-    _HERMES_BIN_DIR_IS_PAYLOAD = False
-    return _HERMES_BIN_DIR
+    _MOOR_BIN_DIR = candidate if candidate and os.path.isdir(candidate) else None
+    _MOOR_BIN_DIR_IS_PAYLOAD = False
+    return _MOOR_BIN_DIR
 
 
-def _prepend_hermes_bin_dir(existing_path: str) -> str:
-    """Prepend the hermes install dir to ``existing_path`` if missing. A sealed payload's
+def _prepend_moor_bin_dir(existing_path: str) -> str:
+    """Prepend the moor install dir to ``existing_path`` if missing. A sealed payload's
     launcher dir moves to the front even when already listed: a login PATH can list
-    another install's ``hermes`` ahead of it."""
-    bin_dir = _resolve_hermes_bin_dir()
-    if bin_dir and _HERMES_BIN_DIR_IS_PAYLOAD:
+    another install's ``moor`` ahead of it."""
+    bin_dir = _resolve_moor_bin_dir()
+    if bin_dir and _MOOR_BIN_DIR_IS_PAYLOAD:
         rest = [entry for entry in existing_path.split(os.pathsep) if entry and entry != bin_dir]
         return os.pathsep.join([bin_dir, *rest])
     return _prepend_missing_path_entries(existing_path, [bin_dir] if bin_dir else [])
@@ -699,7 +699,7 @@ def _managed_runtime_path_entries() -> list[str]:
 
     - the pm store's node/npm entries — installed to satisfy the desktop
       toolchain; the agent's shell deserves the same.
-    - ``$HERMES_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
+    - ``$MOOR_HOME/bin`` — the managed ``uv``. ``install.sh`` writes it there
       and nothing has ever put that directory on PATH, so an install whose only
       uv is the managed one looks uv-less to both the agent and the model.
 
@@ -869,7 +869,7 @@ def _append_dropped_path_entries(cmd_string: str, parent_path: str) -> str:
     A login profile can reset PATH outright (Debian's ``/etc/profile``, so every
     Debian/Ubuntu image and host), and the snapshot's ``export -p`` then pins the reset
     PATH over the spawn env for every later command: in the Docker image that loses
-    ``/opt/hermes/bin`` and bare ``hermes`` exits 127 (#56634). Dropped dirs go AFTER
+    ``/opt/moor/bin`` and bare ``moor`` exits 127 (#56634). Dropped dirs go AFTER
     the login PATH in parent order, so a command that resolved before still resolves
     to the same binary (the user's nvm/pyenv keep precedence); only commands that had
     no match gain one. Present entries are never duplicated; missing absolute dirs are skipped.
@@ -882,9 +882,9 @@ def _append_dropped_path_entries(cmd_string: str, parent_path: str) -> str:
                if d and (not os.path.isabs(d) or os.path.isdir(d))]
     if not entries:
         return cmd_string
-    restore = (f"for __hermes_p in {' '.join(shlex.quote(d) for d in entries)}; do "
-               'case ":$PATH:" in *":$__hermes_p:"*) ;; *) PATH="${PATH:+$PATH:}$__hermes_p" ;; esac; '
-               "done; unset __hermes_p; export PATH")
+    restore = (f"for __moor_p in {' '.join(shlex.quote(d) for d in entries)}; do "
+               'case ":$PATH:" in *":$__moor_p:"*) ;; *) PATH="${PATH:+$PATH:}$__moor_p" ;; esac; '
+               "done; unset __moor_p; export PATH")
     return restore + "\n" + cmd_string
 
 
@@ -965,7 +965,7 @@ def _kill_process_group_posix(proc) -> None:
     grandchildren under load. POSIX-only (_IS_WINDOWS handled by the caller).
     PID-reuse guard (#43044): the group is only signalled while its leader's start
     time still matches the spawn-time baseline — a recycled PGID is never killed."""
-    expected_start = getattr(proc, "_hermes_pgid_start", None)
+    expected_start = getattr(proc, "_moor_pgid_start", None)
     try:
         pgid = os.getpgid(proc.pid)
     except ProcessLookupError:
@@ -1155,15 +1155,15 @@ class LocalEnvironment(BaseEnvironment):
             # The command dies with this process however it dies: a SIGKILLed / OOM-killed host left a
             # running `npm run dev` or `sleep` on init. Released once the wait returns (see below).
             own_process_groups([proc.pid])
-            proc._hermes_owned_pgid = proc.pid
+            proc._moor_owned_pgid = proc.pid
             with contextlib.suppress(ProcessLookupError):
-                proc._hermes_pgid = os.getpgid(proc.pid)
+                proc._moor_pgid = os.getpgid(proc.pid)
                 # Record the group leader's start-time fingerprint so _kill_process can
                 # detect PID/PGID recycling before signalling the group (#43044). The
                 # psutil fallback in get_process_start_time captures a baseline on every
                 # platform, macOS included.
                 from gateway.status import get_process_start_time
-                proc._hermes_pgid_start = get_process_start_time(proc.pid)
+                proc._moor_pgid_start = get_process_start_time(proc.pid)
         if stdin_data is not None:
             _pipe_stdin(proc, stdin_data)
         return proc
@@ -1172,12 +1172,12 @@ class LocalEnvironment(BaseEnvironment):
         """Base wait, then hand the command's group back from the owner-death supervisor: once the
         command returned, what it left running in the background (`server &`) is not ours to kill,
         exactly as on a graceful exit. A command that yielded to background took the group with it
-        (``ProcessRegistry.adopt_local`` clears ``_hermes_owned_pgid``)."""
+        (``ProcessRegistry.adopt_local`` clears ``_moor_owned_pgid``)."""
         try:
             return super()._wait_for_process(proc, *args, **kwargs)
         finally:
-            if (owned_pgid := getattr(proc, "_hermes_owned_pgid", None)) is not None:
-                proc._hermes_owned_pgid = None
+            if (owned_pgid := getattr(proc, "_moor_owned_pgid", None)) is not None:
+                proc._moor_owned_pgid = None
                 release_process_groups([owned_pgid])
 
     def _kill_process(self, proc):
@@ -1193,12 +1193,12 @@ class LocalEnvironment(BaseEnvironment):
         if _IS_WINDOWS:  # already a forced tree kill
             return self._kill_process(proc)
         with contextlib.suppress(OSError):
-            pgid = getattr(proc, "_hermes_pgid", None) or os.getpgid(proc.pid)
+            pgid = getattr(proc, "_moor_pgid", None) or os.getpgid(proc.pid)
             # PID-reuse guard (#43044): never SIGKILL a group whose leader's start time
             # no longer matches the spawn-time baseline — the PGID may have been recycled
             # onto an unrelated process group. Comparison is drift-tolerant (#117505);
             # without a baseline keep the legacy best-effort behaviour.
-            if pgid != os.getpgrp() and _leader_is_ours(pgid, getattr(proc, "_hermes_pgid_start", None)):
+            if pgid != os.getpgrp() and _leader_is_ours(pgid, getattr(proc, "_moor_pgid_start", None)):
                 os.killpg(pgid, signal.SIGKILL)  # windows-footgun: ok — POSIX only (_IS_WINDOWS returned above)
         with contextlib.suppress(OSError):
             proc.kill()

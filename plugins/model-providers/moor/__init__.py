@@ -23,7 +23,7 @@ class MoorProfile(ProviderProfile):
     def build_extra_body(
         self, *, session_id: str | None = None, data_use: frozenset[str] = frozenset(), **context,
     ) -> dict[str, Any]:
-        body: dict[str, Any] = {"tags": nous_portal_tags(session_id=session_id)}
+        body: dict[str, Any] = {"tags": moor_portal_tags(session_id=session_id)}
         # Top-level session_id = sticky routing key, so Anthropic-style cache
         # breakpoints stay warm on one upstream instance. Resolved like the
         # ``conversation=`` tag: declared scope, then the ambient lineage ROOT

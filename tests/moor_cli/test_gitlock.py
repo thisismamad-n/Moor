@@ -72,7 +72,7 @@ def no_git_running(monkeypatch: pytest.MonkeyPatch) -> None:
     code under test.  The guard's own behavior is pinned separately in
     :func:`test_clear_skips_sweep_while_git_running`.
     """
-    from hermes_cli import gitlock
+    from moor_cli import gitlock
 
     monkeypatch.setattr(gitlock, "_git_proc_running", lambda: False)
 
@@ -96,15 +96,15 @@ def test_clear_removes_all_stale_lock_kinds(repo: Path, no_git_running: None) ->
 def test_graph_refresh_clears_object_store_debris_and_leaves_the_index_lock(
         repo: Path, no_git_running: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """A killed graph/midx writer's lock fails every later write of that file (git: "File exists"). The
-    refresh also runs in whatever repo ``hermes -w`` started in, where index.lock is the user's git's.
+    refresh also runs in whatever repo ``moor -w`` started in, where index.lock is the user's git's.
 
     An old lock is no proof its writer is dead (a stopped writer's lock ages too): while a git of any
     form runs (git-core's dashed executables included), or when no process list can be read, every
     lock stays, and a write that could not run leaves no freshness stamp."""
     import sys
 
-    from hermes_cli import gitlock
-    from hermes_cli.git_commit_graph import _FRESH_STAMP, refresh_commit_graph
+    from moor_cli import gitlock
+    from moor_cli.git_commit_graph import _FRESH_STAMP, refresh_commit_graph
 
     git_dir = repo / ".git"
     debris = [git_dir / "objects" / rel for rel in (
@@ -150,7 +150,7 @@ def test_graph_refresh_clears_object_store_debris_and_leaves_the_index_lock(
 
 def test_clear_skips_sweep_while_git_running(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A running git process must block the sweep even for stale locks."""
-    from hermes_cli import gitlock
+    from moor_cli import gitlock
 
     monkeypatch.setattr(gitlock, "_git_proc_running", lambda: True)
     _touch(repo / ".git" / "shallow.lock", STALE_LOCK_MIN_AGE_SECONDS + 60)
@@ -186,7 +186,7 @@ def test_clear_noop_with_no_locks(repo: Path) -> None:
 
 from subprocess import CompletedProcess
 
-from hermes_cli.gitlock import (
+from moor_cli.gitlock import (
     fetch_with_partial_clone_recovery,
     is_partial_clone_pack_objects_crash,
 )
@@ -263,7 +263,7 @@ def test_recovery_marks_unmarked_packs_and_retries_the_same_fetch(crash_stderr, 
 # `git gc --auto` (git's own gc.autoPackLimit decides when it is worth it). Real git against a
 # local blobless clone: these pin how the pieces interact, not their command lines.
 
-from hermes_cli.gitlock import settle_partial_clone_maintenance, disable_tree0_auto_maintenance
+from moor_cli.gitlock import settle_partial_clone_maintenance, disable_tree0_auto_maintenance
 
 _GIT_ENV = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
 
@@ -334,7 +334,7 @@ def test_maintenance_keys_leave_gits_own_fold_running(tmp_path: Path) -> None:
     """Between updates, git's post-lazy-fetch auto maintenance is what folds packs (git <= 2.53).
 
     The keys stop the commit-graph write without switching that fold off: ``maintenance.auto=false``
-    let the packs pile up until the next ``hermes update``. Compared against a stock-config clone
+    let the packs pile up until the next ``moor update``. Compared against a stock-config clone
     because newer git (2.55) does not fold lazy-fetch packs on its own at all.
     """
     def lazy_packs(name: str, keys: bool) -> int:
@@ -414,8 +414,8 @@ def _status_blocked_on_a_fifo(repo: Path, *argv: str) -> subprocess.Popen:
 def test_a_killed_gits_index_lock_goes_at_once_and_a_live_ones_stays(repo: Path) -> None:
     """The next update must not die on the lock a killed one left (the age floor kept it for 10
     minutes), and must never take the lock of a git that is still running."""
-    from hermes_cli import update_receipt
-    from hermes_cli.gitlock import release_dead_index_lock
+    from moor_cli import update_receipt
+    from moor_cli.gitlock import release_dead_index_lock
 
     lock = repo / ".git" / "index.lock"
     _killed_update_receipt()
@@ -436,7 +436,7 @@ def test_a_killed_gits_index_lock_goes_at_once_and_a_live_ones_stays(repo: Path)
 def test_a_fresh_lock_with_no_killed_update_behind_it_is_kept(repo: Path) -> None:
     """No process holding a lock it just created proves nothing (the git may not have opened it
     yet): without a killed update run behind it, the update refuses on it and the lock stays."""
-    from hermes_cli.gitlock import release_dead_index_lock
+    from moor_cli.gitlock import release_dead_index_lock
 
     lock = repo / ".git" / "index.lock"
     lock.write_text("", encoding="utf-8")
@@ -448,7 +448,7 @@ def _killed_update_receipt() -> None:
     """A real running receipt whose owner is a pid that already exited (the killed update)."""
     import json
 
-    from hermes_cli import update_receipt
+    from moor_cli import update_receipt
 
     dead = subprocess.Popen(["true"])
     dead.wait()
@@ -497,7 +497,7 @@ def test_a_killed_updates_lock_stays_while_any_git_works_in_the_checkout(repo: P
     live ``/usr/lib/git-core/git-commit -a`` waiting in its editor (fd closed, and not ``comm == git``):
     the user's commit then died "unable to write new index file". No git of any form may be working in
     the checkout when the start-of-update reclaim takes the lock."""
-    from hermes_cli.gitlock import release_dead_index_lock
+    from moor_cli.gitlock import release_dead_index_lock
 
     lock = repo / ".git" / "index.lock"
     _killed_update_receipt()
@@ -526,8 +526,8 @@ def test_a_killed_updates_lock_stays_while_any_git_works_in_the_checkout(repo: P
         released = release_dead_index_lock(repo)
         why = None
         if not released:  # name which leg kept it: owner proof, an unreadable process, or a holder
-            from hermes_cli import _early_recovery as er
-            from hermes_cli.gitlock import _killed_update_owns
+            from moor_cli import _early_recovery as er
+            from moor_cli.gitlock import _killed_update_owns
             why = {"lock_exists": lock.exists(), "killed_update_owns": _killed_update_owns(lock),
                    "held_open": er._held_open(lock, repo, any_git=True)}
         assert released is True, f"once the checkout's git is gone the killed update's lock goes: {why}"
@@ -538,8 +538,8 @@ def test_a_git_elsewhere_exiting_mid_scan_is_gone_not_a_hidden_holder(repo: Path
     """A git in ANOTHER repository that exits between the scan reading its argv and its cwd/environ
     (unreadable once it has released its memory) is gone: it holds nothing and takes no lock. Read
     as a hidden git that may work here, any busy machine's git churn postponed the launch repair
-    ("a running git holds the index after an interrupted `hermes update`")."""
-    from hermes_cli import _early_recovery as er
+    ("a running git holds the index after an interrupted `moor update`")."""
+    from moor_cli import _early_recovery as er
     from tests.waiting import wait_until
 
     other = tmp_path / "other"
@@ -548,7 +548,7 @@ def test_a_git_elsewhere_exiting_mid_scan_is_gone_not_a_hidden_holder(repo: Path
     shutil.copytree(repo, other, ignore=shutil.ignore_patterns("*.lock"))
     lock = repo / ".git" / "index.lock"
     lock.write_bytes(b"")  # a killed git's: nothing holds it
-    marker = "hermes.test=exits-mid-scan"
+    marker = "moor.test=exits-mid-scan"
     proc = _git_in_the_editor(other, tmp_path, ["git", "-c", marker, "commit", "-a"])
     real = er._counts_as_holder
 
@@ -570,19 +570,19 @@ def test_a_git_elsewhere_exiting_mid_scan_is_gone_not_a_hidden_holder(repo: Path
 def test_lock_keeping_git_is_recognised_in_every_form_and_by_path_components(tmp_path: Path, monkeypatch) -> None:
     """Review P1/secondary, the hosts with no /proc: the macOS branch had only an (empty) ``lsof``,
     and the Windows scan matched ``git.exe`` alone and compared paths with ``startswith``
-    (``hermes-backup`` read as inside ``hermes``). Injected process metadata, not a native run."""
+    (``moor-backup`` read as inside ``moor``). Injected process metadata, not a native run."""
     import types
 
-    from hermes_cli import _early_recovery as er
-    from hermes_cli import gitlock
+    from moor_cli import _early_recovery as er
+    from moor_cli import gitlock
 
     assert er._git_subcommand_of(b"/usr/lib/git-core/git-commit\0-a\0") == "commit"
     assert er._git_subcommand_of(["C:\\Git\\mingw64\\libexec\\git-core\\GIT-COMMIT.EXE"]) == "commit"
     assert er._git_subcommand_of(["git", "-C", "x", "-c", "k=v", "--no-pager", "save", "-a"]) == "save"
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     (root / ".git").mkdir(parents=True)
-    (tmp_path / "hermes-backup").mkdir()
+    (tmp_path / "moor-backup").mkdir()
     lock = root / ".git" / "index.lock"
     lock.write_bytes(b"")
 
@@ -598,7 +598,7 @@ def test_lock_keeping_git_is_recognised_in_every_form_and_by_path_components(tmp
     monkeypatch.setattr("shutil.which", lambda name: name)
     monkeypatch.setattr(er.subprocess, "run", ps_lists("/Library/Developer/CommandLineTools/usr/libexec/git-core/git-commit -a"))
     assert er._held_open_lsof(lock, root, False), "macOS: a dashed git-commit with its fd closed keeps the lock"
-    monkeypatch.setattr(er.subprocess, "run", ps_lists("git commit -a", tmp_path / "hermes-backup"))
+    monkeypatch.setattr(er.subprocess, "run", ps_lists("git commit -a", tmp_path / "moor-backup"))
     assert er._held_open_lsof(lock, root, False) is False, "a commit in another repository is not this checkout's"
     monkeypatch.setattr(er.subprocess, "run", ps_lists("git log --oneline"))
     assert er._held_open_lsof(lock, root, False) is False and er._held_open_lsof(lock, root, True)
@@ -611,7 +611,7 @@ def test_lock_keeping_git_is_recognised_in_every_form_and_by_path_components(tmp
         monkeypatch.setitem(__import__("sys").modules, "psutil", psutil)
         return gitlock._windows_git_in_checkout(root)
 
-    assert scan(tmp_path / "hermes-backup") is False, "a sibling directory is not this checkout"
+    assert scan(tmp_path / "moor-backup") is False, "a sibling directory is not this checkout"
     assert scan(root / "sub") is True and scan(root, "git-commit.exe") is True
 
 
@@ -619,8 +619,8 @@ def test_a_failed_retry_never_erases_the_killed_updates_claim(repo: Path) -> Non
     """Review secondary: a retry that kept the then-live lock and failed replaced latest.json, so once
     the git died the killed run's lock waited for the 10-minute sweep. The durable per-run records
     still name the killed run: the last run that started before the lock was written."""
-    from hermes_cli import update_receipt
-    from hermes_cli.gitlock import release_dead_index_lock
+    from moor_cli import update_receipt
+    from moor_cli.gitlock import release_dead_index_lock
 
     lock = repo / ".git" / "index.lock"
     _killed_update_receipt()  # started before the lock, as a real killed run did

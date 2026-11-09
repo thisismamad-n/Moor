@@ -13,7 +13,7 @@ from __future__ import annotations
 import threading
 import types
 
-from hermes_cli import plugins_loader
+from moor_cli import plugins_loader
 
 
 def test_evict_modules_survives_a_concurrent_mapping_insert(monkeypatch):
@@ -34,13 +34,13 @@ def test_evict_modules_survives_a_concurrent_mapping_insert(monkeypatch):
                 worker.join()
             return str.startswith(self, *args)
 
-    for name in ("hermes_plugins.discord_platform", "hermes_plugins.discord_platform.adapter"):
+    for name in ("moor_plugins.discord_platform", "moor_plugins.discord_platform.adapter"):
         modules[name] = types.ModuleType(name)
     modules[_SwitchPoint("unrelated")] = types.ModuleType("unrelated")
-    modules["hermes_plugins.discord_platform.tools"] = types.ModuleType("hermes_plugins.discord_platform.tools")
+    modules["moor_plugins.discord_platform.tools"] = types.ModuleType("moor_plugins.discord_platform.tools")
     monkeypatch.setattr(plugins_loader, "sys", types.SimpleNamespace(modules=modules))
 
-    plugins_loader._evict_modules("hermes_plugins.discord_platform")
+    plugins_loader._evict_modules("moor_plugins.discord_platform")
 
     assert handed_off.is_set()
     assert sorted(modules) == ["race_probe_sdk.client", "unrelated"]

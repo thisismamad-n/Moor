@@ -16,7 +16,7 @@ const SHORT_LABELS: Record<string, string> = {
 }
 
 /**
- * A pick the route does not send verbatim: `ultra` is a Hermes-internal step
+ * A pick the route does not send verbatim: `ultra` is a moor-internal step
  * that routes clamp to their strongest level (`max` on OpenAI-compatible wires; the Codex
  * app-server sends it verbatim as codex's own mode), and the
  * CLI's `/reasoning` says so ("ultra (sends max on this route)"). The wire

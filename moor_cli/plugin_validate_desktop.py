@@ -45,15 +45,15 @@ _FORBIDDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
      re.compile(r"\b(?:querySelector(?:All)?|closest|getElementsByTagName|createElement)\(\s*[`'\"]webview\b")),
 )
 
-# Review cues, warned and never refused (catalog rule 8): the raw ``window.hermesDesktop`` native bridge
+# Review cues, warned and never refused (catalog rule 8): the raw ``window.moorDesktop`` native bridge
 # (files, git, REST, installs) has no folder or profile scoping — ``ctx.files`` / ``ctx.os`` /
 # ``host.request`` do — yet listed plugins still use it where the SDK has no verb (microphone access,
 # favicon lookup). And the app's markup selected from a CSS rule string, ``closest()`` or a template
 # (``[data-tree-tab=…]{display:none}``) is the reach the refused ``document.querySelector`` rule
 # names, in shapes no refusal regex can tell from a plugin styling SDK components it rendered itself.
 _REVIEW: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("raw bridge window.hermesDesktop",
-     re.compile(r"\b(?:window|globalThis|self)\s*(?:\?\.|\.)\s*hermesDesktop\b")),
+    ("raw bridge window.moorDesktop",
+     re.compile(r"\b(?:window|globalThis|self)\s*(?:\?\.|\.)\s*moorDesktop\b")),
     ("app markup selector",
      re.compile(r"\[data-(?:slot|tour|sidebar|testid|tree-[\w-]+|pane-host|titlebar-cluster)\b")),
 )

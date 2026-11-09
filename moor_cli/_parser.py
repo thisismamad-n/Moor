@@ -329,26 +329,26 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
 
 def _plugin_command_install_hint(prog: str, value: str):
     """Install command when *value* names a catalog memory plugin that resolves nowhere: its
-    ``hermes <name>`` command exists only once the plugin is installed. Top level only; never raises."""
-    if prog != "hermes" or not re.fullmatch(r"[a-z0-9_-]{1,64}", value):
+    ``moor <name>`` command exists only once the plugin is installed. Top level only; never raises."""
+    if prog != "moor" or not re.fullmatch(r"[a-z0-9_-]{1,64}", value):
         return None
     try:
         from plugins.memory import find_provider_dir
         if find_provider_dir(value) is not None:
             return None
-        from hermes_cli.memory_provider_migration import catalog_install_hint
+        from moor_cli.memory_provider_migration import catalog_install_hint
         return catalog_install_hint(value, category="memory")
     except Exception:
         return None
 
 
 def _moved_command_hint(prog: str, value: str) -> str:
-    """Where a command that left core went (``hermes auth spotify``, ``hermes mcp serve``, ...)."""
-    from hermes_cli.left_core_migration import moved_command_hint
+    """Where a command that left core went (``moor auth spotify``, ``moor mcp serve``, ...)."""
+    from moor_cli.left_core_migration import moved_command_hint
     return moved_command_hint(prog, value)
 
 
-class HermesArgumentParser(argparse.ArgumentParser):
+class MoorArgumentParser(argparse.ArgumentParser):
     """argparse parser whose unknown-subcommand error is three short lines, not a 70-name dump.
 
     Stock argparse prints the full usage block plus ``(choose from 'chat', 'model', …)`` when
@@ -366,7 +366,7 @@ class HermesArgumentParser(argparse.ArgumentParser):
             install = _plugin_command_install_hint(self.prog, str(value))
             moved = "" if install else _moved_command_hint(self.prog, str(value))
             if install:
-                # A provider that left core (``hermes honcho``) registers its command only once installed.
+                # A provider that left core (``moor honcho``) registers its command only once installed.
                 lines.append(f"The '{value}' memory plugin is not installed. Install it with: {install}")
             elif moved:
                 lines.append(moved)

@@ -106,7 +106,7 @@ def test_each_turn_sends_the_agent_s_current_wire_model(monkeypatch):
 def test_runtime_retires_thread_when_an_in_place_switch_changes_the_codex_provider(monkeypatch):
     """turn/start can change the model but not the provider: switching between codex's own provider and a
     named custom provider (``[model_providers.<id>]``) starts a thread carrying the new modelProvider."""
-    import hermes_cli.runtime_provider as rp
+    import moor_cli.runtime_provider as rp
     monkeypatch.setattr(rp, "load_config", lambda: {"providers": {"my-gateway": {"api": "https://gw.example/v1"}}})
     client = _FakeClient()
     monkeypatch.setattr(sess_mod, "CodexAppServerClient", lambda **kw: client)
@@ -122,7 +122,7 @@ def test_runtime_retires_thread_when_an_in_place_switch_changes_the_codex_provid
 
 
 def test_runtime_gives_no_approval_callback_when_nobody_can_answer(monkeypatch):
-    """`hermes chat -q` registers the CLI panel callback but nobody answers it: the codex session gets no
+    """`moor chat -q` registers the CLI panel callback but nobody answers it: the codex session gets no
     callback, so exec/apply_patch requests fail closed at once instead of waiting the approval timeout."""
     from tools.terminal_tool import set_approval_callback
 
@@ -132,7 +132,7 @@ def test_runtime_gives_no_approval_callback_when_nobody_can_answer(monkeypatch):
     try:
         interactive = _agent()
         codex_runtime._ensure_codex_session(interactive)
-        monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")
+        monkeypatch.setenv("MOOR_SINGLE_QUERY_SESSION", "1")
         single_query = _agent()
         codex_runtime._ensure_codex_session(single_query)
     finally:

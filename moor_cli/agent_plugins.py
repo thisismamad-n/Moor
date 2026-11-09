@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 from agent.skill_utils import yaml_load
 from moor_platform.declaration import Declaration, parse_declaration
 
-_HERMES_EXTENSION = "com.nousresearch.hermes"
+_MOOR_EXTENSION = "com.moorinc.moor"
 _LIVENESS: dict[str, dict] = {}
 
 
@@ -91,7 +91,7 @@ class AgentPluginPackage:
 
 
 _SERVER_DECLARATION_KEYS = frozenset({"app", "requires", "liveness", "trust", "timeout", "costs", "spend_limit", "cost_unit"})
-# Hermes call-policy keys: alone they configure a server, they do not declare an application.
+# Moor call-policy keys: alone they configure a server, they do not declare an application.
 _SERVER_POLICY_KEYS = frozenset({"trust", "timeout", "costs", "spend_limit", "cost_unit"})
 
 
@@ -99,26 +99,26 @@ def _server_declarations(
     manifest: Mapping[str, Any], mcp_servers: Mapping[str, dict[str, Any]],
     diagnostics: list[AgentPluginDiagnostic] | None = None,
 ) -> dict[str, AgentPluginServerDeclaration]:
-    namespace = manifest.get("extensions", {}).get(_HERMES_EXTENSION, {})
+    namespace = manifest.get("extensions", {}).get(_MOOR_EXTENSION, {})
     raw_servers = namespace.get("servers", {})
     if not isinstance(raw_servers, dict):
-        raise AgentPluginError(f"extension '{_HERMES_EXTENSION}'.servers must be an object")
+        raise AgentPluginError(f"extension '{_MOOR_EXTENSION}'.servers must be an object")
     declarations: dict[str, AgentPluginServerDeclaration] = {}
     for name, raw in raw_servers.items():
         if name not in mcp_servers:
             raise AgentPluginError(f"server declaration '{name}' has no matching mcp.json server")
         if not isinstance(raw, dict):
             raise AgentPluginError(f"server declaration '{name}' must be an object")
-        # A key added by a newer Hermes must not make the package uninstallable here: the older
+        # A key added by a newer Moor must not make the package uninstallable here: the older
         # release ignores it with a diagnostic, like unknown top-level fields. A key whose absence
-        # would be unsafe needs the catalog entry's requires_hermes, not a hard failure on every release:
+        # would be unsafe needs the catalog entry's requires_moor, not a hard failure on every release:
         # plugin.json has no version floor, and install/update by catalog name enforce the entry's
         # (plugins_cmd_catalog.refuse_incompatible_catalog_entry / repin_catalog_plugin).
         unknown = set(raw) - _SERVER_DECLARATION_KEYS
         if unknown:
             if diagnostics is not None:
                 diagnostics.append(AgentPluginDiagnostic(
-                    f"server:{name}", f"ignored unknown keys {sorted(unknown)} (needs a newer Hermes)"))
+                    f"server:{name}", f"ignored unknown keys {sorted(unknown)} (needs a newer Moor)"))
             raw = {key: value for key, value in raw.items() if key not in unknown}
             if not raw:
                 continue
@@ -144,14 +144,14 @@ def _server_declarations(
 
 
 def _server_trust(manifest: Mapping[str, Any], mcp_servers: Mapping[str, dict[str, Any]]) -> dict[str, str]:
-    """Servers the package asks Hermes to gate: ``extensions.com.nousresearch.hermes.servers.<name>.trust``.
+    """Servers the package asks Moor to gate: ``extensions.com.moorinc.moor.servers.<name>.trust``.
 
     The package may only narrow access. ``untrusted`` makes every write-capable call to that server
     ask the user first (the native ``trust: untrusted`` gate); ``full`` is the default and so changes
     nothing. A package can never widen a server the user configured: a ``config.yaml`` server with
     the same name replaces the package's entry, trust included.
     """
-    raw_servers = manifest.get("extensions", {}).get(_HERMES_EXTENSION, {}).get("servers", {})
+    raw_servers = manifest.get("extensions", {}).get(_MOOR_EXTENSION, {}).get("servers", {})
     trust: dict[str, str] = {}
     for name, raw in (raw_servers.items() if isinstance(raw_servers, dict) else ()):
         if not isinstance(raw, dict) or "trust" not in raw or name not in mcp_servers:
@@ -165,8 +165,8 @@ def _server_trust(manifest: Mapping[str, Any], mcp_servers: Mapping[str, dict[st
 
 
 def _server_timeouts(manifest: Mapping[str, Any], mcp_servers: Mapping[str, dict[str, Any]]) -> dict[str, float]:
-    """Translate optional Hermes call deadlines without changing other servers' defaults."""
-    raw_servers = manifest.get("extensions", {}).get(_HERMES_EXTENSION, {}).get("servers", {})
+    """Translate optional Moor call deadlines without changing other servers' defaults."""
+    raw_servers = manifest.get("extensions", {}).get(_MOOR_EXTENSION, {}).get("servers", {})
     timeouts: dict[str, float] = {}
     for name, raw in (raw_servers.items() if isinstance(raw_servers, dict) else ()):
         if not isinstance(raw, dict) or "timeout" not in raw or name not in mcp_servers:
@@ -183,7 +183,7 @@ def _server_costs(manifest: Mapping[str, Any], mcp_servers: Mapping[str, dict[st
     keys (``tools.mcp_tool_costs``). A malformed table disables the package: a budget the author declared must
     never be dropped while the server still spends."""
     from tools.mcp_tool_costs import parse_cost_policy
-    raw_servers = manifest.get("extensions", {}).get(_HERMES_EXTENSION, {}).get("servers", {})
+    raw_servers = manifest.get("extensions", {}).get(_MOOR_EXTENSION, {}).get("servers", {})
     translated: dict[str, dict[str, Any]] = {}
     for name, raw in (raw_servers.items() if isinstance(raw_servers, dict) else ()):
         if not isinstance(raw, dict) or name not in mcp_servers:
@@ -520,19 +520,19 @@ def load_agent_plugin(plugin_root: Path, data_root: Path) -> AgentPluginPackage:
     )
 
 
-def manifest_hermes_extension(manifest: Any) -> dict:
-    """``extensions.com.nousresearch.hermes`` of a parsed ``plugin.json`` (Agent Plugins v1 forbids
-    unknown top-level fields, so Hermes-specific fields such as ``config_keys`` live here), else ``{}``."""
+def manifest_moor_extension(manifest: Any) -> dict:
+    """``extensions.com.moorinc.moor`` of a parsed ``plugin.json`` (Agent Plugins v1 forbids
+    unknown top-level fields, so moor-specific fields such as ``config_keys`` live here), else ``{}``."""
     extensions = manifest.get("extensions") if isinstance(manifest, dict) else None
-    hermes = extensions.get(_HERMES_EXTENSION) if isinstance(extensions, dict) else None
-    return hermes if isinstance(hermes, dict) else {}
+    moor = extensions.get(_MOOR_EXTENSION) if isinstance(extensions, dict) else None
+    return moor if isinstance(moor, dict) else {}
 
 
 def manifest_config_schema(manifest: Any) -> Any:
-    """Raw ``extensions.com.nousresearch.hermes.config_schema`` of a parsed ``plugin.json``, else
+    """Raw ``extensions.com.moorinc.moor.config_schema`` of a parsed ``plugin.json``, else
     ``None``. Unvalidated: the settings form filters it, the loader and ``plugins validate`` report
     what is malformed."""
-    return manifest_hermes_extension(manifest).get("config_schema")
+    return manifest_moor_extension(manifest).get("config_schema")
 
 
 def read_agent_plugin_manifest(plugin_root: Path) -> tuple[dict, tuple[AgentPluginDiagnostic, ...]]:

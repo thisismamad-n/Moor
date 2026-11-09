@@ -25,8 +25,8 @@ class SkinConfig:
     branding: dict[str, str] = field(default_factory=dict)
     tool_prefix: str = "┊"
     tool_emojis: dict[str, str] = field(default_factory=dict)  # per-tool emoji overrides
-    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces HERMES_AGENT_LOGO)
-    banner_hero: str = ""    # Rich-markup hero art (replaces HERMES_CADUCEUS)
+    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces MOOR_AGENT_LOGO)
+    banner_hero: str = ""    # Rich-markup hero art (replaces MOOR_CADUCEUS)
     custom_css: str = ""     # Raw CSS injected as a <style> tag on the desktop GUI (32 KiB cap)
 
     def get_color(self, key: str, fallback: str = "") -> str:
@@ -56,9 +56,9 @@ def _wings(*glyphs) -> list[list[str]]:
             for g in glyphs]
 
 
-# Branding shared by every Hermes-named built-in (mono/daylight override help_header).
-_HERMES_BRANDING: dict[str, str] = _branding(
-    "Hermes", "☤", "Goodbye! ☤", prompt="❯", help_header="(^_^)? Available Commands")
+# Branding shared by every moor-named built-in (mono/daylight override help_header).
+_MOOR_BRANDING: dict[str, str] = _branding(
+    "Moor", "⬡", "Session terminated.", prompt="❯", help_header="[?] Available Commands")
 
 _BUILTIN_SKINS: dict[str, dict[str, Any]] = {
     "default": {

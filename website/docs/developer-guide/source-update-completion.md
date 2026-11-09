@@ -40,7 +40,7 @@ Verification publishes the final receipt.
 
 ## After the commit point nothing fails the update
 
-Once the tree has moved, `hermes update` exits 0 unless the code itself was rolled back.
+Once the tree has moved, `moor update` exits 0 unless the code itself was rolled back.
 Every completion step is independent: a failed launcher publish, product build (each of
 TUI/web/desktop is attempted even when another failed), config migration,
 bytecode sweep, gateway restart/verification, Windows resume or retired-channel adoption
@@ -50,7 +50,7 @@ receipt's `outcome` stays `"success"`. The step's own obligation stays armed:
 the host fleet-restart obligation for gateways (the CLI startup warning keeps naming it; an
 owed restart records the pre-update gateways on the obligation, so a gateway that died at boot
 stays owed until it serves the checkout instead of being settled by the gateway-less discharge),
-the unstamped bytecode fingerprint for the sweep. The next launch or `hermes update` —
+the unstamped bytecode fingerprint for the sweep. The next launch or `moor update` —
 including the "Already up to date" path, which runs the same completion — retries it. A host
 stamped "restarted" for this commit whose fleet is still off the checkout restarts again
 instead of dead-ending. Exit 2 (refused / concurrent) and exit 1 (nothing committed, or
@@ -71,8 +71,8 @@ The receipt is durable while the run is open: `begin_update_receipt` writes it a
 boundary refreshes it, so a killed update leaves its own record. The next update marks a
 `running` record whose processes are gone `interrupted` (naming its last stage) and reports
 it. Receipts and the `update.log` tee resolve to the root home
-(`hermes_constants.get_default_hermes_root()`), never a sticky profile's; so do their readers
-(`hermes logs update`, the debug bundle, the dashboard's update status, pm's sync receipts).
+(`moor_constants.get_default_moor_root()`), never a sticky profile's; so do their readers
+(`moor logs update`, the debug bundle, the dashboard's update status, pm's sync receipts).
 
 The completion bootstrap's dependency preparation (`ensure_tools_for_sync`, `pm.sync_venv`) also
 runs after the tree moved: its failure is a `dependencies` follow-up ("dependencies not installed
@@ -118,22 +118,22 @@ writing without exclusion. An updater that already imported healthy code can
 still hold and write the checkout even when its on-disk modules are damaged.
 Wait for any running update to finish.
 
-The repair code lives in the tree a killed move tears (`hermes_bootstrap.py`,
-`hermes_cli/__init__.py`, `_early_recovery.py`, `update_lock.py`,
+The repair code lives in the tree a killed move tears (`moor_bootstrap.py`,
+`moor_cli/__init__.py`, `_early_recovery.py`, `update_lock.py`,
 `update_custody.py`). Before git writes, every tree move publishes those
 recovery/lock/custody modules, as committed at the move's starting commit, to
-`<git dir>/hermes-update-recovery/<pre>/`, outside the working tree and keyed
+`<git dir>/moor-update-recovery/<pre>/`, outside the working tree and keyed
 to the marker's `pre` (a full commit id, nothing else), with a `MANIFEST` of
 each file's blob id; files and directory are fsynced before the rename. When
 the checkout's own import fails while the marker exists, the minted launcher
-(`.hermes/bin/hermes`) runs that published copy only if every file hashes to
+(`.moor/bin/moor`) runs that published copy only if every file hashes to
 its manifest id. A missing, torn or foreign copy (or none, from an older
 updater) is rebuilt first from git's objects at `pre` (`--no-replace-objects`,
 the recorded git or an absolute `PATH` entry, never the current directory) and
 verified the same way. Then: stdlib plus the copy only, the same restore claim
 and checkout lock (a live writer gets `Not repairing the checkout now` and exit
 1, no traceback), then a relaunch from the restored tree. Limits: other entry
-points (`python -m hermes_cli.main`, the `hermes-agent` hook) have no such
+points (`python -m moor_cli.main`, the `moor-agent` hook) have no such
 fallback; a launcher minted before this fallback existed has none, so a kill
 during the first update onto this code (run under the old launcher) is not
 covered; a `pre` whose tree lacks the checkout lock or custody runner is not
@@ -150,7 +150,7 @@ Intended differences from the pre-transactional updater, for release notes:
 - The commit point arms the completion tail, the fleet restart and the marker
   before git writes. If any of them cannot be made durable, the update stops with
   the checkout unchanged: moving without them is the "tail never runs" state.
-- Startup files (the launcher and `hermes_bootstrap` import closure) are
+- Startup files (the launcher and `moor_bootstrap` import closure) are
   compiled at the target commit before the move, by an interpreter the target's
   `requires-python` admits (`uv python find`, then `python3.N`). With none
   installed the refusal names the Python to install. The preflight is one
@@ -191,17 +191,17 @@ or user state is touched by this implementation's test runs.
 
 ## Crash-cell matrix
 
-Each cell kills a real `hermes update` (or the Desktop hand-off script) at one point
-of the update, then asserts what the user is owed: the next `hermes` launch is
+Each cell kills a real `moor update` (or the Desktop hand-off script) at one point
+of the update, then asserts what the user is owed: the next `moor` launch is
 runnable, right after that launch the checkout is exactly the pre-update commit or
 the target (HEAD plus every tracked byte: `git status` clean and `git diff --quiet
 HEAD`; each target edits modules every launch imports), and nothing the dead update
-left (a git lock, `.hermes-update-in-progress`) blocks the next update.
+left (a git lock, `.moor-update-in-progress`) blocks the next update.
 A cell whose fix is an open PR wraps only its final assertions in
 `known_failure` (`tests/e2e/core/_pending_fixes.py`), after every other assertion of
 the cell: it XFAILs on exactly that gap's message, fails on anything else, and passes
 once the fix lands, whichever merges first. An acceptance run of an integrated batch
-refuses that allowance: `HERMES_E2E_STRICT_ACCEPTANCE=<owner>` (the `strict_acceptance`
+refuses that allowance: `MOOR_E2E_STRICT_ACCEPTANCE=<owner>` (the `strict_acceptance`
 dispatch input of `ci.yaml` and `windows-install-update-e2e.yml`, e.g.
 `gh workflow run windows-install-update-e2e.yml --ref <branch> -f strict_acceptance=upd-txn`)
 turns every gap whose reason starts with `<owner>:` into a failure (`1`: every gap). Kill points are observed states (a git child in the process tree by its argv, git held
@@ -210,10 +210,10 @@ inside its checkout by a filter with `index.lock` present, HEAD read from the re
 | Cell | Kill point | Test | Fixing lane |
 |---|---|---|---|
 | Windows `mid_fetch` | `taskkill /T /F` while the update's `git fetch` child runs | `tests/e2e/core/windows_update/test_crash_cells.py::test_update_killed_mid_fetch_leaves_a_runnable_install` | green |
-| Windows `mid_git` | `taskkill /T /F` inside the fast-forward's checkout: a smudge filter the harness sets in the install's `.git/config` + `.git/info/attributes` holds `git merge` while it writes `hermes_constants.py` (index.lock held, two files already at the target, that one unlinked) | `tests/e2e/core/windows_update/test_crash_cells.py::test_update_killed_mid_git_leaves_a_runnable_install` | #132361 (stale `.git/index.lock`; launch-time interrupted-pull repair ran a bare `git` a machine with only the installer's Git does not have).; the launcher imported `hermes_constants` before `hermes_bootstrap` ran the repair, so the unlinked module killed every launch first: launchers now reach the repair before any other checkout module. Runs last in the journey |
+| Windows `mid_git` | `taskkill /T /F` inside the fast-forward's checkout: a smudge filter the harness sets in the install's `.git/config` + `.git/info/attributes` holds `git merge` while it writes `moor_constants.py` (index.lock held, two files already at the target, that one unlinked) | `tests/e2e/core/windows_update/test_crash_cells.py::test_update_killed_mid_git_leaves_a_runnable_install` | #132361 (stale `.git/index.lock`; launch-time interrupted-pull repair ran a bare `git` a machine with only the installer's Git does not have).; the launcher imported `moor_constants` before `moor_bootstrap` ran the repair, so the unlinked module killed every launch first: launchers now reach the repair before any other checkout module. Runs last in the journey |
 | Windows `tree_moved` | right after the checkout reached the target, before the update finished | `tests/e2e/core/windows_update/test_crash_cells.py::test_update_killed_after_the_tree_moved_leaves_a_runnable_install` | green on main |
-| Windows `desktop_handoff` | `scripts/desktop-update/windows.ps1` and its whole tree while its `hermes update` child runs | `tests/e2e/core/windows_update/test_crash_cells.py::test_desktop_handoff_killed_mid_run_leaves_a_runnable_install` | green on main |
-| Windows `orphaned_update` | only `windows.ps1` (no `/T`); its `hermes update` keeps running and must finish with the marker LIVE until it exits, then gone | `tests/e2e/core/windows_update/test_crash_cells.py::test_desktop_handoff_script_killed_alone_keeps_the_marker_live_until_its_update_ends` | #132354 + #132365 (line-4 delegate) |
+| Windows `desktop_handoff` | `scripts/desktop-update/windows.ps1` and its whole tree while its `moor update` child runs | `tests/e2e/core/windows_update/test_crash_cells.py::test_desktop_handoff_killed_mid_run_leaves_a_runnable_install` | green on main |
+| Windows `orphaned_update` | only `windows.ps1` (no `/T`); its `moor update` keeps running and must finish with the marker LIVE until it exits, then gone | `tests/e2e/core/windows_update/test_crash_cells.py::test_desktop_handoff_script_killed_alone_keeps_the_marker_live_until_its_update_ends` | #132354 + #132365 (line-4 delegate) |
 | POSIX commit points | per lane | `tests/e2e/core/upgrade/<area>/test_hostile_<lane>.py` | the lane that owns the file |
 
 The Windows cells run in the Windows install + update journey

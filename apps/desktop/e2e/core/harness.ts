@@ -78,9 +78,9 @@ export function createCoreSandbox(label: string): CoreSandbox {
     cleanup: () => {
       // Attach-mode Desktop never stops the gateway it dialled, so without this
       // every spec left its sandbox `gateway run` behind (~20 per suite run).
-      stopSandboxGatewayDaemons(root, hermesHome)
+      stopSandboxGatewayDaemons(root, moorHome)
 
-      if (!process.env.HERMES_E2E_CORE_KEEP) {
+      if (!process.env.MOOR_E2E_CORE_KEEP) {
         fs.rmSync(root, { recursive: true, force: true })
       }
     }
@@ -89,7 +89,7 @@ export function createCoreSandbox(label: string): CoreSandbox {
 
 /**
  * Sandbox config: only the scripted provider. The approval prompts under test
- * come from Hermes's own detector.
+ * come from Moor's own detector.
  */
 export function providerConfigYaml(providerUrl: string, extra = '', approvals: 'manual' | 'off' = 'off'): string {
   return `model:
@@ -150,13 +150,13 @@ export function coreAppEnv(sandbox: CoreSandbox, extra: Record<string, string> =
     MOOR_DESKTOP_IGNORE_EXISTING: '1',
     MOOR_DESKTOP_MOOR_ROOT: REPO_ROOT,
     // setup-pm exports an install-scoped interpreter, not a checkout .venv.
-    // The Desktop override must be explicit because the sandbox strips HERMES_*.
-    ...(process.env.HERMES_E2E_PYTHON ? { HERMES_DESKTOP_PYTHON: process.env.HERMES_E2E_PYTHON } : {}),
-    HERMES_DESKTOP_APP_NAME: `HermesCoreE2E-${path.basename(sandbox.root)}`,
-    HERMES_DESKTOP_SKIP_QUIT_CONFIRM: '1',
-    // Never repoint the user's OS hermes:// handler (HKCU on Windows) at a test checkout.
-    HERMES_DESKTOP_SKIP_PROTOCOL_REGISTRATION: '1',
-    HERMES_DESKTOP_CDP_PORT: 'off',
+    // The Desktop override must be explicit because the sandbox strips MOOR_*.
+    ...(process.env.MOOR_E2E_PYTHON ? { MOOR_DESKTOP_PYTHON: process.env.MOOR_E2E_PYTHON } : {}),
+    MOOR_DESKTOP_APP_NAME: `MoorCoreE2E-${path.basename(sandbox.root)}`,
+    MOOR_DESKTOP_SKIP_QUIT_CONFIRM: '1',
+    // Never repoint the user's OS moor:// handler (HKCU on Windows) at a test checkout.
+    MOOR_DESKTOP_SKIP_PROTOCOL_REGISTRATION: '1',
+    MOOR_DESKTOP_CDP_PORT: 'off',
     // A partial-clone (blob:none) dev checkout turns some backend git read into
     // a lazy `git fetch origin` over the network, which outlived quit by >60 s
     // (reported as a finding). CI checkouts are not partial; keep dev runs
@@ -205,9 +205,9 @@ export function appLogTail(app: ElectronApplication, n = 60): string {
 
 // ─── Process census ─────────────────────────────────────────────────────
 
-/** Every live process carrying this sandbox's HERMES_HOME (orphans included); see process-census.ts. */
+/** Every live process carrying this sandbox's MOOR_HOME (orphans included); see process-census.ts. */
 export function sandboxProcesses(sandbox: CoreSandbox): ProcInfo[] {
-  return sandboxProcessesOf(sandbox.hermesHome)
+  return sandboxProcessesOf(sandbox.moorHome)
 }
 
 /**
@@ -222,8 +222,8 @@ export function sandboxProcesses(sandbox: CoreSandbox): ProcInfo[] {
  * dead backend is reparented away and still counted.
  */
 export function backendProcesses(sandbox: CoreSandbox): ProcInfo[] {
-  // The local backend is the gateway `hermes gateway ensure` attached to or started
-  // (`hermes_cli.main [--profile X] gateway run --quiet`); `serve` covers a pool backend.
+  // The local backend is the gateway `moor gateway ensure` attached to or started
+  // (`moor_cli.main [--profile X] gateway run --quiet`); `serve` covers a pool backend.
   const serve = sandboxProcesses(sandbox).filter(
     proc => (/ serve( |$)/.test(proc.cmdline) || / gateway run( |$)/.test(proc.cmdline))
       && !/electron/i.test(proc.cmdline.split(' ')[0])
@@ -236,7 +236,7 @@ export function backendProcesses(sandbox: CoreSandbox): ProcInfo[] {
 
 
 /**
- * `hermes gateway stop` for the sandbox profile, run with the backend's own
+ * `moor gateway stop` for the sandbox profile, run with the backend's own
  * interpreter (argv[0] of the live `gateway run`). Attach-mode Desktop never
  * owns the gateway, so this is how a test proves teardown works when asked.
  * `interrupt` passes `--yes`: stop refuses while a turn is live unless told to
@@ -250,7 +250,7 @@ export function stopSandboxGateway(
   // argv[0], unquoted (a Windows command line quotes a path with spaces).
   const python = /^"([^"]+)"|^(\S+)/.exec(backend?.cmdline ?? '')?.slice(1).find(Boolean) || 'python3'
 
-  const args = ['-m', 'hermes_cli.main', 'gateway', 'stop', ...(interrupt ? ['--yes'] : [])]
+  const args = ['-m', 'moor_cli.main', 'gateway', 'stop', ...(interrupt ? ['--yes'] : [])]
 
   const result = spawnSync(python, args, {
     cwd: REPO_ROOT,

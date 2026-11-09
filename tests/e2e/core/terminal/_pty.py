@@ -104,15 +104,15 @@ class PtyMoor:
 
     def __init__(self, root: Path, argv_tail: list[str], llm: FakeLLMServer | None, *, rows: int, cols: int,
                  extra_config: str = "") -> None:
-        """``llm=None``: the caller already wrote ``root/home/.hermes`` (e.g. a native-runtime home)."""
+        """``llm=None``: the caller already wrote ``root/home/.moor`` (e.g. a native-runtime home)."""
         self.root = root
         self.home = root / "home"
-        self.hermes_home = self.home / ".hermes"
-        operator = (_operator_home() / ".hermes").resolve()
-        assert operator not in (self.hermes_home.resolve(), *self.hermes_home.resolve().parents), (
-            f"sandbox {self.hermes_home} sits inside the operator's Hermes home")
+        self.moor_home = self.home / ".moor"
+        operator = (_operator_home() / ".moor").resolve()
+        assert operator not in (self.moor_home.resolve(), *self.moor_home.resolve().parents), (
+            f"sandbox {self.moor_home} sits inside the operator's Moor home")
         if llm is not None:
-            write_hermes_home(self.hermes_home, llm.base_url, extra_config=extra_config)
+            write_moor_home(self.moor_home, llm.base_url, extra_config=extra_config)
         self.llm = llm
         self.screen = Screen(rows, cols)
         self.raw = bytearray()
@@ -285,7 +285,7 @@ class PtyMoor:
     def leftover_processes(self, timeout: float = 15.0) -> list[str]:
         """Processes still alive in the child's session, or seen as its descendants, after exit.
 
-        The profile's ``gateway run`` is not a leftover: ``hermes chat`` attaches to it and it
+        The profile's ``gateway run`` is not a leftover: ``moor chat`` attaches to it and it
         keeps serving (cron, messaging, the next client) after the client exits; ``close()`` still
         tears it down with the rest of this harness's tree."""
         from gateway.status import looks_like_gateway_command_line

@@ -395,9 +395,9 @@ async def _exec_buzz(
     input_text: Optional[str] = None, timeout: float = _CLI_TIMEOUT,
 ) -> tuple[int, str, str]:
     """Run the buzz CLI (argv, never a shell) -> ``(rc, stdout, stderr)``. Key travels via env only."""
-    from tools.environments.local import hermes_subprocess_env
-    env = hermes_subprocess_env()  # a third-party CLI: its own key only, never Hermes' credentials
-    env["HOME"] = env["HERMES_REAL_HOME"]  # its own config and credentials file live under the user's HOME
+    from tools.environments.local import moor_subprocess_env
+    env = moor_subprocess_env()  # a third-party CLI: its own key only, never Moor' credentials
+    env["HOME"] = env["MOOR_REAL_HOME"]  # its own config and credentials file live under the user's HOME
     env["BUZZ_RELAY_URL"] = relay_url
     env["BUZZ_PRIVATE_KEY"] = private_key
     env.pop("BUZZ_AUTH_TAG", None)
@@ -1768,9 +1768,9 @@ def _profile_buzz_extra() -> dict:
         return {}
     try:
         from gateway.config_loader import platform_section
-        from hermes_constants import get_hermes_home
-        from hermes_cli.config import read_user_config_raw
-        cfg = read_user_config_raw(Path(get_hermes_home()) / "config.yaml")
+        from moor_constants import get_moor_home
+        from moor_cli.config import read_user_config_raw
+        cfg = read_user_config_raw(Path(get_moor_home()) / "config.yaml")
     except Exception:
         return {}
     if not isinstance(cfg, dict):

@@ -172,7 +172,7 @@ def test_profile_switch_closes_previous_profile_keepalive_pty(pty_client, monkey
     Regression for #125287: the profile switch spawned a new keep-alive PTY under
     ``token\\0profile`` and left the previous profile's TUI alive (detached) for the
     registry TTL, still holding that chat's active-session lease, so returning to the
-    chat was refused with "open in another Hermes window".
+    chat was refused with "open in another Moor window".
     """
     import time
 
@@ -197,7 +197,7 @@ def test_profile_switch_closes_previous_profile_keepalive_pty(pty_client, monkey
 
     monkeypatch.setattr(_web_server_chat.PtyBridge, "spawn", _IdleBridge.spawn)
     monkeypatch.setattr(
-        _web_server_chat, "_resolve_chat_argv", lambda **kw: (["fake-hermes-tui"], None, None)
+        _web_server_chat, "_resolve_chat_argv", lambda **kw: (["fake-moor-tui"], None, None)
     )
     attach = "attach-125287"
     try:

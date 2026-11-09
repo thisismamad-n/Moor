@@ -116,7 +116,7 @@ def _load_dashboard_section() -> dict:
 
 def resolve_public_url(state=None) -> str:
     """Operator-declared dashboard public URL, or ``""`` (reconstruct from request). Precedence:
-    ``HERMES_DASHBOARD_PUBLIC_URL`` env (blank counts as unset so a provisioned-but-blank secret
+    ``MOOR_DASHBOARD_PUBLIC_URL`` env (blank counts as unset so a provisioned-but-blank secret
     cannot shadow config.yaml), then ``dashboard.public_url``; malformed warns and falls through.
 
     *state* is the serving app's state. A listener that declares its own public URL there
@@ -125,7 +125,7 @@ def resolve_public_url(state=None) -> str:
     own = getattr(state, "listener_public_url", None)
     if own is not None:
         return own
-    env_raw = os.environ.get("HERMES_DASHBOARD_PUBLIC_URL", "")
+    env_raw = os.environ.get("MOOR_DASHBOARD_PUBLIC_URL", "")
     env_clean = _normalise_public_url(env_raw)
     if env_clean:
         return env_clean

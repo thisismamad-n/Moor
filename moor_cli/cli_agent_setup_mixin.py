@@ -13,7 +13,7 @@ from utils import base_url_host_matches
 
 
 def _single_query_clarify_callback(questions: list) -> dict:
-    """Headless clarify answer for ``hermes chat -q``.
+    """Headless clarify answer for ``moor chat -q``.
 
     A -q turn never builds the prompt_toolkit app, so the interactive clarify modal
     can never be painted or answered — the CLI callback would poll until
@@ -126,9 +126,9 @@ def _gateway_open(session_db, session_id):
     subscribes it and names its receipt owner (:func:`_gateway_owned_id`). ``refusal`` is the reason
     code when the owner answered that this viewer may not open it (``RESUME_GONE``), else ``None``:
     off the gateway store, a transient refusal, or no answer, the caller proceeds on its local reads."""
-    from hermes_cli.gateway_client import GatewayRPCError
-    from hermes_cli.gateway_connection import RESUME_GONE
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from moor_cli.gateway_client import GatewayRPCError
+    from moor_cli.gateway_connection import RESUME_GONE
+    from moor_cli.gateway_session_store import GatewaySessionStore
     if not isinstance(session_db, GatewaySessionStore):
         return session_id, None
     try:
@@ -260,7 +260,7 @@ class CLIAgentSetupMixin:
         """Re-resolve provider credentials before agent use so key rotation / token
         refresh are picked up without restarting the CLI. False on auth failure."""
         from cli import ChatConsole, logger
-        from hermes_cli.runtime_provider import (
+        from moor_cli.runtime_provider import (
             deferred_token_mint, format_runtime_provider_error, resolve_runtime_provider)
         _primary_exc = None
         runtime = None
@@ -273,7 +273,7 @@ class CLIAgentSetupMixin:
             try:
                 # target_model: the ladder's model-keyed rungs (Zen/Go api_mode, per-model
                 # api_mode) must see the model this CLI will actually send, not config's `default`,
-                # or `hermes -m mimo-v2.5 --provider opencode-go` resolves an api_mode/base_url the
+                # or `moor -m mimo-v2.5 --provider opencode-go` resolves an api_mode/base_url the
                 # sent model cannot use (#112600).
                 runtime = resolve_runtime_provider(
                     requested=self.requested_provider, explicit_api_key=self._explicit_api_key,
@@ -285,7 +285,7 @@ class CLIAgentSetupMixin:
                 if runtime is not None:
                     _primary_exc = None
         if runtime is None:
-            from hermes_cli.auth import AuthError, is_rate_limited_auth_error
+            from moor_cli.auth import AuthError, is_rate_limited_auth_error
             self._credentials_rate_limited = bool(_primary_exc) and is_rate_limited_auth_error(_primary_exc)
             # Only an explicit re-authentication requirement is terminal. Unknown
             # resolver/network failures must not acquire the sticky Kanban block.
@@ -429,7 +429,7 @@ class CLIAgentSetupMixin:
         """``(ready, error)``: *error* is the exception that stopped resolution — raised, or
         swallowed by the "auto" ladder and stamped on a keyless fallback — ``None`` when a provider
         resolved (usable or merely keyless). Never prints or mutates CLI state."""
-        from hermes_cli.runtime_provider import deferred_token_mint, resolve_runtime_provider
+        from moor_cli.runtime_provider import deferred_token_mint, resolve_runtime_provider
         try:
             with deferred_token_mint():  # a readiness probe never needs a live token
                 runtime = resolve_runtime_provider(
@@ -496,8 +496,8 @@ class CLIAgentSetupMixin:
             _cprint(f"  {t('cli.startup.first_run_skipped')}")
             return False
         try:
-            from hermes_cli.main import select_provider_and_model
-            from hermes_cli.observability.shared_metrics_setup import provider_setup_surface
+            from moor_cli.main import select_provider_and_model
+            from moor_cli.observability.shared_metrics_setup import provider_setup_surface
             with provider_setup_surface("cli_setup"):
                 select_provider_and_model()
         except (KeyboardInterrupt, EOFError, SystemExit):
@@ -539,7 +539,7 @@ class CLIAgentSetupMixin:
         provider. With a static `/fast` tier (fast / ultrafast) attach request_overrides;
         auto/cold tiers are applied per request by agent.fast_mode instead."""
         from agent.fast_mode import STATIC_TIERS
-        from hermes_cli.models import resolve_fast_mode_overrides
+        from moor_cli.models import resolve_fast_mode_overrides
         runtime = _current_runtime(self)
         route = {"model": self.model, "runtime": runtime, "signature": _route_signature(self.model, runtime)}
         overrides = None
@@ -647,7 +647,7 @@ class CLIAgentSetupMixin:
         """Build the agent on first use; when resuming, restore history from SQLite.
         Returns True on success."""
         from cli import ChatConsole, _cprint, logger
-        from hermes_cli.gateway_agent import GatewayAgent as AIAgent  # the gateway runs the turn
+        from moor_cli.gateway_agent import GatewayAgent as AIAgent  # the gateway runs the turn
         if self.agent is not None:
             return True
 
@@ -659,17 +659,17 @@ class CLIAgentSetupMixin:
         if not self._ensure_runtime_credentials():
             return False
         # No MCP discovery here: the gateway session that runs the turn owns its MCP servers.
-        from hermes_cli.cli_chat_error_copy import agent_init_failure_message
+        from moor_cli.cli_chat_error_copy import agent_init_failure_message
         if self._session_db is None:
             try:
-                from hermes_cli.gateway_session_store import session_store
+                from moor_cli.gateway_session_store import session_store
                 self._session_db = session_store()
             except Exception as e:
                 logger.warning("SQLite session store not available — session will NOT be indexed: %s", e)
         try:
             self._ensure_gateway_session()
         except Exception as e:  # health: allow BLE001 -- any session.create/resume failure is main's agent-init failure copy, never a traceback
-            from hermes_cli.gateway_chat import exit_on_resume_refusal
+            from moor_cli.gateway_chat import exit_on_resume_refusal
             exit_on_resume_refusal(e)  # -q: a changed flag on --resume is interactive startup's `Error:` + exit 2
             ChatConsole().print(f"[bold red]{_escape(agent_init_failure_message(e))}[/]")
             return False
@@ -759,7 +759,7 @@ class CLIAgentSetupMixin:
             # subagent/background completion notice never splits the reply mid-paragraph.
             self.agent._print_fn = self._agent_status_print
             self.agent._finite = single_query_mode  # -q/-Q: a finite gateway admission (headless clarify)
-            from hermes_cli.gateway_tools import bind
+            from moor_cli.gateway_tools import bind
             bind(self.agent)  # main's dock / status bar / /stop read this session's gateway processes
             # Hydrate credits notices at session OPEN (parity with the TUI) so a depletion
             # warning shows before the first message. Idempotent + fail-open in the helper.
@@ -839,11 +839,11 @@ class CLIAgentSetupMixin:
         # A Kanban worker transcript resumes only through a dispatcher-owned run (#68779) —
         # an ordinary CLI resume would be a live writer the board cannot observe. Refuse AND
         # fall back to a fresh session id, so this process never appends to the worker row.
-        from hermes_cli.kanban_resume_guard import kanban_resume_refusal
+        from moor_cli.kanban_resume_guard import kanban_resume_refusal
         if (kanban_refusal := kanban_resume_refusal(self._session_db, self._resume_read_id)):
             self._console_print(f"[bold red]{_escape(kanban_refusal)}[/]")
             self._resumed = False
-            from hermes_state_ids import new_session_id
+            from moor_state_ids import new_session_id
             self.session_id = new_session_id(self.session_start)
             return False
         resume_limit_error = self._resume_history_limit_error()
@@ -899,7 +899,7 @@ class CLIAgentSetupMixin:
 
         # role -> (label, label style, body style, continuation indent)
         you_label = f"  {t('cli.resume.label_you')} "
-        assistant_label = f"  {t('cli.resume.label_assistant', agent_name='Hermes')} "
+        assistant_label = f"  {t('cli.resume.label_assistant', agent_name='Moor')} "
         role_styles = {
             "user": (you_label, f"dim bold {_session_label_c}", "dim", " " * len(you_label)),
             "assistant": (assistant_label, f"dim bold {_assistant_label_c}", "dim", " " * len(assistant_label)),

@@ -116,9 +116,9 @@ def skill_lookup_path_error(name: str) -> Optional[str]:
 
 
 def load_env() -> dict[str, str]:
-    """Snapshot of HERMES_HOME/.env for the post-skill secret-capture diff (same tokenizer that
+    """Snapshot of MOOR_HOME/.env for the post-skill secret-capture diff (same tokenizer that
     installs the profile scope, so a captured value never differs from the served one). A frozen-policy
-    worker never opens the profile ``.env``: ``hermes_cli.config.load_env`` owns that short-circuit."""
+    worker never opens the profile ``.env``: ``moor_cli.config.load_env`` owns that short-circuit."""
     from agent.safe_worker_policy import worker_config_snapshot
 
     if worker_config_snapshot() is not None:
@@ -197,7 +197,7 @@ def _parse_tags(tags_value) -> list[str]:
 
 def _is_skill_disabled(*names: str, platform: str | None = None) -> bool:
     """Any of *names* disabled in config (one config load)? Platform precedence: explicit arg,
-    ``HERMES_PLATFORM``, session ``HERMES_SESSION_PLATFORM``. A globally-disabled skill stays disabled on every platform
+    ``MOOR_PLATFORM``, session ``MOOR_SESSION_PLATFORM``. A globally-disabled skill stays disabled on every platform
     (keep in sync with agent.skill_utils.get_disabled_skill_names)."""
     try:
         from moor_cli.config import load_config
@@ -649,7 +649,7 @@ def skill_view(
         rel = _owned_relative(skill_dir, skill_md, all_dirs)
         if _is_skill_disabled(resolved_name, rel) and (_is_skill_disabled(resolved_name) or any(
                 e["path"] == skill_md and e["load_name"] == rel for e in _skill_catalog(skip_disabled=True, include_hidden=True))):
-            return _fail(f"Skill '{resolved_name}' is disabled. Enable it with `hermes skills` or inspect the files directly on disk.")
+            return _fail(f"Skill '{resolved_name}' is disabled. Enable it with `moor skills` or inspect the files directly on disk.")
         if file_path and skill_dir:
             return _serve_skill_file(
                 skill_dir, file_path, name, list_available=True, mark_read=True,

@@ -19,7 +19,7 @@ import time
 from dataclasses import dataclass
 from dataclasses import field
 from agent.deadline import poll_until
-from hermes_cli.sqlite_util import add_column_if_missing as _add_column_if_missing
+from moor_cli.sqlite_util import add_column_if_missing as _add_column_if_missing
 from pathlib import Path
 from typing import Any
 from typing import Optional
@@ -669,7 +669,7 @@ def _refuse_dead_board_resurrection(path: Path, board: Optional[str]) -> None:
 
     ``board=None`` (or ``default``) is unaffected — except that a None board
     can still *resolve* through the current-board context (``--board`` scope,
-    ``HERMES_KANBAN_BOARD``, the ``current`` file) to a named board dir; an
+    ``MOOR_KANBAN_BOARD``, the ``current`` file) to a named board dir; an
     ``archived`` tombstone in that dir gets the same refusal. For any other
     slug whose DB file does not exist yet, opening it would mkdir the board
     directory and leave an empty DB-only stub — exactly how archived boards
@@ -709,7 +709,7 @@ def _refuse_dead_board_resurrection(path: Path, board: Optional[str]) -> None:
     if meta.get("archived"):
         raise ValueError(f"kanban board {slug!r} is archived; refusing to recreate its database")
     if not _kb.board_metadata_path(slug).exists():
-        raise ValueError(f"kanban board {slug!r} does not exist; create it with `hermes kanban boards create {slug}`")
+        raise ValueError(f"kanban board {slug!r} does not exist; create it with `moor kanban boards create {slug}`")
 
 
 def connect(db_path: Optional[Path] = None, *, board: Optional[str] = None) -> sqlite3.Connection:
@@ -1293,4 +1293,4 @@ def write_txn(conn: sqlite3.Connection, *, allow_nested: bool = False):
 
 # Late-bound origin namespace (see module docstring); imported LAST so this
 # module is fully populated before ``kanban_db`` imports from it.
-from hermes_cli import kanban_db as _kb
+from moor_cli import kanban_db as _kb

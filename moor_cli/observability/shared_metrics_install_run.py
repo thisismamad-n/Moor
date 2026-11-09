@@ -1,8 +1,8 @@
-"""hermes.install.run: fresh installs through scripts/install.sh and scripts/install.ps1.
+"""moor.install.run: fresh installs through scripts/install.sh and scripts/install.ps1.
 
 The installer runs before the user is asked about shared metrics and must never send anything, so a
 full-ladder run only leaves ONE small local receipt (closed tokens plus two epoch timestamps) under
-the profile's store dir. A later Hermes start that runs the process-exit reporter reads it:
+the profile's store dir. A later Moor start that runs the process-exit reporter reads it:
 
 - collection off: ``shared_metrics_process.begin_process`` (and every opt-out answer) deletes every
   receipt unreported, the same rule as parked update receipts;
@@ -53,7 +53,7 @@ def _epoch(value: Any) -> int | None:
 
 
 def install_run_fields(receipt: Any) -> dict[str, str] | None:
-    """hermes.install.run dims for one receipt, or None when anything is outside the contract."""
+    """moor.install.run dims for one receipt, or None when anything is outside the contract."""
     from . import shared_metrics_contract as contract
 
     if not isinstance(receipt, dict) or set(receipt) != _RECEIPT_KEYS:
@@ -107,7 +107,7 @@ def consented_day(home: Path) -> bool:
     sending off (it stays local) or a send consent window opened at or before today 00:00Z. The
     sender's ``CONSENT_GATE_SQL`` passes a day's package only when ``period_start >= opened_at``, so a
     row recorded on the opt-in day itself would sit in a package that is never sent."""
-    from hermes_cli.config import read_raw_config_readonly
+    from moor_cli.config import read_raw_config_readonly
 
     from .shared_metrics_send_config import resolve_send_config
 

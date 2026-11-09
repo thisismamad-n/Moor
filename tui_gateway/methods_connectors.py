@@ -195,11 +195,11 @@ _ACCOUNT_CREATES_GUEST = {"status": False, "connect": True}
 
 
 def _account_connector_list(rid):
-    from hermes_cli.free_tier_offer import note_connected_apps_seen
+    from moor_cli.free_tier_offer import note_connected_apps_seen
     from tools.connectors.managed import managed_client
-    from tools.managed_tool_gateway import read_nous_access_token
+    from tools.managed_tool_gateway import read_moor_access_token
 
-    rows = managed_client(creates_guest=False).list_connectors() if read_nous_access_token() else []
+    rows = managed_client(creates_guest=False).list_connectors() if read_moor_access_token() else []
     note_connected_apps_seen(rows)
     return _ok(rid, {"available": True, "connectors": _connector_rows(rows)})
 
@@ -298,7 +298,7 @@ def _account_home(request):
 def _desktop_page_vars():
     """Bind the session vars of a sessionless request from the desktop Connectors page. Only that
     page sends account-owned and account RPCs, so the surface comes from the request: the backend's
-    ``HERMES_DESKTOP`` is absent on a URL or cloud backend and would name the caller ``tui``."""
+    ``MOOR_DESKTOP`` is absent on a URL or cloud backend and would name the caller ``tui``."""
     from gateway.session_context import set_session_vars
 
     tokens = set_session_vars(source="desktop", profile=_current_profile_name(), cron_session="")

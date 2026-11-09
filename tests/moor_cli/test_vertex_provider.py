@@ -63,11 +63,11 @@ def _vertex_cli_shell(monkeypatch, tmp_path, *, loadable: bool):
     import types
 
     import agent.vertex_adapter as va
-    from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
+    from moor_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     mints: list = []
     sa = tmp_path / "sa.json"
     sa.write_text('{"project_id": "sa-proj"}')

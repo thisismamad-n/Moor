@@ -25,11 +25,11 @@ _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
-_profile_scope = late("_profile_scope", "hermes_cli.web_server_profiles")
-load_config = late("load_config", "hermes_cli.config")
-save_config = late("save_config", "hermes_cli.config")
-require_readable_config_before_write = late("require_readable_config_before_write", "hermes_cli.config")
+_config_profile_scope = late("_config_profile_scope", "moor_cli.web_server_profiles")
+_profile_scope = late("_profile_scope", "moor_cli.web_server_profiles")
+load_config = late("load_config", "moor_cli.config")
+save_config = late("save_config", "moor_cli.config")
+require_readable_config_before_write = late("require_readable_config_before_write", "moor_cli.config")
 
 
 _EMPTY_MODEL_INFO: dict = {
@@ -189,7 +189,7 @@ def get_recommended_default_model(provider: str = "", profile: Optional[str] = N
         try:
             # The tier, Portal URL and recommendation caches are all per profile home.
             with _config_profile_scope(profile):
-                return _nous_recommended_default()
+                return _moor_recommended_default()
         except HTTPException:
             raise  # an unknown ?profile= is the scope's 404, not an empty recommendation
         except Exception:
@@ -304,8 +304,8 @@ def _preset_dict(preset) -> dict:
 def set_moa_models(body: MoaConfigPayload, profile: Optional[str] = None):
     """Persist the Mixture-of-Agents provider/model slots."""
     with http_failure("PUT /api/model/moa failed", 500, detail="Failed to save MoA config"):
-        from hermes_cli import config as config_mod
-        from hermes_cli.moa_config import normalize_moa_config, validate_moa_payload
+        from moor_cli import config as config_mod
+        from moor_cli.moa_config import normalize_moa_config, validate_moa_payload
 
         # Serialize the full RMW with dashboard autosaves and with non-HTTP
         # save_config callers, which only hold the config module's reentrant lock.

@@ -70,11 +70,11 @@ def listeners():
 
 
 @pytest.fixture
-def nous_bearer(monkeypatch, tmp_path):
+def moor_bearer(monkeypatch, tmp_path):
     """Cloud credential path with a known bearer; no IdP configured."""
     for k in ("GATEWAY_RELAY_IDP_TOKEN_URL", "GATEWAY_RELAY_IDP_CLIENT_ID", "GATEWAY_RELAY_IDP_CLIENT_SECRET"):
         monkeypatch.delenv(k, raising=False)
-    monkeypatch.setenv("HERMES_CONFIG_INSTANCE_ID", INSTANCE)
+    monkeypatch.setenv("MOOR_CONFIG_INSTANCE_ID", INSTANCE)
     resolved: list[Path] = []
 
     def token(home):
@@ -120,13 +120,13 @@ def captured(monkeypatch):
     "https://plane.example/?next=https://evil.example",
     "https://",
 ])
-def test_bearer_refused_before_send_for_forbidden_plane_url(monkeypatch, tmp_path, nous_bearer, captured, url):
+def test_bearer_refused_before_send_for_forbidden_plane_url(monkeypatch, tmp_path, moor_bearer, captured, url):
     monkeypatch.setenv(client.URL_ENV, url)
     with pytest.raises(destination.CredentialDestinationError) as exc:
         client.request("GET", tmp_path, "default")
     assert exc.value.retryable is False
     assert captured == []          # nothing left the process
-    assert nous_bearer == []       # the bearer was never even resolved
+    assert moor_bearer == []       # the bearer was never even resolved
 
 
 @pytest.mark.parametrize("url, expect", [
@@ -136,7 +136,7 @@ def test_bearer_refused_before_send_for_forbidden_plane_url(monkeypatch, tmp_pat
     ("http://127.0.0.1:9", "http://127.0.0.1:9/v1/config/self?profile=default"),
     ("http://[::1]:9", "http://[::1]:9/v1/config/self?profile=default"),
 ])
-def test_bearer_sent_to_allowed_plane_origin(monkeypatch, tmp_path, nous_bearer, captured, url, expect):
+def test_bearer_sent_to_allowed_plane_origin(monkeypatch, tmp_path, moor_bearer, captured, url, expect):
     monkeypatch.setenv(client.URL_ENV, url)
     resp = client.request("GET", tmp_path, "default")
     assert resp.status == 200
@@ -145,7 +145,7 @@ def test_bearer_sent_to_allowed_plane_origin(monkeypatch, tmp_path, nous_bearer,
 
 
 @pytest.mark.parametrize("code", [301, 302, 303, 307, 308])
-def test_plane_redirect_is_not_followed_with_the_bearer(monkeypatch, tmp_path, nous_bearer, listeners, code):
+def test_plane_redirect_is_not_followed_with_the_bearer(monkeypatch, tmp_path, moor_bearer, listeners, code):
     """A real cross-origin redirect: the plane answers 3xx to another origin; the target never sees
     a request, let alone the bearer, and the refusal is not retried."""
     target = listeners()
@@ -163,13 +163,13 @@ def test_plane_redirect_is_not_followed_with_the_bearer(monkeypatch, tmp_path, n
 def test_boot_fails_closed_on_forbidden_plane_url_without_retry(monkeypatch, tmp_path):
     """Through the real backend: a forbidden destination is a configuration error, so boot fails
     closed at once (no retry sleeps) and nothing is sent."""
-    from hermes_cli.config_backend import ConfigBackendUnavailable
+    from moor_cli.config_backend import ConfigBackendUnavailable
     from plugins.config_backends import remote as remote_pkg
     from plugins.config_backends.remote import backend as backend_mod
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     with StubPlane() as plane:
         for k, v in remote_env(plane).items():
             monkeypatch.setenv(k, v)
@@ -251,13 +251,13 @@ def test_display_url_drops_user_info(url, shown):
 
 def test_refused_url_never_echoes_user_info(monkeypatch, tmp_path):
     """The boot error, describe() and the destination errors show the URL without its user info."""
-    from hermes_cli.config_backend import ConfigBackendUnavailable
+    from moor_cli.config_backend import ConfigBackendUnavailable
     from plugins.config_backends import remote as remote_pkg
     from plugins.config_backends.remote import backend as backend_mod
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setenv(client.URL_ENV, USERINFO_URL)
     monkeypatch.setenv(client.INSTANCE_ENV, INSTANCE)
     monkeypatch.setattr(backend_mod.time, "sleep", lambda s: None)
@@ -284,7 +284,7 @@ def test_provenance_never_echoes_user_info(monkeypatch, tmp_path):
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     with StubPlane() as plane:
         for k, v in remote_env(plane).items():
             monkeypatch.setenv(k, v)

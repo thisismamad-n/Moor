@@ -10,7 +10,7 @@ Regressions for #134889:
   only it enabled imported that copy here or handed it to its plugin host.
 
 Driven through the real app (native-ticket auth, the gates, the hot mount, the plugin's own router)
-against a temp HERMES_HOME. The daemon is a stand-in runner carrying a real ``TicketStore``; the
+against a temp MOOR_HOME. The daemon is a stand-in runner carrying a real ``TicketStore``; the
 plugin host, another process, is a recorder of what this process would ask it to run.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ from types import SimpleNamespace
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
-from hermes_cli import web_server
+from moor_cli import web_server
 
 _PLUGIN_API = '''
 from pathlib import Path
@@ -41,7 +41,7 @@ async def ping():
 @router.websocket("/events")
 async def events(ws: WebSocket):
     # The canonical WS credential check every dashboard plugin socket makes (kanban's too).
-    from hermes_cli.web_server_chat import _ws_auth_ok
+    from moor_cli.web_server_chat import _ws_auth_ok
     if not _ws_auth_ok(ws):
         await ws.close(code=1008)
         return
@@ -71,19 +71,19 @@ def listed(daemon):
 
 
 @pytest.fixture
-def daemon(_isolate_hermes_home, monkeypatch):
+def daemon(_isolate_moor_home, monkeypatch):
     """The dashboard app as a multiplexing gateway serves it: the launch home plus profile ``beta``."""
     from starlette.testclient import TestClient
 
     import tui_gateway.launch_profile_policy as launch_policy
     from agent.secret_scope import is_multiplex_active, set_multiplex_active
-    from hermes_cli import profiles
-    from hermes_cli.plugin_host import PluginHost
+    from moor_cli import profiles
+    from moor_cli.plugin_host import PluginHost
     from gateway.runtime_bootstrap import TicketStore
     from gateway.session_authorities import SessionAuthorities
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    launch = get_hermes_home().resolve()
+    launch = get_moor_home().resolve()
     beta = launch / "profiles" / "beta"
     beta.mkdir(parents=True)
     authorities = SessionAuthorities(launch, multiplexed=True)
@@ -96,7 +96,7 @@ def daemon(_isolate_hermes_home, monkeypatch):
                                     "served_profiles": authorities.served_profiles()})
     monkeypatch.setattr(web_server.app.state, "gateway_runner", runner, raising=False)
     monkeypatch.setattr(launch_policy, "_snapshot", None)
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: launch)
+    monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: launch)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: launch / "profiles")
     hosted, calls = [], []
 
@@ -112,7 +112,7 @@ def daemon(_isolate_hermes_home, monkeypatch):
 
     async def loopback_peer(scope, receive, send):
         # GatewayRuntimeAPI records the socket peer before any proxy middleware; native tickets need loopback.
-        scope["hermes.gateway_socket_peer"] = ("127.0.0.1", 50000)
+        scope["moor.gateway_socket_peer"] = ("127.0.0.1", 50000)
         await web_server.app(scope, receive, send)
 
     client = TestClient(loopback_peer)
@@ -120,13 +120,13 @@ def daemon(_isolate_hermes_home, monkeypatch):
         yield SimpleNamespace(
             client=client, launch=launch, beta=beta, hosted=hosted, calls=calls,
             owner={web_server._SESSION_HEADER_NAME: web_server._SESSION_TOKEN},
-            beta_ticket=lambda: {"X-Hermes-Gateway-Ticket": store.mint(
+            beta_ticket=lambda: {"X-moor-gateway-Ticket": store.mint(
                 profile_id=str(beta), subject="desktop", purpose="native-http")})
     finally:
         web_server.app.router.routes[:] = routes
         web_server._dashboard_plugins_cache = None
         for name in set(sys.modules) - modules:
-            if name.startswith("hermes_dashboard_plugin_"):
+            if name.startswith("moor_dashboard_plugin_"):
                 del sys.modules[name]
         set_multiplex_active(multiplexed)
 
@@ -215,9 +215,9 @@ def test_launch_consent_read_under_a_secondary_grant_keeps_the_launch_secrets(da
     name (PLG-3): its host serves it."""
     from starlette.testclient import WebSocketDenialResponse
 
-    from hermes_cli import plugins as plugins_mod
-    from hermes_cli.config import load_config
-    from hermes_cli.web_server_profiles import _config_profile_scope
+    from moor_cli import plugins as plugins_mod
+    from moor_cli.config import load_config
+    from moor_cli.web_server_profiles import _config_profile_scope
 
     monkeypatch.delenv("PLG_SCOPE_PROBE", raising=False)
     _install(tmp_path / "bundled-home", "scope-bundled")

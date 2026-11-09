@@ -167,14 +167,14 @@ def test_a_routed_profile_fire_runs_under_multiplex_semantics_for_exactly_its_sc
     from cron import scheduler
     from agent import secret_scope
     from cron.scheduler_provider import _profile_cron_scope, routed_profile_fire
-    from hermes_cli.env_loader import load_hermes_dotenv
+    from moor_cli.env_loader import load_moor_dotenv
 
     launch, routed = tmp_path / "launch", tmp_path / "launch" / "profiles" / "ops"
     for home in (launch, routed):
         (home / "cron").mkdir(parents=True)
     (launch / ".env").write_text("XAI_API_KEY=launch-key\nDISCORD_BOT_TOKEN=launch-bot\n", encoding="utf-8")
     (routed / ".env").write_text("XAI_API_KEY=routed-key\nROUTED_ONLY=routed-only\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.setenv("XAI_API_KEY", "launch-key")
     monkeypatch.setenv("DISCORD_BOT_TOKEN", "launch-bot")
     monkeypatch.delenv("ROUTED_ONLY", raising=False)
@@ -191,7 +191,7 @@ def test_a_routed_profile_fire_runs_under_multiplex_semantics_for_exactly_its_sc
         try:
             assert secret_scope.is_multiplex_active() is True
             # The job's per-run dotenv reload, exactly as cron/scheduler does it: hydrate-only.
-            assert load_hermes_dotenv(hermes_home=routed, load_external_secrets=False) == []
+            assert load_moor_dotenv(moor_home=routed, load_external_secrets=False) == []
             assert secret_scope.get_secret("XAI_API_KEY") == "routed-key"
             assert secret_scope.get_secret("DISCORD_BOT_TOKEN") is None  # never the launch bot
         finally:
@@ -218,7 +218,7 @@ def test_routed_fire_scope_carries_managed_env_authority(tmp_path, monkeypatch, 
     from cron import scheduler
     from agent import secret_scope
     from cron.scheduler_provider import _profile_cron_scope
-    from hermes_cli import managed_scope
+    from moor_cli import managed_scope
 
     launch, routed = tmp_path / "launch", tmp_path / "launch" / "profiles" / "ops"
     managed = tmp_path / "managed"
@@ -226,8 +226,8 @@ def test_routed_fire_scope_carries_managed_env_authority(tmp_path, monkeypatch, 
         (home / "cron").mkdir(parents=True)
     (routed / ".env").write_text(routed_env_line, encoding="utf-8")
     (managed / ".env").write_text("ORG_API_KEY=managed-key\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     monkeypatch.setenv("ORG_API_KEY", "managed-key")  # what _apply_managed_env left in the launch env
     managed_scope.invalidate_managed_cache()
     secret_scope.set_multiplex_active(False)
@@ -250,14 +250,14 @@ def test_dashboard_run_now_isolates_a_sibling_profile_fire_like_the_ticker(tmp_p
     import os
 
     from cron import scheduler
-    from hermes_cli import web_server_cron
+    from moor_cli import web_server_cron
     from agent import secret_scope
     from cron.jobs import create_job
     from cron.scheduler_provider import InProcessCronScheduler
-    from hermes_cli import profiles
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_cli import profiles
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".moor"
     routed = launch / "profiles" / "ops"
     probe = tmp_path / "probe"
     probe.mkdir()
@@ -267,12 +267,12 @@ def test_dashboard_run_now_isolates_a_sibling_profile_fire_like_the_ticker(tmp_p
         (home / "config.yaml").write_text("model: test-model\n", encoding="utf-8")
     (launch / ".env").write_text("LAUNCH_ONLY_SECRET=launch-secret\n", encoding="utf-8")
     (routed / ".env").write_text("ROUTED_ONLY_SECRET=routed-secret\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.setenv("LAUNCH_ONLY_SECRET", "launch-secret")
     monkeypatch.delenv("ROUTED_ONLY_SECRET", raising=False)
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: launch)
+    monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: launch)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: launch / "profiles")
-    monkeypatch.setattr(scheduler, "_hermes_home", None)
+    monkeypatch.setattr(scheduler, "_moor_home", None)
     monkeypatch.setattr("cron.scheduler_provider.resolve_cron_scheduler", lambda: InProcessCronScheduler())
     secret_scope.set_multiplex_active(False)  # the desktop backend never sets the process flag
 
@@ -281,12 +281,12 @@ def test_dashboard_run_now_isolates_a_sibling_profile_fire_like_the_ticker(tmp_p
             "#!/usr/bin/env bash\n"
             f'echo "${{ROUTED_ONLY_SECRET:-<unset>}}|${{LAUNCH_ONLY_SECRET:-<unset>}}" > "{probe / name}"\n',
             encoding="utf-8")
-        token = set_hermes_home_override(str(home))
+        token = set_moor_home_override(str(home))
         try:
             return create_job(prompt=None, schedule="every 1h", script=f"{name}.sh",
                               no_agent=True, deliver="local")["id"]
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     routed_job, launch_job = _job_for(routed, "routed"), _job_for(launch, "launch")
     environ_before = dict(os.environ)

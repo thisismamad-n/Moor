@@ -19,8 +19,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_cli import desktop_plugin_halves as halves
-from hermes_constants import get_default_hermes_root
+from moor_cli import desktop_plugin_halves as halves
+from moor_constants import get_default_moor_root
 from utils import rmtree_readonly
 
 DESKTOP_PLUGINS_DIR = "desktop-plugins"
@@ -33,14 +33,14 @@ def desktop_plugins_root() -> Path:
     """The app-level root ``desktop-plugins/``, created on demand and resolved, exactly as Electron's
     ``desktopPluginsRoot`` and the Webapp's read routes resolve it: one folder whichever profile the
     caller names."""
-    root = get_default_hermes_root() / DESKTOP_PLUGINS_DIR
+    root = get_default_moor_root() / DESKTOP_PLUGINS_DIR
     root.mkdir(parents=True, exist_ok=True)
     return root.resolve()
 
 
 def _pc():
     """The facade, read at call time: tests patch ``plugins_cmd.<name>`` and sibling calls must see it."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     return plugins_cmd
 
 
@@ -73,16 +73,16 @@ def _resolve_source(identifier: str, catalog_name: Optional[str]) -> tuple[str, 
     pc = _pc()
     revision = None
     if catalog_name:
-        from hermes_cli import plugins_cmd_catalog as catalog
+        from moor_cli import plugins_cmd_catalog as catalog
         entry = catalog.get_live_catalog_entry(catalog_name)
         if entry is None:
-            raise pc.PluginOperationError(f"'{catalog_name}' is not in the Hermes plugin catalog.")
+            raise pc.PluginOperationError(f"'{catalog_name}' is not in the Moor plugin catalog.")
         identifier, revision = entry.install_identifier, entry.sha or None
     try:
         git_url, subdir = pc._resolve_git_url(identifier)
     except ValueError as exc:
         raise pc.PluginOperationError(str(exc)) from exc
-    from hermes_cli.plugins_cmd_catalog import raise_if_removed
+    from moor_cli.plugins_cmd_catalog import raise_if_removed
     raise_if_removed(identifier, git_url, *((catalog_name,) if catalog_name else ()))
     return git_url, subdir, revision
 
@@ -98,7 +98,7 @@ def install_desktop_plugin(identifier: str, *, ref: Optional[str], catalog_name:
     name with the package marker Electron writes, so the Plugins page pairs the two rows; a desktop-only
     repository keeps its Git-derived folder name and carries no marker.
     """
-    from hermes_cli.plugins_cmd_inspect import _desktop_folder_name, detect_components
+    from moor_cli.plugins_cmd_inspect import _desktop_folder_name, detect_components
 
     pc = _pc()
     sha = (ref or "").strip().lower()
@@ -107,7 +107,7 @@ def install_desktop_plugin(identifier: str, *, ref: Optional[str], catalog_name:
             raise pc.PluginOperationError("Installing a desktop plugin needs the commit the install dialog reviewed.")
         git_url, subdir, catalog_sha = _resolve_source(identifier, catalog_name)
         root = desktop_plugins_root()
-        with tempfile.TemporaryDirectory(prefix="hermes-plugin-install-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="moor-plugin-install-") as tmp:
             clone = Path(tmp) / "plugin"
             # A catalog entry is fetched at its own pin, as the agent installer fetches it: an
             # annotated-tag pin names the tag object, and only its peeled commit is what the dialog read.

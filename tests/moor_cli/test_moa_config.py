@@ -156,7 +156,7 @@ def test_validate_moa_payload_agrees_with_clean_slot():
 
 def test_config_key_aggregator_fields_are_the_slot_fields_clean_slot_keeps():
     """``config set`` recognizes exactly the aggregator fields the normalizer keeps (no drift)."""
-    from hermes_cli.moa_config import _AGGREGATOR_SLOT_FIELDS, _clean_slot
+    from moor_cli.moa_config import _AGGREGATOR_SLOT_FIELDS, _clean_slot
 
     slot = {"provider": "p", "model": "m", "reasoning_effort": "high", "extra": "dropped"}
     assert set(_clean_slot(slot)) == _AGGREGATOR_SLOT_FIELDS

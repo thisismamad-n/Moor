@@ -18,9 +18,9 @@ from gateway.platforms._shared import (
     apply_yaml_bridge as _apply_yaml_bridge, extra_or_secret as _extra_or_secret, get_scoped_secret, send_error
 )
 from gateway.platforms.send_targets import StandaloneSendPolicy, regex_stripped_parser
-from hermes_cli._subprocess_compat import windows_detach_flags
-from hermes_cli.process_identity import release_process_group_once_empty, spawn_owned
-from hermes_constants import (find_node_executable, get_hermes_dir, with_hermes_node_path)
+from moor_cli._subprocess_compat import windows_detach_flags
+from moor_cli.process_identity import release_process_group_once_empty, spawn_owned
+from moor_constants import (find_node_executable, get_moor_dir, with_moor_node_path)
 
 _IS_WINDOWS = platform.system() == "Windows"
 
@@ -71,12 +71,12 @@ def _session_dir(extra) -> Path:
     """Absolute session dir: --session, bridge.pid and every /health ``session`` comparison (gateway and standalone
     sends) share this one string, or a gateway restarted from another cwd would see its own bridge as foreign."""
     return Path(os.path.abspath(os.path.expanduser(str((extra or {}).get(
-        "session_path", get_hermes_dir("platforms/whatsapp/session", "whatsapp/session"))))))
+        "session_path", get_moor_dir("platforms/whatsapp/session", "whatsapp/session"))))))
 
 
 def _windows_listener_pids(port: int) -> list:
     """PIDs in LISTENING state on ``port`` via netstat (Windows)."""
-    from hermes_cli._subprocess_compat import windows_hide_flags
+    from moor_cli._subprocess_compat import windows_hide_flags
     result = subprocess.run(["netstat", "-ano", "-p", "TCP"], timeout=5, creationflags=windows_hide_flags(), **_RUN_TEXT, check=False)
     rows = (line.split() for line in result.stdout.splitlines())
     return _safe_ints(p[4] for p in rows if len(p) >= 5 and p[3] == "LISTENING" and p[1].endswith(f":{port}"))
@@ -333,7 +333,7 @@ def check_whatsapp_requirements() -> bool:
         # Let connect prepare a missing runtime, but never install during discovery.
         return lazy_installs_allowed()
     try:
-        return subprocess.run([_node, "--version"], timeout=5, env=with_hermes_node_path(), **_RUN_TEXT, check=False).returncode == 0
+        return subprocess.run([_node, "--version"], timeout=5, env=with_moor_node_path(), **_RUN_TEXT, check=False).returncode == 0
     except Exception:
         return False
 
@@ -373,7 +373,7 @@ def ensure_aiohttp() -> Optional[tuple[str, bool]]:
         ensure_import("sms")
     except (RuntimeError, OSError, ValueError) as exc:  # InstallError/DownloadError; anything else escapes as transient
         # Only policy or a foreign interpreter is final. A busy dependency lock, a failed download and "installed;
-        # restart Hermes to activate it" stay retryable: as final errors they exit the gateway 78 and keep it down.
+        # restart Moor to activate it" stay retryable: as final errors they exit the gateway 78 and keep it down.
         return str(exc) or type(exc).__name__, installable
     try:
         _import_aiohttp()
@@ -430,8 +430,8 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             from gateway.platforms.whatsapp_common import resolve_whatsapp_bridge_dir
             WhatsAppAdapter._DEFAULT_BRIDGE_DIR = resolve_whatsapp_bridge_dir()
         extra = config.extra
-        from hermes_constants import get_hermes_home
-        self._profile_home = get_hermes_home()
+        from moor_constants import get_moor_home
+        self._profile_home = get_moor_home()
         self._bridge_process: Optional[subprocess.Popen] = None
         self._foreign_bridge_session: Optional[str] = None  # set by _reuse_running_bridge when /health names another profile's session
         self._bridge_probe_timed_out = False  # set by _reuse_running_bridge when the port's holder gave no /health answer
@@ -671,8 +671,8 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         if (missing := ensure_aiohttp()) is not None:  # may install it: connect runs this off the event loop
             why, retryable = missing
             message = (f"aiohttp is unavailable ({why}); the WhatsApp bridge client needs it. "
-                       "Run `hermes pm install --extra sms` (it ships aiohttp; `hermes pm repair` for a damaged install), "
-                       "then restart `hermes gateway`.")
+                       "Run `moor pm install --extra sms` (it ships aiohttp; `moor pm repair` for a damaged install), "
+                       "then restart `moor gateway`.")
             logger.warning("[%s] %s", self.name, message)
             self._set_fatal_error("whatsapp_aiohttp_missing", message, retryable=retryable)
             return False
@@ -751,7 +751,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                         self._set_fatal_error(
                             "whatsapp_bridge_unresponsive",
                             f"Port {self._bridge_port} is held by a process that did not answer /health in time, so "
-                            f"Hermes cannot tell whose WhatsApp bridge it is; nothing on port {self._bridge_port} was "
+                            f"Moor cannot tell whose WhatsApp bridge it is; nothing on port {self._bridge_port} was "
                             "stopped. Stop that process, or give this profile its own port via "
                             "platforms.whatsapp.extra.bridge_port.",
                             retryable=True,
@@ -768,7 +768,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             self._bridge_log_fh = bridge_log_fh = open(self._bridge_log, "a", encoding="utf-8")  # noqa: ASYNC230 -- long-lived log handle handed to the bridge subprocess
             node = find_node_executable("node")
             if node is None:
-                raise RuntimeError("Node.js is no longer available; run `hermes pm install`")
+                raise RuntimeError("Node.js is no longer available; run `moor pm install`")
             self._bridge_process = _spawn_bridge_process(
                 [node, str(bridge_path), "--port", str(self._bridge_port), "--session", str(self._session_path),
                  "--mode", _wenv("WHATSAPP_MODE", "self-chat")], bridge_log_fh, self._bridge_env())
@@ -1055,7 +1055,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             await asyncio.sleep(1)  # Poll interval
 
     def _log_delivery_status(self, data: dict[str, Any]) -> None:
-        """One gateway.log line per delivery/read status change of a message Hermes sent (Baileys
+        """One gateway.log line per delivery/read status change of a message Moor sent (Baileys
         ``messages.update`` for DMs, ``message-receipt.update`` per recipient in groups)."""
         logger.info(
             "[%s] WhatsApp delivery status: message=%s chat=%s status=%s%s at=%s%s", self.name,
@@ -1231,10 +1231,10 @@ async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_f
     except ImportError:
         return send_error("aiohttp not installed. Run: pip install aiohttp")
     try:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
         from .bridge_ownership import standalone_bridge_port
         bridge_port = standalone_bridge_port(
-            get_hermes_home(), (getattr(pconfig, "extra", {}) or {}).get("bridge_port")
+            get_moor_home(), (getattr(pconfig, "extra", {}) or {}).get("bridge_port")
         )
         own_session = str(_session_dir(getattr(pconfig, "extra", {}) or {}))
         normalized_chat_id = to_whatsapp_jid(chat_id)
@@ -1386,7 +1386,7 @@ def register(ctx) -> None:
         standalone_send=StandaloneSendPolicy(label="WhatsApp", media=True, captionable=True,
                                              forward_force_document=True, mentions=True, text_direct=True),
         name="whatsapp", label="WhatsApp", adapter_factory=WhatsAppAdapter, check_fn=check_whatsapp_requirements,
-        dashboard_description="Use Hermes through the bundled WhatsApp bridge with QR-based auth.",
+        dashboard_description="Use Moor through the bundled WhatsApp bridge with QR-based auth.",
         docs_url="https://github.com/tulir/whatsmeow",
         dashboard_env_vars=(
             "WHATSAPP_ENABLED", "WHATSAPP_MODE", "WHATSAPP_DM_POLICY", "WHATSAPP_ALLOWED_USERS",

@@ -40,7 +40,7 @@ from gateway.config import Platform, PlatformConfig
 from gateway.platforms.base import BasePlatformAdapter, SendResult, merge_pending_message_event
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.platforms._shared import coerce_port, profile_scoped as _profile_scoped
-from hermes_cli.process_identity import release_process_group_once_empty, spawn_owned
+from moor_cli.process_identity import release_process_group_once_empty, spawn_owned
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ def _duration_ms(value: Any) -> Optional[int]:
 def _make_activity_event(*, hook_event_name: str, session_id: Any, status: str = "ok", tool_name: Any = None,
                          tool_input: Any = None, tool_output: Any = None, error_class: Any = None,
                          duration_ms: Any = None) -> dict[str, Any]:
-    event: dict[str, Any] = {"schema": ACTIVITY_EVENT_SCHEMA, "eventId": f"hermes-{uuid.uuid4()}",
+    event: dict[str, Any] = {"schema": ACTIVITY_EVENT_SCHEMA, "eventId": f"moor-{uuid.uuid4()}",
                              "sessionId": _safe_scalar(session_id, "unknown") or "unknown",
                              "hookEventName": hook_event_name, "status": "error" if status == "error" else "ok",
                              "occurredAt": datetime.now(UTC).isoformat().replace("+00:00", "Z")}
@@ -377,10 +377,10 @@ class RaftAdapter(BasePlatformAdapter):
         endpoint = f"http://{self._host}:{port}{self._path}"
         cmd: list[str] = [raft_bin, "--profile", profile, "agent", "bridge", "--wake-adapter", "wake-channel",
                           "--wake-channel-endpoint", endpoint]
-        from tools.environments.local import hermes_subprocess_env
-        # The raft CLI needs its own profile and channel token, never Hermes' credentials.
-        env = {**hermes_subprocess_env(), "RAFT_PROFILE": profile, "RAFT_CHANNEL_TOKEN": self._bridge_token}
-        env["HOME"] = env["HERMES_REAL_HOME"]  # the raft CLI's own login lives under the user's HOME
+        from tools.environments.local import moor_subprocess_env
+        # The raft CLI needs its own profile and channel token, never Moor' credentials.
+        env = {**moor_subprocess_env(), "RAFT_PROFILE": profile, "RAFT_CHANNEL_TOKEN": self._bridge_token}
+        env["HOME"] = env["MOOR_REAL_HOME"]  # the raft CLI's own login lives under the user's HOME
         try:
             # Owned: the bridge dies with this gateway however it dies (a SIGKILLed or OOM-killed
             # gateway used to leave `raft agent bridge` polling Raft for a channel nobody serves).

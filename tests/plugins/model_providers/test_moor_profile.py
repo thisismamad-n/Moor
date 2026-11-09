@@ -23,7 +23,7 @@ import pytest
 def moor_profile():
     """Resolve the registered Moor profile through the real discovery path."""
     # ``model_tools`` triggers plugin discovery on import, which is what
-    # registers the Nous profile in the global provider registry.
+    # registers the Moor profile in the global provider registry.
     import model_tools
     import providers
 

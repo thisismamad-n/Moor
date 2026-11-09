@@ -33,22 +33,22 @@ falls back silently to the syntax-only result.
 
 Concretely, on every successful `write_file` or `patch`:
 
-1. Hermes performs the write, then sends the new content to the language
+1. Moor performs the write, then sends the new content to the language
    server. The write waits for the verdict only while the whole tool call
    stays under about 80 ms.
-2. Hermes asks for the verdict directly where the server supports it:
+2. Moor asks for the verdict directly where the server supports it:
    TypeScript (`typescript-language-server`) answers a synchronous
    diagnostics request, and pyright answers a document pull. Warm servers
-   usually reply in 10–90 ms. When the verdict has diagnostics, Hermes
+   usually reply in 10–90 ms. When the verdict has diagnostics, Moor
    compares them against the verdict on the pre-edit content and keeps
    only the new ones.
 3. A verdict that arrives inside that window appears in the tool result's
    `lsp_diagnostics`. A slower one (cold server, very large file) is
    attached to the session's **next** tool result, labelled `LSP
    diagnostics introduced by your earlier edit of <path>`. If the model
-   tries to finish the turn while a check is still running, Hermes waits
+   tries to finish the turn while a check is still running, Moor waits
    up to 5 s for it. Any problems it finds go to the model as a new
-   message before the answer is accepted, so a one-shot `hermes chat -q`
+   message before the answer is accepted, so a one-shot `moor chat -q`
    run still sees them. Earlier messages are never rewritten.
 
 If the same file is edited again before its check finishes, the newer
@@ -86,10 +86,10 @@ evaluate the project's build files (Gradle, `mix.exs`, `build.zig`,
 Cabal/Stack) when they start. That is fine for your own project, but
 not for a repository the agent has just cloned.
 
-Hermes therefore treats every workspace as untrusted unless it is:
+Moor therefore treats every workspace as untrusted unless it is:
 
-- the git worktree of a directory you pointed Hermes at: where you
-  launched it (`cd my-app && hermes`), the worktree `hermes -w`
+- the git worktree of a directory you pointed Moor at: where you
+  launched it (`cd my-app && moor`), the worktree `moor -w`
   created, the project a Desktop or TUI session is opened in, or a
   gateway's `terminal.cwd`, or
 - a directory listed under `lsp.trusted_workspaces` (or any
@@ -102,27 +102,27 @@ trust under `lsp.trusted_workspaces`. A checkout nested inside a trusted
 worktree has its own `.git`, so it is not trusted, and neither is a git
 repository at or above your home directory (a dotfiles repo there would
 otherwise trust everything below it). Trust covers the whole directory
-you pointed Hermes at, including anything later cloned into it, and
-lasts until Hermes exits.
+you pointed Moor at, including anything later cloned into it, and
+lasts until Moor exits.
 
-In an untrusted workspace Hermes **denies by default**: only the
-servers below start, each with settings that keep it on Hermes-side
+In an untrusted workspace Moor **denies by default**: only the
+servers below start, each with settings that keep it on moor-side
 tools. Every other server is skipped, including rust-analyzer, gopls,
 jdtls, kotlin-language-server, elixir-ls, zls, clojure-lsp,
 haskell-language-server, lua-language-server, terraform-ls, prisma,
 astro, vue-language-server (it loads the `vueCompilerOptions.plugins`
 a project's `tsconfig.json` names) and any server you declare under `lsp.servers`. The diagnostics
 log records `skipped: untrusted workspace …; add it to
-lsp.trusted_workspaces`, and `hermes lsp status` marks those servers
+lsp.trusted_workspaces`, and `moor lsp status` marks those servers
 `[trusted workspaces only]`.
 
 | Server | Untrusted workspace |
 |---|---|
-| pyright | `VIRTUAL_ENV` or the Hermes-managed Python, never the project's `.venv`/`venv` |
+| pyright | `VIRTUAL_ENV` or the moor-managed Python, never the project's `.venv`/`venv` |
 | typescript-language-server | `tsserver.path` pinned to the TypeScript next to the server; skipped if there is none |
 | svelte-language-server | `isTrusted: false` (no `svelte.config.js`, no project `svelte`/`prettier`) |
 | bash-language-server, yaml-language-server, dockerfile-ls, intelephense | unchanged: they run no project code (yaml-language-server may fetch the JSON schemas a file names) |
-| clangd | unchanged: Hermes never passes `--query-driver`, so no project compiler runs |
+| clangd | unchanged: Moor never passes `--query-driver`, so no project compiler runs |
 
 On a local backend, the post-write shell linters that would use the
 checkout's own toolchain are skipped the same way whenever the terminal's
@@ -300,7 +300,7 @@ lsp:
 
   # Directories whose projects a language server may load code from
   # (see "Workspace trust" above). ~ expanded; everything under an
-  # entry counts. The worktree of the directory you launched Hermes in,
+  # entry counts. The worktree of the directory you launched Moor in,
   # or opened the session in, is always trusted.
   trusted_workspaces: []
   # trusted_workspaces: ["~/code/my-app"]
@@ -352,7 +352,7 @@ lsp:
 * `command: [bin, ...args]` — pin a custom binary path. Bypasses
   auto-install.
 * `env: {KEY: value}` — extra env vars passed to the spawned process.
-  Servers and the npm / `go install` auto-installers start from Hermes'
+  Servers and the npm / `go install` auto-installers start from Moor'
   scrubbed child environment (no gateway tokens or provider API keys),
   so a server that needs one of those gets it only through this key.
 * `initialization_options: {...}` — merged into the LSP

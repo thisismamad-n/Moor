@@ -79,7 +79,7 @@ class TestNamedProfileMultiplexerGuard:
 
     def _fake_running_default_gateway(self, monkeypatch, tmp_path):
         """Make the guard believe a live default gateway exists at tmp_path."""
-        from hermes_cli import gateway as gw
+        from moor_cli import gateway as gw
         from gateway import status
 
         monkeypatch.setattr(gw, "_profile_suffix", lambda: "coder")

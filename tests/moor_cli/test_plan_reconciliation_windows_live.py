@@ -56,7 +56,7 @@ def test_plan_reconciliation_live_windows(tmp_path, monkeypatch):
     # which requires a live `gateway run` command line (#109680), so the
     # stand-in wears one; a bare sleeper is recorded too and must NOT count.
     child = subprocess.Popen(
-        [sys.executable, sleeper_script_path(), "hermes", "gateway", "run"],
+        [sys.executable, sleeper_script_path(), "moor", "gateway", "run"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     foreign = subprocess.Popen(

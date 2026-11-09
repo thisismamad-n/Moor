@@ -6,8 +6,8 @@ The interactive_setup wizard lazy-imports its CLI helpers from
 source modules. Covers the home-channel clear-on-blank behavior added in
 PR #58421 and extended in the follow-up.
 """
-import hermes_cli.config as config_mod
-import hermes_cli.cli_output as cli_output_mod
+import moor_cli.config as config_mod
+import moor_cli.cli_output as cli_output_mod
 from tools import discord_tool
 from plugins.platforms.discord import onboarding
 from plugins.platforms.discord.onboarding import interactive_setup
@@ -78,7 +78,7 @@ class TestDiscordTokenCheckedWithDiscord:
     accepted one yields the invite link and adds the bot's owner to whoever is already allowed."""
 
     def test_rejected_token_never_written_and_owner_added_to_allowlist(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         standin = DiscordStandin().start()
         try:
             monkeypatch.setattr(discord_tool, "DISCORD_API_BASE", standin.api_base)

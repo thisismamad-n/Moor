@@ -15,7 +15,7 @@ import pytest
 from moor_cli import anon_auth, anon_sign_in, free_tier_bootstrap
 from moor_cli.auth import _load_auth_store
 
-from tests.hermes_cli.anon_portal import PORTAL, WELCOME, as_local_desktop_backend, claimed_trial, install_portal
+from tests.moor_cli.anon_portal import PORTAL, WELCOME, as_local_desktop_backend, claimed_trial, install_portal
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def _mint_error(nas) -> anon_auth.AuthError:
 
 def _exchange_error(nas, monkeypatch) -> anon_auth.AuthError:
     """Claim the trial (the credential is persisted before any exchange), then exchange it at first use."""
-    from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+    from moor_cli.auth_moor import resolve_moor_runtime_credentials
     assert anon_auth.is_guest_state(claimed_trial(monkeypatch))
     with pytest.raises(anon_auth.AuthError) as exc:
         resolve_moor_runtime_credentials()
@@ -175,7 +175,7 @@ class TestMintCooldown:
 
 def _failed_claim(nas, monkeypatch) -> anon_auth.AuthError:
     """The desktop's welcome-trial claim, refused by the service (boot itself never mints)."""
-    from hermes_cli import welcome_trial
+    from moor_cli import welcome_trial
     as_local_desktop_backend(monkeypatch)
     with pytest.raises(anon_auth.AuthError) as exc:
         welcome_trial.claim_desktop_free_tier()
@@ -209,10 +209,10 @@ class TestBootstrapRecord:
         monkeypatch.setattr(free_tier_bootstrap, "_inventory_other_providers", lambda: True)
         record = free_tier_bootstrap.refresh_record(announce=False)
         assert record.other_providers is True and record.provider_configured is True
-        assert _load_auth_store().get("active_provider") != "nous"
+        assert _load_auth_store().get("active_provider") != "moor"
 
     def test_the_desktop_retry_refreshes_the_boot_record(self, nas, monkeypatch):
-        from hermes_cli import welcome_trial
+        from moor_cli import welcome_trial
         nas.raise_transport = httpx.ConnectTimeout("no route")
         _failed_claim(nas, monkeypatch)
         free_tier_bootstrap.run_bootstrap(announce=False)

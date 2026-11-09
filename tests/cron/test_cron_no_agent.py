@@ -49,8 +49,8 @@ def test_create_job_no_agent_requires_script(moor_env):
         create_job(prompt=None, schedule="every 5m", no_agent=True)
 
 
-def test_script_must_be_a_file_under_scripts_dir_not_a_shell_command(hermes_env):
-    """``script`` names a file under HERMES_HOME/scripts/. A command line (``echo hi``) is
+def test_script_must_be_a_file_under_scripts_dir_not_a_shell_command(moor_env):
+    """``script`` names a file under MOOR_HOME/scripts/. A command line (``echo hi``) is
     refused at creation instead of firing every tick as "Script not found" delivered as the
     payload; a real file whose name contains a space is still a path."""
     from cron.jobs import create_job, update_job
@@ -58,13 +58,13 @@ def test_script_must_be_a_file_under_scripts_dir_not_a_shell_command(hermes_env)
     with pytest.raises(ValueError, match="scripts"):
         create_job(prompt=None, schedule="every 5m", script="echo CRON_PAYLOAD", no_agent=True, deliver="local")
 
-    (hermes_env / "scripts" / "my watchdog.sh").write_text("echo hi\n", encoding="utf-8")
+    (moor_env / "scripts" / "my watchdog.sh").write_text("echo hi\n", encoding="utf-8")
     job = create_job(prompt=None, schedule="every 5m", script="my watchdog.sh", no_agent=True, deliver="local")
     with pytest.raises(ValueError, match="scripts"):
         update_job(job["id"], {"script": "echo CRON_PAYLOAD"})
 
 
-def test_update_job_roundtrips_no_agent_flag(hermes_env):
+def test_update_job_roundtrips_no_agent_flag(moor_env):
     from cron.jobs import create_job, update_job, get_job
 
     script_path = moor_env / "scripts" / "w.sh"
@@ -115,7 +115,7 @@ def test_run_job_no_agent_reloads_dotenv_before_script(moor_env, monkeypatch):
     vars in its environment, and the agent path's per-run dotenv reload never
     executes for no_agent jobs — delivery home channels stayed unresolved.
     run_job must load .env at the top of the no_agent branch."""
-    from hermes_cli import env_loader
+    from moor_cli import env_loader
     from cron.jobs import create_job
     from cron.scheduler import run_job
 
@@ -292,7 +292,7 @@ def test_agent_job_provider_classification_unchanged(error, expected):
 # ---------------------------------------------------------------------------
 
 
-def test_run_job_no_agent_uses_configured_interpreter(hermes_env):
+def test_run_job_no_agent_uses_configured_interpreter(moor_env):
     """A no-agent job's script must run through the configured interpreter.
 
     Proves the override survives the no_agent branch of ``run_job`` →
@@ -305,7 +305,7 @@ def test_run_job_no_agent_uses_configured_interpreter(hermes_env):
     from cron.scheduler import run_job
 
     # A wrapper that re-execs the real interpreter with an env marker.
-    wrapper = hermes_env / "venv" / "bin" / "python3"
+    wrapper = moor_env / "venv" / "bin" / "python3"
     wrapper.parent.mkdir(parents=True)
     wrapper.write_text(
         f"#!{sys.executable}\n"
@@ -316,7 +316,7 @@ def test_run_job_no_agent_uses_configured_interpreter(hermes_env):
     )
     wrapper.chmod(wrapper.stat().st_mode | _stat.S_IXUSR)
 
-    script_path = hermes_env / "scripts" / "marker.py"
+    script_path = moor_env / "scripts" / "marker.py"
     script_path.write_text(
         'import os\nprint(os.environ.get("CRON_WRAPPER_USED", "0"))\n'
     )
@@ -337,7 +337,7 @@ def test_run_job_no_agent_uses_configured_interpreter(hermes_env):
     assert "1" in doc
 
 
-def test_a_routed_profile_script_never_receives_a_launch_only_name(hermes_env, monkeypatch):
+def test_a_routed_profile_script_never_receives_a_launch_only_name(moor_env, monkeypatch):
     """A no_agent script fired for a SIBLING profile runs with that profile's scope overlaid and
     NONE of the launch profile's residue (#107695 review): a name the launch ``.env`` defines, and a
     name a launch external source SUPPLIED — applied, or skipped because a process value already won
@@ -350,10 +350,10 @@ def test_a_routed_profile_script_never_receives_a_launch_only_name(hermes_env, m
     from agent.secret_sources.base import FetchResult
     from agent.secret_sources.registry import ApplyReport, SourceReport
     from cron.scheduler_script import _run_job_script
-    from hermes_cli import env_loader
-    from hermes_constants import get_process_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_cli import env_loader
+    from moor_constants import get_process_moor_home, reset_moor_home_override, set_moor_home_override
 
-    launch = get_process_hermes_home()
+    launch = get_process_moor_home()
     (launch / ".env").write_text("LAUNCH_ONLY_VALUE=launch-only\nCUSTOM_CRON_VALUE=launch\n", encoding="utf-8")
     (launch / "config.yaml").write_text("secrets:\n  test-source:\n    enabled: true\n", encoding="utf-8")
     for name, value in (("LAUNCH_ONLY_VALUE", "launch-only"), ("CUSTOM_CRON_VALUE", "launch"),
@@ -379,7 +379,7 @@ def test_a_routed_profile_script_never_receives_a_launch_only_name(hermes_env, m
         '|${LAUNCH_VAULT_ONLY:-<unset>}|${LAUNCH_SKIPPED_SECRET:-<unset>}"\n'
     )
 
-    home_token = set_hermes_home_override(str(routed))
+    home_token = set_moor_home_override(str(routed))
     context_token = secret_scope.set_multiplex_context(True)
     scope_token = secret_scope.set_secret_scope(
         {"CUSTOM_CRON_VALUE": "routed", "ROUTED_VAULT_ONLY": "routed-vault-value"})
@@ -388,14 +388,14 @@ def test_a_routed_profile_script_never_receives_a_launch_only_name(hermes_env, m
     finally:
         secret_scope.reset_secret_scope(scope_token)
         secret_scope.reset_multiplex_context(context_token)
-        reset_hermes_home_override(home_token)
+        reset_moor_home_override(home_token)
 
     assert ok, output
     assert output.strip() == "routed|routed-vault-value|<unset>|<unset>|<unset>"
     assert dict(os.environ) == environ_before
 
 
-def test_a_routed_profile_script_keeps_administrator_managed_values_over_its_own(hermes_env, monkeypatch):
+def test_a_routed_profile_script_keeps_administrator_managed_values_over_its_own(moor_env, monkeypatch):
     """Managed-scope precedence (#107695 review on f5f88d5058): the administrator's managed ``.env`` is
     applied LAST with override in the launch process, so it beats the user's own ``.env``. Managed keys
     are not launch residue, and they are re-applied over the routed scope so the child sees the same
@@ -404,10 +404,10 @@ def test_a_routed_profile_script_keeps_administrator_managed_values_over_its_own
 
     from agent import secret_scope
     from cron.scheduler_script import _run_job_script
-    from hermes_cli import env_loader, managed_scope
-    from hermes_constants import get_process_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_cli import env_loader, managed_scope
+    from moor_constants import get_process_moor_home, reset_moor_home_override, set_moor_home_override
 
-    launch = get_process_hermes_home()
+    launch = get_process_moor_home()
     managed = launch / "managed"
     managed.mkdir()
     (managed / ".env").write_text("ORG_POLICY_FLAG=managed-value\n", encoding="utf-8")
@@ -423,7 +423,7 @@ def test_a_routed_profile_script_keeps_administrator_managed_values_over_its_own
     script = routed / "scripts" / "probe_policy.sh"
     script.write_text('#!/usr/bin/env bash\necho "${ORG_POLICY_FLAG:-<unset>}"\n')
 
-    home_token = set_hermes_home_override(str(routed))
+    home_token = set_moor_home_override(str(routed))
     context_token = secret_scope.set_multiplex_context(True)
     # The routed user's own .env carries a competing value for the managed key.
     scope_token = secret_scope.set_secret_scope({"ORG_POLICY_FLAG": "user-value"})
@@ -432,7 +432,7 @@ def test_a_routed_profile_script_keeps_administrator_managed_values_over_its_own
     finally:
         secret_scope.reset_secret_scope(scope_token)
         secret_scope.reset_multiplex_context(context_token)
-        reset_hermes_home_override(home_token)
+        reset_moor_home_override(home_token)
 
     assert ok, output
     assert output.strip() == "managed-value"

@@ -99,13 +99,13 @@ export function StartupOverlay() {
 }
 
 /** A Webapp tab without a valid sign-in. The service is running, so there is nothing to recover or
- * dismiss: only hermes webapp signs the tab in. */
+ * dismiss: only moor webapp signs the tab in. */
 function WebappSignInOverlay() {
   const copy = useI18n().t.boot.failure
 
   return (
     <BootFailureModal onDismiss={() => undefined}>
-      <div className="relative w-full max-w-[40rem] overflow-hidden rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) shadow-nous">
+      <div className="relative w-full max-w-[40rem] overflow-hidden rounded-xl border border-(--stroke-moor) bg-(--ui-chat-bubble-background) shadow-moor">
         <div className="flex items-start gap-3 px-5 py-4">
           <LogIn className="mt-0.5 size-5" />
           <div>
@@ -508,7 +508,7 @@ export function BootFailureOverlay() {
   if (view === 'connect') {
     return (
       <BootFailureModal onDismiss={dismiss} title={copy.gatewaySettings}>
-        <div className="relative flex max-h-[86vh] w-full max-w-[46rem] flex-col overflow-hidden rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) shadow-nous">
+        <div className="relative flex max-h-[86vh] w-full max-w-[46rem] flex-col overflow-hidden rounded-xl border border-(--stroke-moor) bg-(--ui-chat-bubble-background) shadow-moor">
           <DialogCloseButton />
           {/* Subtle back affordance (projects/overlay idiom): muted → foreground
               on hover, no divider. */}
@@ -532,7 +532,7 @@ export function BootFailureOverlay() {
 
   return (
     <BootFailureModal onDismiss={dismiss}>
-      <div className="relative w-full max-w-[40rem] overflow-hidden rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) shadow-nous">
+      <div className="relative w-full max-w-[40rem] overflow-hidden rounded-xl border border-(--stroke-moor) bg-(--ui-chat-bubble-background) shadow-moor">
         <DialogCloseButton />
         <div className="flex items-start gap-3 px-5 py-4 pr-12">
           <ErrorIcon className="mt-0.5" size="1.25rem" />

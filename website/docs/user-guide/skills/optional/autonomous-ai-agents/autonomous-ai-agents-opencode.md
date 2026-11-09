@@ -14,7 +14,7 @@ Delegate coding to OpenCode CLI (features, PR review).
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/autonomous-ai-agents/opencode` |
+| Source | Optional — install with `moor skills install official/autonomous-ai-agents/opencode` |
 | Path | `optional-skills/autonomous-ai-agents/opencode` |
 | Version | `1.2.0` |
 | Author | Moor Agent |

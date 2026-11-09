@@ -123,15 +123,15 @@ test('verifyMoorCli accepts an actual zero-exit executable', async (): Promise<v
 
 // #74064: with shell:true the command line goes through a shell (cmd.exe on
 // Windows, /bin/sh here), which truncates an unquoted executable at the first
-// space — `C:\Users\John Doe\...\hermes.cmd --version` runs `C:\Users\John`.
+// space — `C:\Users\John Doe\...\moor.cmd --version` runs `C:\Users\John`.
 // The same truncation reproduces on POSIX sh, so this is a real behavioral
 // test of the quoting, not a platform-conditional one. Windows gets its own
 // lane: there the quoted form goes through cmd.exe /s semantics instead.
 test.skipIf(process.platform === 'win32')(
-  'verifyHermesCli quotes a spaced executable path when probing through a shell',
+  'verifyMoorCli quotes a spaced executable path when probing through a shell',
   async (): Promise<void> => {
-    const spacedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes probe-'))
-    const spacedCmd = path.join(spacedDir, 'hermes.cmd')
+    const spacedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'moor probe-'))
+    const spacedCmd = path.join(spacedDir, 'moor.cmd')
     fs.writeFileSync(spacedCmd, '#!/bin/sh\nexit 0\n', { mode: 0o755 })
     fs.chmodSync(spacedCmd, 0o755)
 
@@ -148,16 +148,16 @@ test.skipIf(process.platform === 'win32')(
       // expected: the shell could not run the truncated command
     }
 
-    // verifyHermesCli wraps the same failure: off-Windows the helper is a
+    // verifyMoorCli wraps the same failure: off-Windows the helper is a
     // no-op (POSIX sh truncates identically), so the spaced-path probe
     // reports the backend missing — exactly the #74064 symptom. The quoting
     // itself is covered by the windowsShellCommand unit tests and runs on
     // the Windows lane.
-    assert.equal(await verifyHermesCli(spacedCmd, { shell: true }), false)
+    assert.equal(await verifyMoorCli(spacedCmd, { shell: true }), false)
 
     // Direct execution (shell: false) never goes through a shell, so a
     // spaced path works as-is — the fix must not leak into the non-shell path.
-    assert.equal(await verifyHermesCli(spacedCmd, { shell: false }), true)
+    assert.equal(await verifyMoorCli(spacedCmd, { shell: false }), true)
 
     fs.rmSync(spacedDir, { recursive: true, force: true })
   }

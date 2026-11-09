@@ -78,7 +78,7 @@ def _wait_pid(path: Path) -> int:
 
 @pytest.mark.platforms("posix")
 def test_a_timed_out_fetch_takes_its_helpers_with_it(fetch_rig, tmp_path, monkeypatch):
-    from hermes_cli import update_custody
+    from moor_cli import update_custody
 
     repo, helper, helper_pid = fetch_rig
     monkeypatch.setattr(update_custody, "_held", lambda: {"fd": None})
@@ -96,7 +96,7 @@ def test_a_killed_owner_takes_the_fetch_helpers_with_it(fetch_rig, tmp_path):
         import sys
         sys.path.insert(0, {str(REPO_ROOT)!r})
         from pathlib import Path
-        from hermes_cli import update_custody, update_lock as ul, update_cmd
+        from moor_cli import update_custody, update_lock as ul, update_cmd
         update_custody._death_signal_preexec = lambda: None  # what macOS has
         lock = ul.UpdateLock(path=Path(sys.argv[2]), install_root=sys.argv[1])
         assert lock.acquire()
@@ -119,7 +119,7 @@ def test_a_reaped_git_never_signals_the_group_its_pid_now_names():
     """``communicate`` reaps git on a Ctrl-C inside its wait window, and the cleanup then reaches
     ``_kill_tree``. A reaped pid may already lead another session; signalling it as a group would
     SIGKILL that unrelated process. The decoy stands in for the session that reused the id."""
-    from hermes_cli.update_custody import _kill_tree
+    from moor_cli.update_custody import _kill_tree
 
     git = subprocess.Popen([sys.executable, "-c", "pass"], start_new_session=True)
     git.wait()

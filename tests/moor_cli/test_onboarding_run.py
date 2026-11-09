@@ -1,5 +1,5 @@
 """``onboarding.run`` lives in the root profile's config.yaml: unset runs onboarding only on a
-machine that never used Hermes, an explicit bool wins, and a backend launched under a named profile reads and writes
+machine that never used Moor, an explicit bool wins, and a backend launched under a named profile reads and writes
 the same root file."""
 
 from __future__ import annotations
@@ -8,17 +8,17 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import onboarding_run, profiles
-from hermes_cli.config import read_user_config_raw
-from hermes_state import SessionDB
+from moor_cli import onboarding_run, profiles
+from moor_cli.config import read_user_config_raw
+from moor_state import SessionDB
 
 
 @pytest.fixture
 def root(tmp_path, monkeypatch) -> Path:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     return home
 
 
@@ -32,10 +32,10 @@ def _add_chat(home: Path) -> None:
 
 
 def _launch_under(monkeypatch, root: Path, name: str) -> Path:
-    """A pooled backend launched under ``-p <name>``: HERMES_HOME is the profile's home."""
+    """A pooled backend launched under ``-p <name>``: MOOR_HOME is the profile's home."""
     home = profiles.create_profile(name, no_alias=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    assert onboarding_run.get_default_hermes_root() == root
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    assert onboarding_run.get_default_moor_root() == root
     return home
 
 
@@ -67,12 +67,12 @@ def test_a_user_profile_is_history(root):
 
 def test_a_managed_run_false_wins_on_a_fresh_install(root, tmp_path, monkeypatch):
     # IT can pin onboarding off through the managed overlay; the root file stays unset.
-    from hermes_cli import managed_scope
+    from moor_cli import managed_scope
 
     managed = tmp_path / "managed"
     managed.mkdir()
     (managed / "config.yaml").write_text("onboarding:\n  run: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     managed_scope.invalidate_managed_cache()
 
     assert onboarding_run.should_run() is False

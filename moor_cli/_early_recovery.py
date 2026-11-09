@@ -250,21 +250,21 @@ def interrupted_pull_marker(root: Path) -> Path:
     return _git_dir(root) / INTERRUPTED_PULL_MARKER
 
 
-# The repair's own code is in the tree a killed move tears (``hermes_bootstrap``, this module, the
+# The repair's own code is in the tree a killed move tears (``moor_bootstrap``, this module, the
 # package initializer, the lock/custody modules). ``update_cmd_commit.arm_tree_move`` publishes this
 # closure, as committed at the marker's ``pre``, beside the marker before git writes; a minted
 # launcher whose checkout import fails runs the repair from there, reading the same files from git's
 # objects first when no updater published them (``_launchers._CLOSURE_REPAIR``).
 # The modules import only the stdlib and each other; the package initializer is published empty.
-RECOVERY_CLOSURE_DIR = "hermes-update-recovery"
-RECOVERY_CLOSURE = ("hermes_cli/_early_recovery.py", "hermes_cli/update_lock.py", "hermes_cli/update_custody.py")
+RECOVERY_CLOSURE_DIR = "moor-update-recovery"
+RECOVERY_CLOSURE = ("moor_cli/_early_recovery.py", "moor_cli/update_lock.py", "moor_cli/update_custody.py")
 
 
 # ``<blob id> <path>`` per published file (``RECOVERY_CLOSURE`` + the empty package initializer):
 # a closure is used only when every file hashes to its id (a power loss can leave the renamed dir
 # with files git's objects never had), else it is rebuilt from git's objects.
 RECOVERY_CLOSURE_MANIFEST = "MANIFEST"
-RECOVERY_CLOSURE_INIT = "hermes_cli/__init__.py"
+RECOVERY_CLOSURE_INIT = "moor_cli/__init__.py"
 
 
 def recovery_closure_dir(root: Path, pre: str) -> Path:
@@ -297,10 +297,10 @@ def recovery_closure_verified(closure: Path, pre: str) -> bool:
 
 
 def _git_executable(recorded_by_updater: str = "") -> str:
-    """The git ``hermes update`` runs (``_subprocess_compat.expose_pm_git``), without installing it.
+    """The git ``moor update`` runs (``_subprocess_compat.expose_pm_git``), without installing it.
 
     The absolute git the killed updater recorded in its marker first: finding PM's copy needs
-    ``pm``, which imports ``hermes_constants``, and a merge killed while writing that module (or
+    ``pm``, which imports ``moor_constants``, and a merge killed while writing that module (or
     anything else ``pm`` imports) leaves only this path to the repair. Then PATH's git. A Windows install whose only git is the one install.ps1 staged in PM's store
     has none on PATH until the updater exposes it, so this falls back to that copy: PM's recorded
     entry, or the lockfile's pinned entry the installer extracted without recording it. A bare
@@ -612,7 +612,7 @@ def _checkout_places(*paths: Path | str | None) -> tuple[str, ...]:
 
 
 def _path_within(path: str, places: tuple[str, ...]) -> bool:
-    """``path`` is one of ``places`` or under it, by PATH COMPONENTS (``/x/hermes-backup`` is not in ``/x/hermes``).
+    """``path`` is one of ``places`` or under it, by PATH COMPONENTS (``/x/moor-backup`` is not in ``/x/moor``).
 
     Lexical: another process's cwd is already the kernel's resolved path, and resolving a stranger's
     path would touch whatever it names."""
@@ -901,7 +901,7 @@ def _release_dead_index_lock(git_dir: Path, root: Path | None = None, *, any_git
 # The ZIP update's equivalent of the interrupted-pull marker (``_early_recovery_zip``): a journal in the
 # install root naming every entry the swap stages/renames. Its name stays here: the launch fast path
 # stats it without importing the ZIP code.
-ZIP_SWAP_JOURNAL = ".hermes-update-zip-swap"
+ZIP_SWAP_JOURNAL = ".moor-update-zip-swap"
 
 
 def write_durable_text(path: Path, text: str) -> None:
@@ -932,7 +932,7 @@ def write_durable_text(path: Path, text: str) -> None:
 
 
 def restore_interrupted_pull(project_root: Path | None = None, *, after_failure: bool = False) -> bool:
-    """Put back the files a killed ``hermes update`` had half-moved to the new commit.
+    """Put back the files a killed ``moor update`` had half-moved to the new commit.
 
     ``after_failure``: the updater itself calls this when git exited non-zero mid-move (a locked or
     read-only file): same restore, and the marker stays whenever the tree is not verified whole.
@@ -947,10 +947,10 @@ def restore_interrupted_pull(project_root: Path | None = None, *, after_failure:
     edits are never touched; the updater's autostash (if any) stays in ``git stash list``. Concurrent
     launches take turns (``_restore_claim``); a launch that waited out another's restore relaunches.
 
-    A torn ``hermes_bootstrap.py``, ``hermes_cli/__init__.py`` or recovery/lock/custody module fails
+    A torn ``moor_bootstrap.py``, ``moor_cli/__init__.py`` or recovery/lock/custody module fails
     before (or inside) the checkout's copy of this code: a minted launcher then runs the copy the
     updater published beside the marker (``RECOVERY_CLOSURE``). Limits, by design: other entry points
-    (``python -m``, the ``hermes-agent`` hook's ``agent/__init__.py``) have no such fallback, and a
+    (``python -m``, the ``moor-agent`` hook's ``agent/__init__.py``) have no such fallback, and a
     launcher minted before that fallback existed has none either. A file git also changes that the user deleted, emptied or cut to a prefix of git's version
     looks exactly like git's own half-written file and is restored too, as is a user edit to a
     conflicted path or, on git < 2.38, to a path both sides of a custom-branch merge changed.
@@ -962,7 +962,7 @@ def restore_interrupted_pull(project_root: Path | None = None, *, after_failure:
             return False  # fast path: nothing to repair, no lock taken
         if _pytest_owns_live_checkout(root):
             return False
-        # A live `hermes update` (or its build/completion/git, after its updater died) owns the
+        # A live `moor update` (or its build/completion/git, after its updater died) owns the
         # checkout: its own transaction settles the tree, and repairing under it races its git.
         busy_note = "⚠ Not repairing the checkout now: {}. Launch again once it finishes."
         if (Path(root) / ZIP_SWAP_JOURNAL).is_file():
@@ -970,7 +970,7 @@ def restore_interrupted_pull(project_root: Path | None = None, *, after_failure:
                 if busy:
                     print(busy_note.format(busy), file=sys.stderr)
                     return False
-                from hermes_cli._early_recovery_zip import restore_interrupted_zip_swap
+                from moor_cli._early_recovery_zip import restore_interrupted_zip_swap
 
                 if restore_interrupted_zip_swap(root):
                     return True
@@ -983,7 +983,7 @@ def restore_interrupted_pull(project_root: Path | None = None, *, after_failure:
                 # The tree is still torn (the marker is there): importing checkout code now would run
                 # the half-written files. Fail closed like unprovable custody does, as one line and
                 # exit 1 (SystemExit's message), never a traceback (F20).
-                raise SystemExit("hermes: another Hermes launch is finishing an interrupted `hermes update`; "
+                raise SystemExit("moor: another Moor launch is finishing an interrupted `moor update`; "
                                  "launch again in a moment.")
             if not marker.is_file():
                 return True  # another launch finished while this one started: rerun from its tree
@@ -1002,7 +1002,7 @@ def restore_interrupted_pull(project_root: Path | None = None, *, after_failure:
 
 @contextlib.contextmanager
 def _checkout_custody(root: Path):
-    """Hold the checkout kernel lock (``hermes_cli.update_lock``) for a repair, like an updater (R2).
+    """Hold the checkout kernel lock (``moor_cli.update_lock``) for a repair, like an updater (R2).
 
     Yields ``""`` while this process holds or joined it (the updater's own ``after_failure``
     settle and its children join), else the busy reason: a live update tree owns the checkout and
@@ -1014,13 +1014,13 @@ def _checkout_custody(root: Path):
     copy and may still be writing this checkout. Refuse launch rather than race that writer.
     """
     try:
-        from hermes_cli import update_lock
+        from moor_cli import update_lock
     except Exception as exc:
         raise RuntimeError(
             "Cannot safely repair the interrupted update: checkout custody is unavailable "
             f"({type(exc).__name__}: {exc}). The recovery marker was kept. "
             "Wait for any running update to finish; if this persists, repair the checkout "
-            "before launching Hermes again."
+            "before launching Moor again."
         ) from exc
     holder = update_lock._acquire_checkout(Path(root))
     if holder is not None and not update_lock.checkout_lock_held(Path(root)):
@@ -1065,8 +1065,8 @@ def _resume_killed_rollback(git, fields: dict[str, str], git_dir: Path, root: Pa
         ref = fields.get("ref", "").strip().removeprefix("refs/heads/")
         back = (f"`git -C {root} checkout {ref}`" if ref
                 else f"`git -C {root} checkout --detach {fields.get('target', '').strip()[:10] or pre[:10]}`")
-        print(f"⚠ An interrupted `hermes update` rollback to {pre[:10]} was not resumed: HEAD now names "
-              f"another branch. Switch back with {back}, then launch `hermes` again to finish it.",
+        print(f"⚠ An interrupted `moor update` rollback to {pre[:10]} was not resumed: HEAD now names "
+              f"another branch. Switch back with {back}, then launch `moor` again to finish it.",
               file=sys.stderr)
         return None
     # A syntax rollback killed before it moved HEAD back: redo that step (HEAD and index, no file),
@@ -1075,7 +1075,7 @@ def _resume_killed_rollback(git, fields: dict[str, str], git_dir: Path, root: Pa
     # proven gone: until HEAD is on ``pre`` this marker is the rollback's only record.
     reason = _redo_rollback_head(git, git_dir, root, pre, rollback, after_failure=after_failure)
     if reason is not None:
-        print(f"⚠ An interrupted `hermes update` rollback to {pre[:10]} cannot resume yet ({reason}); "
+        print(f"⚠ An interrupted `moor update` rollback to {pre[:10]} cannot resume yet ({reason}); "
               "the next launch retries.", file=sys.stderr)
         return None
     return _read_head(git)
@@ -1089,7 +1089,7 @@ def _advise_killed_merge(git_dir: Path, root: Path, target: str, stash: str) -> 
             and merge_head.read_text(encoding="utf-8-sig").strip() == target):
         # The killed updater's own merge: its conflict markers may sit in startup modules.
         _merge_advice_shown = True
-        print(f"⚠ A killed `hermes update` left its merge unfinished. Run `git -C {root} merge --abort`, "
+        print(f"⚠ A killed `moor update` left its merge unfinished. Run `git -C {root} merge --abort`, "
               "then launch again." + (f" Your local changes are in its stash ({stash})." if stash else ""),
               file=sys.stderr)
 
@@ -1098,12 +1098,12 @@ def _custody_git(root: Path, recorded: str):
     """The restore's ``git(*args)``: the binary the updater recorded, every run under custody (``run_git``)."""
     executable = _git_executable(recorded)
     try:
-        from hermes_cli.update_custody import run_git
+        from moor_cli.update_custody import run_git
     except Exception as exc:
         raise RuntimeError(
             "Cannot safely repair the interrupted update: child custody is unavailable "
             f"({type(exc).__name__}: {exc}). The recovery marker was kept. "
-            "Repair the checkout before launching Hermes again."
+            "Repair the checkout before launching Moor again."
         ) from exc
 
     def git(*args: str, stdin: str | None = None, text: bool = True) -> subprocess.CompletedProcess:
@@ -1146,7 +1146,7 @@ def _read_head(git) -> str | None:
     if _OID.fullmatch(oid):
         return oid
     detail = head.stderr.strip() or f"git printed {oid!r}, exit {head.returncode}"
-    print(f"⚠ Could not read HEAD to repair an interrupted `hermes update` ({detail}); "
+    print(f"⚠ Could not read HEAD to repair an interrupted `moor update` ({detail}); "
           "the next launch retries.", file=sys.stderr)
     return None
 
@@ -1157,7 +1157,7 @@ def _retire_unattributable(git, git_dir: Path, root: Path, marker: Path, pre: st
     Unattributable bytes are not proof of a whole tree: only a clean tracked tree at ``pre`` retires
     the record, rollback or not (review G2)."""
     if not _rollback_verified(git, git_dir, pre):
-        print(f"⚠ An interrupted `hermes update` left tracked files that differ from {pre[:10]} and commit "
+        print(f"⚠ An interrupted `moor update` left tracked files that differ from {pre[:10]} and commit "
               f"{target[:10]} is gone; the marker was kept. Inspect `git -C {root} status`, then "
               f"`git -C {root} checkout {pre[:10]} -- <file>` for each file the update wrote.", file=sys.stderr)
         return
@@ -1195,7 +1195,7 @@ def _restore_holding_claim(root: Path, marker: Path, *, after_failure: bool = Fa
     # After a git that EXITED (``after_failure``) no git of ours is left: a lock now is another git's
     # (often the very reason ours failed), never ours to drop. The scan below only reads.
     if not index_free:
-        print(f"⚠ {_index_lock_holder(git_dir, root)} holds the index after an interrupted `hermes update`; "
+        print(f"⚠ {_index_lock_holder(git_dir, root)} holds the index after an interrupted `moor update`; "
               "the next launch finishes the restore.", file=sys.stderr)
         return False
     written = _paths_git_wrote(git, root, pre, target)
@@ -1216,7 +1216,7 @@ def _put_back_written(git, root: Path, marker: Path, written, pre: str, stash: s
         return False
     if restore or added:
         print(("⚠ git stopped partway through writing the new code — " if after_failure else
-               "⚠ A previous `hermes update` was killed while git was writing the new code — ")
+               "⚠ A previous `moor update` was killed while git was writing the new code — ")
               + f"restoring the checkout to {pre[:10]}...", file=sys.stderr)
         failed = _put_back_paths(git, root, restore, added, kept)
         if failed:
@@ -1328,9 +1328,9 @@ def _put_back_paths(git, root: Path, restore: list[str], added: list[str],
 
 
 def _keep_aside(file: Path) -> Path:
-    """Rename ``file`` to a free ``<name>.hermes-update-kept[-N]`` beside it (never importable, never clobbered)."""
+    """Rename ``file`` to a free ``<name>.moor-update-kept[-N]`` beside it (never importable, never clobbered)."""
     n = 1
-    while os.path.lexists(aside := file.with_name(f"{file.name}.hermes-update-kept" + (f"-{n}" if n > 1 else ""))):
+    while os.path.lexists(aside := file.with_name(f"{file.name}.moor-update-kept" + (f"-{n}" if n > 1 else ""))):
         n += 1
     os.rename(file, aside)
     return aside

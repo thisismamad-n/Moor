@@ -18,10 +18,10 @@ from pathlib import PurePosixPath
 
 from moor_cli.local_runtime.context_policy import (
     FLOOR, RUNTIME_OVERHEAD_BYTES, TARGET_WINDOW, LaunchPlan, plan_launch)
-from hermes_cli.local_runtime.estimator import (
+from moor_cli.local_runtime.estimator import (
     HardwareBudget, LayerKind, ModelProfile, PhysicsRefusal, as_loaded)
-from hermes_cli.local_runtime.gguf import model_id_from_stem
-from hermes_platform.host.products import is_nvidia_n1x_pci_id
+from moor_cli.local_runtime.gguf import model_id_from_stem
+from moor_platform.host.products import is_nvidia_n1x_pci_id
 
 logger = logging.getLogger(__name__)
 
@@ -305,7 +305,7 @@ def recommended_entry(budget: HardwareBudget,
 # next fetch, and day-0 entries reach users without an app release.
 
 _CATALOG_URL = ("https://raw.githubusercontent.com/NousResearch/hermes-agent"
-                "/main/hermes_cli/local_runtime/catalog.json")
+                "/main/moor_cli/local_runtime/catalog.json")
 _SCHEMA_VERSION = 3  # bump when an older app would read a newer catalog but launch its entries wrongly
 _REFRESH_TTL_S = 6 * 3600
 _refresh_lock = threading.Lock()

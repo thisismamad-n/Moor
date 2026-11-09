@@ -1,8 +1,8 @@
-"""cloned_memory_provider: a best-effort post-clone notice that never fails ``hermes profile create``."""
+"""cloned_memory_provider: a best-effort post-clone notice that never fails ``moor profile create``."""
 
 import pytest
 
-from hermes_cli.profile_memory_config import cloned_memory_provider
+from moor_cli.profile_memory_config import cloned_memory_provider
 
 
 @pytest.mark.parametrize("body", [

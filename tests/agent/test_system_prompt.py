@@ -464,10 +464,10 @@ def test_stable_tier_is_identical_across_homes(tmp_path, monkeypatch):
     monkeypatch.delenv("TERMINAL_CWD", raising=False)
     tiers = []
     for name in ("a", "b"):
-        root = tmp_path / name / ".hermes"
+        root = tmp_path / name / ".moor"
         root.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda root=root: root.parent)
-        monkeypatch.setenv("HERMES_HOME", str(root))
+        monkeypatch.setenv("MOOR_HOME", str(root))
         with patch("agent.coding_context._coding_mode", return_value="off"):
             parts = _prompt_parts(_make_agent(valid_tool_names=["read_file"]))
         assert f"under {root}/profiles/<name>/." in parts["volatile"]

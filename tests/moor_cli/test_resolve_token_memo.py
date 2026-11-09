@@ -11,7 +11,7 @@ import time
 
 import pytest
 
-from hermes_cli import auth
+from moor_cli import auth
 
 
 @pytest.fixture(autouse=True)

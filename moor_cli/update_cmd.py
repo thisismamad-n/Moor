@@ -18,28 +18,28 @@ from pathlib import Path
 from typing import NoReturn
 
 # Old updaters load _no_prompt_git_kwargs from here after the checkout swap (frozen surface).
-from hermes_cli._subprocess_compat import no_prompt_git_kwargs as _no_prompt_git_kwargs
-from hermes_cli.config import get_hermes_home
-from hermes_cli import update_handoff as _update_handoff
-from hermes_cli.update_cmd_common import _best_effort, _record_stop
+from moor_cli._subprocess_compat import no_prompt_git_kwargs as _no_prompt_git_kwargs
+from moor_cli.config import get_moor_home
+from moor_cli import update_handoff as _update_handoff
+from moor_cli.update_cmd_common import _best_effort, _record_stop
 # Captured BEFORE a checkout swap: parent transport/lifecycle never imports new code.
 from moor_cli.update_completion import run_completion
 from moor_cli.update_channel import adopt_retired_channel
 from pm.receipt import accept_worker_receipt as _accept_completion_pm_receipt
-from hermes_cli import update_receipt as _completion_receipt, update_cmd_config as _completion_config
-from hermes_cli._old_updater import stop_for_relaunch
-from hermes_cli._early_recovery import git_operation_in_progress, interrupted_pull_marker, is_object_id
-from hermes_cli import update_cmd_commit as _commit
-from hermes_cli import update_cmd_posix_pause as _posix_pause
-from hermes_cli.update_cmd_pause_gate import _checkout_move, _moves_for
-from hermes_cli import update_cmd_check as _check
+from moor_cli import update_receipt as _completion_receipt, update_cmd_config as _completion_config
+from moor_cli._old_updater import stop_for_relaunch
+from moor_cli._early_recovery import git_operation_in_progress, interrupted_pull_marker, is_object_id
+from moor_cli import update_cmd_commit as _commit
+from moor_cli import update_cmd_posix_pause as _posix_pause
+from moor_cli.update_cmd_pause_gate import _checkout_move, _moves_for
+from moor_cli import update_cmd_check as _check
 
 # Re-exports: every split-module name stays reachable (and monkeypatchable) as update_cmd.<name>.
-from hermes_cli.update_abort_recovery import (
+from moor_cli.update_abort_recovery import (
     _abort_recovery_is_complete, _qualified_serve_skips, _recover_gateway_restart_after_abort,
     _serve_unit_recovery_available, _surviving_pre_update_serve_runtimes,
     _warn_stale_serve_runtimes)
-from hermes_cli.update_cmd_windows import (
+from moor_cli.update_cmd_windows import (
     _HOLDER_VALUE_FLAGS_FALLBACK,
     _cold_start_windows_gateway_after_update, _desktop_owns_gateway_lifecycle,
     _detect_venv_python_processes, _moor_holder_subcommand, _holder_value_flags,
@@ -52,7 +52,7 @@ from hermes_cli.update_cmd_windows import (
     _start_windows_gateway_service,
     _stop_windows_gateway_service, _venv_launcher_ancestors,
     _wait_for_windows_update_gateway_exit, _write_update_planned_stop_marker)
-from hermes_cli.update_cmd_fleet import (
+from moor_cli.update_cmd_fleet import (
     _FLEET_RESTART_PENDING_NAME, _FRESH_RESTART_SUPERVISORS, _GatewayRestartOutcome,
     _clear_fleet_restart_pending_marker,
     _current_checkout_sha, _drain_or_signal_gateway_for_update, _fleet_probe_expected_runtimes,
@@ -69,13 +69,13 @@ from hermes_cli.update_cmd_fleet import (
     _warn_incomplete_gateway_fleet_restart, _warn_pending_fleet_restart,
     _warn_pending_fleet_restart_on_startup, _write_fleet_restart_pending_marker,
     _write_gateway_update_exit_code)
-from hermes_cli.update_cmd_fleet_verify import _verify_fleet_after_update
-from hermes_cli.update_cmd_zip import (
+from moor_cli.update_cmd_fleet_verify import _verify_fleet_after_update
+from moor_cli.update_cmd_zip import (
     _ZIP_PRESERVED_TOP_LEVEL, _ZIP_STAGING_ARTIFACT_SUFFIXES, _abort_zip_update_if_dirty_tree,
     _atomic_replace_dir, _commit_staged_replacements, _discard_staged,
     _is_zip_preserved_entry_status_line, _is_zip_staging_artifact_status_line, _stage_replacement,
     _update_via_zip, _zip_overlay_block_reason)
-from hermes_cli.update_cmd_stash import (
+from moor_cli.update_cmd_stash import (
     _AUTOSTASH_NAME_PREFIX, _AUTOSTASH_WARN_AGE_DAYS, _clear_pending_autostash,
     _discard_stashed_changes,
     _git_untracked_paths, _park_stashed_changes, _print_stash_cleanup_guidance,
@@ -83,17 +83,17 @@ from hermes_cli.update_cmd_stash import (
     _restored_python_paths, _stash_apply_failed_only_on_existing_untracked,
     _stash_local_changes_if_needed, _target_would_move_head, _unrestored_autostash_notice,
     _warn_orphaned_update_autostashes)
-from hermes_cli.update_cmd_config import (
+from moor_cli.update_cmd_config import (
     _LAST_SIBLING_SNAPSHOTS, _check_and_apply_config_migration, _migrate_sibling_profile_configs,
     _print_items, _reload_config_modules, _run_config_check_fresh, _run_migrate_config_fresh)
-from hermes_cli.update_cmd_validation import (
+from moor_cli.update_cmd_validation import (
     _UPDATE_CRITICAL_MODULES, _critical_module_import_failures,
     _validate_critical_modules_import)
-from hermes_cli.old_updater_deps import (
+from moor_cli.old_updater_deps import (
     _capture_active_lazy_features, _npm_lockfile_changed, _path_uid,
     _rebuild_desktop_after_update, _refresh_active_lazy_features,
     _refresh_active_memory_provider_dependencies, _update_node_dependencies)
-from hermes_cli.update_cmd_git import (
+from moor_cli.update_cmd_git import (
     OFFICIAL_REPO_URL, OFFICIAL_REPO_URLS, SKIP_UPSTREAM_PROMPT_FILE, _ORPHAN_RESCUE_REFS_TO_KEEP,
     _ORPHAN_RESCUE_REF_MAX_AGE_DAYS, _add_upstream_remote, _assess_parked_branch_switch,
     _branch_head_label, _branch_head_suffix, _classify_fetch_failure, _count_commits_between,
@@ -103,7 +103,7 @@ from hermes_cli.update_cmd_git import (
     _print_parked_branch_kept_notice, _print_parked_branch_skip_warning,
     _prune_orphan_rescue_refs, _push_synced_fork, _should_skip_upstream_prompt, _sync_fork_with_upstream,
     _sync_with_upstream_if_needed, UpstreamTargetBroken)
-from hermes_cli.update_cmd_maint import (
+from moor_cli.update_cmd_maint import (
     _PRE_UPDATE_SNAPSHOT_KEEP, _PRE_UPDATE_SNAPSHOT_MAX_FILE_SIZE,
     _checkout_version, _ensure_acp_launcher, _ensure_fhs_path_guard, _finish_dashboard_update_cleanup,
     _format_time_ago, _post_update_sqlite_runtime_status, _print_bundled_skills_sync_report,
@@ -201,15 +201,15 @@ def _map_ssl_cert_file_for_git(git_cmd) -> None:
 
 
 # Compiled before (preflight) and after (post-pull guard, ZIP gate) every tree move. The first rows
-# are what the launcher and ``hermes_bootstrap`` import before any application code (review G3);
+# are what the launcher and ``moor_bootstrap`` import before any application code (review G3);
 # test_update_post_pull_syntax_guard derives that set from the real entry paths and pins it here.
 _UPDATE_CRITICAL_FILES = (
-    "hermes_bootstrap.py", "hermes_cli/_parser.py", "hermes_cli/_launchers.py",
-    "hermes_cli/_early_recovery.py", "hermes_cli/update_lock.py", "hermes_cli/update_custody.py",
-    "hermes_cli/update_handoff.py", "hermes_cli/venv_sync.py", "pm/__init__.py", "pm/environments.py",
-    "hermes_cli/main.py", "hermes_cli/config.py", "hermes_cli/__init__.py",
-    "hermes_cli/web_server.py", "cli.py", "run_agent.py", "model_tools.py", "toolsets.py",
-    "hermes_constants.py")
+    "moor_bootstrap.py", "moor_cli/_parser.py", "moor_cli/_launchers.py",
+    "moor_cli/_early_recovery.py", "moor_cli/update_lock.py", "moor_cli/update_custody.py",
+    "moor_cli/update_handoff.py", "moor_cli/venv_sync.py", "pm/__init__.py", "pm/environments.py",
+    "moor_cli/main.py", "moor_cli/config.py", "moor_cli/__init__.py",
+    "moor_cli/web_server.py", "cli.py", "run_agent.py", "model_tools.py", "toolsets.py",
+    "moor_constants.py")
 
 
 def _record_update_step(step: str, ok: bool, detail: str = "") -> None:
@@ -265,12 +265,12 @@ def _git_run(git_cmd, args, cwd=None, *, check=False, network=False):
 
     Every spawn carries ``windows_hide_flags()``: the updater's git children run under the
     console-less desktop backend, and a bare spawn flashes a console window each (#117781)."""
-    from hermes_cli._subprocess_compat import windows_hide_flags
+    from moor_cli._subprocess_compat import windows_hide_flags
     # ``_no_prompt_git_kwargs()`` already carries the hide flags for network
     # calls, so layer them instead of passing the keyword twice.
     spawn_kwargs = {"timeout": NETWORK_GIT_TIMEOUT_SECONDS, **_no_prompt_git_kwargs()} if network else {}
     spawn_kwargs.setdefault("creationflags", windows_hide_flags())
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     # The one custody policy (R2): local mutators keep the update's checkout lock fd, network
     # git runs without it and dies with us, no git forks a detached gc/maintenance child.
@@ -294,7 +294,7 @@ def _git_run(git_cmd, args, cwd=None, *, check=False, network=False):
 def _heal_stale_shallow_checkout(repo_root: Path, branch: str) -> None:
     """Unshallow a shallow checkout before the bounded fetch (#123254). Non-fatal: on failure the
     update proceeds with the fetch it always ran."""
-    from hermes_cli.gitlock import heal_shallow_history
+    from moor_cli.gitlock import heal_shallow_history
 
     try:
         if heal_shallow_history(repo_root, branch, **_no_prompt_git_kwargs()):
@@ -307,7 +307,7 @@ def _heal_stale_shallow_checkout(repo_root: Path, branch: str) -> None:
 def _capture_head_sha(git_cmd, cwd) -> str | None:
     """Return the current HEAD SHA, or None if it can't be resolved."""
     try:
-        from hermes_cli.update_custody import run_git
+        from moor_cli.update_custody import run_git
 
         result = run_git(
             git_cmd, ["rev-parse", "HEAD"],
@@ -393,7 +393,7 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
     if _posix_pause.gateways_paused():  # the gateway that would relay it is stopped for the update
         print(f"  → {prompt_text} → {default or '(empty)'} (gateways are paused for the update)")
         return default
-    home = get_hermes_home()
+    home = get_moor_home()
     prompt_path = home / ".update_prompt.json"
     response_path = home / ".update_response"
 
@@ -567,9 +567,9 @@ def _log_only_write(text: str) -> None:
     log_file = getattr(stream, "_log", None)
     with suppress(Exception):
         if log_file is None:
-            from hermes_constants import get_default_hermes_root
+            from moor_constants import get_default_moor_root
 
-            log_path = get_default_hermes_root() / "logs" / "update.log"  # the root home's tee
+            log_path = get_default_moor_root() / "logs" / "update.log"  # the root home's tee
             log_path.parent.mkdir(parents=True, exist_ok=True)
             with log_path.open("a", encoding="utf-8") as fallback:
                 fallback.write(text)
@@ -753,7 +753,7 @@ def _settle_windows_resume(request: dict) -> None:
     """
     import atexit
 
-    from hermes_cli import update_cmd_windows
+    from moor_cli import update_cmd_windows
 
     atexit.unregister(_m()._resume_windows_gateways_after_update)
     atexit.unregister(update_cmd_windows._resume_windows_gateways_after_update)
@@ -771,7 +771,7 @@ def _resume_paused_gateways_at_exit(token: dict | None, request: dict | None) ->
     try:
         _m()._resume_windows_gateways_after_update(token)
     except Exception as exc:  # health: allow BLE001 -- a restart failure is owed, not the update's status
-        from hermes_cli.update_receipt import owe_followup
+        from moor_cli.update_receipt import owe_followup
 
         owe_followup(request["receipt"]["update_id"] if request else None, "windows_resume",
                      f"Windows gateway recovery failed: {exc}")
@@ -789,7 +789,7 @@ def _complete_source_update(request: dict | None) -> None:
     from copy import deepcopy
     _completion_receipt.record_stage(
         "apply", "skipped" if request.get("completion_message") else "success", mode=request.get("apply_mode", "git"))
-    from hermes_cli.update_stage import publish_stage
+    from moor_cli.update_stage import publish_stage
     publish_stage("Updating dependencies")  # the completion below starts with the dependency sync
     current = _completion_receipt._current.get()
     if current is not None:
@@ -798,7 +798,7 @@ def _complete_source_update(request: dict | None) -> None:
     # fleet can be proven current on, so the warning could never clear (#125952).
     _write_fleet_restart_pending_marker(expected_sha=request.get("expected_sha") or _current_checkout_sha() or "")
     # Pre-swap module (imported with run_completion above): never the replacement tree's.
-    from hermes_cli.update_completion import settle_lost_completion
+    from moor_cli.update_completion import settle_lost_completion
     lost = False
     try:
         result = run_completion(request)
@@ -835,7 +835,7 @@ def _complete_source_update(request: dict | None) -> None:
         try:
             _m()._resume_windows_gateways_after_update(token)
         except Exception as exc:  # health: allow BLE001 -- the code is committed (C3)
-            from hermes_cli.update_receipt import owe_followup
+            from moor_cli.update_receipt import owe_followup
 
             owe_followup(request["receipt"]["update_id"], "windows_resume", f"Windows gateway recovery failed: {exc}")
         _settle_windows_resume(request)
@@ -847,10 +847,10 @@ def _complete_source_update(request: dict | None) -> None:
         if adopt_retired_channel(request):
             print(f"→ Source subscription moved to {request['channel_retirement']['destination']}")
     except Exception as exc:  # health: allow BLE001 -- the code is committed (C3); the next update re-adopts
-        from hermes_cli.update_receipt import owe_followup
+        from moor_cli.update_receipt import owe_followup
 
         owe_followup(request["receipt"]["update_id"], "channel_adoption", str(exc) or type(exc).__name__,
-                     retry="the next `hermes update` adopts it again")
+                     retry="the next `moor update` adopts it again")
 
 
 def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha, *, target_ref=None) -> None:
@@ -890,7 +890,7 @@ def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha, *, target_r
         # SHA suffix so two updates in the same second get distinct refs.
         kind = "diverged" if has_common_ancestor else "orphan"
         rescue_ref = (
-            f"refs/hermes-update-backups/{kind}-{branch}-"
+            f"refs/moor-update-backups/{kind}-{branch}-"
             f"{_dt.now(UTC).strftime('%Y%m%d-%H%M%S')}-{pre_pull_sha[:12]}")
         head = (
             f"  ⚠ Local history has diverged from origin/{branch} — "
@@ -1005,7 +1005,7 @@ def _roll_back_broken_update(git_cmd, pre_pull_sha, failing_path, syntax_error, 
                 print(f"    ({rollback_result.stderr.strip().splitlines()[0]})")
             if interrupted_pull_marker(root).is_file():
                 _commit.owe_restore_of(root, pre_pull_sha)
-                print(f"  The next `hermes` launch also finishes the rollback to {pre_pull_sha[:10]} on its own.")
+                print(f"  The next `moor` launch also finishes the rollback to {pre_pull_sha[:10]} on its own.")
     else:
         print("  Could not capture pre-pull SHA — recover manually with:")
         print(f"    cd {_m().PROJECT_ROOT} && git reflog && git reset --hard <prev-sha>")
@@ -1085,8 +1085,8 @@ def _move_checkout_to(git_cmd, branch, merge_ref, target_sha, pre_pull_sha) -> N
         ancestry_detail = (ancestry.stderr or ancestry.stdout or "").strip()
         if ancestry_detail:
             print(f"  {ancestry_detail}")
-    print("  Resolve the Git error and re-run `hermes update`; no reset was attempted.")
-    from hermes_cli.update_receipt import git_output_stop_class
+    print("  Resolve the Git error and re-run `moor update`; no reset was attempted.")
+    from moor_cli.update_receipt import git_output_stop_class
 
     # The shared classifier: an index.lock that EXISTS is another git's; "Permission denied" on it is not.
     _record_stop(git_output_stop_class(detail, ["merge"], merge_result.returncode) or "checkout_move_failed")
@@ -1252,7 +1252,7 @@ def _switch_branch_at_commit_point(git_cmd, branch, target_ref, *, pre, stash):
             else:
                 _commit.owe_restore_of(root, pre)
             return subprocess.CompletedProcess(_REF_MOVED, 1, result.stdout, (
-                f"'{branch}' moved to {landed[:10]} during the switch; re-run `hermes update`"))
+                f"'{branch}' moved to {landed[:10]} during the switch; re-run `moor update`"))
         if result.returncode == 0:
             interrupted_pull_marker(root).unlink(missing_ok=True)  # git exited 0: whole at *target*
             return result
@@ -1268,7 +1268,7 @@ def _refuse_before_commit_point(git_cmd, target_ref, _windows_gateway_resume) ->
     """Preconditions that used to fail AFTER the swap: refuse with the install untouched."""
     reason = _commit.preflight_refusal(git_cmd, _m().PROJECT_ROOT, target_ref, _UPDATE_CRITICAL_FILES)
     if reason is None:
-        from hermes_cli.update_downgrade_guard import downgrade_refusal
+        from moor_cli.update_downgrade_guard import downgrade_refusal
         reason = downgrade_refusal(git_cmd, _m().PROJECT_ROOT, target_ref)
         if reason is not None:
             _record_stop("downgrade_refused")
@@ -1289,7 +1289,7 @@ def _exit_after_failed_branch_switch(
     """
     detail = (track_result.stderr or "").strip()
     if interrupted_pull_marker(_m().PROJECT_ROOT).is_file():
-        print(f"✗ Switching to '{branch}' stopped part-way; the next `hermes` launch puts the checkout back.")
+        print(f"✗ Switching to '{branch}' stopped part-way; the next `moor` launch puts the checkout back.")
         if detail:
             print(f"  {detail.splitlines()[0]}")
         if auto_stash_ref is not None:
@@ -1455,7 +1455,7 @@ def _prepare_checkout_for_update(
 
     apply_is_shallow = _is_shallow_checkout(git_cmd)
     if commit_count > 0 and apply_is_shallow:
-        from hermes_cli.source_check import _github_compare_behind
+        from moor_cli.source_check import _github_compare_behind
         counted = _github_compare_behind(*_tip_shas(git_cmd, target_ref, base))
         # counted == 0 means local-ahead: falls through to the up-to-date path.
         commit_count = counted if counted is not None else -1
@@ -1592,7 +1592,7 @@ def _record_update_initiator() -> None:
     hand-off (posix shim, windows script, Tauri updater) — the metric's ``kind``. Read the marker
     raw: a liveness probe or stale-marker cleanup is lock policy, not a metrics side effect."""
     with _best_effort('Update initiator unavailable: %s'):
-        from hermes_cli.update_lock import update_marker_path
+        from moor_cli.update_lock import update_marker_path
         first = update_marker_path().read_text(encoding="utf-8-sig").partition("\n")[0].strip()
         if first.isdigit() and int(first) != os.getpid():
             _completion_receipt.record_fact("initiator", "desktop")
@@ -1606,11 +1606,11 @@ def _prepare_git_command(*, checkout_move=None) -> tuple[bool, list, bool]:
     use_zip_update = not git_dir.exists()
     if use_zip_update and sys.platform != "win32":
         print("✗ Not a git repository. Please reinstall:")
-        print("  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash")
+        print("  curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash")
         _record_stop("not_git_checkout")
         sys.exit(1)
 
-    from hermes_cli._subprocess_compat import expose_pm_git
+    from moor_cli._subprocess_compat import expose_pm_git
 
     expose_pm_git(_m().PROJECT_ROOT)
     git_cmd = _base_git_cmd()
@@ -1662,7 +1662,7 @@ def _verify_head_after_pull(
             f"origin/{branch} advanced but the working tree stayed put.")
         print(
             "  Reattach to the branch and retry: "
-            f"git -C {_m().PROJECT_ROOT} checkout {branch} && hermes update")
+            f"git -C {_m().PROJECT_ROOT} checkout {branch} && moor update")
         _commit.disarm_commit_obligations()  # nothing moved: no tail is owed (refused if HEAD did)
         _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
         _record_stop("detached_head")
@@ -1812,15 +1812,15 @@ def _cmd_update_impl(args, gateway_mode: bool):
     # Marks this frame as the CURRENT updater for
     # _old_updater.in_historical_update(); historical on-disk updaters do not
     # declare this local, so only they hand off through retired shims.
-    _hermes_current_updater_frame = True
+    _moor_current_updater_frame = True
     _commit.begin_update_attempt()  # nothing an earlier update in this process armed is ours (O5)
-    from hermes_cli.update_proxy_env import prefer_dotenv_proxy_env
+    from moor_cli.update_proxy_env import prefer_dotenv_proxy_env
     prefer_dotenv_proxy_env()  # the .env loaded at import beats a system proxy the Desktop injected
     git_operation = git_operation_in_progress(_m().PROJECT_ROOT)
     if git_operation:
         root = _m().PROJECT_ROOT
         print(f"✗ Cannot update while a Git {git_operation} is in progress in {root}.")
-        print(f"  Finish it or run `git {git_operation} --abort`, then re-run `hermes update`.")
+        print(f"  Finish it or run `git {git_operation} --abort`, then re-run `moor update`.")
         _record_stop("git_in_progress", without_receipt="failed")  # before the receipt opens: a metrics row only
         sys.exit(1)
 
@@ -1831,7 +1831,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
     # and _sweep_stale skips everything while a git process holds it. A killed update's
     # index.lock is younger than the sweep's age floor, so it goes here once its git is proven
     # dead (we hold the update lock: no other update's git can own it).
-    from hermes_cli.gitlock import release_dead_index_lock
+    from moor_cli.gitlock import release_dead_index_lock
     if release_dead_index_lock(_m().PROJECT_ROOT):
         print("  (removed .git/index.lock left by a git that was killed)")
     _check.clear_git_debris(_m().PROJECT_ROOT)
@@ -1855,7 +1855,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
     pre_update_snapshot_id = _m()._run_pre_update_backup(args)
     _record_pre_update_backup_outcome(args, pre_update_snapshot_id)
     _record_snapshot_stage(args, pre_update_snapshot_id)
-    from hermes_cli.update_stage import publish_stage
+    from moor_cli.update_stage import publish_stage
     publish_stage("Downloading updates")  # a failed backup never stops the update
 
     _windows_gateway_resume = _pause_gateways_for_update(opts)
@@ -1863,7 +1863,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         import atexit as _atexit
         _atexit.register(_m()._resume_windows_gateways_after_update, _windows_gateway_resume)
     desktop_dir = _m().PROJECT_ROOT / "apps" / "desktop"
-    # An installed Hermes.app only this update refreshes counts even with no release/ build
+    # An installed Moor.app only this update refreshes counts even with no release/ build
     # beside it: without one it was never rebuilt, so it never got newer (#52339).
     had_desktop_app_before_update = (
         _m()._desktop_packaged_executable(desktop_dir) is not None
@@ -1922,7 +1922,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             fetch_args = ["fetch", "--no-tags", "origin", target_ref]
         else:
             fetch_args = ["fetch", "origin", _check.tracking_refspec("origin", branch)]
-        from hermes_cli.gitlock import fetch_with_partial_clone_recovery, is_partial_clone_pack_objects_crash
+        from moor_cli.gitlock import fetch_with_partial_clone_recovery, is_partial_clone_pack_objects_crash
         # Marking the unmarked packs clears the git 2.53+ partial-clone pack-objects crash (#124272).
         if fetch_args is None:
             fetch_result = subprocess.CompletedProcess([], 0)

@@ -25,8 +25,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import update_lock
-from hermes_cli.update_lock import (
+from moor_cli import update_lock
+from moor_cli.update_lock import (
     HANDOFF_PID_ENV,
     UPDATE_MARKER_MAX_AGE_SECONDS,
     UpdateLock,
@@ -65,10 +65,10 @@ def other_pid():
 
 @pytest.fixture(autouse=True)
 def _no_runtime_host_above_the_runner(monkeypatch):
-    """Judge hand-offs as if no Hermes gateway/serve/dashboard ran this test process.
+    """Judge hand-offs as if no Moor gateway/serve/dashboard ran this test process.
 
     A hand-off is refused when such a host sits above us (cli §7 V9), and that walk reads the real
-    process ancestry: run from a terminal that a ``hermes gateway run`` agent opened, every hand-off
+    process ancestry: run from a terminal that a ``moor gateway run`` agent opened, every hand-off
     test was refused. A test that wants a host above it patches ``_is_runtime_host`` to answer True."""
     monkeypatch.setattr(update_lock, "_is_runtime_host", lambda cmdline: False)
 
@@ -86,14 +86,14 @@ def _claim_v2(marker, pid, started_at=None, ct_offset=0.0):
 def test_marker_path_is_the_profile_tree_root(tmp_path, monkeypatch):
     """The lock must land where the Rust updater, Electron gate and hand-off scripts look.
 
-    They all read the ROOT home; a sticky/`-p` profile re-homes HERMES_HOME to
+    They all read the ROOT home; a sticky/`-p` profile re-homes MOOR_HOME to
     ``<root>/profiles/<p>``, and a marker there is invisible to every other owner (V9c).
     """
     root = tmp_path / "root"
-    monkeypatch.setenv("HERMES_HOME", str(root / "profiles" / "work"))
-    assert update_marker_path() == root / ".hermes-update-in-progress"
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    assert update_marker_path() == root / ".hermes-update-in-progress"
+    monkeypatch.setenv("MOOR_HOME", str(root / "profiles" / "work"))
+    assert update_marker_path() == root / ".moor-update-in-progress"
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    assert update_marker_path() == root / ".moor-update-in-progress"
 
 
 def test_acquire_writes_pid_and_start_time(marker):
@@ -149,7 +149,7 @@ def test_marker_owned_by_a_zombie_self_heals(marker):
 
     # Keep the child unreaped (a zombie) and wait until the state probe
     # actually reports 'Z' so the assertion can't race the exit.
-    from hermes_cli._early_recovery import _process_state
+    from moor_cli._early_recovery import _process_state
 
     became_zombie = False
     for _ in range(40):
@@ -207,7 +207,7 @@ def test_one_incarnation_rule_when_our_own_creation_time_is_unreadable(marker, m
     """Degraded (our creation time unreadable): we write no-ct claims, so a no-ct claim naming our
     pid is ours and a ct one is a previous incarnation. The marker reader said so while the
     holder-record reader answered "unprovable" and named the dead incarnation as the holder."""
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
 
     monkeypatch.setattr(update_lock, "_OWN_CT", {"pid": os.getpid(), "ct": None})
     now = int(time.time())
@@ -272,7 +272,7 @@ def test_v2_marker_whose_pid_was_reused_is_reclaimed(marker, other_pid):
 
 
 def test_delegate_keeps_the_claim_live_after_the_partner_dies(marker, monkeypatch, other_pid):
-    """Rule 6: `hermes update` adopting a hand-off claim names itself on line 4, restores
+    """Rule 6: `moor update` adopting a hand-off claim names itself on line 4, restores
     lines 1-3 byte-identical on exit, and is what keeps the claim visible if the partner dies."""
     _claim_v2(marker, other_pid)
     base = marker.read_bytes()
@@ -434,7 +434,7 @@ def test_withdrawing_a_torn_claim_never_deletes_a_replacement(marker, monkeypatc
 def test_unreadable_creation_time_gets_the_v1_ceiling(marker, other_pid, monkeypatch):
     """Contract A1: a live pid whose creation time cannot be read (Windows denies it for
     elevated/other-user pids) is live only within the legacy ceiling: it may be a reused pid."""
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
 
     _claim_v2(marker, other_pid)
     fresh = marker.read_text(encoding="utf-8")
@@ -511,7 +511,7 @@ def test_an_unwritable_marker_location_says_why_the_update_needs_it_and_how_to_f
 _HOLD_CHECKOUT = """
 import sys, time
 sys.path.insert(0, sys.argv[1])
-from hermes_cli.update_lock import UpdateLock
+from moor_cli.update_lock import UpdateLock
 lock = UpdateLock(path=__import__("pathlib").Path(sys.argv[3]), install_root=sys.argv[2])
 assert lock.acquire()
 print("held", flush=True)
@@ -521,7 +521,7 @@ time.sleep(120)
 
 @pytest.mark.platforms("posix")
 def test_checkout_lock_excludes_an_update_from_another_home(tmp_path):
-    """Two `hermes update` runs on one checkout from different homes exclude each other (V3)."""
+    """Two `moor update` runs on one checkout from different homes exclude each other (V3)."""
     install = tmp_path / "checkout"
     install.mkdir()
     holder = subprocess.Popen(
@@ -549,7 +549,7 @@ def test_an_unjudgeable_marker_never_admits_a_contender_past_a_held_checkout_loc
     """L5: read_live_update never raises, so a marker it cannot judge (any exception) reads as
     "no live update". That fails open on the marker only: the checkout kernel lock stays the
     guard, so update_in_progress still answers True and a contender's acquire is refused."""
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
 
     install = tmp_path / "checkout"
     install.mkdir()
@@ -591,7 +591,7 @@ def test_checkout_lock_outlives_its_owner_while_an_inheriting_child_runs(tmp_pat
         child.kill()
         child.wait()
     assert not update_in_progress(install)
-    assert checkout_lock_path(install).name == ".hermes-update.lock"  # no .git: a ZIP install
+    assert checkout_lock_path(install).name == ".moor-update.lock"  # no .git: a ZIP install
 
 
 def test_git_checkout_lock_lives_in_the_common_git_dir_and_never_dirties_the_tree(tmp_path):
@@ -610,8 +610,8 @@ def test_git_checkout_lock_lives_in_the_common_git_dir_and_never_dirties_the_tre
     linked = tmp_path / "linked"
     git("worktree", "add", "-q", "--detach", str(linked))
     common = Path(os.path.normpath(install / ".git"))
-    assert checkout_lock_path(install) == common / "hermes-update.lock"
-    assert checkout_lock_path(linked) == common / "hermes-update.lock"
+    assert checkout_lock_path(install) == common / "moor-update.lock"
+    assert checkout_lock_path(linked) == common / "moor-update.lock"
 
     lock = UpdateLock(path=tmp_path / "marker", install_root=install)
     assert lock.acquire() is True
@@ -883,7 +883,7 @@ class TestAncestryUnderUnreadableProcesses:
     """
 
     def test_ancestor_below_an_unreadable_process_is_still_found(self, monkeypatch):
-        from hermes_cli.update_lock import _is_ancestor_pid
+        from moor_cli.update_lock import _is_ancestor_pid
 
         _pin_ancestry(monkeypatch, _chain(2000, blocked_above=True))
 
@@ -893,7 +893,7 @@ class TestAncestryUnderUnreadableProcesses:
         )
 
     def test_deeper_ancestor_below_an_unreadable_process_is_found(self, monkeypatch):
-        from hermes_cli.update_lock import _is_ancestor_pid
+        from moor_cli.update_lock import _is_ancestor_pid
 
         _pin_ancestry(monkeypatch, _chain(2000, 3000, blocked_above=True))
 
@@ -901,21 +901,21 @@ class TestAncestryUnderUnreadableProcesses:
 
     def test_unreadable_process_below_the_match_still_refuses(self, monkeypatch):
         """Failing before a match keeps the conservative refusal."""
-        from hermes_cli.update_lock import _is_ancestor_pid
+        from moor_cli.update_lock import _is_ancestor_pid
 
         _pin_ancestry(monkeypatch, _chain(blocked_above=True))
 
         assert _is_ancestor_pid(2000) is False
 
     def test_unrelated_pid_is_refused_on_a_fully_readable_chain(self, monkeypatch):
-        from hermes_cli.update_lock import _is_ancestor_pid
+        from moor_cli.update_lock import _is_ancestor_pid
 
         _pin_ancestry(monkeypatch, _chain(2000, 3000))
 
         assert _is_ancestor_pid(DEAD_PID) is False
 
     def test_our_own_pid_is_never_an_ancestor(self, monkeypatch):
-        from hermes_cli.update_lock import _is_ancestor_pid
+        from moor_cli.update_lock import _is_ancestor_pid
 
         _pin_ancestry(monkeypatch, _chain(2000))
 
@@ -923,7 +923,7 @@ class TestAncestryUnderUnreadableProcesses:
 
     def test_walk_is_bounded(self, monkeypatch):
         """A pathological chain terminates instead of spinning."""
-        from hermes_cli.update_lock import _MAX_ANCESTRY_DEPTH, _is_ancestor_pid
+        from moor_cli.update_lock import _MAX_ANCESTRY_DEPTH, _is_ancestor_pid
 
         _pin_ancestry(monkeypatch, _chain(*range(2000, 2000 + _MAX_ANCESTRY_DEPTH * 2)))
 
@@ -933,7 +933,7 @@ class TestAncestryUnderUnreadableProcesses:
         self, marker, monkeypatch
     ):
         """The reporter's end-to-end symptom: exit 2 on every GUI update."""
-        monkeypatch.setattr("hermes_cli.update_lock._pid_alive", lambda pid: True)
+        monkeypatch.setattr("moor_cli.update_lock._pid_alive", lambda pid: True)
         _pin_ancestry(monkeypatch, _chain(2000, blocked_above=True))
         marker.write_text(f"2000\n{int(time.time())}\n", encoding="utf-8")
 
@@ -948,7 +948,7 @@ class TestAncestryUnderUnreadableProcesses:
 @pytest.mark.platforms("posix")
 @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root writes any file")
 def test_unwritable_lock_file_still_locks_the_checkout(tmp_path):
-    """Contract A5: a `sudo hermes update` leaves the lock file root-owned; later updates take the
+    """Contract A5: a `sudo moor update` leaves the lock file root-owned; later updates take the
     kernel lock on a read-only fd instead of refusing forever, and still exclude each other."""
     root = tmp_path / "install"
     root.mkdir()
@@ -956,13 +956,13 @@ def test_unwritable_lock_file_still_locks_the_checkout(tmp_path):
     lock_file.write_text("0\n0\n")
     lock_file.chmod(0o444)
 
-    first = UpdateLock(path=tmp_path / "a" / ".hermes-update-in-progress", install_root=root)
+    first = UpdateLock(path=tmp_path / "a" / ".moor-update-in-progress", install_root=root)
     assert first.acquire() is True, first.holder
     second = subprocess.run(
         [sys.executable, "-c",
-         "import sys; from hermes_cli.update_lock import UpdateLock; "
+         "import sys; from moor_cli.update_lock import UpdateLock; "
          "sys.exit(0 if UpdateLock(path=__import__('pathlib').Path(sys.argv[1]), install_root=sys.argv[2]).acquire() else 3)",
-         str(tmp_path / "b" / ".hermes-update-in-progress"), str(root)],
+         str(tmp_path / "b" / ".moor-update-in-progress"), str(root)],
         cwd=REPO_ROOT, env={**os.environ, "PYTHONPATH": str(REPO_ROOT)}, stdin=subprocess.DEVNULL, timeout=60,
         check=False,
     )
@@ -980,7 +980,7 @@ def test_read_only_lock_file_is_refused_on_windows(tmp_path):
     lock_file = checkout_lock_path(root)
     lock_file.write_bytes(b"0\n0\n")
     lock_file.chmod(0o444)  # FILE_ATTRIBUTE_READONLY: O_RDWR is denied, the read-only open works
-    marker = tmp_path / "home" / ".hermes-update-in-progress"
+    marker = tmp_path / "home" / ".moor-update-in-progress"
     try:
         lock = UpdateLock(path=marker, install_root=root)
         assert lock.acquire() is False
@@ -1000,7 +1000,7 @@ def test_checkout_lock_never_writes_through_a_link_to_a_file_outside_the_install
     outside.write_bytes(b"PRECIOUS USER DATA")
     getattr(os, link)(outside, checkout_lock_path(root))
 
-    lock = UpdateLock(path=tmp_path / "home" / ".hermes-update-in-progress", install_root=root)
+    lock = UpdateLock(path=tmp_path / "home" / ".moor-update-in-progress", install_root=root)
     assert lock.acquire() is False
     assert lock.holder is not None and lock.holder.reason
     assert outside.read_bytes() == b"PRECIOUS USER DATA"

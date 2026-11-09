@@ -5,7 +5,7 @@ real loader and real config files under a temp home.
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
 pytest.importorskip("fastapi")
@@ -37,9 +37,9 @@ SECRET = "sk-route-secret-0123456789abcdef"
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    from hermes_cli import plugins as plugins_mod
+    from moor_cli import plugins as plugins_mod
 
-    root = tmp_path / "hermes_home"
+    root = tmp_path / "moor_home"
     work = root / "profiles" / "work"
     plugin_dir = work / "plugins" / "routes"
     plugin_dir.mkdir(parents=True)
@@ -57,7 +57,7 @@ def homes(tmp_path, monkeypatch):
     (root / "config.yaml").write_text(yaml.safe_dump({"delegation": {"backend": "model_map"}}), encoding="utf-8")
     empty_bundled = tmp_path / "bundled"
     empty_bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     from agent import secret_scope
     from tui_gateway import launch_profile_policy as lpp
@@ -70,7 +70,7 @@ def homes(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client(homes):
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
     c = TestClient(app)
     c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return c
@@ -118,7 +118,7 @@ def test_a_managed_install_refuses_every_routing_write_with_the_reason(client, h
     never a silent ``ok`` over an untouched file."""
     _root, work = homes
     before = (work / "config.yaml").read_text(encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED", "nixos")
+    monkeypatch.setenv("MOOR_MANAGED", "nixos")
     resp = client.put(f"{path}?profile=work", json=body)
     assert resp.status_code == 409, resp.text
     assert "managed by nixos" in resp.json()["detail"] and "\n" not in resp.json()["detail"]

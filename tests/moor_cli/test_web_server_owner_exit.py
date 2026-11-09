@@ -9,8 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from hermes_cli.dashboard_procs import _REAP_MIN_AGE_SECONDS, _lock_owned_serve_pids, read_valid_backend_lock
-from hermes_cli.web_server_owner_exit import should_retire_superseded, start_owner_watchdog
+from moor_cli.dashboard_procs import _REAP_MIN_AGE_SECONDS, _lock_owned_serve_pids, read_valid_backend_lock
+from moor_cli.web_server_owner_exit import should_retire_superseded, start_owner_watchdog
 
 OID, ME, NEW = "f" * 32, "a" * 16, "b" * 16
 
@@ -18,8 +18,8 @@ OID, ME, NEW = "f" * 32, "a" * 16, "b" * 16
 def _lock(nonce: str) -> dict:
     return {"schemaVersion": 2, "protocolVersion": 1, "ownershipId": OID, "spawnNonce": nonce,
             "tokenFingerprint": "c" * 32, "pid": 4242, "port": 0, "profile": "default",
-            "hermesPath": "/opt/hermes/bin/hermes", "hermesHome": "~/.hermes",
-            "logPath": f"~/.hermes/desktop-ssh/{OID}/{nonce}.log", "startedAt": "2026-10-03T00:00:00Z"}
+            "moorPath": "/opt/moor/bin/moor", "moorHome": "~/.moor",
+            "logPath": f"~/.moor/desktop-ssh/{OID}/{nonce}.log", "startedAt": "2026-10-03T00:00:00Z"}
 
 
 def test_retires_only_on_a_valid_lock_naming_another_spawn(tmp_path):
@@ -87,18 +87,18 @@ def test_lock_written_by_the_windows_ssh_runtime_lets_the_superseded_backend_ret
     (no logPath). The owner watchdog must accept it, or Windows hosts keep stacking backends."""
     from pathlib import PureWindowsPath
 
-    from hermes_cli import windows_ssh_runtime
+    from moor_cli import windows_ssh_runtime
 
     # The runtime's root is a WindowsPath on that host; pass it as data instead of faking the OS.
     monkeypatch.setattr(windows_ssh_runtime, "_root",
-                        lambda: PureWindowsPath(r"C:\Users\u\.hermes\desktop-ssh"))
+                        lambda: PureWindowsPath(r"C:\Users\u\.moor\desktop-ssh"))
     desktop_record = {k: v for k, v in _lock(NEW).items() if k != "logPath"}
-    desktop_record.update(creationTimeNs="133700000000000000", hermesPath=r"C:\Hermes\hermes.exe")
+    desktop_record.update(creationTimeNs="133700000000000000", moorPath=r"C:\Moor\moor.exe")
     lock_path = tmp_path / "desktop-ssh" / OID / "backend.lock.json"
     lock_path.parent.mkdir(parents=True)
     lock_path.write_bytes(windows_ssh_runtime._lock_record(OID, desktop_record))
 
     assert should_retire_superseded(lock=read_valid_backend_lock(lock_path), my_nonce=ME, age_s=600.0)
-    # The same valid lock makes the backend lock-owned, so `hermes update`'s restart_managed sweep
+    # The same valid lock makes the backend lock-owned, so `moor update`'s restart_managed sweep
     # leaves it to the code-skew watchdog instead of terminating it, as on POSIX.
     assert desktop_record["pid"] in _lock_owned_serve_pids(lock_path.parent.parent)

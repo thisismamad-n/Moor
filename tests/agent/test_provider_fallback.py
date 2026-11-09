@@ -135,20 +135,20 @@ class TestFallbackChainAdvancement:
 
     def test_activation_counts_once_with_classifier_reason(self, monkeypatch):
         """A skipped candidate is not an activation; the one that binds records its FailoverReason."""
-        from hermes_cli.observability import shared_metrics_events
-        from hermes_cli.observability.shared_metrics_fields import fallback_fields
+        from moor_cli.observability import shared_metrics_events
+        from moor_cli.observability.shared_metrics_fields import fallback_fields
 
         calls = []
         monkeypatch.setattr(shared_metrics_events, "record_fallback", lambda **kw: calls.append(kw))
         agent = _make_agent(fallback_model=[
             {"provider": "broken", "model": "nope"}, {"provider": "zai", "model": "glm-5.2"},
         ])
-        agent.provider = "nous"
+        agent.provider = "moor"
         with patch("agent.auxiliary_client.resolve_provider_client",
                    side_effect=[(None, None), (_mock_client(base_url="https://api.z.ai/v1"), "glm-5.2")]):
             assert agent._try_activate_fallback(FailoverReason.rate_limit) is True
 
-        assert [(kw["from_provider"], kw["to_provider"]) for kw in calls] == [("nous", "zai")]
+        assert [(kw["from_provider"], kw["to_provider"]) for kw in calls] == [("moor", "zai")]
         assert fallback_fields(**calls[0])["error_class"] == "rate_limit"
 
     def test_skips_provider_that_raises_to_next(self):

@@ -557,7 +557,7 @@ def _fenced_base64_reply(command: str, payload: bytes, rc: int = 0) -> str:
     relies on."""
     import base64 as _b64
     import re as _re
-    sentinel = _re.search(r"__HERMES_RB_[0-9a-f]+__", command).group(0)
+    sentinel = _re.search(r"__MOOR_RB_[0-9a-f]+__", command).group(0)
     body = _b64.b64encode(payload).decode() if rc == 0 else ""
     size = f"{len(payload)}\n{sentinel}\n" if "wc -c <" in command else ""
     return f"{sentinel}\n{body}\n{sentinel}\n{size}{rc}\n"

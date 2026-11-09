@@ -107,8 +107,8 @@ function decodePowerShellCommand(command) {
   return zlib.inflateRawSync(Buffer.from(deflated)).toString('utf8')
 }
 
-async function probeWindowsFiles(ssh, explicitHermesPath = '') {
-  const explicit = psLiteral(explicitHermesPath)
+async function probeWindowsFiles(ssh, explicitMoorPath = '') {
+  const explicit = psLiteral(explicitMoorPath)
 
   const script = [
     // Module auto-load / cold-start progress records get serialized by Windows
@@ -127,13 +127,13 @@ async function probeWindowsFiles(ssh, explicitHermesPath = '') {
     '}',
     `$explicit=${explicit}`,
     'if($explicit){Assert-NoReparse $explicit $false;$explicitPython=[IO.Path]::Combine([IO.Path]::GetDirectoryName($explicit), "python.exe");Assert-NoReparse $explicitPython $true}',
-    // HERMES_HOME is only trusted when it names a directory on the REMOTE: a stale User-scope
+    // MOOR_HOME is only trusted when it names a directory on the REMOTE: a stale User-scope
     // value (older install.ps1 persisted one) or a client path leaked over SSH otherwise fails
-    // assertSafeRemoteHome as "Unsafe remote Hermes home" (#118988).
-    '$hermesHome=$env:HERMES_HOME',
-    'if(-not $hermesHome -or -not (Test-Path -LiteralPath $hermesHome -PathType Container)){$hermesHome=Join-Path $env:LOCALAPPDATA "hermes"}',
-    'Assert-NoReparse $hermesHome $true',
-    '$candidate=[IO.Path]::Combine($hermesHome, "hermes-agent\\venv\\Scripts\\hermes.exe")',
+    // assertSafeRemoteHome as "Unsafe remote Moor home" (#118988).
+    '$moorHome=$env:MOOR_HOME',
+    'if(-not $moorHome -or -not (Test-Path -LiteralPath $moorHome -PathType Container)){$moorHome=Join-Path $env:LOCALAPPDATA "moor"}',
+    'Assert-NoReparse $moorHome $true',
+    '$candidate=[IO.Path]::Combine($moorHome, "moor-agent\\venv\\Scripts\\moor.exe")',
     '$candidatePython=[IO.Path]::Combine([IO.Path]::GetDirectoryName($candidate), "python.exe")',
     'Assert-NoReparse $candidate $true',
     'Assert-NoReparse $candidatePython $true',
@@ -145,22 +145,22 @@ async function probeWindowsFiles(ssh, explicitHermesPath = '') {
     '$fallbackProfileCandidate=Join-Path $HOME "moor-agent\\.venv\\Scripts\\moor.exe"',
     '$candidates=@()',
     'if($explicit){$candidates+=$explicit}',
-    // A bare `hermes` resolves through PATHEXT, so a published hermes.cmd counts as well as hermes.exe.
-    '$cmd=@(Get-Command hermes -CommandType Application -ErrorAction SilentlyContinue)|Select-Object -First 1',
+    // A bare `moor` resolves through PATHEXT, so a published moor.cmd counts as well as moor.exe.
+    '$cmd=@(Get-Command moor -CommandType Application -ErrorAction SilentlyContinue)|Select-Object -First 1',
     'if($cmd){Assert-NoReparse $cmd.Source $true;$cmdPython=[IO.Path]::Combine([IO.Path]::GetDirectoryName($cmd.Source), "python.exe");Assert-NoReparse $cmdPython $true;$candidates+=$cmd.Source}',
     // The installer's launchers, for an SSH session whose PATH lacks the user PATH entry.
-    '$candidates+=Join-Path $hermesHome "bin\\hermes.exe"',
-    '$candidates+=Join-Path $hermesHome "bin\\hermes.cmd"',
+    '$candidates+=Join-Path $moorHome "bin\\moor.exe"',
+    '$candidates+=Join-Path $moorHome "bin\\moor.cmd"',
     '$candidates+=$fallbackHomeCandidate',
     '$candidates+=$fallbackProfileCandidate',
-    '$hermes=$null',
-    'foreach($candidate in $candidates){Assert-NoReparse $candidate $true;$candidatePython=[IO.Path]::Combine([IO.Path]::GetDirectoryName($candidate), "python.exe");Assert-NoReparse $candidatePython $true;try{$item=Get-Item -LiteralPath $candidate -Force -ErrorAction Stop;if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -and -not $item.PSIsContainer){$pair=Test-Path -LiteralPath $candidatePython -PathType Leaf;if($pair -or (Split-Path -Leaf (Split-Path -Parent $candidate)) -ieq "bin"){$hermes=$item.FullName;break}}}catch [Management.Automation.ItemNotFoundException]{continue}}',
-    'if(-not $hermes){throw "Hermes is not installed on the remote Windows host."}',
-    'Assert-NoReparse $hermes $false',
-    'if($explicit -and $hermes -ne $explicit){throw "The configured Hermes path is not an executable file."}',
-    '$python=[IO.Path]::Combine([IO.Path]::GetDirectoryName($hermes), "python.exe")',
+    '$moor=$null',
+    'foreach($candidate in $candidates){Assert-NoReparse $candidate $true;$candidatePython=[IO.Path]::Combine([IO.Path]::GetDirectoryName($candidate), "python.exe");Assert-NoReparse $candidatePython $true;try{$item=Get-Item -LiteralPath $candidate -Force -ErrorAction Stop;if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -and -not $item.PSIsContainer){$pair=Test-Path -LiteralPath $candidatePython -PathType Leaf;if($pair -or (Split-Path -Leaf (Split-Path -Parent $candidate)) -ieq "bin"){$moor=$item.FullName;break}}}catch [Management.Automation.ItemNotFoundException]{continue}}',
+    'if(-not $moor){throw "Moor is not installed on the remote Windows host."}',
+    'Assert-NoReparse $moor $false',
+    'if($explicit -and $moor -ne $explicit){throw "The configured Moor path is not an executable file."}',
+    '$python=[IO.Path]::Combine([IO.Path]::GetDirectoryName($moor), "python.exe")',
     'if(Test-Path -LiteralPath $python -PathType Leaf){Assert-NoReparse $python $false}else{$python=""}',
-    '[ordered]@{os="Windows";arch=$env:PROCESSOR_ARCHITECTURE;hermesHome=$hermesHome;hermesPath=$hermes;launcherPath=$hermes;python=$python}|ConvertTo-Json -Compress'
+    '[ordered]@{os="Windows";arch=$env:PROCESSOR_ARCHITECTURE;moorHome=$moorHome;moorPath=$moor;launcherPath=$moor;python=$python}|ConvertTo-Json -Compress'
   ].join('\r\n')
 
   // Windows OpenSSH may serialize PowerShell's progress stream as
@@ -181,12 +181,12 @@ async function probeWindowsFiles(ssh, explicitHermesPath = '') {
   return parsed
 }
 
-async function probeWindowsRemote(ssh, explicitHermesPath = '') {
-  const parsed = await probeWindowsFiles(ssh, explicitHermesPath)
+async function probeWindowsRemote(ssh, explicitMoorPath = '') {
+  const parsed = await probeWindowsFiles(ssh, explicitMoorPath)
 
   // Resolve only after the OS-only marker gate: never import a changing checkout.
   if (parsed.launcherPath) {
-    await assertWindowsRemoteInstallUpdateClear(ssh, parsed.hermesHome)
+    await assertWindowsRemoteInstallUpdateClear(ssh, parsed.moorHome)
 
     return resolveWindowsLauncher(ssh, parsed)
   }
@@ -199,12 +199,12 @@ async function resolveWindowsLauncher(ssh: any, runtime: any) {
     '$ProgressPreference="SilentlyContinue"',
     '$ErrorActionPreference="Stop"',
     WINDOWS_NO_REPARSE_PS,
-    `Assert-NoReparse ${psLiteral(runtime.hermesPath)} $false`,
-    `$lines=@(& ${psLiteral(runtime.hermesPath)} '--print-runtime-command');$code=$LASTEXITCODE`,
-    'if($code -ne 0){throw "The Hermes launcher does not support --print-runtime-command; refresh the Windows installation launcher."}',
+    `Assert-NoReparse ${psLiteral(runtime.moorPath)} $false`,
+    `$lines=@(& ${psLiteral(runtime.moorPath)} '--print-runtime-command');$code=$LASTEXITCODE`,
+    'if($code -ne 0){throw "The Moor launcher does not support --print-runtime-command; refresh the Windows installation launcher."}',
     '$command=$lines[-1]|ConvertFrom-Json',
-    'if($command -isnot [array] -or $command.Count -lt 2 -or -not [IO.Path]::IsPathRooted([string]$command[0])){throw "Invalid Hermes runtime command"}',
-    'foreach($part in $command){if($part -isnot [string] -or $part.Contains([char]0)){throw "Invalid Hermes runtime argument"}}',
+    'if($command -isnot [array] -or $command.Count -lt 2 -or -not [IO.Path]::IsPathRooted([string]$command[0])){throw "Invalid Moor runtime command"}',
+    'foreach($part in $command){if($part -isnot [string] -or $part.Contains([char]0)){throw "Invalid Moor runtime argument"}}',
     'Assert-NoReparse ([string]$command[0]) $false',
     '[ordered]@{python=[string]$command[0];runtimeCommand=@($command)}|ConvertTo-Json -Depth 5 -Compress'
   ].join('\r\n')
@@ -220,7 +220,7 @@ async function resolveWindowsLauncher(ssh: any, runtime: any) {
     }
   } catch (cause: any) {
     if (TRANSPORT_KINDS.has(cause?.kind)) {throw cause}
-    const error: any = new Error('Refresh the remote Windows Hermes launcher: its boot-selecting runtime could not be resolved.')
+    const error: any = new Error('Refresh the remote Windows Moor launcher: its boot-selecting runtime could not be resolved.')
     error.kind = 'update-required'
     error.cause = cause
     throw error
@@ -230,20 +230,20 @@ async function resolveWindowsLauncher(ssh: any, runtime: any) {
 }
 
 // The checkouts whose update lock guards a dead marker (update_lock._reclaim_dead):
-// the installer's `<install root>\hermes-agent` and the checkout of the runtime
+// the installer's `<install root>\moor-agent` and the checkout of the runtime
 // python (`<root>\venv\Scripts\python.exe`). Defines $checkoutRoots; needs $installRoot.
 function windowsCheckoutRootsScript(python = '') {
   const runtimeRoot = python
     ? `[IO.Path]::GetDirectoryName([IO.Path]::GetDirectoryName([IO.Path]::GetDirectoryName(${psLiteral(python)})))`
     : '$null'
 
-  return `$checkoutRoots=@([IO.Path]::Combine($installRoot,"hermes-agent"),${runtimeRoot})`
+  return `$checkoutRoots=@([IO.Path]::Combine($installRoot,"moor-agent"),${runtimeRoot})`
 }
 
 // Marker-gate probe script: reads the install-wide update marker fail-closed
 // (missing -> CLEAR, unreadable/malformed -> UNCERTAIN) without following
 // symlinks on any path level, including the marker file itself.
-function windowsUpdateMarkerProbeScript(hermesHome, python = '') {
+function windowsUpdateMarkerProbeScript(moorHome, python = '') {
   const script = [
     '$ProgressPreference="SilentlyContinue"',
     '$ErrorActionPreference="Stop"',
@@ -278,7 +278,7 @@ public static class MoorMarkerNoFollow {
     '$installRoot=$moorHome',
     '$parent=Split-Path -Parent $moorHome',
     'if((Split-Path -Leaf $parent) -ieq "profiles"){$installRoot=Split-Path -Parent $parent}',
-    '$marker=Join-Path $installRoot ".hermes-update-in-progress"',
+    '$marker=Join-Path $installRoot ".moor-update-in-progress"',
     windowsCheckoutRootsScript(python),
     '$result="UNCERTAIN"',
     '$stream=$null;$memory=$null',
@@ -305,7 +305,7 @@ public static class MoorMarkerNoFollow {
  * This uses only PowerShell/.NET and therefore never imports the remote
  * checkout while an updater may be replacing it.
  */
-async function assertWindowsRemoteInstallUpdateClear(ssh, hermesHome, python = '') {
+async function assertWindowsRemoteInstallUpdateClear(ssh, moorHome, python = '') {
   let observation = ''
 
   try {
@@ -314,7 +314,7 @@ async function assertWindowsRemoteInstallUpdateClear(ssh, hermesHome, python = '
     // CLEAR gate into a fail-closed 'update-in-progress' verdict.
     observation =
       stripPowerShellNoise(
-        await ssh.exec(compressedPowerShellCommand(windowsUpdateMarkerProbeScript(hermesHome, python)))
+        await ssh.exec(compressedPowerShellCommand(windowsUpdateMarkerProbeScript(moorHome, python)))
       ).pop() || ''
   } catch (cause) {
     const error: any = new Error('Could not prove that the remote Moor install is clear for SSH startup.')
@@ -331,10 +331,10 @@ async function assertWindowsRemoteInstallUpdateClear(ssh, hermesHome, python = '
 
   const error: any = new Error(
     live
-      ? `Remote Hermes update process ${live[1]} is still running; SSH startup is paused.`
+      ? `Remote Moor update process ${live[1]} is still running; SSH startup is paused.`
       : observation === 'HELD'
-        ? 'A process the remote Hermes update started still holds the install; SSH startup is paused.'
-        : 'The remote Hermes update marker is unreadable or malformed; refusing SSH startup.'
+        ? 'A process the remote Moor update started still holds the install; SSH startup is paused.'
+        : 'The remote Moor update marker is unreadable or malformed; refusing SSH startup.'
   )
 
   error.kind = 'update-in-progress'
@@ -362,7 +362,7 @@ function powerShellErrorDetail(value) {
     .replace(/&amp;/g, '&')
 }
 
-async function detectRemotePlatform(ssh, explicitHermesPath = '') {
+async function detectRemotePlatform(ssh, explicitMoorPath = '') {
   try {
     const output = (await ssh.exec('uname -s; uname -m')).trim().split('\n')
 
@@ -441,11 +441,11 @@ function atomicWindowsSpawnCommand(runtime, reservation: any = {}, payload?: str
     '$OutputEncoding=[Text.UTF8Encoding]::new($false)',
     WINDOWS_MARKER_JUDGE_PS,
     WINDOWS_CHECKOUT_LOCK_PS,
-    `$hermesHome=${psLiteral(runtime.hermesHome)}`,
-    '$installRoot=$hermesHome',
-    '$parent=Split-Path -Parent $hermesHome',
+    `$moorHome=${psLiteral(runtime.moorHome)}`,
+    '$installRoot=$moorHome',
+    '$parent=Split-Path -Parent $moorHome',
     'if((Split-Path -Leaf $parent) -ieq "profiles"){$installRoot=Split-Path -Parent $parent}',
-    '$marker=Join-Path $installRoot ".hermes-update-in-progress"',
+    '$marker=Join-Path $installRoot ".moor-update-in-progress"',
     windowsCheckoutRootsScript(runtime.python),
     // The updaters' kernel lock (A7 rule 1): `<marker>.lock` opened sharing
     // nothing, like marker.ps1 Open-MarkerLock / update_lock.py, bounded 10 s.
@@ -470,7 +470,7 @@ function atomicWindowsSpawnCommand(runtime, reservation: any = {}, payload?: str
       ? '  if($spawnExit -ne 0){exit $spawnExit}'
       : '  if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}',
     reservation.ownershipId
-      ? `  $spawned=$spawnLines[-1]|ConvertFrom-Json; $lock=[ordered]@{schemaVersion=2;protocolVersion=1;ownershipId=${psLiteral(reservation.ownershipId)};spawnNonce=${psLiteral(reservation.spawnNonce)};pid=[int]$spawned.pid;creationTimeNs=[string]$spawned.creationTimeNs;port=0;profile=${psLiteral(reservation.profile)};hermesPath=${psLiteral(reservation.hermesPath)};hermesHome=${psLiteral(reservation.hermesHome)};tokenFingerprint=${psLiteral(reservation.tokenFingerprint)};startedAt=${psLiteral(reservation.startedAt)}}|ConvertTo-Json -Compress; ` +
+      ? `  $spawned=$spawnLines[-1]|ConvertFrom-Json; $lock=[ordered]@{schemaVersion=2;protocolVersion=1;ownershipId=${psLiteral(reservation.ownershipId)};spawnNonce=${psLiteral(reservation.spawnNonce)};pid=[int]$spawned.pid;creationTimeNs=[string]$spawned.creationTimeNs;port=0;profile=${psLiteral(reservation.profile)};moorPath=${psLiteral(reservation.moorPath)};moorHome=${psLiteral(reservation.moorHome)};tokenFingerprint=${psLiteral(reservation.tokenFingerprint)};startedAt=${psLiteral(reservation.startedAt)}}|ConvertTo-Json -Compress; ` +
         `  $lock | & ${helper('write-lock').map(psLiteral).join(' ')} ${psLiteral(reservation.ownershipId)} | Out-Null; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; $spawnLines|Write-Output`
       : '',
     '  if([IO.File]::Exists($marker)){throw "remote update marker claimed during backend spawn"}',
@@ -743,7 +743,7 @@ function windowsHelperOwnsRuntime(runtime, inspection) {
 
 // Test answers with Connect's own capability bar.
 async function inspectWindowsSupport(ssh, runtime) {
-  const inspection = await helper(ssh, runtime, 'inspect', [runtime.hermesPath])
+  const inspection = await helper(ssh, runtime, 'inspect', [runtime.moorPath])
 
   return { version: inspection.version, supported: inspection.supported && windowsHelperOwnsRuntime(runtime, inspection) }
 }
@@ -766,9 +766,9 @@ async function connectWindowsRemote(deps) {
   } = deps
 
   assertBootstrapNotSuperseded(signal)
-  const runtime = await probeWindowsRemote(ssh, remoteHermesPath)
-  await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
-  const inspection = await helper(ssh, runtime, 'inspect', [runtime.hermesPath])
+  const runtime = await probeWindowsRemote(ssh, remoteMoorPath)
+  await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
+  const inspection = await helper(ssh, runtime, 'inspect', [runtime.moorPath])
 
   if (!windowsHelperOwnsRuntime(runtime, inspection)) {
     const error: any = new Error('The remote Windows SSH helper must be updated with boot-selecting runtime ownership support before connecting.')
@@ -787,7 +787,7 @@ async function connectWindowsRemote(deps) {
   rememberLog(`[ssh-lifecycle] remote platform Windows/${runtime.arch}`)
   rememberLog(`[ssh-lifecycle] located moor at ${runtime.moorPath}`)
 
-  await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
+  await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
   const lock = await helper(ssh, runtime, 'read-lock', [ownershipId])
 
   if (validLock(lock, ownershipId)) {
@@ -802,7 +802,7 @@ async function connectWindowsRemote(deps) {
     const reusable = reusableWindowsLock(lock, state, profile, reuseToken, runtime)
 
     if (reusable) {
-      await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
+      await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
       const localPort = await pickLocalPort()
       await forward(localPort, lock.port)
 
@@ -834,23 +834,23 @@ async function connectWindowsRemote(deps) {
         }
 
         await cancelForward(localPort, lock.port)
-        await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
+        await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
         await cleanupOwned(ssh, runtime, ownershipId, lock)
       } catch (error) {
         await cancelForward(localPort, lock.port)
         throw error
       }
     } else {
-      await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
+      await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
       await cleanupOwned(ssh, runtime, ownershipId, lock)
     }
   } else if (lock) {
-    await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
+    await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
     await helper(ssh, runtime, 'remove-lock', [ownershipId])
   }
 
   assertBootstrapNotSuperseded(signal)
-  await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
+  await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
   const token = crypto.randomBytes(32).toString('hex')
   const spawnNonce = crypto.randomBytes(8).toString('hex')
   await helper(ssh, runtime, 'upload-token', [ownershipId, spawnNonce], token)
@@ -859,7 +859,7 @@ async function connectWindowsRemote(deps) {
   let spawned
 
   try {
-    await assertWindowsRemoteInstallUpdateClear(ssh, runtime.hermesHome, runtime.python)
+    await assertWindowsRemoteInstallUpdateClear(ssh, runtime.moorHome, runtime.python)
     spawned = await atomicWindowsSpawn(
       ssh,
       runtime,

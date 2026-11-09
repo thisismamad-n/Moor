@@ -8,15 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.observability import relay_shared_metrics
-from hermes_cli.observability import shared_metrics_loop as loop
-from hermes_cli.observability.shared_metrics import SharedMetricsStore
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-from tests.hermes_cli.test_relay_shared_metrics_runtime import direct_runtime
+from moor_cli.observability import relay_shared_metrics
+from moor_cli.observability import shared_metrics_loop as loop
+from moor_cli.observability.shared_metrics import SharedMetricsStore
+from moor_constants import reset_moor_home_override, set_moor_home_override
+from tests.moor_cli.test_relay_shared_metrics_runtime import direct_runtime
 
 _LOOP_METRICS = {
-    "hermes.memory.op.count", "hermes.curator.run.count", "hermes.delegation.run.count",
-    "hermes.execution_backend.count",
+    "moor.memory.op.count", "moor.curator.run.count", "moor.delegation.run.count",
+    "moor.execution_backend.count",
 }
 
 
@@ -31,7 +31,7 @@ def _rows(home: Path, metric: str) -> list[tuple[dict, int]]:
 
 @pytest.fixture
 def home(direct_runtime, tmp_path):
-    path = tmp_path / "hermes-home"
+    path = tmp_path / "moor-home"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -57,7 +57,7 @@ def test_memory_tool_counts_each_operation_with_its_outcome_and_origin(home):
     finally:
         reset_current_write_origin(token)
 
-    rows = {tuple(sorted(d.items())): v for d, v in _rows(home, "hermes.memory.op.count")}
+    rows = {tuple(sorted(d.items())): v for d, v in _rows(home, "moor.memory.op.count")}
     base = {"provider": "builtin", "origin": "foreground"}
     assert rows == {
         tuple(sorted({**base, "op": "add", "outcome": "success", "failure_class": "none"}.items())): 1,
@@ -91,7 +91,7 @@ def test_memory_failure_class_names_each_store_refusal_and_never_its_text(home):
     memory_tool("remove", old_text="SECRET-nowhere", store=store)  # 4th: the per-turn retry cap
     memory_tool("add", target="SECRET-target", content="z", store=store)
 
-    rows = _rows(home, "hermes.memory.op.count")
+    rows = _rows(home, "moor.memory.op.count")
     assert "SECRET" not in json.dumps(rows)
     assert sorted((d["op"], d["outcome"], d["failure_class"], v) for d, v in rows) == [
         ("add", "failed", "over_budget", 1), ("add", "failed", "scan_blocked", 1),
@@ -125,14 +125,14 @@ def test_memory_provider_tools_report_bounded_provider_and_op(home):
     manager.handle_tool_call("acme_private_remember", {"content": "c"})
 
     rows = sorted(
-        (d["provider"], d["op"], d["outcome"], d["failure_class"]) for d, _ in _rows(home, "hermes.memory.op.count")
+        (d["provider"], d["op"], d["outcome"], d["failure_class"]) for d, _ in _rows(home, "moor.memory.op.count")
     )
     assert rows == [("honcho", "search", "success", "none"), ("plugin", "add", "failed", "exception")]
 
 
 def test_disabled_shared_metrics_record_no_loop_rows(home, monkeypatch):
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config_readonly", lambda: {"telemetry": {"shared_metrics": {"enabled": False}}},
+        "moor_cli.config.read_raw_config_readonly", lambda: {"telemetry": {"shared_metrics": {"enabled": False}}},
     )
     from tools.memory_tool import memory_tool
 
@@ -149,16 +149,16 @@ def test_async_curator_pass_records_in_the_profile_that_started_it(home, tmp_pat
     owner = tmp_path / "owner-profile"
     owner.mkdir()
     done = threading.Event()
-    token = set_hermes_home_override(owner)  # the review thread does not inherit this binding
+    token = set_moor_home_override(owner)  # the review thread does not inherit this binding
     try:
         curator.run_curator_review(consolidate=False, on_summary=lambda _msg: done.set())
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     assert done.wait(30)
 
-    assert _rows(home, "hermes.curator.run.count") == []
+    assert _rows(home, "moor.curator.run.count") == []
     zero = {f"{k}_bucket": "0" for k in ("archived", "created", "merged", "patched")}
-    assert _rows(owner, "hermes.curator.run.count") == [({**zero, "outcome": "success", "trigger": "manual"}, 1)]
+    assert _rows(owner, "moor.curator.run.count") == [({**zero, "outcome": "success", "trigger": "manual"}, 1)]
 
 
 def test_scheduled_ticks_that_find_the_pass_held_elsewhere_record_nothing(home, monkeypatch):
@@ -168,7 +168,7 @@ def test_scheduled_ticks_that_find_the_pass_held_elsewhere_record_nothing(home, 
     monkeypatch.setattr(curator, "_claim_run", lambda: False)
     for _ in range(3):  # gateway housekeeping ticks while another process holds the claim
         assert curator.maybe_run_curator() is None
-    assert _rows(home, "hermes.curator.run.count") == []
+    assert _rows(home, "moor.curator.run.count") == []
 
 
 def test_delegation_fanout_split_into_units_is_one_row_in_the_parent_profile(home, tmp_path):
@@ -179,19 +179,19 @@ def test_delegation_fanout_split_into_units_is_one_row_in_the_parent_profile(hom
     other.mkdir()
 
     def unit(results):
-        token = set_hermes_home_override(other)  # async units finish on runner threads
+        token = set_moor_home_override(other)  # async units finish on runner threads
         try:
             loop.finish_delegation_unit(call, results, background=True)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     for results in ([{"status": "completed"}], [{"status": "completed"}, {"status": "failed"}]):
         worker = threading.Thread(target=unit, args=(results,))
         worker.start()
         worker.join()
 
-    assert _rows(other, "hermes.delegation.run.count") == []
-    assert _rows(home, "hermes.delegation.run.count") == [(
+    assert _rows(other, "moor.delegation.run.count") == []
+    assert _rows(home, "moor.delegation.run.count") == [(
         {"depth": "2", "mode": "background", "outcome": "partial", "subagent_count_bucket": "3_to_5"}, 1,
     )]
 
@@ -216,7 +216,7 @@ def test_delegate_task_call_is_one_row_however_many_children(home, monkeypatch):
 
     dt.delegate_task(tasks=[{"goal": f"worker task number {i}"} for i in range(3)], parent_agent=parent)
 
-    assert _rows(home, "hermes.delegation.run.count") == [(
+    assert _rows(home, "moor.delegation.run.count") == [(
         {"depth": "1", "mode": "foreground", "outcome": "partial", "subagent_count_bucket": "3_to_5"}, 1,
     )]
 
@@ -226,9 +226,9 @@ def test_terminal_calls_count_against_the_configured_backend(home):
 
     assert json.loads(terminal_tool("echo hi"))["exit_code"] == 0
     assert json.loads(terminal_tool("exit 3"))["exit_code"] == 3  # the command failed, the backend did not
-    terminal_tool("echo control-plane", _host_local=True)  # Hermes' own children are not user work
+    terminal_tool("echo control-plane", _host_local=True)  # Moor' own children are not user work
 
-    assert _rows(home, "hermes.execution_backend.count") == [
+    assert _rows(home, "moor.execution_backend.count") == [
         ({"backend": "local", "error_class": "none", "kind": "terminal", "outcome": "success"}, 2),
     ]
 
@@ -238,7 +238,7 @@ def test_foreground_terminal_timeout_is_a_failed_timeout(home):
 
     assert json.loads(terminal_tool("sleep 5", timeout=1))["exit_code"] == 124
 
-    assert _rows(home, "hermes.execution_backend.count") == [
+    assert _rows(home, "moor.execution_backend.count") == [
         ({"backend": "local", "error_class": "timeout", "kind": "terminal", "outcome": "failed"}, 1),
     ]
 
@@ -254,7 +254,7 @@ def test_background_review_fork_terminal_calls_are_not_backend_usage(home):
         provenance.reset_current_write_origin(token)
     terminal_tool("echo user-work")
 
-    assert _rows(home, "hermes.execution_backend.count") == [
+    assert _rows(home, "moor.execution_backend.count") == [
         ({"backend": "local", "error_class": "none", "kind": "terminal", "outcome": "success"}, 1),
     ]
 
@@ -267,17 +267,17 @@ def test_path_completion_listing_is_not_user_backend_work(home):
         assert mc._backend_dir_entries(str(home), "sess-1") is not None
     terminal_tool("echo user-work")
 
-    assert _rows(home, "hermes.execution_backend.count") == [
+    assert _rows(home, "moor.execution_backend.count") == [
         ({"backend": "local", "error_class": "none", "kind": "terminal", "outcome": "success"}, 1),
     ]
 
 
 def test_every_shipped_terminal_backend_has_its_own_bucket():
-    from hermes_cli.observability import shared_metrics_contract as contract
+    from moor_cli.observability import shared_metrics_contract as contract
     from tools.terminal_tool_config import _BUILTIN_BACKENDS
 
     schema = json.loads(
-        (Path(contract.__file__).parent / "schemas" / "hermes.shared_metrics.v4.schema.json").read_text()
+        (Path(contract.__file__).parent / "schemas" / "moor.shared_metrics.v4.schema.json").read_text()
     )
     execution = schema["$defs"]["execution_backend_counter"]["properties"]["dimensions"]
     for backend in _BUILTIN_BACKENDS:
@@ -288,7 +288,7 @@ def test_every_shipped_terminal_backend_has_its_own_bucket():
 
 def test_browser_backend_is_not_resolved_while_collection_is_off(home, monkeypatch):
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config_readonly", lambda: {"telemetry": {"shared_metrics": {"enabled": False}}},
+        "moor_cli.config.read_raw_config_readonly", lambda: {"telemetry": {"shared_metrics": {"enabled": False}}},
     )
     resolved = []
     loop.record_browser_call(lambda: '{"success": true}', lambda: resolved.append(1) or "local")
@@ -302,7 +302,7 @@ def test_browser_calls_name_the_backend_that_served_them(home):
     with pytest.raises(RuntimeError):
         loop.record_browser_call(_raise, lambda: "some-private-provider")
 
-    rows = sorted((d["backend"], d["outcome"], d["error_class"]) for d, _ in _rows(home, "hermes.execution_backend.count"))
+    rows = sorted((d["backend"], d["outcome"], d["error_class"]) for d, _ in _rows(home, "moor.execution_backend.count"))
     assert rows == [
         ("browserbase", "failed", "tool_error"), ("browserbase", "success", "none"), ("other", "failed", "exception"),
     ]
@@ -363,7 +363,7 @@ def test_browser_exec_counts_against_the_browser_that_actually_served_it(home, m
     monkeypatch.setenv("BROWSER_CDP_URL", "ws://127.0.0.1:9/devtools/browser/x")  # `/browser connect` mid-session
     call('new_tab("https://example.com/")', "connected")
 
-    rows = {d["backend"]: v for d, v in _rows(home, "hermes.execution_backend.count") if d["outcome"] == "success"}
+    rows = {d["backend"]: v for d, v in _rows(home, "moor.execution_backend.count") if d["outcome"] == "success"}
     assert rows == {"browserbase": 1, "local": 2, "cdp": 1}
 
 
@@ -386,7 +386,7 @@ def test_a_local_call_names_the_engine_that_served_it_not_the_one_configured_now
     browser_exec_route.features = {"local": True, "lightpanda": True}
     call_with_engine_configured("auto", "lightpanda-session")
 
-    rows = {d["backend"]: v for d, v in _rows(home, "hermes.execution_backend.count") if d["outcome"] == "success"}
+    rows = {d["backend"]: v for d, v in _rows(home, "moor.execution_backend.count") if d["outcome"] == "success"}
     assert rows == {"local": 2, "lightpanda": 1}
 
 

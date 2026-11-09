@@ -56,7 +56,7 @@ def _iter_process_table() -> list[tuple[int, str]]:
             elif line.startswith("ProcessId="):
                 _append_row(rows, line[len("ProcessId=") :], current_cmd)
         return rows
-    # ps, not `pgrep -f "hermes.*dashboard"` (greedy regex; consistent with gateway pid scan).
+    # ps, not `pgrep -f "moor.*dashboard"` (greedy regex; consistent with gateway pid scan).
     result = subprocess.run(["ps", "-A", "-o", "pid=,command="], timeout=10, **_PS_RUN_KWARGS, check=False)
     if result.returncode == 0:
         for line in getattr(result, "stdout", "").split("\n"):
@@ -80,13 +80,13 @@ def _scan_dashboard_processes(*, exclude_pids: set[int] | None = None) -> list[t
     process; ``_kill_stale_dashboard_processes`` reads it and passes it here. (#37532)
     """
     skip = {os.getpid(), *(exclude_pids or ())}
-    # Canonical token matcher, never argv substrings: ``hermes serve`` is a prefix of ``hermes
-    # server`` and this list decides a SIGTERM — ``herdr --session hermes server`` (a terminal
-    # multiplexer) was killed and its unit restarted by ``hermes update`` (#121156).
-    from hermes_cli.update_cmd_windows import _hermes_holder_subcommand
+    # Canonical token matcher, never argv substrings: ``moor serve`` is a prefix of ``moor
+    # server`` and this list decides a SIGTERM — ``herdr --session moor server`` (a terminal
+    # multiplexer) was killed and its unit restarted by ``moor update`` (#121156).
+    from moor_cli.update_cmd_windows import _moor_holder_subcommand
     try:
         found = [(pid, cmd) for pid, cmd in _iter_process_table()
-                 if pid not in skip and _hermes_holder_subcommand(cmd) in ("dashboard", "serve")]
+                 if pid not in skip and _moor_holder_subcommand(cmd) in ("dashboard", "serve")]
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         return []
     # Spawn-ledger augmentation: an argv scan misses a truncated or unreadable cmdline; the ledger
@@ -114,7 +114,7 @@ def _ledger_serve_binds() -> dict[int, tuple[str, int]]:
     """
     binds: dict[int, tuple[str, int]] = {}
     with contextlib.suppress(Exception):
-        from hermes_cli.process_identity import ledger_entries
+        from moor_cli.process_identity import ledger_entries
         for entry in ledger_entries():
             pid, port = entry.get("pid"), entry.get("port")
             if (entry.get("purpose") in ("serve", "dashboard") and isinstance(pid, int)
@@ -163,7 +163,7 @@ def _pid_passwd_home(pid: int) -> str | None:
     return None
 
 
-def _hermes_home_for_pid(pid: int, *, require_launch_identity: bool = False) -> str | None:
+def _moor_home_for_pid(pid: int, *, require_launch_identity: bool = False) -> str | None:
     """Resolve a process home for discovery, or require pinned launch identity for termination.
 
     By default, ``None`` means an unreadable environment (another user, hardened ``/proc``).
@@ -183,8 +183,8 @@ def _hermes_home_for_pid(pid: int, *, require_launch_identity: bool = False) -> 
     env = _pid_environ(pid)
     if env is None:
         return None
-    from hermes_cli.main_dashboard import _dashboard_cmdline_for_pid
-    from hermes_cli.profiles import get_active_profile, normalize_profile_name, profile_root_for_env_home
+    from moor_cli.main_dashboard import _dashboard_cmdline_for_pid
+    from moor_cli.profiles import get_active_profile, normalize_profile_name, profile_root_for_env_home
     argv = _dashboard_cmdline_for_pid(pid)
     if require_launch_identity and argv is None:
         # The dashboard argv reader has no Windows implementation; psutil does.
@@ -193,7 +193,7 @@ def _hermes_home_for_pid(pid: int, *, require_launch_identity: bool = False) -> 
     if require_launch_identity and not argv:
         return None
     argv = argv or []
-    env_home = env.get("HERMES_HOME", "").strip()
+    env_home = env.get("MOOR_HOME", "").strip()
     profile = _profile_flag_value(argv)
     if require_launch_identity:
         anchor = (env.get('LOCALAPPDATA') or env.get('USERPROFILE')) if sys.platform == 'win32' else env.get('HOME')
@@ -212,9 +212,9 @@ def _hermes_home_for_pid(pid: int, *, require_launch_identity: bool = False) -> 
     else:
         default_home = Path(env.get("HOME") or _pid_passwd_home(pid) or Path.home()) / ".moor"
     root = profile_root_for_env_home(env_home, default_home)
-    fixed_identity = any(env.get(k) for k in ("HERMES_SUPERVISED_CHILD", "HERMES_S6_SUPERVISED_CHILD",
-                                               "HERMES_GATEWAY_EXTERNAL_SUPERVISOR",
-                                               "HERMES_GATEWAY_PROFILE_PIN")) or is_desktop_ssh_backend_argv(argv)
+    fixed_identity = any(env.get(k) for k in ("MOOR_SUPERVISED_CHILD", "MOOR_S6_SUPERVISED_CHILD",
+                                               "MOOR_GATEWAY_EXTERNAL_SUPERVISOR",
+                                               "MOOR_GATEWAY_PROFILE_PIN")) or is_desktop_ssh_backend_argv(argv)
     if profile is None and not fixed_identity:
         if require_launch_identity:
             return None  # The sticky profile at launch is unknowable; never read today's value.
@@ -470,7 +470,7 @@ def _kill_pids_windows(pids: list[int], killed: list[int], failed: list[tuple[in
 
 
 # SIGTERM → SIGKILL grace for the dashboard/serve backend. Must outlast the lifespan teardown in
-# hermes_cli/web_server.py::_lifespan: stop_hosted_room_service(timeout=5.0) + the startup-thread
+# moor_cli/web_server.py::_lifespan: stop_hosted_room_service(timeout=5.0) + the startup-thread
 # join(1.0) + PTY_REGISTRY.close_all() (concurrent; ≤ ~4s per PTY, see pty_bridge._MAX_HELPER_SHUTDOWN_GRACE_S). A SIGKILL inside
 # that window skips close_all(), so the ui-tui / tui_gateway.entry children outlive the backend
 # and keep the deleted state.db-wal inode open — the next moor start refuses with a FATAL
@@ -625,20 +625,20 @@ def _kill_stale_dashboard_processes(
     Manually-started dashboards are not auto-restarted because we don't know the original launch args
     (--host, --port, --insecure, --tui, --no-open). See #68934.
     *already_restarted_units* names units (no ``.service`` suffix) the caller already handled directly —
-    e.g. ``hermes update``'s systemd fleet-restart loop, which restarts, declines (without root) or fails
-    ``hermes-serve*``/``hermes-dashboard*`` units, reporting each, before this function runs. Without excluding them,
+    e.g. ``moor update``'s systemd fleet-restart loop, which restarts, declines (without root) or fails
+    ``moor-serve*``/``moor-dashboard*`` units, reporting each, before this function runs. Without excluding them,
     a Serve-only install's freshly restarted process is found again here and restarted a second time for
     no benefit (review on #83595), and a declined system unit is retried into a polkit prompt (#141021).
     """
     from moor_cli import main_dashboard as _dash
 
-    _dash_unit = str(getattr(_dash, "_DASHBOARD_SYSTEMD_UNIT", "hermes-dashboard.service")).removesuffix(".service")
+    _dash_unit = str(getattr(_dash, "_DASHBOARD_SYSTEMD_UNIT", "moor-dashboard.service")).removesuffix(".service")
     # The update's fleet loop already handled the dashboard unit (restarted it, or declined for lack
     # of root and printed the manual command): a second attempt here restarts a healthy unit twice,
     # or retries without --no-ask-password and dumps a polkit/tty error under the same advice (#141021).
     if (restart_managed and _dash_unit not in (already_restarted_units or ())
             and _dash._restart_managed_dashboard_service(reason)):
-        # The dashboard unit is handled but other backends (e.g. hermes-serve.service) are not:
+        # The dashboard unit is handled but other backends (e.g. moor-serve.service) are not:
         # mark the unit handled so the filter below drops its PIDs, and keep going.
         already_restarted_units = set(already_restarted_units or ()) | {_dash_unit}
     exclude = _exclude_pids_from_env()

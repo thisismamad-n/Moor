@@ -1,5 +1,5 @@
-"""v4 reliability metrics: hermes.update.run / hermes.update.stage from the final update receipt,
-hermes.process.exit from per-process markers and turn watchdogs."""
+"""v4 reliability metrics: moor.update.run / moor.update.stage from the final update receipt,
+moor.process.exit from per-process markers and turn watchdogs."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import update_receipt
-from hermes_cli.observability import relay_shared_metrics
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_process as process_metrics
-from hermes_cli.observability import shared_metrics_update as update_metrics
+from moor_cli import update_receipt
+from moor_cli.observability import relay_shared_metrics
+from moor_cli.observability import shared_metrics_contract as contract
+from moor_cli.observability import shared_metrics_process as process_metrics
+from moor_cli.observability import shared_metrics_update as update_metrics
 
 
 @pytest.fixture
@@ -24,9 +24,9 @@ def marks(tmp_path, monkeypatch):
     """Capture decision marks at the runtime boundary; collection on unless a test turns it off."""
     captured: list[tuple[str, dict]] = []
     policy = {"on": True}
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config_readonly",
+        "moor_cli.config.read_raw_config_readonly",
         lambda: {"telemetry": {"shared_metrics": {"enabled": policy["on"]}}},
     )
     monkeypatch.setattr(relay_shared_metrics, "enabled", lambda: policy["on"])
@@ -144,10 +144,10 @@ def test_turn_watchdog_abort_counts_once_per_turn_in_the_turn_profile(marks, tmp
     agent = SimpleNamespace()
     process_metrics.record_watchdog_turn_abort(agent)  # never armed: no owning profile, no row
     process_metrics.arm_turn(agent)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "other"))  # the watchdog thread's ambient home
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "other"))  # the watchdog thread's ambient home
     seen: list[str] = []
     monkeypatch.setattr(relay_shared_metrics, "record_process_mark", lambda mark, data: (
-        marks.rows.append((mark, data)), seen.append(str(__import__("hermes_constants").get_hermes_home()))))
+        marks.rows.append((mark, data)), seen.append(str(__import__("moor_constants").get_moor_home()))))
     process_metrics.record_watchdog_turn_abort(agent)
     process_metrics.record_watchdog_turn_abort(agent)  # the second watchdog on the same turn
     assert [data["exit_kind"] for _, data in marks.rows] == ["watchdog"]
@@ -170,7 +170,7 @@ def test_begin_process_marks_then_stamps_clean_and_crash(marks, monkeypatch):
 
 
 def test_opted_out_start_purges_markers_left_while_opted_in(marks, monkeypatch):
-    from hermes_cli.observability import shared_metrics_setup as setup_metrics
+    from moor_cli.observability import shared_metrics_setup as setup_metrics
 
     left = [process_metrics.markers_dir(marks.home) / "cli-1.json", setup_metrics.markers_dir(marks.home) / "tui-1-1.json",
             marks.home / "telemetry" / "shared_metrics" / "desktop_onboarding" / "provider.completed"]  # CLI opt-out
@@ -186,9 +186,9 @@ def test_opted_out_start_purges_markers_left_while_opted_in(marks, monkeypatch):
 def test_v3_schema_accepts_exactly_the_contract_values():
     from pathlib import Path
 
-    from hermes_cli import observability
+    from moor_cli import observability
 
-    schema = json.loads((Path(observability.__file__).parent / "schemas/hermes.shared_metrics.v4.schema.json").read_text())
+    schema = json.loads((Path(observability.__file__).parent / "schemas/moor.shared_metrics.v4.schema.json").read_text())
     by_name = {d["properties"]["name"]["const"]: d for d in schema["$defs"].values() if "properties" in d}
     for metric in (contract.UPDATE_RUN_METRIC, contract.UPDATE_STAGE_METRIC, contract.PROCESS_EXIT_METRIC):
         dims = by_name[metric]["properties"]["dimensions"]
@@ -208,7 +208,7 @@ def _pre_pull_finalize(monkeypatch) -> None:
 def test_pre_pull_park_happens_only_while_opted_in_and_keeps_only_metric_fields(marks, monkeypatch):
     pending = update_metrics.pending_updates_dir(marks.home)
     pending.mkdir(parents=True)
-    (pending / "earlier.json").write_text(json.dumps({"update_id": "earlier", "argv": ["hermes", "update"]}))
+    (pending / "earlier.json").write_text(json.dumps({"update_id": "earlier", "argv": ["moor", "update"]}))
     marks.policy["on"] = False
     _pre_pull_finalize(monkeypatch)
     assert not pending.exists() or list(pending.iterdir()) == []  # nothing parked, the earlier one purged

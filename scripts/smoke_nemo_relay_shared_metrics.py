@@ -318,11 +318,11 @@ UPDATE_RECEIPT: dict[str, Any] = {
 # The offline probes in the skill-lifecycle subprocess: one failed URL plugin install and one failed
 # update run (UPDATE_RECEIPT), identical in SQLite and in the export.
 FAILURE_EXPECTED_DIMENSIONS = {
-    "hermes.extension.install.count": {
+    "moor.extension.install.count": {
         "failure_class": "clone_failed", "kind": "plugin", "name": "custom", "outcome": "failed",
         "registry": "none", "source": "local",
     },
-    "hermes.update.run": {
+    "moor.update.run": {
         "apply_mode": "unknown", "duration_bucket": "lt_30s", "failed_stage": "apply",
         "failure_class": "fetch_failed", "from_version_age_bucket": "unknown", "kind": "cli",
         "outcome": "failed",
@@ -334,7 +334,7 @@ def expected_update_stages() -> list[tuple[str, str]]:
     """One row per marked stage of UPDATE_RECEIPT, plus a failed row for the stage the run died in:
     stage marks are end marks, so the apply stage the fetch failure stopped has none of its own."""
     marked = [(stage["name"], stage["outcome"]) for stage in UPDATE_RECEIPT["stages"]]
-    died_in = FAILURE_EXPECTED_DIMENSIONS["hermes.update.run"]["failed_stage"]
+    died_in = FAILURE_EXPECTED_DIMENSIONS["moor.update.run"]["failed_stage"]
     return sorted([*marked, (died_in, "failed")])
 
 
@@ -346,28 +346,28 @@ def _validate_exact_rows(rows: dict[str, list[dict[str, Any]]], expected: dict[s
 
 def _validate_failure_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
     _validate_exact_rows(rows, FAILURE_EXPECTED_DIMENSIONS)
-    stages = sorted((row["dimensions"]["stage"], row["dimensions"]["outcome"]) for row in rows["hermes.update.stage"])
+    stages = sorted((row["dimensions"]["stage"], row["dimensions"]["outcome"]) for row in rows["moor.update.stage"])
     if stages != expected_update_stages():
-        raise AssertionError(f"Unexpected update stages: {rows['hermes.update.stage']}")
+        raise AssertionError(f"Unexpected update stages: {rows['moor.update.stage']}")
 # ---- end iuf c1 ----
 
 
 # One interactive turn (2 model calls, 1 read_file) on the canary custom model: the v5 per-turn,
 # per-conversation rows it must produce, identical in SQLite and in the export. The agent-created
-# skill is Hermes' own work, so it records no feature_adoption row (the exact name sets assert that).
+# skill is Moor' own work, so it records no feature_adoption row (the exact name sets assert that).
 V5_EXPECTED_DIMENSIONS = {
-    "hermes.task_cost.count": {
+    "moor.task_cost.count": {
         "api_calls_bucket": "2", "model": "custom", "outcome": "completed", "provider": "custom",
         "tokens_bucket": "lt_2k", "tool_calls_bucket": "1",
     },
-    "hermes.tool_output_truncation.count": {"original_size_bucket": "lt_1k", "tool": "read_file", "truncated": "no"},
-    "hermes.tool_enabled_unused.count": {"toolset": "file", "used": "yes"},
+    "moor.tool_output_truncation.count": {"original_size_bucket": "lt_1k", "tool": "read_file", "truncated": "no"},
+    "moor.tool_enabled_unused.count": {"toolset": "file", "used": "yes"},
 }
 
 
 def _validate_v5_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
     _validate_exact_rows(rows, V5_EXPECTED_DIMENSIONS)
-    [overhead] = rows["hermes.tool_overhead.count"]  # the file toolset's 4 tools, schema tokens estimated
+    [overhead] = rows["moor.tool_overhead.count"]  # the file toolset's 4 tools, schema tokens estimated
     if (
         overhead["value"] != 1
         or overhead["dimensions"]["execution_surface"] != "cli"
@@ -381,8 +381,8 @@ def _validate_v5_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
 # gateway reports its own boot latency and the local platform's delivery and first-reply latency for
 # the turn. The turn's single read_file call is one tool batch.
 GATEWAY_TURN_EXPECTED_DIMENSIONS = {
-    "hermes.platform.delivery": {"failure_class": "none", "outcome": "sent", "platform": "local"},
-    "hermes.tool_batch.count": {"connector_share": "none", "model": "custom", "provider": "custom", "size_bucket": "1"},
+    "moor.platform.delivery": {"failure_class": "none", "outcome": "sent", "platform": "local"},
+    "moor.tool_batch.count": {"connector_share": "none", "model": "custom", "provider": "custom", "size_bucket": "1"},
 }
 # Each process that launched once reports one startup row: the chat client and the gateway it started.
 EXPECTED_STARTUP_SURFACES = ("cli", "gateway_boot")
@@ -390,10 +390,10 @@ EXPECTED_STARTUP_SURFACES = ("cli", "gateway_boot")
 
 def _validate_gateway_turn_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
     _validate_exact_rows(rows, GATEWAY_TURN_EXPECTED_DIMENSIONS)
-    replies = rows["hermes.gateway.reply_latency"]  # the bucket is whatever the host's load made it
+    replies = rows["moor.gateway.reply_latency"]  # the bucket is whatever the host's load made it
     if any(row["dimensions"]["platform"] != "local" for row in replies) or sum(row["value"] for row in replies) != 1:
         raise AssertionError(f"Unexpected gateway reply latency: {replies}")
-    startup = rows["hermes.startup.latency"]
+    startup = rows["moor.startup.latency"]
     if sorted(row["dimensions"]["surface"] for row in startup) != sorted(EXPECTED_STARTUP_SURFACES) or any(
         row["value"] != 1 for row in startup
     ):
@@ -402,34 +402,34 @@ def _validate_gateway_turn_rows(rows: dict[str, list[dict[str, Any]]]) -> None:
 
 # The metric names the scenario must produce, exactly, in SQLite and in the export.
 EXPECTED_METRIC_NAMES = frozenset({
-    "hermes.client.active",
-    "hermes.context_peak.count",
-    "hermes.extension.install.count",  # iuf c1
-    "hermes.gateway.reply_latency",
-    "hermes.install.milestone",
-    "hermes.install.snapshot",
-    "hermes.model_reply_issue.count",
-    "hermes.model_route.count",
-    "hermes.model_tokens.sum",
-    "hermes.model_tool_quality.count",
-    "hermes.platform.delivery",
-    "hermes.session.count",
-    "hermes.skill.lifecycle.count",
-    "hermes.skill.load.count",
-    "hermes.startup.latency",
-    "hermes.task_cost.count",
-    "hermes.task_run.duration",
-    "hermes.task_run.finished",
-    "hermes.task_run.started",
-    "hermes.tool.usage.count",
-    "hermes.tool_batch.count",
-    "hermes.tool_call.count",
-    "hermes.tool_call.latency",
-    "hermes.tool_enabled_unused.count",
-    "hermes.tool_output_truncation.count",
-    "hermes.tool_overhead.count",
-    "hermes.update.run",  # iuf c1
-    "hermes.update.stage",  # iuf c1
+    "moor.client.active",
+    "moor.context_peak.count",
+    "moor.extension.install.count",  # iuf c1
+    "moor.gateway.reply_latency",
+    "moor.install.milestone",
+    "moor.install.snapshot",
+    "moor.model_reply_issue.count",
+    "moor.model_route.count",
+    "moor.model_tokens.sum",
+    "moor.model_tool_quality.count",
+    "moor.platform.delivery",
+    "moor.session.count",
+    "moor.skill.lifecycle.count",
+    "moor.skill.load.count",
+    "moor.startup.latency",
+    "moor.task_cost.count",
+    "moor.task_run.duration",
+    "moor.task_run.finished",
+    "moor.task_run.started",
+    "moor.tool.usage.count",
+    "moor.tool_batch.count",
+    "moor.tool_call.count",
+    "moor.tool_call.latency",
+    "moor.tool_enabled_unused.count",
+    "moor.tool_output_truncation.count",
+    "moor.tool_overhead.count",
+    "moor.update.run",  # iuf c1
+    "moor.update.stage",  # iuf c1
 })
 
 
@@ -500,7 +500,7 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
             f"Unexpected client-active counter: {by_name['moor.client.active']}"
         )
     # Two primary calls; each lands in whatever TTFT bucket the host's load put it in.
-    models = by_name["hermes.model_route.count"]
+    models = by_name["moor.model_route.count"]
     expected_model = {
         "call_role": "primary", "error_class": "none", "model": "custom", "outcome": "success",
         "provider": "custom",
@@ -543,53 +543,53 @@ def _validate_store(database_path: Path) -> list[dict[str, Any]]:
         or terminal["packaged_value"] != 1
     ):
         raise AssertionError(f"Unexpected task terminal counter: {terminal}")
-    [duration] = by_name["hermes.task_run.duration"]
+    [duration] = by_name["moor.task_run.duration"]
     if duration["dimensions"] != {
         "duration_bucket": duration["dimensions"].get("duration_bucket"),
         "execution_surface": "cli", "outcome": "success", "retry_count_bucket": "0",
     } or duration["value"] != 1:
         raise AssertionError(f"Unexpected task duration counter: {duration}")
-    [cost] = by_name["hermes.task_cost.count"]
+    [cost] = by_name["moor.task_cost.count"]
     if (cost["dimensions"]["api_calls_bucket"], cost["dimensions"]["tool_calls_bucket"]) != ("2", "1"):
         raise AssertionError(f"Unexpected task cost counter: {cost}")
-    if [c["dimensions"] for c in by_name["hermes.tool.usage.count"]] != [
+    if [c["dimensions"] for c in by_name["moor.tool.usage.count"]] != [
         {"error_class": "none", "outcome": "success", "tool_name": "read_file"}
     ]:
-        raise AssertionError(f"Unexpected tool usage: {by_name['hermes.tool.usage.count']}")
-    [snapshot] = by_name["hermes.install.snapshot"]
+        raise AssertionError(f"Unexpected tool usage: {by_name['moor.tool.usage.count']}")
+    [snapshot] = by_name["moor.install.snapshot"]
     if (
         snapshot["value"] != 1 or snapshot["dimensions"]["memory_provider"] != "builtin"
         # The smoke config leaves compression.prepare_ahead at its default.
         or snapshot["dimensions"]["compression_prepare_ahead"] != "off"
     ):
         raise AssertionError(f"Unexpected install snapshot: {snapshot}")
-    [session] = by_name["hermes.session.count"]
+    [session] = by_name["moor.session.count"]
     if (session["dimensions"]["turn_count_bucket"], session["dimensions"]["last_outcome"]) != (
         "1", "success",
     ):
         raise AssertionError(f"Unexpected session summary: {session}")
-    tokens = {c["dimensions"]["token_type"]: c["value"] for c in by_name["hermes.model_tokens.sum"]}
+    tokens = {c["dimensions"]["token_type"]: c["value"] for c in by_name["moor.model_tokens.sum"]}
     if tokens != {"input": 20, "output": 2}:
-        raise AssertionError(f"Unexpected token sums: {by_name['hermes.model_tokens.sum']}")
-    [quality] = by_name["hermes.model_tool_quality.count"]
+        raise AssertionError(f"Unexpected token sums: {by_name['moor.model_tokens.sum']}")
+    [quality] = by_name["moor.model_tool_quality.count"]
     if quality["dimensions"] != {"call_role": "primary", "issue": "none", "model": "custom", "provider": "custom"}:
         raise AssertionError(f"Unexpected tool-call quality: {quality}")
-    [reply] = by_name["hermes.model_reply_issue.count"]  # both scripted replies are usable
+    [reply] = by_name["moor.model_reply_issue.count"]  # both scripted replies are usable
     if (reply["dimensions"], reply["value"]) != ({"issue": "none", "model": "custom", "provider": "custom"}, 2):
         raise AssertionError(f"Unexpected model reply issues: {reply}")
-    [peak] = by_name["hermes.context_peak.count"]
+    [peak] = by_name["moor.context_peak.count"]
     if (peak["dimensions"]["provider"], peak["dimensions"]["model"], peak["dimensions"]["limit_hit"]) != (
         "custom", "custom", "no",
     ):
         raise AssertionError(f"Unexpected context peak: {peak}")
-    milestones = {c["dimensions"]["milestone"] for c in by_name["hermes.install.milestone"]}
+    milestones = {c["dimensions"]["milestone"] for c in by_name["moor.install.milestone"]}
     if not {"first_task_started", "first_task_success", "first_tool_success"} <= milestones:
         raise AssertionError(f"Missing install milestones: {sorted(milestones)}")
-    [tool] = by_name["hermes.tool_call.count"]
+    [tool] = by_name["moor.tool_call.count"]
     expected_tool_dimensions = {
         "approval_outcome": "not_required", "outcome": "success", "tool_category": "file",
     }
-    [latency] = by_name["hermes.tool_call.latency"]
+    [latency] = by_name["moor.tool_call.latency"]
     if (
         tool["dimensions"] != expected_tool_dimensions
         or latency["dimensions"]["latency_bucket"] == "unknown"
@@ -703,7 +703,7 @@ def _validate_packages(
         raise AssertionError(
             f"Unexpected client-active metric: {metrics['moor.client.active']}"
         )
-    models = metrics["hermes.model_route.count"]
+    models = metrics["moor.model_route.count"]
     if any(
         {k: v for k, v in m["dimensions"].items() if k != "ttft_bucket"} != {
             "call_role": "primary", "error_class": "none", "model": "custom", "outcome": "success",
@@ -729,7 +729,7 @@ def _validate_packages(
     if (
         tool["dimensions"]
         != {"approval_outcome": "not_required", "outcome": "success", "tool_category": "file"}
-        or metrics["hermes.tool_call.latency"][0]["dimensions"]["latency_bucket"] == "unknown"
+        or metrics["moor.tool_call.latency"][0]["dimensions"]["latency_bucket"] == "unknown"
     ):
         raise AssertionError(f"Unexpected tool metric: {tool}")
     lifecycle = metrics["moor.skill.lifecycle.count"]
@@ -765,10 +765,10 @@ def _validate_packages(
 
 def main() -> int:
     args = _arguments()
-    hermes_repo = args.hermes_repo.resolve()
+    moor_repo = args.moor_repo.resolve()
     # The gateway identity check must come from the tree under test, not whatever tree the venv's
     # editable install points at.
-    sys.path.insert(0, str(hermes_repo))
+    sys.path.insert(0, str(moor_repo))
     relay_python = args.relay_python.resolve() if args.relay_python else None
     moor = _resolve_moor_executable(moor_repo)
     if relay_python is not None and not any(
@@ -910,8 +910,8 @@ def main() -> int:
                 # A real failing plugin install (offline: a file:// repo that does not exist) and a
                 # final update receipt whose fetch failed: each emits one row with a failure_class.
                 "from pathlib import Path",
-                "from hermes_cli.plugins_cmd import PluginOperationError, _install_plugin_core",
-                "from hermes_cli.plugins_cmd_install import recorded_install",
+                "from moor_cli.plugins_cmd import PluginOperationError, _install_plugin_core",
+                "from moor_cli.plugins_cmd_install import recorded_install",
                 "missing = (Path.cwd() / 'no-such-plugin-repo').as_uri()",
                 "try:",
                 "    recorded_install(lambda: _install_plugin_core(missing, force=False),",
@@ -919,7 +919,7 @@ def main() -> int:
                 "    raise SystemExit('bogus plugin install succeeded')",
                 "except PluginOperationError:",
                 "    pass",
-                "from hermes_cli.observability.shared_metrics_update import record_update_receipt",
+                "from moor_cli.observability.shared_metrics_update import record_update_receipt",
                 f"record_update_receipt({UPDATE_RECEIPT!r})",
                 "runtime = relay_shared_metrics._get_runtime()",
                 "assert runtime is not None",
@@ -958,7 +958,7 @@ def main() -> int:
         / "moor_cli"
         / "observability"
         / "schemas"
-        / "hermes.shared_metrics.v4.schema.json",
+        / "moor.shared_metrics.v4.schema.json",
     )
 
     print("Moor -> NeMo Relay shared-metrics smoke test passed")

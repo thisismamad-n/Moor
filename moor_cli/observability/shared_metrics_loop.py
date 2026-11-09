@@ -22,26 +22,26 @@ logger = logging.getLogger(__name__)
 
 
 @contextlib.contextmanager
-def _bound_home(hermes_home: Any) -> Iterator[None]:
+def _bound_home(moor_home: Any) -> Iterator[None]:
     """Record in the profile captured by the producer (curator/delegation threads carry no binding)."""
-    if not hermes_home:
+    if not moor_home:
         yield
         return
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
-    token = set_hermes_home_override(hermes_home)
+    token = set_moor_home_override(moor_home)
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
-def _emit(mark_attr: str, build: Callable[..., dict[str, str] | None], *, hermes_home: Any = None, **raw: Any) -> None:
+def _emit(mark_attr: str, build: Callable[..., dict[str, str] | None], *, moor_home: Any = None, **raw: Any) -> None:
     try:
         from . import shared_metrics_contract as contract
         from .shared_metrics_events import _emit as emit_mark
 
-        with _bound_home(hermes_home):
+        with _bound_home(moor_home):
             emit_mark(getattr(contract, mark_attr), build, **raw)
     except Exception:
         logger.debug("Shared-metrics %s not recorded", mark_attr, exc_info=True)
@@ -63,9 +63,9 @@ def _parsed(result: Any) -> dict[str, Any]:
 
 def _current_home() -> str | None:
     try:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
-        return str(get_hermes_home())
+        return str(get_moor_home())
     except Exception:
         return None
 
@@ -195,12 +195,12 @@ def curator_run_fields(*, trigger: Any, outcome: Any, counts: Any) -> dict[str, 
 
 def record_curator_run(
     *, trigger: str, outcome: str, counts: dict[str, int] | Callable[[], dict[str, int]] | None = None,
-    hermes_home: Any = None,
+    moor_home: Any = None,
 ) -> None:
     """One row per curator pass. ``counts`` may be a callable so the diff is only computed when on."""
     _emit(
         "CURATOR_RUN_MARK", curator_run_fields, trigger=trigger, outcome=outcome, counts=counts or {},
-        hermes_home=hermes_home,
+        moor_home=moor_home,
     )
 
 
@@ -216,7 +216,7 @@ _MAX_OPEN_DELEGATIONS = 256
 class _DelegationRun:
     expected: int
     depth: int
-    hermes_home: str | None
+    moor_home: str | None
     statuses: list[Any] = field(default_factory=list)
     background: bool = False
 
@@ -255,7 +255,7 @@ def begin_delegation_run(call_key: object, *, subagents: int, depth: int) -> Non
     """Open one delegate_task call; ``call_key`` is the object every unit of the call shares."""
     if subagents <= 0:
         return
-    run = _DelegationRun(expected=subagents, depth=depth, hermes_home=_current_home())
+    run = _DelegationRun(expected=subagents, depth=depth, moor_home=_current_home())
     with _DELEGATIONS_LOCK:
         while len(_DELEGATIONS) >= _MAX_OPEN_DELEGATIONS:
             _DELEGATIONS.pop(next(iter(_DELEGATIONS)))
@@ -276,7 +276,7 @@ def finish_delegation_unit(call_key: object, results: Iterable[Any], *, backgrou
         del _DELEGATIONS[id(call_key)]
     _emit(
         "DELEGATION_RUN_MARK", delegation_run_fields, statuses=run.statuses, depth=run.depth,
-        background=run.background, subagents=run.expected, hermes_home=run.hermes_home,
+        background=run.background, subagents=run.expected, moor_home=run.moor_home,
     )
 
 
@@ -329,14 +329,14 @@ def execution_backend_fields(*, kind: Any, backend: Any, result: Any, error_clas
     }
 
 
-# Set while Hermes itself drives a backend (TUI/Desktop path completion listings): that is not the
+# Set while Moor itself drives a backend (TUI/Desktop path completion listings): that is not the
 # user's workload, so it must not show up as backend usage.
 _UNMETERED = contextvars.ContextVar("shared_metrics_unmetered_backend", default=False)
 
 
 @contextlib.contextmanager
 def unmetered_backend_calls() -> Iterator[None]:
-    """Run Hermes-owned terminal/browser/code calls without counting them as execution-backend use."""
+    """Run moor-owned terminal/browser/code calls without counting them as execution-backend use."""
     token = _UNMETERED.set(True)
     try:
         yield
@@ -347,7 +347,7 @@ def unmetered_backend_calls() -> Iterator[None]:
 def record_execution_backend(kind: str, backend: Any, result: Any = None, *, error_class: str | None = None) -> Any:
     """Count one tool call that reached its backend; returns ``result`` unchanged. ``backend`` may be a
     callable so resolving it costs nothing while collection is off. Calls the background review /
-    curator forks make are Hermes' own work, not the user's (terminal.outcome skips them too)."""
+    curator forks make are Moor' own work, not the user's (terminal.outcome skips them too)."""
     from tools.skill_provenance import is_background_review
 
     if _UNMETERED.get() or is_background_review():

@@ -639,25 +639,25 @@ fi
 # $MOOR_HOME on the mounted volume. Run the same safe, non-interactive
 # config-schema migrations that `moor update` runs for non-Docker installs,
 # after first-boot seeding and before supervised gateway services start.
-# Set HERMES_SKIP_CONFIG_MIGRATION=1 for controlled/manual migrations.
-# Remote config mode (HERMES_CONFIG_BACKEND=remote) has no local config to migrate: the agent
+# Set MOOR_SKIP_CONFIG_MIGRATION=1 for controlled/manual migrations.
+# Remote config mode (MOOR_CONFIG_BACKEND=remote) has no local config to migrate: the agent
 # migrates the fetched document in memory and never writes it back, so a leftover config.yaml must
 # not be migrated or treated as live. The backend is decided by the agent's own selection (same
-# dotenv parser and precedence as at boot: container env, $HERMES_HOME/.env, managed .env), never
+# dotenv parser and precedence as at boot: container env, $MOOR_HOME/.env, managed .env), never
 # by a second grammar here. If it cannot be decided, nothing is migrated: the agent still decides
 # at boot, and a file-mode migration simply waits for the next boot.
-_config_backend=$(s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" -c '
+_config_backend=$(s6-setuidgid moor "$INSTALL_DIR/.venv/bin/python" -c '
 import sys
 from pathlib import Path
-from hermes_cli.env_loader import selected_config_backend_name
+from moor_cli.env_loader import selected_config_backend_name
 print(selected_config_backend_name(Path(sys.argv[1])))
-' "$HERMES_HOME" 2>/dev/null) || _config_backend=""
+' "$MOOR_HOME" 2>/dev/null) || _config_backend=""
 if [ "$_config_backend" = "remote" ]; then
-    echo "[stage2] HERMES_CONFIG_BACKEND=remote: skipping docker_config_migrate.py"
+    echo "[stage2] MOOR_CONFIG_BACKEND=remote: skipping docker_config_migrate.py"
 elif [ -z "$_config_backend" ]; then
     echo "[stage2] Warning: could not determine the config backend; skipping docker_config_migrate.py"
-elif [ -f "$HERMES_HOME/config.yaml" ]; then
-    s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/scripts/docker_config_migrate.py" \
+elif [ -f "$MOOR_HOME/config.yaml" ]; then
+    s6-setuidgid moor "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/scripts/docker_config_migrate.py" \
         || echo "[stage2] Warning: docker_config_migrate.py failed; continuing"
 fi
 
@@ -770,16 +770,16 @@ fi
 
 # --- Check the pinned Chromium binary ---
 # The image's Dockerfile pm-provisions pinned full Chromium into
-# $HERMES_RUNTIME_DIR (/opt/hermes/tools) at BUILD time and bakes the
-# resolved binary path into /etc/hermes/chromium-executable-path (the layout
-# differs per arch, so it is resolved at build time, not hard-coded). Hermes
-# reads that file itself (hermes_cli/browser_runtime.py) when pm's facts are
+# $MOOR_RUNTIME_DIR (/opt/moor/tools) at BUILD time and bakes the
+# resolved binary path into /etc/moor/chromium-executable-path (the layout
+# differs per arch, so it is resolved at build time, not hard-coded). Moor
+# reads that file itself (moor_cli/browser_runtime.py) when pm's facts are
 # hidden, so nothing is exported here: the hook only says, once per boot,
 # when the baked path no longer names a runnable binary (a custom build that
 # stripped the tool store), instead of leaving the first browser_exec call to
 # discover it. No file at all is quiet: such builds never baked one.
-if [ -f /etc/hermes/chromium-executable-path ]; then
-    browser_bin="$(cat /etc/hermes/chromium-executable-path)"
+if [ -f /etc/moor/chromium-executable-path ]; then
+    browser_bin="$(cat /etc/moor/chromium-executable-path)"
     if [ -n "$browser_bin" ] && [ -x "$browser_bin" ]; then
         echo "[stage2] Using pinned Chromium binary: $browser_bin"
     else

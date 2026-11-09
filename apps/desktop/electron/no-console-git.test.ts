@@ -45,7 +45,7 @@ function hangingTreeFixture() {
 
   if (process.platform === 'win32') {
     const python = execFileSync('python3', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' }).trim()
-    vi.stubEnv('HERMES_DESKTOP_PYTHON', python)
+    vi.stubEnv('MOOR_DESKTOP_PYTHON', python)
   }
 
   const listening = (port: number): Promise<boolean> =>

@@ -41,7 +41,7 @@ VALID = {
     #   programmatic - CLI sends via SMTP + reads verify links via IMAP (needs EMAIL_* creds)
     #   alias        - AgentMail agent-owned inboxes / per-broker aliases
     "email_mode": {"draft_only", "browser", "programmatic", "alias"},
-    # browser_backend: local = Hermes's own Chromium via browser_exec; camofox = the `camofox`
+    # browser_backend: local = Moor's own Chromium via browser_exec; camofox = the `camofox`
     # catalog plugin. Only browserbase (or auto + key) changes planning (soft-CAPTCHA clearing).
     "browser_backend": {"auto", "browserbase", "local", "camofox"},
     "tracker_backend": {"local-json", "google-sheets"},
@@ -49,7 +49,7 @@ VALID = {
 }
 
 
-# Values written by older installs, renamed when Hermes dropped agent-browser.
+# Values written by older installs, renamed when Moor dropped agent-browser.
 LEGACY_VALUES = {"browser_backend": {"agent-browser": "local"}}
 
 

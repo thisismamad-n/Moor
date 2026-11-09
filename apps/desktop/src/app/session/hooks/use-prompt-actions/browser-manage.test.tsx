@@ -6,7 +6,7 @@ import { $connection, setSessions } from '@/store/session'
 import { actRender, Harness, type HarnessHandle, RUNTIME_SESSION_ID, sessionInfo } from './index-test-utils'
 import { clearSingleFlightSessionResumeState } from './single-flight-resume'
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getLatestSessionMessages: vi.fn(async () => ({ messages: [], session_id: 'session' })),
   getProfiles: vi.fn(async () => ({ profiles: [] })),
   getSession: vi.fn(),

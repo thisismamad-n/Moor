@@ -4,7 +4,7 @@ const host = vi.hoisted(() => ({
   exposeInMainWorld: vi.fn(),
   send: vi.fn<(channel: string, line: string) => void>(),
   sendSync: vi.fn((channel: string): unknown =>
-    channel === 'hermes:feature-flags' ? { localModels: true, assumeFreshInstall: true } : {}
+    channel === 'moor:feature-flags' ? { localModels: true, assumeFreshInstall: true } : {}
   )
 }))
 
@@ -21,7 +21,7 @@ it('publishes the feature flags answered by main before the renderer starts', as
 
   expect(registration).toBeDefined()
   expect(registration![1]).toMatchObject({ localModelsEnabled: true, assumeFreshInstall: true })
-  expect(host.sendSync).toHaveBeenCalledWith('hermes:feature-flags')
+  expect(host.sendSync).toHaveBeenCalledWith('moor:feature-flags')
 })
 
 it('forwards full renderer error lines through the exposed bridge', async (): Promise<void> => {

@@ -1,7 +1,7 @@
-import { JsonRpcGatewayClient } from '@hermes/shared'
+import { JsonRpcGatewayClient } from '@moor/shared'
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { HermesGateway } from './client'
+import { MoorGateway } from './client'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -16,7 +16,7 @@ async function equalIdClient(resume: (profile: string) => Promise<unknown>) {
 
     return (method === 'session.resume' ? resume(String(params?.profile)) : { status: 'resolved' }) as never
   })
-  const client = new HermesGateway()
+  const client = new MoorGateway()
   await client.connect('ws://localhost/api/ws?native_dial=fixture&ticket=first')
 
   return { calls, client, emit: (event: Record<string, unknown>) => (client as any).handleEvent(event) }

@@ -38,23 +38,23 @@ def _platform_default_toolset(platform: object) -> str:
 
 @cache
 def _bundled_platform_names() -> frozenset:
-    from hermes_cli.config import _platform_manifest_paths
+    from moor_cli.config import _platform_manifest_paths
 
     return frozenset(name for name, path, _kind, _st in _platform_manifest_paths(source="bundled") if path)
 
 
 def is_known_platform_bundle(platform: object, name: str) -> bool:
-    """True when ``name`` is the ``hermes-<platform>`` bundle of a platform Hermes knows: builtin, shipped
+    """True when ``name`` is the ``moor-<platform>`` bundle of a platform Moor knows: builtin, shipped
     under ``plugins/platforms``, a platform that left core for a catalog plugin, or one a loaded plugin
     registered. Installs seeded from cli-config.yaml.example carry such rows for platforms nobody set up
     (teams, google_chat, homeassistant), inert until the plugin loads. A misspelt platform key naming its
-    own bundle (``telegarm: [hermes-telegarm]``) is not known, so it is still reported."""
+    own bundle (``telegarm: [moor-telegarm]``) is not known, so it is still reported."""
     if name != _platform_default_toolset(platform):
         return False
     key = str(platform)
     if key in PLATFORMS or key in _bundled_platform_names():
         return True
-    from hermes_cli.left_core_migration import LEFT_CORE
+    from moor_cli.left_core_migration import LEFT_CORE
 
     if any(feature.platform == key for feature in LEFT_CORE):
         return True
@@ -82,7 +82,7 @@ def saved_toolset_resolver(config: dict) -> Callable[[str], bool]:
     """``is_valid_toolset`` for a saved ``platform_toolsets`` list, mirroring what
     ``tools_config._get_platform_tools`` lets through: registered toolsets, any configured MCP server by
     its ``mcp-<server>`` toolset name or bare alias (neither is registered before MCP discovery; a
-    disabled server is inactive, not a typo), ``hermes-<platform>`` plugin-platform bundles and the
+    disabled server is inactive, not a typo), ``moor-<platform>`` plugin-platform bundles and the
     ``no_mcp`` sentinel. The manifest scan and the plugin lookup (which may run plugin discovery)
     happen only for a name the cheaper checks cannot place."""
     from functools import cache
@@ -95,13 +95,13 @@ def saved_toolset_resolver(config: dict) -> Callable[[str], bool]:
 
     @cache
     def platform_bundles() -> frozenset:
-        from hermes_cli.config import _platform_plugin_manifests
+        from moor_cli.config import _platform_plugin_manifests
 
-        return frozenset(f"hermes-{name}" for name, _manifest in _platform_plugin_manifests())
+        return frozenset(f"moor-{name}" for name, _manifest in _platform_plugin_manifests())
 
     @cache
     def plugin_names() -> frozenset:
-        from hermes_cli.plugins import get_plugin_toolset_keys_nowait, get_portable_mcp_server_names_nowait
+        from moor_cli.plugins import get_plugin_toolset_keys_nowait, get_portable_mcp_server_names_nowait
 
         portable = get_portable_mcp_server_names_nowait()
         return frozenset(get_plugin_toolset_keys_nowait() | portable | {f"mcp-{name}" for name in portable})

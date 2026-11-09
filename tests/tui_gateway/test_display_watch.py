@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 def _other_process(home: Path, stmt: str) -> None:
-    env = {**os.environ, "HERMES_HOME": str(home)}
+    env = {**os.environ, "MOOR_HOME": str(home)}
     subprocess.run(
         [sys.executable, "-c", f"import sys; sys.path.insert(0, {str(REPO)!r}); "
          f"from tools.bot_desktop import lease; {stmt}"],
@@ -65,7 +65,7 @@ def _lease_events(events, **want):
 
 def test_takeover_in_another_process_is_broadcast(tmp_path, monkeypatch):
     from tui_gateway import server
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
     home = tmp_path / "home"
     home.mkdir()
     events = _watching(server, home, monkeypatch)

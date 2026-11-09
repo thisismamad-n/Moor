@@ -7,7 +7,7 @@ Prompt strings and config write order are behavior.
 
 from __future__ import annotations
 
-from hermes_cli.model_setup_flows_common import (
+from moor_cli.model_setup_flows_common import (
     _ask, _ensure_dict_section, _finish_model, _note_setup_failure, _pick_model_or_prompt, _say)
 
 

@@ -129,7 +129,7 @@ def test_finite_chat_joins_parallel_children_before_final_response(tmp_path, mod
     mode_flags = {"quiet": ["-Q"], "oneshot": ["--oneshot"], "redirected": [],
                   "resumed": ["-Q"]}
     command = [
-        sys.executable, "-c", "from hermes_cli.main import main; main()", "chat",
+        sys.executable, "-c", "from moor_cli.main import main; main()", "chat",
         *mode_flags[mode], "--provider", "custom", "--model", "test-model", "--base-url", url,
         "--toolsets", "delegation", "--ignore-rules", "--query-file", str(query),
         "--reasoning", "high", "--max-turns", "10",

@@ -43,7 +43,7 @@ def _secret_result(var_name: str, value: str) -> dict:
     except ValueError as exc:  # a locked or denylisted key: the skill setup only logs it, so say why here
         cprint(f"\n  ✗ {exc}")
         raise
-    cprint(f"\n{_DIM}  ✓ Stored secret in {display_hermes_home()}/.env as {var_name}{_RST}")
+    cprint(f"\n{_DIM}  ✓ Stored secret in {display_moor_home()}/.env as {var_name}{_RST}")
     return {
         **stored,
         "skipped": False,

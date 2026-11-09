@@ -326,11 +326,11 @@ test('addWorktree: base origin/main does not set up upstream tracking', async ()
 // installers made: remote.origin.fetch maps only the tag, so no branch has a
 // tracking ref. The remote has `main` and `feature` one commit past the tag.
 // Returns both paths and the tip. The caller must remove them.
-const IDENT = ['-c', 'user.email=hermes@localhost', '-c', 'user.name=Hermes']
+const IDENT = ['-c', 'user.email=moor@localhost', '-c', 'user.name=Moor']
 
 function seedNarrowClone(label) {
-  const remoteDir = fs.mkdtempSync(path.join(os.tmpdir(), `hermes-${label}-remote-`))
-  const cloneDir = fs.mkdtempSync(path.join(os.tmpdir(), `hermes-${label}-clone-`))
+  const remoteDir = fs.mkdtempSync(path.join(os.tmpdir(), `moor-${label}-remote-`))
+  const cloneDir = fs.mkdtempSync(path.join(os.tmpdir(), `moor-${label}-clone-`))
   execFileSync('git', ['init', '-q', '-b', 'main', remoteDir])
   execFileSync('git', ['-C', remoteDir, ...IDENT, 'commit', '-q', '--allow-empty', '-m', 'root'])
   execFileSync('git', ['-C', remoteDir, 'tag', 'v0'])

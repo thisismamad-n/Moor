@@ -28,11 +28,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from fastapi import APIRouter, HTTPException, Query
 
-from hermes_cli.session_listing import subagent_listing_scope
-from hermes_cli.web_deps import late
-from hermes_cli.config import get_process_hermes_home
-from hermes_cli.profiles import ProfileIdentitySettlementPending
-from hermes_cli.web_server_config import (
+from moor_cli.session_listing import subagent_listing_scope
+from moor_cli.web_deps import late
+from moor_cli.config import get_process_moor_home
+from moor_cli.profiles import ProfileIdentitySettlementPending
+from moor_cli.web_server_config import (
     _apply_main_model_assignment, _normalize_main_model_assignment, _validated_main_model_selection,
 )
 from moor_cli.web_server_gateway import _strip_session_list_rows
@@ -123,7 +123,7 @@ def _scope_profile_name(path: Path) -> Optional[str]:
 
 def _write_profile_model(profile_dir: Path, provider: str, model: str, validate_in: Optional[Path] = None,
                          base_url: str = "") -> None:
-    """Write the main model assignment into ``profile_dir``'s config.yaml (HERMES_HOME-scoped)
+    """Write the main model assignment into ``profile_dir``'s config.yaml (MOOR_HOME-scoped)
     through the same validated /model shape as ``POST /api/model/set``.
 
     ``validate_in`` is the home whose ``providers:``/``.env``/catalog vouch for the pick (default:
@@ -138,8 +138,8 @@ def _write_profile_model(profile_dir: Path, provider: str, model: str, validate_
 
     ``base_url`` is the endpoint a bare ``custom``/``local`` pick binds to (a fresh profile's config
     names none); other providers ignore it."""
-    from hermes_cli.config import load_config, save_config
-    from hermes_cli.config_backend import refusing_locked_omissions
+    from moor_cli.config import load_config, save_config
+    from moor_cli.config_backend import refusing_locked_omissions
     with _config_profile_scope(_scope_profile_name(validate_in or profile_dir)):
         provider, model = _normalize_main_model_assignment(provider, model)
         result = _validated_main_model_selection(load_config(), provider, model, base_url)

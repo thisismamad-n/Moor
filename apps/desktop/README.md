@@ -9,11 +9,11 @@
 
 **The native desktop app for [Moor Agent](../../README.md) — the self-improving AI agent from [Moor inc.](https://nousresearch.com).** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
 
-> **Intel Macs:** the `Hermes-Setup.dmg` bootstrap installer is built for
+> **Intel Macs:** the `moor-setup.dmg` bootstrap installer is built for
 > Apple Silicon (arm64) only, so on an Intel Mac it reports "not supported on
 > this Mac". Stable releases build the native `darwin-x64` bundle only when
 > cut with `--with macos-intel`; otherwise install the
-> [CLI](../../README.md) and run `hermes desktop`. See
+> [CLI](../../README.md) and run `moor desktop`. See
 > [Platform Support](../../website/docs/getting-started/platform-support.md#build-targets-and-support-priority).
 
 <table>
@@ -118,7 +118,7 @@ publishes Windows and macOS packages; Linux desktop legs are disabled.
 
 The bundled app carries the Electron shell, native React chat surface, and
 local agent payload. It runs the payload directly from resources. User data
-lives in `HERMES_HOME` outside the app. Bootstrap builds instead provision a
+lives in `MOOR_HOME` outside the app. Bootstrap builds instead provision a
 source installation. A remote-only Light variant exists as a build target but
 is not published.
 

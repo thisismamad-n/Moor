@@ -28,7 +28,7 @@ function write(file: string, text: string) {
 
 /** Whether this host's temporary folder ignores case: create `X`, look for `x`. */
 function caseInsensitiveTmp(): boolean {
-  const probe = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-dp-case-'))
+  const probe = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-dp-case-'))
 
   try {
     fs.mkdirSync(path.join(probe, 'Desktop'))
@@ -119,7 +119,7 @@ describe('reconcileUnifiedDesktopHalves', () => {
   it.skipIf(process.platform === 'win32')(
     'materializes a SYMLINKED dev package and re-syncs on any byte change, even with an older mtime',
     async () => {
-      // `ln -s ~/src/my-plugin ~/.hermes/plugins/` is how a plugin is developed in
+      // `ln -s ~/src/my-plugin ~/.moor/plugins/` is how a plugin is developed in
       // place; the Python loader follows it, but the reconcile skipped the link
       // (Dirent.isDirectory() is false for a symlink) — the desktop half never loaded.
       const home = makeHome()

@@ -6,7 +6,7 @@ Real plugin directories, real loader, real config/.env files under a temp home.
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
 pytest.importorskip("fastapi")
@@ -23,9 +23,9 @@ def register(ctx):
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    from hermes_cli import plugins as plugins_mod
+    from moor_cli import plugins as plugins_mod
 
-    root = tmp_path / "hermes_home"
+    root = tmp_path / "moor_home"
     work = root / "profiles" / "work"
     plugin_dir = work / "plugins" / "workchat"
     plugin_dir.mkdir(parents=True)
@@ -38,7 +38,7 @@ def homes(tmp_path, monkeypatch):
         (home / ".env").write_text("", encoding="utf-8")
     empty_bundled = tmp_path / "bundled"
     empty_bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     from agent import secret_scope
     from tui_gateway import launch_profile_policy as lpp
@@ -51,7 +51,7 @@ def homes(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client(homes):
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
     c = TestClient(app)
     c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return c
@@ -82,13 +82,13 @@ def test_a_managed_gateway_block_for_a_profile_plugin_stays_in_that_profile(clie
     """The administrator's config goes through the same filtered steps: a managed ``gateway.<plugin id>``
     block must not register the profile's plugin process-wide either."""
     from gateway.config import Platform
-    from hermes_cli import managed_scope
+    from moor_cli import managed_scope
 
     _, work = homes
     managed = tmp_path / "managed"
     managed.mkdir()
     (managed / "config.yaml").write_text(yaml.safe_dump({"gateway": {"workchat": {"enabled": True}}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     managed_scope.invalidate_managed_cache()
     (work / "config.yaml").write_text(yaml.safe_dump({
         "plugins": {"enabled": ["workchat"]}, "platforms": {"webhook": {"enabled": True}},

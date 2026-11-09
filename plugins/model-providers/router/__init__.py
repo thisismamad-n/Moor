@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from agent.reasoning_effort import EFFORT_LADDER
-from hermes_cli.version_info import hermes_user_agent
+from moor_cli.version_info import moor_user_agent
 from providers import register_provider
 from providers.base import LazyHeaders, ProviderProfile, _profile_user_agent
 
@@ -294,7 +294,7 @@ router = RouterProfile(
     env_vars=("RAMP_ROUTER_API_KEY", "ROUTER_API_KEY", "RAMP_ROUTER_BASE_URL"), base_url=_base_url(),
     auth_type="api_key",
     # Router attributes coding-agent clients by UA prefix; its WAF rejects default UAs.
-    default_headers=LazyHeaders({"User-Agent": lambda: hermes_user_agent("Hermes-Agent")}),
+    default_headers=LazyHeaders({"User-Agent": lambda: moor_user_agent("moor-agent")}),
     supports_vision=True, default_aux_model="gpt-5.4-mini",
     fallback_models=(),  # account-scoped IDs; the picker uses fetch_models()
 )

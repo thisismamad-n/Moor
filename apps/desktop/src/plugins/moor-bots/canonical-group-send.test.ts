@@ -19,7 +19,7 @@ test('uncertain sends reopen with exact identity and attachments, isolated by au
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'group-send-journal-'))
   const reopen = () => {
     const journal = preparedJournal(dir, 'http://localhost:5174')
-    vi.stubGlobal('window', { hermesDesktop: { preparedSubmissions: {
+    vi.stubGlobal('window', { moorDesktop: { preparedSubmissions: {
       read: async () => JSON.stringify(journal.read()),
       update: async (key: string, entry: string | null) => journal.update(key, entry === null ? null : JSON.parse(entry)),
       compareAndSet: async (key: string, expected: string | null, entry: string | null) => {
@@ -62,7 +62,7 @@ test('native journal acknowledgement gates send and a failed write cannot downgr
     return { applied: true, current: entry }
   }) }
   const browserWrite = vi.fn()
-  vi.stubGlobal('window', { hermesDesktop: { preparedSubmissions: native }, localStorage: { setItem: browserWrite } })
+  vi.stubGlobal('window', { moorDesktop: { preparedSubmissions: native }, localStorage: { setItem: browserWrite } })
   const send = vi.fn()
   const pending = prepareCanonicalGroupSend(binding, { text: 'before network' }).then(send)
   await writing

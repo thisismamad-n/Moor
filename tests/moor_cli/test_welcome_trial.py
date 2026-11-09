@@ -1,12 +1,12 @@
-"""The desktop's welcome trial (``hermes_cli.welcome_trial``): who may claim it, what a claim leaves
+"""The desktop's welcome trial (``moor_cli.welcome_trial``): who may claim it, what a claim leaves
 behind, which guests keep the free model, and that a connector guest never asks for inference."""
 
 import contextlib
 
 import pytest
 
-from hermes_cli import anon_auth, install_state, welcome_trial
-from tests.hermes_cli.anon_portal import as_local_desktop_backend, claimed_trial, install_portal, off_local_desktop
+from moor_cli import anon_auth, install_state, welcome_trial
+from tests.moor_cli.anon_portal import as_local_desktop_backend, claimed_trial, install_portal, off_local_desktop
 
 
 @pytest.fixture
@@ -38,9 +38,9 @@ def test_the_claim_is_stamped_by_the_mint_write_itself(portal, monkeypatch):
 
 BLOCKED = {
     "the CLI": lambda mp, home: None,
-    "an SSH backend": lambda mp, home: (mp.setenv("HERMES_DESKTOP", "1"), mp.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)),
+    "an SSH backend": lambda mp, home: (mp.setenv("MOOR_DESKTOP", "1"), mp.delenv("MOOR_DASHBOARD_SESSION_TOKEN", raising=False)),
     "guests switched off": lambda mp, home: (as_local_desktop_backend(mp),
-                                              (home / "config.yaml").write_text("nous:\n  guest: false\n", encoding="utf-8")),
+                                              (home / "config.yaml").write_text("moor:\n  guest: false\n", encoding="utf-8")),
     "a provider key": lambda mp, home: (as_local_desktop_backend(mp), mp.setenv("OPENROUTER_API_KEY", "sk-or-test")),
     "a used machine": lambda mp, home: (as_local_desktop_backend(mp), install_state.mark_machine_used()),
 }
@@ -48,9 +48,9 @@ BLOCKED = {
 
 @pytest.mark.parametrize("case", list(BLOCKED))
 def test_the_trial_is_never_claimed_outside_a_first_desktop_install(portal, monkeypatch, case):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    BLOCKED[case](monkeypatch, get_hermes_home())
+    BLOCKED[case](monkeypatch, get_moor_home())
 
     assert welcome_trial.claim_desktop_free_tier() is None
     assert portal.creates() == 0
@@ -63,8 +63,8 @@ def test_a_connector_guest_neither_claims_nor_carries_inference(portal, monkeypa
 
     assert welcome_trial.claim_desktop_free_tier() is None
     assert not anon_auth.free_inference_active()
-    from hermes_cli.auth import resolve_nous_access_token
-    resolve_nous_access_token()
+    from moor_cli.auth import resolve_moor_access_token
+    resolve_moor_access_token()
     assert [r["body"]["purpose"] for r in portal.token_requests] == ["connectors"]
 
 
@@ -77,7 +77,7 @@ def test_a_claimed_trial_carries_inference_outside_the_desktop_too(portal, monke
 
 
 def _chat(db_path, model: str) -> None:
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path)
     db.create_session("s1", "desktop", model=model)
@@ -94,12 +94,12 @@ def test_a_lost_claim_is_not_replaced(portal, monkeypatch):
 
 
 def test_a_connector_guest_adopted_from_the_shared_store_carries_no_trial(portal, monkeypatch):
-    from hermes_cli.auth import _load_auth_store, _save_auth_store
+    from moor_cli.auth import _load_auth_store, _save_auth_store
 
     as_local_desktop_backend(monkeypatch)
     anon_auth.ensure_portal_identity(explicit=True)  # connector mint: welcome_claim False, mirrored
     store = _load_auth_store()
-    store["providers"].pop("nous")  # a profile whose own identity differs adopts the shared one
+    store["providers"].pop("moor")  # a profile whose own identity differs adopts the shared one
     _save_auth_store(store)
 
     adopted = anon_auth.ensure_portal_identity(explicit=True)
@@ -118,14 +118,14 @@ LOSSES = {
 
 @pytest.mark.parametrize("loss", list(LOSSES))
 def test_a_lost_trial_is_never_claimed_again_after_a_relaunch(portal, monkeypatch, loss):
-    from hermes_cli import free_tier_bootstrap
-    from hermes_cli.auth import resolve_provider
-    from hermes_cli.auth_constants import AuthError
-    from hermes_constants import get_hermes_home
+    from moor_cli import free_tier_bootstrap
+    from moor_cli.auth import resolve_provider
+    from moor_cli.auth_constants import AuthError
+    from moor_constants import get_moor_home
 
     lose, creates = LOSSES[loss]
     claimed_trial(monkeypatch)
-    _chat(get_hermes_home() / "state.db", anon_auth.GUEST_MODEL)
+    _chat(get_moor_home() / "state.db", anon_auth.GUEST_MODEL)
     lose()
     install_state.probe.cache_clear()  # the relaunch
     free_tier_bootstrap.reset_for_tests()
@@ -141,33 +141,33 @@ def test_a_lost_trial_is_never_claimed_again_after_a_relaunch(portal, monkeypatc
 
 
 
-def test_a_leftover_guest_pool_row_is_not_reported_as_a_nous_login(portal, monkeypatch):
-    from hermes_cli.auth import _load_auth_store, _save_auth_store, resolve_nous_runtime_credentials
-    from hermes_cli.auth_nous import get_nous_auth_status_local
+def test_a_leftover_guest_pool_row_is_not_reported_as_a_moor_login(portal, monkeypatch):
+    from moor_cli.auth import _load_auth_store, _save_auth_store, resolve_moor_runtime_credentials
+    from moor_cli.auth_moor import get_moor_auth_status_local
 
     claimed_trial(monkeypatch)
-    resolve_nous_runtime_credentials()  # the trial ran, so the pool holds the guest's exchanged token
+    resolve_moor_runtime_credentials()  # the trial ran, so the pool holds the guest's exchanged token
     store = _load_auth_store()
-    store["providers"].pop("nous")  # the claim is lost; only the pool row is left
+    store["providers"].pop("moor")  # the claim is lost; only the pool row is left
     _save_auth_store(store)
 
-    # Provider setup would otherwise tag Nous Portal "Connected" for a credential that runs nothing.
-    assert get_nous_auth_status_local()["logged_in"] is False
+    # Provider setup would otherwise tag Moor Portal "Connected" for a credential that runs nothing.
+    assert get_moor_auth_status_local()["logged_in"] is False
 
 
 @pytest.mark.parametrize("desktop", [True, False], ids=["local_desktop_backend", "elsewhere"])
-def test_a_connector_guest_pinned_to_nous_gets_no_inference_token(portal, monkeypatch, desktop):
-    from hermes_cli.auth_constants import AuthError
-    from hermes_cli.runtime_provider import resolve_runtime_provider
-    from hermes_constants import get_hermes_home
+def test_a_connector_guest_pinned_to_moor_gets_no_inference_token(portal, monkeypatch, desktop):
+    from moor_cli.auth_constants import AuthError
+    from moor_cli.runtime_provider import resolve_runtime_provider
+    from moor_constants import get_moor_home
 
     if desktop:
         as_local_desktop_backend(monkeypatch)
     anon_auth.ensure_portal_identity(explicit=True)  # a connector action's guest, never claimed
-    (get_hermes_home() / "config.yaml").write_text("model:\n  provider: nous\n  default: nous/welcome\n",
+    (get_moor_home() / "config.yaml").write_text("model:\n  provider: moor\n  default: moor/welcome\n",
                                                    encoding="utf-8")
     with contextlib.suppress(AuthError):
-        resolve_runtime_provider(requested="nous")
+        resolve_runtime_provider(requested="moor")
 
     assert [r["body"].get("purpose") for r in portal.token_requests if r["body"].get("purpose") != "connectors"] == []
 
@@ -175,7 +175,7 @@ def test_a_connector_guest_pinned_to_nous_gets_no_inference_token(portal, monkey
 def test_the_token_seam_refuses_an_inference_token_to_a_guest_without_the_trial(portal, monkeypatch):
     import httpx
 
-    from hermes_cli.auth_constants import AuthError
+    from moor_cli.auth_constants import AuthError
 
     as_local_desktop_backend(monkeypatch)
     state = dict(anon_auth.ensure_portal_identity(explicit=True))  # a connector guest
@@ -186,15 +186,15 @@ def test_the_token_seam_refuses_an_inference_token_to_a_guest_without_the_trial(
 
 
 def _root_run():
-    from hermes_cli.config_effective import load_user_config_effective
-    from hermes_constants import get_default_hermes_root
+    from moor_cli.config_effective import load_user_config_effective
+    from moor_constants import get_default_moor_root
 
-    section = load_user_config_effective(get_default_hermes_root() / "config.yaml").get("onboarding") or {}
+    section = load_user_config_effective(get_default_moor_root() / "config.yaml").get("onboarding") or {}
     return section.get("run")
 
 
 def _relaunch():
-    from hermes_cli import free_tier_bootstrap
+    from moor_cli import free_tier_bootstrap
 
     install_state.probe.cache_clear()
     free_tier_bootstrap.reset_for_tests()
@@ -203,7 +203,7 @@ def _relaunch():
 
 @pytest.mark.parametrize("used", [False, True], ids=["fresh", "used"])
 def test_the_first_desktop_boot_records_that_onboarding_is_due(portal, monkeypatch, used):
-    from hermes_cli.onboarding_run import set_run
+    from moor_cli.onboarding_run import set_run
 
     as_local_desktop_backend(monkeypatch)
     if used:
@@ -218,19 +218,19 @@ def test_the_first_desktop_boot_records_that_onboarding_is_due(portal, monkeypat
 
 
 def test_a_missed_first_launch_stays_due_and_keeps_the_trial(portal, monkeypatch):
-    from hermes_cli.onboarding_run import should_run
-    from hermes_constants import get_hermes_home
+    from moor_cli.onboarding_run import should_run
+    from moor_constants import get_moor_home
 
     as_local_desktop_backend(monkeypatch)
     _relaunch()                                         # first boot; the app never opened onboarding
-    _chat(get_hermes_home() / "state.db", "anthropic/claude")   # then the user chatted
+    _chat(get_moor_home() / "state.db", "anthropic/claude")   # then the user chatted
     install_state.probe.cache_clear()
 
     assert install_state.probe().existing
     assert should_run() is True
     assert welcome_trial.claim_blocker() is None
     assert welcome_trial.claim_desktop_free_tier() is not None
-    assert welcome_trial.claim_blocker() == "a Nous identity exists"
+    assert welcome_trial.claim_blocker() == "a Moor identity exists"
 
 
 def test_a_claim_cut_off_before_its_marker_write_never_claims_twice(portal, monkeypatch):
@@ -256,23 +256,23 @@ def test_two_installs_claiming_at_once_mint_one_trial(portal, monkeypatch, tmp_p
     their auth locks never meet), one OS user, one marker. The canary claims while stable mints."""
     import threading
 
-    from hermes_cli import auth_nous
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_cli import auth_moor
+    from moor_constants import get_moor_home, reset_moor_home_override, set_moor_home_override
 
     as_local_desktop_backend(monkeypatch)
     _relaunch()                                          # the trial is reserved for this OS user
-    monkeypatch.setattr(auth_nous, "_nous_shared_auth_dir", lambda: get_hermes_home() / "shared-nous")
-    canary_root = tmp_path / "hermes-canary"
+    monkeypatch.setattr(auth_moor, "_moor_shared_auth_dir", lambda: get_moor_home() / "shared-moor")
+    canary_root = tmp_path / "moor-canary"
     canary_root.mkdir()
     canary: dict = {}
     canary_done = threading.Event()
 
     def canary_claims():
-        token = set_hermes_home_override(canary_root)
+        token = set_moor_home_override(canary_root)
         try:
             canary["state"] = welcome_trial.claim_desktop_free_tier()
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
             canary_done.set()
 
     stable, canary_thread = threading.current_thread(), threading.Thread(target=canary_claims)
@@ -292,7 +292,7 @@ def test_two_installs_claiming_at_once_mint_one_trial(portal, monkeypatch, tmp_p
 
 
 def test_one_due_answer_walks_the_provider_ladder_once(portal, monkeypatch):
-    from hermes_cli import auth
+    from moor_cli import auth
 
     as_local_desktop_backend(monkeypatch)
     real, calls = auth.resolve_provider, []
@@ -312,18 +312,18 @@ def _kanban_worker_model(monkeypatch, tmp_path) -> str:
     from dataclasses import asdict
     from types import SimpleNamespace
     from contextlib import closing
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.config import load_config
-    from hermes_cli.kanban_db_connect import connect
-    from hermes_constants import get_hermes_home
+    from moor_cli import kanban_db as kb
+    from moor_cli.config import load_config
+    from moor_cli.kanban_db_connect import connect
+    from moor_constants import get_moor_home
     from gateway.session_contract import Principal
     from gateway.session_kanban import build_kanban_policy
     from gateway.session_policy import restore_policy
 
-    home = str(get_hermes_home())
-    monkeypatch.setenv("HERMES_KANBAN_HOME", str(tmp_path / "kanban"))
-    monkeypatch.delenv("HERMES_KANBAN_DB", raising=False)
-    monkeypatch.setattr("hermes_cli.profiles.resolve_profile_env", lambda name: home)
+    home = str(get_moor_home())
+    monkeypatch.setenv("MOOR_KANBAN_HOME", str(tmp_path / "kanban"))
+    monkeypatch.delenv("MOOR_KANBAN_DB", raising=False)
+    monkeypatch.setattr("moor_cli.profiles.resolve_profile_env", lambda name: home)
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     kb.create_board("trial")
@@ -342,11 +342,11 @@ def _kanban_worker_model(monkeypatch, tmp_path) -> str:
 def unconfigured_trial(portal, monkeypatch):
     """A fresh install whose Desktop claimed the trial, read by the scheduler or the Kanban
     dispatcher (not Desktop work), with no model configured anywhere."""
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
+    monkeypatch.delenv("MOOR_MODEL", raising=False)
     claimed_trial(monkeypatch)
     off_local_desktop(monkeypatch)
     yield
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
     assert not (load_config().get("model") or {}).get("default")  # never persisted: a later provider wins
 
 
@@ -359,12 +359,12 @@ def test_a_claimed_trial_runs_a_kanban_worker_when_no_model_is_configured(unconf
 
 
 def test_a_configured_model_beats_the_trial_for_cron_jobs_and_kanban_workers(portal, monkeypatch, tmp_path):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
+    monkeypatch.delenv("MOOR_MODEL", raising=False)
     claimed_trial(monkeypatch)
     off_local_desktop(monkeypatch)
-    (get_hermes_home() / "config.yaml").write_text(
+    (get_moor_home() / "config.yaml").write_text(
         "model:\n  provider: openrouter\n  default: anthropic/claude-sonnet-4\n", encoding="utf-8")
 
     assert _cron_model() == "anthropic/claude-sonnet-4"

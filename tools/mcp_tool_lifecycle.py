@@ -6,7 +6,7 @@ import asyncio
 import os
 import time
 from typing import Dict, Optional
-from hermes_cli.process_identity import is_owner_death_supervisor, release_process_groups
+from moor_cli.process_identity import is_owner_death_supervisor, release_process_groups
 from tools.mcp_tool_common import _core
 from tools import mcp_tool_loop as _loop
 

@@ -52,7 +52,7 @@ def served_profile_unserved_platforms(profile: str) -> dict[str, str]:
     """``{platform: reason}`` for a served profile's platforms the multiplexer deliberately does not run
     (unpaired WhatsApp or Relay shared ingress; ``gateway.run_adapters`` stamps
     ``<profile>:<platform>`` as ``disabled`` with a reason and remedy)."""
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
     from gateway.status import read_runtime_status
     if not profile or live_default_gateway_pid() is None:
         return {}

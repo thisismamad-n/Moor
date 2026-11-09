@@ -181,7 +181,7 @@ Running the dashboard as a separate container **is** supported when that contain
 
 ## Running the Webapp
 
-The image ships the [Webapp](./desktop.md) (Hermes Desktop in a browser) prebuilt; the gateway serves it on its own port when the mounted `config.yaml` turns it on (see [Configuration → Webapp](./configuration.md#webapp)):
+The image ships the [Webapp](./desktop.md) (Moor Desktop in a browser) prebuilt; the gateway serves it on its own port when the mounted `config.yaml` turns it on (see [Configuration → Webapp](./configuration.md#webapp)):
 
 ```yaml
 webapp:
@@ -195,16 +195,16 @@ Publish the port and configure a sign-in provider, as for the dashboard:
 
 ```sh
 docker run -d \
-  --name hermes \
+  --name moor \
   --restart unless-stopped \
-  -v ~/.hermes:/opt/data \
+  -v ~/.moor:/opt/data \
   -p 9120:9120 \
-  -e HERMES_DASHBOARD_BASIC_AUTH_USERNAME=admin \
-  -e HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="$(openssl rand -hex 16)" \
+  -e MOOR_DASHBOARD_BASIC_AUTH_USERNAME=admin \
+  -e MOOR_DASHBOARD_BASIC_AUTH_PASSWORD="$(openssl rand -hex 16)" \
   nousresearch/hermes-agent gateway run
 ```
 
-A non-loopback `host` needs one of the [dashboard's auth providers](#running-the-dashboard), and the listener refuses to start without one. Without `public_url`, links printed by `hermes webapp` inside the container use the container's own address, not the published one.
+A non-loopback `host` needs one of the [dashboard's auth providers](#running-the-dashboard), and the listener refuses to start without one. Without `public_url`, links printed by `moor webapp` inside the container use the container's own address, not the published one.
 
 ## Running interactively (CLI chat)
 
@@ -387,7 +387,7 @@ The s6 container has four distinct log surfaces, and "why isn't my gateway showi
 | **Boot reconciler** (records which profile gateways were restored on each container start) | `${MOOR_HOME}/logs/container-boot.log` (append-only audit log) | `tail -F ~/.moor/logs/container-boot.log` |
 | **Generic Moor logs** (`agent.log`, `errors.log`) | `${MOOR_HOME}/logs/` (profile-aware) | `docker exec moor moor logs --follow [--level WARNING] [--session <id>]` |
 
-For an interactive container with terminal input and output (such as `docker run -it ... --tui` or `bash`), the foreground command owns the terminal. The entrypoint defaults to `S6_LOGGING=2` and `S6_CMD_USE_TERMINAL=1` so supervised gateway and dashboard output does not overwrite that screen. Their console output goes to s6's rotated catch-all log at `/run/uncaught-logs/current` inside the container. The per-profile gateway file logs and normal Hermes logs remain available at the paths above. The catch-all directory is runtime storage, so it does not survive a container restart or removal.
+For an interactive container with terminal input and output (such as `docker run -it ... --tui` or `bash`), the foreground command owns the terminal. The entrypoint defaults to `S6_LOGGING=2` and `S6_CMD_USE_TERMINAL=1` so supervised gateway and dashboard output does not overwrite that screen. Their console output goes to s6's rotated catch-all log at `/run/uncaught-logs/current` inside the container. The per-profile gateway file logs and normal Moor logs remain available at the paths above. The catch-all directory is runtime storage, so it does not survive a container restart or removal.
 
 Headless containers keep forwarding service output to `docker logs`. Explicit `S6_LOGGING` and `S6_CMD_USE_TERMINAL` settings take precedence over these interactive defaults.
 
@@ -564,9 +564,9 @@ The image uses Debian 13.4 and includes:
 - s6-overlay for supervision and zombie-process cleanup.
 
 Chromium is staged through PM, not `npx playwright install`. The build records
-its resolved executable in `/etc/hermes/chromium-executable-path`, which Hermes
+its resolved executable in `/etc/moor/chromium-executable-path`, which Moor
 reads when it launches the browser.
-`PLAYWRIGHT_BROWSERS_PATH` names `/opt/hermes/tools`, outside the data mount.
+`PLAYWRIGHT_BROWSERS_PATH` names `/opt/moor/tools`, outside the data mount.
 
 Every image, including the unsuffixed (non-`-desktop`) tags, carries the full
 Chromium build rather than Playwright's lighter headless shell: one pinned,
@@ -650,7 +650,7 @@ Each profile created with `moor profile create <name>` automatically gets an s6-
 - `docker restart`, image upgrades (`docker compose up -d --force-recreate`), and unexpected exits preserve running gateways: the cont-init reconciler reads `$MOOR_HOME/profiles/<name>/gateway_state.json` and brings the slot back up if the last recorded state was `running`. Only an explicit `moor gateway stop` records `stopped` and keeps the gateway down across the restart; the container/s6 SIGTERM sent on a restart or upgrade is treated as "still running" and auto-starts.
 - Per-profile gateway logs persist under `$MOOR_HOME/logs/gateways/<profile>/current` (rotated by `s6-log`), and the reconciler's actions are appended to `$MOOR_HOME/logs/container-boot.log` per boot. See [Where the logs go](#where-the-logs-go) for the full routing map.
 
-`hermes status --full` inside the container reports `Manager: s6 (container supervisor)`. Use `/command/s6-svstat /run/service/gateway-<name>` for the raw supervisor view (note `/command/` is on PATH for supervision-tree processes only; pass the absolute path when calling from `docker exec`).
+`moor status --full` inside the container reports `Manager: s6 (container supervisor)`. Use `/command/s6-svstat /run/service/gateway-<name>` for the raw supervisor view (note `/command/` is on PATH for supervision-tree processes only; pass the absolute path when calling from `docker exec`).
 
 ## Upgrading
 

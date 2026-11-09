@@ -57,7 +57,7 @@ CA_TRUST_PACKAGES = {"certifi"}
 
 
 def test_every_dependency_is_held_to_one_three_day_release_age():
-    """Hermes's deps must be >= 3 days old when locked, exact pins included (Teknium ruling).
+    """Moor's deps must be >= 3 days old when locked, exact pins included (Teknium ruling).
 
     A per-package exemption or date would quietly let a fresh release into the lock; the
     check runs at lock time only, so users never need a mirror that serves upload times.

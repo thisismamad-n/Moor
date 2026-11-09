@@ -1,21 +1,21 @@
-import type { FreeTierClaimNudgeResult } from '@hermes/shared'
+import type { FreeTierClaimNudgeResult } from '@moor/shared'
 import { atom } from 'nanostores'
 
 import { invalidateAllConnectors } from '@/app/capabilities/connectors/data/keys'
 import {
   cancelOAuthSession,
-  getNousHandoffStatus,
+  getMoorHandoffStatus,
   listOAuthProviders,
   OAUTH_LONG_POLL_SECONDS,
   pollOAuthSession,
   type ProfileScope,
   startOAuthLogin
-} from '@/hermes'
+} from '@/moor'
 import { LONG_POLL_MIN_GAP_MS, pause, restOfLongPollGap } from '@/lib/long-poll'
 import { gatewayActivationEpoch } from '@/store/gateway'
-import type { AppHandoffStatus, FreeTierStatus, OAuthPollResponse } from '@/types/hermes'
+import type { AppHandoffStatus, FreeTierStatus, OAuthPollResponse } from '@/types/moor'
 
-import { type FreeTierRequester, NOUS_PROVIDER_ID, refreshFreeTierStatus } from './free-tier'
+import { type FreeTierRequester, MOOR_PROVIDER_ID, refreshFreeTierStatus } from './free-tier'
 import { $localModelOfferPending } from './local-model-offer'
 import { onboardingSurfaceActive } from './onboarding-presence'
 
@@ -266,7 +266,7 @@ export function closeFreeTierSignIn() {
 
 // The reasons the backend names on a non-approved terminal poll: an expired
 // code, and the account service's `anon_*` verdicts when it was busy,
-// unreachable or refused mid sign-in (`hermes_cli/anon_sign_in.py`). Anything
+// unreachable or refused mid sign-in (`moor_cli/anon_sign_in.py`). Anything
 // else falls through to the generic error screen, which shows the backend's
 // own message.
 const FAILURE_BY_REASON: Record<string, FreeTierSignInFailure> = {
@@ -303,7 +303,7 @@ async function openSignInUrl(url: string) {
 }
 
 /**
- * Drive one sign-in attempt end to end: resolve what identity this Hermes is
+ * Drive one sign-in attempt end to end: resolve what identity this Moor is
  * on, start the device-code sign-in, open its page, then long-poll until it
  * resolves. Safe to call again from a "Try again" button — it clears any
  * previous timers first.
@@ -399,7 +399,7 @@ async function pollUntilDone(sessionId: string, requestGateway: FreeTierRequeste
   try {
     for (;;) {
       const askedAt = Date.now()
-      const result = await pollOAuthSession(NOUS_PROVIDER_ID, sessionId, undefined, OAUTH_LONG_POLL_SECONDS)
+      const result = await pollOAuthSession(MOOR_PROVIDER_ID, sessionId, undefined, OAUTH_LONG_POLL_SECONDS)
 
       if (stale()) {
         return
@@ -487,7 +487,7 @@ export async function followHandoff(
     const askedAt = Date.now()
 
     try {
-      current = await getNousHandoffStatus(current.updated_at ?? null, scope)
+      current = await getMoorHandoffStatus(current.updated_at ?? null, scope)
       failures = 0
     } catch {
       if (++failures > HANDOFF_READ_RETRIES) {

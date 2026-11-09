@@ -210,7 +210,7 @@ interface PluginContext {
   /** Script in the preview Browser page — declared capability + per-origin user consent
    *  (see "Preview page scripts"). */
   preview: PluginPreview
-  /** Plugin-scoped JSON persistence (keys live under `hermes.plugin.<id>.`). */
+  /** Plugin-scoped JSON persistence (keys live under `moor.plugin.<id>.`). */
   storage: PluginStorage
 }
 ```
@@ -456,10 +456,10 @@ then removes it.
 
 ```css
 /* Hide the transcript while it is being placed, fade it in when it lands. */
-:root[data-hermes-theme="noir"] [data-chat-surface] [data-slot="aui_thread-viewport"] {
+:root[data-moor-theme="noir"] [data-chat-surface] [data-slot="aui_thread-viewport"] {
   transition: opacity 0.12s ease-out;
 }
-:root[data-hermes-theme="noir"] [data-chat-surface][data-session-switching] [data-slot="aui_thread-viewport"] {
+:root[data-moor-theme="noir"] [data-chat-surface][data-session-switching] [data-slot="aui_thread-viewport"] {
   opacity: 0;
   transition: none;
 }
@@ -505,7 +505,7 @@ style and keyboard-navigate like the built-in ones; a plugin never touches the
 menu's DOM.
 
 ```javascript
-import { COMPOSER_AREAS, host } from '@hermes/plugin-sdk'
+import { COMPOSER_AREAS, host } from '@moor/plugin-sdk'
 
 ctx.register({
   id: 'spelling',
@@ -810,7 +810,7 @@ and a **trailing badge** after core's own chips. The row's markup, name,
 star, submenu and click stay core's.
 
 ```ts
-import { MODEL_MENU_ROW_AREA, type ModelMenuRowContribution } from '@hermes/plugin-sdk'
+import { MODEL_MENU_ROW_AREA, type ModelMenuRowContribution } from '@moor/plugin-sdk'
 
 interface ModelMenuRowContext {
   provider: string  // provider slug: 'anthropic', 'openrouter', …
@@ -867,7 +867,7 @@ import {
   KANBAN_CARD_AREAS,
   KANBAN_CARD_BADGE_HUES,
   type KanbanCardBadgeContribution
-} from '@hermes/plugin-sdk'
+} from '@moor/plugin-sdk'
 
 interface KanbanCard {            // frozen; identity and routing fields only
   id: string                      // task id (t_…): key your own per-card data by it
@@ -1079,7 +1079,7 @@ and sandbox tokens) instead of being navigated to directly. Scripts run as on
 native Desktop; messages the guest posts to `parent` arrive with
 `event.source === ref.current.contentWindow`, messages posted to that window
 reach the guest, and `onLoad` fires when the guest document has loaded (the
-shell announces that with one `{type: 'hermes-guest-loaded'}` message from the
+shell announces that with one `{type: 'moor-guest-loaded'}` message from the
 same window, so filter guest messages by type). Post
 to `parent`, not `top`: the shell sits between them. Changing `sandbox` after
 mount gives the Webapp a fresh frame (a new `ref.current`, the guest restarts
@@ -1170,7 +1170,7 @@ prompt to the agent as a user turn, off-screen: no bubble takes up the
 transcript, the widget updating is the visible response. The turn is still
 real — it wakes the agent, rides the composer's steer/queue rules, and
 persists (typed `hidden`) so resume and the session DB keep the full record.
-Prompts are trimmed, capped at 500 chars (`window.hermes.maxLength`), and
+Prompts are trimmed, capped at 500 chars (`window.moor.maxLength`), and
 throttled to one per second per frame. Nothing is truncated or dropped
 silently: `send()` returns a Promise that resolves `{ ok: true }` once the
 prompt reaches the chat's composer, or `{ ok: false, error }` where `error` is
@@ -1187,7 +1187,7 @@ the path, earlier in the transcript. If the plugin that owns that tool registere
 the tool's name, your component replaces the built-in player:
 
 ```javascript
-import * as sdk from '@hermes/plugin-sdk'
+import * as sdk from '@moor/plugin-sdk'
 import { useEffect, useState } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
@@ -1262,7 +1262,7 @@ What the host guarantees:
   backoff while a claimed tool has no owner, and after `reload.mcp` or a
   plugin-list change, so the card appears once the server is up.
 - **Only this app pairs a desktop half with a package.** The
-  `.hermes-package.json` marker is written by the installer and the reconcile
+  `.moor-package.json` marker is written by the installer and the reconcile
   pass; one shipped inside a desktop-only repository is dropped on install.
 - **Other surfaces are unchanged.** Tools keep emitting plain `MEDIA:` lines;
   the CLI, the TUI and messaging platforms deliver the file as before.
@@ -1298,7 +1298,7 @@ tile) it renders its children in place. Put it where the control should sit
 when inline:
 
 ```javascript
-import { WorkspacePageHeaderControl } from '@hermes/plugin-sdk'
+import { WorkspacePageHeaderControl } from '@moor/plugin-sdk'
 
 jsx(WorkspacePageHeaderControl, {
   id: 'my-page:switcher', // namespace with your slug
@@ -1309,7 +1309,7 @@ jsx(WorkspacePageHeaderControl, {
 `WorkspacePageHeaderControl` is new in this release. Older desktop builds don't
 export it, and a named import of a missing SDK export stops the plugin module
 from loading. A plugin that must also run on older builds either feature-detects
-through a namespace import (`import * as sdk from '@hermes/plugin-sdk'`, then
+through a namespace import (`import * as sdk from '@moor/plugin-sdk'`, then
 `sdk.WorkspacePageHeaderControl ?? …`) or keeps the raw `Contribute` form above.
 
 ### Sidebar nav visibility and order (`SIDEBAR_NAV_PREFS_AREA`)
@@ -1398,7 +1398,7 @@ host.state.profile          // ReadableAtom<string>
 host.state.viewport         // ReadableAtom<{ width, height, narrow }>
 ```
 
-`gatewayActivationEpoch` is a named SDK export: `import { gatewayActivationEpoch } from '@hermes/plugin-sdk'`.
+`gatewayActivationEpoch` is a named SDK export: `import { gatewayActivationEpoch } from '@moor/plugin-sdk'`.
 It reads the canonical activation counter, which changes on every active route
 selection, including same-profile source swaps. Capture `const epoch = gatewayActivationEpoch()`
 alongside the route before asynchronous work, then check both the captured route
@@ -1546,7 +1546,7 @@ rejection your `.catch()` sees, never an error-boundary crash.
 #### Live tool progress — `tool.progress` {#tool-progress-event}
 
 While a tool call runs, an MCP server that sends `notifications/progress` (the
-MCP spec's progress channel; Hermes opts in by sending `_meta.progressToken` on
+MCP spec's progress channel; Moor opts in by sending `_meta.progressToken` on
 every `tools/call`) reaches the renderer as a `tool.progress` event. The native
 tool row shows it as `42% · <message>` next to its timer; a plugin can render
 its own view:
@@ -1627,9 +1627,9 @@ computer running Desktop. A plugin reaches exactly two kinds of folder:
 Every call names a folder handle and a path **relative to that folder**. The
 app's main process checks each call: `..`, absolute paths, drive letters and
 symlinks that resolve outside the folder are refused, never normalized, and
-nothing inside Hermes' own data (the Hermes home with `config.yaml`, `.env`,
+nothing inside Moor' own data (the Moor home with `config.yaml`, `.env`,
 auth and profiles; the app data folder with every plugin's data and the grants
-record) is reachable. A folder that holds or sits inside Hermes data (however
+record) is reachable. A folder that holds or sits inside Moor data (however
 it is spelled: a bind mount, a macOS firmlink, a WSL share or a
 `\\localhost\C$` share counts), a key folder such as `~/.ssh`, or a kernel
 filesystem such as `/proc` (wherever it is mounted) cannot be granted at all;
@@ -1749,7 +1749,7 @@ runs, so the user rebinding (or unbinding) that shortcut in Settings ▸ Keyboar
 Shortcuts changes nothing for you:
 
 ```ts
-import { TITLEBAR_AREAS } from '@hermes/plugin-sdk'
+import { TITLEBAR_AREAS } from '@moor/plugin-sdk'
 import { jsx } from 'react/jsx-runtime'
 
 register(ctx) {
@@ -1927,7 +1927,7 @@ Deliberately **not** keys, and why:
 | active theme / mode record | `THEMES_AREA` (register a theme; the user selects it) | theme selection is per window/profile and arbitrated by the app, not a flat preference |
 | `pluginDecisions` (desktop plugin on/off) | the app's Plugins tab (a read-only view is a separate SDK hook) | a plugin toggling another plugin's enable state is plugins interfering with each other |
 | chat / composer width, turn spacing, session-row geometry | nothing yet — these become keys only once they exist as core Appearance preferences (chat width: #55287) | layout is host-owned; a plugin-owned geometry contract would make every theme a layout contract |
-| `toolView.technical`, `embed-mode`, `titlebarAppActions`, `translucency.v2`, `user-bubble-transparency.v1`, `hermesDesktop.zoom.*` | follow-up keys after each store is audited | some drive the main process or window chrome; each needs its own guard and ownership review before it becomes plugin-writable |
+| `toolView.technical`, `embed-mode`, `titlebarAppActions`, `translucency.v2`, `user-bubble-transparency.v1`, `moorDesktop.zoom.*` | follow-up keys after each store is audited | some drive the main process or window chrome; each needs its own guard and ownership review before it becomes plugin-writable |
 
 Migration — `moor-appearance-hub`, which today does
 `localStorage.setItem('moor.desktop.sessionListDensity', id)` followed by
@@ -2024,7 +2024,7 @@ whatever the user chose: registering is not selecting.
 
 ```ts
 export default {
-  id: 'hermes-lang-pl',
+  id: 'moor-lang-pl',
   register(ctx) {
     // Attributed to this plugin and dropped on unload/disable.
     ctx.i18n.registerAppLocale('pl', {
@@ -2051,7 +2051,7 @@ Where English has a **function** entry (``results: n => `${n} results` ``), a pa
 gives a plain string with POSITIONAL placeholders — `{0}`, `{1}` in argument
 order — and the merge wraps it into the same call shape. The full key set is
 published in `locales/_keys.desktop.json` (regenerate with `npm run i18n:keys`
-in `apps/desktop` and commit it; CI pins the file to `en.ts`), which is what `hermes plugins
+in `apps/desktop` and commit it; CI pins the file to `en.ts`), which is what `moor plugins
 validate` checks a pack's `<lang>.desktop.yaml` against.
 
 `host.i18n.registerAppLocale` is the same call for code with no `ctx` in reach;
@@ -2177,11 +2177,11 @@ The app loads the **copy** in `desktop-plugins/<id>/`, not your package. An
 installed package (catalog, Git URL, `file://` path) is refreshed only when its
 source `plugin.js` is newer than the copy and something asks — **Rescan** in
 **Capabilities → Plugins**, an install/update through the app, or a restart —
-so editing `~/.hermes/plugins/<id>/desktop/plugin.js` in place does nothing
+so editing `~/.moor/plugins/<id>/desktop/plugin.js` in place does nothing
 on screen until then. Develop from a checkout linked into `plugins/` instead:
 
 ```bash
-ln -s ~/src/my-plugin ~/.hermes/plugins/my-plugin
+ln -s ~/src/my-plugin ~/.moor/plugins/my-plugin
 ```
 
 A linked package's copy is marked `"linked": true`. The app watches the
@@ -2189,11 +2189,11 @@ checkout's `desktop/plugin.js`; every save re-syncs the copy (by content, not
 mtime, so `git stash pop` counts) and hot-reloads the plugin. Catalog and Git
 installs keep the mtime rule.
 
-`hermes plugins doctor <path-or-id>` warns when the copy differs from your
+`moor plugins doctor <path-or-id>` warns when the copy differs from your
 source and names the copy it found:
 
 ```text
-WARN: Desktop runs a stale copy of desktop/plugin.js (~/.hermes/desktop-plugins/my-plugin);
+WARN: Desktop runs a stale copy of desktop/plugin.js (~/.moor/desktop-plugins/my-plugin);
 your edits are not loaded. Refresh it with Capabilities → Plugins → Rescan …
 ```
 
@@ -2305,10 +2305,10 @@ your handler). Where it lands depends on the process the call runs in:
 
 | Caller runs in | Reaches |
 |---|---|
-| the process Desktop is connected to — the host gateway a local Desktop attaches to, or a remote `hermes serve`: `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every Desktop window connected to that process |
+| the process Desktop is connected to — the host gateway a local Desktop attaches to, or a remote `moor serve`: `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every Desktop window connected to that process |
 | the `dashboard.turn_isolation` compute-host child (tools/hooks of an isolated turn) | relayed over the host pipe to its parent process, then every connected window |
-| the stdio TUI (`hermes` in a terminal) | that terminal's client |
-| `hermes chat`, cron, `hermes plugins validate`, or a gateway with no Desktop window connected | nobody — no Desktop client is attached to that process; the call is a logged no-op |
+| the stdio TUI (`moor` in a terminal) | that terminal's client |
+| `moor chat`, cron, `moor plugins validate`, or a gateway with no Desktop window connected | nobody — no Desktop client is attached to that process; the call is a logged no-op |
 
 Use this instead of importing `tui_gateway.server` internals; for plugin-scoped frames
 with a payload tailored per connection, `ctx.socket('/events')` remains the
@@ -2439,7 +2439,7 @@ on top of that: `ctx.preview.executeJavaScript` needs a declared capability
 and the user's per-origin consent ([Preview page scripts](#preview-page-scripts)).
 File access follows the same rule: a catalog plugin
 should read and write through [`ctx.files`](#plugin-files), not the raw
-`window.hermesDesktop` file bridge. `ctx.files` is enforced in the main
+`window.moorDesktop` file bridge. `ctx.files` is enforced in the main
 process, so a plugin that uses it (or untrusted text it handles, such as a
 note name from the model) cannot leave the folders the user granted; the raw
 bridge has no such limit, which is why catalog review asks for `ctx.files`. A future remote-source door will need a real boundary
@@ -2485,7 +2485,7 @@ pipeline as a trust boundary.
 | Category | Exports |
 |----------|---------|
 | Host | `host` (`.state.*`, `.settings`, `.notify`, `.notifyError`, `.navigate`, `.onEvent`, `.logs`, `.status`, `.restartGateway`, `.request`, `.composer`, `.spellcheck`, `.sessions`, `.skills`, `.toolsets`, `.profiles`, `.pluginDecisions`) |
-| Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginFiles`, `PluginFolder`, `PluginFileEntry`, `PluginFilesResult`, `PluginOs`, `PluginPet`, `PetSayOptions`, `PetMessageTone`, `PluginAppActionId`, `PluginAppActionInfo`, `PluginRunActionResult`, `PLUGIN_APP_ACTIONS`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
+| Plugin contract | `MoorPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginFiles`, `PluginFolder`, `PluginFileEntry`, `PluginFilesResult`, `PluginOs`, `PluginPet`, `PetSayOptions`, `PetMessageTone`, `PluginAppActionId`, `PluginAppActionInfo`, `PluginRunActionResult`, `PLUGIN_APP_ACTIONS`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `MoorOpenTarget`, `Contribution` |
 | Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `COMPOSER_AREAS`, `MODEL_MENU_ROW_AREA`, `KANBAN_CARD_AREAS`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS`, `SETTINGS_PLUGINS_AREA` |
 | Area payloads | `PluginSettingsPage`, `PluginSettingsSubpage` (+ `pluginSettingsHref`), `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `ComposerContextMenuProvider` (+ `ComposerContextMenuItem`, `ComposerContextMenuContext`, `ComposerContextMenuAction`), `SessionRowSlotContribution`, `KanbanCardBadgeContribution` (+ `KanbanCard`, `KanbanCardBoard`, `KanbanCardBadge`, `KanbanCardBadgeTone`, `KANBAN_CARD_BADGE_HUES`, `KANBAN_CARD_BADGE_LIMITS`), `SidebarNavPrefsContribution` |
 | React / state | `useValue`, `atom`, `computed`, `useQuery`, `useMutation`, `useQueryClient`, `queryClient`, `Contribute`, `WorkspacePageHeaderControl` |

@@ -13,11 +13,11 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import main as cli_main
-from hermes_cli import main_desktop
-from hermes_cli import main_desktop_tcc
-from hermes_cli import main_install_repair
-from hermes_cli import main_web_build
+from moor_cli import main as cli_main
+from moor_cli import main_desktop
+from moor_cli import main_desktop_tcc
+from moor_cli import main_install_repair
+from moor_cli import main_web_build
 
 
 @pytest.fixture(autouse=True)
@@ -132,7 +132,7 @@ def _packaged_exe_rel() -> Path:
 
 
 def _npm_argv(cmd) -> list:
-    """The npm command line inside a build call. A direct ``hermes desktop`` build holds the
+    """The npm command line inside a build call. A direct ``moor desktop`` build holds the
     checkout lock (review C5), so on POSIX it runs under the custody launcher
     (``python -I -S -c <reaper> <fds> npm ...``)."""
     cmd = list(cmd)
@@ -188,7 +188,7 @@ def test_source_launch_reads_bom_electron_path_without_provisioning(tmp_path, mo
 
 def _stamped_macos_bundle(app: Path, asar: bytes) -> Path:
     (app / "Contents" / "MacOS").mkdir(parents=True)
-    (app / "Contents" / "MacOS" / "Hermes").write_bytes(b"\xcf\xfa\xed\xfe")
+    (app / "Contents" / "MacOS" / "Moor").write_bytes(b"\xcf\xfa\xed\xfe")
     (app / "Contents" / "Resources").mkdir()
     (app / "Contents" / "Resources" / "app.asar").write_bytes(asar)
     (app / "Contents" / "Resources" / "install-stamp.json").write_text('{"updateMechanism": "self"}')
@@ -197,15 +197,15 @@ def _stamped_macos_bundle(app: Path, asar: bytes) -> Path:
 
 @pytest.mark.platforms("macos")
 def test_packaged_launch_opens_the_refreshed_installed_app(tmp_path, monkeypatch):
-    """#52339: Finder and the Dock open the installed Hermes.app, so ``hermes desktop`` must launch
+    """#52339: Finder and the Dock open the installed Moor.app, so ``moor desktop`` must launch
     that copy (brought up to the checkout build) instead of a second bundle under release/."""
     import shutil
 
     root = _make_desktop_tree(tmp_path)
-    _stamped_macos_bundle(root / "apps" / "desktop" / "release" / "mac-arm64" / "Hermes.app", b"checkout build")
-    installed = _stamped_macos_bundle(tmp_path / "Applications" / "Hermes.app", b"stale build")
-    monkeypatch.setattr("hermes_cli.gui_uninstall.packaged_gui_app_paths", lambda: [installed])
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda **kw: tmp_path)  # root is its hermes-agent
+    _stamped_macos_bundle(root / "apps" / "desktop" / "release" / "mac-arm64" / "Moor.app", b"checkout build")
+    installed = _stamped_macos_bundle(tmp_path / "Applications" / "Moor.app", b"stale build")
+    monkeypatch.setattr("moor_cli.gui_uninstall.packaged_gui_app_paths", lambda: [installed])
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda **kw: tmp_path)  # root is its moor-agent
     monkeypatch.setattr(main_desktop, "_stage_macos_bundle_copy", lambda src, dst: shutil.copytree(src, dst, symlinks=True))
     monkeypatch.setattr(main_desktop, "_running_macos_app_bundles", lambda: set())
     # This pins the LAUNCH contract; the real codesign signature probe is out of scope here.
@@ -220,7 +220,7 @@ def test_packaged_launch_opens_the_refreshed_installed_app(tmp_path, monkeypatch
         main_desktop.cmd_gui(_ns(skip_build=True))
 
     assert exit_info.value.code == 0
-    assert calls == [[str(installed / "Contents" / "MacOS" / "Hermes")]]
+    assert calls == [[str(installed / "Contents" / "MacOS" / "Moor")]]
     assert (installed / "Contents" / "Resources" / "app.asar").read_bytes() == b"checkout build"
 
 
@@ -258,24 +258,24 @@ def test_packaged_renderer_bom_does_not_bypass_entry_validation(tmp_path):
 
 
 # --- package-manager (Homebrew/pip) installs: no desktop source tree -------
-# (#61056: `hermes desktop` under Homebrew looked for apps/desktop inside the
+# (#61056: `moor desktop` under Homebrew looked for apps/desktop inside the
 # Cellar site-packages, which the formula does not ship.)
 
 
 def test_site_packages_install_kind_detects_brew_and_pip():
-    brew_root = Path("/opt/homebrew/Cellar/hermes-agent/2026.7.7.2/libexec/site-packages")
+    brew_root = Path("/opt/homebrew/Cellar/moor-agent/2026.7.7.2/libexec/site-packages")
     pip_root = Path("/usr/lib/python3/dist-packages")
     venv_root = Path("/home/u/proj/venv/lib/python3.12/site-packages")
     assert main_desktop._site_packages_install_kind(brew_root) == "homebrew"
     assert main_desktop._site_packages_install_kind(pip_root) == "pip"
     assert main_desktop._site_packages_install_kind(venv_root) == "pip"
-    assert main_desktop._site_packages_install_kind(Path("/home/u/hermes-agent")) is None
+    assert main_desktop._site_packages_install_kind(Path("/home/u/moor-agent")) is None
 
 
 def test_gui_brew_install_prints_brew_guidance_not_venv_hint(tmp_path, monkeypatch, capsys):
     """A Homebrew install has no apps/desktop tree and can never build one — the
     error must say so instead of implying a broken checkout."""
-    root = tmp_path / "Cellar" / "hermes-agent" / "2026.7.7.2" / "libexec" / "site-packages"
+    root = tmp_path / "Cellar" / "moor-agent" / "2026.7.7.2" / "libexec" / "site-packages"
     root.mkdir(parents=True)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     monkeypatch.setattr(main_desktop, "_launch_installed_macos_desktop_app", lambda: False)
@@ -290,8 +290,8 @@ def test_gui_brew_install_prints_brew_guidance_not_venv_hint(tmp_path, monkeypat
 
 
 def test_gui_brew_install_launches_installed_app_when_present(tmp_path, monkeypatch):
-    """Prefer the separately installed /Applications/Hermes.app over failing."""
-    root = tmp_path / "Cellar" / "hermes-agent" / "2026.7.7.2" / "libexec" / "site-packages"
+    """Prefer the separately installed /Applications/Moor.app over failing."""
+    root = tmp_path / "Cellar" / "moor-agent" / "2026.7.7.2" / "libexec" / "site-packages"
     root.mkdir(parents=True)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     launched = []
@@ -305,14 +305,14 @@ def test_gui_brew_install_launches_installed_app_when_present(tmp_path, monkeypa
 
 
 def test_gui_close_preview_flag_forwards_to_packaged_exe(tmp_path, monkeypatch):
-    """`hermes desktop --close-preview` must reach the Electron binary so the
+    """`moor desktop --close-preview` must reach the Electron binary so the
     running instance's single-instance handler can close a fullscreened
     preview pane the user cannot otherwise escape (#97213)."""
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
-    # Patching hermes_cli.main_desktop.subprocess.run swaps the shared stdlib
+    # Patching moor_cli.main_desktop.subprocess.run swaps the shared stdlib
     # module's attribute, so the desktop-entry install's interpreter probe
-    # (`<python> -I -c 'import hermes_cli.main'`) would be captured as a
+    # (`<python> -I -c 'import moor_cli.main'`) would be captured as a
     # launch too. Neutralize the entry install the way the other foreground
     # tests do; this test is only about the flag reaching the packaged exe.
     monkeypatch.setattr(main_desktop, "_register_linux_desktop_entry", lambda **kw: None)
@@ -324,9 +324,9 @@ def test_gui_close_preview_flag_forwards_to_packaged_exe(tmp_path, monkeypatch):
         launched.append(list(cmd))
         return subprocess.CompletedProcess(cmd, 0)
 
-    with patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
-         patch("hermes_cli.main_desktop.subprocess.run", side_effect=fake_run), \
+    with patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_linux_sandbox_fixup", return_value=True), \
+         patch("moor_cli.main_desktop.subprocess.run", side_effect=fake_run), \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns(close_preview=True))
 
@@ -342,11 +342,11 @@ def test_gui_close_preview_flag_forwards_to_packaged_exe(tmp_path, monkeypatch):
 @pytest.mark.parametrize("exists,platform", [(True, "darwin"), (False, "darwin"), (True, "linux")])
 def test_launch_installed_macos_desktop_app_gates_on_bundle_and_platform(tmp_path, monkeypatch, exists, platform):
     monkeypatch.setattr(main_desktop.sys, "platform", platform)
-    exe = Path("/Applications/Hermes.app/Contents/MacOS/Hermes")
+    exe = Path("/Applications/Moor.app/Contents/MacOS/Moor")
     monkeypatch.setattr(main_desktop.Path, "is_file", lambda self: exists if self == exe else Path.is_file(self))
     calls = []
     if exists and platform == "darwin":
-        from hermes_cli import bundled_app
+        from moor_cli import bundled_app
         monkeypatch.setattr(bundled_app, "launch_detached", lambda argv, **kw: calls.append(argv) or 4321)
 
     assert main_desktop._launch_installed_macos_desktop_app() is (exists and platform == "darwin")
@@ -578,7 +578,7 @@ def test_setup_tcc_identity_fails_when_trust_step_fails(tmp_path, monkeypatch, c
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Moor Local Signing") is False
 
 
 @pytest.mark.platforms("macos")
@@ -600,7 +600,7 @@ def test_setup_tcc_identity_fails_when_identity_never_becomes_valid(tmp_path, mo
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Moor Local Signing") is False
 
 
 @pytest.mark.platforms("macos")
@@ -626,7 +626,7 @@ def test_setup_tcc_identity_skips_generation_when_already_valid(tmp_path, monkey
     monkeypatch.setattr(main_desktop, "_desktop_macos_relaunchable_fixup", lambda d: True)
     monkeypatch.setattr("moor_cli.config.set_config_value", lambda key, value: None)
 
-    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Hermes Local Signing") is True
+    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Moor Local Signing") is True
 
     # No openssl generation, no security import — only find-identity + config.
     assert not any(c[0] == "/usr/bin/openssl" for c in calls)
@@ -666,7 +666,7 @@ def test_setup_tcc_identity_untrusted_existing_cert_is_repaired(tmp_path, monkey
     monkeypatch.setattr(main_desktop, "_desktop_macos_relaunchable_fixup", lambda d: True)
     monkeypatch.setattr("moor_cli.config.set_config_value", lambda key, value: None)
 
-    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Hermes Local Signing") is True
+    assert main_desktop_tcc._desktop_macos_setup_tcc_identity("Moor Local Signing") is True
     assert any(c[0] == "/usr/bin/security" and c[1] == "add-trusted-cert" for c in calls)
 
 
@@ -679,8 +679,8 @@ def test_cmd_gui_setup_tcc_identity_exits_before_build(tmp_path, monkeypatch):
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     _make_packaged_executable(root, monkeypatch)
 
-    with patch("hermes_cli.main_desktop_tcc._desktop_macos_setup_tcc_identity", return_value=True) as mock_setup, \
-         patch("hermes_cli.source_build.prepare_source_dependencies") as mock_install, \
+    with patch("moor_cli.main_desktop_tcc._desktop_macos_setup_tcc_identity", return_value=True) as mock_setup, \
+         patch("moor_cli.source_build.prepare_source_dependencies") as mock_install, \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns(setup_tcc_identity=True, identity="Moor Local Signing"))
 
@@ -758,12 +758,12 @@ def test_relaunchable_fixup_configured_identity_failure_never_falls_back_to_adho
     )
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda a: False)
-    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing")
+    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "Moor Local Signing")
     # The bundle being re-signed in place is publisher-signed (Team ID): a degraded
     # replacement would orphan its keychain ACLs and TCC grants.
     monkeypatch.setattr(
         main_desktop, "_macos_signature_summary",
-        lambda codesign, app: {"team": "TEAMID123", "identifier": "com.nousresearch.hermes",
+        lambda codesign, app: {"team": "TEAMID123", "identifier": "com.moorinc.moor",
                                "verified": True},
     )
 
@@ -792,7 +792,7 @@ def test_relaunchable_fixup_configured_identity_success_still_signs(tmp_path, mo
 
     calls: list[list[str]] = []
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda a: False)
-    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing")
+    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "Moor Local Signing")
 
     def fake_local_codesign(app, *, desktop_dir, identity):
         calls.append(["local-codesign", identity])
@@ -805,7 +805,7 @@ def test_relaunchable_fixup_configured_identity_success_still_signs(tmp_path, mo
     )
 
     assert cli_main._desktop_macos_relaunchable_fixup(desktop_dir) is True
-    assert ["local-codesign", "Hermes Local Signing"] in calls
+    assert ["local-codesign", "Moor Local Signing"] in calls
     assert not any("--deep" in c for c in calls)
     assert not any("delete-generic-password" in c for c in calls)
 
@@ -953,7 +953,7 @@ def test_relaunchable_fixup_failed_identity_uses_pinned_adhoc_before_legacy(tmp_
     """
     root = _make_desktop_tree(tmp_path)
     desktop_dir = root / "apps" / "desktop"
-    exe = desktop_dir / "release" / "mac-arm64" / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+    exe = desktop_dir / "release" / "mac-arm64" / "Moor.app" / "Contents" / "MacOS" / "Moor"
     exe.parent.mkdir(parents=True)
     exe.write_text("", encoding="utf-8")
 
@@ -962,7 +962,7 @@ def test_relaunchable_fixup_failed_identity_uses_pinned_adhoc_before_legacy(tmp_
     monkeypatch.delenv("APPLE_SIGNING_IDENTITY", raising=False)
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda _app: False)
     monkeypatch.setattr(
-        main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing",
+        main_desktop, "_desktop_macos_local_signing_identity", lambda: "Moor Local Signing",
     )
 
     seen: list[str] = []
@@ -987,7 +987,7 @@ def test_relaunchable_fixup_failed_identity_uses_pinned_adhoc_before_legacy(tmp_
     monkeypatch.setattr(main_desktop.subprocess, "run", fake_run)
 
     assert main_desktop._desktop_macos_relaunchable_fixup(desktop_dir) is True
-    assert seen == ["Hermes Local Signing", "-"]
+    assert seen == ["Moor Local Signing", "-"]
     assert not any(cmd[:5] == ["/usr/bin/codesign", "--force", "--deep", "--sign", "-"] for cmd in calls)
 
 
@@ -995,7 +995,7 @@ def test_relaunchable_fixup_legacy_when_pinned_adhoc_also_fails(tmp_path, monkey
     """Legacy deep ad-hoc still runs when identifier-pinned signing fails too."""
     root = _make_desktop_tree(tmp_path)
     desktop_dir = root / "apps" / "desktop"
-    exe = desktop_dir / "release" / "mac-arm64" / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+    exe = desktop_dir / "release" / "mac-arm64" / "Moor.app" / "Contents" / "MacOS" / "Moor"
     exe.parent.mkdir(parents=True)
     exe.write_text("", encoding="utf-8")
     app = exe.parents[2]
@@ -1005,7 +1005,7 @@ def test_relaunchable_fixup_legacy_when_pinned_adhoc_also_fails(tmp_path, monkey
     monkeypatch.delenv("APPLE_SIGNING_IDENTITY", raising=False)
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda _app: False)
     monkeypatch.setattr(
-        main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing",
+        main_desktop, "_desktop_macos_local_signing_identity", lambda: "Moor Local Signing",
     )
 
     seen: list[str] = []
@@ -1028,7 +1028,7 @@ def test_relaunchable_fixup_legacy_when_pinned_adhoc_also_fails(tmp_path, monkey
     monkeypatch.setattr(main_desktop.subprocess, "run", fake_run)
 
     assert main_desktop._desktop_macos_relaunchable_fixup(desktop_dir) is True
-    assert seen == ["Hermes Local Signing", "-"]
+    assert seen == ["Moor Local Signing", "-"]
     assert ["/usr/bin/codesign", "--force", "--deep", "--sign", "-", str(app)] in calls
 
 
@@ -1146,7 +1146,7 @@ def test_gui_launches_even_when_desktop_entry_install_fails(tmp_path, monkeypatc
 )
 def test_desktop_launch_options_normalizes_password_store(raw, expected):
     cfg = {"desktop": {"password_store": raw}}
-    with patch("hermes_cli.config.load_config", return_value=cfg):
+    with patch("moor_cli.config.load_config", return_value=cfg):
         _, _, store, _, _ = main_desktop._desktop_launch_options()
     assert store == expected
 
@@ -1164,7 +1164,7 @@ def test_desktop_launch_options_normalizes_password_store(raw, expected):
 def test_desktop_launch_options_normalizes_ozone_hint(raw, expected):
     """``desktop.ozone_platform_hint`` normalizes to x11/wayland/auto."""
     cfg = {"desktop": {"ozone_platform_hint": raw}}
-    with patch("hermes_cli.config.load_config", return_value=cfg):
+    with patch("moor_cli.config.load_config", return_value=cfg):
         _, _, _, hint, _ = main_desktop._desktop_launch_options()
     assert hint == expected
 
@@ -1205,30 +1205,30 @@ def test_desktop_launch_options_normalizes_ozone_hint(raw, expected):
 def test_desktop_launch_options_normalizes_renderer_accessibility(raw, expected):
     """``desktop.renderer_accessibility`` defaults to ON; only explicit false words opt out."""
     cfg = {"desktop": {} if raw is None else {"renderer_accessibility": raw}}
-    with patch("hermes_cli.config.load_config", return_value=cfg):
+    with patch("moor_cli.config.load_config", return_value=cfg):
         _, _, _, _, renderer_a11y = main_desktop._desktop_launch_options()
     assert renderer_a11y is expected
 
 
 def test_desktop_environment_bridges_only_the_accessibility_opt_out(monkeypatch):
     """ON (the default) sets nothing; the opt-out bridges to
-    HERMES_DESKTOP_RENDERER_ACCESSIBILITY=0, and an explicit env var wins."""
-    monkeypatch.delenv("HERMES_DESKTOP_RENDERER_ACCESSIBILITY", raising=False)
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"desktop": {}})
+    MOOR_DESKTOP_RENDERER_ACCESSIBILITY=0, and an explicit env var wins."""
+    monkeypatch.delenv("MOOR_DESKTOP_RENDERER_ACCESSIBILITY", raising=False)
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: {"desktop": {}})
 
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert "HERMES_DESKTOP_RENDERER_ACCESSIBILITY" not in env
+    assert "MOOR_DESKTOP_RENDERER_ACCESSIBILITY" not in env
 
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "moor_cli.config.load_config",
         lambda: {"desktop": {"renderer_accessibility": False}})
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert env["HERMES_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
+    assert env["MOOR_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
 
-    monkeypatch.setenv("HERMES_DESKTOP_RENDERER_ACCESSIBILITY", "0")
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"desktop": {}})
+    monkeypatch.setenv("MOOR_DESKTOP_RENDERER_ACCESSIBILITY", "0")
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: {"desktop": {}})
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert env["HERMES_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
+    assert env["MOOR_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
 
 
 
@@ -1402,19 +1402,19 @@ def test_gui_password_store_bridge_is_linux_only(tmp_path, monkeypatch):
 
 @pytest.mark.platforms("windows")
 def test_gui_win32_launches_detached_and_returns(tmp_path, monkeypatch):
-    import hermes_cli._subprocess_compat as _subproc_compat
+    import moor_cli._subprocess_compat as _subproc_compat
 
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     packaged_exe = _make_packaged_executable(root, monkeypatch)
     ok = subprocess.CompletedProcess([], 0)
 
-    with patch("hermes_cli.source_build.prepare_source_dependencies", return_value=ok), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
-         patch("hermes_cli.config.load_config", return_value={}), \
-         patch("hermes_cli.main.subprocess.Popen") as mock_popen, \
-         patch("hermes_cli.main.subprocess.run") as mock_run, \
+    with patch("moor_cli.source_build.prepare_source_dependencies", return_value=ok), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
+         patch("moor_cli.config.load_config", return_value={}), \
+         patch("moor_cli.main.subprocess.Popen") as mock_popen, \
+         patch("moor_cli.main.subprocess.run") as mock_run, \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns(skip_build=True))
 
@@ -1435,7 +1435,7 @@ def test_gui_win32_launches_detached_and_returns(tmp_path, monkeypatch):
 
 @pytest.mark.platforms("windows")
 def test_gui_win32_detach_falls_back_without_breakaway(tmp_path, monkeypatch):
-    import hermes_cli._subprocess_compat as _subproc_compat
+    import moor_cli._subprocess_compat as _subproc_compat
 
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
@@ -1445,11 +1445,11 @@ def test_gui_win32_detach_falls_back_without_breakaway(tmp_path, monkeypatch):
     breakaway_denied = PermissionError("breakaway denied")
     breakaway_denied.winerror = 5
 
-    with patch("hermes_cli.source_build.prepare_source_dependencies", return_value=ok), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
-         patch("hermes_cli.config.load_config", return_value={}), \
-         patch("hermes_cli.main.subprocess.Popen",
+    with patch("moor_cli.source_build.prepare_source_dependencies", return_value=ok), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
+         patch("moor_cli.config.load_config", return_value={}), \
+         patch("moor_cli.main.subprocess.Popen",
                side_effect=[breakaway_denied, None]) as mock_popen, \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns(skip_build=True))
@@ -1476,11 +1476,11 @@ def test_gui_win32_detach_reraises_non_breakaway_oserror(tmp_path, monkeypatch):
     spawn_error = OSError("The system cannot find the file specified")
     spawn_error.winerror = 2  # ERROR_FILE_NOT_FOUND — unrelated to breakaway.
 
-    with patch("hermes_cli.source_build.prepare_source_dependencies", return_value=ok), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
-         patch("hermes_cli.config.load_config", return_value={}), \
-         patch("hermes_cli.main.subprocess.Popen",
+    with patch("moor_cli.source_build.prepare_source_dependencies", return_value=ok), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
+         patch("moor_cli.config.load_config", return_value={}), \
+         patch("moor_cli.main.subprocess.Popen",
                side_effect=[spawn_error, None]) as mock_popen, \
          pytest.raises(OSError) as exc:
         cli_main.cmd_gui(_ns(skip_build=True))
@@ -1501,7 +1501,7 @@ def test_gui_foreground_launch_ctrl_c_exits_cleanly(tmp_path, monkeypatch, capsy
     """
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
-    # Patching hermes_cli.main.subprocess.run swaps the shared stdlib module's
+    # Patching moor_cli.main.subprocess.run swaps the shared stdlib module's
     # attribute, so EVERY subprocess.run in the process raises. Three
     # best-effort pre-launch paths call it BEFORE the attached launch — outside
     # the KeyboardInterrupt handler under test — so neutralize each the way the
@@ -1519,12 +1519,12 @@ def test_gui_foreground_launch_ctrl_c_exits_cleanly(tmp_path, monkeypatch, capsy
     def _interrupted_launch(*call_args, **kwargs):
         raise KeyboardInterrupt()
 
-    with patch("hermes_cli.source_build.prepare_source_dependencies", return_value=ok), \
-         patch("hermes_cli.main_desktop._desktop_build_needed", return_value=False), \
-         patch("hermes_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
-         patch("hermes_cli.config.load_config", return_value={}), \
-         patch("hermes_cli.main.subprocess.run", side_effect=_interrupted_launch) as mock_run, \
-         patch("hermes_cli.main.subprocess.Popen") as mock_popen, \
+    with patch("moor_cli.source_build.prepare_source_dependencies", return_value=ok), \
+         patch("moor_cli.main_desktop._desktop_build_needed", return_value=False), \
+         patch("moor_cli.main_desktop._desktop_exe_integrity_error", return_value=None), \
+         patch("moor_cli.config.load_config", return_value={}), \
+         patch("moor_cli.main.subprocess.run", side_effect=_interrupted_launch) as mock_run, \
+         patch("moor_cli.main.subprocess.Popen") as mock_popen, \
          pytest.raises(SystemExit) as exc:
         cli_main.cmd_gui(_ns(skip_build=True))
 
@@ -1677,7 +1677,7 @@ def test_stop_desktop_processes_locking_build_posix_swap_bypasses_early_return(t
 
 def _stop_spares_the_desktop_driving_this_update(tmp_path, monkeypatch, *, also_posix):
     """A Desktop's own process tree runs this update (a historical Desktop's piped
-    `hermes update` child, or the launch-time tail its backend runs). Stopping that
+    `moor update` child, or the launch-time tail its backend runs). Stopping that
     Desktop kills the update with it. Its renderer/GPU/zygote helpers run the same
     exe but are not our ancestors; stopping them leaves a main process that can
     neither draw nor quit. Only an unrelated Desktop from the same release tree is
@@ -1732,7 +1732,7 @@ def _stop_spares_the_desktop_driving_this_update(tmp_path, monkeypatch, *, also_
 
 @pytest.mark.platforms("posix")
 def test_posix_swap_spares_the_desktop_driving_this_update(tmp_path, monkeypatch):
-    """A historical Desktop runs `hermes update` as a piped child and relaunches
+    """A historical Desktop runs `moor update` as a piped child and relaunches
     itself afterwards; stopping it breaks the update's stdout (EPIPE)."""
     _stop_spares_the_desktop_driving_this_update(tmp_path, monkeypatch, also_posix=True)
 

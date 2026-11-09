@@ -88,7 +88,7 @@ set/get/unset <NAME>` route any bare name registered in `OPTIONAL_ENV_VARS` / `_
   (or carrying a `setup_hidden_env` platform suffix) to `.env` via `config_env_routing.py` — the
   file the platform setup flows write — never to the top level of config.yaml.
 - **One writer seam.** Every write of a `config.yaml` (main or profile) goes through
-  `hermes_cli.config.atomic_config_write` (refuses deletion by omission) or the explicit
+  `moor_cli.config.atomic_config_write` (refuses deletion by omission) or the explicit
   `atomic_config_replace` full-state path (→ `utils.atomic_roundtrip_yaml_save`, ruamel
   round-trip): formatting survives, and the fail-closed unreadable-file guard runs first. Deliberate `pop()`/unset/migration paths use `atomic_config_replace`; additive
   writers stay on `atomic_config_write`. Never call
@@ -125,7 +125,7 @@ thinking_verbs, wings), `tool_prefix`, `tool_emojis`, `branding.*` (agent_name, 
 response_label, prompt_symbol). Consumers: `banner.py`, `display.py`, `cli.py`. Key-by-key table
 and YAML template: `website/docs/user-guide/features/skins.md`.
 
-## Update pipeline (`hermes update`)
+## Update pipeline (`moor update`)
 
 Transactional, `plan → snapshot → apply → restart-per-kind → verify → report`; every stage guards a
 real field failure (fleet campaign #91277), and a PR that weakens a stage answers for that class.
@@ -213,6 +213,6 @@ recorded when both exist. Process liveness is `(pid, start_time)` or the canonic
 
 `anon_auth.run_sign_in()` is the one sign-in composition: it yields `SignInState`s that carry their
 own `.copy` / `.copy_terminal`, persists only after a completed promotion AND a token grant, and runs
-`settle_after_upgrade` exactly once per completion. `hermes auth upgrade`, the CLI and gateway
+`settle_after_upgrade` exactly once per completion. `moor auth upgrade`, the CLI and gateway
 `/login` and the desktop poller are renderers over it; the desktop's plain device-code login
-(`_nous_plain_poller`) stays a separate path. Long form: `cli-internals.md` § Nous free tier sign-in.
+(`_moor_plain_poller`) stays a separate path. Long form: `cli-internals.md` § Moor free tier sign-in.

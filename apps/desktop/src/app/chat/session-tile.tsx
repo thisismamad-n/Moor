@@ -37,7 +37,7 @@ import {
 } from '@/components/pane-shell/workspace-scope'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { type ResolvedOwner, transcribeAudio } from '@/hermes'
+import { type ResolvedOwner, transcribeAudio } from '@/moor'
 import { useI18n } from '@/i18n'
 import type { ChatMessage } from '@/lib/chat-messages'
 import { NEW_SESSION_TITLE, sessionTitle } from '@/lib/chat-runtime'

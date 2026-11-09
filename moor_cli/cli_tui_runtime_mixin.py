@@ -44,7 +44,7 @@ class CLITuiRuntimeMixin:
                     if not self._agent_running:
                         self._tui_idle_tick()
                     continue
-                from hermes_cli.gateway_queue import OwnQueueHold
+                from moor_cli.gateway_queue import OwnQueueHold
                 held = OwnQueueHold.begin(self, user_input)
                 if held is None:
                     self._tui_process_one_input(user_input)
@@ -278,7 +278,7 @@ class CLITuiRuntimeMixin:
             if _term_lines > 2:
                 print("\n" * (_term_lines - 1), end="", flush=True)
 
-        from hermes_cli.gateway_client import GatewayClientError
+        from moor_cli.gateway_client import GatewayClientError
         try:
             self._ensure_gateway_session()  # the banner shows the gateway session's id and inventory
         except GatewayClientError as exc:
@@ -299,14 +299,14 @@ class CLITuiRuntimeMixin:
         # so; this TTY is where they can. Either answer pins an image, so it is asked once.
         if sys.stdin.isatty():
             try:
-                from hermes_cli.sandbox_image_switch import offer_interactive
+                from moor_cli.sandbox_image_switch import offer_interactive
                 from cli import _cprint
                 offer_interactive(cprint=_cprint)
             except Exception:
                 logger.debug("sandbox image switch offer failed", exc_info=True)
             # Low disk + auto-prune never decided: ask once (either answer ends it for good).
             try:
-                from hermes_cli.prune_advisor import offer_interactive as _offer_auto_prune
+                from moor_cli.prune_advisor import offer_interactive as _offer_auto_prune
                 from cli import _cprint
                 _offer_auto_prune(cprint=_cprint)
             except Exception:
@@ -503,7 +503,7 @@ class CLITuiRuntimeMixin:
         # Without this line the terminal sits silent through the whole cleanup window.
         with suppress(Exception):
             print(f"{_DIM}{t('cli.tui.shutting_down')}{_RST}", flush=True)
-        from hermes_cli.cli_shutdown import _gateway_owns_session_end
+        from moor_cli.cli_shutdown import _gateway_owns_session_end
         if self.agent and self._agent_running and not (
                 self._detach_on_exit and _gateway_owns_session_end(self.agent)):
             # A gateway turn left by Ctrl+D is not interrupted: ``end_session`` below detaches this
@@ -542,7 +542,7 @@ class CLITuiRuntimeMixin:
                 # /exit --delete: remove transcripts + SQLite history.
                 try:
                     _sid = _closing_sid
-                    if self._session_db.delete_session(_sid, sessions_dir=get_hermes_home() / "sessions"):
+                    if self._session_db.delete_session(_sid, sessions_dir=get_moor_home() / "sessions"):
                         _cprint(f"  {_DIM}{t('cli.tui.session_deleted', session_id=_escape(_sid))}{_RST}")
                     else:
                         _cprint(f"  {_DIM}{t('cli.tui.session_delete_missing', session_id=_escape(_sid))}{_RST}")
@@ -556,7 +556,7 @@ class CLITuiRuntimeMixin:
         # short; a signal-driven exit never asks.
         import cli as _cli_mod
         if not _cli_mod._signal_watchdog_armed and _cli_mod._active_worktree:
-            from hermes_cli.worktree_exit import apply_exit_choice, ask_exit_choice
+            from moor_cli.worktree_exit import apply_exit_choice, ask_exit_choice
             with suppress(Exception, KeyboardInterrupt):
                 ask_exit_choice(_cli_mod._active_worktree)
                 apply_exit_choice(_cli_mod._active_worktree, _cprint)

@@ -27,23 +27,23 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 
-from hermes_cli import web_server_file_tickets as file_tickets
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.home_data_layout import SECRET_CACHE_STORES
-from hermes_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
-from hermes_cli.staged_uploads import (
+from moor_cli import web_server_file_tickets as file_tickets
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_cli.home_data_layout import SECRET_CACHE_STORES
+from moor_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
+from moor_cli.staged_uploads import (
     ensure_profile_subdir, is_staged_upload, removed_on_failure, resolve_upload_home,
 )
-from hermes_cli.web_deps import late
-from hermes_cli.web_server_remote_media import remote_media_response
-from hermes_cli.web_upload_limit import CHAT_IMAGE_MAX_BYTES
-from hermes_cli.web_server_surface import route_on
-from hermes_cli.web_server_files import (
+from moor_cli.web_deps import late
+from moor_cli.web_server_remote_media import remote_media_response
+from moor_cli.web_upload_limit import CHAT_IMAGE_MAX_BYTES
+from moor_cli.web_server_surface import route_on
+from moor_cli.web_server_files import (
     SANDBOX_NOT_FOUND, _agent_fs_path, _agent_path_scope, _file_url_path, _fs_path, _hosted_fs_read_guard,
     _is_unmapped_container_path, _managed_file_entry, _managed_response_meta, _resolve_managed_path,
     _session_workspace,
 )
-from hermes_cli.web_models import (
+from moor_cli.web_models import (
     ChatImageUpload, FileTicketRequest, FsWriteText, ManagedDirectoryCreate, ManagedFileDelete,
     ManagedFileUpload,
 )
@@ -52,10 +52,10 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_profile_scope = late("_profile_scope", "hermes_cli.web_server_profiles")
-get_hermes_home = late("get_hermes_home", "hermes_cli.config")
-load_config = late("load_config", "hermes_cli.config")
-load_env = late("load_env", "hermes_cli.config")
+_profile_scope = late("_profile_scope", "moor_cli.web_server_profiles")
+get_moor_home = late("get_moor_home", "moor_cli.config")
+load_config = late("load_config", "moor_cli.config")
+load_env = late("load_env", "moor_cli.config")
 _require_token = late("_require_token")
 # Image types GET /api/media serves — extension-allowlisted so an authenticated
 # caller can't pull non-image files through it.
@@ -310,7 +310,7 @@ def _fs_backend(profile: Optional[str] = None):
     adapter is not re-dialed here: a host that goes down after it connected fails the read itself,
     which each route answers on its own.
     """
-    from hermes_cli.ssh_workspace_fs import SshWorkspaceFsError, get_ssh_workspace_fs
+    from moor_cli.ssh_workspace_fs import SshWorkspaceFsError, get_ssh_workspace_fs
 
     with _profile_scope(profile):
         terminal = dict(load_config().get("terminal") or {})
@@ -334,9 +334,9 @@ def _fs_backend(profile: Optional[str] = None):
 def _chat_image_dir(home: Path) -> Path:
     """Where browser image pastes land: the profile's canonical image staging dir on this host
     (``gateway.platforms.base.get_image_cache_dir``), the only one attachment admission accepts."""
-    from hermes_constants import get_hermes_dir
+    from moor_constants import get_moor_dir
 
-    return get_hermes_dir("cache/images", "image_cache", home=home)
+    return get_moor_dir("cache/images", "image_cache", home=home)
 
 
 def _is_host_file(path: str, profile: Optional[str]) -> bool:
@@ -357,7 +357,7 @@ def _is_host_file(path: str, profile: Optional[str]) -> bool:
     except (OSError, RuntimeError, ValueError):  # ValueError: a decoded NUL (``%00``)
         return False  # not on this host: the workspace's to answer
     with _profile_scope(profile):
-        home = get_hermes_home()
+        home = get_moor_home()
         cache = _chat_image_dir(home)
     try:
         if target.parent == cache.resolve(strict=True):
@@ -377,7 +377,7 @@ def _remote_fs_backend(path: str, profile: Optional[str]):
 
 
 def _raise_fs_backend_error(exc: Exception) -> None:
-    from hermes_cli.ssh_workspace_fs import SshWorkspaceFsError
+    from moor_cli.ssh_workspace_fs import SshWorkspaceFsError
 
     if not isinstance(exc, SshWorkspaceFsError):
         raise exc
@@ -577,7 +577,7 @@ async def upload_chat_image(payload: ChatImageUpload, profile: Optional[str] = N
     def _run():
         data, mime_type, ext = _decode_chat_image_upload(payload)
         home = resolve_upload_home(profile)
-        from hermes_constants import apply_secure_dir_policy, assert_named_profile_home_live
+        from moor_constants import apply_secure_dir_policy, assert_named_profile_home_live
 
         img_dir = ensure_profile_subdir(
             home,
@@ -646,7 +646,7 @@ def _managed_readable_file(
     sensitive-path denylist. Returns (policy, target, display_path, max_bytes,
     mime_type). Callers own the live-SQLite 409 (held through the read for
     /api/files/read, point-in-time for streamed responses)."""
-    from hermes_cli.web_server import _MANAGED_FILE_MAX_BYTES
+    from moor_cli.web_server import _MANAGED_FILE_MAX_BYTES
     policy, target, display_path = _resolve_managed_path(
         path, request, create_root=create_root, for_agent_read=True,
     )
@@ -699,7 +699,7 @@ async def _managed_file_response(
     time, as an SSH profile's clip already is, so a long recording plays."""
     authority = getattr(request.state, "file_ticket_authority", None)
     if authority is not None:
-        from hermes_cli.web_server_file_response import OpenedFileResponse
+        from moor_cli.web_server_file_response import OpenedFileResponse
 
         return OpenedFileResponse(
             path=str(authority.target),
@@ -766,8 +766,8 @@ def _pin_ticket_file(authority: file_tickets.FileAuthority, checked):
 @router.post("/api/files/ticket", dependencies=[Depends(route_on("browser_files"))])
 async def issue_file_ticket(payload: FileTicketRequest, request: Request):
     """Ticket a browser download/media URL instead of putting the session token in it."""
-    from hermes_cli.web_routers.sessions import _history_profile_home
-    from hermes_constants import named_profile_home
+    from moor_cli.web_routers.sessions import _history_profile_home
+    from moor_constants import named_profile_home
 
     def owner_home():
         return Path(_history_profile_home(payload.profile))
@@ -1175,7 +1175,7 @@ async def _fs_owned_session(session_id: Optional[str], profile: Optional[str]) -
     sessions a host or Docker one does."""
     if session_id is None:
         return None
-    from hermes_cli.web_routers.sessions import get_session_detail
+    from moor_cli.web_routers.sessions import get_session_detail
 
     if not session_id.strip():
         raise HTTPException(status_code=404, detail="Session not found")
@@ -1183,10 +1183,10 @@ async def _fs_owned_session(session_id: Optional[str], profile: Optional[str]) -
 
 
 def _fs_profile_home(profile: Optional[str]) -> Optional[Path]:
-    """HERMES_HOME of a requested profile (404/400 on an unknown one), None for the request's
+    """MOOR_HOME of a requested profile (404/400 on an unknown one), None for the request's
     own profile (omitted, ``""`` or ``current``, as ``_is_current_profile`` reads them)."""
-    from hermes_cli.web_server_cron import _cron_profile_home
-    from hermes_cli.web_server_profiles import _is_current_profile
+    from moor_cli.web_server_cron import _cron_profile_home
+    from moor_cli.web_server_profiles import _is_current_profile
 
     if _is_current_profile(profile):
         return None
@@ -1198,7 +1198,7 @@ def _fs_profile_home(profile: Optional[str]) -> Optional[Path]:
 async def fs_read_data_url(
     path: str, request: Request, profile: Optional[str] = None, session_id: Optional[str] = None,
 ):
-    from hermes_cli.web_server import _FS_DATA_URL_MAX_BYTES
+    from moor_cli.web_server import _FS_DATA_URL_MAX_BYTES
     session = await _fs_owned_session(session_id, profile)
     backend = await asyncio.to_thread(_remote_fs_backend, path, profile)
     if backend is not None:
@@ -1245,7 +1245,7 @@ def _if_none_match(request: Request) -> set[str]:
 
 def _remote_download_target(backend, path: str) -> tuple[str, int]:
     """*path* resolved on the SSH workspace to a regular file a download may read, and its size."""
-    from hermes_cli.ssh_workspace_fs import SshWorkspaceFsError
+    from moor_cli.ssh_workspace_fs import SshWorkspaceFsError
 
     try:
         target, size = backend.inspect_file(path)
@@ -1308,7 +1308,7 @@ async def _fs_download_authority(
 ) -> file_tickets.FileAuthority:
     """The file ``/api/fs/download`` serves for this query, captured for a download ticket: on the
     profile's SSH workspace when it has one, else on this host under the same read rules."""
-    from hermes_constants import named_profile_home
+    from moor_constants import named_profile_home
 
     remote = await _remote_file_authority(path, profile, owner, _remote_download_target)
     if remote is not None:
@@ -1337,7 +1337,7 @@ async def _ticketed_fs_download(
         target, size = await _ticketed_remote_target(authority, _remote_download_target)
         return _remote_download_response(request, authority.workspace, target, size)
 
-    from hermes_cli.web_server_file_response import OpenedFileResponse
+    from moor_cli.web_server_file_response import OpenedFileResponse
 
     def checked():
         _hosted_fs_read_guard(authority.target, request)

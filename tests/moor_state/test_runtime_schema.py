@@ -3,9 +3,9 @@ import sqlite3
 
 import pytest
 
-from hermes_state import SessionDB
-from hermes_state_common import SCHEMA_VERSION
-import hermes_state_runtime as rt
+from moor_state import SessionDB
+from moor_state_common import SCHEMA_VERSION
+import moor_state_runtime as rt
 
 
 def test_schema_reconciles_existing_sessions_without_losing_history(tmp_path):

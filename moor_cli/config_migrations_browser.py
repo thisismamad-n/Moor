@@ -1,5 +1,5 @@
-"""Config step 51 -> 52 (registered in ``hermes_cli.config_migrations.MIGRATIONS``): agent-browser and the
-built-in browser_* tools left Hermes, so ``browser.backend`` / ``browser.extension_control`` go and the
+"""Config step 51 -> 52 (registered in ``moor_cli.config_migrations.MIGRATIONS``): agent-browser and the
+built-in browser_* tools left Moor, so ``browser.backend`` / ``browser.extension_control`` go and the
 AGENT_BROWSER_* settings a home's .env gave agent-browser move to the ``browser.*`` keys the launcher reads."""
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ import re
 from typing import Any
 
 
-# AGENT_BROWSER_* (read by agent-browser, which left Hermes) -> the browser.* key Hermes reads now.
+# AGENT_BROWSER_* (read by agent-browser, which left Moor) -> the browser.* key Moor reads now.
 _AGENT_BROWSER_ENV_KEYS = (
     ("AGENT_BROWSER_EXECUTABLE_PATH", "executable_path"),
     ("AGENT_BROWSER_PROFILE", "user_data_dir"),
@@ -22,11 +22,11 @@ _AGENT_BROWSER_ENV_KEYS = (
 def _agent_browser_env(home) -> dict[str, str]:
     """AGENT_BROWSER_* as *home* set them: its dotenv layers, then the process env for the launch home
     only (a served profile's env is the launch profile's, not its own)."""
-    from hermes_cli.env_loader import resolve_home_dotenv
-    from hermes_constants import get_routing_process_hermes_home, hermes_home_key
+    from moor_cli.env_loader import resolve_home_dotenv
+    from moor_constants import get_routing_process_moor_home, moor_home_key
 
     dotenv = resolve_home_dotenv(home)
-    launch = hermes_home_key(home) == hermes_home_key(get_routing_process_hermes_home())
+    launch = moor_home_key(home) == moor_home_key(get_routing_process_moor_home())
     found = {}
     for name, _key in _AGENT_BROWSER_ENV_KEYS:
         value = (dotenv.get(name) or (os.environ.get(name) if launch else None) or "").strip()
@@ -61,15 +61,15 @@ def _browser_value_from_env(key: str, value: str) -> Any:
     if key == "executable_path" and _inside_pm_store(value):
         return None
     if key == "user_data_dir" and not os.path.isabs(os.path.expanduser(value)):
-        # agent-browser inherited Hermes's cwd and resolved a relative profile there; browser.user_data_dir
-        # anchors relative paths at HERMES_HOME, so pin the directory the logins are in now.
+        # agent-browser inherited Moor's cwd and resolved a relative profile there; browser.user_data_dir
+        # anchors relative paths at MOOR_HOME, so pin the directory the logins are in now.
         return os.path.abspath(os.path.expanduser(value))
     return value
 
 
 def _config_decided(key: str, current: Any) -> bool:
     """``browser.<key>`` already won over its AGENT_BROWSER_* var, as core resolved them: ``engine: auto``
-    deferred to AGENT_BROWSER_ENGINE and ``headed`` was config OR env, so those defaults (core's `hermes
+    deferred to AGENT_BROWSER_ENGINE and ``headed`` was config OR env, so those defaults (core's `moor
     tools` Local Browser row wrote ``engine: auto``; old saves materialised both) do not block the move."""
     if key == "engine":
         return str(current or "").strip().lower() not in ("", "auto")
@@ -82,11 +82,11 @@ def _config_decided(key: str, current: Any) -> bool:
 # ``browser-use`` meant the built-in tools, on whatever browser the value named.
 _BACKEND_REASONS = {
     "browser-use": "browser_exec (Browser Use mode) is the only browser now",
-    "agent-browser": "agent-browser left Hermes; browser_exec is the browser now",
-    "camofox": "Camofox is now the camofox plugin (`hermes plugins install camofox`)",
-    "local": "browser_exec launches Hermes's packaged Chromium itself (browser.cloud_provider: local)",
-    **dict.fromkeys(("browserbase", "firecrawl", "nous"),
-                    "a cloud browser is chosen with browser.cloud_provider (`hermes tools` → Browser Automation)"),
+    "agent-browser": "agent-browser left Moor; browser_exec is the browser now",
+    "camofox": "Camofox is now the camofox plugin (`moor plugins install camofox`)",
+    "local": "browser_exec launches Moor's packaged Chromium itself (browser.cloud_provider: local)",
+    **dict.fromkeys(("browserbase", "firecrawl", "moor"),
+                    "a cloud browser is chosen with browser.cloud_provider (`moor tools` → Browser Automation)"),
 }
 
 
@@ -113,9 +113,9 @@ def move_agent_browser_env(home, browser: dict) -> tuple[list[str], list[str]]:
         browser[key] = new
         moved.append(f"{name} → browser.{key}")
         if key == "user_data_dir" and new != value:
-            # Resolved against this process's cwd, which need not be where Hermes ran before.
+            # Resolved against this process's cwd, which need not be where Moor ran before.
             pinned.append(f"pinned browser.user_data_dir to {new}: {name}={value} was relative to the directory "
-                          f"Hermes ran in; check that the browser logins are there")
+                          f"Moor ran in; check that the browser logins are there")
     return moved, pinned
 
 
@@ -123,12 +123,12 @@ def agent_browser_env_pending() -> bool:
     """The active home's config.yaml would still take AGENT_BROWSER_* settings from its .env (the v52 move)."""
     from pathlib import Path
 
-    from hermes_cli.config import read_raw_config
-    from hermes_constants import get_hermes_home
+    from moor_cli.config import read_raw_config
+    from moor_constants import get_moor_home
 
     config = read_raw_config()
     browser = config.get("browser") if isinstance(config.get("browser"), dict) else {}
-    return bool(move_agent_browser_env(Path(get_hermes_home()), dict(browser))[0])
+    return bool(move_agent_browser_env(Path(get_moor_home()), dict(browser))[0])
 
 
 def adopt_agent_browser_env(home, config: dict) -> list[str]:
@@ -140,14 +140,14 @@ def adopt_agent_browser_env(home, config: dict) -> list[str]:
     if moved:
         config["browser"] = browser
     if pinned:
-        from hermes_cli.left_core_migration import defer_startup_notice
+        from moor_cli.left_core_migration import defer_startup_notice
         for note in pinned:
             defer_startup_notice(f"{note[0].upper()}{note[1:]}.")
     return moved
 
 
 def migrate_to_52(results: dict[str, Any], quiet: bool) -> None:
-    # 51 -> 52: agent-browser and the built-in browser_* tools left Hermes; browser_exec is the only
+    # 51 -> 52: agent-browser and the built-in browser_* tools left Moor; browser_exec is the only
     # browser. `browser.backend` chose between the two, so it is dropped (an `off`, the opt-out of
     # browser_exec, gets a notice saying how to turn browsing off now). The AGENT_BROWSER_* settings
     # this home's .env gave agent-browser move to the browser.* keys the launcher reads, never over
@@ -157,9 +157,9 @@ def migrate_to_52(results: dict[str, Any], quiet: bool) -> None:
     # browser-extension control lane dispatched to the removed tools, so its key goes too.
     from pathlib import Path
 
-    from hermes_cli.config_migrations import _persist_migration, read_raw_config
-    from hermes_cli.left_core_migration import record_core_use
-    from hermes_constants import get_hermes_home
+    from moor_cli.config_migrations import _persist_migration, read_raw_config
+    from moor_cli.left_core_migration import record_core_use
+    from moor_constants import get_moor_home
 
     config = read_raw_config()
     browser = config.get("browser") if isinstance(config.get("browser"), dict) else {}
@@ -169,9 +169,9 @@ def migrate_to_52(results: dict[str, Any], quiet: bool) -> None:
         backend = browser.pop("backend")
         # YAML 1.1 reads an unquoted `off` as False; core treated that as off too.
         if backend is False or (isinstance(backend, str) and backend.strip().lower() == "off"):
-            # config_added is what `hermes update` re-surfaces on its quiet path, so the notice rides in it.
+            # config_added is what `moor update` re-surfaces on its quiet path, so the notice rides in it.
             note = ("removed browser.backend: off — the built-in browser tools are gone and browser_exec is the "
-                    "browser now; to turn browsing off, disable the `browser` toolset in `hermes tools`")
+                    "browser now; to turn browsing off, disable the `browser` toolset in `moor tools`")
             added.append(note)
             messages.append(f"  ✓ {note[0].upper()}{note[1:]}.")
             notices.append(f"{note[0].upper()}{note[1:]}.")
@@ -180,7 +180,7 @@ def migrate_to_52(results: dict[str, Any], quiet: bool) -> None:
     if "extension_control" in browser:
         browser.pop("extension_control")
         added.append("removed browser.extension_control")
-    moved, pinned = move_agent_browser_env(Path(get_hermes_home()), browser)
+    moved, pinned = move_agent_browser_env(Path(get_moor_home()), browser)
     for note in pinned:
         added.append(note)
         messages.append(f"  ✓ {note[0].upper()}{note[1:]}.")
@@ -188,7 +188,7 @@ def migrate_to_52(results: dict[str, Any], quiet: bool) -> None:
     if moved:
         added.append(f"browser: {', '.join(moved)}")
         messages.append(f"  ✓ Moved agent-browser settings from .env to config.yaml: {', '.join(moved)}")
-    used = record_core_use(Path(get_hermes_home()), config, 52)
+    used = record_core_use(Path(get_moor_home()), config, 52)
     if not added and not used:
         return
     if added:

@@ -14,11 +14,11 @@ import threading
 import pytest
 
 from agent import relay_runtime
-from hermes_cli import plugins
-from hermes_cli.observability import relay_shared_metrics
-from hermes_cli.observability import shared_metrics_events as events
-from hermes_cli.observability.shared_metrics import SharedMetricsStore
-from hermes_cli.plugins import PluginManager
+from moor_cli import plugins
+from moor_cli.observability import relay_shared_metrics
+from moor_cli.observability import shared_metrics_events as events
+from moor_cli.observability.shared_metrics import SharedMetricsStore
+from moor_cli.plugins import PluginManager
 
 _AUX_USAGE = {"input_tokens": 1000, "output_tokens": 10}
 
@@ -28,9 +28,9 @@ def relay_home(tmp_path, monkeypatch):
     relay = pytest.importorskip("nemo_relay")
     if getattr(relay, "_native", None) is None:
         pytest.skip("NeMo Relay native binding is unavailable on this platform")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor-home"))
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config_readonly",
+        "moor_cli.config.read_raw_config_readonly",
         lambda: {"telemetry": {"shared_metrics": {"enabled": True}}},
     )
     relay_shared_metrics._reset_for_tests()
@@ -38,7 +38,7 @@ def relay_home(tmp_path, monkeypatch):
     manager = PluginManager()
     manager._discovered = True  # a runtime with zero plugins loaded (#64178)
     monkeypatch.setattr(plugins, "_plugin_manager", manager)
-    yield tmp_path / "hermes-home"
+    yield tmp_path / "moor-home"
     relay_shared_metrics._reset_for_tests()
     relay_runtime._reset_for_tests()
 
@@ -58,9 +58,9 @@ def _recorded(home) -> dict[str, int]:
     found = {"slash": 0, "aux_input": 0}
     for row in SharedMetricsStore(root / "metrics.sqlite3", root / "outbox").counter_snapshot():
         dims = row["dimensions"]
-        if row["metric_name"] == "hermes.slash_command.count" and dims.get("command") == "help":
+        if row["metric_name"] == "moor.slash_command.count" and dims.get("command") == "help":
             found["slash"] += row["value"]
-        elif row["metric_name"] == "hermes.model_tokens.sum" and dims.get("token_type") == "input":
+        elif row["metric_name"] == "moor.model_tokens.sum" and dims.get("token_type") == "input":
             found["aux_input"] += row["value"]
     return found
 

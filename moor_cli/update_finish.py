@@ -18,13 +18,13 @@ def finish_update(*, root, assume_yes, gateway_mode, pre_update_snapshot_id,
     the gateway topology is left alone. An unsafe SQLite runtime is reported by maintenance and
     vetoes migration only.
     """
-    from hermes_cli.update_cmd import (
+    from moor_cli.update_cmd import (
         _run_post_update_maintenance,
         _restart_gateway_fleet_after_update, _verify_fleet_after_update,
         _write_gateway_update_exit_code, _resume_windows_gateways_and_merge_outcome,
     )
-    from hermes_cli import update_receipt
-    from hermes_cli.update_receipt import TAIL_FOLLOWUPS, record_build_stage, record_followup
+    from moor_cli import update_receipt
+    from moor_cli.update_receipt import TAIL_FOLLOWUPS, record_build_stage, record_followup
 
     owed = followups if followups is not None else []
     runtime_safe = False
@@ -42,8 +42,8 @@ def finish_update(*, root, assume_yes, gateway_mode, pre_update_snapshot_id,
     tail_owed = any(step in TAIL_FOLLOWUPS for step, _ in owed)
     record_build_stage(owed)
     if not tail_owed:
-        from hermes_cli.source_stamp import write_source_stamp
-        from hermes_cli.venv_sync import clear_completion
+        from moor_cli.source_stamp import write_source_stamp
+        from moor_cli.venv_sync import clear_completion
 
         try:
             write_source_stamp(Path(root))
@@ -103,15 +103,15 @@ def main(context: Path, result: Path) -> int:
         # Preparation has already committed the dependency generation and
         # selected store Python. Bootstrap must run before any app imports;
         # its ordinary currency check is now a no-op, not another update.
-        sys.argv = list(request["argv"]) if restarting else [str(root / "hermes"), "update"]
-        import hermes_bootstrap
+        sys.argv = list(request["argv"]) if restarting else [str(root / "moor"), "update"]
+        import moor_bootstrap
         # Import failures are update failures too: keep the original receipt
         # open before importing the application graph from the new checkout.
-        from hermes_cli import main as cli
-        from hermes_cli.source_build import build_update_products
-        from hermes_cli.update_lock import UpdateLock, describe_holder
-        from hermes_cli.update_cmd_windows import _resume_windows_gateways_after_update
-        from hermes_cli.venv_sync import arm_completion
+        from moor_cli import main as cli
+        from moor_cli.source_build import build_update_products
+        from moor_cli.update_lock import UpdateLock, describe_holder
+        from moor_cli.update_cmd_windows import _resume_windows_gateways_after_update
+        from moor_cli.venv_sync import arm_completion
 
         cli.PROJECT_ROOT = root
         if restarting:
@@ -168,10 +168,10 @@ def main(context: Path, result: Path) -> int:
         if code and request.get("gateway_mode"):
             # Even an application import failure must wake the gateway watcher. A run that already
             # closed as a success (an interrupt after verification) stays 0 (review regression 3).
-            from hermes_constants import get_hermes_home
-            from hermes_cli.runtime_state import _atomic_bytes
+            from moor_constants import get_moor_home
+            from moor_cli.runtime_state import _atomic_bytes
 
-            _atomic_bytes(get_hermes_home() / ".update_exit_code",
+            _atomic_bytes(get_moor_home() / ".update_exit_code",
                           b"0" if terminal.get("outcome") == "success" else b"1")
         if restarting and not cli_started:
             # Startup failed before the replacement command could own a

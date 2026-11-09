@@ -1,4 +1,4 @@
-"""Post-restart fleet verification for ``hermes update`` (``update_cmd_fleet`` sibling).
+"""Post-restart fleet verification for ``moor update`` (``update_cmd_fleet`` sibling).
 
 After the restart phase: compare every live gateway's stamped code against the checkout, reconcile
 the pre-update plan against what the restart did, keep the restart owed (a ``gateway_restart``
@@ -12,10 +12,10 @@ import subprocess
 import time as _time
 from contextlib import suppress
 
-from hermes_cli.update_cmd_common import _best_effort
+from moor_cli.update_cmd_common import _best_effort
 
 # Log-record parity with the origin module.
-logger = logging.getLogger("hermes_cli.update_cmd")
+logger = logging.getLogger("moor_cli.update_cmd")
 
 # A supervisor can report a restarted unit active before the gateway finishes its
 # bootstrap and publishes ``gateway_state.json``. Keep the readiness poll bounded,
@@ -24,22 +24,22 @@ _FLEET_PROBE_SETTLE_TIMEOUT_SECONDS = 120.0
 
 
 def _print_legacy_units_warning() -> None:
-    """Legacy hermes.service fights hermes-gateway.service over the bot token; warn on
+    """Legacy moor.service fights moor-gateway.service over the bot token; warn on
     every update until migrated."""
-    from hermes_cli.gateway import (has_legacy_hermes_units, _find_legacy_hermes_units, supports_systemd_services)
-    if not (supports_systemd_services() and has_legacy_hermes_units()):
+    from moor_cli.gateway import (has_legacy_moor_units, _find_legacy_moor_units, supports_systemd_services)
+    if not (supports_systemd_services() and has_legacy_moor_units()):
         return
     print()
-    print("⚠ Legacy Hermes gateway unit(s) detected:")
-    for name, path, is_sys in _find_legacy_hermes_units():
+    print("⚠ Legacy Moor gateway unit(s) detected:")
+    for name, path, is_sys in _find_legacy_moor_units():
         scope = "system" if is_sys else "user"
         print(f"    {path}  ({scope} scope)")
     print()
-    print("  These pre-rename units (hermes.service) fight the current")
-    print("  hermes-gateway.service for the bot token and cause SIGTERM")
+    print("  These pre-rename units (moor.service) fight the current")
+    print("  moor-gateway.service for the bot token and cause SIGTERM")
     print("  flap loops. Remove them with:")
     print()
-    print("    hermes gateway migrate-legacy")
+    print("    moor gateway migrate-legacy")
     print()
     print("  (add `sudo` if any are in system scope)")
 
@@ -56,7 +56,7 @@ def _collect_fleet_snapshot(restart, rows_expected: bool) -> list:
     start and its first runtime-status write, #112634) — keep polling; at the deadline it is flagged
     ``identity_pending`` so the matrix does not call it a pre-stamping gateway.
     """
-    from hermes_cli.update_receipt import collect_fleet_versions
+    from moor_cli.update_receipt import collect_fleet_versions
     pending = getattr(restart, "self_restart_pending_pids", None) or None
     if not rows_expected:
         return collect_fleet_versions(
@@ -93,7 +93,7 @@ def _restarted_units_gone(scoped_units) -> bool:
     closed now instead of at the deadline. Anything inconclusive keeps waiting: no units, systemctl
     missing/slow, or ``LoadState=not-found`` — a unit name asked in a scope that does not own it
     answers ``inactive`` exactly like a dead unit (#112466), so only a loaded unit can prove death."""
-    from hermes_cli import update_cmd_fleet as fleet
+    from moor_cli import update_cmd_fleet as fleet
     if not scoped_units:
         return False
     scope_cmds = dict(fleet._SYSTEMD_SCOPES)
@@ -130,13 +130,13 @@ def _live_gateway_pids_from_fleet(fleet_rows: list) -> dict:
 
 
 def _gateway_unit_runs_one_of(unit: str, pids: set) -> bool:
-    """Every scope that has ``hermes-gateway*`` *unit* loaded runs it as one of *pids*.
+    """Every scope that has ``moor-gateway*`` *unit* loaded runs it as one of *pids*.
 
     The restart bookkeeping keeps bare unit names, so it cannot say which scope failed: a loaded twin
     in the other scope that is not proven keeps the failure. Anything unreadable proves nothing.
     """
-    from hermes_cli import update_cmd_fleet as fleet
-    if not pids or not (unit == "hermes-gateway" or unit.startswith("hermes-gateway-")):
+    from moor_cli import update_cmd_fleet as fleet
+    if not pids or not (unit == "moor-gateway" or unit.startswith("moor-gateway-")):
         return False
     loaded = False
     for _scope, scope_cmd in fleet._SYSTEMD_SCOPES:
@@ -178,8 +178,8 @@ def _settle_units_proven_current(restart, fleet_rows: list) -> bool:
     restart.incomplete = bool(restart.failed_or_stale_units or restart.phase_errors)
     if not restart.incomplete:
         # The restart phase withheld this stamp; every other profile's CLI reads it.
-        from hermes_cli import update_cmd_fleet as fleet
-        from hermes_cli.update_host_obligation import mark_host_restart_completed
+        from moor_cli import update_cmd_fleet as fleet
+        from moor_cli.update_host_obligation import mark_host_restart_completed
         mark_host_restart_completed(fleet._restart_identity_sha())
     return True
 
@@ -196,7 +196,7 @@ def _record_owed_gateway_inventory(plan, stopped_unmapped_pids=()) -> None:
     A readable inventory (a same-SHA catch-up keeps the standing record) only GROWS: rows this run
     newly owes are appended, so a mapped successor cannot discharge a newly stopped unmapped one.
     """
-    from hermes_cli import update_cmd_fleet as fleet
+    from moor_cli import update_cmd_fleet as fleet
     armed = fleet._fleet_restart_obligation_armed()
     fields = fleet._obligation_fields() if armed else {}
     if fields is None:
@@ -228,7 +228,7 @@ def _record_owed_gateway_inventory(plan, stopped_unmapped_pids=()) -> None:
 def _named_gateways_still_owed() -> bool:
     """True when the armed obligation NAMES gateways (recorded by an earlier owed restart) and the
     live fleet still does not prove them current. An inventory-less record keeps its old rules."""
-    from hermes_cli import update_cmd_fleet as fleet
+    from moor_cli import update_cmd_fleet as fleet
     if not fleet._fleet_restart_obligation_armed():
         return False
     fields = fleet._obligation_fields()
@@ -238,10 +238,10 @@ def _named_gateways_still_owed() -> bool:
 
 
 def _is_serve_unit(name: object) -> bool:
-    """A serve/dashboard unit by the fleet loop's own name gate (``hermes-serve*``/``hermes-dashboard*``,
+    """A serve/dashboard unit by the fleet loop's own name gate (``moor-serve*``/``moor-dashboard*``,
     bare or ``.service``). Anything else it records as failed (gateway units, launchd labels,
     listing-failure markers) is gateway evidence."""
-    from hermes_cli.update_cmd_fleet import _is_serve_or_dashboard_unit
+    from moor_cli.update_cmd_fleet import _is_serve_or_dashboard_unit
 
     return _is_serve_or_dashboard_unit(f"{str(name).removesuffix('.service')}.service")
 
@@ -257,19 +257,19 @@ def _restart_phase_owes_gateway(restart) -> bool:
 
 def _split_unaccounted(outcomes) -> tuple[bool, set]:
     """``(gateway missed, serve/dashboard PIDs missed)`` among the unaccounted runtime outcomes."""
-    from hermes_cli.update_inventory import _SERVE_KINDS
+    from moor_cli.update_inventory import _SERVE_KINDS
 
     missed = [o for o in outcomes if o.get("outcome") == "unaccounted"]
     serve_pids = {o["pid"] for o in missed if o.get("kind") in _SERVE_KINDS and isinstance(o.get("pid"), int)}
     return any(o.get("kind") not in _SERVE_KINDS for o in missed), serve_pids
 
 
-# The Desktop hand-offs (scripts/desktop-update/posix.sh, windows.ps1) drop their "Run hermes gateway
+# The Desktop hand-offs (scripts/desktop-update/posix.sh, windows.ps1) drop their "Run moor gateway
 # restart" hint only when every gateway_restart reason starts with this prefix, so every serve-only
 # part below starts with it and the gateway part always comes first (#141071).
 SERVE_ONLY_REASON_PREFIX = "serve/dashboard "
 _GATEWAY_OWED_REASON = "gateways may still run pre-update code or were stopped without a successor"
-_GATEWAY_RECOVERY = "; recover with `hermes gateway restart`"
+_GATEWAY_RECOVERY = "; recover with `moor gateway restart`"
 
 
 def _owed_restart_reason(restart, stopped, *, gateway_owed: bool, stale_serves: set, down_serves: set) -> str:
@@ -277,7 +277,7 @@ def _owed_restart_reason(restart, stopped, *, gateway_owed: bool, stale_serves: 
 
     The step id stays ``gateway_restart`` (Desktop hand-offs parse it); only the text changes. A run
     whose gateways all verified current but whose dashboard unit could not be restarted must not tell
-    the user to run `hermes gateway restart`, which never touches that unit."""
+    the user to run `moor gateway restart`, which never touches that unit."""
     parts = []
     if gateway_owed:
         parts.append(
@@ -292,7 +292,7 @@ def _owed_restart_reason(restart, stopped, *, gateway_owed: bool, stale_serves: 
     if down_serves:
         parts.append(
             f"{SERVE_ONLY_REASON_PREFIX}process(es) {', '.join(map(str, sorted(down_serves)))} were stopped during the"
-            " update and not brought back; relaunch `hermes serve` / `hermes dashboard`")
+            " update and not brought back; relaunch `moor serve` / `moor dashboard`")
     if stale_serves - down_serves:
         parts.append(
             f"{SERVE_ONLY_REASON_PREFIX}process(es) {', '.join(map(str, sorted(stale_serves - down_serves)))} still run"
@@ -309,11 +309,11 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     records a ``gateway_restart`` follow-up and leaves ``fleet_restart_pending`` armed for the
     next catch-up and the startup warning; otherwise clears the marker.
     """
-    from hermes_cli import update_cmd_fleet as fleet
-    from hermes_cli.update_cmd import (
+    from moor_cli import update_cmd_fleet as fleet
+    from moor_cli.update_cmd import (
         _m, _surviving_pre_update_serve_runtimes, _warn_stale_serve_runtimes,
     )
-    from hermes_cli.update_cmd_maint import _refresh_dashboard_after_update
+    from moor_cli.update_cmd_maint import _refresh_dashboard_after_update
     with _best_effort('Legacy unit check during update failed: %s'):
         _print_legacy_units_warning()
 
@@ -333,12 +333,12 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     _stale_serves_owed: set = set()
 
     # Success-path twin of the abort-recovery probe: the restart phase only touches
-    # units, so a unit-less `hermes serve` keeps stale sys.modules. Runs AFTER
+    # units, so a unit-less `moor serve` keeps stale sys.modules. Runs AFTER
     # dashboard cleanup so a respawned manual dashboard isn't a survivor. Rows feed
     # reconciliation (survivor → owed restart); ``None`` = probe failed, stays fail-closed.
     # Check if any pre-update serve/dashboard runtimes survived on pre-update code generations (#100479).
     # This is the SUCCESS-path twin of the abort-recovery probe above: the restart phase only restarts
-    # units, so an sshd-spawned `serve --isolated` or a manual `hermes serve` (no unit) is left running its
+    # units, so an sshd-spawned `serve --isolated` or a manual `moor serve` (no unit) is left running its
     # pre-update sys.modules graph — and its cron ticker keeps firing agent jobs that ImportError on every
     # symbol added in the pulled range. The rows also feed the plan-vs-execution reconciliation below, so a
     # survivor is escalated (an owed gateway_restart follow-up) instead of merely printed.
@@ -350,7 +350,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
 
     print()
     print("Tip: You can now select a provider and model:")
-    print("  hermes model              # Select provider and model")
+    print("  moor model              # Select provider and model")
 
     # Compare every live gateway's stamped code_sha against the fresh checkout
     # instead of assuming the restart phase worked.
@@ -358,7 +358,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     _fleet_snapshot: list = []
     _units_settled = False
     with _best_effort('Fleet version verification failed: %s'):
-        from hermes_cli.update_receipt import print_fleet_version_matrix
+        from moor_cli.update_receipt import print_fleet_version_matrix
         # Cross-platform "rows expected" signal: (restarted_services or killed_pids)
         # never fires on Windows (pause/resume populates neither), so a healthy
         # resumed gateway yielded zero rows and exit 0.
@@ -379,7 +379,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
             restart.incomplete = _gateway_owed = True
             # A proven-stale survivor must not keep running (its ticker yields every tick and
             # nothing else restarts it, #117275): hand it to the drain-first restart path.
-            from hermes_cli.update_cmd_stale_survivors import signal_stale_fleet_survivors
+            from moor_cli.update_cmd_stale_survivors import signal_stale_fleet_survivors
             signal_stale_fleet_survivors(_fleet_snapshot, restart, fleet._gateway_drain_budget())
         elif not _fleet_snapshot and _fleet_rows_expected:
             # collect_fleet_versions() swallows every failure, so zero rows with
@@ -405,11 +405,11 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
         # and skipped one the inventory knew about) — escalate it exactly like a STALE/DOWN fleet row. See
         # #91277.
         if _pre_update_plan is not None and _pre_update_plan.runtimes:
-            from hermes_cli.update_inventory import (match_runtime_outcomes, report_unaccounted_runtimes)
-            from hermes_cli.update_receipt import row_is_external
+            from moor_cli.update_inventory import (match_runtime_outcomes, report_unaccounted_runtimes)
+            from moor_cli.update_receipt import row_is_external
             # Gateway incarnation evidence, from the post-restart fleet snapshot collected above: a
             # service can serve a profile its own name does not encode (root-home launchd label +
-            # sticky active profile, hashed custom HERMES_HOME), so the bookkeeping's service names
+            # sticky active profile, hashed custom MOOR_HOME), so the bookkeeping's service names
             # alone cannot credit the planned runtime. A profile the probe produced no row for simply
             # has no evidence — that runtime stays on the name-matching path (and logs it).
             _live_gateway_pids = _live_gateway_pids_from_fleet(_fleet_snapshot)
@@ -433,7 +433,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
                 live_gateway_pids=_live_gateway_pids,
             )
             from dataclasses import asdict
-            from hermes_cli.update_serve_obligations import defer_manual_serve
+            from moor_cli.update_serve_obligations import defer_manual_serve
 
             for runtime, outcome in zip(_pre_update_plan.runtimes, _runtime_outcomes):
                 if outcome["outcome"] == "unaccounted" and defer_manual_serve(asdict(runtime), require_alive=True):
@@ -444,7 +444,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
                 _gateway_owed |= _missed_gateway
                 _stale_serves_owed |= _missed_serves
             with suppress(Exception):
-                import hermes_cli.update_receipt as _ur
+                import moor_cli.update_receipt as _ur
                 _active = _ur._current.get()
                 if _active is not None:
                     _active.data["runtime_outcomes"] = _runtime_outcomes
@@ -466,8 +466,8 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     if restart.incomplete:
         # Code is committed (contract C3): a gateway that may still run stale modules is a
         # follow-up, never a failed update. The fleet obligation stays armed, every CLI start
-        # warns about it, and the next `hermes update` retries the restart.
-        from hermes_cli.update_receipt import record_followup
+        # warns about it, and the next `moor update` retries the restart.
+        from moor_cli.update_receipt import record_followup
         stopped = sorted(getattr(restart, "stopped_unmapped_pids", None) or ())
         record_followup("gateway_restart", _owed_restart_reason(
             restart, stopped, gateway_owed=_gateway_owed, stale_serves=_stale_serves_owed,
@@ -479,7 +479,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
         # the follow-up above.
         restart.record_receipt()
     with _best_effort('Update receipt finalize failed: %s'):
-        from hermes_cli.update_receipt import finalize_update_receipt
+        from moor_cli.update_receipt import finalize_update_receipt
         # A False ``update_complete`` (unsafe SQLite runtime, owed tail work) never fails the
         # run: maintenance already reported it as a follow-up. It only vetoes migration below.
         _receipt_path = finalize_update_receipt("success", fleet=_fleet_snapshot)
@@ -496,8 +496,8 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     # Fleet is healthy on the new code: fold per-profile gateways into one multiplexer when nothing
     # blocks it (deterministic; never prompts), else print the blockers and the one-liner to run later.
     try:
-        from hermes_cli.gateway_migrate import maybe_auto_migrate_after_update
+        from moor_cli.gateway_migrate import maybe_auto_migrate_after_update
         maybe_auto_migrate_after_update()
     except (Exception, SystemExit) as exc:  # health: allow BLE001 -- a SystemExit here must not fail a committed update
         logger.warning('Multiplex auto-migration after update failed: %s', exc)
-        print(f"  ⚠ Gateway multiplex migration did not finish: {exc} (run `hermes gateway migrate` later)")
+        print(f"  ⚠ Gateway multiplex migration did not finish: {exc} (run `moor gateway migrate` later)")

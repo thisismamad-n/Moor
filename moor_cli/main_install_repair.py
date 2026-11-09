@@ -191,15 +191,15 @@ def _recover_update_debts_on_startup() -> None:
     # still owed by a previous update without restarting services here.
     if "update" not in sys.argv[1:]:
         try:
-            from hermes_cli.update_cmd_fleet import _warn_pending_fleet_restart_on_startup
+            from moor_cli.update_cmd_fleet import _warn_pending_fleet_restart_on_startup
 
             _warn_pending_fleet_restart_on_startup()
         except Exception:  # a startup warning never blocks the launch it warns about
             logger.debug("pending fleet restart check failed", exc_info=True)
-    from hermes_cli.update_pause_record import recover as _recover_paused_gateways
+    from moor_cli.update_pause_record import recover as _recover_paused_gateways
     # Unconditional: recover() itself skips the PARSED `update`/`gateway run` commands; a raw argv
     # value equal to "update" (`--resume update`) is no reason to strand paused gateways.
-    _recover_paused_gateways()  # a killed `hermes update` left gateways paused (Windows)
+    _recover_paused_gateways()  # a killed `moor update` left gateways paused (Windows)
 
 
 def _cleanup_quarantined_exes(scripts_dir: Path | None = None) -> None:
@@ -219,8 +219,8 @@ def _cleanup_quarantined_exes(scripts_dir: Path | None = None) -> None:
     scripts_dir = scripts_dir if scripts_dir is not None else _venv_scripts_dir()
     if scripts_dir is None:
         return
-    from hermes_cli.main import PROJECT_ROOT
-    from hermes_cli.update_lock import update_in_progress
+    from moor_cli.main import PROJECT_ROOT
+    from moor_cli.update_lock import update_in_progress
 
     if update_in_progress(PROJECT_ROOT):
         return  # every quarantine may be that update's own, mid rename-back
@@ -263,7 +263,7 @@ def _configured_features_missing_deps() -> list[tuple[str, str, str]]:
         for platform in load_gateway_config().get_connected_platforms():
             entry = platform_registry.get(platform.value)
             if entry is not None and not entry.check_fn():
-                missing.append((entry.label, entry.install_hint or "Run `hermes setup` to install support.",
+                missing.append((entry.label, entry.install_hint or "Run `moor setup` to install support.",
                                 entry.name))
     except Exception as exc:
         logger.debug("configured-platform dependency check skipped: %s", exc)
@@ -272,7 +272,7 @@ def _configured_features_missing_deps() -> list[tuple[str, str, str]]:
         from moor_cli.config import load_config_readonly
 
         if (load_config_readonly().get("mcp_servers") or {}) and importlib.util.find_spec("mcp") is None:
-            missing.append(("MCP servers", "Run `hermes pm install` to install MCP support.", "mcp"))
+            missing.append(("MCP servers", "Run `moor pm install` to install MCP support.", "mcp"))
     except Exception as exc:
         logger.debug("configured-MCP dependency check skipped: %s", exc)
     return missing
@@ -336,7 +336,7 @@ def _is_windows_npm_path(npm_path: str) -> bool:
 def _resolve_node_runtime_npm() -> str | None:
     """PM's npm, refused on a POSIX host when it is a Windows shim (EISDIR over WSL UNC paths, #30271).
 
-    Never re-scans the user's PATH for another npm: Hermes runs only its PM-managed toolchain.
+    Never re-scans the user's PATH for another npm: Moor runs only its PM-managed toolchain.
     """
     from moor_constants import find_node_executable
     npm = find_node_executable("npm")

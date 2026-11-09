@@ -7,13 +7,13 @@ from pathlib import Path
 
 import pytest
 
-import hermes_constants
-from hermes_platform.host import runtime as host_runtime
-from hermes_constants import (
-    get_default_hermes_root,
-    get_hermes_dir,
-    get_hermes_home,
-    get_process_hermes_home,
+import moor_constants
+from moor_platform.host import runtime as host_runtime
+from moor_constants import (
+    get_default_moor_root,
+    get_moor_dir,
+    get_moor_home,
+    get_process_moor_home,
     is_container,
     node_tool_runnable,
     parse_reasoning_effort,
@@ -71,30 +71,30 @@ class TestGetDefaultMoorRoot:
 
     @pytest.mark.platforms("windows")
     def test_root_for_another_environment_ignores_this_process(self, tmp_path, monkeypatch):
-        """hermes_root_for_environment applies the root rules to the mapping it gets."""
+        """moor_root_for_environment applies the root rules to the mapping it gets."""
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "sandbox-local"))
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "sandbox-home"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "sandbox-home"))
         local = tmp_path / "local"
         user = tmp_path / "user"
         custom = tmp_path / "data"
         cases = [
-            ({"LOCALAPPDATA": str(local)}, local / "hermes"),
-            ({"LOCALAPPDATA": str(local), "HERMES_HOME": str(local / "hermes" / "profiles" / "work")},
-             local / "hermes"),
-            ({"LOCALAPPDATA": str(local), "HERMES_HOME": str(custom / "profiles" / "work")}, custom),
-            ({"LOCALAPPDATA": str(local), "HERMES_DATA_DIR_SUFFIX": "-magic"}, local / "hermes-magic"),
-            ({"localappdata": str(local), "HERMES_HOME": "%LocalAppData%\\data"}, local / "data"),
-            ({"LOCALAPPDATA": str(local), "HERMES_HOME": "$LOCALAPPDATA\\data"}, local / "data"),
-            ({"LOCALAPPDATA": str(local), "HERMES_HOME": "${LOCALAPPDATA}\\data"}, local / "data"),
-            ({"LOCALAPPDATA": str(local), "USERPROFILE": str(user), "HERMES_HOME": "~\\data"}, user / "data"),
-            ({"USERPROFILE": str(user)}, user / "AppData" / "Local" / "hermes"),
-            ({"LOCALAPPDATA": str(local), "HERMES_HOME": "relative\\data"}, None),
-            ({"LOCALAPPDATA": str(local), "HERMES_HOME": "%UNDEFINED%\\data"}, None),
-            ({"LOCALAPPDATA": str(local), "HERMES_HOME": "~\\data"}, None),
+            ({"LOCALAPPDATA": str(local)}, local / "moor"),
+            ({"LOCALAPPDATA": str(local), "MOOR_HOME": str(local / "moor" / "profiles" / "work")},
+             local / "moor"),
+            ({"LOCALAPPDATA": str(local), "MOOR_HOME": str(custom / "profiles" / "work")}, custom),
+            ({"LOCALAPPDATA": str(local), "MOOR_DATA_DIR_SUFFIX": "-magic"}, local / "moor-magic"),
+            ({"localappdata": str(local), "MOOR_HOME": "%LocalAppData%\\data"}, local / "data"),
+            ({"LOCALAPPDATA": str(local), "MOOR_HOME": "$LOCALAPPDATA\\data"}, local / "data"),
+            ({"LOCALAPPDATA": str(local), "MOOR_HOME": "${LOCALAPPDATA}\\data"}, local / "data"),
+            ({"LOCALAPPDATA": str(local), "USERPROFILE": str(user), "MOOR_HOME": "~\\data"}, user / "data"),
+            ({"USERPROFILE": str(user)}, user / "AppData" / "Local" / "moor"),
+            ({"LOCALAPPDATA": str(local), "MOOR_HOME": "relative\\data"}, None),
+            ({"LOCALAPPDATA": str(local), "MOOR_HOME": "%UNDEFINED%\\data"}, None),
+            ({"LOCALAPPDATA": str(local), "MOOR_HOME": "~\\data"}, None),
             ({}, None),
         ]
         for environ, root in cases:
-            assert hermes_constants.hermes_root_for_environment(environ) == root, environ
+            assert moor_constants.moor_root_for_environment(environ) == root, environ
 
 
 
@@ -504,8 +504,8 @@ class TestSecureParentDir:
         assert called_with[0] == (str(real_dir), 0o700)
 
 
-class TestGetHermesDir:
-    """Tests for ``get_hermes_dir(new_subpath, old_name)``.
+class TestGetMoorDir:
+    """Tests for ``get_moor_dir(new_subpath, old_name)``.
 
     Contract: prefer the legacy ``<old_name>/`` location, but only when
     it has content. An empty legacy stub must fall through to the new

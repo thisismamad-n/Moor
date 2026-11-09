@@ -61,7 +61,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None, toolchain
     through the active profile secret scope — an absent scoped value is
     omitted; (2) secret-substring names are blocked; (3) safe prefixes pass,
     as do a local session's client ``toolchain`` names (NVM_DIR, GOPATH...);
-    (4) operational HERMES_* pass by exact name; (5) on Windows the
+    (4) operational MOOR_* pass by exact name; (5) on Windows the
     OS-essential allowlist passes by exact name.
     """
     try:
@@ -87,7 +87,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None, toolchain
         if is_secret_env_name(k):
             continue
         if (any(k.startswith(p) for p in _SAFE_ENV_PREFIXES) or k in toolchain
-                or k in _HERMES_CHILD_ALLOWED
+                or k in _MOOR_CHILD_ALLOWED
                 or (is_windows and k.upper() in _WINDOWS_ESSENTIAL_ENV_VARS)):
             scrubbed[k] = v
         elif k.startswith("MOOR_"):
@@ -122,13 +122,13 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None, toolchain
 def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
                      child_python: str) -> dict[str, str]:
     """Build the scrubbed child environment both execution paths share."""
-    from hermes_constants import apply_scratch_tmp_env, apply_subprocess_home_env, get_hermes_home_override
+    from moor_constants import apply_scratch_tmp_env, apply_subprocess_home_env, get_moor_home_override
     from agent.session_client_env import tool_env, toolchain_environ
     # A local session's client toolchain replaces the daemon's PATH / venv, then the whole scrub (secret
     # names, delegated-child restrictions) runs over the merged environment.
     child_env = _scrub_child_env(toolchain_environ(), toolchain=frozenset(tool_env()))
-    child_env["HERMES_RPC_SOCKET"] = rpc_endpoint
-    child_env["HERMES_RPC_TOKEN"] = rpc_token
+    child_env["MOOR_RPC_SOCKET"] = rpc_endpoint
+    child_env["MOOR_RPC_TOKEN"] = rpc_token
     child_env["PYTHONDONTWRITEBYTECODE"] = "1"
     # Force UTF-8 stdio and default file encoding: on Windows sys.stdout is bound to the console
     # code page (cp1252) and print("→") raises; harmless under a C/POSIX locale (containers).
@@ -154,16 +154,16 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     if _home_override:
         child_env["MOOR_HOME"] = _home_override
         apply_scratch_tmp_env(child_env)  # TMPDIR follows the routed home, like HOME does
-    # PYTHONPATH: the staging dir (hermes_tools.py) must always be importable even when project
-    # mode changes CWD. Hermes's root is added ONLY when the child runs in Hermes's Python env —
-    # exposing Hermes's site-packages to an external interpreter can mix incompatible compiled
-    # extensions (3.12 NumPy under a 3.9 venv). Inherited Hermes-owned entries are stripped first.
-    # Before re-injecting PYTHONPATH, strip Hermes-owned entries that leaked through _scrub_child_env
+    # PYTHONPATH: the staging dir (moor_tools.py) must always be importable even when project
+    # mode changes CWD. Moor's root is added ONLY when the child runs in Moor's Python env —
+    # exposing Moor's site-packages to an external interpreter can mix incompatible compiled
+    # extensions (3.12 NumPy under a 3.9 venv). Inherited moor-owned entries are stripped first.
+    # Before re-injecting PYTHONPATH, strip moor-owned entries that leaked through _scrub_child_env
     # (PYTHONPATH is in _SAFE_ENV_PREFIXES so it passes the scrub). External project interpreters
-    # must not inherit Hermes dependencies (#74817). PM's own interpreter, however, can be a
+    # must not inherit Moor dependencies (#74817). PM's own interpreter, however, can be a
     # bare bundled Python whose dependencies live in the selected generation, not sys.prefix.
     from tools.environments.local_pythonpath import (
-        _strip_hermes_owned_pythonpath, _validated_runtime_venv, _same_path,
+        _strip_moor_owned_pythonpath, _validated_runtime_venv, _same_path,
     )
     _runtime_path = None
     if child_python == sys.executable:
@@ -177,12 +177,12 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
             if any(_same_path(Path(entry), candidate)
                    for entry in child_env.get("PYTHONPATH", "").split(os.pathsep) if entry):
                 _runtime_path = str(candidate)
-    _strip_hermes_owned_pythonpath(child_env)
+    _strip_moor_owned_pythonpath(child_env)
     _existing_pp = child_env.get("PYTHONPATH", "")
     _pp_parts = [tmpdir]
     if _runtime_path is not None:
         _pp_parts.append(_runtime_path)
-    if _uses_hermes_python_environment(child_python):
+    if _uses_moor_python_environment(child_python):
         _pp_parts.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     elif child_python not in _external_env_logged:
         # Surface once per interpreter so "import moor_constants fails" is diagnosable.

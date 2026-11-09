@@ -1,4 +1,4 @@
-import type { ModelOptionProvider, ModelPricing, PlanUsage, PlanUsageGauge } from '@hermes/shared'
+import type { ModelOptionProvider, ModelPricing, PlanUsage, PlanUsageGauge } from '@moor/shared'
 import {
   gaugeTitle,
   hasTopTier,
@@ -7,8 +7,8 @@ import {
   planLimit,
   splitRecommended,
   usageTag
-} from '@hermes/shared'
-import { fuzzyRank, modelSearchText } from '@hermes/shared'
+} from '@moor/shared'
+import { fuzzyRank, modelSearchText } from '@moor/shared'
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactElement, useMemo, useRef, useState } from 'react'

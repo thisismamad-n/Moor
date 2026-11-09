@@ -66,7 +66,7 @@ def test_a_stalled_steer_never_freezes_the_monitor(monkeypatch):
     """Steer runs off the UI loop: while the backend call hangs, the monitor still repaints and Esc
     still closes it; the answer lands in the notice line when it arrives."""
     import threading
-    from hermes_cli.cli_subagent_monitor import SubagentMonitor, build_monitor_application
+    from moor_cli.cli_subagent_monitor import SubagentMonitor, build_monitor_application
     from prompt_toolkit.input import create_pipe_input
     from prompt_toolkit.output import DummyOutput
     from tools import delegate_tool_registry as registry

@@ -33,7 +33,7 @@ class GatewayEndpoint:
     # default multiplexer's root when the profile is served by it.
     control_home: str | None = None
     # Commit the owner BOOTED from (its ``identify`` ``code_sha``); None when it cannot name one.
-    # A gateway that outlived ``hermes update`` keeps serving old code, so an attaching client
+    # A gateway that outlived ``moor update`` keeps serving old code, so an attaching client
     # compares this with its own checkout and restarts the owner instead of re-attaching it.
     code_sha: str | None = None
 
@@ -78,7 +78,7 @@ def _overlay_owner_home(home: Path) -> Path:
     """Return the owner named by a private overlay's gateway lock, if it has one."""
     if os.name == "nt":
         return home
-    from hermes_cli.gateway_runtime_discovery import DiscoveryError, _private_lock, _private_node
+    from moor_cli.gateway_runtime_discovery import DiscoveryError, _private_lock, _private_node
     lock = home / "gateway.lock"
     try:
         # An overlay home intentionally shares only the owner's lock.  Do not turn an arbitrary
@@ -164,8 +164,8 @@ def _starting_multiplexer_root(home: Path) -> Path | None:
     A ``gateway.standalone: true`` secondary is never served by it, so a reserved (or ready) root
     must not make its client wait out the deadline instead of starting the profile's own owner.
     One uncached config parse plus a lock probe: call it once per ensure iteration."""
-    from hermes_cli.gateway_runtime_discovery import missing_owner_state
-    from hermes_cli.gateway_runtime_multiplex import implied_host_root
+    from moor_cli.gateway_runtime_discovery import missing_owner_state
+    from moor_cli.gateway_runtime_multiplex import implied_host_root
     root = implied_host_root(home)
     return root if root is not None and missing_owner_state(root) == "starting" else None
 
@@ -176,9 +176,9 @@ def _standalone_multiplexer_reason(root: Path) -> str | None:
     A held root lock ordinarily means that a named profile should wait for its
     multiplexer.  A host which published a guard refusal is different: it is a
     standalone gateway and can never add the named profile during that boot. Read
-    with the same liveness rules as ``hermes gateway status``'s standalone box.
+    with the same liveness rules as ``moor gateway status``'s standalone box.
     """
-    from hermes_cli.gateway_multiplex_mode import recorded_standalone_reason
+    from moor_cli.gateway_multiplex_mode import recorded_standalone_reason
     reason = recorded_standalone_reason(root / "gateway_state.json")
     return reason[:500] if reason else None
 
@@ -190,7 +190,7 @@ def _parked_by_multiplexer(payload: dict, home: Path) -> GatewayDiscovery | None
     parked = payload.get("parked_profiles")
     if not isinstance(parked, dict):
         return None
-    from hermes_cli.profiles import normalize_profile_name
+    from moor_cli.profiles import normalize_profile_name
     name = normalize_profile_name(home.name)
     reason = next((r for n, r in parked.items() if normalize_profile_name(str(n)) == name), None)
     if reason is None:
@@ -210,8 +210,8 @@ def _served_by_multiplexer(home: Path, *, timeout: float) -> GatewayDiscovery | 
     """A served secondary has no socket of its own: the default multiplexer's control socket
     answers for it, and its ``identify`` lists the home under ``served_profiles``. Only the
     multiplexer's live descriptor proves service; a held ``gateway.lock`` alone does not."""
-    from hermes_cli.gateway_runtime_discovery import DiscoveryError, query_identify
-    from hermes_cli.gateway_runtime_multiplex import multiplexer_root_for
+    from moor_cli.gateway_runtime_discovery import DiscoveryError, query_identify
+    from moor_cli.gateway_runtime_multiplex import multiplexer_root_for
     root = multiplexer_root_for(home)
     if root is None:
         return None
@@ -224,7 +224,7 @@ def _served_by_multiplexer(home: Path, *, timeout: float) -> GatewayDiscovery | 
         named = _refused_owner_verdict(exc)
         if named is None:
             return None
-        from hermes_cli.gateway_multiplex_mode import host_serves_named_profile
+        from moor_cli.gateway_multiplex_mode import host_serves_named_profile
         if host_serves_named_profile(root, home) is False:
             return None
         return named
@@ -292,7 +292,7 @@ def discover_gateway_endpoint(profile_home: str | Path, *, timeout: float = 2.0)
     A named profile served by the default multiplexer resolves to the multiplexer's endpoint
     with ``profile_id`` = the profile's own home, so clients attach to it with that identity.
     """
-    from hermes_cli.gateway_runtime_discovery import DiscoveryError, missing_owner_state, query_identify
+    from moor_cli.gateway_runtime_discovery import DiscoveryError, missing_owner_state, query_identify
 
     if not math.isfinite(timeout) or timeout <= 0:
         raise ValueError("timeout must be finite and positive")
@@ -324,7 +324,7 @@ def discover_gateway_endpoint(profile_home: str | Path, *, timeout: float = 2.0)
 
 def _update_fenced(homes) -> bool:
     """True while an update owns the install, judged the way main's launchers and the Desktop
-    judge ``.hermes-update-in-progress``: a live (or still being written) marker, or a dead or
+    judge ``.moor-update-in-progress``: a live (or still being written) marker, or a dead or
     malformed one while the checkout lock is held (a killed update's tree still runs). A dead
     marker over a free lock is a killed update: it never blocks a launch.
 
@@ -333,7 +333,7 @@ def _update_fenced(homes) -> bool:
     exists but cannot be read is unjudgeable and fences.
     """
     import time
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
 
     for fence_home in homes:
         path = fence_home / update_lock.MARKER_NAME
@@ -363,22 +363,22 @@ def _fenced_verdict(home: Path, timeout: float) -> GatewayDiscovery:
     return GatewayDiscovery("draining", reason_code="update_paused")
 
 
-_REPLACE_FAILED_DETAIL = "an older Hermes gateway still owns this profile after a stop; run: hermes gateway stop"
+_REPLACE_FAILED_DETAIL = "an older Moor gateway still owns this profile after a stop; run: moor gateway stop"
 # ``draining`` reasons after which the owner is going away by itself: its own idle exit, or the
-# older-Hermes owner this call just stopped. Ensure waits it out and starts the current owner.
+# older-Moor owner this call just stopped. Ensure waits it out and starts the current owner.
 _RETIRING = frozenset({"idle_exit", "replaced"})
 
 
 def _observe_replacing_stale(home: Path, deadline: float, replaced: set[Path]) -> GatewayDiscovery:
-    """Discovery, except that a gateway an older Hermes left on this home is stopped once (like
-    ``hermes gateway stop``) and reported as retiring; a refusal keeps ``incompatible`` + its remedy."""
-    from hermes_cli.gateway_runtime_service import remaining
+    """Discovery, except that a gateway an older Moor left on this home is stopped once (like
+    ``moor gateway stop``) and reported as retiring; a refusal keeps ``incompatible`` + its remedy."""
+    from moor_cli.gateway_runtime_service import remaining
     observed = discover_gateway_endpoint(home, timeout=remaining(deadline))
     if observed.state != "incompatible" or observed.reason_code != "runtime_protocol":
         return observed
     if home in replaced:
         return GatewayDiscovery("incompatible", reason_code="runtime_protocol", detail=_REPLACE_FAILED_DETAIL)
-    from hermes_cli import gateway_runtime_replace as replace
+    from moor_cli import gateway_runtime_replace as replace
     replaced.add(home)
     refusal = replace.replace_incompatible_owner(home, deadline=deadline)
     if refusal is not None:
@@ -391,11 +391,11 @@ def ensure_gateway_runtime(profile_home: str | Path, *, timeout: float = DEFAULT
                            idle_exit: bool = False) -> GatewayDiscovery:
     """Ensure once; pending remains pending at deadline.
 
-    Never installs anything. The one owner it replaces is a gateway an older Hermes left running on
+    Never installs anything. The one owner it replaces is a gateway an older Moor left running on
     this install's own home (``incompatible``/``runtime_protocol``, the upgrade case): it is stopped
-    the way ``hermes gateway stop`` stops it, once, and the current one started like any absent
-    owner. Another install's or a newer Hermes's gateway stays refused, with the reason in ``detail``
-    (``hermes_cli.gateway_runtime_replace``).
+    the way ``moor gateway stop`` stops it, once, and the current one started like any absent
+    owner. Another install's or a newer Moor's gateway stays refused, with the reason in ``detail``
+    (``moor_cli.gateway_runtime_replace``).
 
     A successful service command or Popen is not session readiness. After an
     owner/start request is observed this invocation never launches another.
@@ -404,11 +404,11 @@ def ensure_gateway_runtime(profile_home: str | Path, *, timeout: float = DEFAULT
     (``idle_exit``); this call waits for it to go and starts the replacement transparently.
     """
     import time
-    from hermes_cli.gateway_runtime_service import (
+    from moor_cli.gateway_runtime_service import (
         RuntimeStartError, discover_existing_gateway_service, remaining,
         start_existing_gateway_service,
     )
-    from hermes_constants import get_default_hermes_root, get_process_hermes_home
+    from moor_constants import get_default_moor_root, get_process_moor_home
 
     if not math.isfinite(timeout) or timeout <= 0:
         raise ValueError("timeout must be finite and positive")
@@ -426,7 +426,7 @@ def ensure_gateway_runtime(profile_home: str | Path, *, timeout: float = DEFAULT
     try:
         while True:
             # The install-root marker also covers profiles.
-            if _update_fenced({home, get_process_hermes_home(), get_default_hermes_root()}):
+            if _update_fenced({home, get_process_moor_home(), get_default_moor_root()}):
                 return _fenced_verdict(home, remaining(deadline))
             # Poll BEFORE discovering: an exit observed first, then "absent", cannot be a child that
             # published its owner a moment later. A winning racer shows up as starting/ready instead.
@@ -444,7 +444,7 @@ def ensure_gateway_runtime(profile_home: str | Path, *, timeout: float = DEFAULT
                 # The one start this invocation requested died without leaving an owner: waiting
                 # out the deadline cannot change that, and this call never launches a second one.
                 # Its own (redacted) output is the answer the user needs, not a pointer to a file.
-                from hermes_cli.gateway_runtime_start import startup_failure_report
+                from moor_cli.gateway_runtime_start import startup_failure_report
                 return GatewayDiscovery("inaccessible", reason_code="runtime_exited",
                                         detail=startup_failure_report(child_home, child_offset, status, child.pid))
             if observed.state == "starting" and not retiring:
@@ -462,7 +462,7 @@ def ensure_gateway_runtime(profile_home: str | Path, *, timeout: float = DEFAULT
                 # A named profile the default multiplexer serves has no daemon of its own: start
                 # (or await) the MULTIPLEXER. A per-profile spawn here would become a second owner
                 # that blocks the multiplexer's next all-or-nothing reserve.
-                from hermes_cli.gateway_runtime_multiplex import implied_host_root, multiplexer_serves_home
+                from moor_cli.gateway_runtime_multiplex import implied_host_root, multiplexer_serves_home
                 target = multiplexer_serves_home(home) or home
                 service = discover_existing_gateway_service(target, deadline=deadline)
                 if service is None and target == home and (host := implied_host_root(home)) is not None:
@@ -477,7 +477,7 @@ def ensure_gateway_runtime(profile_home: str | Path, *, timeout: float = DEFAULT
                 if service is not None:
                     start_existing_gateway_service(service, deadline=deadline)
                 else:
-                    from hermes_cli.gateway_runtime_start import spawn_unmanaged_gateway, stdio_log_size
+                    from moor_cli.gateway_runtime_start import spawn_unmanaged_gateway, stdio_log_size
                     child_home, child_offset = target, stdio_log_size(target)
                     child = spawn_unmanaged_gateway(target, deadline=deadline, idle_exit=idle_exit)
                 requested = True

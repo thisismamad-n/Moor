@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 import moor_yaml as yaml
 
-from hermes_cli.plugins import SUPPORTED_MANIFEST_VERSION
+from moor_cli.plugins import SUPPORTED_MANIFEST_VERSION
 from tests.pm._fixtures import client, isolated_python
 
 
@@ -88,14 +88,14 @@ def test_manifest_version_above_shared_support_is_refused_cleanly(
 
 
 def test_a_linked_plugin_slot_is_already_installed_not_a_bad_manifest(monkeypatch, tmp_path):
-    """A provider's own installer can leave ``plugins/<name>`` as a link into a venv (mnemosyne-hermes
+    """A provider's own installer can leave ``plugins/<name>`` as a link into a venv (mnemosyne-moor
     did). The catalog install must say the slot is taken, not record ``manifest_invalid``."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     monkeypatch.setattr(plugins_cmd, "_scan_on_install_enabled", lambda: False)
     repo = _plugin_repo(tmp_path, {"name": "demo", "version": "1.0.0"})
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     (home / "plugins").mkdir(parents=True)
     (tmp_path / "elsewhere").mkdir()
     (home / "plugins" / "demo").symlink_to(tmp_path / "elsewhere", target_is_directory=True)

@@ -19,12 +19,12 @@ from agent.credential_pool import (
     _exhausted_until, _normalize_custom_pool_name, get_pool_strategy, label_from_token, list_custom_pool_providers,
     load_pool)
 from agent.credential_pool_admin import CredentialNotSavedError
-import hermes_cli.auth as auth_mod
-from hermes_cli.auth import PROVIDER_REGISTRY
-from hermes_cli.auth_plugin_providers import (
+import moor_cli.auth as auth_mod
+from moor_cli.auth import PROVIDER_REGISTRY
+from moor_cli.auth_plugin_providers import (
     canonical_registry_rows, dispatch_plugin_auth, is_refreshable_oauth_provider, plugin_missing_auth_handler_error)
-from hermes_constants import OPENROUTER_BASE_URL
-from hermes_cli.secret_prompt import masked_secret_prompt
+from moor_constants import OPENROUTER_BASE_URL
+from moor_cli.secret_prompt import masked_secret_prompt
 
 
 # Providers that support OAuth login in addition to API keys.
@@ -143,7 +143,7 @@ def _unknown_provider_exit(provider: str) -> SystemExit:
     import difflib
     known = sorted({pid for pid, _ in canonical_registry_rows()} | {"openrouter"}
                    | {entry["name"] for entry in _get_custom_provider_entries()})
-    from hermes_cli.left_core_migration import provider_install_hint
+    from moor_cli.left_core_migration import provider_install_hint
     if moved := provider_install_hint(provider):
         return SystemExit(f"Unknown provider '{provider}'. {moved}")
     close = difflib.get_close_matches(provider, known, n=3, cutoff=0.5)
@@ -313,11 +313,11 @@ def _add_moor_oauth_credential(args, provider: str) -> PooledCredential:
     timeout = getattr(args, "timeout", None) or 15.0
 
     def _persist(creds: dict, what: str) -> PooledCredential:
-        # `--label` is embedded into providers.nous so label_from_token doesn't overwrite it on every
-        # subsequent load_pool("nous").
-        from hermes_cli.anon_auth import settle_after_upgrade
-        from hermes_cli.guest_handoff import drain, result_lines
-        entry = auth_mod.persist_nous_credentials(creds, label=custom_label)
+        # `--label` is embedded into providers.moor so label_from_token doesn't overwrite it on every
+        # subsequent load_pool("moor").
+        from moor_cli.anon_auth import settle_after_upgrade
+        from moor_cli.guest_handoff import drain, result_lines
+        entry = auth_mod.persist_moor_credentials(creds, label=custom_label)
         handoff = drain()  # a replaced free tier hands its apps over once the save lands
         settle_after_upgrade(creds)  # a config left on the free tier's route moves to the account
         shown_label = entry.label if entry is not None else label_from_token(
@@ -330,9 +330,9 @@ def _add_moor_oauth_credential(args, provider: str) -> PooledCredential:
     # Codex-style auto-import: a shared Moor credential at <moor-root>/shared/moor_auth.json
     # (written by any previous login) makes `moor --profile <name> auth add moor --type oauth`
     # a one-tap operation for multi-profile users.
-    from hermes_cli.anon_auth import is_guest_state
+    from moor_cli.anon_auth import is_guest_state
 
-    if (shared := auth_mod._read_shared_nous_state()) and not is_guest_state(shared):
+    if (shared := auth_mod._read_shared_moor_state()) and not is_guest_state(shared):
         try:
             found = f"Found existing Moor OAuth credentials at {auth_mod._moor_shared_store_path()}"
         except RuntimeError:
@@ -677,15 +677,15 @@ def auth_refresh_command(args) -> None:
 
 
 def _moved_auth_hint(action: str, provider: str) -> str:
-    """``hermes auth status|logout spotify`` after Spotify left core for its plugin's own command."""
-    from hermes_cli.left_core_migration import moved_command_hint
-    return moved_command_hint("hermes auth", provider, action)
+    """``moor auth status|logout spotify`` after Spotify left core for its plugin's own command."""
+    from moor_cli.left_core_migration import moved_command_hint
+    return moved_command_hint("moor auth", provider, action)
 
 
 def auth_status_command(args) -> None:
     provider = _normalize_provider(getattr(args, "provider", "") or "")
     if not provider:
-        raise SystemExit("Provider is required. Example: `hermes auth status nous`.")
+        raise SystemExit("Provider is required. Example: `moor auth status moor`.")
     if dispatch_plugin_auth("status", args, provider):
         return
     if moved := _moved_auth_hint("status", provider):
@@ -711,8 +711,8 @@ def auth_status_command(args) -> None:
         value = status.get(key)
         if value:
             print(f"  {key}: {value}")
-    if provider == "nous":
-        from hermes_cli.guest_handoff import drain, handoff_status, status_lines
+    if provider == "moor":
+        from moor_cli.guest_handoff import drain, handoff_status, status_lines
         drain()   # a move left retrying gets its next try now
         for line in status_lines(handoff_status()):
             print(f"  {line}")

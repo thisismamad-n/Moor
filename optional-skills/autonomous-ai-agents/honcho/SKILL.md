@@ -32,7 +32,7 @@ Honcho provides AI-native cross-session user modeling. It learns who the user is
 Honcho is a plugin-catalog memory provider maintained by Plastic Labs. Install it once per machine (homes upgraded from a release that bundled Honcho get it automatically):
 
 ```bash
-hermes plugins install honcho
+moor plugins install honcho
 ```
 
 ### Cloud (app.honcho.dev)

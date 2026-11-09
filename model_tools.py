@@ -264,8 +264,8 @@ def _tool_defs_cache_key(
     if profile_scope == CHECK_FN_CACHE_BYPASS:
         return None
     try:
-        from hermes_cli.config import get_config_path
-        from hermes_cli.config_backend import config_version
+        from moor_cli.config import get_config_path
+        from moor_cli.config_backend import config_version
         cfg_fp = config_version(get_config_path())
     except (FileNotFoundError, OSError, ImportError):
         cfg_fp = None

@@ -11,9 +11,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import config_provider_env as cpe
-from hermes_cli.config_backend import ConfigBackendUnavailable
-from hermes_cli.config_defaults_env import OptionalEnvVars
+from moor_cli import config_provider_env as cpe
+from moor_cli.config_backend import ConfigBackendUnavailable
+from moor_cli.config_defaults_env import OptionalEnvVars
 
 
 def _profile(name, *env_vars, auth_type="api_key"):
@@ -22,7 +22,7 @@ def _profile(name, *env_vars, auth_type="api_key"):
 
 
 def test_every_api_key_provider_var_is_declared_in_core():
-    import hermes_cli.config as cfg
+    import moor_cli.config as cfg
     from providers import list_providers
 
     expected = {v for p in list_providers() if p.auth_type == "api_key" for v in p.env_vars}
@@ -44,7 +44,7 @@ def test_bundled_profiles_match_discovery_and_leave_the_registry_alone():
 
 
 def test_the_catalog_builds_under_a_backend_that_refuses_every_read(monkeypatch):
-    import hermes_cli.config_backend as cb
+    import moor_cli.config_backend as cb
 
     reads = []
 
@@ -89,7 +89,7 @@ def test_fill_runs_on_first_read_core_wins_provider_replaces_platform_first_prov
 def test_discovery_completion_adds_registered_plugin_providers(table, monkeypatch):
     import providers
 
-    from hermes_cli import config_defaults
+    from moor_cli import config_defaults
 
     monkeypatch.setattr(providers, "bundled_profiles", lambda: [_profile("alpha", "ALPHA_API_KEY")])
     monkeypatch.setattr(config_defaults, "OPTIONAL_ENV_VARS", table)
@@ -109,7 +109,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 def _cold(script: str, home: Path, *args: str) -> dict:
     """Run *script* in a fresh interpreter (nothing imported, nothing discovered) and return the
     JSON object it prints last."""
-    env = {**os.environ, "HERMES_HOME": str(home), "PYTHONPATH": str(_ROOT)}
+    env = {**os.environ, "MOOR_HOME": str(home), "PYTHONPATH": str(_ROOT)}
     result = subprocess.run([sys.executable, "-c", textwrap.dedent(script), *args], cwd=_ROOT, env=env,
                             stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120, check=False)
     assert result.returncode == 0, result.stderr[-4000:]
@@ -138,10 +138,10 @@ def test_cold_discovery_completion_reads_no_config_and_scans_no_home_plugins(tmp
     _marker_plugin(home / "plugins" / "model-providers", "homeplug", marker, "HOMEPLUG_API_KEY")
     out = _cold("""
         import json, sys
-        import hermes_cli.config as cfg
-        import hermes_cli.config_backend as cb
+        import moor_cli.config as cfg
+        import moor_cli.config_backend as cb
         import providers
-        from hermes_cli.config_backend import ConfigBackendUnavailable
+        from moor_cli.config_backend import ConfigBackendUnavailable
         from providers.base import ProviderProfile
 
         reads = []
@@ -156,7 +156,7 @@ def test_cold_discovery_completion_reads_no_config_and_scans_no_home_plugins(tmp
                                                         auth_type="api_key"))
         providers._run_discovery_steps = steps
         hook_errors = []
-        import hermes_cli.config_provider_env as cpe
+        import moor_cli.config_provider_env as cpe
         real = cpe.sync_registered_providers
         def hook():
             try:
@@ -186,10 +186,10 @@ _SAFE_CATALOG = """
         _bind_worker_config({})
     import providers
     providers._BUNDLED_PLUGINS_DIR = Path(sys.argv[2])
-    import hermes_cli.config as cfg
+    import moor_cli.config as cfg
     present = "MARKPLUG_API_KEY" in cfg.OPTIONAL_ENV_VARS
     print(json.dumps({"present": present,
-                      "catalog_modules": [k for k in sys.modules if k.startswith("_hermes_provider_catalog_")]}))
+                      "catalog_modules": [k for k in sys.modules if k.startswith("_moor_provider_catalog_")]}))
 """
 
 

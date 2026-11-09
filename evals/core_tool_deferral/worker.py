@@ -41,8 +41,8 @@ moor_home = os.path.join(tmp_root, ".moor")
 workspace = os.path.join(tmp_root, "ws")
 os.makedirs(moor_home)
 os.makedirs(workspace)
-isolate_host(tmp_root, hermes_home)
-with open(os.path.join(hermes_home, "config.yaml"), "w", encoding="utf-8") as f:
+isolate_host(tmp_root, moor_home)
+with open(os.path.join(moor_home, "config.yaml"), "w", encoding="utf-8") as f:
     f.write(f"model:\n  provider: openrouter\n  model: {MODEL}\n")
 
 os.environ["MOOR_HOME"] = moor_home
@@ -237,7 +237,7 @@ agent = AIAgent(
     connection_callback=connection_cb,
 )
 
-PREAMBLE = ("You are running inside the Hermes desktop app on the user's machine. "
+PREAMBLE = ("You are running inside the Moor desktop app on the user's machine. "
             f"Your working directory (the workspace) is: {workspace}\n\nTask: ")
 
 t0 = time.time()

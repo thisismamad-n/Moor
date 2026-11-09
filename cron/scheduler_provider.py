@@ -95,10 +95,10 @@ def _existing_profile_homes(profile_homes: list) -> list:
 def routed_profile_fire(home=None) -> bool:
     """True when a fire runs for a profile OTHER than the process's own.
 
-    Derived from the fire's home itself (``home``, else the task's active ``get_hermes_home()``), never from
+    Derived from the fire's home itself (``home``, else the task's active ``get_moor_home()``), never from
     a marker one entry point sets: the desktop ticker (``_profile_cron_scope``), the dashboard's
-    manual Run now (``hermes_cli.web_server_cron._cron_store_scope``) and any other caller that
-    binds a HERMES_HOME override for a sibling profile all reach ``run_one_job`` the same way, and a
+    manual Run now (``moor_cli.web_server_cron._cron_store_scope``) and any other caller that
+    binds a MOOR_HOME override for a sibling profile all reach ``run_one_job`` the same way, and a
     marker set only in the ticker left the manual path with the original cross-profile leak.
 
     The desktop backend fires every local profile from one process without setting the
@@ -107,12 +107,12 @@ def routed_profile_fire(home=None) -> bool:
     ``override=True`` and a scope miss read the launch profile's credentials (#107692).
     ``cron.scheduler._install_fire_secret_scope`` turns this into multiplex semantics for exactly
     the span the profile's secret scope covers, and the restart-safe handoff marks the worker
-    payload with it. The launch identity is ``get_routing_process_hermes_home()`` (gateway/AGENTS.md
+    payload with it. The launch identity is ``get_routing_process_moor_home()`` (gateway/AGENTS.md
     "One launch-home identity")."""
-    from hermes_constants import get_hermes_home, get_routing_process_hermes_home, hermes_home_key
+    from moor_constants import get_moor_home, get_routing_process_moor_home, moor_home_key
 
-    target = home if home is not None else get_hermes_home()
-    return hermes_home_key(target) != hermes_home_key(get_routing_process_hermes_home())
+    target = home if home is not None else get_moor_home()
+    return moor_home_key(target) != moor_home_key(get_routing_process_moor_home())
 
 
 @contextlib.contextmanager

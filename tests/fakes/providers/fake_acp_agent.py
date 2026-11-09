@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fake ACP agent executable for an ``external_process`` model provider (``agent.acp_client.ACPClient``).
 
-An ``external_process`` provider makes Hermes spawn an external agent process per model call and
+An ``external_process`` provider makes Moor spawn an external agent process per model call and
 speak the Agent Client Protocol to it: JSON-RPC 2.0, one JSON object per line over stdio
 (https://agentclientprotocol.com/protocol/overview). This module is that process. It
 
@@ -19,7 +19,7 @@ speak the Agent Client Protocol to it: JSON-RPC 2.0, one JSON object per line ov
 
 Test-side API: :class:`AcpFake` (write the script, build the launcher, read the transcript),
 :func:`install_provider_plugin` (the ``fake-acp`` provider a real user plugin would register in a
-``HERMES_HOME``) and the action builders (:func:`thought`, :func:`message`, ...). Run as a script it
+``MOOR_HOME``) and the action builders (:func:`thought`, :func:`message`, ...). Run as a script it
 is the agent itself: ``fake_acp_agent.py --acp --stdio --state <dir>``.
 """
 
@@ -130,10 +130,10 @@ def moor_tool_call(call_id: str, name: str, args: dict[str, Any]) -> str:
     return f"<tool_call>{json.dumps(body)}</tool_call>"
 
 
-def install_provider_plugin(hermes_home: Path) -> Path:
-    """Write the ``fake-acp`` model-provider plugin into ``hermes_home`` the way a user installs one
-    (``$HERMES_HOME/plugins/model-providers/<name>/``); returns the plugin dir."""
-    plugin_dir = Path(hermes_home) / "plugins" / "model-providers" / PROVIDER
+def install_provider_plugin(moor_home: Path) -> Path:
+    """Write the ``fake-acp`` model-provider plugin into ``moor_home`` the way a user installs one
+    (``$MOOR_HOME/plugins/model-providers/<name>/``); returns the plugin dir."""
+    plugin_dir = Path(moor_home) / "plugins" / "model-providers" / PROVIDER
     plugin_dir.mkdir(parents=True, exist_ok=True)
     (plugin_dir / "__init__.py").write_text(_PLUGIN_INIT, encoding="utf-8")
     (plugin_dir / "plugin.yaml").write_text(_PLUGIN_MANIFEST, encoding="utf-8")

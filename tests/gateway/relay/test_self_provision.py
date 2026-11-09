@@ -247,21 +247,21 @@ def test_relay_display_name_suppresses_stock_brand(monkeypatch):
 
 
 def _boot_with_expired_login(tmp_path, monkeypatch, *, env_file: str, stored_portal: str) -> list[str]:
-    """Launch home whose Nous access token expired while the box slept, so the startup
+    """Launch home whose Moor access token expired while the box slept, so the startup
     self-provision is the first caller to refresh it. Returns the Portal URLs the refresh used."""
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".moor"
     launch_home.mkdir()
     (launch_home / ".env").write_text(env_file, encoding="utf-8")
     (launch_home / "auth.json").write_text(json.dumps({
-        "active_provider": "nous",
-        "providers": {"nous": {
+        "active_provider": "moor",
+        "providers": {"moor": {
             "portal_base_url": stored_portal,
             "access_token": "expired-access-token", "refresh_token": "refresh-token",
             "expires_at": "2000-01-01T00:00:00+00:00",
         }},
     }), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
-    for name in ("HERMES_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL", "NOUS_INFERENCE_BASE_URL"):
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
+    for name in ("MOOR_PORTAL_BASE_URL", "MOOR_PORTAL_BASE_URL", "MOOR_INFERENCE_BASE_URL"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(relay, "relay_url", lambda: "wss://connector.example/relay")
     monkeypatch.setattr(relay, "register_relay_adapter", lambda: False)
@@ -271,14 +271,14 @@ def _boot_with_expired_login(tmp_path, monkeypatch, *, env_file: str, stored_por
         portals.append(kwargs["portal_base_url"])
         raise RuntimeError("stop before any network call")
 
-    monkeypatch.setattr("hermes_cli.auth._refresh_nous_or_quarantine", _refresh)
+    monkeypatch.setattr("moor_cli.auth._refresh_moor_or_quarantine", _refresh)
     return portals
 
 
 def test_startup_refresh_uses_launch_profile_portal_when_multiplexed(tmp_path, monkeypatch, caplog):
     """A Portal override in the launch profile's .env survives the startup refresh."""
     portals = _boot_with_expired_login(
-        tmp_path, monkeypatch, env_file="HERMES_PORTAL_BASE_URL=https://portal.example\n",
+        tmp_path, monkeypatch, env_file="MOOR_PORTAL_BASE_URL=https://portal.example\n",
         stored_portal="https://portal.example")
     secret_scope.set_multiplex_active(True)
 
@@ -291,22 +291,22 @@ def test_startup_refresh_uses_launch_profile_portal_when_multiplexed(tmp_path, m
 
 def test_startup_refresh_without_override_stays_on_default_portal(tmp_path, monkeypatch):
     """With no override anywhere, the startup refresh keeps the default Portal."""
-    from hermes_cli.auth_nous import DEFAULT_NOUS_PORTAL_URL
+    from moor_cli.auth_moor import DEFAULT_MOOR_PORTAL_URL
 
     portals = _boot_with_expired_login(
-        tmp_path, monkeypatch, env_file="", stored_portal=DEFAULT_NOUS_PORTAL_URL)
+        tmp_path, monkeypatch, env_file="", stored_portal=DEFAULT_MOOR_PORTAL_URL)
     secret_scope.set_multiplex_active(True)
 
     GatewayStartupMixin._start_register_plugins_relay_hooks()
 
-    assert portals == [DEFAULT_NOUS_PORTAL_URL]
+    assert portals == [DEFAULT_MOOR_PORTAL_URL]
 
 
 def test_startup_refresh_single_profile_reads_process_env_override(tmp_path, monkeypatch):
     """Single-profile hosts (multiplexing off) still take the override from the process env."""
     portals = _boot_with_expired_login(
         tmp_path, monkeypatch, env_file="", stored_portal="https://portal.example")
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", "https://portal.example")
+    monkeypatch.setenv("MOOR_PORTAL_BASE_URL", "https://portal.example")
 
     GatewayStartupMixin._start_register_plugins_relay_hooks()
 
@@ -314,20 +314,20 @@ def test_startup_refresh_single_profile_reads_process_env_override(tmp_path, mon
 
 
 def test_startup_idp_secret_ref_keeps_launch_env_value_when_multiplexed(tmp_path, monkeypatch):
-    """Only the Nous token step runs in the launch profile's scope: a ``${VAR}`` IdP secret injected
+    """Only the Moor token step runs in the launch profile's scope: a ``${VAR}`` IdP secret injected
     into the launch env (systemd, ``op run``) still reaches the IdP, as it did unscoped."""
     import io
     from unittest.mock import Mock
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".moor"
     launch_home.mkdir()
     (launch_home / ".env").write_text("", encoding="utf-8")
     (launch_home / "config.yaml").write_text(
         "gateway:\n  idp:\n    token_url: https://idp.example/token\n"
         "    client_id: relay-client\n    client_secret: ${RELAY_IDP_SECRET}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     # The autouse fixture stubs config reads; this test needs the real ``${VAR}`` expansion.
-    from hermes_cli.config_effective import load_user_config_effective
+    from moor_cli.config_effective import load_user_config_effective
     monkeypatch.setattr("gateway.run._load_gateway_config",
                         lambda config_path=None: load_user_config_effective(launch_home / "config.yaml"))
     monkeypatch.setenv("RELAY_IDP_SECRET", "injected-launch-secret")

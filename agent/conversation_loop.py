@@ -36,8 +36,8 @@ from agent.surface_switch import (
     identity_line_value, note_inert_pinned_tools, runtime_host_value, stage_surface_switch_note,
 )
 from agent.turn_context import PRE_LLM_BLOCK_EXIT_REASON, PreflightCompressionTimedOut, build_turn_context
-from hermes_cli.observability.shared_metrics_efficiency import record_cache_break, record_prompt_rebuild
-from hermes_cli.plugins_dispatch import held_stream_transforms
+from moor_cli.observability.shared_metrics_efficiency import record_cache_break, record_prompt_rebuild
+from moor_cli.plugins_dispatch import held_stream_transforms
 from agent.turn_retry_state import TurnRetryState
 from agent.turn_scripted_prelude import Prelude, play_prelude
 # Phase helpers of the turn loop, bound at import so a source-tree swap cannot load a
@@ -464,19 +464,19 @@ def _ra():
     return run_agent
 
 
-def _nous_entitlement_message(capability: str, *, billing: bool = False) -> str:
+def _moor_entitlement_message(capability: str, *, billing: bool = False) -> str:
     """``billing``: the request hit a billing wall. A usage-window account then gets its own next
     step (top-up link); its plan is still live, so the entitlement copy alone would say nothing."""
     try:
-        from hermes_cli.nous_account import (
-            format_nous_portal_entitlement_message,
+        from moor_cli.moor_account import (
+            format_moor_portal_entitlement_message,
             format_usage_window_block_guidance,
-            get_nous_portal_account_info,
+            get_moor_portal_account_info,
         )
-        account_info = get_nous_portal_account_info(force_fresh=True)
+        account_info = get_moor_portal_account_info(force_fresh=True)
         if billing and (window_guidance := format_usage_window_block_guidance(account_info)):
             return window_guidance
-        return format_nous_portal_entitlement_message(
+        return format_moor_portal_entitlement_message(
             account_info, capability=capability, in_chat=True
         ) or ""
     except Exception:
@@ -518,8 +518,8 @@ def _is_moor_inference_route(provider: str, base_url: str) -> bool:
 def _billing_or_entitlement_message(
     *, capability: str, provider: str, base_url: str, model: str, unverified: bool = False
 ) -> str:
-    if _is_nous_inference_route(provider, base_url):
-        return _nous_entitlement_message(capability, billing=True)
+    if _is_moor_inference_route(provider, base_url):
+        return _moor_entitlement_message(capability, billing=True)
 
     provider_label = (provider or "").strip() or "the selected provider"
     model_label = (model or "").strip() or "the selected model"
@@ -613,7 +613,7 @@ def _usage_window_refusal(agent, classified, api_messages=None) -> tuple[str, Op
         top_tier = current_model_is_top_tier(agent)
         stop = _window_hard_stop(state, model_is_free=False, model_is_top_tier=top_tier) if state is not None else None
         # The server may word the refusal itself (``display_message`` on the 402): shown verbatim, so a
-        # reword ships with the API. Without it, the stop line Hermes builds from the gauges.
+        # reword ships with the API. Without it, the stop line Moor builds from the gauges.
         display = context.get("display_message")
         server_message = str(getattr(classified, "message", "") or "").strip()
         if isinstance(display, str) and display.strip():
@@ -772,7 +772,7 @@ def _refresh_bot_chat_tools(agent) -> None:
     """Rebuild ``agent.tools`` for a Bot Chat capability refresh through the builder that
     created the session, so the refreshed set is what a fresh desktop/TUI session gets
     (#124211). A canonical Bot Chat never forks, so its tools[] is otherwise a fossil of
-    session creation: ``hermes tools enable/disable`` writes ``platform_toolsets`` and the
+    session creation: ``moor tools enable/disable`` writes ``platform_toolsets`` and the
     automatic between-turns refresh reuses the build-time selection. Only the desktop/TUI
     gateway keeps agents alive across turns; every other surface builds a fresh agent whose
     tools[] already reflects config. No prefix preservation: a disabled toolset must drop,
@@ -858,7 +858,7 @@ def _restore_or_build_system_prompt(agent, system_message, conversation_history)
             return
         refresh_epoch = stored_prompt_refresh_epoch(agent, session_row)
         if refresh_epoch:
-            # `hermes sessions refresh-prompts` ran after this prompt was built. Pin tools[] first
+            # `moor sessions refresh-prompts` ran after this prompt was built. Pin tools[] first
             # (the refresh is about instructions; the frozen tool array stays), then rebuild once.
             _restore_pinned_tools(agent, session_row)
             rebuild_for_refresh(agent, system_message, conversation_history, refresh_epoch)
@@ -1906,7 +1906,7 @@ def _redact_display_metadata(metadata: dict) -> dict:
 
 
 def _close_durable_failed_turn(agent, result: Any) -> None:
-    """Append a Hermes-authored assistant boundary when a failed turn left its durable tail open
+    """Append a moor-authored assistant boundary when a failed turn left its durable tail open
     (``OPEN_TURN_TAIL_ROLES``: the accepted ``user`` row, or a ``tool`` row when a call ran before
     the failure), in place on ``result["messages"]`` and in SessionDB.
 

@@ -55,7 +55,7 @@ class TestConnectionGateScope:
         """A→B→A under multiplex: profile A (own A2A_PORT) connects, profile B (none) does not even though
         os.environ carries the launch value, then A again. The tools gate follows the same scope."""
         import agent.secret_scope as ss
-        import hermes_constants
+        import moor_constants
         from plugins.platforms import a2a
 
         monkeypatch.setenv("A2A_PORT", "9902")  # the launch profile's value, bridged into os.environ
@@ -66,13 +66,13 @@ class TestConnectionGateScope:
         try:
             seen = []
             for home in (home_a, home_b, home_a):
-                home_tok = hermes_constants.set_hermes_home_override(str(home))
+                home_tok = moor_constants.set_moor_home_override(str(home))
                 tok = ss.set_secret_scope(ss.build_profile_secret_scope(home), profile_home=str(home))
                 try:
                     seen.append((a2a.is_connected(SimpleNamespace(extra={})), tools._a2a_tools_available()))
                 finally:
                     ss.reset_secret_scope(tok)
-                    hermes_constants.reset_hermes_home_override(home_tok)
+                    moor_constants.reset_moor_home_override(home_tok)
         finally:
             ss.set_multiplex_active(prev)
         assert seen == [(True, True), (False, False), (True, True)]
@@ -585,7 +585,7 @@ class TestRegistryDispatchConvention:
     uses (`entry.handler(args, **kwargs)`), not keyword params."""
 
     def test_register_then_dispatch_via_registry(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         monkeypatch.setattr(tools, "_load_config", dict)
         from tools.registry import registry
 

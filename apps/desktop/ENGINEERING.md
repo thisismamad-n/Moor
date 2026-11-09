@@ -69,7 +69,7 @@ There are three distinct switch shapes, and conflating them is the classic bug:
 - A **connection/mode apply** (local ↔ remote ↔ cloud) is the soft re-home:
   shell mounted, gateway-bound stores explicitly wiped, then reconnect. Query
   invalidation alone cannot evict live session stores — wipe them.
-- A **runtime home change** (switching the underlying `HERMES_HOME` profile) is
+- A **runtime home change** (switching the underlying `MOOR_HOME` profile) is
   a hard re-home: the window legitimately reloads and state resets by remount.
 - A **live profile swap** in the same window activates another profile's socket
   while background profiles keep streaming; lists merge rather than wipe, and
@@ -122,7 +122,7 @@ Two auth-flavored corollaries worth naming because they are easy to get wrong:
 ## Guest content never opens anything by itself
 
 Untrusted HTML runs in two places: sandboxed `allow-scripts` iframes (artifact
-previews) and the preview pane's `<webview>` (`persist:hermes-preview`). Neither
+previews) and the preview pane's `<webview>` (`persist:moor-preview`). Neither
 may drive the OS browser without the user's hand on it (GHSA-9f4c-93c8-jc8g):
 `setWindowOpenHandler` denies everything and never opens a URL as a side
 effect (`electron/window-open-policy.ts`), and the webview has no
@@ -132,7 +132,7 @@ A guest page's `target="_blank"` links (Streamlit's "Ask Google" traceback
 button) reach the OS browser through one explicit bridge instead:
 
 - `main.ts` installs `electron/preview-guest-preload-entry.ts` via
-  `will-attach-webview`, keyed on the `persist:hermes-preview` partition only.
+  `will-attach-webview`, keyed on the `persist:moor-preview` partition only.
   It is the app's only guest preload; a new webview does not inherit it unless
   it opts into that partition.
 - The preload runs in the isolated world, exposes nothing to the page, and
@@ -141,7 +141,7 @@ button) reach the OS browser through one explicit bridge instead:
   `dispatchEvent(click)` from page script is dropped there; page `window.open`
   stays blocked.
 - `PreviewPane` admits `http:`/`https:` only (`src/lib/preview-external.ts`)
-  and hands the URL to the existing `hermes:openExternal` IPC, which applies
+  and hands the URL to the existing `moor:openExternal` IPC, which applies
   main's URL policy. `file:` is excluded on purpose: a guest must never reach
   `shell.openPath`.
 
@@ -166,22 +166,22 @@ reopens the gesture-less forced-navigation class the advisory closed.
 - Root geometry variables are not theme changes. Authored custom CSS can depend
   on those variables, so it must retain full repaint notifications.
 
-## Nous free tier: state is pulled, never latched in the renderer
+## Moor free tier: state is pulled, never latched in the renderer
 
-The free tier (a Nous identity with no account, `hermes_cli/anon_auth.py`) reaches the renderer
+The free tier (a Moor identity with no account, `moor_cli/anon_auth.py`) reaches the renderer
 through one JSON-RPC pair: `free_tier.status` (has_guest, enabled, available,
 notice_pending, model, label) read from local auth state with zero network, and
 `free_tier.ack_notice`, which persists the one-time notice flag on the identity itself. The
 first-launch ready screen and the own-key strip are the SAME state rendered for two situations,
 keyed on `notice_pending`; there is no localStorage latch, so the CLI and the desktop cannot
 disagree about whether the notice was shown. Sign-in goes through the existing
-`POST /api/providers/oauth/nous/start` + poll route, which the dialog long-polls (`?wait=`: the
+`POST /api/providers/oauth/moor/start` + poll route, which the dialog long-polls (`?wait=`: the
 backend answers once the session leaves `pending`; the loop never asks again sooner than 2 s, so an
 older backend that answers at once is not hammered). On completion it reports `reason`,
 `account_email`, `model` and `handoff_status` (what the replaced free tier's apps did, with the
 backend's own copy in `lines`); a move still retrying is followed through the
-`/api/providers/oauth/nous/handoff` long-poll until it settles or the dialog closes. Every entry
-point (Billing, status chip, ready screen) opens the one free-tier sign-in dialog, and a Nous sign-in
+`/api/providers/oauth/moor/handoff` long-poll until it settles or the dialog closes. Every entry
+point (Billing, status chip, ready screen) opens the one free-tier sign-in dialog, and a Moor sign-in
 from the onboarding picker that moved apps shows the same result screen once onboarding leaves the
 screen (onboarding paints above every dialog). Never branch on
 provider display names: the picker row carries `free_tier_row`, status cards carry `free_tier`.

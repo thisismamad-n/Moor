@@ -1,4 +1,4 @@
-"""hermes.feature_disabled.count: a user turns off something Hermes ships on, or removes something shipped.
+"""moor.feature_disabled.count: a user turns off something Moor ships on, or removes something shipped.
 
 One chokepoint sees every write: ``save_config`` hands over the raw config it replaced and the one it
 wrote, and :func:`config_transitions` diffs only what the user moved away from the shipped default
@@ -7,11 +7,11 @@ booleans. Names are public only when shipped (toolset key, bundled/catalog skill
 plugin, ``DEFAULT_CONFIG`` key path; never a value); anything else reads ``custom``. The store counts
 each (kind, name, event) at most once per day.
 
-The surface is the entry point that is running: ``set_process_surface`` from the ``hermes`` command
+The surface is the entry point that is running: ``set_process_surface`` from the ``moor`` command
 dispatch (``tools`` / ``config`` / ``skills`` / ``plugins`` / chat slash commands / the web server) and
 the TUI gateway. A process with no surface (setup wizard, updates) records nothing, nor does a write
-Hermes makes itself inside a surfaced process (migrations, under :func:`hermes_applied_write`): those
-are Hermes applying choices, not a user turning something off.
+Moor makes itself inside a surfaced process (migrations, under :func:`moor_applied_write`): those
+are Moor applying choices, not a user turning something off.
 
 ``save_config``'s callers may hold their own write lock (the dashboard's ``_CONFIG_MUTATION_LOCK``), so
 the hook only runs the cheap gate inline; the diff and the record run on a thread bound to the owning
@@ -39,11 +39,11 @@ _COMMAND_SURFACES = {
 _SETTING_KINDS = {"memory": "memory", "curator": "curator", "compression": "compression"}
 _OFF = frozenset({"false", "off", "no", "0", "none", ""})
 _process_surface: str | None = None
-_hermes_write: ContextVar[bool] = ContextVar("hermes_feature_disabled_hermes_write", default=False)
+_moor_write: ContextVar[bool] = ContextVar("moor_feature_disabled_moor_write", default=False)
 
 
 def set_process_surface(command: Any) -> None:
-    """Called once by the ``hermes`` dispatch (``command`` is the subcommand, None for chat) or the
+    """Called once by the ``moor`` dispatch (``command`` is the subcommand, None for chat) or the
     TUI gateway (``"tui_gateway"``). Unknown commands clear it."""
     global _process_surface
     _process_surface = "tui_gateway" if command == "tui_gateway" else _COMMAND_SURFACES.get(command)
@@ -96,7 +96,7 @@ def skill_metric_name(raw: Any) -> str:
 @functools.cache
 def default_on_settings() -> frozenset[str]:
     """Dotted ``DEFAULT_CONFIG`` paths whose shipped value is ``True`` (the closed setting vocabulary)."""
-    from hermes_cli.config import DEFAULT_CONFIG
+    from moor_cli.config import DEFAULT_CONFIG
 
     from .shared_metrics_contract import FEATURE_DISABLED_NAME_MAX_LENGTH, _metric_identifier
 
@@ -178,7 +178,7 @@ def _toolset_transitions(old: dict, new: dict) -> Iterable[tuple[str, str, str]]
 
     if scope(old) == scope(new):
         return
-    from hermes_cli.tools_config import _configurable_keys, _get_platform_tools
+    from moor_cli.tools_config import _configurable_keys, _get_platform_tools
 
     platforms = {"cli"}
     for config in (old, new):
@@ -225,33 +225,33 @@ def _emit(transitions: Iterable[tuple[str, str, str]], surface: str) -> None:
 
 
 @contextlib.contextmanager
-def hermes_applied_write() -> Iterator[None]:
-    """Config writes Hermes makes on its own (migrations) record nothing, whatever the surface."""
-    token = _hermes_write.set(True)
+def moor_applied_write() -> Iterator[None]:
+    """Config writes Moor makes on its own (migrations) record nothing, whatever the surface."""
+    token = _moor_write.set(True)
     try:
         yield
     finally:
-        _hermes_write.reset(token)
+        _moor_write.reset(token)
 
 
 def _record(old: Any, new: Any, surface: str, home: str) -> None:
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
-    token = set_hermes_home_override(home)  # a thread does not inherit the profile binding
+    token = set_moor_home_override(home)  # a thread does not inherit the profile binding
     try:
         _emit(config_transitions(old, new), surface)
     except Exception:
         logger.debug("Feature-disabled not recorded", exc_info=True)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def record_config_saved(old_raw: Any, new_config: Any) -> None:
     """``save_config``'s hook, after the write and outside its lock. Never raises."""
-    if _process_surface is None or _hermes_write.get():
+    if _process_surface is None or _moor_write.get():
         return
     try:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         from .relay_shared_metrics import enabled
 
@@ -259,15 +259,15 @@ def record_config_saved(old_raw: Any, new_config: Any) -> None:
             return
         # Not a daemon: a CLI command that exits right after its write still records.
         threading.Thread(
-            target=_record, args=(copy.deepcopy(old_raw), copy.deepcopy(new_config), surface, str(get_hermes_home())),
-            name="hermes-feature-disabled",
+            target=_record, args=(copy.deepcopy(old_raw), copy.deepcopy(new_config), surface, str(get_moor_home())),
+            name="moor-feature-disabled",
         ).start()
     except Exception:
         logger.debug("Feature-disabled not recorded", exc_info=True)
 
 
 def recording_raw_config_write(config_path: Any, user_config: Any, write) -> None:
-    """``hermes config set/unset`` write the raw file directly (not via ``save_config``): diff the file
+    """``moor config set/unset`` write the raw file directly (not via ``save_config``): diff the file
     they replace against what they write. The write itself runs unguarded, so its errors are the caller's."""
     before = None
     if _process_surface is not None:
@@ -275,7 +275,7 @@ def recording_raw_config_write(config_path: Any, user_config: Any, write) -> Non
             from .relay_shared_metrics import enabled
 
             if enabled():
-                from hermes_cli.config import read_user_config_raw
+                from moor_cli.config import read_user_config_raw
 
                 before = read_user_config_raw(config_path)
         except Exception:

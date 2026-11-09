@@ -185,7 +185,7 @@ def arm_completion(project_root: Path) -> Path:
 #: failing re-runs on every launch ("every launch burns ~4 minutes"), so after
 #: this many consecutive failures the tail waits out a backoff window before
 #: trying again, and past the cap it stops self-starting entirely and leaves
-#: the marker for an explicit ``hermes update`` instead. The counter is the
+#: the marker for an explicit ``moor update`` instead. The counter is the
 #: tail's own attempt record beside the pending marker: same lifetime, same
 #: install scope, cleared by the same success path.
 COMPLETION_RETRY_BACKOFF_ATTEMPTS = 2
@@ -328,19 +328,19 @@ _TAIL_SCRIPTS = frozenset({"source_completion.py", "update_completion.py"})
 def _is_tail_script(root: Path, argv0: str) -> bool:
     """Exact own-script identity; argv is not inherited by the processes a tail spawns."""
     script = Path(argv0)
-    return script.name in _TAIL_SCRIPTS and script.resolve().parent == root / "hermes_cli"
+    return script.name in _TAIL_SCRIPTS and script.resolve().parent == root / "moor_cli"
 
 
 def _supervised_child() -> bool:
     """A launcher-marked child: booted by a manager, not a user's shell.
 
     Launcher markers only — not INVOCATION_ID, which systemd exports to every
-    descendant: an ordinary hermes command inside a CI runner still owes its repair.
+    descendant: an ordinary moor command inside a CI runner still owes its repair.
     Parsed as a truthy flag, so an explicit ``0``/``false`` does not suppress the tail.
     """
     return any(
         os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
-        for name in ("HERMES_SUPERVISED_CHILD", "HERMES_S6_SUPERVISED_CHILD")
+        for name in ("MOOR_SUPERVISED_CHILD", "MOOR_S6_SUPERVISED_CHILD")
     )
 
 
@@ -351,13 +351,13 @@ def _tree_matches_completed_stamp(root: Path) -> bool:
     when that commit is a clean HEAD, the products in the tree were built for it, so a
     stale venv only needs re-provisioning and a marker armed BEFORE that stamp is a
     leftover from a previous home/install, never a rebuild of the same SHA (fresh
-    Windows installs and pristine HERMES_HOMEs hit exactly this: #123314). A marker
-    armed after the stamp is newer debt (a same-commit ``hermes update`` that failed
+    Windows installs and pristine MOOR_HOMEs hit exactly this: #123314). A marker
+    armed after the stamp is newer debt (a same-commit ``moor update`` that failed
     or was killed) and is still owed. Boot-time adoption also stamps HEAD but builds
     nothing, so its stamp (``adoptedAt``) is not evidence; neither is a dirty tree.
     """
-    from hermes_cli.steward import read_install_stamp
-    from hermes_cli.version_info import _git_version_info
+    from moor_cli.steward import read_install_stamp
+    from moor_cli.version_info import _git_version_info
 
     stamp = read_install_stamp(root)
     commit = stamp.get("commit")
@@ -370,7 +370,7 @@ def _tree_matches_completed_stamp(root: Path) -> bool:
     return info.commit == commit and not info.dirty
 
 
-# `hermes update` flags that report and exit without changing anything (subcommands/update.py).
+# `moor update` flags that report and exit without changing anything (subcommands/update.py).
 _REPORT_ONLY_UPDATE_FLAGS = frozenset({"--check", "--plan", "--list-venv-holders"})
 
 
@@ -379,25 +379,25 @@ def _may_retry_completion(root: Path, command: list[str], *, current: bool) -> b
     import sys
 
     if not current and command[:1] == ["update"] and not _REPORT_ONLY_UPDATE_FLAGS & set(command):
-        # `hermes update` is the remedy every backed-off launch names: it always tries the repair.
+        # `moor update` is the remedy every backed-off launch names: it always tries the repair.
         # Its report-only forms change nothing, so they stay inside the backoff like any launch.
         return True
     may_retry, attempts, backoff = completion_retry_state(root)
     if not may_retry and attempts >= COMPLETION_RETRY_MAX_ATTEMPTS:
         # The tail has failed often enough that every relaunch re-running it
         # does more harm than good (#122206: "every launch burns ~4 minutes").
-        # Leave the marker for an explicit `hermes update`; say so once.
+        # Leave the marker for an explicit `moor update`; say so once.
         print(
-            f"hermes: a source update could not be finished automatically "
-            f"({attempts} attempts); run `hermes update` from a shell to finish it",
+            f"moor: a source update could not be finished automatically "
+            f"({attempts} attempts); run `moor update` from a shell to finish it",
             file=sys.stderr, flush=True,
         )
     elif not may_retry and not current:
         # Inside the backoff window a finished-dependencies tail waits silently (the record's age
         # tracks the wait); stale dependencies are worth one line in front of the user.
         print(
-            f"hermes: running with the previous dependencies after {attempts} failed syncs; "
-            f"next automatic retry in {max(1, backoff // 60)} min, or run `hermes update` to finish it",
+            f"moor: running with the previous dependencies after {attempts} failed syncs; "
+            f"next automatic retry in {max(1, backoff // 60)} min, or run `moor update` to finish it",
             file=sys.stderr, flush=True,
         )
     return may_retry
@@ -415,9 +415,9 @@ def _relaunch_target(root: Path, python: Path, *, same: bool) -> Path | None:
 
     import pm
 
-    if same and getattr(sys, "_hermes_relaunched", False) and not pm.venv_is_current(project_root=root):
-        print("hermes: relaunching did not leave this install current; running with the "
-              "dependencies it has — run `hermes update` to finish it", file=sys.stderr, flush=True)
+    if same and getattr(sys, "_moor_relaunched", False) and not pm.venv_is_current(project_root=root):
+        print("moor: relaunching did not leave this install current; running with the "
+              "dependencies it has — run `moor update` to finish it", file=sys.stderr, flush=True)
         return None
     return python
 
@@ -430,7 +430,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     so a tail that failed is retried on the next launch WITHOUT rebuilding
     dependencies that are already current. Old updaters need not write a
     marker (and cannot accidentally clear this obligation).
-    A supervised child leaves that tail to ``hermes update`` when its dependencies
+    A supervised child leaves that tail to ``moor update`` when its dependencies
     are current: its manager restarts it on every start, so a sticky marker would
     re-run the tail (and its environment builds) on each boot until the disk fills.
     Return the store interpreter when this process must restart cleanly.
@@ -443,8 +443,8 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     if _is_tail_script(root, sys.argv[0]):
         return None
 
-    from hermes_cli._parser import command_argv
-    from hermes_cli.steward import read_install_stamp
+    from moor_cli._parser import command_argv
+    from moor_cli.steward import read_install_stamp
 
     command = command_argv(argv)
     if (command[:1] == ["pm"]
@@ -453,7 +453,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
             # fenced the gateway. Completing that same tail first can take minutes and
             # leaves the user without the fence diagnosis or a usable restart remedy.
             or _is_read_only_gateway_status(command)
-            or os.environ.get("HERMES_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
+            or os.environ.get("MOOR_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
             or not (root / ".git").exists()
             or not (root / "pyproject.toml").is_file()):
         return None
@@ -509,15 +509,15 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
                 # marker over a held checkout lock is a killed update whose tree (its completion
                 # child) still runs.
                 if not lock.acquire_checkout(root):
-                    raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+                    raise RuntimeError("an update is still running; wait for it to exit, then relaunch Moor")
                 _finish_source_update(root, current=current, pending=pending)
         finally:
             lock.release()
     python = resolve_store_python(root)
     if python is None:
-        raise RuntimeError("source update has no managed Python; run `hermes pm install`")
+        raise RuntimeError("source update has no managed Python; run `moor pm install`")
     # Lexical identity, never resolve(): PM spells the store path through
-    # HERMES_HOME (which may carry '..') while sys.executable arrives
+    # MOOR_HOME (which may carry '..') while sys.executable arrives
     # normalized, so a raw compare re-execs every child forever (#122513). A
     # venv interpreter symlinked to the same binary is still a different
     # interpreter (its own sys.prefix) and must re-exec once.
@@ -528,7 +528,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     if owed_to_cli:
         # Left owed, not dropped: say so (once, in the process that boots) where an
         # operator of the unit will read it.
-        print("hermes: a source update is unfinished; run `hermes update` from a shell to finish it",
+        print("moor: a source update is unfinished; run `moor update` from a shell to finish it",
               file=sys.stderr, flush=True)
     return None
 
@@ -537,7 +537,7 @@ def _prepare_borrowed_launch(root: Path, owner: Path, *, current: bool) -> Path 
     """Launch a checkout that another data root owns (#123238).
 
     Dependency state is per data root, so a borrowing root -- a test's temporary
-    ``HERMES_HOME``, a per-task home -- still gets an environment of its own, synced exactly
+    ``MOOR_HOME``, a per-task home -- still gets an environment of its own, synced exactly
     as a process spawned under a live update syncs. The rest is the checkout's, and so the
     owner's: launchers, product builds, post-update maintenance, the install stamp and the
     owner's own update markers. None of it is armed, run or published from here, so a
@@ -547,13 +547,13 @@ def _prepare_borrowed_launch(root: Path, owner: Path, *, current: bool) -> Path 
     import os
     import sys
     import pm
-    from hermes_cli._launchers import resolve_store_python
-    from hermes_cli.update_lock import UpdateLock
+    from moor_cli._launchers import resolve_store_python
+    from moor_cli.update_lock import UpdateLock
 
     if not current:
         lock = UpdateLock(install_root=root, checkout_first=False)  # R6, as in prepare_launch
         if not lock.acquire():
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Moor")
         try:
             _sync_source_dependencies(root, arm=False, borrowed_from=owner)
         finally:
@@ -563,7 +563,7 @@ def _prepare_borrowed_launch(root: Path, owner: Path, *, current: bool) -> Path 
             raise RuntimeError("dependency sync left this install out of date")
     python = resolve_store_python(root)
     if python is None:
-        raise RuntimeError("source update has no managed Python; run `hermes pm install`")
+        raise RuntimeError("source update has no managed Python; run `moor pm install`")
     same = os.path.normcase(os.path.abspath(python)) == os.path.normcase(os.path.abspath(sys.executable))
     return python if not current or not same else None
 
@@ -579,8 +579,8 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
         # Current post-sync verification children can boot under a live updater.
         legacy_markers = (root / ".update-incomplete", root / ".lazy-refresh-incomplete")
         if any(_marker_owner_is_live(marker) for marker in legacy_markers):
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
-        print("hermes: completing source-update dependencies...", file=sys.stderr, flush=True)
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Moor")
+        print("moor: completing source-update dependencies...", file=sys.stderr, flush=True)
         completed = _tree_matches_completed_stamp(root)
         # ponytail: commit-only match; a product dir deleted by hand is rebuilt on demand
         # by its own entry point (the TUI/web freshness gates), not here.
@@ -617,7 +617,7 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
     # The tail's progress lines go to stderr: this is an automatic repair in
     # front of whatever command the user ran, and that command may be
     # emitting machine-readable stdout (a JSON probe, a piped query).
-    from hermes_cli.update_custody import CustodyRefused, run
+    from moor_cli.update_custody import CustodyRefused, run
 
     # The completion child stays in this launch's checkout custody (POSIX: it inherits the lock
     # fd; Windows: created suspended and bound to the lock owner's kill-on-close job), so a
@@ -626,13 +626,13 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
     try:
         code = run(
             [sys.executable, "-I", "-B", "-u",
-             str(root / "hermes_cli/source_completion.py"),
+             str(root / "moor_cli/source_completion.py"),
              "--source", str(root), "--finish-update",
              *(("--desktop",) if desktop else ())],
             inherit_lock=True, cwd=root, env=activation_environment(root), stdout=sys.__stderr__,
         ).returncode
     except CustodyRefused as exc:
-        print(f"hermes: {exc.reason}", file=sys.stderr, flush=True)
+        print(f"moor: {exc.reason}", file=sys.stderr, flush=True)
         code = 1
     if code != 0:
         _record_completion_attempt(root, failed=True)
@@ -655,10 +655,10 @@ def _sync_source_dependencies(root: Path, *, arm: bool, borrowed_from: Path | No
     from pm.extras import legacy_selection
 
     if borrowed_from is not None:
-        print(f"hermes: preparing dependencies for this data root (the checkout's updates belong to "
+        print(f"moor: preparing dependencies for this data root (the checkout's updates belong to "
               f"{borrowed_from})...", file=sys.stderr, flush=True)
     elif not arm:
-        print("hermes: preparing dependencies for this update...", file=sys.stderr, flush=True)
+        print("moor: preparing dependencies for this update...", file=sys.stderr, flush=True)
     refuse_foreign_owned_venv(root)
     if arm:
         # Owed from before the sync commits: a crash between the commit and the
@@ -700,10 +700,10 @@ def relaunch_command(
         if option in ("-W", "-X") and index < len(original):
             options.append(original[index])
             index += 1
-    # _hermes_relaunched marks the child this starts (not processes it spawns) for _relaunch_target;
+    # _moor_relaunched marks the child this starts (not processes it spawns) for _relaunch_target;
     # a restore re-execs sys.orig_argv and keeps it, which is why that guard re-checks currency.
     prefix = (f"import sys, runpy; sys.path.insert(0, {str(root)!r}); sys.argv = {argv!r}; "
-              "sys._hermes_relaunched = True; ")
+              "sys._moor_relaunched = True; ")
     if argv[0] == "-c":
         body = f"exec({original[index + 1]!r})"
     elif module and module != "__main__":

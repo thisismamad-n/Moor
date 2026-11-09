@@ -6,8 +6,8 @@
   only I/O primitives (cross-process flock, atomic 0o600 writes).
 - ``resolve_provider()`` picks the active provider via the documented priority chain.
 - ``OAUTH_PROVIDER_FLOWS`` maps each OAuth provider to its resolver/status builder; the flows live in
-  ``auth_nous``/``auth_codex``/``auth_xai``/``auth_qwen``/``auth_minimax``/``auth_openrouter`` and are
-  re-imported here so ``hermes_cli.auth.<name>`` stays the public/patchable surface."""
+  ``auth_moor``/``auth_codex``/``auth_xai``/``auth_qwen``/``auth_minimax``/``auth_openrouter`` and are
+  re-imported here so ``moor_cli.auth.<name>`` stays the public/patchable surface."""
 
 from __future__ import annotations
 
@@ -33,65 +33,65 @@ from urllib.parse import urlparse
 from moor_constants import OPENROUTER_BASE_URL, moor_home_key, secure_parent_dir
 from agent.credential_persistence import sanitize_borrowed_credential_payload
 from utils import atomic_json_write, env_float, file_cache_version, is_truthy_value
-from hermes_cli.auth_zai_kimi import (
+from moor_cli.auth_zai_kimi import (
     KIMI_CODE_BASE_URL, ZAI_ENDPOINTS, _normalize_lmstudio_runtime_base_url, _resolve_kimi_base_url,
     _resolve_zai_base_url, detect_zai_endpoint)
-from hermes_cli.auth_model_picker import (
+from moor_cli.auth_model_picker import (
     _prompt_model_selection, _save_model_choice)
-from hermes_cli.auth_device_flow import (
+from moor_cli.auth_device_flow import (
     _can_open_graphical_browser, _default_verify, _is_remote_session,
     _moor_device_auth_timeout_message, _offer_existing_oauth_credentials,
     _poll_device_token_generic, _poll_for_token, _print_device_code_instructions,
     _print_login_success, _print_loopback_ssh_hint, _prompt_yes_no, _request_device_code,
     _resolve_verify, _ssh_user_at_host)
-from hermes_cli.auth_oauth_grants import (
+from moor_cli.auth_oauth_grants import (
     SINGLE_USE_REFRESH_POOL_PROVIDERS, _oauth_heal_clean_marks, _oauth_heal_notices,
     consume_oauth_heal_notices, heal_forked_single_use_oauth_grants,
     strip_cloned_single_use_oauth_grants)
-from hermes_cli.auth_nous import (
-    NOUS_SESSION_TERMINAL, NOUS_SESSION_UNKNOWN, NOUS_SESSION_VALID, _ALLOWED_NOUS_INFERENCE_HOSTS,
-    _agent_key_is_usable, _apply_nous_refreshed_tokens, _assert_nous_inference_jwt_usable,
-    _compute_nous_auth_status, _format_nous_entitlement_auth_error, _healed_nous_inference_url,
-    _login_nous, _merge_shared_nous_oauth_state, _migrate_stale_nous_portal_url,
-    _nous_device_code_login, _nous_inference_env_override, _nous_invoke_jwt_is_usable,
-    _nous_invoke_jwt_status, _nous_portal_base_url, _nous_portal_env_override, _nous_shared_store_lock,
-    _nous_shared_store_path, _pool_first_oauth_status, _quarantine_nous_oauth_state,
-    _quarantine_nous_pool_entries, _read_shared_nous_state, _refresh_access_token,
-    _refresh_nous_or_quarantine, _select_nous_invoke_jwt, _sync_nous_pool_from_auth_store,
-    _token_fingerprint, _try_import_shared_nous_state, _validate_nous_inference_url_from_network,
-    _write_shared_nous_state, fetch_nous_models, get_nous_auth_status_local,
-    get_nous_session_validity, persist_nous_credentials, refresh_nous_oauth_from_state,
-    resolve_nous_runtime_credentials, step_up_nous_billing_scope)
-from hermes_cli.auth_minimax import (
+from moor_cli.auth_moor import (
+    MOOR_SESSION_TERMINAL, MOOR_SESSION_UNKNOWN, MOOR_SESSION_VALID, _ALLOWED_MOOR_INFERENCE_HOSTS,
+    _agent_key_is_usable, _apply_moor_refreshed_tokens, _assert_moor_inference_jwt_usable,
+    _compute_moor_auth_status, _format_moor_entitlement_auth_error, _healed_moor_inference_url,
+    _login_moor, _merge_shared_moor_oauth_state, _migrate_stale_moor_portal_url,
+    _moor_device_code_login, _moor_inference_env_override, _moor_invoke_jwt_is_usable,
+    _moor_invoke_jwt_status, _moor_portal_base_url, _moor_portal_env_override, _moor_shared_store_lock,
+    _moor_shared_store_path, _pool_first_oauth_status, _quarantine_moor_oauth_state,
+    _quarantine_moor_pool_entries, _read_shared_moor_state, _refresh_access_token,
+    _refresh_moor_or_quarantine, _select_moor_invoke_jwt, _sync_moor_pool_from_auth_store,
+    _token_fingerprint, _try_import_shared_moor_state, _validate_moor_inference_url_from_network,
+    _write_shared_moor_state, fetch_moor_models, get_moor_auth_status_local,
+    get_moor_session_validity, persist_moor_credentials, refresh_moor_oauth_from_state,
+    resolve_moor_runtime_credentials, step_up_moor_billing_scope)
+from moor_cli.auth_minimax import (
     _MINIMAX_OAUTH_ERROR_BODY_LIMIT, _login_minimax_oauth, _minimax_oauth_login, _minimax_pkce_pair,
     _minimax_poll_token, _minimax_post_form, _minimax_request_user_code,
     _minimax_resolve_token_expiry_unix, _minimax_response_error_text, _minimax_save_auth_state,
     _refresh_minimax_oauth_state, build_minimax_oauth_token_provider,
     resolve_minimax_oauth_runtime_credentials)
-from hermes_cli.auth_xai import (
+from moor_cli.auth_xai import (
     _login_xai_oauth, _read_xai_oauth_tokens, _refresh_xai_oauth_tokens, _save_xai_oauth_tokens,
     _write_through_xai_oauth_to_global_root, _xai_access_token_is_expiring,
     _xai_oauth_device_code_login, _xai_oauth_discovery, _xai_oauth_poll_device_token,
     _xai_oauth_request_device_code, _xai_proactive_refresh_skew_seconds,
     _xai_validate_inference_base_url, refresh_xai_oauth_pure, resolve_xai_oauth_runtime_credentials)
-from hermes_cli.auth_codex import (
+from moor_cli.auth_codex import (
     _codex_access_token_is_expiring, _codex_device_code_login, _codex_http_client,
     _codex_pool_rate_limit_status, _codex_quota_probe_cache, _codex_usage_probe_url,
     _import_codex_cli_tokens, _is_codex_rate_limit_shaped, _login_openai_codex,
     _probe_codex_quota_restored, _read_codex_tokens, _refresh_codex_auth_tokens,
     _refresh_expired_codex_probe_token, _save_codex_tokens, clear_codex_pool_quota_cooldowns,
     refresh_codex_oauth_pure, resolve_codex_runtime_credentials)
-from hermes_cli.auth_openrouter import _openrouter_pkce_login
-from hermes_cli.guest_handoff import note_store_write
-from hermes_cli.auth_qwen import (
+from moor_cli.auth_openrouter import _openrouter_pkce_login
+from moor_cli.guest_handoff import note_store_write
+from moor_cli.auth_qwen import (
     _qwen_access_token_is_expiring, _qwen_base_url, _qwen_cli_auth_path, _read_qwen_cli_tokens,
     _refresh_qwen_cli_tokens, _save_qwen_cli_tokens, get_qwen_auth_status,
     resolve_qwen_runtime_credentials)
-from hermes_cli.auth_constants import (
-    _decode_jwt_claims, AUTH_STORE_VERSION, AUTH_LOCK_TIMEOUT_SECONDS, DEFAULT_NOUS_PORTAL_URL,
-    DEFAULT_NOUS_INFERENCE_URL, DEFAULT_NOUS_CLIENT_ID, NOUS_BILLING_MANAGE_SCOPE,
-    DEFAULT_NOUS_SCOPE, NOUS_DEVICE_CODE_SOURCE, NOUS_AUTH_PATH_INVOKE_JWT,
-    ACCESS_TOKEN_REFRESH_SKEW_SECONDS, NOUS_INVOKE_JWT_MIN_TTL_SECONDS, DEFAULT_CODEX_BASE_URL,
+from moor_cli.auth_constants import (
+    _decode_jwt_claims, AUTH_STORE_VERSION, AUTH_LOCK_TIMEOUT_SECONDS, DEFAULT_MOOR_PORTAL_URL,
+    DEFAULT_MOOR_INFERENCE_URL, DEFAULT_MOOR_CLIENT_ID, MOOR_BILLING_MANAGE_SCOPE,
+    DEFAULT_MOOR_SCOPE, MOOR_DEVICE_CODE_SOURCE, MOOR_AUTH_PATH_INVOKE_JWT,
+    ACCESS_TOKEN_REFRESH_SKEW_SECONDS, MOOR_INVOKE_JWT_MIN_TTL_SECONDS, DEFAULT_CODEX_BASE_URL,
     DEFAULT_XAI_OAUTH_BASE_URL, MINIMAX_OAUTH_CLIENT_ID, MINIMAX_OAUTH_SCOPE,
     MINIMAX_OAUTH_GLOBAL_BASE, MINIMAX_OAUTH_CN_BASE, MINIMAX_OAUTH_GLOBAL_INFERENCE,
     MINIMAX_OAUTH_CN_INFERENCE, MINIMAX_OAUTH_REFRESH_SKEW_SECONDS, DEFAULT_QWEN_BASE_URL,
@@ -100,7 +100,7 @@ from hermes_cli.auth_constants import (
     CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS, XAI_OAUTH_CLIENT_ID, XAI_OAUTH_SCOPE,
     XAI_ACCESS_TOKEN_REFRESH_SKEW_SECONDS, QWEN_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     LMSTUDIO_NOAUTH_PLACEHOLDER,
-    ACTUAL_LOCAL_NOAUTH_PLACEHOLDER, CODEX_RATE_LIMITED_CODE, AuthError, _nous_err, httpx)
+    ACTUAL_LOCAL_NOAUTH_PLACEHOLDER, CODEX_RATE_LIMITED_CODE, AuthError, _moor_err, httpx)
 
 logger = logging.getLogger(__name__)
 
@@ -241,7 +241,7 @@ _REGISTRY_ROWS: tuple[Any, ...] = (
     # region (agent/vertex_adapter.py build_vertex_base_url), not a fixed host.
     ("vertex", "Google Vertex AI", "", (), "", "vertex"),
     ("azure-foundry", "Azure Foundry", "", ("AZURE_FOUNDRY_API_KEY",), "AZURE_FOUNDRY_BASE_URL"))
-from hermes_cli.auth_plugin_providers import HomeScopedRegistry  # mirrored rows are read per home
+from moor_cli.auth_plugin_providers import HomeScopedRegistry  # mirrored rows are read per home
 PROVIDER_REGISTRY: dict[str, ProviderConfig] = HomeScopedRegistry(
     (p.id, p) for p in (r if isinstance(r, ProviderConfig) else _api_key_provider(*r) for r in _REGISTRY_ROWS))
 # The rows above, before any plugin touches the dict (a user plugin may override these; #48450).
@@ -251,12 +251,12 @@ BUILTIN_PROVIDER_IDS = frozenset(dict.keys(PROVIDER_REGISTRY))
 # module's registry during that discovery. Keep the import below ProviderConfig / PROVIDER_REGISTRY so
 # a plugin never observes a partially initialized auth module (CONTRACT: during discovery a plugin may
 # rely only on ``ProviderConfig`` and ``PROVIDER_REGISTRY`` from here — nothing defined below).
-from hermes_cli.config import (
-    atomic_config_replace, config_exists, get_hermes_home, get_config_path, read_raw_config, require_readable_config_before_write)
+from moor_cli.config import (
+    atomic_config_replace, config_exists, get_moor_home, get_config_path, read_raw_config, require_readable_config_before_write)
 
 # Plugin profiles (plugins/model-providers/<name>/) are mirrored into PROVIDER_REGISTRY with the
 # auth_type they declare; the mirror lives in the sibling so it can be re-run after discovery.
-from hermes_cli.auth_plugin_providers import (
+from moor_cli.auth_plugin_providers import (
     canonical_registry_rows as _canonical_registry_rows, get_plugin_oauth_auth_status,
     registry_lookup as _registry_lookup, sync_plugin_provider_registry)
 
@@ -622,7 +622,7 @@ def _lock_holder_hint(lock_path: Path) -> str:
         except OSError:
             pass  # exists but is not signalable (e.g. EPERM): still a live holder
     # No example holder: many stores use this lock; the caller's timeout_message names which one.
-    return f"another hermes process (pid {pid}) probably still holds it"
+    return f"another moor process (pid {pid}) probably still holds it"
 
 
 def _stamp_lock_holder_pid(lock_file: Any) -> None:
@@ -1517,8 +1517,8 @@ def _logged_in_oauth_active_provider(*, skip_free_tier: bool = False) -> Optiona
     """auth.json ``active_provider`` when it is a registry provider that reports logged in."""
     try:
         _maybe = _load_auth_store().get("active_provider")
-        if _maybe == "nous":
-            from hermes_cli.anon_auth import free_inference_active, has_guest
+        if _maybe == "moor":
+            from moor_cli.anon_auth import free_inference_active, has_guest
             if has_guest() and (skip_free_tier or not free_inference_active()):
                 return None  # this guest carries no inference here (or is being discounted): not a login
         if _maybe and _maybe in PROVIDER_REGISTRY and get_auth_status(_maybe).get("logged_in"):
@@ -1586,7 +1586,7 @@ def _credential_profile(provider_id: str) -> Any:
 def _env_key_auto_detected(
     scoped_key_env: Callable[[str], str], oauth_active: Optional[str]) -> Optional[str]:
     """First registry api_key provider (registry order) with a usable env key, warning when it
-    preempts a logged-in OAuth provider so a stale key in ~/.hermes/.env never switches silently."""
+    preempts a logged-in OAuth provider so a stale key in ~/.moor/.env never switches silently."""
     from providers import list_providers
 
     ambient = {p.name for p in list_providers() if p.ambient_credentials}  # never per-pid lookups: a miss walks the ladder
@@ -1620,7 +1620,7 @@ def resolve_provider(
     "auto" priority (explicit intent beats a stale OAuth login): 1. CLI api_key/base_url ->
     "openrouter"; 2. config.yaml ``model.provider``; 3. OPENROUTER_API_KEY (or an sk-or- key in
     OPENAI_API_KEY) -> "openrouter"; 4. OpenRouter pool; 5. provider env keys; 6. auth.json ``active_provider``;
-    7. Nous free tier when a claimed guest exists on the desktop's local backend (never created here);
+    7. Moor free tier when a claimed guest exists on the desktop's local backend (never created here);
     8. AWS Bedrock chain; 9. AuthError(no_provider_configured).
 
     ``skip_free_tier`` hides rungs 6-for-a-free-tier-identity and 7: the boot bootstrap asks
@@ -1636,10 +1636,10 @@ def resolve_provider(
     if normalized in ("openrouter", "custom") or _registry_lookup(normalized) is not None:
         return normalized
     if normalized != "auto":
-        from hermes_cli.auth_error_copy import unknown_provider_hint
+        from moor_cli.auth_error_copy import unknown_provider_hint
         hint = unknown_provider_hint(normalized)
-        tail = (f"\n\n{hint}" if hint else " Check 'hermes model' for available providers, "
-                "or run 'hermes doctor' to diagnose config issues.")
+        tail = (f"\n\n{hint}" if hint else " Check 'moor model' for available providers, "
+                "or run 'moor doctor' to diagnose config issues.")
         raise AuthError(f"Unknown provider '{normalized}'." + tail, code="invalid_provider")
 
     if explicit_api_key or explicit_base_url:  # one-off CLI creds always mean openrouter/custom
@@ -1674,7 +1674,7 @@ def resolve_provider(
                 _oauth_active)
         return _oauth_active
 
-    # Nous free tier, when this guest claimed the welcome trial and this is the desktop's local
+    # Moor free tier, when this guest claimed the welcome trial and this is the desktop's local
     # backend (``anon_auth.free_inference_active``). This rung sits ABOVE the Bedrock
     # chain on purpose: every rung above this line is explicit user intent (CLI creds, config, env
     # keys, a sign-in); the boto chain below is implicit host state, and a leftover ~/.aws profile
@@ -1682,25 +1682,25 @@ def resolve_provider(
     # only the desktop's trial claim does (welcome_trial), so provider resolution stays free of network.
     if not skip_free_tier:
         try:
-            from hermes_cli.anon_auth import free_inference_active
+            from moor_cli.anon_auth import free_inference_active
             if free_inference_active():
-                return "nous"
+                return "moor"
         except Exception as exc:
             logger.debug("free tier check during provider resolution skipped: %s", exc)
     # AWS Bedrock via the boto3 credential chain (IAM roles, SSO, env vars): implicit host state,
     # below explicit keys and below the free tier.
     try:
         from agent.bedrock_adapter import has_aws_credentials
-        from hermes_cli.anon_auth import on_local_desktop_backend  # a laptop: no EC2 metadata lookup
+        from moor_cli.anon_auth import on_local_desktop_backend  # a laptop: no EC2 metadata lookup
         if has_aws_credentials(instance_metadata=not on_local_desktop_backend()):
             return "bedrock"
     except ImportError:
         pass  # boto3 not installed
     from moor_constants import display_moor_home
     raise AuthError(
-        "Hermes is not connected to any AI provider yet. Run `hermes model` to pick one, type `/login` in chat, "
-        f"or add a key with `hermes auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
-        f"{display_hermes_home()}/.env.)",
+        "Moor is not connected to any AI provider yet. Run `moor model` to pick one, type `/login` in chat, "
+        f"or add a key with `moor auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
+        f"{display_moor_home()}/.env.)",
         code="no_provider_configured")
 
 
@@ -1772,7 +1772,7 @@ def _optional_base_url(value: Any) -> Optional[str]:
 
 # Valid Moor Portal hosts; a stored portal_base_url outside this set is a misconfiguration and falls
 # back to the default. localhost / 127.0.0.1 are for local development and testing.
-_NOUS_PORTAL_ALLOWED_HOSTS: frozenset[str] = frozenset({
+_MOOR_PORTAL_ALLOWED_HOSTS: frozenset[str] = frozenset({
     "portal.nousresearch.com", "localhost", "127.0.0.1"})
 
 # Per-process memo for resolve_moor_access_token: startup runs one check_fn per managed tool and
@@ -1786,22 +1786,22 @@ _RESOLVE_TOKEN_CACHE: dict[str, tuple[float, str]] = {}
 _RESOLVE_TOKEN_CACHE_TTL_S = 5.0
 
 
-def resolve_nous_access_token(
+def resolve_moor_access_token(
     *,
     timeout_seconds: float = 15.0,
     insecure: Optional[bool] = None,
     ca_bundle: Optional[str] = None,
     refresh_skew_seconds: int = ACCESS_TOKEN_REFRESH_SKEW_SECONDS) -> str:
-    """Refresh-aware Nous Portal token for managed tool gateways, connectors and account reads, never
+    """Refresh-aware Moor Portal token for managed tool gateways, connectors and account reads, never
     the free model: a guest gets a live held token, else a connectors-only mint NAS never challenges.
-    Only a NAS from before hermes-portal#1516 challenges that mint; it is worked here as before."""
-    from hermes_cli.anon_challenge import run_with_challenge
-    return run_with_challenge(lambda: _resolve_nous_access_token(
+    Only a NAS from before moor-portal#1516 challenges that mint; it is worked here as before."""
+    from moor_cli.anon_challenge import run_with_challenge
+    return run_with_challenge(lambda: _resolve_moor_access_token(
         timeout_seconds=timeout_seconds, insecure=insecure, ca_bundle=ca_bundle,
         refresh_skew_seconds=refresh_skew_seconds))
 
 
-def _resolve_nous_access_token(
+def _resolve_moor_access_token(
     *,
     timeout_seconds: float,
     insecure: Optional[bool],
@@ -1829,11 +1829,11 @@ def _resolve_nous_access_token(
         client_id = str(state.get("client_id") or DEFAULT_MOOR_CLIENT_ID)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
         persist = lambda: _save_provider_state_to_source(
-            auth_store, "nous", state, state_source_path)
+            auth_store, "moor", state, state_source_path)
 
         lock_timeout = max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)
-        with _nous_shared_store_lock(timeout_seconds=lock_timeout):
-            from hermes_cli.anon_auth import held_connectors_token, is_guest_state, refresh_guest_state
+        with _moor_shared_store_lock(timeout_seconds=lock_timeout):
+            from moor_cli.anon_auth import held_connectors_token, is_guest_state, refresh_guest_state
             if is_guest_state(state):
                 # A live held token serves (an inference one is a superset); else mint connectors-only.
                 if access_token := held_connectors_token(state, skew_seconds=refresh_skew_seconds):
@@ -1842,7 +1842,7 @@ def _resolve_nous_access_token(
                                   headers={"Accept": "application/json"}, verify=verify) as client:
                     minted = refresh_guest_state(state, client, purpose="connectors")
                 persist()
-                _write_shared_nous_state(state, renewal=True)
+                _write_shared_moor_state(state, renewal=True)
                 return _memo(minted)
 
             merged_shared = _merge_shared_moor_oauth_state(state)
@@ -1877,7 +1877,7 @@ def _resolve_nous_access_token(
             state["client_id"] = client_id
             state["tls"] = _tls_state_from_verify(verify)
             persist()
-            _write_shared_nous_state(state, renewal=True)
+            _write_shared_moor_state(state, renewal=True)
             return _memo(state["access_token"])
 
 
@@ -1887,8 +1887,8 @@ def _resolve_nous_access_token(
 # (~350ms) and read-only UI surfaces call it many times per render (~31x per menu paint), burning
 # single-use refresh tokens. Keyed on auth.json path + file_cache_version so profile switches don't share a memo
 # and login/logout/add/remove invalidate naturally.
-_NOUS_AUTH_STATUS_CACHE_TTL = 15.0  # seconds
-_nous_auth_status_cache: Optional[tuple[float, str, Optional[tuple[Any, ...]], dict[str, Any]]] = None
+_MOOR_AUTH_STATUS_CACHE_TTL = 15.0  # seconds
+_moor_auth_status_cache: Optional[tuple[float, str, Optional[tuple[Any, ...]], dict[str, Any]]] = None
 
 # Memo for _load_global_auth_store(): (path, file_cache_version, store); same invalidation rule.
 _global_auth_store_cache: Optional[tuple[str, tuple[Any, ...], dict[str, Any]]] = None
@@ -1909,8 +1909,8 @@ def invalidate_moor_auth_status_cache() -> None:
     _moor_auth_status_cache = None
 
 
-def get_nous_auth_status() -> dict[str, Any]:
-    """Status snapshot for Nous auth, memoised ~15s keyed on the auth.json mtime.
+def get_moor_auth_status() -> dict[str, Any]:
+    """Status snapshot for Moor auth, memoised ~15s keyed on the auth.json mtime.
 
     Prefers the auth-store provider state (the live source of truth for refresh) and validates it by
     resolving runtime credentials so revoked refresh sessions do not show up as a healthy login."""
@@ -1936,7 +1936,7 @@ class OAuthProviderFlow:
     resolve_fn: str
     status_fn: str
     terminal_refresh_codes: frozenset[str] = frozenset()  # retrying the same refresh token cannot succeed
-    # ``hermes logout`` with no active provider falls back to config.yaml ``model.provider`` only
+    # ``moor logout`` with no active provider falls back to config.yaml ``model.provider`` only
     # for providers whose credentials live in auth.json.
     logout_from_config: bool = False
 
@@ -1960,9 +1960,9 @@ _MOOR_AUTH_MISSING_CODES = frozenset({
     "moor_auth_missing", "moor_auth_missing_access_token", "moor_auth_missing_refresh_token"})
 
 OAUTH_PROVIDER_FLOWS: dict[str, OAuthProviderFlow] = {
-    "nous": OAuthProviderFlow(
-        "nous", "resolve_nous_runtime_credentials", "get_nous_auth_status",
-        terminal_refresh_codes=_OAUTH_GRANT_DEAD_CODES | _NOUS_AUTH_MISSING_CODES, logout_from_config=True),
+    "moor": OAuthProviderFlow(
+        "moor", "resolve_moor_runtime_credentials", "get_moor_auth_status",
+        terminal_refresh_codes=_OAUTH_GRANT_DEAD_CODES | _MOOR_AUTH_MISSING_CODES, logout_from_config=True),
     "openai-codex": OAuthProviderFlow(
         "openai-codex", "resolve_codex_runtime_credentials", "get_codex_auth_status",
         terminal_refresh_codes=_OAUTH_GRANT_DEAD_CODES | {"codex_refresh_failed", "codex_auth_missing_refresh_token"},
@@ -2013,7 +2013,7 @@ def get_codex_auth_status() -> dict[str, Any]:
         on_pool_miss=_codex_pool_rate_limited_status)
     if str(status.get("source") or "").startswith("pool:"):
         # Pool rows keep the canonical URL; the chat route may send this key to model.base_url.
-        from hermes_cli.auth_codex import _codex_pool_route_base_url
+        from moor_cli.auth_codex import _codex_pool_route_base_url
         status["base_url"] = _codex_pool_route_base_url(status.get("base_url"))
     return status
 
@@ -2072,7 +2072,7 @@ def _external_process_auth_evidence(provider_id: str, resolved_command: Optional
 
     False means "not verifiable from here", NOT "signed out". Subprocess-free (spawning the CLI from
     status endpoints/pickers re-creates a cold-start stall). Generic evidence
-    for any external-process profile is its binary resolving: the subprocess owns real auth and Hermes
+    for any external-process profile is its binary resolving: the subprocess owns real auth and Moor
     has nothing else to inspect, so out-of-tree ACP rows pass credential-gated surfaces (Desktop
     ``explicit_only`` picker); a profile whose CLI exposes readable token stores answers
     ``external_auth_evidence()`` instead."""
@@ -2101,7 +2101,7 @@ def _external_process_spec(
                or str(getattr(profile, "process_command", "") or ""))
     raw_args = os.getenv(args_env_var, "").strip() if args_env_var else ""
     args = shlex.split(raw_args) if raw_args else list(getattr(profile, "process_args", ()) or [])
-    from hermes_cli.auth_external_process import resolve_external_process_command
+    from moor_cli.auth_external_process import resolve_external_process_command
     return command, args, base_url, resolve_external_process_command(command), command_env_vars
 
 
@@ -2435,4 +2435,4 @@ def logout_command(args) -> None:
     elif os.getenv("OPENROUTER_API_KEY"):
         print("Moor will use OpenRouter for inference.")
     else:
-        print("Run `hermes model` or configure an API key to use Hermes.")
+        print("Run `moor model` or configure an API key to use Moor.")

@@ -231,13 +231,13 @@ class MoorMCPOAuthProvider(MoorProviderMixin, *_SDK_BASES):
         if (url.scheme, url.host, url.port, url.path) != (expected.scheme, expected.host, expected.port, expected.path):
             return
         from mcp.client.auth.oauth2 import OAuthRegistrationError
-        name = self._hermes_server_name
+        name = self._moor_server_name
         raise OAuthRegistrationError(
             f"MCP OAuth '{name}': this provider does not support automatic client registration (its authorization "
             f"server advertises no registration_endpoint), so the SDK's fallback would POST {expected} and fail "
             "(Google's hosted Gmail/Drive MCP servers and similar providers return 404 for it). Create an OAuth "
             "client for this provider and add it under config.yaml mcp_servers.<name>.oauth (client_id, "
-            f"client_secret), then run `hermes mcp login {name}`.")
+            f"client_secret), then run `moor mcp login {name}`.")
 
     async def async_auth_flow(self, request):  # type: ignore[override]
         try:  # pre-flow hook: reload from disk if it changed (non-fatal on error)
@@ -384,14 +384,14 @@ class MCPOAuthManager:
         """Force the SDK provider to reload when the tokens file mtime changed (e.g. a cron refresh); True if so."""
         from tools.mcp_oauth import _get_token_dir, _safe_filename
         from utils import file_cache_version
-        entry = self._entries.get(self._key(server_name, hermes_home))
+        entry = self._entries.get(self._key(server_name, moor_home))
         if entry is None or entry.provider is None:
             return False
         async with entry.lock:
             try:
                 # Hashed every time: a refresh atomically replaced in the same tick keeps the mtime,
                 # and a racy digest going empty later would read as a change and tear the session down.
-                version = file_cache_version(_get_token_dir(hermes_home) / f"{_safe_filename(server_name)}.json",
+                version = file_cache_version(_get_token_dir(moor_home) / f"{_safe_filename(server_name)}.json",
                                              always_digest=True)
             except OSError:
                 return False
@@ -404,7 +404,7 @@ class MCPOAuthManager:
                 # baseline: the file was written by this process's own first
                 # sign-in, and reloading on the next request would tear down the
                 # live HTTP MCP session. With no tokens in memory (started before
-                # an external `hermes mcp login`), fall through and reload.
+                # an external `moor mcp login`), fall through and reload.
                 return False
             # `_initialized` is private SDK API but stable across the pinned versions (>=1.26.0).
             if hasattr(entry.provider, "_initialized"):

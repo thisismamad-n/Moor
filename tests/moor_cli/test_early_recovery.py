@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import _early_recovery as er
-from hermes_cli import _early_recovery_zip as erz
+from moor_cli import _early_recovery as er
+from moor_cli import _early_recovery_zip as erz
 from pm import recovery
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -214,7 +214,7 @@ def test_zip_journal_writer_never_writes_through_a_preexisting_temp(tmp_path, li
 
 
 def test_zip_journal_publication_never_deletes_a_file_at_its_old_fixed_temp_name(tmp_path):
-    """The writer unlinked ``.hermes-update-zip-swap.tmp`` before its exclusive create: a user's file by
+    """The writer unlinked ``.moor-update-zip-swap.tmp`` before its exclusive create: a user's file by
     that name was erased (review Z5). Its temp is now unpredictable: the file survives, byte for byte."""
     root = tmp_path / "install"
     root.mkdir()
@@ -242,7 +242,7 @@ def test_an_interrupted_swap_restores_its_backup_by_entry_not_by_target(tmp_path
     root = tmp_path / "install"
     root.mkdir()
     (root / "target.txt").write_text("T", encoding="utf-8")
-    old = root / "alpha.hermes-update-old"
+    old = root / "alpha.moor-update-old"
     if kind == "regular":
         old.write_text("OLD", encoding="utf-8")
     else:
@@ -269,8 +269,8 @@ def test_an_unparsed_zip_journal_keeps_itself_and_every_backup(tmp_path, monkeyp
     be read or understood is never settled by guesswork: the journal and every sibling stay."""
     root = tmp_path / "install"
     root.mkdir()
-    for name, text in {"a.py": "NEW_A", "a.py.hermes-update-old": "OLD_A", "b.py": "OLD_B",
-                       "b.py.hermes-update-staging": "NEW_B"}.items():
+    for name, text in {"a.py": "NEW_A", "a.py.moor-update-old": "OLD_A", "b.py": "OLD_B",
+                       "b.py.moor-update-staging": "NEW_B"}.items():
         (root / name).write_text(text, encoding="utf-8")
     journal = root / er.ZIP_SWAP_JOURNAL
     journal.write_text('{"phase": "swapping", "gen": "0123456789ab", "entries": [["a.py", true, "", ""], '
@@ -287,7 +287,7 @@ def test_an_unparsed_zip_journal_keeps_itself_and_every_backup(tmp_path, monkeyp
     assert erz.restore_interrupted_zip_swap(root) is False
     assert journal.is_file()
     assert {p.name: p.read_text(encoding="utf-8-sig") for p in root.iterdir() if p != journal and p.suffix != ".lock"} == {
-        "a.py": "NEW_A", "a.py.hermes-update-old": "OLD_A", "b.py": "OLD_B", "b.py.hermes-update-staging": "NEW_B"}
+        "a.py": "NEW_A", "a.py.moor-update-old": "OLD_A", "b.py": "OLD_B", "b.py.moor-update-staging": "NEW_B"}
 
 
 @pytest.mark.skipif(sys.platform == "win32" or getattr(os, "geteuid", lambda: 0)() == 0,
@@ -295,15 +295,15 @@ def test_an_unparsed_zip_journal_keeps_itself_and_every_backup(tmp_path, monkeyp
 def test_dropping_a_staged_tree_never_changes_a_hardlinked_live_files_mode(tmp_path):
     live = tmp_path / "release"
     live.mkdir()
-    (live / "Hermes.exe").write_bytes(b"app")
-    staging = tmp_path / "apps.hermes-update-staging" / "release"
+    (live / "Moor.exe").write_bytes(b"app")
+    staging = tmp_path / "apps.moor-update-staging" / "release"
     staging.mkdir(parents=True)
-    os.link(live / "Hermes.exe", staging / "Hermes.exe")
-    (live / "Hermes.exe").chmod(0o555)
+    os.link(live / "Moor.exe", staging / "Moor.exe")
+    (live / "Moor.exe").chmod(0o555)
     staging.chmod(0o555)  # a read-only dir refuses rmtree: the retry path runs
     erz._drop_path(staging.parent)
     assert not staging.parent.exists()
-    assert (live / "Hermes.exe").stat().st_mode & 0o777 == 0o555
+    assert (live / "Moor.exe").stat().st_mode & 0o777 == 0o555
 
 
 @pytest.mark.parametrize("body", ['{"attempts": Infinity}', '{"attempts": -Infinity}', '{"attempts": NaN}',
@@ -329,7 +329,7 @@ def test_a_failed_repair_counts_its_attempt_even_on_an_undecodable_marker(tmp_pa
 def test_the_foreign_lock_record_is_fsynced_under_a_per_writer_temp(tmp_path, monkeypatch):
     """_remember_foreign_lock rewrote the restore's only record through a fixed-name ``.tmp`` with no
     fsync (review C12, invariant 5): a crash could leave an empty marker, and two writers shared one temp."""
-    marker, lock = tmp_path / "hermes-update-pull", tmp_path / "update.lock"
+    marker, lock = tmp_path / "moor-update-pull", tmp_path / "update.lock"
     marker.write_text("pid=1\npre=abc\n", encoding="utf-8")
     lock.write_text("x", encoding="utf-8")
     synced, replaced = [], []

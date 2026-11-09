@@ -51,6 +51,6 @@ def test_resume_prefers_gateway_runtime_over_stale_top_level_keys():
     """A gateway turn after a Desktop pick rewrites only ``gateway_runtime``, so the nested route is the
     newest one — same precedence as ``SessionDB.session_gateway_runtime``."""
     row = {"model": "gpt-6-sol", "model_config": json.dumps(
-        {"provider": "anthropic", **NOUS_ROUTE, "gateway_runtime": {"provider": "openai-codex", "api_mode": "codex_responses"}})}
+        {"provider": "anthropic", **MOOR_ROUTE, "gateway_runtime": {"provider": "openai-codex", "api_mode": "codex_responses"}})}
     desktop = _stored_session_runtime_overrides(row)["model_override"]
     assert (desktop["provider"], desktop["base_url"], desktop["api_mode"]) == ("openai-codex", None, "codex_responses")

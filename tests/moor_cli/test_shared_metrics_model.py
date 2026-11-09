@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
-from hermes_cli import lifecycle
-from hermes_cli.observability import relay_shared_metrics
-from tests.hermes_cli.test_relay_shared_metrics_runtime import (
+from moor_cli import lifecycle
+from moor_cli.observability import relay_shared_metrics
+from tests.moor_cli.test_relay_shared_metrics_runtime import (
     _stored_values,
     direct_runtime,
 )
@@ -66,7 +66,7 @@ def test_every_emitted_tool_call_counts_once_with_its_issue(direct_runtime, tmp_
     _validate(_agent("custom:acme-private", "acme-internal"), [_tool_call("c9", "todo", "{}")])
     _flush()
 
-    rows = _stored_values(tmp_path, "hermes.model_tool_quality.count")
+    rows = _stored_values(tmp_path, "moor.model_tool_quality.count")
     assert "acme" not in json.dumps(rows)
     assert sorted((d["provider"], d["model"], d["call_role"], d["issue"], v) for d, v in rows) == sorted([
         ("openrouter", "anthropic/claude-sonnet", "primary", "none", 2),
@@ -80,10 +80,10 @@ def test_every_emitted_tool_call_counts_once_with_its_issue(direct_runtime, tmp_
 
 
 def test_tool_call_quality_records_nothing_while_disabled(direct_runtime, tmp_path, monkeypatch):
-    monkeypatch.setattr("hermes_cli.config.read_raw_config_readonly", dict)
+    monkeypatch.setattr("moor_cli.config.read_raw_config_readonly", dict)
     _validate(_agent("openrouter", "anthropic/claude-sonnet"), [_tool_call("c1", "nope", "{")])
-    assert not (tmp_path / "hermes-home" / "telemetry").exists() or not _stored_values(
-        tmp_path, "hermes.model_tool_quality.count")
+    assert not (tmp_path / "moor-home" / "telemetry").exists() or not _stored_values(
+        tmp_path, "moor.model_tool_quality.count")
 
 
 def _turn(session_id, task_id, model, result, *, usage=None, context_length=None, error=None, **start):
@@ -102,8 +102,8 @@ def _turn(session_id, task_id, model, result, *, usage=None, context_length=None
 def test_friction_is_attributed_to_the_model_that_produced_the_turn(direct_runtime, tmp_path):
     """After a /model switch the retry still blames the model whose turn is retried; interrupts and
     a quick exit after a failure count once; a session-close abort and delegated work never do."""
-    from hermes_cli.observability import shared_metrics_events as events
-    from hermes_cli.observability.shared_metrics_model import record_model_friction
+    from moor_cli.observability import shared_metrics_events as events
+    from moor_cli.observability.shared_metrics_model import record_model_friction
 
     _turn("s1", "t1", "model-a", {"completed": True})
     events.record_model_switch(from_provider="openrouter", to_provider="anthropic", surface="cli", from_model="model-a")
@@ -120,7 +120,7 @@ def test_friction_is_attributed_to_the_model_that_produced_the_turn(direct_runti
     lifecycle.finalize_session(session_id="child")
     _flush()
 
-    rows = _stored_values(tmp_path, "hermes.model_friction.count")
+    rows = _stored_values(tmp_path, "moor.model_friction.count")
     assert sorted((d["provider"], d["model"], d["signal"], v) for d, v in rows) == sorted([
         ("openrouter", "model-a", "switch_away", 1),
         ("openrouter", "model-a", "retry", 1),
@@ -148,7 +148,7 @@ def test_context_peak_is_one_bucketed_row_per_session(direct_runtime, tmp_path):
     lifecycle.finalize_session(session_id="child")
     _flush()
 
-    rows = _stored_values(tmp_path, "hermes.context_peak.count")
+    rows = _stored_values(tmp_path, "moor.context_peak.count")
     assert sorted(
         (d["model"], d["peak_fill_bucket"], d["window_bucket"], d["limit_hit"], v) for d, v in rows
     ) == [

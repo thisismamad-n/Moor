@@ -208,12 +208,12 @@ def _serve(profile: str, pid: int, kind: str = "serve") -> RuntimeRecord:
 
 
 def test_systemd_dashboard_runtime_reconciles_restarted_via_its_unit():
-    """#125297: the fleet unit pass restarts ``hermes-dashboard{,-<profile>}``, so the
+    """#125297: the fleet unit pass restarts ``moor-dashboard{,-<profile>}``, so the
     receipt's runtime_outcomes row must credit it as ``restarted`` — not leave the
     dashboard ``deferred`` while the update still reports success."""
     outcomes = match_runtime_outcomes(
         _plan(_dash_unit_runtime("default", 700), _dash_unit_runtime("work", 701)),
-        restarted_services=["hermes-dashboard", "user/hermes-dashboard-work"],
+        restarted_services=["moor-dashboard", "user/moor-dashboard-work"],
         relaunched_profiles=[], externally_supervised_profiles=[],
         killed_pids=set(), failed_units=[],
     )
@@ -223,11 +223,11 @@ def test_systemd_dashboard_runtime_reconciles_restarted_via_its_unit():
 
 
 def test_systemd_dashboard_runtime_without_unit_restart_stays_unaccounted():
-    """The tripwire side: no ``hermes-dashboard*`` restart in the bookkeeping means
+    """The tripwire side: no ``moor-dashboard*`` restart in the bookkeeping means
     the row escalates (exit 1), never a silent ``deferred`` on a success receipt."""
     outcomes = match_runtime_outcomes(
         _plan(_dash_unit_runtime("default", 700), _rt("default", 100, supervisor="systemd")),
-        restarted_services=["hermes-gateway"], relaunched_profiles=[],
+        restarted_services=["moor-gateway"], relaunched_profiles=[],
         externally_supervised_profiles=[], killed_pids=set(), failed_units=[],
     )
     by_pid = {o["pid"]: o["outcome"] for o in outcomes}
@@ -397,14 +397,14 @@ def test_mixed_fleet_only_the_missed_one_escalates(capsys):
 
 def test_gateway_credited_by_successor_incarnation_not_service_name():
     """A service can serve a profile its own name does not encode: with a sticky
-    active profile, the root-home ``ai.hermes.gateway`` LaunchAgent supervises the
+    active profile, the root-home ``ai.moor.gateway`` LaunchAgent supervises the
     ``coder`` gateway, so the plan row (profile ``coder``) and the restarted label
     never match by name. The planned PID being gone while a gateway answers for the
     same profile is the evidence that has to credit it — otherwise every update
     exits 1 (receipt outcome=partial) after a successful launchd restart."""
     outcomes = match_runtime_outcomes(
         _plan(_rt("coder", 76508, supervisor="launchd")),
-        restarted_services=["ai.hermes.gateway"], relaunched_profiles=[],
+        restarted_services=["ai.moor.gateway"], relaunched_profiles=[],
         externally_supervised_profiles=[], killed_pids=set(), failed_units=[],
         live_gateway_pids={"coder": {76796}},
     )
@@ -418,7 +418,7 @@ def test_gateway_successor_credit_requires_a_live_replacement():
     stays unaccounted and escalates."""
     no_successor = match_runtime_outcomes(
         _plan(_rt("coder", 76508, supervisor="launchd")),
-        restarted_services=["ai.hermes.gateway"], relaunched_profiles=[],
+        restarted_services=["ai.moor.gateway"], relaunched_profiles=[],
         externally_supervised_profiles=[], killed_pids=set(), failed_units=[],
         live_gateway_pids={},
     )
@@ -443,7 +443,7 @@ def test_gateway_successor_credit_requires_a_live_replacement():
 
     empty_evidence = match_runtime_outcomes(
         _plan(_rt("coder", 76508, supervisor="launchd")),
-        restarted_services=["ai.hermes.gateway"], relaunched_profiles=[],
+        restarted_services=["ai.moor.gateway"], relaunched_profiles=[],
         externally_supervised_profiles=[], killed_pids=set(), failed_units=[],
         live_gateway_pids={"coder": set()},
     )
@@ -456,10 +456,10 @@ def test_missing_successor_evidence_is_logged(caplog):
     evidence was missing or the restart was genuinely missed."""
     import logging
 
-    with caplog.at_level(logging.DEBUG, logger="hermes_cli.update_inventory"):
+    with caplog.at_level(logging.DEBUG, logger="moor_cli.update_inventory"):
         outcomes = match_runtime_outcomes(
             _plan(_rt("coder", 76508, supervisor="launchd")),
-            restarted_services=["ai.hermes.gateway"], relaunched_profiles=[],
+            restarted_services=["ai.moor.gateway"], relaunched_profiles=[],
             externally_supervised_profiles=[], killed_pids=set(), failed_units=[],
             live_gateway_pids={},
         )
@@ -483,7 +483,7 @@ def test_successor_evidence_never_outranks_stopped_or_failed():
         _plan(_rt("coder", 76508, supervisor="launchd")),
         restarted_services=[], relaunched_profiles=[],
         externally_supervised_profiles=[], killed_pids=set(),
-        failed_units=["ai.hermes.gateway-coder"],
+        failed_units=["ai.moor.gateway-coder"],
         live_gateway_pids={"coder": {76796}},
     )
     assert failed[0]["outcome"] == "failed"
@@ -494,7 +494,7 @@ def test_live_gateway_pids_from_fleet_skips_down_and_unusable_rows():
     PRE-restart PID (nothing replaced it) so it must never count as a successor;
     rows without a usable profile/PID are skipped; a ``stale`` row is a live
     successor (the fleet matrix escalates staleness on its own)."""
-    from hermes_cli.update_cmd_fleet_verify import _live_gateway_pids_from_fleet
+    from moor_cli.update_cmd_fleet_verify import _live_gateway_pids_from_fleet
 
     rows = [
         {"profile": "coder", "pid": 76796, "state": "current"},
@@ -565,7 +565,7 @@ def test_successor_evidence_is_gateway_only_and_stays_optional():
 
     without_probe = match_runtime_outcomes(
         _plan(_rt("coder", 76508, supervisor="launchd")),
-        restarted_services=["ai.hermes.gateway"], relaunched_profiles=[],
+        restarted_services=["ai.moor.gateway"], relaunched_profiles=[],
         externally_supervised_profiles=[], killed_pids=set(), failed_units=[],
     )
     assert without_probe[0]["outcome"] == "unaccounted"

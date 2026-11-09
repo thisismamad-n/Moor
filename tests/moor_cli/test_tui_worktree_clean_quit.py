@@ -1,4 +1,4 @@
-"""N8: quitting ``hermes --tui -w`` removes a clean worktree (and its branch), as ``main`` did
+"""N8: quitting ``moor --tui -w`` removes a clean worktree (and its branch), as ``main`` did
 before #106742; a dirty one, or one the gateway still has queued/started work in, is kept."""
 import json
 import sqlite3
@@ -27,23 +27,23 @@ def _branches(repo):
 
 @pytest.mark.parametrize('case', ['clean', 'clean_with_history', 'dirty', 'pending_turn'])
 def test_tui_worktree_quit_removes_only_a_clean_idle_tree(tmp_path, monkeypatch, case):
-    from hermes_cli import main_tui_launch
-    from hermes_cli.worktree_ops import _setup_worktree
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    from moor_cli import main_tui_launch
+    from moor_cli.worktree_ops import _setup_worktree
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB
 
     repo = _repo(tmp_path)
     monkeypatch.chdir(repo)
-    monkeypatch.setenv('HERMES_PYTHON', sys.executable)
-    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_hermes_home() / 'state.db')
+    monkeypatch.setenv('MOOR_PYTHON', sys.executable)
+    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_moor_home() / 'state.db')
     monkeypatch.setattr(main_tui_launch, '_setup_tui_worktree', lambda: wt_info)
     monkeypatch.setattr(main_tui_launch, '_make_tui_argv', lambda *_: (['node'], Path('.')))
     monkeypatch.setattr(main_tui_launch, '_print_tui_exit_summary', lambda *_: None)
 
     def ink(_argv, cwd=None, env=None):
-        db_path = get_hermes_home() / 'state.db'
+        db_path = get_moor_home() / 'state.db'
         db = SessionDB(db_path=db_path)
-        db.create_session('tui-wt', 'tui', cwd=env['HERMES_TUI_CWD'])
+        db.create_session('tui-wt', 'tui', cwd=env['MOOR_TUI_CWD'])
         if case != 'clean':
             db.append_message('tui-wt', 'user', 'hello')
         if case != 'pending_turn':
@@ -60,8 +60,8 @@ def test_tui_worktree_quit_removes_only_a_clean_idle_tree(tmp_path, monkeypatch,
             conn.commit()
             conn.close()
         if case == 'dirty':
-            (Path(env['HERMES_TUI_CWD']) / 'work.txt').write_text('uncommitted')
-        Path(env['HERMES_TUI_ACTIVE_SESSION_FILE']).write_text(json.dumps({'session_id': 'tui-wt'}))
+            (Path(env['MOOR_TUI_CWD']) / 'work.txt').write_text('uncommitted')
+        Path(env['MOOR_TUI_ACTIVE_SESSION_FILE']).write_text(json.dumps({'session_id': 'tui-wt'}))
         return 0
 
     monkeypatch.setattr(main_tui_launch.subprocess, 'call', ink)
@@ -80,27 +80,27 @@ def test_tui_worktree_quit_removes_only_a_clean_idle_tree(tmp_path, monkeypatch,
 
 
 def _quit_with(tmp_path, monkeypatch, prepare):
-    """Run ``hermes --tui -w`` whose Ink session ``prepare(db, cwd)`` shapes, then quit; the tree."""
-    from hermes_cli import main_tui_launch
-    from hermes_cli.worktree_ops import _setup_worktree
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    """Run ``moor --tui -w`` whose Ink session ``prepare(db, cwd)`` shapes, then quit; the tree."""
+    from moor_cli import main_tui_launch
+    from moor_cli.worktree_ops import _setup_worktree
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB
 
     repo = _repo(tmp_path)
     monkeypatch.chdir(repo)
-    monkeypatch.setenv('HERMES_PYTHON', sys.executable)
-    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_hermes_home() / 'state.db')
+    monkeypatch.setenv('MOOR_PYTHON', sys.executable)
+    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_moor_home() / 'state.db')
     monkeypatch.setattr(main_tui_launch, '_setup_tui_worktree', lambda: wt_info)
     monkeypatch.setattr(main_tui_launch, '_make_tui_argv', lambda *_: (['node'], Path('.')))
     monkeypatch.setattr(main_tui_launch, '_print_tui_exit_summary', lambda *_: None)
 
     def ink(_argv, cwd=None, env=None):
-        db = SessionDB(db_path=get_hermes_home() / 'state.db')
-        db.create_session('tui-wt', 'tui', cwd=env['HERMES_TUI_CWD'])
+        db = SessionDB(db_path=get_moor_home() / 'state.db')
+        db.create_session('tui-wt', 'tui', cwd=env['MOOR_TUI_CWD'])
         db.append_message('tui-wt', 'user', 'every 10m: run the tests')
-        prepare(db, env['HERMES_TUI_CWD'])
+        prepare(db, env['MOOR_TUI_CWD'])
         db.close()
-        Path(env['HERMES_TUI_ACTIVE_SESSION_FILE']).write_text(json.dumps({'session_id': 'tui-wt'}))
+        Path(env['MOOR_TUI_ACTIVE_SESSION_FILE']).write_text(json.dumps({'session_id': 'tui-wt'}))
         return 0
 
     monkeypatch.setattr(main_tui_launch.subprocess, 'call', ink)
@@ -113,13 +113,13 @@ def _scheduled(kind, status='active'):
     """The gateway's own per-session automation row, as /loop, /heartbeat and /goal store it."""
     import time
     if kind == 'loop':
-        from hermes_cli.loops import LoopState
+        from moor_cli.loops import LoopState
         return LoopState(prompt='run the tests', interval_seconds=600, next_due_at=time.time() + 600,
                          status=status, route={'platform': 'local', 'chat_id': 'tui-wt'}).to_json()
     if kind == 'heartbeat':
-        from hermes_cli.heartbeat import HeartbeatState
+        from moor_cli.heartbeat import HeartbeatState
         return HeartbeatState(prompt='check in', interval_seconds=600, status=status).to_json()
-    from hermes_cli.goals import GoalState
+    from moor_cli.goals import GoalState
     return GoalState(goal='ship it', status=status).to_json()
 
 

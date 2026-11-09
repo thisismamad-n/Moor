@@ -9,11 +9,11 @@ import logging
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from hermes_cli.local_runtime.context_policy import (
+from moor_cli.local_runtime.context_policy import (
     RUNTIME_OVERHEAD_BYTES, fit_to_free_memory, launch_args, plan_launch, ub_logits_bytes)
-from hermes_cli.local_runtime.estimator import (
+from moor_cli.local_runtime.estimator import (
     HardwareBudget, PhysicsRefusal, as_loaded, ctx_bytes, footprint_bytes, profile_from_gguf)
-from hermes_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
+from moor_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +146,7 @@ def _dflash_plan(entry, profile, budget: HardwareBudget, live: HardwareBudget | 
     overhead = fixed_overhead + _dflash_extra_bytes(entry, lean)
     plan = plan_launch(lean, budget, fixed_overhead=overhead, requested_window=requested_window)
     if live is not None and live.commit_room_bytes is not None:
-        from hermes_cli.local_runtime.hardware import usable_beside_prompt_cache
+        from moor_cli.local_runtime.hardware import usable_beside_prompt_cache
 
         live = replace(live, usable_vram_bytes=usable_beside_prompt_cache(live, residents))
     if live is not None:
@@ -179,8 +179,8 @@ def preset_for_model(gguf: Path, budget: HardwareBudget,
     ``engine_tag`` is the installed llama.cpp release; without it no draft that needs a minimum
     release runs.
     """
-    from hermes_cli.local_runtime.catalog import entry_for_model
-    from hermes_cli.local_runtime.growth import load_window_overrides
+    from moor_cli.local_runtime.catalog import entry_for_model
+    from moor_cli.local_runtime.growth import load_window_overrides
 
     model_id = model_id_from_stem(gguf.stem)
     try:
@@ -215,7 +215,7 @@ def preset_for_model(gguf: Path, budget: HardwareBudget,
         mtp_prefill=plan.mtp_prefill,
         mtp_draft_depth=entry.mtp_draft_depth if entry is not None else 3))
     keys["model"] = str(gguf)
-    from hermes_cli.local_runtime.hardware import prompt_cache_bytes
+    from moor_cli.local_runtime.hardware import prompt_cache_bytes
     cache = prompt_cache_bytes(live, footprint_bytes(plan.profile, decision.window,
                                                      overhead_bytes=plan.overhead_bytes), residents)
     if cache is not None:
@@ -264,7 +264,7 @@ def preset_for_model(gguf: Path, budget: HardwareBudget,
 def resident_footprint(gguf: Path, budget: HardwareBudget, window: int, *, drafting: bool = False) -> int | None:
     """Estimated bytes one staged model holds while loaded at ``window``, or None when unreadable.
     ``drafting`` prices the one-slot DFlash launch its preset runs instead of MTP."""
-    from hermes_cli.local_runtime.catalog import entry_for_model
+    from moor_cli.local_runtime.catalog import entry_for_model
 
     model_id = model_id_from_stem(gguf.stem)
     try:
@@ -358,7 +358,7 @@ def plan_presets(models_dir: Path, budget: HardwareBudget, mtp_capable: set[str]
                  *, live: HardwareBudget | None = None, residents: int = 1,
                  engine_tag: str | None = None) -> list[PresetEntry]:
     """The launch decision for every staged model; unreadable headers are skipped."""
-    from hermes_cli.local_runtime.bootstrap import staged_in
+    from moor_cli.local_runtime.bootstrap import staged_in
 
     entries = (preset_for_model(gguf, budget, mtp_capable or set(), live=live, residents=residents,
                                 engine_tag=engine_tag)

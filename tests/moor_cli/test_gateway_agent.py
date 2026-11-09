@@ -1,4 +1,4 @@
-"""GatewayAgent drives main's HermesCLI callbacks from a scripted gateway (no live gateway)."""
+"""GatewayAgent drives main's MoorCLI callbacks from a scripted gateway (no live gateway)."""
 import asyncio
 import json
 import threading
@@ -6,9 +6,9 @@ from contextlib import asynccontextmanager
 
 import pytest
 
-from hermes_cli.gateway_agent import GatewayAgent
-from hermes_cli.gateway_client import GatewayClientError, GatewayRPCError
-from hermes_cli.gateway_connection import DISCONNECTED, NOT_SENT, GatewayConnection
+from moor_cli.gateway_agent import GatewayAgent
+from moor_cli.gateway_client import GatewayClientError, GatewayRPCError
+from moor_cli.gateway_connection import DISCONNECTED, NOT_SENT, GatewayConnection
 
 SID = "local-abc"
 
@@ -177,7 +177,7 @@ def test_interrupt_sends_session_interrupt_and_settles_interrupted(make_agent):
     assert out["interrupted"] is True and out["completed"] is False
 
 
-def test_result_dict_has_every_key_hermes_cli_reads(make_agent):
+def test_result_dict_has_every_key_moor_cli_reads(make_agent):
     agent, _ = make_agent([frame("message.complete", {"text": "x", "outcome": "completed"})],
                           result={"final_response": "x", "api_calls": 2, "input_tokens": 10, "output_tokens": 3},
                           usage={"last_prompt_tokens": 42, "context_length": 1000})
@@ -432,7 +432,7 @@ def test_an_explicit_level_the_session_already_inherits_is_still_committed(make_
     high by inheritance: still the owner's reasoning mutation, so a later profile change can't move it. An
     implicit re-derivation (/new, a one-turn restore) of the same level commits nothing."""
     from types import SimpleNamespace
-    from hermes_cli.cli_model_switch_mixin import _apply_reasoning_after_switch
+    from moor_cli.cli_model_switch_mixin import _apply_reasoning_after_switch
     agent, client = make_agent([])
     agent.connection.state(SID).info["reasoning_effort"] = "high"
     GatewayAgent(connection=agent.connection, session_id=SID, reasoning_config={"enabled": True, "effort": "high"},
@@ -537,7 +537,7 @@ def test_connection_reply_sends_a_jsonrpc_response_frame():
 def test_gateway_secret_request_opens_mains_secret_panel_and_the_gateway_saves(make_agent, monkeypatch):
     """``secret`` (skill env var): main's panel collects the value and prints its lines, but the CLI
     process never writes ``.env`` — the value goes back to the gateway, which saves it."""
-    from hermes_cli import callbacks
+    from moor_cli import callbacks
     from tools import skills_tool
     request = {"jsonrpc": "2.0", "id": "srq-sec", "method": "secret",
                "params": {"session_id": SID, "env_var": "HAB_KEY", "prompt": "Enter it",
@@ -900,7 +900,7 @@ def test_another_viewer_completing_the_clarify_batch_releases_mains_panel(make_a
     close it from the connection thread; the pump then reads the turn's completion instead of sitting
     in the modal until clarify_timeout."""
     import cli
-    from tests.hermes_cli.test_cli_clarify_batch import _make_cli_stub
+    from tests.moor_cli.test_cli_clarify_batch import _make_cli_stub
     monkeypatch.setattr(cli, "CLI_CONFIG", {"agent": {"clarify_timeout": 60}})
     panel = _make_cli_stub()
     panel._ring_bell = lambda **kw: None
@@ -931,7 +931,7 @@ def test_another_viewer_answering_a_vault_prompt_releases_mains_panel(make_agent
     until its own 120-180 s deadline instead of reading the rest of the turn."""
     from unittest.mock import MagicMock
     from agent.vault_backends import unlock
-    from tests.hermes_cli.test_cli_clarify_batch import _make_cli_stub
+    from tests.moor_cli.test_cli_clarify_batch import _make_cli_stub
     panel = _make_cli_stub()
     panel._sudo_state = None
     panel._sudo_deadline = 0
@@ -1045,7 +1045,7 @@ def test_a_voice_stopped_correction_is_consumed_not_requeued(make_agent, mode):
     voice is already off, and that becomes an agent turn."""
     import queue
 
-    from cli import HermesCLI
+    from cli import MoorCLI
 
     agent, client = make_agent([])
     agent._generation = 7
@@ -1060,7 +1060,7 @@ def test_a_voice_stopped_correction_is_consumed_not_requeued(make_agent, mode):
     client.rpc = rpc
     printed = []
     agent._print_fn = printed.append
-    shell = object.__new__(HermesCLI)
+    shell = object.__new__(MoorCLI)
     shell.busy_input_mode = mode
     shell.agent = agent
     shell._pending_input, shell._interrupt_queue = queue.Queue(), queue.Queue()
@@ -1113,7 +1113,7 @@ def test_todo_updates_after_a_session_switch_reach_the_cli_todo_store(make_agent
     later ``todo.updated`` must still land where the CLI reads it (``read()``: the pet's done-plan beat)."""
     from types import SimpleNamespace
 
-    from hermes_cli.cli_commands_mixin import _sync_agent_to_session
+    from moor_cli.cli_commands_mixin import _sync_agent_to_session
     todos = [{"id": "1", "content": "ship it", "status": "completed"}]
     agent, _ = make_agent([frame("todo.updated", {"todos": todos, "revision": 1}),
                            frame("message.complete", {"text": "x", "outcome": "completed"})])
@@ -1141,8 +1141,8 @@ def test_resume_restores_the_sessions_todos_into_the_cli_todo_store(make_agent):
     which starts with the gateway's ``todo_state`` (revision kept), not empty until the next ``todo.updated``."""
     from types import SimpleNamespace
 
-    from hermes_cli.cli_commands_mixin import _sync_agent_to_session
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from moor_cli.cli_commands_mixin import _sync_agent_to_session
+    from moor_cli.gateway_session_store import GatewaySessionStore
     todos = [{"id": "1", "content": "ship it", "status": "in_progress"}]
     agent, client = make_agent([])
     _resume_with_todos(client, todos, 4)
@@ -1155,7 +1155,7 @@ def test_resume_restores_the_sessions_todos_into_the_cli_todo_store(make_agent):
 def test_startup_resume_builds_the_agent_with_the_sessions_todos(make_agent):
     """``chat -c`` attaches (``open_session``) before it builds the agent, whose store starts with the
     snapshot; a later ``todo.updated`` of that session is what the next swapped-in store starts with."""
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from moor_cli.gateway_session_store import GatewaySessionStore
     from tools.todo_tool import TodoStore
     todos = [{"id": "1", "content": "ship it", "status": "completed"}]
     agent, client = make_agent([])

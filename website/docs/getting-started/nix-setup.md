@@ -677,7 +677,7 @@ macOS has no equivalent option. A `launchd` agent with `RunAtLoad` starts at log
 
 ### Running the Desktop / Dashboard Backend
 
-`gateway.enable` runs the messaging gateway for Telegram, Discord, Slack and the other platforms. A Hermes Desktop **remote** connection and the web dashboard connect to a *different* process, which is `hermes serve` or `hermes dashboard`. (A Desktop running on the same host attaches to the gateway itself via `hermes gateway ensure`.) `backend.mode` runs that process with the gateway:
+`gateway.enable` runs the messaging gateway for Telegram, Discord, Slack and the other platforms. A Moor Desktop **remote** connection and the web dashboard connect to a *different* process, which is `moor serve` or `moor dashboard`. (A Desktop running on the same host attaches to the gateway itself via `moor gateway ensure`.) `backend.mode` runs that process with the gateway:
 
 ```nix
 {
@@ -698,11 +698,11 @@ The default address is `127.0.0.1`. Each other address starts the authentication
 
 ### Running the Webapp
 
-The package ships the [Webapp](../user-guide/desktop.md#use-the-desktop-workspace-from-a-browser) (Hermes Desktop in a browser) prebuilt, so nothing is built at run time; the store is read-only. The gateway serves it when its settings turn it on (see [Configuration → Webapp](../user-guide/configuration.md#webapp)):
+The package ships the [Webapp](../user-guide/desktop.md#use-the-desktop-workspace-from-a-browser) (Moor Desktop in a browser) prebuilt, so nothing is built at run time; the store is read-only. The gateway serves it when its settings turn it on (see [Configuration → Webapp](../user-guide/configuration.md#webapp)):
 
 ```nix
 {
-  services.hermes-agent = {
+  services.moor-agent = {
     enable = true;
     gateway.enable = true;
     settings.webapp = {
@@ -714,7 +714,7 @@ The package ships the [Webapp](../user-guide/desktop.md#use-the-desktop-workspac
 }
 ```
 
-Open it with `hermes webapp`. A non-loopback `host` or a `public_url` needs one of the [dashboard's sign-in providers](../user-guide/features/web-dashboard.md#authentication-gated-mode), as for the dashboard. `nix build .#webapp` builds the bundle on its own. The wrapper points `HERMES_WEBAPP_DIST` at it, so `hermes webapp --force-build` has nothing to rebuild and says so.
+Open it with `moor webapp`. A non-loopback `host` or a `public_url` needs one of the [dashboard's sign-in providers](../user-guide/features/web-dashboard.md#authentication-gated-mode), as for the dashboard. `nix build .#webapp` builds the bundle on its own. The wrapper points `MOOR_WEBAPP_DIST` at it, so `moor webapp --force-build` has nothing to rebuild and says so.
 
 ### Verify It Works
 
@@ -839,14 +839,14 @@ The package's `site-packages` is added to PYTHONPATH in the moor wrapper. `impor
 
 ### Optional Dependency Groups (`extraDependencyGroups`)
 
-For optional extras declared in hermes-agent's `pyproject.toml`, use `extraDependencyGroups` to include them in the sealed venv at build time. This is required for any extra the selected package does not already ship — on Nix, runtime installation into the read-only store is not possible.
+For optional extras declared in moor-agent's `pyproject.toml`, use `extraDependencyGroups` to include them in the sealed venv at build time. This is required for any extra the selected package does not already ship — on Nix, runtime installation into the read-only store is not possible.
 
 ```nix
 # Add Google Meet support on top of what the package ships
-services.hermes-agent.extraDependencyGroups = [ "google-meet" ];
+services.moor-agent.extraDependencyGroups = [ "google-meet" ];
 ```
 
-`extraDependencyGroups` and `extraPythonPackages` **add to** the groups the selected package ships; they never replace them. The `default` package already ships `messaging`, `voice`, `exa` and the other groups in the table below, so naming one of those changes nothing. The same holds for `pkgs.hermes-agent.override { extraDependencyGroups = [ ... ]; }`. For a smaller build, start from a smaller package: `package = inputs.hermes-agent.packages.${system}.minimal;` (or `#messaging`), or `.override { defaultDependencyGroups = [ ]; }` to drop the shipped groups and list only the ones you want.
+`extraDependencyGroups` and `extraPythonPackages` **add to** the groups the selected package ships; they never replace them. The `default` package already ships `messaging`, `voice`, `exa` and the other groups in the table below, so naming one of those changes nothing. The same holds for `pkgs.moor-agent.override { extraDependencyGroups = [ ... ]; }`. For a smaller build, start from a smaller package: `package = inputs.moor-agent.packages.${system}.minimal;` (or `#messaging`), or `.override { defaultDependencyGroups = [ ]; }` to drop the shipped groups and list only the ones you want.
 
 These groups join the core dependency resolution at build time. Conflicting
 requirements can still fail that resolution. The table lists common groups;
@@ -905,10 +905,10 @@ External flakes can override the package directly:
   outputs = { moor-agent, nixpkgs, ... }: {
     nixpkgs.overlays = [ moor-agent.overlays.default ];
     # Then:
-    #   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
-    #   pkgs.hermes-agent.override { extraDependencyGroups = [ "google-meet" ]; }
+    #   pkgs.moor-agent.override { extraPythonPackages = [...]; }
+    #   pkgs.moor-agent.override { extraDependencyGroups = [ "google-meet" ]; }
     # Both add to the groups the default package ships. To drop those:
-    #   pkgs.hermes-agent.override { defaultDependencyGroups = [ ]; }
+    #   pkgs.moor-agent.override { defaultDependencyGroups = [ ]; }
   };
 }
 ```
@@ -935,7 +935,7 @@ A build-time collision check prevents plugin packages from shadowing core moor d
 ### Dev Shell
 
 The flake provides an editable Python venv with the `dev` dependency group, running
-on the interpreter `pm/lock.json` pins. `HERMES_PYTHON` and `VIRTUAL_ENV` point at it,
+on the interpreter `pm/lock.json` pins. `MOOR_PYTHON` and `VIRTUAL_ENV` point at it,
 and it needs no `PYTHONPATH`. It does not install
 Python dependencies into a repository-local `.venv`. The shell also provides
 Node.js and runtime tools. Its npm hook refreshes JS workspaces when their inputs change.
@@ -1060,7 +1060,7 @@ nix build .#checks.x86_64-linux.config-roundtrip    # merge script preserves use
 
 ### Backend (`moor serve` / `moor dashboard`)
 
-This option runs the process that a remote Hermes Desktop connection and the web dashboard connect to, with the gateway. You cannot use it with `container.enable`.
+This option runs the process that a remote Moor Desktop connection and the web dashboard connect to, with the gateway. You cannot use it with `container.enable`.
 
 | Option | Type | Default | Description |
 |---|---|---|---|

@@ -1,7 +1,7 @@
-"""``hermes sessions discard``: acknowledge a turn lost across a gateway crash, without a REPL.
+"""``moor sessions discard``: acknowledge a turn lost across a gateway crash, without a REPL.
 
 After an owner restart mid-turn, the session's ``started`` admission is fenced ``unknown`` and
-everything queued behind it waits. A finite ``hermes chat --resume <id> -q`` refuses (exit 3)
+everything queued behind it waits. A finite ``moor chat --resume <id> -q`` refuses (exit 3)
 rather than queue behind it. Interactively, ``/discard <admission>`` clears it. This is the same
 fenced control (``prompt.resolve_unknown`` with the generation the owner stamped) for scripts.
 The lost input is not replayed; it stays in the transcript to resend.
@@ -12,15 +12,15 @@ import sys
 
 
 async def _resume(client, name):
-    """Exact session id first, then title, as ``hermes chat --resume`` / ``-c`` resolve it."""
-    from hermes_cli.gateway_client import GatewayClientError
+    """Exact session id first, then title, as ``moor chat --resume`` / ``-c`` resolve it."""
+    from moor_cli.gateway_client import GatewayClientError
     for key in ("session_id", "title"):
         try:
             return await client.rpc("session.resume", **{key: name})
         except GatewayClientError as exc:
             if str(exc) != "not_found":
                 raise
-    raise GatewayClientError(f"No session found matching '{name}'. Use 'hermes sessions list' to see available sessions.")
+    raise GatewayClientError(f"No session found matching '{name}'. Use 'moor sessions list' to see available sessions.")
 
 
 def _confirm(session_id, rows):
@@ -34,7 +34,7 @@ def _confirm(session_id, rows):
 
 
 async def _discard(args):
-    from hermes_cli.gateway_client import GatewayClientError, connect_gateway
+    from moor_cli.gateway_client import GatewayClientError, connect_gateway
     async with connect_gateway() as client:
         snapshot = await _resume(client, args.session)
         session_id = snapshot.get("session_id") or snapshot["stored_session_id"]
@@ -64,11 +64,11 @@ async def _discard(args):
 
 
 def add_discard_parser(sessions_subparsers) -> None:
-    from hermes_cli.subcommands._shared import add_yes_flag
+    from moor_cli.subcommands._shared import add_yes_flag
     parser = sessions_subparsers.add_parser(
         "discard", help="Acknowledge turns lost in a gateway crash (unknown admissions) so the session runs again",
         description="After a gateway crash mid-turn, the lost turn is fenced 'unknown' and blocks the "
-            "session: `hermes chat --resume <id> -q` exits 3 until it is acknowledged. This is the "
+            "session: `moor chat --resume <id> -q` exits 3 until it is acknowledged. This is the "
             "non-interactive form of `/discard <admission>`. The lost input is not replayed.")
     parser.add_argument("session", help="Session ID or title")
     parser.add_argument("--admission", action="append", metavar="ID",
@@ -79,7 +79,7 @@ def add_discard_parser(sessions_subparsers) -> None:
 def cmd_discard(args) -> int:
     import asyncio
     from websockets.exceptions import WebSocketException
-    from hermes_cli.gateway_client import GatewayClientError
+    from moor_cli.gateway_client import GatewayClientError
     try:
         return asyncio.run(_discard(args))
     except (GatewayClientError, OSError, TimeoutError, WebSocketException) as exc:

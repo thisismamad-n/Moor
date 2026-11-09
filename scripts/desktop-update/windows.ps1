@@ -24,11 +24,11 @@
 #     -DesktopPid <pid>     the Electron main process to wait out
 #     [-RelaunchExe <path>] Moor.exe to start when done (omit = no relaunch)
 #     [-NoUi]               headless (tests); default shows a progress window
-#     [-NoMarkerCleanup]    leave .hermes-update-in-progress in place (tests)
+#     [-NoMarkerCleanup]    leave .moor-update-in-progress in place (tests)
 #     [-ProbeTimeoutSeconds <n>] launcher probe bound, default 60 (tests)
 #     [-HandoffRun <id>]    protocol 2: the run id of the Desktop's bridge claim
 #
-# hermes-handoff-protocol: 2
+# moor-handoff-protocol: 2
 # (exact line above: the Desktop reads it to learn this script speaks hand-off
 # protocol 2 -- it accepts -HandoffRun and the -MarkerOp helper below.)
 #
@@ -44,18 +44,18 @@
 # exits, or a venv shim that never unlocks, aborts the hand-off without
 # mutating the install -- a skipped update is recoverable, a half-updated
 # venv is not. Every exit path (success, abort, crash) writes
-# .hermes-update-result.json for the relaunched Desktop to surface, and
+# .moor-update-result.json for the relaunched Desktop to surface, and
 # relaunches the Desktop so the user is never left stranded. The one
 # exception is a refused run (exit 2): it changed nothing and writes no result.
 #
-# Marker (contract C1 v2 + A7, marker.ps1): claiming HERMES_HOME\.hermes-update-
+# Marker (contract C1 v2 + A7, marker.ps1): claiming MOOR_HOME\.moor-update-
 # in-progress is the FIRST thing the script does -- before any Add-Type, UI
 # or probe -- and every read/judge/mutate of it happens inside one hold of
 # the kernel lock on "<marker>.lock". With -HandoffRun it only adopts the
 # Desktop's bridge for that run; with only -DesktopPid (an old packaged
 # Desktop) it accepts that Desktop's cmd.exe launcher claim by lineage;
 # otherwise it claims fresh, reclaiming a dead marker. Any other live owner
-# refuses the run (exit 2, nothing changed, no result file). The `hermes
+# refuses the run (exit 2, nothing changed, no result file). The `moor
 # update` child is named as the line-4 delegate BEFORE it is resumed.
 # Release deletes our claim, or hands it to a still-running delegate.
 
@@ -98,14 +98,14 @@ if (-not $SelfTestUi -and -not $SelfTestPipeDrain -and -not $SelfTestLogConcurre
 
 $ErrorActionPreference = "Continue"
 $TempDir = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
-$HermesHome = if ($env:HERMES_HOME) { $env:HERMES_HOME } elseif ($InstallRoot) { Split-Path -Parent $InstallRoot } else { $TempDir }
-$env:HERMES_HOME = $HermesHome
-$MarkerPath = Join-Path $HermesHome ".hermes-update-in-progress"
-$LogDir = Join-Path $HermesHome "logs"
+$MoorHome = if ($env:MOOR_HOME) { $env:MOOR_HOME } elseif ($InstallRoot) { Split-Path -Parent $InstallRoot } else { $TempDir }
+$env:MOOR_HOME = $MoorHome
+$MarkerPath = Join-Path $MoorHome ".moor-update-in-progress"
+$LogDir = Join-Path $MoorHome "logs"
 $LogPath = Join-Path $LogDir "desktop-update-handoff.log"
-$ResultPath = Join-Path $HermesHome ".hermes-update-result.json"
+$ResultPath = Join-Path $MoorHome ".moor-update-result.json"
 $script:HandoffLogMutex = $null
-# One mutex per log path (case-normalized: the same HERMES_HOME spelled
+# One mutex per log path (case-normalized: the same MOOR_HOME spelled
 # differently must still serialize), hashed because a mutex name cannot carry
 # path characters.
 $handoffLogHash = ""
@@ -113,7 +113,7 @@ $handoffSha = [System.Security.Cryptography.SHA1]::Create()
 try {
     $handoffLogHash = [BitConverter]::ToString($handoffSha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($LogPath.ToLowerInvariant())), 0, 8).Replace("-", "")
 } finally { $handoffSha.Dispose() }
-$script:HandoffLogMutexName = "Global\HermesHandoffLog-$handoffLogHash"
+$script:HandoffLogMutexName = "Global\MoorHandoffLog-$handoffLogHash"
 # Lines the log could not take yet, oldest first (Write-HandoffLog).
 $script:PendingLogLines = New-Object System.Collections.Generic.List[string]
 
@@ -173,7 +173,7 @@ function Write-HandoffLog([string]$Message) {
     $script:PendingLogLines.Add($line)
     [void](Sync-HandoffLog)
     if ($MarkerOp) { return }   # a helper op's stdout is its one verdict line
-    if ($script:ConsoleInput -and [HermesHandoff.ConsoleInput]::Selecting()) { return }
+    if ($script:ConsoleInput -and [MoorHandoff.ConsoleInput]::Selecting()) { return }
     Write-Host $line
 }
 
@@ -226,13 +226,13 @@ try {
 # Console selection must never hold the hand-off (#103222). The console is
 # hidden by design (wrapHandoffForDetachedConsole), but an older Desktop or a
 # manual run can leave it visible, and conhost blocks every write to it while a
-# selection is active: the child output replayed after `hermes update` exited
+# selection is active: the child output replayed after `moor update` exited
 # stalled on Write-Host until the user pressed Esc, and the result, marker
 # cleanup and relaunch waited behind it. QuickEdit goes off for the run (so a
 # stray click cannot start a selection) and the console echo is skipped while
 # one is active; the log file keeps every line either way.
 try {
-    Add-Type -Namespace HermesHandoff -Name ConsoleInput -MemberDefinition @'
+    Add-Type -Namespace MoorHandoff -Name ConsoleInput -MemberDefinition @'
 [StructLayout(LayoutKind.Sequential)] public struct SelectionInfo { public uint Flags; public uint Anchor; public ulong Window; }
 [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
 static extern IntPtr CreateFile(string name, uint access, uint share, IntPtr attributes, uint disposition, uint flags, IntPtr template);
@@ -288,12 +288,12 @@ $script:UiState = [hashtable]::Synchronized(@{
     acknowledged_receipt = $null
 })
 $script:UiServer = $null     # @{ Listener; Runspace; PowerShell; Port; BrowserProc; Profile }
-# `hermes update` publishes its own stages (hermes_cli/update_stage.py: downloading, dependencies,
+# `moor update` publishes its own stages (moor_cli/update_stage.py: downloading, dependencies,
 # each app build, packaging) into this file, as it does under posix.sh. The step loop relays them
 # to the window, which otherwise read "Updating code and dependencies" for a whole 20-60 minute
 # run (#139952, #135363), and to the hand-off log, whose timestamps then name the slow stage.
-$script:ChildStageFile = Join-Path ([IO.Path]::GetTempPath()) ("hermes-update-status.{0}" -f $PID)
-$env:HERMES_UPDATE_STATUS_FILE = $script:ChildStageFile
+$script:ChildStageFile = Join-Path ([IO.Path]::GetTempPath()) ("moor-update-status.{0}" -f $PID)
+$env:MOOR_UPDATE_STATUS_FILE = $script:ChildStageFile
 $script:ChildStageSeen = $null
 
 function Get-UiHtmlPath {
@@ -466,18 +466,18 @@ function Stop-UiServer([switch]$LeaveWindow) {
         } catch {}
     }
     # Best-effort removal of the dedicated browser profile dirs: this run's
-    # profile plus hermes-update-ui-<pid> leftovers whose hand-off process is
-    # gone. %TEMP% is shared by every HERMES_HOME of this user, and the marker
+    # profile plus moor-update-ui-<pid> leftovers whose hand-off process is
+    # gone. %TEMP% is shared by every MOOR_HOME of this user, and the marker
     # only serialises one home, so a dir whose pid is still running belongs to
     # another live hand-off and is left alone. A browser that is still
     # shutting down may hold the lock; the delete then silently no-ops.
     try {
         $profileDirs = @()
         if ($script:UiServer.Profile) { $profileDirs += $script:UiServer.Profile }
-        Get-ChildItem -LiteralPath $TempDir -Directory -Filter "hermes-update-ui-*" -ErrorAction SilentlyContinue |
+        Get-ChildItem -LiteralPath $TempDir -Directory -Filter "moor-update-ui-*" -ErrorAction SilentlyContinue |
             ForEach-Object {
                 $owner = 0
-                if ($_.Name -match '^hermes-update-ui-([0-9]+)$' -and [int]::TryParse($Matches[1], [ref]$owner) -and
+                if ($_.Name -match '^moor-update-ui-([0-9]+)$' -and [int]::TryParse($Matches[1], [ref]$owner) -and
                     $owner -ne $PID -and -not (Get-Process -Id $owner -ErrorAction SilentlyContinue)) {
                     $profileDirs += $_.FullName
                 }
@@ -794,7 +794,7 @@ function Write-Result([bool]$Ok, [int]$Code, [string]$Message, [bool]$ManualActi
     }
 }
 
-# Post-commit follow-ups (contract C3): each failed step after `hermes update`
+# Post-commit follow-ups (contract C3): each failed step after `moor update`
 # exited 0 becomes a warning, never a failed update.
 $script:Warnings = New-Object System.Collections.Generic.List[string]
 # A plain array: Windows PowerShell 5.1's @() over a non-empty List[object] throws
@@ -836,17 +836,17 @@ function Get-DesktopWorkingDirectory {
 
 function Restore-UserProxyEnv {
     # Port of restoreUserProxyEnv (electron/updater/system-proxy-env.ts): the Desktop handed its
-    # system proxy to the update only. HERMES_UPDATE_SYSTEM_PROXY names the variables it added and
-    # HERMES_UPDATE_USER_NO_PROXY holds the user's own NO_PROXY it extended.
-    foreach ($key in ("$env:HERMES_UPDATE_SYSTEM_PROXY" -split ',')) {
+    # system proxy to the update only. MOOR_UPDATE_SYSTEM_PROXY names the variables it added and
+    # MOOR_UPDATE_USER_NO_PROXY holds the user's own NO_PROXY it extended.
+    foreach ($key in ("$env:MOOR_UPDATE_SYSTEM_PROXY" -split ',')) {
         if (@('HTTPS_PROXY', 'HTTP_PROXY', 'NO_PROXY') -contains $key) { Remove-Item "Env:$key" -ErrorAction SilentlyContinue }
     }
-    $saved = [Environment]::GetEnvironmentVariable('HERMES_UPDATE_USER_NO_PROXY', 'Process')
+    $saved = [Environment]::GetEnvironmentVariable('MOOR_UPDATE_USER_NO_PROXY', 'Process')
     if ($null -ne $saved) {
         [Environment]::SetEnvironmentVariable('NO_PROXY', $saved, 'Process')
-        Remove-Item Env:HERMES_UPDATE_USER_NO_PROXY -ErrorAction SilentlyContinue
+        Remove-Item Env:MOOR_UPDATE_USER_NO_PROXY -ErrorAction SilentlyContinue
     }
-    Remove-Item Env:HERMES_UPDATE_SYSTEM_PROXY -ErrorAction SilentlyContinue
+    Remove-Item Env:MOOR_UPDATE_SYSTEM_PROXY -ErrorAction SilentlyContinue
 }
 
 function Start-DesktopRelaunch {
@@ -986,7 +986,7 @@ function Start-DesktopRelaunch {
             # Fallback keeps the old behavior (console tie-in and all) --
             # a tethered Desktop beats no Desktop. Unlike the WMI and explorer rungs it inherits
             # this script's environment: the stage relay is the update's, never the app's.
-            Remove-Item Env:HERMES_UPDATE_STATUS_FILE -ErrorAction SilentlyContinue
+            Remove-Item Env:MOOR_UPDATE_STATUS_FILE -ErrorAction SilentlyContinue
             $p = Start-Process -FilePath $RelaunchExe -WorkingDirectory (Get-DesktopWorkingDirectory) -PassThru
             Start-Sleep -Milliseconds 1500
             if ($p -and -not $p.HasExited) { $spawned = $true }
@@ -1042,14 +1042,14 @@ if ($env:MOOR_UPDATE_STEP_IDLE_SECONDS) {
 # refuses, so nothing is replaced under a live Desktop. Overridable so the
 # self-tests need not sit it out; not documented as a user knob.
 $script:DesktopExitSeconds = 150
-if ($env:HERMES_UPDATE_DESKTOP_EXIT_SECONDS) {
+if ($env:MOOR_UPDATE_DESKTOP_EXIT_SECONDS) {
     $parsedExit = 0
-    if ([int]::TryParse($env:HERMES_UPDATE_DESKTOP_EXIT_SECONDS, [ref]$parsedExit) -and $parsedExit -gt 0) {
+    if ([int]::TryParse($env:MOOR_UPDATE_DESKTOP_EXIT_SECONDS, [ref]$parsedExit) -and $parsedExit -gt 0) {
         $script:DesktopExitSeconds = $parsedExit
     }
 }
 
-# Silence on the pipes is NOT silence in the update. `hermes update` captures
+# Silence on the pipes is NOT silence in the update. `moor update` captures
 # the (very loud) Electron/vite build into logs/update.log instead of its own
 # stdout (moor_cli/update_cmd.py, the update-log tee), so a real update is
 # routinely stdout-silent for 40+ minutes while demonstrably progressing. An
@@ -1119,7 +1119,7 @@ function Sync-ChildStage {
     Publish-UiProgress $message
 }
 
-function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
+function Invoke-MoorStep([string]$Exe, [string[]]$MoorArgs, [string]$Tag) {
     # A stage left by the previous step must not replace the one the orchestrator just published.
     Remove-Item -LiteralPath $script:ChildStageFile -Force -ErrorAction SilentlyContinue
     $script:ChildStageSeen = $null
@@ -1175,12 +1175,12 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
     if ($Tag -eq 'update') {
         $delegate = Add-MarkerDelegate @($proc.Id)
         if ($delegate -notin @('published', 'kept')) {
-            [void][HermesUpdateJob]::TerminateAndWait($started.Job, 1, 5000)
-            [HermesUpdateJob]::Close($started.Job)
+            [void][MoorUpdateJob]::TerminateAndWait($started.Job, 1, 5000)
+            [MoorUpdateJob]::Close($started.Job)
             throw "could not name the update process as the update marker's delegate ($delegate); nothing was run"
         }
     }
-    [HermesUpdateJob]::Resume($started)
+    [MoorUpdateJob]::Resume($started)
     $stdoutReader = $started.StandardOutput
     $stderrReader = $started.StandardError
     $job = $started.Job
@@ -1200,7 +1200,7 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
     $abandoned = $false
     $lastProgressAt = Get-Date
     $progressLogStamp = Get-StepProgressLogStamp
-    $jobActivity = [HermesUpdateJob]::Activity($job)
+    $jobActivity = [MoorUpdateJob]::Activity($job)
     $stalled = $false
     $nextStageCheck = Get-Date
     while ($true) {
@@ -1213,7 +1213,7 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
             # CPU or I/O spent inside the job is progress too: a pipe-silent
             # wheel download or extraction is busy, not stalled. One cheap
             # kernel query per idle pass; never on the hot drain path.
-            $currentActivity = [HermesUpdateJob]::Activity($job)
+            $currentActivity = [MoorUpdateJob]::Activity($job)
             if ($currentActivity -ne $jobActivity) {
                 $jobActivity = $currentActivity
                 $lastProgressAt = Get-Date
@@ -1248,12 +1248,12 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
                 # venv, or release tree can overlap two installers and
                 # corrupt the install.
                 Write-HandoffLog ("{0}!| step stalled: no stdout/stderr, no update.log growth and no CPU/IO in its process tree for {1}s while pid {2} remained alive; cancelling its process tree." -f $Tag, $script:StepIdleTimeoutSeconds, $proc.Id)
-                $stalled = [HermesUpdateJob]::TerminateAndWait($job, 124, 10000)
+                $stalled = [MoorUpdateJob]::TerminateAndWait($job, 124, 10000)
                 if (-not $stalled) {
                     Write-HandoffLog ("{0}!| process-tree cancellation could not prove quiescence; refusing the timeout retry." -f $Tag)
                     $script:TreeSafeToFinalize = $false
-                    $script:UnquiescedPids = @([HermesUpdateJob]::ProcessIds($job))
-                    [HermesUpdateJob]::Close($job)
+                    $script:UnquiescedPids = @([MoorUpdateJob]::ProcessIds($job))
+                    [MoorUpdateJob]::Close($job)
                     throw "Unable to quiesce stalled update process tree"
                 }
             }
@@ -1312,10 +1312,10 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
     return @{ Code = $code; Output = $all; TreeQuiesced = (-not $stalled -or $proc.HasExited); StartedAfterJobAssignment = $true }
 }
 
-# `hermes update` can COMPLETE (its output carries "✓ Update complete!") and
+# `moor update` can COMPLETE (its output carries "✓ Update complete!") and
 # still be killed with the idle-watchdog sentinel 124: the post-update phase
 # (gateway restart hand-off) stayed alive and silent past the ceiling, so
-# Invoke-HermesStep terminated the tree (#96205). The install is done; failing
+# Invoke-MoorStep terminated the tree (#96205). The install is done; failing
 # would keep the old Desktop and a legacy install would re-run the whole update.
 # Surface success so the hand-off verifies, restores the gateways and relaunches.
 # Only 124 is remapped, and never when anything after the banner reports a
@@ -1323,7 +1323,7 @@ function Invoke-HermesStep([string]$Exe, [string[]]$HermesArgs, [string]$Tag) {
 # incomplete — …", "✗ <unit> failed to come back after restart" or
 # "verification incomplete" there. \u2717 (✗) stays an escape: Windows
 # PowerShell reads this BOM-less script as ANSI, never as UTF-8.
-function Resolve-HermesUpdateOutcome($StepResult) {
+function Resolve-MoorUpdateOutcome($StepResult) {
     $banner = if ($StepResult.Output) { $StepResult.Output.LastIndexOf('Update complete!') } else { -1 }
     if ($StepResult.Code -eq 124 -and $banner -ge 0 -and $StepResult.Output.Substring($banner) -notmatch 'incomplete|not complete|\u2717') {
         Write-HandoffLog "update completed before the idle watchdog killed its finalizing step (exit 124); treating it as success, not retrying (#96205)"
@@ -1334,7 +1334,7 @@ function Resolve-HermesUpdateOutcome($StepResult) {
 }
 
 # -- The commit point (contract C3) --------------------------------------------
-# `hermes update` exits 0 once committed, except an interrupt (130) or a parked
+# `moor update` exits 0 once committed, except an interrupt (130) or a parked
 # autostash (1) after the commit point, and a crash of a committed run. Its own
 # receipt says which (same rule as posix.sh::update_committed_after_exit): the
 # run's receipt -- matched by the correlation id handed to it, finalized
@@ -1342,8 +1342,8 @@ function Resolve-HermesUpdateOutcome($StepResult) {
 # act) | interrupted (Ctrl-C after the code moved). A reconciled "interrupted"
 # record keeps finished_at null, so it never matches.
 function Get-CommittedReceiptOutcome {
-    $root = $HermesHome
-    # hermes_constants.get_default_hermes_root: a <root>\profiles\<name> home files under <root>
+    $root = $MoorHome
+    # moor_constants.get_default_moor_root: a <root>\profiles\<name> home files under <root>
     $parent = Split-Path -Parent $root
     if ($parent -and (Split-Path -Leaf $parent) -eq 'profiles') { $root = Split-Path -Parent $parent }
     $path = Join-Path $root 'logs\update_receipts\latest.json'
@@ -1689,7 +1689,7 @@ Complete-HandoffLog
     exit 0
 }
 
-$savedConsoleInputMode = if ($script:ConsoleInput) { [HermesHandoff.ConsoleInput]::DisableQuickEdit() } else { $null }
+$savedConsoleInputMode = if ($script:ConsoleInput) { [MoorHandoff.ConsoleInput]::DisableQuickEdit() } else { $null }
 try {
     # -- 0. The marker was claimed before anything else (top of script) -----
     if ($script:MarkerClaim -eq "refused") {
@@ -1697,7 +1697,7 @@ try {
         # (or the Desktop that gave up on this hand-off) reports its own.
         $finalCode = 2
         $blocker = if ($script:MarkerBlocker -gt 0) { " (process $($script:MarkerBlocker))" } else { "" }
-        $finalMsg = "Another Hermes update is already running$blocker, or the Desktop gave up on this hand-off. Nothing was changed."
+        $finalMsg = "Another Moor update is already running$blocker, or the Desktop gave up on this hand-off. Nothing was changed."
         Write-HandoffLog $finalMsg
         exit $finalCode
     }
@@ -1749,7 +1749,7 @@ try {
         exit 0
     }
 
-    $HermesProbeTimeoutSeconds = $ProbeTimeoutSeconds
+    $MoorProbeTimeoutSeconds = $ProbeTimeoutSeconds
     . (Join-Path $PSScriptRoot 'runtime.ps1')
     $legacyInstall = -not (Test-Path -LiteralPath (Join-Path $InstallRoot 'pm') -PathType Container)
     try {
@@ -1768,7 +1768,7 @@ try {
         if (-not (Wait-DesktopExit $script:DesktopExitSeconds)) {
             # The running Desktop still owns application outputs being replaced.
             $finalCode = 4
-            $finalMsg = "Update aborted: the Hermes window (pid $DesktopPid) did not exit within $($script:DesktopExitSeconds)s. Nothing was changed. Close Hermes fully and try again."
+            $finalMsg = "Update aborted: the Moor window (pid $DesktopPid) did not exit within $($script:DesktopExitSeconds)s. Nothing was changed. Close Moor fully and try again."
             Write-HandoffLog $finalMsg
             exit $finalCode
         }
@@ -1799,7 +1799,7 @@ try {
     # backends and an unknown flag would abort argparse with exit 2, which
     # collides with the "close all Moor windows" sentinel.
     try {
-        $helpProbe = Invoke-HermesProbe $pythonExe (@($runtimeArgs) + @('update', '--help'))
+        $helpProbe = Invoke-MoorProbe $pythonExe (@($runtimeArgs) + @('update', '--help'))
         if ($helpProbe.TimedOut) {
             Write-HandoffLog "update --help probe timed out; running without --keep-stash"
         } elseif ($helpProbe.Output -match "--keep-stash") {
@@ -1815,13 +1815,13 @@ try {
     # close-holder consent is bound to -HandoffRun. That run id beats an inherited
     # one: a Desktop the Start-Process rung relaunched carried the previous run's
     # id, under which its next retry's consent could never match (#101789).
-    $script:UpdateCorrelation = if ($HandoffRun) { $HandoffRun } elseif ($env:HERMES_UPDATE_CORRELATION_ID) { $env:HERMES_UPDATE_CORRELATION_ID } else { $script:ResultRunId }
-    $env:HERMES_UPDATE_CORRELATION_ID = $script:UpdateCorrelation
+    $script:UpdateCorrelation = if ($HandoffRun) { $HandoffRun } elseif ($env:MOOR_UPDATE_CORRELATION_ID) { $env:MOOR_UPDATE_CORRELATION_ID } else { $script:ResultRunId }
+    $env:MOOR_UPDATE_CORRELATION_ID = $script:UpdateCorrelation
     Write-HandoffLog ("running: python " + ($updateArgs -join " "))
     Publish-UiProgress "Updating code and dependencies"
-    $res = Invoke-HermesStep $pythonExe $updateArgs "update"
-    Write-HandoffLog "hermes update exit code: $($res.Code)"
-    $res = Resolve-HermesUpdateOutcome $res
+    $res = Invoke-MoorStep $pythonExe $updateArgs "update"
+    Write-HandoffLog "moor update exit code: $($res.Code)"
+    $res = Resolve-MoorUpdateOutcome $res
 
     # Retry only the identified pre-PM update-boundary transition. Current
     # update/build failures propagate and must not trigger another owner.
@@ -1834,48 +1834,48 @@ try {
         # Same request as the first attempt (--force included): the installation is still the
         # legacy one being converted until this run succeeds.
         $updateArgs = $runtimeArgs + @('update', '--yes') + $gatewayArg + $forceArg + $targetArgs
-        $res = Invoke-HermesStep $pythonExe $updateArgs 'update'
-        $res = Resolve-HermesUpdateOutcome $res
+        $res = Invoke-MoorStep $pythonExe $updateArgs 'update'
+        $res = Resolve-MoorUpdateOutcome $res
     }
 
     $committedAfterExit = $null
     if ($res.Code -ne 0 -and $res.Code -ne 2) { $committedAfterExit = Get-CommittedReceiptOutcome }
     if ($res.Code -ne 0 -and -not $committedAfterExit) {
         $finalCode = $res.Code
-        $finalMsg = "Update failed (exit $($res.Code)). Run `hermes debug share` in a terminal to send a report."
+        $finalMsg = "Update failed (exit $($res.Code)). Run `moor debug share` in a terminal to send a report."
         exit $finalCode
     }
 
-    # -- Commit point: `hermes update` exited 0 (contract C3). The install is
+    # -- Commit point: `moor update` exited 0 (contract C3). The install is
     # on the new version; every step below is follow-up work whose failure is
     # a warning on an ok result, never "still on the previous version".
     $script:Committed = $true
     $finalCode = 0
     $finalMsg = "Update complete."
     if ($script:UpdateInterrupted) {
-        Add-Followup "post-update steps (gateway resume) were interrupted; run hermes update again" "its post-update steps (gateway resume) were interrupted. Run 'hermes update' again to finish them." -Manual
+        Add-Followup "post-update steps (gateway resume) were interrupted; run moor update again" "its post-update steps (gateway resume) were interrupted. Run 'moor update' again to finish them." -Manual
     }
     if ($committedAfterExit) {
         # Past the commit point with a nonzero exit: installed, with an owed follow-up.
         $sentence = switch ($committedAfterExit) {
-            'partial' { "one step is left for you: your local source changes may still be parked in git stash. Run 'hermes update' in a terminal for the exact commands." }
-            'interrupted' { "its post-update steps were interrupted. The next launch or 'hermes update' finishes them." }
-            default { "'hermes update' exited with code $($res.Code) afterwards. Run 'hermes update' in a terminal to finish any remaining steps." }
+            'partial' { "one step is left for you: your local source changes may still be parked in git stash. Run 'moor update' in a terminal for the exact commands." }
+            'interrupted' { "its post-update steps were interrupted. The next launch or 'moor update' finishes them." }
+            default { "'moor update' exited with code $($res.Code) afterwards. Run 'moor update' in a terminal to finish any remaining steps." }
         }
-        Add-Followup "update: hermes update exited $($res.Code) after the commit point (receipt outcome: $committedAfterExit)" $sentence -Manual
+        Add-Followup "update: moor update exited $($res.Code) after the commit point (receipt outcome: $committedAfterExit)" $sentence -Manual
     }
 
     # Pre-PM updates reported a successful exit with a failed build warning.
     # Keep that historical transition here only; current failures propagate.
     $desktopBuildFailed = $false
     if ($legacyInstall -and $res.Output -match "Desktop build failed") {
-        Write-HandoffLog "hermes update reported a desktop build failure; retrying build"
+        Write-HandoffLog "moor update reported a desktop build failure; retrying build"
         Publish-UiProgress "Rebuilding Desktop"
         $rebuildFailure = $null
         try {
-            $runtimeCommand = @(Get-HermesRuntimeCommand -InstallRoot $InstallRoot)
+            $runtimeCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot)
             $rebuildArgs = @($runtimeCommand | Select-Object -Skip 1) + @('desktop', '--force-build', '--build-only')
-            $rebuild = Invoke-HermesStep $runtimeCommand[0] $rebuildArgs 'rebuild'
+            $rebuild = Invoke-MoorStep $runtimeCommand[0] $rebuildArgs 'rebuild'
             Write-HandoffLog "desktop rebuild exit code: $($rebuild.Code)"
             if ($rebuild.Code -ne 0) { $rebuildFailure = "exit $($rebuild.Code)" }
         } catch {
@@ -1883,17 +1883,17 @@ try {
         }
         if ($rebuildFailure) {
             $desktopBuildFailed = $true
-            Add-Followup "desktop rebuild: $rebuildFailure" "the Desktop app rebuild failed, so you may still be running the previous build. Run 'hermes desktop --force-build' in a terminal to retry." -Manual
+            Add-Followup "desktop rebuild: $rebuildFailure" "the Desktop app rebuild failed, so you may still be running the previous build. Run 'moor desktop --force-build' in a terminal to retry." -Manual
         }
     }
 
     # Contract C3: a Desktop build that failed after the code committed is an owed follow-up
     # (exit 0); the CLI prints one whole "Desktop app build owed:" line for it. The user is on
-    # the new Hermes but this app was not rebuilt: a manual outcome, never plain success.
+    # the new Moor but this app was not rebuilt: a manual outcome, never plain success.
     if (-not $desktopBuildFailed -and $res.Output -match '(?m)^\s*Desktop app build owed: ') {
-        # #101789: a program that is not part of Hermes (an IME cloud helper, an AV
+        # #101789: a program that is not part of Moor (an IME cloud helper, an AV
         # component) has its working folder inside release\ and Windows refuses the swap.
-        # hermes_cli/desktop_release_holders.py names each one on its own line; the
+        # moor_cli/desktop_release_holders.py names each one on its own line; the
         # relaunched Desktop offers to close exactly those and retry, never silently.
         # pid + start time identify the exact process the user is asked about; the start time
         # stays the CLI's invariant text (no locale-dependent number parsing here). An exe of
@@ -1906,41 +1906,41 @@ try {
             $holderNames = (@($script:ReleaseHolders) | ForEach-Object { "$($_.name) (pid $($_.pid))" }) -join ', '
             # A holder with no readable program path cannot be closed from the Desktop dialog.
             $closeOffer = if (@($script:ReleaseHolders | Where-Object { $_.exe }).Count -gt 0) { 'Close it and update again, or choose to close it below.' } else { 'Close it yourself (Task Manager) and update again.' }
-            Add-Followup "build: the Desktop app folder is in use by $holderNames" "the Desktop app could not be replaced because $holderNames is using its folder. It is not part of Hermes, so it was left running. $closeOffer" -Manual
+            Add-Followup "build: the Desktop app folder is in use by $holderNames" "the Desktop app could not be replaced because $holderNames is using its folder. It is not part of Moor, so it was left running. $closeOffer" -Manual
         } else {
-            Add-Followup "build: the Desktop app build is owed by the committed update" "the Desktop app could not be rebuilt, so it still runs its old build. Run 'hermes desktop --force-build' in a terminal to rebuild it; the update log has the build error." -Manual
+            Add-Followup "build: the Desktop app build is owed by the committed update" "the Desktop app could not be rebuilt, so it still runs its old build. Run 'moor desktop --force-build' in a terminal to rebuild it; the update log has the build error." -Manual
         }
     }
 
     # Every other owed follow-up of the committed update (a gateway still on the old code, a
     # Windows resume, a lost completion...) prints one whole "Update follow-up '<step>' did not
-    # finish:" line (hermes_cli/update_receipt.record_followup): never a plain success either.
+    # finish:" line (moor_cli/update_receipt.record_followup): never a plain success either.
     $owedSteps = @([regex]::Matches(($res.Output -join "`n"), "Update follow-up '([A-Za-z0-9_]+)' did not finish: ") |
         ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
     if ($owedSteps.Count -gt 0) {
         # A gateway_restart owed only for serve/dashboard units (the reason then starts with
-        # "serve/dashboard ", hermes_cli/update_cmd_fleet_verify.SERVE_ONLY_REASON_PREFIX) names their own
+        # "serve/dashboard ", moor_cli/update_cmd_fleet_verify.SERVE_ONLY_REASON_PREFIX) names their own
         # command in the log. The hint drops only when EVERY gateway_restart line is serve-only; any other
         # reason, including a raw restart-phase error, keeps it (#141071).
         $gwReasons = @((($res.Output -join "`n") -split "`r?`n") | Where-Object { $_ -cmatch "Update follow-up 'gateway_restart' did not finish: " })
-        $serveOnly = ($gwReasons.Count -gt 0) -and -not @($gwReasons | Where-Object { ($_ -cnotmatch "did not finish: serve/dashboard ") -or ($_ -cmatch "hermes gateway restart") }).Count
-        $owedHint = if (($owedSteps -contains 'gateway_restart') -and -not $serveOnly) { " Run 'hermes gateway restart' to move the messaging gateway onto the new code now." } else { '' }
-        Add-Followup ("followup: owed by the committed update: " + ($owedSteps -join ', ')) ("some follow-up steps did not finish (" + ($owedSteps -join ', ') + "). The next launch or 'hermes update' retries them; the update log has the details." + $owedHint) -Manual
+        $serveOnly = ($gwReasons.Count -gt 0) -and -not @($gwReasons | Where-Object { ($_ -cnotmatch "did not finish: serve/dashboard ") -or ($_ -cmatch "moor gateway restart") }).Count
+        $owedHint = if (($owedSteps -contains 'gateway_restart') -and -not $serveOnly) { " Run 'moor gateway restart' to move the messaging gateway onto the new code now." } else { '' }
+        Add-Followup ("followup: owed by the committed update: " + ($owedSteps -join ', ')) ("some follow-up steps did not finish (" + ($owedSteps -join ', ') + "). The next launch or 'moor update' retries them; the update log has the details." + $owedHint) -Manual
     }
 
     # A zero-exit update is not proof that the runtime survived the update.
     if (-not $desktopBuildFailed) {
         $verifyFailure = $null
         try {
-            $verifyCommand = @(Get-HermesRuntimeCommand -InstallRoot $InstallRoot -Module 'hermes_cli.desktop_update_verify')
+            $verifyCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot -Module 'moor_cli.desktop_update_verify')
             $verifyArgs = @($verifyCommand | Select-Object -Skip 1)
-            $verify = Invoke-HermesStep $verifyCommand[0] $verifyArgs 'verify'
+            $verify = Invoke-MoorStep $verifyCommand[0] $verifyArgs 'verify'
             if ($verify.Code -ne 0) { $verifyFailure = "exit $($verify.Code)" }
         } catch {
             $verifyFailure = $_.Exception.Message
         }
         if ($verifyFailure) {
-            Add-Followup "verify: $verifyFailure" "the new Desktop build could not be verified. Nothing was removed. If Hermes does not start normally, run 'hermes desktop --force-build' in a terminal to rebuild it." -Manual
+            Add-Followup "verify: $verifyFailure" "the new Desktop build could not be verified. Nothing was removed. If Moor does not start normally, run 'moor desktop --force-build' in a terminal to rebuild it." -Manual
         }
     }
 
@@ -1958,13 +1958,13 @@ try {
             # and its command can include an isolation/bootstrap prefix.
             $gatewayCommand = @(Get-MoorRuntimeCommand -InstallRoot $InstallRoot)
             $gatewayArgs = @($gatewayCommand | Select-Object -Skip 1) + @("gateway", "start", "--all")
-            $gatewayRestart = Invoke-HermesStep $gatewayCommand[0] $gatewayArgs "gateway restart"
+            $gatewayRestart = Invoke-MoorStep $gatewayCommand[0] $gatewayArgs "gateway restart"
             if ($gatewayRestart.Code -ne 0) { $gatewayFailure = "exit $($gatewayRestart.Code)" }
         } catch {
             $gatewayFailure = $_.Exception.Message
         }
         if ($gatewayFailure) {
-            Add-Followup "gateway start: $gatewayFailure" "it could not restart every messaging gateway. Run `hermes gateway start --all` in a terminal." -Manual
+            Add-Followup "gateway start: $gatewayFailure" "it could not restart every messaging gateway. Run `moor gateway start --all` in a terminal." -Manual
         }
     }
 
@@ -1976,13 +1976,13 @@ try {
     # tree gets its own warning in the finally block.
     Write-HandoffLog "hand-off error: $($_.Exception.Message)"
     if ($script:Committed -and $script:TreeSafeToFinalize) {
-        Add-Followup "hand-off: $($_.Exception.Message)" "a post-update step failed unexpectedly. Run 'hermes update' again to finish it." -Manual
+        Add-Followup "hand-off: $($_.Exception.Message)" "a post-update step failed unexpectedly. Run 'moor update' again to finish it." -Manual
         $finalCode = 0
     }
 } finally {
     # This run's id is ours, not the relaunched Desktop's: the Start-Process rung
     # would hand it on to every update that Desktop starts.
-    Remove-Item -LiteralPath Env:HERMES_UPDATE_CORRELATION_ID -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath Env:MOOR_UPDATE_CORRELATION_ID -ErrorAction SilentlyContinue
     if (@('claimed', 'adopted') -contains $script:MarkerClaim -and $InstallRoot) {
         # #101789: a Desktop "close and retry" consent belongs to this run alone. One its swap
         # never reached (a failed build) must not let a later update close the program unasked.
@@ -2007,14 +2007,14 @@ try {
         if ($script:Committed) {
             # C3: the update landed; only a follow-up step outlived its cancellation.
             $finalCode = 0
-            Add-Followup "follow-up processes could not be stopped" "a follow-up step's processes could not be stopped, so Hermes was not reopened. Reopen Hermes once they finish, or restart Windows first." -Manual
-            $finalMsg = "Hermes was updated, but " + ($script:FollowupText -join " Also, ")
+            Add-Followup "follow-up processes could not be stopped" "a follow-up step's processes could not be stopped, so Moor was not reopened. Reopen Moor once they finish, or restart Windows first." -Manual
+            $finalMsg = "Moor was updated, but " + ($script:FollowupText -join " Also, ")
             Write-Result $true $finalCode $finalMsg $true
             Write-HandoffLog $finalMsg
             Show-ManualFinale $finalMsg
         } else {
             $finalCode = 7
-            $finalMsg = "Update recovery could not stop every updater process. Hermes was not restarted to avoid overlapping the active install. Wait for it to finish or restart Windows, then reopen Hermes."
+            $finalMsg = "Update recovery could not stop every updater process. Moor was not restarted to avoid overlapping the active install. Wait for it to finish or restart Windows, then reopen Moor."
             Write-Result $false $finalCode $finalMsg
             Write-HandoffLog $finalMsg
             Show-ErrorFinale $finalMsg
@@ -2022,7 +2022,7 @@ try {
         Close-ProgressWindow
     } else {
         if ($finalCode -eq 0 -and $script:FollowupText.Count -gt 0) {
-            $finalMsg = "Hermes was updated, but " + ($script:FollowupText -join " Also, ")
+            $finalMsg = "Moor was updated, but " + ($script:FollowupText -join " Also, ")
         }
         $manualAction = $finalCode -eq 0 -and $script:ManualFollowup
         Write-Result ($finalCode -eq 0) $finalCode $finalMsg $manualAction
@@ -2056,7 +2056,7 @@ try {
             Close-ProgressWindow
         }
     }
-    if ($null -ne $savedConsoleInputMode) { [HermesHandoff.ConsoleInput]::Restore($savedConsoleInputMode) }
+    if ($null -ne $savedConsoleInputMode) { [MoorHandoff.ConsoleInput]::Restore($savedConsoleInputMode) }
     Complete-HandoffLog
 }
 exit $finalCode

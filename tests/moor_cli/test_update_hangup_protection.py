@@ -126,7 +126,7 @@ class TestInstallHangupProtection:
 
         # Patch the import inside _install_hangup_protection.
         monkeypatch.setattr(
-            "hermes_constants.get_default_hermes_root", _boom, raising=True
+            "moor_constants.get_default_moor_root", _boom, raising=True
         )
 
         original_handler = (

@@ -20,8 +20,8 @@ from pathlib import Path
 from time import monotonic as _monotonic
 from typing import Optional, Sequence
 
-from hermes_constants import (
-    get_config_path, get_hermes_home, mkdir_under_hermes_home, named_profile_is_deleted,
+from moor_constants import (
+    get_config_path, get_moor_home, mkdir_under_moor_home, named_profile_is_deleted,
 )
 
 # setup_logging() is idempotent: a second call is a no-op unless ``force=True``.
@@ -308,7 +308,7 @@ COMPONENT_PREFIXES = {
     # ``gateway/platforms/`` into bundled plugins (#41112) are still gateway
     # components and belong in gateway.log. ``agent.memory_caller_scope``: a multiplexed gateway's
     # memory-provider profile refusals (#140058), which the operator reads in gateway.log.
-    "gateway": ("gateway", "hermes_plugins", "plugins.platforms", "agent.memory_caller_scope"),
+    "gateway": ("gateway", "moor_plugins", "plugins.platforms", "agent.memory_caller_scope"),
     "agent": ("agent", "run_agent", "model_tools", "batch_runner"),
     "tools": ("tools",),
     "cli": ("moor_cli", "cli"),
@@ -686,7 +686,7 @@ class _ProfileRoutingFileHandler(logging.Handler):
         self._liveness_checked_at[home] = _monotonic()
         if home.is_dir() and not named_profile_is_deleted(home):
             return False
-        # Deleted out of band (CLI ``hermes profile delete`` while this process runs; it
+        # Deleted out of band (CLI ``moor profile delete`` while this process runs; it
         # tombstones before rmtree). The startup snapshot still names it, so its handler would
         # retry the vanished logs/ path on every record (#103777). Release it the way an
         # in-process delete does: the stale fd is closed on this routed record and the home is
@@ -751,7 +751,7 @@ class _ProfileRoutingFileHandler(logging.Handler):
             try:
                 handler.handle(record)
             finally:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
             # The write was skipped because logs/ is gone (an rmtree inside the liveness interval,
             # see _ManagedRotatingFileHandler.emit): re-check now, and keep the record in the
             # default log either way (a live profile whose logs/ was removed by hand included).
@@ -1034,7 +1034,7 @@ def _read_logging_config():
             from moor_cli.config_effective import load_user_config_effective
             cfg = load_user_config_effective(get_config_path())
         except Exception:
-            from hermes_cli.config_backend import config_exists, read_config_doc
+            from moor_cli.config_backend import config_exists, read_config_doc
             config_path = get_config_path()
             cfg = (read_config_doc(config_path) or {}) if config_exists(config_path) else {}
         if not cfg:

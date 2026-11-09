@@ -1,4 +1,4 @@
-import { applyDocumentLocale, isRecord } from '@hermes/shared/i18n'
+import { applyDocumentLocale, isRecord } from '@moor/shared/i18n'
 import { useStore } from '@nanostores/react'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -196,7 +196,7 @@ export function I18nProvider({
           // Keep inference unsaved so OS language changes apply on the next boot
           // until the user explicitly picks a language. The saved ask is checked
           // again after the probe: its pack may have arrived in the meantime.
-          const machineProfile = await window.hermesDesktop?.getMachineProfile?.().catch(() => null)
+          const machineProfile = await window.moorDesktop?.getMachineProfile?.().catch(() => null)
 
           if (!cancelled && !userLocaleRef.current) {
             setLocaleState(resolveInitialLocale(requestedRef.current, machineProfile?.locale))

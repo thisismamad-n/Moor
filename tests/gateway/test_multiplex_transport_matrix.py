@@ -203,13 +203,13 @@ async def test_secondary_bot_route_runs_in_the_routed_runtime_scope(mux):
     does: that runtime's authority admits the turn, so a later completion wake finds the committed
     turn on the same ledger (#139726). The bot's own traffic keeps the bot profile's scope."""
     from gateway.platforms.event import MessageEvent
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     r = mux.runner
     scopes = []
 
     async def _handle_message(event):
-        scopes.append(get_hermes_home())
+        scopes.append(get_moor_home())
 
     r._handle_message = _handle_message
     handler = r._make_profile_message_handler("team_b")

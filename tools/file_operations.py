@@ -149,9 +149,9 @@ NOT_REGULAR_SENTINEL = "__moor_not_regular__"
 # signal that ``_probe_regular_file`` carries in ``exit 1`` travels in-band.
 MISSING_SENTINEL = "__moor_missing__"
 
-_READ_SENTINEL_PREFIX = "__HERMES_RF_"
-_WRITE_SENTINEL_PREFIX = "__HERMES_WF_"
-_BYTES_SENTINEL_PREFIX = "__HERMES_RB_"
+_READ_SENTINEL_PREFIX = "__MOOR_RF_"
+_WRITE_SENTINEL_PREFIX = "__MOOR_WF_"
+_BYTES_SENTINEL_PREFIX = "__MOOR_RB_"
 
 
 def _new_sentinel(prefix: str) -> str:
@@ -913,8 +913,8 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
         """Whether ``read_file`` and ``search_files`` may bypass the shell: only POSIX + a backend whose
         files are the host's (``uses_host_filesystem``: the file is on this host, path already native;
         Windows keeps the shell path since file_operations holds Git-Bash-style paths there).
-        ``HERMES_NATIVE_FILE_READ=0`` turns the fast path off."""
-        flag = os.environ.get("HERMES_NATIVE_FILE_READ", "1").strip().lower()
+        ``MOOR_NATIVE_FILE_READ=0`` turns the fast path off."""
+        flag = os.environ.get("MOOR_NATIVE_FILE_READ", "1").strip().lower()
         if flag in ("0", "false", "no", "off"):
             return False
         # Same "are these the host's files" test the LSP path uses; an attribute read
@@ -1266,7 +1266,7 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
         data, failed = self._read_exact_bytes(path)
         if data is None:
             return ReadResult(error=f"Failed to read file: {failed.stdout}")
-        # V4A writes this back, so no display cleanup (nothing has emitted the __HERMES_FENCE_ wrapper it
+        # V4A writes this back, so no display cleanup (nothing has emitted the __MOOR_FENCE_ wrapper it
         # targets since d684d7ee7e; it can only eat the file's own escape bytes), and surrogateescape
         # so write_file's encode restores any byte past the sample that UTF-8 cannot decode (#79178).
         # Strip a leading BOM (a phantom U+FEFF defeats an exact first-line match);

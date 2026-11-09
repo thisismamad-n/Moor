@@ -8,36 +8,36 @@ from fastapi import FastAPI
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from hermes_cli import web_host_terminal, web_server, web_server_chat
-from hermes_cli.web_routers.webapp import router
-from hermes_cli.web_session_sockets import HOST_TERMINAL_SOCKET
+from moor_cli import web_host_terminal, web_server, web_server_chat
+from moor_cli.web_routers.webapp import router
+from moor_cli.web_session_sockets import HOST_TERMINAL_SOCKET
 from tests.waiting import async_wait_until, wait_until
 
 
 @pytest.fixture
 def host_app(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     (home / "config.yaml").write_text("{}", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(web_server.app.state, "ui_surface", "webapp", raising=False)
     monkeypatch.setattr(web_server.app.state, "bound_host", "localhost", raising=False)
     monkeypatch.setattr(web_server.app.state, "auth_required", False, raising=False)
     # Do not run login scripts from the real user's shell.
-    from hermes_cli import web_host_terminal
+    from moor_cli import web_host_terminal
     monkeypatch.setattr(web_host_terminal, "shell_spec", lambda: (["/bin/sh", "-i"], "sh"))
     app = FastAPI()
     app.include_router(router)
-    from hermes_cli.web_host_terminal_sessions import host_terminal_lifespan
+    from moor_cli.web_host_terminal_sessions import host_terminal_lifespan
     app.router.lifespan_context = host_terminal_lifespan
     yield app
 
 
 def url(extra=""):
     """A host-terminal URL with a fresh terminal ticket minted with this process's session token."""
-    from hermes_cli.web_routers.webapp import SESSION_TOKEN_OWNER, mint_socket_ticket
+    from moor_cli.web_routers.webapp import SESSION_TOKEN_OWNER, mint_socket_ticket
     ticket = mint_socket_ticket(SESSION_TOKEN_OWNER, HOST_TERMINAL_SOCKET, session_token=web_server._SESSION_TOKEN)
     return f"ws://localhost/api/host-terminal?ticket={ticket}{extra}"
 
@@ -71,11 +71,11 @@ def test_shell_scopes_passthrough_after_eager_activation(
     host_app, tmp_path, monkeypatch, named_launch,
 ):
     from agent import secret_scope
-    from hermes_constants import get_hermes_home_override
+    from moor_constants import get_moor_home_override
     from tools.terminal_scope import get_terminal_scope
     from tui_gateway import launch_profile_policy
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     launch = root / "profiles" / "launch" if named_launch else root
     other = root / "profiles" / "other"
     passthrough = "WEBAPP_TEST_TOKEN"
@@ -90,7 +90,7 @@ def test_shell_scopes_passthrough_after_eager_activation(
     (other / ".env").write_text(
         f"{passthrough}=other-value\n{other_only}=other-only\n", encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.setenv(passthrough, "launch-value")
     monkeypatch.setenv(launch_only, "launch-only")
     monkeypatch.delenv(other_only, raising=False)
@@ -119,7 +119,7 @@ def test_shell_scopes_passthrough_after_eager_activation(
                 assert b"SCOPE=" + expected in output
                 assert b"ambient-poison" not in output
             assert secret_scope.current_secret_scope() is None
-            assert get_hermes_home_override() is None
+            assert get_moor_home_override() is None
             assert get_terminal_scope() is None
     # The fix must bind the caller, not disable the process-wide fail-closed guard.
     with pytest.raises(secret_scope.UnscopedSecretError):
@@ -322,14 +322,14 @@ def rejection(client, request, expected):
 
 def ticket_url(user="owner", extra=""):
     """A host-terminal URL with a fresh terminal ticket for a signed-in *user*."""
-    from hermes_cli.web_routers.webapp import mint_socket_ticket
+    from moor_cli.web_routers.webapp import mint_socket_ticket
     ticket = mint_socket_ticket({"user_id": user, "provider": "test-provider"}, HOST_TERMINAL_SOCKET)
     return f"ws://localhost/api/host-terminal?ticket={ticket}{extra}"
 
 
 def test_identity_profile_deletion_and_auth_gate(host_app, fake_bridges, tmp_path, monkeypatch):
-    from hermes_constants import mark_named_profile_deleted
-    home = tmp_path / ".hermes"
+    from moor_constants import mark_named_profile_deleted
+    home = tmp_path / ".moor"
     for name in ("alpha", "beta"):
         profile = home / "profiles" / name
         profile.mkdir(parents=True)
@@ -359,7 +359,7 @@ def test_identity_profile_deletion_and_auth_gate(host_app, fake_bridges, tmp_pat
 def test_real_profile_a_b_a_and_process_exit_never_respawns(host_app, tmp_path):
     homes = {}
     for name in ("alpha", "beta"):
-        homes[name] = tmp_path / ".hermes" / "profiles" / name
+        homes[name] = tmp_path / ".moor" / "profiles" / name
         homes[name].mkdir(parents=True)
         (homes[name] / "config.yaml").write_text("{}", encoding="utf-8")
     with TestClient(host_app) as client:
@@ -370,7 +370,7 @@ def test_real_profile_a_b_a_and_process_exit_never_respawns(host_app, tmp_path):
                 extra += "&attach=" + tokens[name]
             with client.websocket_connect(url(extra)) as ws:
                 tokens[name] = metadata(ws)["terminalId"]
-                ws.send_bytes(b"printf 'HO%s=%s\\n' ME \"$HERMES_HOME\"\n")
+                ws.send_bytes(b"printf 'HO%s=%s\\n' ME \"$MOOR_HOME\"\n")
                 assert b"HOME=" + str(homes[name]).encode() in output_until(ws, b"HOME=" + str(homes[name]).encode())
         token = tokens["alpha"]
         with client.websocket_connect(url("&profile=alpha&attach=" + token)) as ws:
@@ -390,7 +390,7 @@ def test_a_shell_that_exits_while_detached_closes_the_redial_as_an_exit(host_app
     """A tab that redials after its shell exited (``exit`` while the tab was away) is told the
     shell exited, as an attached tab is, so it closes instead of offering a new shell. That holds
     before the reaper takes the dead shell and after."""
-    from hermes_cli import web_host_terminal_sessions
+    from moor_cli import web_host_terminal_sessions
     if not reaped:
         async def no_reaper(_registry, *, interval):
             await asyncio.Event().wait()
@@ -422,7 +422,7 @@ def test_real_shell_rejects_input_after_profile_deletion(host_app, tmp_path):
     import subprocess
     import sys
 
-    profile = tmp_path / ".hermes" / "profiles" / "alpha"
+    profile = tmp_path / ".moor" / "profiles" / "alpha"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}", encoding="utf-8")
     before, after = tmp_path / "before", tmp_path / "after"
@@ -437,7 +437,7 @@ def test_real_shell_rejects_input_after_profile_deletion(host_app, tmp_path):
             # A different process cannot notify the serving process's registry.
             subprocess.run([
                 sys.executable, "-c",
-                "import sys; from hermes_constants import mark_named_profile_deleted; "
+                "import sys; from moor_constants import mark_named_profile_deleted; "
                 "mark_named_profile_deleted(sys.argv[1])",
                 str(profile),
             ], env={**os.environ, "HOME": str(tmp_path)}, check=True, timeout=10)
@@ -498,10 +498,10 @@ def test_ownership_checks_never_block_the_event_loop(host_app, fake_bridges, tmp
     every socket the process serves. Create, reattach, input and the reaper all
     check off-loop, and a deleted profile still loses its attached shell."""
     import asyncio
-    from hermes_cli.web_host_terminal_sessions import HostOwner
-    from hermes_constants import mark_named_profile_deleted
+    from moor_cli.web_host_terminal_sessions import HostOwner
+    from moor_constants import mark_named_profile_deleted
 
-    profile = tmp_path / ".hermes" / "profiles" / "alpha"
+    profile = tmp_path / ".moor" / "profiles" / "alpha"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}", encoding="utf-8")
     checks = []
@@ -540,7 +540,7 @@ def test_input_frames_that_arrive_together_share_ownership_checks(tmp_path, monk
     """A paste lands as many frames. Frames that arrived together share off-loop
     fenced writes, every byte lands in order, and a deleted home receives none."""
     from types import SimpleNamespace
-    from hermes_cli.web_host_terminal_sessions import HostOwner, _pump_input
+    from moor_cli.web_host_terminal_sessions import HostOwner, _pump_input
 
     frames = [f"line {i}\n".encode() for i in range(40)]
     checks = []
@@ -594,7 +594,7 @@ def test_cross_process_deletion_closes_attached_shell(host_app, fake_bridges, tm
     import os
     import subprocess
     import sys
-    profile = tmp_path / ".hermes" / "profiles" / "alpha"
+    profile = tmp_path / ".moor" / "profiles" / "alpha"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}", encoding="utf-8")
     with TestClient(host_app) as client:
@@ -604,7 +604,7 @@ def test_cross_process_deletion_closes_attached_shell(host_app, fake_bridges, tm
             # A different process cannot notify the serving process's registry.
             subprocess.run([
                 sys.executable, "-c",
-                "import sys; from hermes_constants import mark_named_profile_deleted; "
+                "import sys; from moor_constants import mark_named_profile_deleted; "
                 "mark_named_profile_deleted(sys.argv[1])",
                 str(profile),
             ], env={**os.environ, "HOME": str(tmp_path)}, check=True, timeout=5)
@@ -617,7 +617,7 @@ def test_cross_process_deletion_closes_attached_shell(host_app, fake_bridges, tm
 @pytest.mark.parametrize("failure", ["metadata", "replay"])
 def test_route_lost_initial_delivery_detaches_and_expires(host_app, fake_bridges, monkeypatch, failure):
     from starlette.websockets import WebSocket
-    from hermes_cli.pty_session import PtySession
+    from moor_cli.pty_session import PtySession
     original_start = PtySession.start
 
     async def start(session):

@@ -77,7 +77,7 @@ last event of that turn. Desktop translates both paths into its existing
 `pending_submissions` queue store.
 
 A turn that was `started` when its owning gateway died is recovered by the next owner
-as `unknown`: Hermes cannot prove which side effects happened, so it neither replays
+as `unknown`: Moor cannot prove which side effects happened, so it neither replays
 the input nor lets the queued turns behind it run. `prompt.resolve_unknown`
 (`session:control`, params `session_id`, `admission_id`, `execution_generation`)
 acknowledges the loss: the row settles as `interrupted`, the session FIFO resumes and
@@ -86,7 +86,7 @@ row (visible in the resume/`session.info` projection), so a stale or already-res
 row is refused with `stale_generation`. Desktop shows such a row in the queue panel as
 "Turn lost during restart" with a **Discard** button; the gateway CLI exposes it as
 `/discard <admission_id>`. The lost input stays in the transcript for the user to resend; the
-discard closes it with a Hermes notice (like a failed turn), so it is never merged into the
+discard closes it with a Moor notice (like a failed turn), so it is never merged into the
 follower's model request.
 
 A messaging user (Telegram, Discord, ...) whose session is paused this way is told once per
@@ -100,7 +100,7 @@ on the old one); the operator can alternatively resolve the unknown row from Des
 
 `prompt.submit` accepts an optional `attachments: [{path, mime}]` list beside `text`.
 The client stages image bytes in the profile image cache (`cache/images/` under the
-served `HERMES_HOME`, the same place messaging adapters stage downloads); paths must be
+served `MOOR_HOME`, the same place messaging adapters stage downloads); paths must be
 regular files directly in that directory, `mime` must be an image type
 (`image/png`, `image/jpeg`, `image/gif`, `image/webp`), at most 10 per submission, each
 under `gateway.max_inbound_media_bytes`. The authority copies the bytes into its
@@ -251,7 +251,7 @@ The authoritative daemon accepts a **fresh, one-use HTTP grant per request** fro
 its same-user private control socket. Send `session-ticket` with exactly
 `profile_id` (the canonical served primary home), `instance_id` (the ready daemon's
 boot ID), and `purpose: "native-http"`. The returned ticket expires after 30 seconds
-and carries only `http:owner`; send it in `X-Hermes-Gateway-Ticket` from the native
+and carries only `http:owner`; send it in `X-moor-gateway-Ticket` from the native
 main process. Never place it in a URL, cookie, public descriptor, renderer config,
 or log, and never obtain a dashboard token by scraping the public page.
 
@@ -341,12 +341,12 @@ including top-level one-shot launches. It does not become a process-wide option.
 
 ## Optional service installation
 
-A running gateway and an installed OS service are different things. `hermes gateway run`
+A running gateway and an installed OS service are different things. `moor gateway run`
 works without a service, including with no messaging platforms configured.
 
-`hermes setup`, quick setup, and `hermes gateway setup` ask interactive users once:
+`moor setup`, quick setup, and `moor gateway setup` ask interactive users once:
 
-> Install the gateway service so Hermes starts automatically at login and keeps scheduled jobs and messaging available?
+> Install the gateway service so Moor starts automatically at login and keeps scheduled jobs and messaging available?
 
 The profile's `gateway.service_install_choice` stores `null`, `install`, or `decline`.
 An unset value is not permission to install. Declining records `decline` without creating,
@@ -357,18 +357,18 @@ run while the host is off.
 
 Noninteractive setup and imports do not install a missing service, even when the imported
 config says `install`. Existing installed services remain authoritative and can be started
-regardless of the saved preference. To opt in explicitly later, run `hermes gateway install`;
+regardless of the saved preference. To opt in explicitly later, run `moor gateway install`;
 the choice is recorded only after successful installation. To be asked again during setup,
-reset the choice with `hermes config set gateway.service_install_choice null`.
+reset the choice with `moor config set gateway.service_install_choice null`.
 
-Setup orchestration lives in `hermes_cli/gateway_setup_service.py`. Its
+Setup orchestration lives in `moor_cli/gateway_setup_service.py`. Its
 `ensure_gateway_service` helper is not a general runtime discovery or auto-start API:
 ordinary calls never reinstall a missing service based only on stored preference.
 
-## `hermes gateway ensure`
+## `moor gateway ensure`
 
-Clients (Desktop, `hermes chat`, the TUI) discover or start the profile's session
-runtime with `hermes gateway ensure --json --timeout 60`; the summary is in the
+Clients (Desktop, `moor chat`, the TUI) discover or start the profile's session
+runtime with `moor gateway ensure --json --timeout 60`; the summary is in the
 [CLI reference](../reference/cli-commands.md#local-runtime-discovery-and-startup).
 
 The timeout is a finite, positive total deadline in seconds (default `60`, enough for a
@@ -386,7 +386,7 @@ loaded launchd job rather than assuming the on-disk plist is current, and Window
 queries the actual task XML, principal, and installed launcher.
 
 - `profile_mismatch`: the installed service selects a different home or profile.
-  Inspect the selected service's `HERMES_HOME` and command-line profile selector;
+  Inspect the selected service's `MOOR_HOME` and command-line profile selector;
   use the matching profile or explicitly repair the service configuration.
 - `service_account_mismatch`: the service belongs to another account. Run the
   client as that account, or explicitly configure a service for the intended user.
@@ -406,7 +406,7 @@ remain eligible; a successful start request still must pass live readiness check
 On POSIX, local bootstrap checks the profile directory before it trusts the
 control socket inside it. Newly reserved homes are created with mode `0700`;
 existing permissions are never changed by `ensure`. The home keeps the operator's
-mode (a symlinked `~/.hermes`, `HERMES_HOME_MODE` `0701`/`0750`, or a `0755`
+mode (a symlinked `~/.moor`, `MOOR_HOME_MODE` `0701`/`0750`, or a `0755`
 home all work): read and search bits grant nothing against the owner-only (`0600`)
 socket. Only write access another user could use to swap the socket is refused
 with `inaccessible / unsafe_control_permissions`: world-write always, and
@@ -687,7 +687,7 @@ The gateway runs as a long-lived process, managed via:
 
 `terminal(background=true, notify_on_complete=true)` starts a gateway watcher that detects
 completion and triggers a new agent turn. Verbosity: `display.background_process_notifications`
-(or `HERMES_BACKGROUND_NOTIFICATIONS`): `concise` (default; one line, failures append an output
+(or `MOOR_BACKGROUND_NOTIFICATIONS`): `concise` (default; one line, failures append an output
 tail), `all` (running updates + final raw output), `result` (final raw output only), `error`
 (final raw output only on non-zero exit), `off`.
 
@@ -724,14 +724,14 @@ briefs are labelled user turns appended at a turn boundary, preserving role alte
 
 ## `/login` (off-turn, paired DM only)
 
-`/login` is registered in `hermes_cli/commands.py` with `busy_policy="dispatch"` and
+`/login` is registered in `moor_cli/commands.py` with `busy_policy="dispatch"` and
 `desktop="settings"`, listed in `run_busy.py::_PLAIN_COMMANDS`, and handled by
 `GatewayLoginCommandsMixin` (`gateway/slash_commands_login.py`). It refuses outside a paired DM:
 `chat_type in {"dm","private"}`, a truthy `chat_id`, and a platform whose `"dm"` really is a paired
 conversation — ntfy, raft and a2a all report `chat_type="dm"` for a broadcast topic, a channel and
 an agent peer, so posting a sign-in link and code there would publish them.
 
-**It binds the whole install.** The sign-in writes the singleton `providers.nous`, so whoever
+**It binds the whole install.** The sign-in writes the singleton `providers.moor`, so whoever
 approves the code owns this gateway's inference and connectors for every chat it serves. Slash
 gating is opt-in (`gateway/slash_access.py`): with no `allow_admin_from` set, every user allowed to
 DM the bot can run it. Operators of shared gateways must set it.
@@ -747,7 +747,7 @@ token poll checks on a ≤1 s tick and once more before the save. A cancelled at
 A shutdown-cancelled attempt pushes nothing — the task is dying and its adapters may already be
 gone. The completion copy carries what the free tier's handoff moved.
 
-On completion the handler **evicts** every cached agent still on `nous/welcome` and clears any
+On completion the handler **evicts** every cached agent still on `moor/welcome` and clears any
 session model override pinned to it. It does not switch agents in place and does not write a model
 override: `settle_after_upgrade` already moved `model.default`/`model.base_url` in the config, every
 turn re-resolves the config and the credentials, and `_agent_config_signature` already forces a

@@ -32,17 +32,17 @@ pub fn moor_home() -> PathBuf {
 }
 
 /// Root of the profile tree that holds this process's home. Mirrors
-/// `hermes_constants.get_default_hermes_root()`: a HERMES_HOME under the
+/// `moor_constants.get_default_moor_root()`: a MOOR_HOME under the
 /// platform default resolves to the default; otherwise a
-/// `<root>/profiles/<name>` home resolves to `<root>`; any other HERMES_HOME
+/// `<root>/profiles/<name>` home resolves to `<root>`; any other MOOR_HOME
 /// is its own root; unset means the platform default. Host-wide state (the
 /// update marker) must live here, never in a per-profile home.
-pub fn hermes_root() -> PathBuf {
-    let env_home = std::env::var("HERMES_HOME").ok();
-    hermes_root_from(env_home.as_deref(), &platform_default_home())
+pub fn moor_root() -> PathBuf {
+    let env_home = std::env::var("MOOR_HOME").ok();
+    moor_root_from(env_home.as_deref(), &platform_default_home())
 }
 
-fn hermes_root_from(env_home: Option<&str>, native_home: &Path) -> PathBuf {
+fn moor_root_from(env_home: Option<&str>, native_home: &Path) -> PathBuf {
     let Some(env_home) = env_home.map(str::trim).filter(|s| !s.is_empty()) else {
         return native_home.to_path_buf();
     };
@@ -62,31 +62,31 @@ fn hermes_root_from(env_home: Option<&str>, native_home: &Path) -> PathBuf {
 }
 
 fn platform_default_home() -> PathBuf {
-    platform_default_home_with(&std::env::var("HERMES_DATA_DIR_SUFFIX").unwrap_or_default())
+    platform_default_home_with(&std::env::var("MOOR_DATA_DIR_SUFFIX").unwrap_or_default())
 }
 
-/// `suffix` is HERMES_DATA_DIR_SUFFIX, appended literally to the leaf exactly as
-/// `hermes_constants._get_platform_default_hermes_home()` and the desktop's
-/// `platformDefaultHermesHome()` do: channel builds keep their own data dir,
+/// `suffix` is MOOR_DATA_DIR_SUFFIX, appended literally to the leaf exactly as
+/// `moor_constants._get_platform_default_moor_home()` and the desktop's
+/// `platformDefaultMoorHome()` do: channel builds keep their own data dir,
 /// and with it their own update marker.
 fn platform_default_home_with(suffix: &str) -> PathBuf {
     #[cfg(target_os = "windows")]
     {
         // %LOCALAPPDATA%\moor — matches scripts/install.ps1's $MoorHome.
         if let Some(local_app_data) = dirs::data_local_dir() {
-            return local_app_data.join(format!("hermes{suffix}"));
+            return local_app_data.join(format!("moor{suffix}"));
         }
     }
 
     // macOS + Linux + fallback: ~/.moor (matches Python get_moor_home(),
     // install.sh, and the Electron desktop's resolveMoorHome()).
     if let Some(home) = dirs::home_dir() {
-        return home.join(format!(".hermes{suffix}"));
+        return home.join(format!(".moor{suffix}"));
     }
 
     // Last resort — current dir, almost certainly wrong but at least
     // doesn't panic.
-    PathBuf::from(format!(".hermes{suffix}"))
+    PathBuf::from(format!(".moor{suffix}"))
 }
 
 pub fn log_dir() -> PathBuf {
@@ -124,12 +124,12 @@ pub fn installer_dest() -> PathBuf {
 /// mid-update re-locks the venv shim and triggers `force_kill_other_moor`,
 /// which then kills that legitimate backend in a respawn loop (#50238).
 ///
-/// Lives directly under the profile-tree ROOT (`hermes_root`), never a
+/// Lives directly under the profile-tree ROOT (`moor_root`), never a
 /// `profiles/<name>` home: it is one host-wide lock shared with
-/// `hermes_cli/update_lock.py` and the Electron gate, so a profile-scoped
-/// HERMES_HOME must not split it into a second, unguarded file.
+/// `moor_cli/update_lock.py` and the Electron gate, so a profile-scoped
+/// MOOR_HOME must not split it into a second, unguarded file.
 pub fn update_in_progress_marker() -> PathBuf {
-    hermes_root().join(".hermes-update-in-progress")
+    moor_root().join(".moor-update-in-progress")
 }
 
 /// Copy the currently-running installer binary to `installer_dest()` so it's
@@ -263,23 +263,23 @@ mod tests {
 
     #[test]
     fn profile_home_resolves_to_its_tree_root() {
-        let native = Path::new("/nonexistent-native/.hermes");
+        let native = Path::new("/nonexistent-native/.moor");
         assert_eq!(
-            hermes_root_from(Some("/srv/hermes-root/profiles/work"), native),
-            PathBuf::from("/srv/hermes-root"),
+            moor_root_from(Some("/srv/moor-root/profiles/work"), native),
+            PathBuf::from("/srv/moor-root"),
             "a profiles/<name> home must share the root's single update marker"
         );
         assert_eq!(
-            hermes_root_from(Some("/srv/hermes-root"), native),
-            PathBuf::from("/srv/hermes-root")
+            moor_root_from(Some("/srv/moor-root"), native),
+            PathBuf::from("/srv/moor-root")
         );
         assert_eq!(
-            hermes_root_from(Some("/nonexistent-native/.hermes/profiles/work"), native),
+            moor_root_from(Some("/nonexistent-native/.moor/profiles/work"), native),
             native.to_path_buf(),
             "a home under the platform default resolves to the default"
         );
-        assert_eq!(hermes_root_from(None, native), native.to_path_buf());
-        assert_eq!(hermes_root_from(Some("  "), native), native.to_path_buf());
+        assert_eq!(moor_root_from(None, native), native.to_path_buf());
+        assert_eq!(moor_root_from(Some("  "), native), native.to_path_buf());
     }
 
     #[test]
@@ -295,6 +295,6 @@ mod tests {
             ),
             "the suffix is appended to the leaf, as Python and the desktop do"
         );
-        assert_eq!(hermes_root_from(None, &channel), channel);
+        assert_eq!(moor_root_from(None, &channel), channel);
     }
 }

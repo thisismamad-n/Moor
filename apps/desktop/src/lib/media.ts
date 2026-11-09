@@ -1,7 +1,7 @@
-import { fileUrlToNativePath, LOCAL_CONNECTION_ID } from '@hermes/shared'
+import { fileUrlToNativePath, LOCAL_CONNECTION_ID } from '@moor/shared'
 
-import { capabilityScoped, hermesApi, type OwnerScope, sessionFileOwnerScope } from '@/api/client'
-import type { HermesConnection } from '@/global'
+import { capabilityScoped, moorApi, type OwnerScope, sessionFileOwnerScope } from '@/api/client'
+import type { MoorConnection } from '@/global'
 import { translateNow } from '@/i18n'
 import { desktopFsCacheKey, isReadFileErrorResult, readDesktopFileDataUrl } from '@/lib/desktop-fs'
 import { hostHas } from '@/lib/host-capabilities'
@@ -123,9 +123,9 @@ export async function resolveMediaDisplaySrc(path: string, owner?: OwnerScope): 
   if (
     owner?.connectionId === LOCAL_CONNECTION_ID &&
     hostHas('nativeHostFiles') &&
-    window.hermesDesktop?.readFileDataUrl
+    window.moorDesktop?.readFileDataUrl
   ) {
-    const dataUrl = await window.hermesDesktop.readFileDataUrl(filePathFromMediaPath(path))
+    const dataUrl = await window.moorDesktop.readFileDataUrl(filePathFromMediaPath(path))
 
     if (isReadFileErrorResult(dataUrl)) {
       throw new Error(dataUrl.message || `Media file read failed: ${dataUrl.error}`)
@@ -154,7 +154,7 @@ export async function resolveMediaDisplaySrc(path: string, owner?: OwnerScope): 
     return mediaExternalUrl(path)
   }
 
-  const dataUrl = await window.hermesDesktop.readFileDataUrl(filePathFromMediaPath(path))
+  const dataUrl = await window.moorDesktop.readFileDataUrl(filePathFromMediaPath(path))
 
   if (isReadFileErrorResult(dataUrl)) {
     throw new Error(dataUrl.message || `Media file read failed: ${dataUrl.error}`)
@@ -244,8 +244,8 @@ export async function resolveMediaPlaybackSrc(path: string, owner?: OwnerScope, 
     return path
   }
 
-  if (window.hermesDesktop && ['audio', 'video'].includes(mediaKind(path))) {
-    if (window.hermesDesktop.getGatewayFileStreamUrl) {
+  if (window.moorDesktop && ['audio', 'video'].includes(mediaKind(path))) {
+    if (window.moorDesktop.getGatewayFileStreamUrl) {
       const conn = $connection.get()
       // A Docker agent's /workspace is its session's own sandbox. The session id goes only with
       // the profile that owns it; with no known owner the clip names no session.
@@ -253,7 +253,7 @@ export async function resolveMediaPlaybackSrc(path: string, owner?: OwnerScope, 
       const via = session ?? owner
 
       // A tile keeps its owner's profile for every ticket, renewals included, as its image reads do.
-      return window.hermesDesktop.getGatewayFileStreamUrl({
+      return window.moorDesktop.getGatewayFileStreamUrl({
         connectionId: via?.connectionId || conn?.connectionId,
         // The gateway OS owns file-URI conversion, including drive letters and UNC hosts.
         path,
@@ -373,7 +373,7 @@ export async function gatewayImageProxyDataUrl(url: string, owner?: OwnerScope):
   }
 
   try {
-    const result = await hermesApi<string | { dataUrl?: string }>({
+    const result = await moorApi<string | { dataUrl?: string }>({
       path: `/api/media/proxy?url=${encodeURIComponent(url)}`,
       ...(owner?.connectionId ? { connectionId: owner.connectionId } : {}),
       ...(owner?.profile ? { profile: owner.profile } : {})

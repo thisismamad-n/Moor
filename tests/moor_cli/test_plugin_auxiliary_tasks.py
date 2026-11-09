@@ -103,12 +103,12 @@ def test_reset_aux_to_auto_resets_plugin_tasks(tmp_path, monkeypatch, patched_ma
 
 @pytest.fixture
 def aux_home(tmp_path, monkeypatch):
-    """Empty HERMES_HOME so DEFAULT_CONFIG is the only source of built-in aux values."""
+    """Empty MOOR_HOME so DEFAULT_CONFIG is the only source of built-in aux values."""
     from pathlib import Path
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     return home
 
@@ -119,7 +119,7 @@ def _register(patched_manager, key, **kwargs):
 
 
 def _set_aux(**blocks):
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
 
     cfg = load_config()
     cfg.setdefault("auxiliary", {}).update(blocks)
@@ -161,7 +161,7 @@ def test_bad_inherit_from_warns_and_registers_without_inheritance(aux_home, patc
 
     from agent.auxiliary_client import _get_auxiliary_task_config as resolve
 
-    with caplog.at_level(logging.WARNING, logger="hermes_cli.plugins"):
+    with caplog.at_level(logging.WARNING, logger="moor_cli.plugins"):
         _register(patched_manager, "plug_aux", inherit_from=bad)
     assert "ignoring inherit_from" in caplog.text
     assert patched_manager._aux_tasks["plug_aux"]["inherit_from"] is None

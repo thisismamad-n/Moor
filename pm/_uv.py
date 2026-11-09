@@ -15,7 +15,7 @@ def _toolchain(*, realize: bool = True, explicit: bool = False) -> tuple[Path, P
     A read-only probe never installs. A sealed Windows payload builds on a verified writable
     copy of its Python: uv starts a venv's ``Scripts\\python.exe`` to query it, and that
     redirector runs outside the package, so its target must too. A redirector naming the
-    packaged interpreter dies with exit 101 (#135236). Hermes itself still enters those venvs
+    packaged interpreter dies with exit 101 (#135236). Moor itself still enters those venvs
     on the packaged interpreter (``pm.environments.venv_command``).
     """
     from pm.install import _installed_location, _lockfile, ensure, sealed

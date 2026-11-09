@@ -1,4 +1,4 @@
-import type { ModelOptionProvider } from '@hermes/shared/gateway-events'
+import type { ModelOptionProvider } from '@moor/shared/gateway-events'
 import {
   blockingGauge,
   formatResetsIn,
@@ -6,7 +6,7 @@ import {
   planBlocks,
   planLimitLine,
   usageTag
-} from '@hermes/shared/plan-usage'
+} from '@moor/shared/plan-usage'
 import { describe, expect, it } from 'vitest'
 
 import { usageLimitDialog } from './billingDialog.js'
@@ -128,7 +128,7 @@ describe('usageLimitDialog', () => {
     limit_name: 'daily',
     message: "You've hit your daily limit · resets 15:56",
     scope: 'all',
-    suggestions: [{ label: 'Model Free', model: 'example/model-free:free', note: 'free', provider: 'nous' }]
+    suggestions: [{ label: 'Model Free', model: 'example/model-free:free', note: 'free', provider: 'moor' }]
   }
 
   it('offers the recommended model for this session and names the credits way on', () => {
@@ -136,7 +136,7 @@ describe('usageLimitDialog', () => {
 
     expect(dialog.title).toBe('Limit reached')
     expect(dialog.confirmLabel).toBe('Switch to Model Free (free)')
-    expect(dialog.switchValue).toBe('example/model-free:free --provider nous --session')
+    expect(dialog.switchValue).toBe('example/model-free:free --provider moor --session')
     expect(dialog.detail).toBe("You've hit your daily limit · resets 15:56\nOr add credits with /topup.")
   })
 

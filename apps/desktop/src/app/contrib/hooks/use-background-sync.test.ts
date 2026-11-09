@@ -52,7 +52,7 @@ vi.mock('@/store/projects', async importOriginal => ({
   refreshProjects: vi.fn(async () => undefined)
 }))
 
-const { getLatestSessionMessages, getOlderSessionMessages } = await import('@/hermes')
+const { getLatestSessionMessages, getOlderSessionMessages } = await import('@/moor')
 const { refreshProjectTree, refreshProjects } = await import('@/store/projects')
 
 const ACTIVE_RUNTIME_ID = 'runtime-active'

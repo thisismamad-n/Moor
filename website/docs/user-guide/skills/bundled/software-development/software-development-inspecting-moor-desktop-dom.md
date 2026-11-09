@@ -14,8 +14,8 @@ Read the live Moor desktop DOM/CSS over CDP.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/software-development/inspecting-hermes-desktop-dom` |
-| Path | `optional-skills/software-development/inspecting-hermes-desktop-dom` |
+| Source | Optional — install with `moor skills install official/software-development/inspecting-moor-desktop-dom` |
+| Path | `optional-skills/software-development/inspecting-moor-desktop-dom` |
 | Version | `1.0.0` |
 | Author | Moor Agent |
 | License | MIT |

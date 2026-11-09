@@ -16,7 +16,7 @@ Windows post-update path already uses for exactly this case.
 
 import pytest
 
-from hermes_cli import gateway
+from moor_cli import gateway
 
 
 _ARGV = ["python", "-m", "moor_cli.main", "gateway", "run"]

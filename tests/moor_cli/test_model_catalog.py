@@ -132,7 +132,7 @@ class TestFetchFailure:
     def test_offline_cold_cache_does_not_refetch_on_every_call(self, isolated_home, monkeypatch):
         """Offline with no cached manifest: one failed fetch, then later calls answer at once
         until the retry window ends; an explicit refresh still tries the network."""
-        from hermes_cli import model_catalog
+        from moor_cli import model_catalog
         calls: list[str] = []
         failed_at = time.monotonic()
 
@@ -158,8 +158,8 @@ class TestFetchFailure:
     def test_model_refresh_retries_a_backed_off_catalog(self, isolated_home):
         """``/model --refresh`` (``clear_provider_models_cache``) must show a catalog that came back
         inside the backoff window, override URL included."""
-        from hermes_cli import model_catalog
-        from hermes_cli.models import clear_provider_models_cache
+        from moor_cli import model_catalog
+        from moor_cli.models import clear_provider_models_cache
         override = _valid_manifest()
         override["providers"]["openrouter"]["models"] = [{"id": "vendor/override-model", "description": ""}]
         cfg = {"enabled": True, "url": "http://master", "ttl_hours": 24.0,
@@ -178,8 +178,8 @@ class TestFetchFailure:
     def test_override_failure_backs_off_per_profile(self, isolated_home, tmp_path):
         """A multiplexed gateway serves many profiles: one profile's dead override must not
         suppress another profile's request to the same URL."""
-        from hermes_cli import model_catalog
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_cli import model_catalog
+        from moor_constants import reset_moor_home_override, set_moor_home_override
         calls: list[str] = []
         cfg = {"enabled": True, "url": "http://master", "ttl_hours": 24.0,
                "providers": {"openrouter": {"url": "http://override"}}}
@@ -191,24 +191,24 @@ class TestFetchFailure:
         for name in ("alpha", "beta"):
             (tmp_path / name).mkdir()
         with patch.object(model_catalog, "_load_catalog_config", return_value=cfg):
-            token = set_hermes_home_override(str(tmp_path / "alpha"))
+            token = set_moor_home_override(str(tmp_path / "alpha"))
             try:
                 with patch.object(model_catalog, "_fetch_manifest", return_value=None):
                     model_catalog.get_curated_openrouter_models()
             finally:
-                reset_hermes_home_override(token)
-            token = set_hermes_home_override(str(tmp_path / "beta"))
+                reset_moor_home_override(token)
+            token = set_moor_home_override(str(tmp_path / "beta"))
             try:
                 with patch.object(model_catalog, "_fetch_manifest", side_effect=fetch):
                     model_catalog.get_curated_openrouter_models()
             finally:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
         assert "http://override" in calls, "profile beta skipped the override after alpha's failure"
 
     def test_dead_override_on_the_manifest_url_keeps_the_fallback_chain(self, isolated_home):
         """An override pointing at the (dead) main URL must not put the manifest's working
         fallback URL into the override's backoff."""
-        from hermes_cli import model_catalog
+        from moor_cli import model_catalog
         cfg = {"enabled": True, "url": "http://master", "ttl_hours": 24.0,
                "providers": {"openrouter": {"url": "http://master"}}}
         with patch.object(model_catalog, "_load_catalog_config", return_value=cfg), \
@@ -218,7 +218,7 @@ class TestFetchFailure:
         assert models == [(m["id"], m["description"]) for m in _valid_manifest()["providers"]["openrouter"]["models"]]
 
     def test_unreachable_provider_override_is_not_refetched_on_every_call(self, isolated_home):
-        from hermes_cli import model_catalog
+        from moor_cli import model_catalog
         calls: list[str] = []
 
         def fetch(url, timeout):
@@ -364,8 +364,8 @@ class TestDefaultModelFromCache:
     def test_shipped_manifest_labels_the_silent_default(self, isolated_home):
         """Contract with the in-repo manifest: both provider blocks label the
         same default entry the code constant points at."""
-        from hermes_cli import model_catalog
-        from hermes_cli.models import PREFERRED_SILENT_DEFAULT_MODEL
+        from moor_cli import model_catalog
+        from moor_cli.models import PREFERRED_SILENT_DEFAULT_MODEL
 
         repo_root = Path(model_catalog.__file__).resolve().parent.parent
         manifest = json.loads(
@@ -432,7 +432,7 @@ class TestRefreshCadence:
         with patch.object(model_catalog, "_load_catalog_config", return_value={
             "enabled": True, "url": "http://master", "ttl_hours": 1.0, "providers": {},
         }), patch.object(model_catalog, "get_catalog", return_value=_valid_manifest()) as gc, \
-             patch("hermes_cli.models.fetch_openrouter_models") as orm:
+             patch("moor_cli.models.fetch_openrouter_models") as orm:
             assert model_catalog.refresh_catalogs() is True
         gc.assert_called_once_with(force_refresh=True)
         orm.assert_called_once_with(force_refresh=True)
@@ -552,8 +552,8 @@ class TestIntegrationWithModelsModule:
         full_row = _moor(full)
         assert full_row is not None and full_row["models"] == expected
 
-        # The Nous row is already curated, so an int cap never trims it (its free tier sits last).
-        one_row = _nous(one)
+        # The Moor row is already curated, so an int cap never trims it (its free tier sits last).
+        one_row = _moor(one)
         assert one_row is not None and one_row["models"] == expected
 
         zero_row = _moor(zero)
@@ -576,7 +576,7 @@ class TestIntegrationWithModelsModule:
 
 
 class TestSwrRefreshProfileScope:
-    """Two profile homes — A (process default) and B (routed via the HERMES_HOME ContextVar, as
+    """Two profile homes — A (process default) and B (routed via the MOOR_HOME ContextVar, as
     tui_gateway ``_profile_scoped`` does). The off-thread stale-while-revalidate refresh spawned
     under B must write B's cache file, and A's in-flight refresh must not suppress B's."""
 
@@ -598,8 +598,8 @@ class TestSwrRefreshProfileScope:
 
     def test_refresh_under_profile_override_writes_that_profiles_cache(self, isolated_home, tmp_path):
         from agent.secret_scope import set_multiplex_active
-        from hermes_cli import model_catalog
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_cli import model_catalog
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         old = _valid_manifest()
         fresh = {**_valid_manifest(), "updated_at": "2026-05-01T00:00:00Z"}
@@ -616,11 +616,11 @@ class TestSwrRefreshProfileScope:
         try:
             with patch.object(model_catalog, "_load_catalog_config", return_value=self._CFG), \
                  patch.object(model_catalog, "_fetch_manifest_with_fallback", fetch):
-                token = set_hermes_home_override(path_b.parent.parent)
+                token = set_moor_home_override(path_b.parent.parent)
                 try:
                     assert model_catalog.get_catalog() == old  # stale copy served without blocking
                 finally:
-                    reset_hermes_home_override(token)  # the handler returns before the fetch completes
+                    reset_moor_home_override(token)  # the handler returns before the fetch completes
                 release.set()
                 self._join_swr_threads()
         finally:
@@ -631,8 +631,8 @@ class TestSwrRefreshProfileScope:
 
     def test_inflight_refresh_for_one_profile_does_not_suppress_another(self, isolated_home, tmp_path):
         from agent.secret_scope import set_multiplex_active
-        from hermes_cli import model_catalog
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_cli import model_catalog
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         old = _valid_manifest()
         path_a = self._seed_expired(isolated_home, old)
@@ -651,11 +651,11 @@ class TestSwrRefreshProfileScope:
             with patch.object(model_catalog, "_load_catalog_config", return_value=self._CFG), \
                  patch.object(model_catalog, "_fetch_manifest_with_fallback", fetch):
                 model_catalog.get_catalog()  # A's refresh is now in flight (blocked on `release`)
-                token = set_hermes_home_override(path_b.parent.parent)
+                token = set_moor_home_override(path_b.parent.parent)
                 try:
                     model_catalog.get_catalog()  # B must get its own refresh
                 finally:
-                    reset_hermes_home_override(token)
+                    reset_moor_home_override(token)
                 release.set()
                 self._join_swr_threads()
         finally:
@@ -709,12 +709,12 @@ class TestManifestMatchesInRepoLists:
     def test_inclusion_ling_free_is_curated_and_published(self):
         """inclusionai/ling-3.0-flash:free must reach the picker from BOTH sources (#73686).
 
-        The model works when named explicitly via ``hermes config set model.default`` but was
+        The model works when named explicitly via ``moor config set model.default`` but was
         absent from the curated fallback list, so the runtime fetcher's stale-while-revalidate
         and offline floors never offered it in the Desktop model picker. The static list is
         the floor; the published manifest is what fresh installs fetch — both must carry it.
         """
-        from hermes_cli.models_catalog_static import OPENROUTER_MODELS
+        from moor_cli.models_catalog_static import OPENROUTER_MODELS
 
         curated_ids = [mid for mid, _desc in OPENROUTER_MODELS]
         assert "inclusionai/ling-3.0-flash:free" in curated_ids
@@ -730,11 +730,11 @@ class TestManifestMatchesInRepoLists:
             ]
         assert "inclusionai/ling-3.0-flash:free" in manifest_ids
 
-    def test_nous_lists_portal_served_muse_spark_but_not_contributor_twins(self):
+    def test_moor_lists_portal_served_muse_spark_but_not_contributor_twins(self):
         """The Portal serves plain muse-spark 1.2/1.3; only the -contributor twins are OpenRouter-only."""
-        from hermes_cli.models_catalog_static import _PROVIDER_MODELS
+        from moor_cli.models_catalog_static import _PROVIDER_MODELS
 
-        nous = _PROVIDER_MODELS["nous"]
+        moor = _PROVIDER_MODELS["moor"]
         for version in ("1.2", "1.3"):
-            assert f"meta/muse-spark-{version}" in nous
-            assert f"meta/muse-spark-{version}-contributor" not in nous
+            assert f"meta/muse-spark-{version}" in moor
+            assert f"meta/muse-spark-{version}-contributor" not in moor

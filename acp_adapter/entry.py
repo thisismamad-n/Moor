@@ -11,7 +11,7 @@ Usage::
 # IMPORTANT: moor_bootstrap must be the very first import — UTF-8 stdio
 # on Windows.  No-op on POSIX.  See moor_bootstrap.py for full rationale.
 try:
-    import hermes_bootstrap
+    import moor_bootstrap
 except ModuleNotFoundError as exc:
     # Partial ``moor update`` (git-reset landed, ``uv pip install -e .`` did not).
     if exc.name != "moor_bootstrap":
@@ -112,7 +112,7 @@ def _print_version() -> None:
 
 def _run_check() -> None:
     import acp
-    from acp_adapter.server import HermesACPAgent
+    from acp_adapter.server import MoorACPAgent
 
     print("Moor ACP check OK")
 
@@ -199,7 +199,7 @@ def main(argv: list[str] | None = None) -> None:
         _warm_memory_provider_import(logger)
 
     # MCP discovery and execution belong to the gateway daemon; this process is a viewer.
-    agent = HermesACPAgent()
+    agent = MoorACPAgent()
 
     async def serve():
         # MCP and execution belong to the daemon. Close only this viewer, while

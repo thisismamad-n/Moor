@@ -127,7 +127,7 @@ class TestPollUntil:
 class TestResolveTimeout:
     def test_default_wins_when_nothing_configured(self, monkeypatch):
         monkeypatch.setattr("agent.deadline._timeouts_section", dict)
-        monkeypatch.delenv("HERMES_TEST_DEADLINE_X", raising=False)
+        monkeypatch.delenv("MOOR_TEST_DEADLINE_X", raising=False)
         assert (
             resolve_timeout("a.b", default=42.0, env_var="MOOR_TEST_DEADLINE_X")
             == 42.0
@@ -135,7 +135,7 @@ class TestResolveTimeout:
 
     def test_env_var_beats_default(self, monkeypatch):
         monkeypatch.setattr("agent.deadline._timeouts_section", dict)
-        monkeypatch.setenv("HERMES_TEST_DEADLINE_X", "17.5")
+        monkeypatch.setenv("MOOR_TEST_DEADLINE_X", "17.5")
         assert (
             resolve_timeout("a.b", default=42.0, env_var="MOOR_TEST_DEADLINE_X")
             == 17.5
@@ -174,7 +174,7 @@ class TestResolveTimeout:
 
     def test_invalid_env_value_falls_through_to_default(self, monkeypatch):
         monkeypatch.setattr("agent.deadline._timeouts_section", dict)
-        monkeypatch.setenv("HERMES_TEST_DEADLINE_X", "banana")
+        monkeypatch.setenv("MOOR_TEST_DEADLINE_X", "banana")
         assert (
             resolve_timeout("a.b", default=42.0, env_var="MOOR_TEST_DEADLINE_X")
             == 42.0
@@ -564,12 +564,12 @@ class TestConcurrentToolTimeoutMigration:
 
     def test_env_var_still_works(self, monkeypatch):
         monkeypatch.setattr("agent.deadline._timeouts_section", dict)
-        monkeypatch.setenv("HERMES_CONCURRENT_TOOL_TIMEOUT_S", "60")
+        monkeypatch.setenv("MOOR_CONCURRENT_TOOL_TIMEOUT_S", "60")
         assert self._resolver()() == 60.0
 
     def test_env_zero_still_disables(self, monkeypatch):
         monkeypatch.setattr("agent.deadline._timeouts_section", dict)
-        monkeypatch.setenv("HERMES_CONCURRENT_TOOL_TIMEOUT_S", "0")
+        monkeypatch.setenv("MOOR_CONCURRENT_TOOL_TIMEOUT_S", "0")
         assert self._resolver()() is None
 
 
@@ -594,13 +594,13 @@ class TestSequentialToolTimeoutResolver:
         from agent import tool_executor
 
         monkeypatch.setattr("agent.deadline._timeouts_section", dict)
-        monkeypatch.delenv("HERMES_CONCURRENT_TOOL_TIMEOUT_S", raising=False)
+        monkeypatch.delenv("MOOR_CONCURRENT_TOOL_TIMEOUT_S", raising=False)
         assert self._resolver()() == tool_executor._resolve_concurrent_tool_timeout()
 
     def test_inherits_concurrent_env_bridge(self, monkeypatch):
         # No sequential-specific setting -> concurrent env var flows through.
         monkeypatch.setattr("agent.deadline._timeouts_section", dict)
-        monkeypatch.setenv("HERMES_CONCURRENT_TOOL_TIMEOUT_S", "60")
+        monkeypatch.setenv("MOOR_CONCURRENT_TOOL_TIMEOUT_S", "60")
         assert self._resolver()() == 60.0
 
     def test_own_config_key_wins_over_concurrent(self, monkeypatch):

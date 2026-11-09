@@ -4,13 +4,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import runtime_provider as rp
+from moor_cli import runtime_provider as rp
 
 
 # ── model.openai_runtime: codex_app_server on every ladder rung (#115169) ─────────────────
 
 _CODEX_STORE_CREDS = {"base_url": "https://chatgpt.com/backend-api/codex", "api_key": "tok",
-                      "source": "hermes-auth-store", "last_refresh": 1}
+                      "source": "moor-auth-store", "last_refresh": 1}
 
 
 def _codex_rung(monkeypatch, rung: str) -> dict:
@@ -98,7 +98,7 @@ def test_openai_alias_without_base_url_pairs_openai_key_with_openai_base_url(mon
 def test_bare_custom_explicit_launch_key_wins_over_custom_pool(monkeypatch):
     """R2-M1: on the bare-custom terminal rung a launch ``--api-key`` must not be replaced by a
     pooled credential for the same URL (named-custom and direct-alias already honour it)."""
-    from hermes_cli.runtime_provider_backends import _resolve_openrouter_runtime
+    from moor_cli.runtime_provider_backends import _resolve_openrouter_runtime
 
     monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "custom"})
     monkeypatch.setattr(rp, "_try_resolve_from_custom_pool", lambda *a, **k: {

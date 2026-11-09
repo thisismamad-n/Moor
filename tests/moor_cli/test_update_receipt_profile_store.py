@@ -14,7 +14,7 @@ _PROBE = textwrap.dedent("""
     import json, sys, time
     from pathlib import Path
     sys.path.insert(0, sys.argv[1])
-    from hermes_cli import update_receipt as receipts
+    from moor_cli import update_receipt as receipts
     from pm import receipt as pm_receipt
 
     old = Path(sys.argv[2]) / 'logs' / 'update_receipts'
@@ -39,13 +39,13 @@ _PROBE = textwrap.dedent("""
 
 def test_named_profile_sees_update_and_pm_receipts_in_both_directions(tmp_path):
     home = tmp_path / "account"
-    profile = home / ".hermes" / "profiles" / "foo"
+    profile = home / ".moor" / "profiles" / "foo"
     profile.mkdir(parents=True)
     script = tmp_path / "probe.py"
     script.write_text(_PROBE, encoding="utf-8")
-    env = {key: value for key, value in os.environ.items() if not key.startswith(("HERMES_", "PYTEST_"))}
-    env.update(HOME=str(home), USERPROFILE=str(home), HERMES_HOME=str(profile),
-               HERMES_RUNTIME_DIR=str(tmp_path / "tools"), PYTHONDONTWRITEBYTECODE="1",
+    env = {key: value for key, value in os.environ.items() if not key.startswith(("MOOR_", "PYTEST_"))}
+    env.update(HOME=str(home), USERPROFILE=str(home), MOOR_HOME=str(profile),
+               MOOR_RUNTIME_DIR=str(tmp_path / "tools"), PYTHONDONTWRITEBYTECODE="1",
                PYTHONPATH=os.pathsep.join([str(ROOT), *filter(None, sys.path)]))
     done = subprocess.run([sys.executable, str(script), str(ROOT), str(profile)], env=env, cwd=tmp_path,
                           text=True, capture_output=True, timeout=60, check=False)
@@ -54,6 +54,6 @@ def test_named_profile_sees_update_and_pm_receipts_in_both_directions(tmp_path):
 
     # The updater still writes the root store the Desktop and hand-off scripts read.
     assert any(result["update_id"] in name for name in result["root_archives"])
-    assert result["pm_sees_update"] == result["update_id"]  # `hermes -p foo pm status`
+    assert result["pm_sees_update"] == result["update_id"]  # `moor -p foo pm status`
     assert result["updater_sees_pm"] == "sync"  # read_latest_receipt() consumers
     assert result["old_archive"] == "old"  # receipts written to the profile store before the move

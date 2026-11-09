@@ -84,7 +84,7 @@ def _(rid, params: dict, _root=_relay_root) -> dict:
         # A logged-in client's sender fields are NOT trusted — but the delivery is not refused
         # either: the Desktop is itself a logged-in client on every gateway that requires sign-in
         # (it mints a ws-ticket carrying the signed-in {user_id, provider} —
-        # hermes_cli/dashboard_auth/routes.py), so refusing took cross-connection relay offline
+        # moor_cli/dashboard_auth/routes.py), so refusing took cross-connection relay offline
         # for exactly the auth-gated gateways it serves; only ``?internal=`` callers are
         # identity-exempt and the Desktop cannot present one. Nor is the author dropped: an
         # unattributed turn is the HUMAN's to the recipient's memory, so a bot DM must stay
@@ -101,12 +101,12 @@ def _(rid, params: dict, _root=_relay_root) -> dict:
     # not teammates (#99392), so a DM never targets one.
     from tools.bot_mode_probe import _profile_for_handle, _roster
     roster = dict(_roster(root))
-    resolved = _profile_for_handle('hermes', roster) if profile.lower() == 'hermes' else profile
+    resolved = _profile_for_handle('moor', roster) if profile.lower() == 'moor' else profile
     home = roster.get(resolved)
     if home is None:
         return _err(rid, 4092, f"no profile '{profile}' on this gateway", data={'reason': 'unknown_profile'})
     if isinstance(forwarded.get("message"), str):
-        # The sender stamped itself with its bare @handle; a relayed "@hermes" is ANOTHER machine's
+        # The sender stamped itself with its bare @handle; a relayed "@moor" is ANOTHER machine's
         # default, so re-stamp it with the form this gateway can reply to (#103731).
         from tools.bot_mode_probe import local_taken_forms
         from tools.bot_relay import qualify_sender_stamp, read_remote_roster

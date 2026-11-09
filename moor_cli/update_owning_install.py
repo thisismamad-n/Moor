@@ -31,7 +31,7 @@ def owning_install_root(project_root: Path) -> Path | None:
     root = Path(project_root).resolve()
     if venv.name not in ("venv", ".venv"):
         return None
-    owner = venv.parent if (venv.parent / "hermes_cli" / "main.py").is_file() else _pm_environment_owner(venv)
+    owner = venv.parent if (venv.parent / "moor_cli" / "main.py").is_file() else _pm_environment_owner(venv)
     if owner is None or owner == root:
         return None
     chosen = (Path(p).resolve() for p in os.environ.get("PYTHONPATH", "").split(os.pathsep) if p)
@@ -43,7 +43,7 @@ def owning_install_root(project_root: Path) -> Path | None:
 def _pm_environment_owner(venv: Path) -> Path | None:
     """The checkout a PM generation venv (``<installs>/<key>/environments/<gen>/venv``) belongs to.
 
-    Its ``hermes_cli`` is the generation's ``workspace/`` snapshot, which has no ``.git``, so an
+    Its ``moor_cli`` is the generation's ``workspace/`` snapshot, which has no ``.git``, so an
     update run from it must go to the checkout (#122627). The install key hashes the checkout
     path, which proves the path recorded beside it.
     """
@@ -57,7 +57,7 @@ def _pm_environment_owner(venv: Path) -> Path | None:
         owner = Path((state / "inputs" / ".project-root").read_text(encoding="utf-8-sig").strip())
     except OSError:
         return None
-    if install_key(owner) != state.name or not (owner / "hermes_cli" / "main.py").is_file():
+    if install_key(owner) != state.name or not (owner / "moor_cli" / "main.py").is_file():
         return None
     return owner
 

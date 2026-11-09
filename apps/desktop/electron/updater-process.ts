@@ -44,7 +44,7 @@ export function resolveInstallationLauncher(
     return staged
   }
 
-  for (const candidate of historicalLauncherCandidates(updateRoot, isWindows, hermesHome)) {
+  for (const candidate of historicalLauncherCandidates(updateRoot, isWindows, moorHome)) {
     if (launcherTargetsInstallation(candidate, updateRoot)) {
       return candidate
     }
@@ -62,7 +62,7 @@ export function resolveInstallationLauncher(
 export async function resolveInstallationLauncherAsync(
   updateRoot: string,
   isWindows: boolean = process.platform === 'win32',
-  hermesHome: string = process.env.HERMES_HOME ?? ''
+  moorHome: string = process.env.MOOR_HOME ?? ''
 ): Promise<string | null> {
   const staged: string | null = stagedInstallationLauncher(updateRoot, isWindows)
 
@@ -72,7 +72,7 @@ export async function resolveInstallationLauncherAsync(
 
   const realRoot: string | null = realpathOrNull(updateRoot)
 
-  for (const candidate of realRoot ? historicalLauncherCandidates(updateRoot, isWindows, hermesHome) : []) {
+  for (const candidate of realRoot ? historicalLauncherCandidates(updateRoot, isWindows, moorHome) : []) {
     if ((await launcherInstallDirectoryAsync(candidate, updateRoot)) === realRoot) {
       return candidate
     }
@@ -82,19 +82,19 @@ export async function resolveInstallationLauncherAsync(
 }
 
 function stagedInstallationLauncher(updateRoot: string, isWindows: boolean): string | null {
-  const names: string[] = isWindows ? ['hermes.exe', 'hermes.cmd'] : ['hermes']
+  const names: string[] = isWindows ? ['moor.exe', 'moor.cmd'] : ['moor']
 
-  return names.map(name => path.join(updateRoot, '.hermes', 'bin', name)).find(stagedFileExists) ?? null
+  return names.map(name => path.join(updateRoot, '.moor', 'bin', name)).find(stagedFileExists) ?? null
 }
 
 // Earlier PM installers published only to user-bin. Trust that historical
 // launcher only after its existing version surface proves exact source identity.
-function historicalLauncherCandidates(updateRoot: string, isWindows: boolean, hermesHome: string): string[] {
-  if (!stagedFileExists(path.join(updateRoot, 'hermes_cli', '_launchers.py'))) {
+function historicalLauncherCandidates(updateRoot: string, isWindows: boolean, moorHome: string): string[] {
+  if (!stagedFileExists(path.join(updateRoot, 'moor_cli', '_launchers.py'))) {
     return []
   }
 
-  return userBinLaunchers(isWindows, hermesHome, isWindows ? [path.join(path.dirname(updateRoot), 'bin')] : [])
+  return userBinLaunchers(isWindows, moorHome, isWindows ? [path.join(path.dirname(updateRoot), 'bin')] : [])
 }
 
 // An old shim is a migration rung, never a damaged PM install fallback.
@@ -103,7 +103,7 @@ function legacyInstallationLauncher(updateRoot: string, isWindows: boolean): str
     return null
   }
 
-  const legacy: string = path.join(updateRoot, 'venv', isWindows ? 'Scripts' : 'bin', isWindows ? 'hermes.exe' : 'hermes')
+  const legacy: string = path.join(updateRoot, 'venv', isWindows ? 'Scripts' : 'bin', isWindows ? 'moor.exe' : 'moor')
 
   return stagedFileExists(legacy) ? legacy : null
 }
@@ -121,13 +121,13 @@ function realpathOrNull(target: string): string | null {
 const CMD_UNSAFE_PATH: RegExp = /["%&|<>^\r\n]/
 
 /** Published user-bin launchers, at fixed locations: a GUI launch's PATH may omit them. */
-function userBinLaunchers(isWindows: boolean, hermesHome: string, extraDirs: string[] = []): string[] {
-  const names: string[] = isWindows ? ['hermes.exe', 'hermes.cmd'] : ['hermes']
-  const defaultHome: string = platformDefaultHermesHome(os.homedir(), process.env, isWindows ? 'win32' : 'linux')
+function userBinLaunchers(isWindows: boolean, moorHome: string, extraDirs: string[] = []): string[] {
+  const names: string[] = isWindows ? ['moor.exe', 'moor.cmd'] : ['moor']
+  const defaultHome: string = platformDefaultMoorHome(os.homedir(), process.env, isWindows ? 'win32' : 'linux')
 
   const dirs: string[] = isWindows
-    ? [path.join(hermesHome || defaultHome, 'bin'), path.join(defaultHome, 'bin'), ...extraDirs]
-    : [path.join(os.homedir(), '.local', 'bin'), path.join(hermesHome || defaultHome, 'bin'), ...extraDirs]
+    ? [path.join(moorHome || defaultHome, 'bin'), path.join(defaultHome, 'bin'), ...extraDirs]
+    : [path.join(os.homedir(), '.local', 'bin'), path.join(moorHome || defaultHome, 'bin'), ...extraDirs]
 
   return [...new Set(dirs)]
     .flatMap((dir: string): string[] => names.map((name: string): string => path.join(dir, name)))
@@ -136,18 +136,18 @@ function userBinLaunchers(isWindows: boolean, hermesHome: string, extraDirs: str
 
 /**
  * A source install outside the canonical root (install.sh --dir, a
- * setup-hermes.sh clone) is reachable only through the user-bin launcher it
+ * setup-moor.sh clone) is reachable only through the user-bin launcher it
  * published. Return the install directory that launcher reports, when it is a
- * Hermes source tree; the caller still resolves and probes it by root.
+ * Moor source tree; the caller still resolves and probes it by root.
  */
 export function userLauncherInstallRoot(
   isWindows: boolean = process.platform === 'win32',
-  hermesHome: string = process.env.HERMES_HOME ?? ''
+  moorHome: string = process.env.MOOR_HOME ?? ''
 ): { launcher: string; root: string } | null {
-  for (const launcher of userBinLaunchers(isWindows, hermesHome)) {
+  for (const launcher of userBinLaunchers(isWindows, moorHome)) {
     const root: string | null = launcherInstallDirectory(launcher)
 
-    if (root && existsSync(path.join(root, 'hermes_cli', 'main.py'))) {
+    if (root && existsSync(path.join(root, 'moor_cli', 'main.py'))) {
       return { launcher, root }
     }
   }
@@ -167,7 +167,7 @@ export function launcherTargetsInstallation(launcher: string, root: string): boo
 
 // A launcher's install directory cannot move while this process lives, and the
 // backend resolver runs once per surface (startup, TUI resume, pool backends, and
-// every tick of reensureDuringRestart), so the HERMES_DESKTOP_HERMES rung memoizes
+// every tick of reensureDuringRestart), so the MOOR_DESKTOP_MOOR rung memoizes
 // each launcher's root. The probe is async: `--version` may take seconds (it also
 // runs the passive update check) and must never stall Electron's main thread.
 // Concurrent resolves share one in-flight probe. A miss (no `Install directory:`
@@ -228,7 +228,7 @@ function launcherVersionProbe(launcher: string, root?: string): LauncherVersionP
       timeout: 15000,
       windowsHide: true,
       windowsVerbatimArguments: viaCmd,
-      env: root ? { ...process.env, HERMES_INSTALL_ROOT: root } : process.env
+      env: root ? { ...process.env, MOOR_INSTALL_ROOT: root } : process.env
     }
   }
 }

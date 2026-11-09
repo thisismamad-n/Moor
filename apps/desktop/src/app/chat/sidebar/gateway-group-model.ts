@@ -1,10 +1,10 @@
-import { LOCAL_CONNECTION_ID } from '@hermes/shared'
+import { LOCAL_CONNECTION_ID } from '@moor/shared'
 import { useStore } from '@nanostores/react'
 import { useMemo } from 'react'
 
 import { $apiRequestScope } from '@/api/client'
 import type { DesktopConnectionsRegistry } from '@/global'
-import type { SessionInfo } from '@/hermes'
+import type { SessionInfo } from '@/moor'
 import { isBrowserHostedDesktop } from '@/lib/platform'
 import { resolveProfileColor } from '@/lib/profile-color'
 import { $connectionsRegistry } from '@/store/connection-registry-state'

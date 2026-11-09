@@ -608,7 +608,7 @@ class _TurnAgent:
         self.request_overrides = dict(kwargs.get("request_overrides") or {})
         # Mirror AIAgent.__init__: the welcome host pins its one model, and the primary
         # route is snapshotted for the post-turn fallback classifier.
-        from hermes_cli.anon_auth import pin_model_for_route
+        from moor_cli.anon_auth import pin_model_for_route
         self.model = pin_model_for_route(self.provider, self.base_url, self.model)
         self._primary_runtime = {"model": self.model, "provider": self.provider, "base_url": self.base_url}
 
@@ -627,7 +627,7 @@ class _TurnAgent:
     "runtime, global_model, expected_model",
     [
         ({"api_key": "fake", "provider": "openrouter"}, "default/model", "chan/model"),
-        ({"api_key": "fake", "provider": "nous", "base_url": _WELCOME}, "nous/welcome", "nous/welcome"),
+        ({"api_key": "fake", "provider": "moor", "base_url": _WELCOME}, "moor/welcome", "moor/welcome"),
     ],
     ids=["named-channel-model", "welcome-host-pins-over-channel-model"],
 )

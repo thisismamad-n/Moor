@@ -544,7 +544,7 @@ def _(rid, params: dict, db) -> dict:
         # surfaces that OWN hidden sessions (Bots pane, pickers).
         from pathlib import Path
 
-        from hermes_cli.session_listing import show_subagent_sessions
+        from moor_cli.session_listing import show_subagent_sessions
 
         # ``sessions.show_subagents`` (the store's own profile config) re-admits delegate runs (#97202).
         # A store without a path has no profile config to read, so it keeps the default shape.
@@ -843,10 +843,10 @@ def _resume_guard(ctx: _Resume) -> dict | None:
     ownership env, invisible to the board while a re-dispatch can start a competing writer
     in the same workspace. One guard for every resume shape below (cold / eager / deferred /
     lazy / live-reuse) — no slash worker is ever built for a refused session."""
-    from hermes_cli.kanban_resume_guard import kanban_resume_refusal
+    from moor_cli.kanban_resume_guard import kanban_resume_refusal
     if (kanban_refusal := kanban_resume_refusal(ctx.db, ctx.target)) is not None:
         return _err(ctx.rid, 4132, kanban_refusal)
-    from hermes_state import SessionResumeTooLargeError, resolved_max_resume_messages
+    from moor_state import SessionResumeTooLargeError, resolved_max_resume_messages
     tip_only = ctx.lazy or ctx.omit_messages or (ctx.defer_history and not ctx.eager_build)
     try:
         if callable(safety_check := getattr(ctx.db, "assert_resume_safe", None)):
@@ -1062,7 +1062,7 @@ def _(rid, params: dict) -> dict:
             live = _find_live_session_by_key(ctx.target, ctx.profile_home)
         if live is not None:
             return _resume_reuse_live(ctx, *live)
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         from tools.approval_yolo import restore_session_yolo  # a fresh backend starts with an empty set
         restore_session_yolo(ctx.target, SessionDB.session_yolo_enabled(ctx.found))
         if ctx.lazy:
@@ -1102,7 +1102,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4007, "session_key required")
     if not (raw := _str_param(params, "cwd")):
         return _err(rid, 4016, "cwd required")
-    from hermes_constants import translate_cwd_for_wsl_backend
+    from moor_constants import translate_cwd_for_wsl_backend
     # Snapshot under the lock — concurrent RPCs mutate _sessions.
     with _sessions_lock:
         live_sid, live = next(
@@ -1168,7 +1168,7 @@ def _(rid, params: dict, session: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Delete a stored session + transcripts; refused while live here (FK trips on the agent's next flush)."""
     from agent.onboarding_record import delete_chat
-    from hermes_state_errors import SessionActiveWriteGuardError  # body runs on server.py globals
+    from moor_state_errors import SessionActiveWriteGuardError  # body runs on server.py globals
 
     if not (target := params.get("session_id", "")):
         return _err(rid, 4006, "session_id required")
@@ -1182,7 +1182,7 @@ def _(rid, params: dict) -> dict:
         if db is None:
             return _db_unavailable_error(rid, code=5036)
         try:
-            home = Path(profile_home) if profile_home is not None else get_hermes_home()
+            home = Path(profile_home) if profile_home is not None else get_moor_home()
             deleted = delete_chat(db, target, lambda: db.delete_session(
                 target, sessions_dir=home / "sessions", exclude_active_write_guards=True))
         except SessionActiveWriteGuardError:
@@ -1445,9 +1445,9 @@ def _(rid, params: dict, session: dict) -> dict:
     usage: dict = _session_usage_snapshot(session)
     if session.get("agent") is None and not usage:
         usage = {"calls": 0, "input": 0, "output": 0, "total": 0}
-    # Nous credits are agent-independent (portal fetch); fail-open when absent.
-    from agent.account_usage import nous_credits_usage_fields  # never raises (fail-open inside)
-    usage.update(nous_credits_usage_fields(session.get("agent")))
+    # Moor credits are agent-independent (portal fetch); fail-open when absent.
+    from agent.account_usage import moor_credits_usage_fields  # never raises (fail-open inside)
+    usage.update(moor_credits_usage_fields(session.get("agent")))
     return _ok(rid, usage)
 
 
@@ -1825,12 +1825,12 @@ def _billing_view(name: str, module: str, builder: str, serializer: str, fallbac
 @method("billing.state")
 @_profile_scoped
 def _(rid, params: dict) -> dict:
-    """Profile-bound read-only billing view; fail-open. The Nous free tier has no account to
+    """Profile-bound read-only billing view; fail-open. The Moor free tier has no account to
     bill, so its state is answered locally (``free_tier_account`` set, ``logged_in`` false) without a portal
     round-trip that could only fail."""
     try:
         from agent.billing_view import BillingState, build_billing_state
-        from hermes_cli.anon_auth import has_free_tier_account
+        from moor_cli.anon_auth import has_free_tier_account
         if has_free_tier_account():
             return _ok(rid, _serialize_billing_state(BillingState(logged_in=False), free_tier_account=True))
         return _ok(rid, _serialize_billing_state(build_billing_state()))
@@ -2146,8 +2146,8 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict, session: dict) -> dict:
     if _session_uses_compute_host(session):
         return _save_via_compute_host(rid, params)
-    from hermes_cli.session_export import load_save_snapshot, render_session_for_save
-    from hermes_state import SessionExportTooLargeError
+    from moor_cli.session_export import load_save_snapshot, render_session_for_save
+    from moor_state import SessionExportTooLargeError
     # As CLI/messaging /save json, under the SESSION's profile config + home (runs unscoped); a failed read falls back.
     try:
         with _session_profile_runtime_scope(session, hydrate_secrets=False), _session_db(session) as db:
@@ -2157,7 +2157,7 @@ def _(rid, params: dict, session: dict) -> dict:
     except Exception:
         logger.warning("session.save: stored-session read failed; saving the in-memory history", exc_info=True)
         data = None
-    path = Path(session.get("profile_home") or get_hermes_home()) / "sessions/saved" / f"hermes_conversation_{datetime.now():%Y%m%d_%H%M%S}.json"
+    path = Path(session.get("profile_home") or get_moor_home()) / "sessions/saved" / f"moor_conversation_{datetime.now():%Y%m%d_%H%M%S}.json"
     if not data:  # No stored row: the in-memory history as an importable snapshot (CLI fallback shape).
         started = getattr(agent := session["agent"], "session_start", None)
         started = started.timestamp() if isinstance(started, datetime) else session.get("created_at")

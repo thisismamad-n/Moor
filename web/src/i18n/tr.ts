@@ -97,13 +97,13 @@ export const tr: Translations = {
     activeProvider: "Etkin bellek sağlayıcısı",
     noProvider: "yok — yalnızca yerleşik",
     builtinLayer: "Yerleşik katman",
-    builtinNote: "MEMORY.md ve USER.md, herhangi bir harici sağlayıcıdan bağımsız olarak Hermes'in kendi belleğidir. Varsayılan olarak ikisi de oturumlara yüklenir; (memory.memory_enabled / memory.user_profile_enabled) yapılandırma anahtarları her birini kapatır. Bir sağlayıcı bunlara ekleme yapar; asla yerlerini almaz.",
+    builtinNote: "MEMORY.md ve USER.md, herhangi bir harici sağlayıcıdan bağımsız olarak Moor'in kendi belleğidir. Varsayılan olarak ikisi de oturumlara yüklenir; (memory.memory_enabled / memory.user_profile_enabled) yapılandırma anahtarları her birini kapatır. Bir sağlayıcı bunlara ekleme yapar; asla yerlerini almaz.",
   },
 
   status: {
     actionFailed: "İşlem başarısız",
     actionFinished: "Tamamlandı",
-    actionFinishedOwed: "Güncellendi, ancak bekleyen adımlar var (bitirmek için `hermes update` komutunu yeniden çalıştırın)",
+    actionFinishedOwed: "Güncellendi, ancak bekleyen adımlar var (bitirmek için `moor update` komutunu yeniden çalıştırın)",
     actions: "İşlemler",
     agent: "Agent",
     activeSessions: "Aktif Oturumlar",

@@ -33,17 +33,17 @@ def _startup(monkeypatch, tmp_path):
     from gateway import lifecycle_ledger as ledger
     from gateway import run_api, run_runtime
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     events, release, scan_entered = [], threading.Event(), threading.Event()
     state = {"evidence": None}
 
     class _LiveRunner:
         def __init__(self, config):
             from gateway.session import SessionStore
-            from hermes_constants import get_hermes_home
-            from hermes_state import SessionDB
-            self.session_store = SessionStore(get_hermes_home() / "sessions", config)
-            self._session_db = SessionDB(get_hermes_home() / "state.db")
+            from moor_constants import get_moor_home
+            from moor_state import SessionDB
+            self.session_store = SessionStore(get_moor_home() / "sessions", config)
+            self._session_db = SessionDB(get_moor_home() / "state.db")
             self.session_store._db = self._session_db
             self._draining = False
             self._running = False
@@ -87,8 +87,8 @@ def _startup(monkeypatch, tmp_path):
     monkeypatch.setattr("gateway.run._host_attach_or_none", AsyncMock(return_value=None))
     monkeypatch.setattr("gateway.status.get_running_pid", lambda: None)
     monkeypatch.setattr("tools.skills_sync.sync_skills", lambda quiet=True: None)
-    monkeypatch.setattr("hermes_logging.setup_logging", lambda hermes_home, mode: tmp_path)
-    monkeypatch.setattr("hermes_logging._add_rotating_handler", lambda *args, **kwargs: None)
+    monkeypatch.setattr("moor_logging.setup_logging", lambda moor_home, mode: tmp_path)
+    monkeypatch.setattr("moor_logging._add_rotating_handler", lambda *args, **kwargs: None)
     monkeypatch.setattr("gateway.run.GatewayRunner", _LiveRunner)
     monkeypatch.setattr(ledger, "record_startup", lambda: state["evidence"])
     monkeypatch.setattr(ledger, "run_deferred_integrity_check", scan)

@@ -584,7 +584,7 @@ def soak_env(tmp_path, monkeypatch):
 
 
 def _run_scenario(sc: Scenario, soak_env) -> dict[str, int]:
-    tmp_path, hermes_home, monkeypatch = soak_env
+    tmp_path, moor_home, monkeypatch = soak_env
     monkeypatch.setenv("TZ", sc.process_tz)
     time.tzset()
     lines = ["platforms:", "  telegram:", "    enabled: true", "    token: fake-soak-token"]
@@ -704,8 +704,8 @@ def test_two_replicas_contend_for_every_fire(soak_env):
             assert nxt > clock.now_ts(), f"round {rnd} {name}: not re-armed past now ({_iso(nxt)})"
     finally:
         peer.stop()
-    rows = H.ledger_rows(hermes_home)
-    deliveries = H.delivery_status(hermes_home)
+    rows = H.ledger_rows(moor_home)
+    deliveries = H.delivery_status(moor_home)
     sink = H.read_jsonl(control.sink)
     starts = {r["exec"] for r in H.read_jsonl(control.runs) if r["event"] == "start"}
     won = [r for r in rows if r["id"] in starts]

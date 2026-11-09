@@ -6,13 +6,13 @@ from types import SimpleNamespace
 import pytest
 
 from gateway import session_kanban
-from hermes_cli import kanban_db as kb
-from hermes_cli.kanban_db_connect import connect_closing
+from moor_cli import kanban_db as kb
+from moor_cli.kanban_db_connect import connect_closing
 
 
 def _bound_claim(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
     kb.init_db()
     path = kb.kanban_db_path()
     with connect_closing(path) as conn:
@@ -54,13 +54,13 @@ def test_managed_result_persists_exact_worker_exit(tmp_path, monkeypatch, result
 
 
 def _credential_failures():
-    from hermes_cli.auth import AuthError
-    from hermes_cli.auth_constants import CODEX_RATE_LIMITED_CODE
+    from moor_cli.auth import AuthError
+    from moor_cli.auth_constants import CODEX_RATE_LIMITED_CODE
     wrapped = RuntimeError("agent init failed")
-    wrapped.__cause__ = AuthError("refresh revoked", provider="nous", relogin_required=True)
+    wrapped.__cause__ = AuthError("refresh revoked", provider="moor", relogin_required=True)
     return [
         (AuthError("quota", provider="openai-codex", code=CODEX_RATE_LIMITED_CODE), kb.KANBAN_RATE_LIMIT_EXIT_CODE),
-        (AuthError("relogin", provider="nous", relogin_required=True), kb.KANBAN_TERMINAL_PROVIDER_EXIT_CODE),
+        (AuthError("relogin", provider="moor", relogin_required=True), kb.KANBAN_TERMINAL_PROVIDER_EXIT_CODE),
         (wrapped, kb.KANBAN_TERMINAL_PROVIDER_EXIT_CODE),
         (RuntimeError("unknown startup failure"), 1),
     ]

@@ -1,6 +1,6 @@
-"""The issue record config validation emits (``hermes config check``, doctor, startup warnings).
+"""The issue record config validation emits (``moor config check``, doctor, startup warnings).
 
-Its own module so the facade (``hermes_cli.config``) and its check siblings share it without
+Its own module so the facade (``moor_cli.config``) and its check siblings share it without
 a facade import from the siblings."""
 
 from dataclasses import dataclass

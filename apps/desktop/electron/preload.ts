@@ -16,7 +16,7 @@ const hudWindowing = ipcRenderer.sendSync('moor:hud:windowing')
 const hudNativeDrag = hudWindowing?.nativeDrag === true
 
 const launchFlags: { localModels?: boolean; assumeFreshInstall?: boolean } | undefined =
-  ipcRenderer.sendSync('hermes:feature-flags')
+  ipcRenderer.sendSync('moor:feature-flags')
 
 // Local, sanitized skin payload for the first renderer theme paint. This does
 // not wait on `gateway.ready`, so an unreachable remote primary cannot force
@@ -25,11 +25,11 @@ const localSkin = ipcRenderer.sendSync('moor:skin:local')
 
 // This machine's UI preferences store (#145213), read before the first paint so
 // a preference set in another window or in this machine's Webapp paints at once.
-const uiPreferencesSnapshot = ipcRenderer.sendSync('hermes:ui-preferences:snapshot')
+const uiPreferencesSnapshot = ipcRenderer.sendSync('moor:ui-preferences:snapshot')
 
 import { unwrapExpectedNotFound } from './api-expected-404'
 
-contextBridge.exposeInMainWorld('hermesDesktop', {
+contextBridge.exposeInMainWorld('moorDesktop', {
   glassSupported: translucencySupport?.glass === true,
   translucencySupported: translucencySupport?.translucency === true,
   // Launch-flag fact: the app was started with --local, so the renderer may
@@ -41,41 +41,41 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   localSkin: localSkin && typeof localSkin === 'object' ? localSkin : null,
   uiPreferences: {
     snapshot: uiPreferencesSnapshot && typeof uiPreferencesSnapshot === 'object' ? uiPreferencesSnapshot : null,
-    read: () => ipcRenderer.invoke('hermes:ui-preferences:read'),
-    write: payload => ipcRenderer.invoke('hermes:ui-preferences:write', payload),
+    read: () => ipcRenderer.invoke('moor:ui-preferences:read'),
+    write: payload => ipcRenderer.invoke('moor:ui-preferences:write', payload),
     onChanged: callback => {
       const listener = (_event, snapshot) => callback(snapshot)
-      ipcRenderer.on('hermes:ui-preferences:changed', listener)
+      ipcRenderer.on('moor:ui-preferences:changed', listener)
 
-      return () => ipcRenderer.removeListener('hermes:ui-preferences:changed', listener)
+      return () => ipcRenderer.removeListener('moor:ui-preferences:changed', listener)
     }
   },
-  getConnection: (profile, opts) => ipcRenderer.invoke('hermes:connection', profile, opts),
+  getConnection: (profile, opts) => ipcRenderer.invoke('moor:connection', profile, opts),
   // Loopback origin that hosts YouTube's player for the file:// renderer.
-  getEmbedHostOrigin: () => ipcRenderer.invoke('hermes:embed-host:origin'),
+  getEmbedHostOrigin: () => ipcRenderer.invoke('moor:embed-host:origin'),
   // Registry-scoped backend resolution: { connectionId, profile } → descriptor.
-  getConnectionFor: payload => ipcRenderer.invoke('hermes:connection:for', payload),
-  getProfileRoutes: profiles => ipcRenderer.invoke('hermes:plugin-profile-routes', profiles),
-  revalidateConnection: () => ipcRenderer.invoke('hermes:connection:revalidate'),
-  getGatewayWsUrl: profile => ipcRenderer.invoke('hermes:gateway:ws-url', profile),
+  getConnectionFor: payload => ipcRenderer.invoke('moor:connection:for', payload),
+  getProfileRoutes: profiles => ipcRenderer.invoke('moor:plugin-profile-routes', profiles),
+  revalidateConnection: () => ipcRenderer.invoke('moor:connection:revalidate'),
+  getGatewayWsUrl: profile => ipcRenderer.invoke('moor:gateway:ws-url', profile),
   // Registry-scoped fresh WS URL: { connectionId, profile } → result shape of
   // getGatewayWsUrl, minted against that connection's backend.
-  getGatewayWsUrlFor: payload => ipcRenderer.invoke('hermes:gateway:ws-url-for', payload),
+  getGatewayWsUrlFor: payload => ipcRenderer.invoke('moor:gateway:ws-url-for', payload),
   // { connectionId, profile, pluginId, path } → one-use local plugin socket URL, null, or { refused: 'permission' }.
-  getPluginWsUrl: payload => ipcRenderer.invoke('hermes:plugin:ws-url', payload),
+  getPluginWsUrl: payload => ipcRenderer.invoke('moor:plugin:ws-url', payload),
   // Union agent roster across every registered connection.
-  getAgentRoster: () => ipcRenderer.invoke('hermes:agents:roster'),
-  openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openSession', sessionId, opts),
-  openSessionInTerminal: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openInTerminal', sessionId, opts),
-  openWindow: (options?: DesktopProfileRoute) => ipcRenderer.invoke('hermes:window:openInstance', options),
-  openBrowserWindow: tabId => ipcRenderer.invoke('hermes:window:openBrowser', tabId),
+  getAgentRoster: () => ipcRenderer.invoke('moor:agents:roster'),
+  openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('moor:window:openSession', sessionId, opts),
+  openSessionInTerminal: (sessionId, opts) => ipcRenderer.invoke('moor:window:openInTerminal', sessionId, opts),
+  openWindow: (options?: DesktopProfileRoute) => ipcRenderer.invoke('moor:window:openInstance', options),
+  openBrowserWindow: tabId => ipcRenderer.invoke('moor:window:openBrowser', tabId),
   windowRelay: {
-    send: payload => ipcRenderer.send('hermes:window:relay', payload),
+    send: payload => ipcRenderer.send('moor:window:relay', payload),
     onMessage: callback => {
       const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('hermes:window:relay', listener)
+      ipcRenderer.on('moor:window:relay', listener)
 
-      return () => ipcRenderer.removeListener('hermes:window:relay', listener)
+      return () => ipcRenderer.removeListener('moor:window:relay', listener)
     }
   },
   onBrowserPopoutClosed: callback => {
@@ -102,7 +102,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     }
   },
   chatOnboarding: {
-    size: mode => ipcRenderer.send('hermes:window:size', mode)
+    size: mode => ipcRenderer.send('moor:window:size', mode)
   },
   petOverlay: {
     // Main renderer → main process: window lifecycle + drag. `request` is
@@ -242,13 +242,13 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   // and hands it back, and the primary renderer submits it through the normal
   // prompt path.
   quickEntry: {
-    getSettings: () => ipcRenderer.invoke('hermes:quick-entry:settings:get'),
-    setSettings: patch => ipcRenderer.invoke('hermes:quick-entry:settings:set', patch),
+    getSettings: () => ipcRenderer.invoke('moor:quick-entry:settings:get'),
+    setSettings: patch => ipcRenderer.invoke('moor:quick-entry:settings:set', patch),
     // Invoke returns the delivery result so the draft is not lost (#85590).
-    submit: payload => ipcRenderer.invoke('hermes:quick-entry:submit', payload),
+    submit: payload => ipcRenderer.invoke('moor:quick-entry:submit', payload),
     // Main cannot invoke the primary renderer, so it receives this ack (#85590).
-    ackSubmit: (correlationId, result) => ipcRenderer.send('hermes:quick-entry:ack', { correlationId, result }),
-    dismiss: () => ipcRenderer.send('hermes:quick-entry:dismiss'),
+    ackSubmit: (correlationId, result) => ipcRenderer.send('moor:quick-entry:ack', { correlationId, result }),
+    dismiss: () => ipcRenderer.send('moor:quick-entry:dismiss'),
     // Primary renderer → main → quick window: gateway connection state + the
     // recent-session options the target picker offers. Main caches the latest
     // payload so a freshly spawned quick window starts from truth.
@@ -272,16 +272,16 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       const listener = () => callback()
       ipcRenderer.on('moor:quick-entry:shown', listener)
 
-      return () => ipcRenderer.removeListener('hermes:quick-entry:shown', listener)
+      return () => ipcRenderer.removeListener('moor:quick-entry:shown', listener)
     },
     // Main → quick window: the outcome of a submit whose relay already timed
     // out. Delivery is now KNOWN — reconcile the unknown state instead of
     // leaving the user to resend a prompt that may already be delivered.
     onLateResult: callback => {
       const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('hermes:quick-entry:late-result', listener)
+      ipcRenderer.on('moor:quick-entry:late-result', listener)
 
-      return () => ipcRenderer.removeListener('hermes:quick-entry:late-result', listener)
+      return () => ipcRenderer.removeListener('moor:quick-entry:late-result', listener)
     }
   },
   getBootProgress: () => ipcRenderer.invoke('moor:boot-progress:get'),
@@ -316,17 +316,17 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return () => ipcRenderer.removeListener('moor:connections:changed', listener)
     }
   },
-  sshConfigHosts: () => ipcRenderer.invoke('hermes:ssh-config:hosts'),
-  sshResolveHost: host => ipcRenderer.invoke('hermes:ssh-config:resolve', host),
-  probeConnectionConfig: remoteUrl => ipcRenderer.invoke('hermes:connection-config:probe', remoteUrl),
+  sshConfigHosts: () => ipcRenderer.invoke('moor:ssh-config:hosts'),
+  sshResolveHost: host => ipcRenderer.invoke('moor:ssh-config:resolve', host),
+  probeConnectionConfig: remoteUrl => ipcRenderer.invoke('moor:connection-config:probe', remoteUrl),
   // `options` lets a registry-editor draft sign in BEFORE it is saved: the
   // main process settles the draft's connection id up front so the login
   // window writes into the per-connection cookie jar the saved entry will
   // read (not the legacy shared jar an unsaved URL would fall back to).
   oauthLoginConnectionConfig: (remoteUrl, options) =>
-    ipcRenderer.invoke('hermes:connection-config:oauth-login', remoteUrl, options),
-  oauthLogoutConnectionConfig: remoteUrl => ipcRenderer.invoke('hermes:connection-config:oauth-logout', remoteUrl),
-  // Hermes Cloud: one portal login powers discovery + silent per-agent sign-in
+    ipcRenderer.invoke('moor:connection-config:oauth-login', remoteUrl, options),
+  oauthLogoutConnectionConfig: remoteUrl => ipcRenderer.invoke('moor:connection-config:oauth-logout', remoteUrl),
+  // Moor Cloud: one portal login powers discovery + silent per-agent sign-in
   // (cloud-auto-discovery Phase 3).
   cloud: {
     status: () => ipcRenderer.invoke('moor:cloud:status'),
@@ -351,31 +351,31 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   // The handler resolves an expected 404 with a sentinel instead of rejecting
   // (Electron logs a stack for every rejected invoke). Turn it back into the
   // rejection the renderer expects — see electron/api-expected-404.ts.
-  api: request => ipcRenderer.invoke('hermes:api', request).then(unwrapExpectedNotFound),
-  notify: payload => ipcRenderer.invoke('hermes:notify', payload),
-  claimStartupLatency: () => ipcRenderer.invoke('hermes:startup-latency:claim'),
-  requestMicrophoneAccess: () => ipcRenderer.invoke('hermes:requestMicrophoneAccess'),
-  readWindowBelow: () => ipcRenderer.invoke('hermes:window:readBelow'),
-  readFileDataUrl: filePath => ipcRenderer.invoke('hermes:readFileDataUrl', filePath),
-  readFileDataUrlForAttach: filePath => ipcRenderer.invoke('hermes:readFileDataUrlForAttach', filePath),
+  api: request => ipcRenderer.invoke('moor:api', request).then(unwrapExpectedNotFound),
+  notify: payload => ipcRenderer.invoke('moor:notify', payload),
+  claimStartupLatency: () => ipcRenderer.invoke('moor:startup-latency:claim'),
+  requestMicrophoneAccess: () => ipcRenderer.invoke('moor:requestMicrophoneAccess'),
+  readWindowBelow: () => ipcRenderer.invoke('moor:window:readBelow'),
+  readFileDataUrl: filePath => ipcRenderer.invoke('moor:readFileDataUrl', filePath),
+  readFileDataUrlForAttach: filePath => ipcRenderer.invoke('moor:readFileDataUrlForAttach', filePath),
   dataUrlReadMax: {
     get: () => ipcRenderer.invoke('moor:data-url-read-max:get'),
     set: maxMb => ipcRenderer.invoke('moor:data-url-read-max:set', maxMb)
   },
-  readFileText: filePath => ipcRenderer.invoke('hermes:readFileText', filePath),
-  readPluginSource: (filePath: string) => ipcRenderer.invoke('hermes:readPluginSource', filePath),
-  selectPaths: options => ipcRenderer.invoke('hermes:selectPaths', options),
-  selectSavePath: options => ipcRenderer.invoke('hermes:selectSavePath', options),
-  saveTextFileAs: request => ipcRenderer.invoke('hermes:saveTextFileAs', request),
-  writeClipboard: text => ipcRenderer.invoke('hermes:writeClipboard', text),
-  readClipboard: () => ipcRenderer.invoke('hermes:readClipboard'),
-  saveGatewayFile: payload => ipcRenderer.invoke('hermes:saveGatewayFile', payload),
-  saveImageFromUrl: url => ipcRenderer.invoke('hermes:saveImageFromUrl', url),
-  contextMenuEdit: command => ipcRenderer.invoke('hermes:context-menu:edit', command),
-  contextMenuCopyImage: () => ipcRenderer.invoke('hermes:context-menu:copy-image'),
-  contextMenuSpellcheck: action => ipcRenderer.invoke('hermes:context-menu:spellcheck', action),
-  contextMenuGuestAddWord: payload => ipcRenderer.invoke('hermes:context-menu:guest-add-word', payload),
-  spellcheckDictionary: (op, word) => ipcRenderer.invoke('hermes:spellcheck:dictionary', { op, word }),
+  readFileText: filePath => ipcRenderer.invoke('moor:readFileText', filePath),
+  readPluginSource: (filePath: string) => ipcRenderer.invoke('moor:readPluginSource', filePath),
+  selectPaths: options => ipcRenderer.invoke('moor:selectPaths', options),
+  selectSavePath: options => ipcRenderer.invoke('moor:selectSavePath', options),
+  saveTextFileAs: request => ipcRenderer.invoke('moor:saveTextFileAs', request),
+  writeClipboard: text => ipcRenderer.invoke('moor:writeClipboard', text),
+  readClipboard: () => ipcRenderer.invoke('moor:readClipboard'),
+  saveGatewayFile: payload => ipcRenderer.invoke('moor:saveGatewayFile', payload),
+  saveImageFromUrl: url => ipcRenderer.invoke('moor:saveImageFromUrl', url),
+  contextMenuEdit: command => ipcRenderer.invoke('moor:context-menu:edit', command),
+  contextMenuCopyImage: () => ipcRenderer.invoke('moor:context-menu:copy-image'),
+  contextMenuSpellcheck: action => ipcRenderer.invoke('moor:context-menu:spellcheck', action),
+  contextMenuGuestAddWord: payload => ipcRenderer.invoke('moor:context-menu:guest-add-word', payload),
+  spellcheckDictionary: (op, word) => ipcRenderer.invoke('moor:spellcheck:dictionary', { op, word }),
   onContextMenuSpellcheck: callback => {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('moor:context-menu-spellcheck', listener)
@@ -393,21 +393,21 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return ''
     }
   },
-  normalizePreviewTarget: (target, baseDir) => ipcRenderer.invoke('hermes:normalizePreviewTarget', target, baseDir),
-  watchPreviewFile: url => ipcRenderer.invoke('hermes:watchPreviewFile', url),
-  watchDirectory: dir => ipcRenderer.invoke('hermes:watchDirectory', dir),
-  stopPreviewFileWatch: id => ipcRenderer.invoke('hermes:stopPreviewFileWatch', id),
-  setActiveWork: payload => ipcRenderer.send('hermes:active-work', payload),
-  setTitleBarTheme: payload => ipcRenderer.send('hermes:titlebar-theme', payload),
-  setNativeTheme: mode => ipcRenderer.send('hermes:native-theme', mode),
-  setTranslucency: payload => ipcRenderer.send('hermes:translucency', payload),
-  setKeepAwake: mode => ipcRenderer.send('hermes:keep-awake', mode),
+  normalizePreviewTarget: (target, baseDir) => ipcRenderer.invoke('moor:normalizePreviewTarget', target, baseDir),
+  watchPreviewFile: url => ipcRenderer.invoke('moor:watchPreviewFile', url),
+  watchDirectory: dir => ipcRenderer.invoke('moor:watchDirectory', dir),
+  stopPreviewFileWatch: id => ipcRenderer.invoke('moor:stopPreviewFileWatch', id),
+  setActiveWork: payload => ipcRenderer.send('moor:active-work', payload),
+  setTitleBarTheme: payload => ipcRenderer.send('moor:titlebar-theme', payload),
+  setNativeTheme: mode => ipcRenderer.send('moor:native-theme', mode),
+  setTranslucency: payload => ipcRenderer.send('moor:translucency', payload),
+  setKeepAwake: mode => ipcRenderer.send('moor:keep-awake', mode),
   // Once per computer, after a timed sleep interrupted a turn with keep-awake off.
   onKeepAwakeOffer: callback => {
     const listener = () => callback()
-    ipcRenderer.on('hermes:keep-awake-offer', listener)
+    ipcRenderer.on('moor:keep-awake-offer', listener)
 
-    return () => ipcRenderer.removeListener('hermes:keep-awake-offer', listener)
+    return () => ipcRenderer.removeListener('moor:keep-awake-offer', listener)
   },
   minimizeToTray: {
     get: () => ipcRenderer.invoke('moor:minimize-to-tray:get'),
@@ -427,14 +427,14 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
 
     return () => ipcRenderer.removeListener('moor:f12-shortcut', listener)
   },
-  setPreviewShortcutActive: active => ipcRenderer.send('hermes:previewShortcutActive', Boolean(active)),
+  setPreviewShortcutActive: active => ipcRenderer.send('moor:previewShortcutActive', Boolean(active)),
   setPreviewGuestHidden: (webContentsId, hidden) =>
-    ipcRenderer.send('hermes:preview-guest-hidden', { webContentsId, hidden: Boolean(hidden) }),
-  openExternal: url => ipcRenderer.invoke('hermes:openExternal', url),
+    ipcRenderer.send('moor:preview-guest-hidden', { webContentsId, hidden: Boolean(hidden) }),
+  openExternal: url => ipcRenderer.invoke('moor:openExternal', url),
   freeTierChallenge: {
     // Load the account service's challenge page in a hidden window (revealed
     // only if the page asks for the human). Resolves with how it ended.
-    run: request => ipcRenderer.invoke('hermes:freeTierChallenge:run', request)
+    run: request => ipcRenderer.invoke('moor:freeTierChallenge:run', request)
   },
   mcpOauth: {
     // One-shot loopback listener for MCP OAuth against remote backends: bind
@@ -456,10 +456,10 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     pickDefaultProjectDir: () => ipcRenderer.invoke('moor:setting:defaultProjectDir:pick')
   },
   preparedSubmissions: {
-    read: () => ipcRenderer.invoke('hermes:prepared-submissions:read'),
-    update: (key, entry) => ipcRenderer.invoke('hermes:prepared-submissions:update', key, entry),
+    read: () => ipcRenderer.invoke('moor:prepared-submissions:read'),
+    update: (key, entry) => ipcRenderer.invoke('moor:prepared-submissions:update', key, entry),
     compareAndSet: (key, expected, entry) =>
-      ipcRenderer.invoke('hermes:prepared-submissions:compare-and-set', key, expected, entry)
+      ipcRenderer.invoke('moor:prepared-submissions:compare-and-set', key, expected, entry)
   },
   zoom: {
     // Current zoom of this window, as { level, percent }.
@@ -481,29 +481,29 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   getRecentLogs: () => ipcRenderer.invoke('moor:logs:recent'),
   // Fire-and-forget: persists a renderer error-boundary catch (with component
   // stack) to desktop.log so crashes survive the window (#79428).
-  reportRendererError: report => ipcRenderer.send('hermes:logs:renderer-error', report),
-  logLine: (line: string): void => ipcRenderer.send('hermes:logs:renderer-line', line),
-  readDir: dirPath => ipcRenderer.invoke('hermes:fs:readDir', dirPath),
-  gitRoot: startPath => ipcRenderer.invoke('hermes:fs:gitRoot', startPath),
-  revealPath: targetPath => ipcRenderer.invoke('hermes:fs:reveal', targetPath),
-  openDir: dirPath => ipcRenderer.invoke('hermes:fs:openDir', dirPath),
-  desktopPluginsRoot: () => ipcRenderer.invoke('hermes:fs:desktopPluginsRoot'),
-  reconcileDesktopPlugins: async () => (await ipcRenderer.invoke('hermes:fs:reconcileDesktopPlugins')).published,
-  reconcileDesktopPluginsReport: () => ipcRenderer.invoke('hermes:fs:reconcileDesktopPlugins'),
-  logsRoot: (profile?: string) => ipcRenderer.invoke('hermes:fs:logsRoot', profile),
-  renamePath: (targetPath, newName) => ipcRenderer.invoke('hermes:fs:rename', targetPath, newName),
-  writeTextFile: (filePath, content) => ipcRenderer.invoke('hermes:fs:writeText', filePath, content),
-  trashPath: targetPath => ipcRenderer.invoke('hermes:fs:trash', targetPath),
+  reportRendererError: report => ipcRenderer.send('moor:logs:renderer-error', report),
+  logLine: (line: string): void => ipcRenderer.send('moor:logs:renderer-line', line),
+  readDir: dirPath => ipcRenderer.invoke('moor:fs:readDir', dirPath),
+  gitRoot: startPath => ipcRenderer.invoke('moor:fs:gitRoot', startPath),
+  revealPath: targetPath => ipcRenderer.invoke('moor:fs:reveal', targetPath),
+  openDir: dirPath => ipcRenderer.invoke('moor:fs:openDir', dirPath),
+  desktopPluginsRoot: () => ipcRenderer.invoke('moor:fs:desktopPluginsRoot'),
+  reconcileDesktopPlugins: async () => (await ipcRenderer.invoke('moor:fs:reconcileDesktopPlugins')).published,
+  reconcileDesktopPluginsReport: () => ipcRenderer.invoke('moor:fs:reconcileDesktopPlugins'),
+  logsRoot: (profile?: string) => ipcRenderer.invoke('moor:fs:logsRoot', profile),
+  renamePath: (targetPath, newName) => ipcRenderer.invoke('moor:fs:rename', targetPath, newName),
+  writeTextFile: (filePath, content) => ipcRenderer.invoke('moor:fs:writeText', filePath, content),
+  trashPath: targetPath => ipcRenderer.invoke('moor:fs:trash', targetPath),
   pluginFiles: {
-    request: (pluginId, labels) => ipcRenderer.invoke('hermes:pluginFiles:request', pluginId, labels),
-    grants: pluginId => ipcRenderer.invoke('hermes:pluginFiles:grants', pluginId),
-    revoke: (pluginId, folderId) => ipcRenderer.invoke('hermes:pluginFiles:revoke', pluginId, folderId),
-    op: (pluginId, request) => ipcRenderer.invoke('hermes:pluginFiles:op', pluginId, request),
+    request: (pluginId, labels) => ipcRenderer.invoke('moor:pluginFiles:request', pluginId, labels),
+    grants: pluginId => ipcRenderer.invoke('moor:pluginFiles:grants', pluginId),
+    revoke: (pluginId, folderId) => ipcRenderer.invoke('moor:pluginFiles:revoke', pluginId, folderId),
+    op: (pluginId, request) => ipcRenderer.invoke('moor:pluginFiles:op', pluginId, request),
     onChanged: callback => {
       const listener = (_event, change) => callback(change)
-      ipcRenderer.on('hermes:pluginFiles:changed', listener)
+      ipcRenderer.on('moor:pluginFiles:changed', listener)
 
-      return () => ipcRenderer.removeListener('hermes:pluginFiles:changed', listener)
+      return () => ipcRenderer.removeListener('moor:pluginFiles:changed', listener)
     }
   },
   git: {
@@ -616,9 +616,9 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   },
   onExternalOpenFailed: callback => {
     const listener = (_event, payload) => callback(payload)
-    ipcRenderer.on('hermes:external-open-failed', listener)
+    ipcRenderer.on('moor:external-open-failed', listener)
 
-    return () => ipcRenderer.removeListener('hermes:external-open-failed', listener)
+    return () => ipcRenderer.removeListener('moor:external-open-failed', listener)
   },
   onPreviewFileChanged: callback => {
     const listener = (_event, payload) => callback(payload)
@@ -665,57 +665,57 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   // Renderer's install overlay subscribes to live events and queries the
   // current snapshot via getBootstrapState() to recover after a devtools
   // reload mid-bootstrap.
-  getBootstrapState: () => ipcRenderer.invoke('hermes:bootstrap:get'),
-  probeLocalBackend: () => ipcRenderer.invoke('hermes:local-backend:probe'),
-  continueBootstrapLocal: () => ipcRenderer.invoke('hermes:bootstrap:continue-local'),
-  recycleBackend: profile => ipcRenderer.invoke('hermes:backend:recycle', profile),
-  resetBootstrap: () => ipcRenderer.invoke('hermes:bootstrap:reset'),
+  getBootstrapState: () => ipcRenderer.invoke('moor:bootstrap:get'),
+  probeLocalBackend: () => ipcRenderer.invoke('moor:local-backend:probe'),
+  continueBootstrapLocal: () => ipcRenderer.invoke('moor:bootstrap:continue-local'),
+  recycleBackend: profile => ipcRenderer.invoke('moor:backend:recycle', profile),
+  resetBootstrap: () => ipcRenderer.invoke('moor:bootstrap:reset'),
   updateHold: {
-    recheck: () => ipcRenderer.invoke('hermes:update-hold:recheck'),
-    quit: () => ipcRenderer.invoke('hermes:update-hold:quit'),
+    recheck: () => ipcRenderer.invoke('moor:update-hold:recheck'),
+    quit: () => ipcRenderer.invoke('moor:update-hold:quit'),
     startAnyway: (request: { holdId: string; confirmed: true }) =>
-      ipcRenderer.invoke('hermes:update-hold:start-anyway', request)
+      ipcRenderer.invoke('moor:update-hold:start-anyway', request)
   },
-  repairBootstrap: () => ipcRenderer.invoke('hermes:bootstrap:repair'),
-  cancelBootstrap: () => ipcRenderer.invoke('hermes:bootstrap:cancel'),
+  repairBootstrap: () => ipcRenderer.invoke('moor:bootstrap:repair'),
+  cancelBootstrap: () => ipcRenderer.invoke('moor:bootstrap:cancel'),
   onBootstrapEvent: callback => {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('moor:bootstrap:event', listener)
 
     return () => ipcRenderer.removeListener('moor:bootstrap:event', listener)
   },
-  getVersion: (scope?: { connectionId?: string; profile?: string }) => ipcRenderer.invoke('hermes:version', scope),
-  relaunchApp: () => ipcRenderer.invoke('hermes:app:relaunch'),
-  getMachineProfile: () => ipcRenderer.invoke('hermes:machine:profile'),
-  getRemoteDisplayReason: () => ipcRenderer.invoke('hermes:get-remote-display-reason'),
+  getVersion: (scope?: { connectionId?: string; profile?: string }) => ipcRenderer.invoke('moor:version', scope),
+  relaunchApp: () => ipcRenderer.invoke('moor:app:relaunch'),
+  getMachineProfile: () => ipcRenderer.invoke('moor:machine:profile'),
+  getRemoteDisplayReason: () => ipcRenderer.invoke('moor:get-remote-display-reason'),
   uninstall: {
-    summary: () => ipcRenderer.invoke('hermes:uninstall:summary'),
-    run: mode => ipcRenderer.invoke('hermes:uninstall:run', { mode }),
-    openAppsSettings: () => ipcRenderer.invoke('hermes:uninstall:openAppsSettings')
+    summary: () => ipcRenderer.invoke('moor:uninstall:summary'),
+    run: mode => ipcRenderer.invoke('moor:uninstall:run', { mode }),
+    openAppsSettings: () => ipcRenderer.invoke('moor:uninstall:openAppsSettings')
   },
   updates: {
-    check: opts => ipcRenderer.invoke('hermes:updates:check', opts),
-    apply: opts => ipcRenderer.invoke('hermes:updates:apply', opts),
-    setChannel: name => ipcRenderer.invoke('hermes:updates:channel:set', name),
+    check: opts => ipcRenderer.invoke('moor:updates:check', opts),
+    apply: opts => ipcRenderer.invoke('moor:updates:apply', opts),
+    setChannel: name => ipcRenderer.invoke('moor:updates:channel:set', name),
     onProgress: callback => {
       const listener = (_event, payload) => callback(payload)
       ipcRenderer.on('moor:updates:progress', listener)
 
-      return () => ipcRenderer.removeListener('hermes:updates:progress', listener)
+      return () => ipcRenderer.removeListener('moor:updates:progress', listener)
     },
-    takePendingRun: () => ipcRenderer.invoke('hermes:updates:metric:take'),
-    ackPendingRun: sent => ipcRenderer.invoke('hermes:updates:metric:ack', sent),
+    takePendingRun: () => ipcRenderer.invoke('moor:updates:metric:take'),
+    ackPendingRun: sent => ipcRenderer.invoke('moor:updates:metric:ack', sent),
     onPendingRun: callback => {
       const listener = () => callback()
-      ipcRenderer.on('hermes:updates:metric:pending', listener)
+      ipcRenderer.on('moor:updates:metric:pending', listener)
 
-      return () => ipcRenderer.removeListener('hermes:updates:metric:pending', listener)
+      return () => ipcRenderer.removeListener('moor:updates:metric:pending', listener)
     }
   },
   desktopMetrics: {
-    setEnabled: (on, profile) => ipcRenderer.invoke('hermes:desktop-metrics:set-enabled', on, profile),
-    takeRendererCrashes: () => ipcRenderer.invoke('hermes:desktop-metrics:crash:take'),
-    ackRendererCrashes: sent => ipcRenderer.invoke('hermes:desktop-metrics:crash:ack', sent)
+    setEnabled: (on, profile) => ipcRenderer.invoke('moor:desktop-metrics:set-enabled', on, profile),
+    takeRendererCrashes: () => ipcRenderer.invoke('moor:desktop-metrics:crash:take'),
+    ackRendererCrashes: sent => ipcRenderer.invoke('moor:desktop-metrics:crash:ack', sent)
   },
   themes: {
     fetchMarketplace: id => ipcRenderer.invoke('moor:vscode-theme:fetch', id),

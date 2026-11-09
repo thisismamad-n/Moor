@@ -1,7 +1,7 @@
 """Post-update cron safety net for field-level loss: restore agent-job prompts an update
 collapsed to the job name while the job count stayed the same (issue #82990).
 
-Split out of ``hermes_cli.backup`` (which owns the quick snapshots this compares against and
+Split out of ``moor_cli.backup`` (which owns the quick snapshots this compares against and
 the count-based net); ``backup`` names are late-imported so its patch seams
 (``_sibling_profile_homes``) hold.
 """
@@ -11,10 +11,10 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 # Log-record parity with the origin module.
-logger = logging.getLogger("hermes_cli.backup")
+logger = logging.getLogger("moor_cli.backup")
 
 
 def _load_cron_jobs_doc(path: Path) -> Optional[Any]:
@@ -111,9 +111,9 @@ def _restore_under_cron_lock(home: Path, snap_prompts: dict[str, str]) -> list[s
 
 def restore_cron_prompt_fields_if_degraded(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> Optional[dict[str, Any]]:
-    """Safety net for field-level cron-job degradation across ``hermes update``.
+    """Safety net for field-level cron-job degradation across ``moor update``.
 
     A writer active during the update's mutation window replaced every
     agent-job ``prompt`` with the job's own ``name`` while the job COUNT
@@ -139,7 +139,7 @@ def restore_cron_prompt_fields_if_degraded(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        hermes_home: Override for the Hermes home directory (tests/siblings).
+        moor_home: Override for the Moor home directory (tests/siblings).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -149,9 +149,9 @@ def restore_cron_prompt_fields_if_degraded(
     if not snapshot_id:
         return None
 
-    from hermes_cli.backup import _CRON_JOBS_REL, _quick_snapshot_root
+    from moor_cli.backup import _CRON_JOBS_REL, _quick_snapshot_root
 
-    home = hermes_home or get_hermes_home()
+    home = moor_home or get_moor_home()
     live_path = home / _CRON_JOBS_REL
     snap_path = _quick_snapshot_root(home) / snapshot_id / _CRON_JOBS_REL
 
@@ -208,9 +208,9 @@ def restore_cron_prompt_fields_all_profiles(
     restored: list[dict[str, Any]] = []
     if not profile_snapshots:
         return restored
-    from hermes_cli.backup import _sibling_profile_homes
+    from moor_cli.backup import _sibling_profile_homes
 
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_moor_home()
     by_name = dict(_sibling_profile_homes(home))
     for name, snap_id in profile_snapshots.items():
         profile_home = by_name.get(name)
@@ -218,7 +218,7 @@ def restore_cron_prompt_fields_all_profiles(
             continue
         try:
             result = restore_cron_prompt_fields_if_degraded(
-                snap_id, hermes_home=profile_home
+                snap_id, moor_home=profile_home
             )
         except Exception as exc:
             logger.debug(

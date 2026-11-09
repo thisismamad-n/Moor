@@ -14,7 +14,7 @@ Karpathy's LLM Wiki: build/query interlinked markdown KB.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/research/llm-wiki` |
+| Source | Optional — install with `moor skills install official/research/llm-wiki` |
 | Path | `optional-skills/research/llm-wiki` |
 | Version | `2.1.0` |
 | Author | Moor Agent |

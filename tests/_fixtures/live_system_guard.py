@@ -1,4 +1,4 @@
-"""The autouse live-system guard: no real kills, Hermes-unit systemctl writes, gateway spawns or checkout writes.
+"""The autouse live-system guard: no real kills, moor-unit systemctl writes, gateway spawns or checkout writes.
 
 Imported into ``tests/conftest.py`` so pytest registers the fixture there;
 ``pytest_plugins`` is not an option because ``tests/conftest.py`` is not the
@@ -30,9 +30,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 #    instead of silently murdering the real gateway.
 #  • ``subprocess.run`` / ``subprocess.Popen`` / ``call`` / ``check_call`` /
 #    ``check_output`` reject any ``systemctl ... <verb> <unit>`` invocation
-#    that would mutate ANY live Hermes unit — ``hermes-gateway[-<profile>]``,
-#    ``hermes-dashboard[-<profile>]``, ``hermes-serve[-<profile>]`` and every
-#    other ``hermes``/``hermes-*`` unit. Read-only systemctl calls
+#    that would mutate ANY live Moor unit — ``moor-gateway[-<profile>]``,
+#    ``moor-dashboard[-<profile>]``, ``moor-serve[-<profile>]`` and every
+#    other ``moor``/``moor-*`` unit. Read-only systemctl calls
 #    (``status``, ``show``, ``list-units``, ``is-active``) still pass through.
 #
 # We intentionally do NOT stub ``find_gateway_pids`` / ``_scan_gateway_pids``
@@ -65,10 +65,10 @@ def _live_system_guard(request, monkeypatch):
       • os.system / os.popen
       • pty.spawn
       • asyncio.create_subprocess_exec / create_subprocess_shell
-    A mutating systemctl verb is refused against every Hermes unit
-    (``hermes``/``hermes-*``: gateway, dashboard, serve, any profile).
+    A mutating systemctl verb is refused against every Moor unit
+    (``moor``/``moor-*``: gateway, dashboard, serve, any profile).
     Subprocess inspection looks at the WHOLE command string (not just
-    tokens[0]), so ``bash -c "systemctl restart hermes-dashboard"``,
+    tokens[0]), so ``bash -c "systemctl restart moor-dashboard"``,
     ``sudo systemctl ...``, ``env systemctl ...``, ``setsid systemctl ...``
     are all caught. ``pkill``/``killall``/``taskkill`` invocations
     targeting moor/python patterns are also blocked. Bare ``git``
@@ -236,7 +236,7 @@ def _live_system_guard(request, monkeypatch):
 
     def _shell_words(cmd_str: str, depth: int = 0) -> set[str]:
         # Split on whitespace AND quoting/shell punctuation so a unit or verb
-        # inside ``bash -c "systemctl restart hermes-dashboard"`` is still a word,
+        # inside ``bash -c "systemctl restart moor-dashboard"`` is still a word,
         # and keep the shell's own reading too: ``rest\\art`` runs ``restart``.
         words: set[str] = set()
         for w in _re.split(r"[\s'\"`;&|()<>]+", cmd_str):
@@ -252,14 +252,14 @@ def _live_system_guard(request, monkeypatch):
                 words |= _shell_words(token, depth + 1)  # a ``bash -c`` payload
         return words
 
-    def _is_hermes_unit(word: str) -> bool:
-        # ``hermes`` / ``hermes-<anything>`` once any path and unit suffix are
-        # stripped: hermes-gateway[-<profile>], hermes-dashboard[-<profile>],
-        # hermes-serve[-<profile>], ... — never ``myhermes-dashboard`` or ``nginx``.
+    def _is_moor_unit(word: str) -> bool:
+        # ``moor`` / ``moor-<anything>`` once any path and unit suffix are
+        # stripped: moor-gateway[-<profile>], moor-dashboard[-<profile>],
+        # moor-serve[-<profile>], ... — never ``mymoor-dashboard`` or ``nginx``.
         name = word.rsplit("/", 1)[-1].lower()
         for suffix in (".service", ".timer", ".socket"):
             name = name.removesuffix(suffix)
-        return name == "hermes" or name.startswith("hermes-")
+        return name == "moor" or name.startswith("moor-")
 
     def _is_blocked_systemctl(cmd) -> bool:
         cmd_str = _cmd_to_string(cmd)
@@ -269,8 +269,8 @@ def _live_system_guard(request, monkeypatch):
         # A unit the test itself created under a unique name (``request.node.
         # live_system_guard_owned_units``) may be cleaned up; nothing else is exempt.
         owned = getattr(request.node, "live_system_guard_owned_units", ())
-        if not (_matches_hermes_gateway(cmd_str)
-                or any(_is_hermes_unit(w) and w not in owned for w in words)):
+        if not (_matches_moor_gateway(cmd_str)
+                or any(_is_moor_unit(w) and w not in owned for w in words)):
             return False
         return any(verb in words for verb in _MUTATING_VERBS)
 
@@ -312,9 +312,9 @@ def _live_system_guard(request, monkeypatch):
     def _sandboxed_gateway_child(cmd_str: str, env) -> bool:
         """The disposable-daemon fixtures (``tests/gateway/fixtures/*``, the socket-path-length
         probes) launch the bare ``python -m gateway.run`` module entry with an explicit ``env``
-        that re-homes BOTH ``HERMES_HOME`` and ``HOME`` away from the developer's account. Such a
+        that re-homes BOTH ``MOOR_HOME`` and ``HOME`` away from the developer's account. Such a
         child resolves no developer unit or config, holds no live port, and is reaped by its
-        test: the orphan class the guard exists for is the ``hermes gateway run|start|restart``
+        test: the orphan class the guard exists for is the ``moor gateway run|start|restart``
         CLI spawn against the real home, which the fixtures never use."""
         if not isinstance(env, dict):
             return False
@@ -324,8 +324,8 @@ def _live_system_guard(request, monkeypatch):
             tokens = cmd_str.split()
         if "-m" not in tokens or tokens[tokens.index("-m") + 1:][:1] != ["gateway.run"]:
             return False
-        hermes_home, home = env.get("HERMES_HOME"), env.get("HOME")
-        if not hermes_home or not home:
+        moor_home, home = env.get("MOOR_HOME"), env.get("HOME")
+        if not moor_home or not home:
             return False
         # The developer's account home from the passwd db: tests re-point ``Path.home`` at their
         # tmp user dir, which would make a sandboxed child look like it runs against the real one.
@@ -334,13 +334,13 @@ def _live_system_guard(request, monkeypatch):
             real_home = Path(pwd.getpwuid(_os.getuid()).pw_dir).resolve()
         except (ImportError, KeyError):
             real_home = Path.home().resolve()
-        # The child must not resolve the REAL Hermes root. Comparing HERMES_HOME against the whole
+        # The child must not resolve the REAL Moor root. Comparing MOOR_HOME against the whole
         # account home refused every Windows sandbox: %TEMP% lives under %USERPROFILE%.
-        from hermes_state_guard import _real_platform_state_root
-        real_root = _real_platform_state_root() or real_home / ".hermes"
+        from moor_state_guard import _real_platform_state_root
+        real_root = _real_platform_state_root() or real_home / ".moor"
         try:
             return (Path(home).resolve() != real_home
-                    and not Path(hermes_home).resolve().is_relative_to(real_root))
+                    and not Path(moor_home).resolve().is_relative_to(real_root))
         except Exception:
             return False
 
@@ -357,8 +357,8 @@ def _live_system_guard(request, monkeypatch):
             raise RuntimeError(
                 f"tests/conftest.py live-system guard: blocked "
                 f"subprocess.{name}({cmd!r}) — would mutate a live "
-                "Hermes systemd unit (hermes-gateway*, hermes-dashboard*, "
-                "hermes-serve*, ...). Mock "
+                "Moor systemd unit (moor-gateway*, moor-dashboard*, "
+                "moor-serve*, ...). Mock "
                 "subprocess.run / _run_systemctl in the test, or "
                 "mark with @pytest.mark.live_system_guard_bypass."
             )
@@ -415,7 +415,7 @@ def _live_system_guard(request, monkeypatch):
         # sibling refactor moved the spawn seam and left tests patching the
         # facade. The canonical matcher, never an argv substring.
         from gateway.status import gateway_spawn_intent_subcommand
-        # A gateway launched INSIDE a container (`docker exec … hermes gateway start`) cannot
+        # A gateway launched INSIDE a container (`docker exec … moor gateway start`) cannot
         # reach the host's systemd unit or webhook port; tests/docker/ exists to exercise it.
         in_container = _first_token_basename(cmd_str) in _CONTAINER_RUNTIMES
         if (

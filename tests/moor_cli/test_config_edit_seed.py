@@ -19,8 +19,8 @@ def _config_edit(tmp_path, monkeypatch, cfg, *, template):
 
 
 def _setup_agent_enter(tmp_path, monkeypatch, cfg):
-    """`hermes setup agent` on a fresh home, pressing Enter (the offered default) on every prompt."""
-    from hermes_cli import setup
+    """`moor setup agent` on a fresh home, pressing Enter (the offered default) on every prompt."""
+    from moor_cli import setup
 
     monkeypatch.setattr(setup, "prompt", lambda question, default=None, *a, **k: default or "")
     monkeypatch.setattr(setup, "prompt_yes_no", lambda *a, **k: False)
@@ -43,9 +43,9 @@ def _blank_slate(tmp_path, monkeypatch, cfg):
 
 
 def _doctor_fix(tmp_path, monkeypatch, cfg):
-    """`hermes doctor --fix` on a home with no config.yaml: the real config-file check, fix enabled."""
-    from hermes_cli import doctor
-    from hermes_cli.doctor_config import _check_config_file
+    """`moor doctor --fix` on a home with no config.yaml: the real config-file check, fix enabled."""
+    from moor_cli import doctor
+    from moor_cli.doctor_config import _check_config_file
 
     root = tmp_path / "checkout"  # only the template, so a stray cli-config.yaml cannot short-circuit the seed
     root.mkdir()
@@ -87,14 +87,14 @@ def test_every_seeder_keeps_every_platform_display_default(tmp_path, monkeypatch
 def test_config_edit_refusal_without_a_config_file_exits_nonzero(tmp_path, monkeypatch, capsys):
     """A backend with no local file (Remote Config) refuses `config edit` with rc 1, so a script
     cannot read the refusal as a successful edit (teknium1 P3 on #122509)."""
-    import hermes_cli.config as cfg
+    import moor_cli.config as cfg
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(cfg, "is_managed", lambda: False)
     monkeypatch.setattr(cfg, "supports_file_tooling", lambda: False)
     monkeypatch.setattr(cfg.subprocess, "run", lambda *a, **k: pytest.fail("no editor may open"))
     with pytest.raises(SystemExit) as exc:
         cfg.edit_config()
     assert exc.value.code == 1
-    assert "hermes config set" in capsys.readouterr().err
+    assert "moor config set" in capsys.readouterr().err
     assert not (tmp_path / "config.yaml").exists()

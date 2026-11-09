@@ -16,12 +16,12 @@ Tracks [issue #7816](https://github.com/thisismamad-n/Moor/issues/7816).
 
 ## How it runs
 
-The curator is triggered by an inactivity check, not a cron job. On CLI session start, during gateway housekeeping (which also covers a local Desktop, since it attaches to the gateway), and on the `hermes serve` maintenance timer, Hermes checks whether:
+The curator is triggered by an inactivity check, not a cron job. On CLI session start, during gateway housekeeping (which also covers a local Desktop, since it attaches to the gateway), and on the `moor serve` maintenance timer, Moor checks whether:
 
 1. Enough time has passed since the last curator run (`interval_hours`, default **7 days**), and
 2. The agent has been idle long enough (`min_idle_hours`, default **2 hours**).
 
-`hermes serve` / `hermes dashboard` backends (for example a remote Desktop connection) share the existing hourly maintenance timer (first poll after 90 seconds), independently of cron jobs. They measure inactivity from process startup and the most recent chat activity in the same profile, retaining that activity timestamp after a session closes or is reaped, and skip curator while a turn in that profile is running. A connected but inactive window does not block maintenance. A running messaging gateway for the same profile owns these chores instead.
+`moor serve` / `moor dashboard` backends (for example a remote Desktop connection) share the existing hourly maintenance timer (first poll after 90 seconds), independently of cron jobs. They measure inactivity from process startup and the most recent chat activity in the same profile, retaining that activity timestamp after a session closes or is reaped, and skip curator while a turn in that profile is running. A connected but inactive window does not block maintenance. A running messaging gateway for the same profile owns these chores instead.
 
 The timer services its backend's profile. In-flight maintenance runs in a worker thread; closing the backend does not cooperatively interrupt that pass. Starting multiple independent serve processes for the same profile can still race the curator's interval check.
 
@@ -95,33 +95,33 @@ Earlier releases used a one-off `curator.auxiliary.{provider,model}` block. That
 ## CLI
 
 ```bash
-hermes curator status         # last run, counts, pinned list, LRU top 5
-hermes curator run            # trigger a run now (blocks until done). Prune-only unless curator.consolidate: true
-hermes curator run --consolidate # force the LLM consolidation pass on for this run, overriding the config default
-hermes curator run --background  # fire-and-forget: start the run in a background thread
-hermes curator run --dry-run  # preview only — report without any mutations
-hermes curator backup         # take a manual snapshot of ~/.hermes/skills/
-hermes curator rollback       # restore from the newest snapshot
-hermes curator rollback --list     # list available snapshots
-hermes curator rollback --id <ts>  # restore a specific snapshot
-hermes curator rollback -y         # skip the confirmation prompt
-hermes curator pause          # stop runs until resumed
-hermes curator resume
-hermes curator pin <skill>    # never auto-transition this skill
-hermes curator unpin <skill>
-hermes curator lock <skill>   # the agent may not change it
-hermes curator unlock <skill>
-hermes curator adopt <skill>    # hand an unmanaged skill to the curator
-hermes curator adopt --all-unmanaged   # hand over every unmanaged skill
-hermes curator list-unmanaged   # itemize skills with no provenance marker
-hermes curator restore <skill>  # move an archived skill back to active
-hermes curator list-archived    # list skills currently in ~/.hermes/skills/.archive/
-hermes curator archive <skill>  # manually archive a single skill now
-hermes curator prune [--days N] # bulk-archive agent-created skills idle >= N days (default: `archive_after_days`, 30)
-hermes curator ledger           # list the per-mutation audit ledger (all actors)
-hermes curator ledger --skill <name> --limit 50  # filter/paginate ledger entries
-hermes curator rollback <entry-id>  # undo a single mutation from the ledger
-hermes curator purge [--days N] [--dry-run]  # delete archived skills older than the TTL (explicit only)
+moor curator status         # last run, counts, pinned list, LRU top 5
+moor curator run            # trigger a run now (blocks until done). Prune-only unless curator.consolidate: true
+moor curator run --consolidate # force the LLM consolidation pass on for this run, overriding the config default
+moor curator run --background  # fire-and-forget: start the run in a background thread
+moor curator run --dry-run  # preview only — report without any mutations
+moor curator backup         # take a manual snapshot of ~/.moor/skills/
+moor curator rollback       # restore from the newest snapshot
+moor curator rollback --list     # list available snapshots
+moor curator rollback --id <ts>  # restore a specific snapshot
+moor curator rollback -y         # skip the confirmation prompt
+moor curator pause          # stop runs until resumed
+moor curator resume
+moor curator pin <skill>    # never auto-transition this skill
+moor curator unpin <skill>
+moor curator lock <skill>   # the agent may not change it
+moor curator unlock <skill>
+moor curator adopt <skill>    # hand an unmanaged skill to the curator
+moor curator adopt --all-unmanaged   # hand over every unmanaged skill
+moor curator list-unmanaged   # itemize skills with no provenance marker
+moor curator restore <skill>  # move an archived skill back to active
+moor curator list-archived    # list skills currently in ~/.moor/skills/.archive/
+moor curator archive <skill>  # manually archive a single skill now
+moor curator prune [--days N] # bulk-archive agent-created skills idle >= N days (default: `archive_after_days`, 30)
+moor curator ledger           # list the per-mutation audit ledger (all actors)
+moor curator ledger --skill <name> --limit 50  # filter/paginate ledger entries
+moor curator rollback <entry-id>  # undo a single mutation from the ledger
+moor curator purge [--days N] [--dry-run]  # delete archived skills older than the TTL (explicit only)
 ```
 
 ## Backups and rollback
@@ -286,7 +286,7 @@ in the skill ledger. It may archive (delete) only curator-managed skills, never
 pinned ones. To review those writes before they land, turn on
 `skills.write_approval` (see [Gating agent skill writes](./skills.md#gating-agent-skill-writes-skillswrite_approval)).
 A bundled or hub-installed skill the review has edited counts as locally
-modified, so `hermes update` / `hermes skills update` stop overwriting it.
+modified, so `moor update` / `moor skills update` stop overwriting it.
 
 :::note `created_by` is a policy flag, not a provenance claim
 The stored field is named `created_by`, but it is consumed as "may autonomous
@@ -313,8 +313,8 @@ Skills that ARE agent-created follow the full lifecycle:
 - Archives are recoverable via `moor curator restore <name>`
 
 If you want to protect an agent-created skill from archival, use
-`hermes curator pin <name>`. If you want the agent to stop changing a skill at all —
-for example a hand-authored skill you rely on — use `hermes curator lock <name>`.
+`moor curator pin <name>`. If you want the agent to stop changing a skill at all —
+for example a hand-authored skill you rely on — use `moor curator lock <name>`.
 Both are described below.
 
 ## Pinning a skill
@@ -346,9 +346,9 @@ If you want a stronger guarantee than "no deletion" — freezing a skill's conte
 Pinning stops archival. Locking stops **the agent from changing a skill at all**, while the skill stays readable, listed in the skill index, auto-loadable and usable exactly as before.
 
 ```bash
-hermes curator lock <skill>
-hermes curator unlock <skill>
-hermes curator status          # lists locked skills
+moor curator lock <skill>
+moor curator unlock <skill>
+moor curator status          # lists locked skills
 ```
 
 In Desktop, open **Capabilities → Skills**, select the skill and use its lock switch.
@@ -359,17 +359,17 @@ Once a skill is locked, every way the agent can write refuses it, in normal turn
 - **`write_file` and `patch`** refuse any path inside the skill's directory (`SKILL.md`, `references/`, `scripts/`, …).
 - **`terminal`** refuses commands that write there: redirections and `tee`, `cp`/`mv`/`rm`/`touch`/`mkdir`/`chmod`, `sed -i`/`perl -i`, `git` changes in the skill's tree, archive extraction into it, and inline `python -c`/`bash -c` code naming it, including after a `cd` into the skill. Reading the skill and running its scripts keep working.
 - The curator never archives a locked skill.
-- The agent cannot unlock it: `terminal` refuses `hermes curator unlock`, and the lock record (`skills/.usage.json`) is protected the same way while any skill is locked. The refusal tells the agent to describe the change it wanted so you can decide.
+- The agent cannot unlock it: `terminal` refuses `moor curator unlock`, and the lock record (`skills/.usage.json`) is protected the same way while any skill is locked. The refusal tells the agent to describe the change it wanted so you can decide.
 
-Your own edits are not gated: editing the files in your editor or in the Desktop skill editor always works. To let the agent change it again, run `hermes curator unlock <skill>` or flip the switch.
+Your own edits are not gated: editing the files in your editor or in the Desktop skill editor always works. To let the agent change it again, run `moor curator unlock <skill>` or flip the switch.
 
-The flag is stored as `"locked": true` on the skill's entry in `~/.hermes/skills/.usage.json`, the same sidecar as `pinned`, so it is **per profile**: `hermes -p work curator lock deploy-runbook` locks that profile's copy only. Any skill that resolves in the profile can be locked (hand-written, agent-created, bundled or hub-installed); `lock` refuses a name it cannot resolve.
+The flag is stored as `"locked": true` on the skill's entry in `~/.moor/skills/.usage.json`, the same sidecar as `pinned`, so it is **per profile**: `moor -p work curator lock deploy-runbook` locks that profile's copy only. Any skill that resolves in the profile can be locked (hand-written, agent-created, bundled or hub-installed); `lock` refuses a name it cannot resolve.
 
 What a lock is not:
 
 - It is a **policy check, not a sandbox.** The terminal check reads the command's write targets; a script that writes into the skill through its own logic, or `execute_code`, is not inspected. Pair it with filesystem permissions if you need a hard boundary.
-- If `.usage.json` is corrupt, the background passes are refused (fail closed) while normal turns proceed, so one broken file does not freeze every skill edit. Repair it, or run `hermes curator unlock <skill>` to rewrite it.
-- It does **not** stop `hermes update` / `hermes skills update` from refreshing a bundled or hub skill you have not modified; those are your commands, not agent writes.
+- If `.usage.json` is corrupt, the background passes are refused (fail closed) while normal turns proceed, so one broken file does not freeze every skill edit. Repair it, or run `moor curator unlock <skill>` to rewrite it.
+- It does **not** stop `moor update` / `moor skills update` from refreshing a bundled or hub skill you have not modified; those are your commands, not agent writes.
 
 ## Usage telemetry
 

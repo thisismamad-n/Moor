@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import web_server
-import hermes_cli.web_server_gateway as _web_server_gateway
+from moor_cli import web_server
+import moor_cli.web_server_gateway as _web_server_gateway
 
 
 @pytest.fixture()
@@ -96,8 +96,8 @@ class TestUpdateStatusReadsReceipt:
         monkeypatch.setattr(_web_server_gateway, "_ACTION_LOG_DIR", tmp_path / "actions")
         (tmp_path / "actions").mkdir(exist_ok=True)
         # The dashboard's own log names the action it spawned; the receipt must name the same one.
-        (tmp_path / "actions" / "hermes-update.log").write_text(
-            f"=== hermes-update started 2026-08-23 07:00:00 {_ACTION_ID} ===\n", encoding="utf-8")
+        (tmp_path / "actions" / "moor-update.log").write_text(
+            f"=== moor-update started 2026-08-23 07:00:00 {_ACTION_ID} ===\n", encoding="utf-8")
         monkeypatch.setattr(_web_server_gateway, "_ACTION_PROCS", {})
         monkeypatch.setattr(_web_server_gateway, "_ACTION_RESULTS", {})
         monkeypatch.setattr(_web_server_gateway, "_ACTION_COMMANDS", {})

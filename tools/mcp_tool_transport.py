@@ -14,7 +14,7 @@ from agent.proxy_bypass import is_loopback_host, should_bypass_proxy
 from agent import runtime_cwd as _runtime_cwd
 from tools.mcp_tool_errors import _MCP_HTTP_MAX_BODY_BYTES, NonMcpEndpointError, _apply_identity_header, _describe_http_failure, _handshake_answered_with_unsupported_version, _handshake_rejected_as_modern, _is_streamable_http_rejection, _make_http_rejection_recorder, _make_mcp_body_cap_transport, _make_redirect_header_stripper, _resolve_client_cert, _unwrap_exception_group
 from tools.mcp_tool_lifecycle import _filter_mcp_children, _leader_start_time, _orphan_stdio_pid_servers, _orphan_stdio_pids, _stdio_pgids, _stdio_pids, _stdio_starttimes
-from hermes_cli.process_identity import own_process_groups, register_child, release_process_groups
+from moor_cli.process_identity import own_process_groups, register_child, release_process_groups
 from tools.mcp_tool_common import _core
 from tools.mcp_tool_node_abi import node_abi_error
 from tools import mcp_tool_config as _config
@@ -181,8 +181,8 @@ class MCPServerTransportMixin:
         if _core._client_session_accepts("client_info"):
             # Servers key logs/behaviour on clientInfo; the SDK default is "mcp"/"0.1.0".
             from mcp.types import Implementation
-            from hermes_cli.version_info import get_version_info
-            kwargs["client_info"] = Implementation(name="hermes-agent", version=get_version_info().base_version)
+            from moor_cli.version_info import get_version_info
+            kwargs["client_info"] = Implementation(name="moor-agent", version=get_version_info().base_version)
         return kwargs
 
     async def _negotiate_session(self, session, connect_timeout: float):
@@ -391,7 +391,7 @@ class MCPServerTransportMixin:
         # outlive us. Idempotent; BREAKAWAY_OK keeps deliberate breakaway children escaping.
         # Self-guards: a cheap no-op returning False on non-Windows.
         try:
-            from hermes_cli.process_identity import attach_self_to_kill_on_close_job
+            from moor_cli.process_identity import attach_self_to_kill_on_close_job
             attach_self_to_kill_on_close_job()
         except Exception:
             logger.debug("job-object self-attach failed before stdio spawn", exc_info=True)

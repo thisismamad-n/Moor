@@ -325,8 +325,8 @@ def test_claim_seconds_before_the_slot_owns_it_once(temp_home, monkeypatch):
     jobs.mark_job_run(job["id"], True)
 
     backstop = slot_dt.astimezone(UTC) + timedelta(minutes=11)
-    monkeypatch.setattr(jobs, "_hermes_now", lambda: backstop)
-    monkeypatch.setattr(executions, "_hermes_now", lambda: backstop)
+    monkeypatch.setattr(jobs, "_moor_now", lambda: backstop)
+    monkeypatch.setattr(executions, "_moor_now", lambda: backstop)
     assert jobs.claim_job_for_fire(job["id"], return_job=True) is False, (
         "misfire backstop re-ran the slot a skewed early fire already completed")
     assert datetime.fromisoformat(jobs.get_job(job["id"])["next_run_at"]) > slot_dt

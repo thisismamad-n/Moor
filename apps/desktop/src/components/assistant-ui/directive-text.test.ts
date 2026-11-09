@@ -40,8 +40,8 @@ describe('moorDirectiveFormatter.parse', () => {
   })
 
   it('preserves punctuation inside quoted values but trims bare sentence punctuation', () => {
-    const quoted = hermesDirectiveFormatter.parse('see @file:`report!` now')
-    const bare = hermesDirectiveFormatter.parse('see @file:report! now')
+    const quoted = moorDirectiveFormatter.parse('see @file:`report!` now')
+    const bare = moorDirectiveFormatter.parse('see @file:report! now')
 
     expect(quoted).toEqual([
       { kind: 'text', text: 'see ' },

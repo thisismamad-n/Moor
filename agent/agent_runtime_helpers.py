@@ -665,7 +665,7 @@ def _merge_consecutive_users(messages: list[dict]) -> tuple[list[dict], int]:
     """Pass 3: merge consecutive plain-text user messages (no user input lost)."""
     from agent.context_compressor import _DB_PERSISTED_MARKER, split_user_originated_turn
     from agent.conversation_compression_archive import MERGED_DURABLE_ROWS
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     def _plain_text(content: Any) -> bool:
         # never rewrite the persisted row around undecodable content
@@ -751,7 +751,7 @@ def _normalize_sentinel_encoded_content(messages: list[dict]) -> None:
     image-bearing turn is never merged as text (#125299). A multimodal turn can re-enter the working set
     as its ``\\x00json:[…]`` string (e.g. after a proactive prune re-inserts history, #124102). A body
     that no longer parses stays a sentinel string; ``_merge_consecutive_users`` refuses to weld it."""
-    from hermes_state import SessionDB  # lazy: the persistence layer owns the sentinel codec
+    from moor_state import SessionDB  # lazy: the persistence layer owns the sentinel codec
 
     for msg in messages:
         if not isinstance(msg, dict):
@@ -1401,7 +1401,7 @@ def _primary_quota_reopened_early(agent, primary_provider, primary_model, matche
     """
     if primary_provider != "openai-codex":
         return False
-    from hermes_cli.auth_codex import CODEX_QUOTA_PROBE_MIN_INTERVAL_SECONDS
+    from moor_cli.auth_codex import CODEX_QUOTA_PROBE_MIN_INTERVAL_SECONDS
     now = time.monotonic()
     if now - getattr(agent, "_codex_reopen_checked_at", float("-inf")) < CODEX_QUOTA_PROBE_MIN_INTERVAL_SECONDS:
         return False
@@ -1435,7 +1435,7 @@ def restore_primary_runtime(agent) -> bool:
     primary_provider = str((rt or {}).get("provider") or "").strip().lower()
     primary_model = str((rt or {}).get("model") or "").strip()
     from agent.fallback_cooldown import _is_entitlement_rejected
-    from hermes_cli.chat_catalog import is_known_non_chat_model
+    from moor_cli.chat_catalog import is_known_non_chat_model
     if primary_model and (
         _is_entitlement_rejected(agent, primary_provider, primary_model)
         or is_known_non_chat_model(primary_model)
@@ -2076,7 +2076,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
     # keeps SDK retries because it is NOT wrapped by the conversation loop.
     client_kwargs.setdefault("max_retries", 0)
     _ensure_route_client_headers(client_kwargs, str(getattr(agent, "provider", "") or ""))
-    # All primary construction and recovery paths must identify Hermes to the official Codex
+    # All primary construction and recovery paths must identify Moor to the official Codex
     # endpoint, including snapshots with custom header overrides.
     from agent.codex_headers import apply_required_codex_headers
     apply_required_codex_headers(

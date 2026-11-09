@@ -17,7 +17,7 @@ import time
 from xml.sax.saxutils import escape
 from datetime import UTC
 
-from hermes_cli import gateway_service_owner
+from moor_cli import gateway_service_owner
 
 from agent.deadline import poll_until
 
@@ -213,12 +213,12 @@ def _launchd_unsupported_marker_exists() -> bool:
 
 
 def _gateway_run_command() -> list[str]:
-    from hermes_cli._launchers import runtime_command
-    from hermes_constants import get_default_hermes_root
+    from moor_cli._launchers import runtime_command
+    from moor_constants import get_default_moor_root
     # Every caller spawns an UNSUPERVISED child, which follows the sticky active_profile unless a
     # selector pins it (main._apply_profile_override): the root's replacement booted that profile.
     selector = shlex.split(_gw()._profile_arg())
-    if not selector and _gw().get_hermes_home().resolve() == get_default_hermes_root().resolve():
+    if not selector and _gw().get_moor_home().resolve() == get_default_moor_root().resolve():
         selector = ["--profile", "default"]
     return runtime_command(_gw().PROJECT_ROOT, [*selector, "gateway", "run", "--replace"],
                            python=_gw().get_python_path())
@@ -294,15 +294,15 @@ def _spawn_detached_gateway() -> bool:
     gateway.log, stderr is timestamped into gateway.error.log, and the PID is tracked via the gateway.pid
     file that `run_gateway` writes, so stop/status/restart keep working.
     """
-    from hermes_cli._subprocess_compat import windows_detach_popen_kwargs
-    from hermes_constants import get_hermes_home
+    from moor_cli._subprocess_compat import windows_detach_popen_kwargs
+    from moor_constants import get_moor_home
     from tools.environments.local import served_profile_child_env
-    log_dir = _gw().get_hermes_home() / "logs"
+    log_dir = _gw().get_moor_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     child_env = served_profile_child_env(
-        target_home=get_hermes_home(), inherit_credentials=True,
+        target_home=get_moor_home(), inherit_credentials=True,
     )
-    child_env.pop("_HERMES_GATEWAY", None)
+    child_env.pop("_MOOR_GATEWAY", None)
     try:
         with open(log_dir / "gateway.log", "ab") as out:
             subprocess.Popen(
@@ -572,8 +572,8 @@ def refresh_launchd_plist_if_needed() -> bool:
     if not plist_path.exists() or _gw().launchd_plist_is_current():
         return False
     # Runs on every gateway start/restart: a plist pinning another home is another install's gateway.
-    from hermes_cli.gateway_service_owner import definition_belongs_to_home
-    if not definition_belongs_to_home(plist_path, _gw().get_hermes_home(), "rewrite"):
+    from moor_cli.gateway_service_owner import definition_belongs_to_home
+    if not definition_belongs_to_home(plist_path, _gw().get_moor_home(), "rewrite"):
         return False
 
     new_plist = _gw().generate_launchd_plist()
@@ -628,8 +628,8 @@ def launchd_install(force: bool = False, *, start_now: bool = True, force_unit_p
     plist_path = _gw().get_launchd_plist_path()
     label = _gw().get_launchd_label()
     # A plist pinning another home is another install's gateway, --force included; --force-unit-path repoints.
-    from hermes_cli.gateway_service_owner import definition_belongs_to_home
-    if not force_unit_path and not definition_belongs_to_home(plist_path, _gw().get_hermes_home(), "overwrite"):
+    from moor_cli.gateway_service_owner import definition_belongs_to_home
+    if not force_unit_path and not definition_belongs_to_home(plist_path, _gw().get_moor_home(), "overwrite"):
         sys.exit(1)
     # Loading the plist starts the gateway (RunAtLoad), so a no-start install writes it without
     # loading it. A gateway that launchd already runs is still reloaded; this install did not start it.

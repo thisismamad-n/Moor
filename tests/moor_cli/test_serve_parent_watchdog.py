@@ -230,11 +230,11 @@ def test_parent_watchdog_shuts_down_through_the_signal_path_not_os_exit(monkeypa
     import signal
     import threading
 
-    from hermes_cli import web_server_lifecycle
+    from moor_cli import web_server_lifecycle
 
-    monkeypatch.setenv("HERMES_PARENT_PID", "4242")
-    monkeypatch.delenv("HERMES_PARENT_START_MARKER", raising=False)
-    monkeypatch.delenv("HERMES_PARENT_NONCE", raising=False)
+    monkeypatch.setenv("MOOR_PARENT_PID", "4242")
+    monkeypatch.delenv("MOOR_PARENT_START_MARKER", raising=False)
+    monkeypatch.delenv("MOOR_PARENT_NONCE", raising=False)
     monkeypatch.setattr(web_server_lifecycle, "_is_serve_orphaned", lambda *_args: True)
 
     hard_exits = []
@@ -279,7 +279,7 @@ def test_parent_watchdog_arms_a_daemon_hard_exit_ceiling(monkeypatch):
     import os
     import signal
 
-    from hermes_cli import web_server_lifecycle
+    from moor_cli import web_server_lifecycle
 
     raised = []
     monkeypatch.setattr(web_server_lifecycle.signal, "raise_signal", raised.append)

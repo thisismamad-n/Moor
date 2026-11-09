@@ -34,38 +34,38 @@ def moor_vendored_dirs() -> tuple[str, ...]:
 
 
 def machine_marker_files() -> tuple[str, ...]:
-    """Where Hermes records that this OS user has used it. No Hermes data-dir setting moves these.
+    """Where Moor records that this OS user has used it. No Moor data-dir setting moves these.
     The first entry is the one written; the rest are read too (Windows: MSIX builds that ran with
     filesystem virtualisation wrote under the package's LocalCache)."""
     if _WIN:
-        return ("%LOCALAPPDATA%/Nous Research/.machine",
-                "%LOCALAPPDATA%/Packages/NousResearch*_*/LocalCache/Local/Nous Research/.machine")
+        return ("%LOCALAPPDATA%/Moor inc./.machine",
+                "%LOCALAPPDATA%/Packages/Moor inc.*_*/LocalCache/Local/Moor inc./.machine")
     if sys.platform == "darwin":
-        return ("~/Library/Application Support/Nous Research/.machine",)
-    return ("$XDG_STATE_HOME/nous-research/.machine", "~/.local/state/nous-research/.machine")
+        return ("~/Library/Application Support/Moor inc./.machine",)
+    return ("$XDG_STATE_HOME/moor-research/.machine", "~/.local/state/moor-research/.machine")
 
 
-def hermes_home_globs() -> tuple[str, ...]:
-    """Every place a Hermes data root can sit by default: suffixed channel roots, the legacy Windows
+def moor_home_globs() -> tuple[str, ...]:
+    """Every place a Moor data root can sit by default: suffixed channel roots, the legacy Windows
     root, and the per-package roots of MSIX builds that ran with filesystem virtualisation."""
     if _WIN:
-        return ("%LOCALAPPDATA%/hermes*", "%USERPROFILE%/.hermes",
-                "%LOCALAPPDATA%/Packages/NousResearch*_*/LocalCache/Local/hermes*")
-    return ("~/.hermes*",)
+        return ("%LOCALAPPDATA%/moor*", "%USERPROFILE%/.moor",
+                "%LOCALAPPDATA%/Packages/Moor inc.*_*/LocalCache/Local/moor*")
+    return ("~/.moor*",)
 
 
 def gateway_service_definition_globs() -> tuple[str, ...]:
-    """This OS user's gateway service definitions, each naming the HERMES_HOME it serves."""
+    """This OS user's gateway service definitions, each naming the MOOR_HOME it serves."""
     if _WIN:
-        return ("%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/Hermes_Gateway*",)
+        return ("%APPDATA%/Microsoft/Windows/Start Menu/Programs/Startup/Moor_Gateway*",)
     if sys.platform == "darwin":
-        return ("~/Library/LaunchAgents/ai.hermes.gateway*.plist",)
-    return ("$XDG_CONFIG_HOME/systemd/user/hermes-gateway*.service", "~/.config/systemd/user/hermes-gateway*.service")
+        return ("~/Library/LaunchAgents/ai.moor.gateway*.plist",)
+    return ("$XDG_CONFIG_HOME/systemd/user/moor-gateway*.service", "~/.config/systemd/user/moor-gateway*.service")
 
 
 def system_gateway_service_definition_globs() -> tuple[str, ...]:
     """Machine-wide gateway services. Each runs as the account its ``User=`` names (root when none)."""
-    return ("/etc/systemd/system/hermes-gateway*.service",) if _POSIX and sys.platform != "darwin" else ()
+    return ("/etc/systemd/system/moor-gateway*.service",) if _POSIX and sys.platform != "darwin" else ()
 
 
 def mac_privacy_protected_dirs() -> tuple[str, ...]:

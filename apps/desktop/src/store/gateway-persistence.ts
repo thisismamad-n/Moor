@@ -1,4 +1,4 @@
-import { LOCAL_CONNECTION_ID } from '@hermes/shared'
+import { LOCAL_CONNECTION_ID } from '@moor/shared'
 
 import type { DesktopConnectionsRegistry, DesktopRegistryConnection } from '@/global'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
@@ -32,10 +32,10 @@ export function persistentGatewayIds(
   return (registry?.connections ?? []).filter(connection => !servedByPrimary(connection, primary)).map(c => c.id)
 }
 
-/** Dialing This device where Hermes is not installed would start the installer
+/** Dialing This device where Moor is not installed would start the installer
  *  unseen; only a confirmed click may do that. A missing probe fails closed. */
 async function localInstalled(): Promise<boolean> {
-  const probe = window.hermesDesktop?.probeLocalBackend
+  const probe = window.moorDesktop?.probeLocalBackend
 
   return probe ? (await probe()).bootstrapNeeded !== true : false
 }

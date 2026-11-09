@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import uninstall
-from tests.hermes_cli.test_data_uninstall import layout
+from moor_cli import uninstall
+from tests.moor_cli.test_data_uninstall import layout
 
 
 @pytest.mark.parametrize("mode", ["confirmed", "cancel", "dry-run"])

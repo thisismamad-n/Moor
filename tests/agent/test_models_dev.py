@@ -888,7 +888,7 @@ class TestModelOverrides:
             },
         }
         with self._setup_overrides(overrides):
-            # Caller passes the models.dev id; config keyed by Hermes id.
+            # Caller passes the models.dev id; config keyed by Moor id.
             result = _explicit_model_override("fireworks-ai", "my-model")
         assert result is not None
         assert result["context_window"] == 111111
@@ -899,7 +899,7 @@ class TestModelOverrides:
             },
         }
         with self._setup_overrides(overrides):
-            # Caller passes the Hermes id; config keyed by models.dev id.
+            # Caller passes the Moor id; config keyed by models.dev id.
             result = _explicit_model_override("fireworks", "my-model")
         assert result is not None
         assert result["context_window"] == 222222

@@ -172,10 +172,10 @@ def test_handle_approve_surfaces_overwritten_entry(moor_home):
     assert store.memory_entries == ["RULE B: CI is per-head."]
 
 
-def test_handle_approve_lists_a_patch_as_the_entry_before_the_edit(hermes_home):
+def test_handle_approve_lists_a_patch_as_the_entry_before_the_edit(moor_home):
     """An approved patch keeps the rest of its entry; the approve output called it an
     overwrite and told the user to re-add text they had deliberately changed."""
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import MemoryStore
     from tools import write_approval as wa
     store = MemoryStore(); store.load_from_disk()
@@ -338,17 +338,17 @@ def test_memory_inline_deny_blocks(moor_home, approval_callback_cleanup):
 
 @pytest.mark.parametrize("context", ["single_query", "cron", "webhook"])
 def test_headless_memory_write_stages_without_inline_prompt(
-    hermes_home, approval_callback_cleanup, monkeypatch, context
+    moor_home, approval_callback_cleanup, monkeypatch, context
 ):
-    """`hermes chat -q`, cron and unattended platforms can register the CLI callback but have no human to answer
+    """`moor chat -q`, cron and unattended platforms can register the CLI callback but have no human to answer
     it: the write stages at once instead of waiting the approval timeout."""
     from tools.memory_tool import memory_tool, MemoryStore
     from tools.terminal_tool import set_approval_callback
     from tools import write_approval as wa
 
     _set_approval("memory", True)
-    monkeypatch.setenv(*{"single_query": ("HERMES_SINGLE_QUERY_SESSION", "1"), "cron": ("HERMES_CRON_SESSION", "1"),
-                         "webhook": ("HERMES_SESSION_PLATFORM", "webhook")}[context])
+    monkeypatch.setenv(*{"single_query": ("MOOR_SINGLE_QUERY_SESSION", "1"), "cron": ("MOOR_CRON_SESSION", "1"),
+                         "webhook": ("MOOR_SESSION_PLATFORM", "webhook")}[context])
 
     calls = []
 
@@ -369,7 +369,7 @@ def test_headless_memory_write_stages_without_inline_prompt(
     assert wa.pending_count("memory") == 1
 
 
-def test_memory_invalid_params_rejected_before_staging(hermes_home):
+def test_memory_invalid_params_rejected_before_staging(moor_home):
     # Param validation must run BEFORE the gate so a broken write is rejected
     # immediately instead of staged and failing at approve time.
     from tools.memory_tool import memory_tool, MemoryStore
@@ -393,7 +393,7 @@ def _stage_one_memory_write():
     return r
 
 
-def test_staged_hint_names_the_review_command_on_slash_surfaces(hermes_home):
+def test_staged_hint_names_the_review_command_on_slash_surfaces(moor_home):
     from tools import write_approval as wa
     _set_approval("memory", True)
     r = _stage_one_memory_write()
@@ -402,31 +402,31 @@ def test_staged_hint_names_the_review_command_on_slash_surfaces(hermes_home):
     assert wa.pending_count("memory") == 1
 
 
-def test_staged_hint_names_the_pending_dir_on_headless_surfaces(hermes_home, monkeypatch):
+def test_staged_hint_names_the_pending_dir_on_headless_surfaces(moor_home, monkeypatch):
     from tools import write_approval as wa
     _set_approval("memory", True)
-    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.setenv("MOOR_CRON_SESSION", "1")
     r = _stage_one_memory_write()
     assert "review with /memory pending" not in r["message"], r["message"]
     assert "pending records live in" in r["message"]
     assert str(wa._pending_path(wa.MEMORY, "").parent) in r["message"]
-    monkeypatch.delenv("HERMES_CRON_SESSION")
+    monkeypatch.delenv("MOOR_CRON_SESSION")
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "task-7")
+    monkeypatch.setenv("MOOR_KANBAN_TASK", "task-7")
     r = _stage_one_memory_write()
     assert "review with /memory pending" not in r["message"], r["message"]
-    monkeypatch.delenv("HERMES_KANBAN_TASK")
+    monkeypatch.delenv("MOOR_KANBAN_TASK")
 
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "api_server")
+    monkeypatch.setenv("MOOR_SESSION_PLATFORM", "api_server")
     r = _stage_one_memory_write()
     assert "review with /memory pending" not in r["message"], r["message"]
     assert "pending records live in" in r["message"]
-    monkeypatch.delenv("HERMES_SESSION_PLATFORM")
+    monkeypatch.delenv("MOOR_SESSION_PLATFORM")
     assert wa.pending_count("memory") == 3
 
 
-def test_staged_hint_keeps_command_for_chat_gateway_platform(hermes_home, monkeypatch):
+def test_staged_hint_keeps_command_for_chat_gateway_platform(moor_home, monkeypatch):
     _set_approval("memory", True)
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "telegram")
+    monkeypatch.setenv("MOOR_SESSION_PLATFORM", "telegram")
     r = _stage_one_memory_write()
     assert "/memory pending" in r["message"], r["message"]

@@ -1,4 +1,4 @@
-import type { GatewayEvent, GatewayEventName } from '@hermes/shared'
+import type { GatewayEvent, GatewayEventName } from '@moor/shared'
 import { QueryClient } from '@tanstack/react-query'
 import { act, render } from '@testing-library/react'
 import { useEffect, useRef } from 'react'

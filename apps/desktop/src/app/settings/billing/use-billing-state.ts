@@ -1,4 +1,4 @@
-import { gaugeScope, gaugeTitle, PAYMENT_PAUSE_REASON } from '@hermes/shared'
+import { gaugeScope, gaugeTitle, PAYMENT_PAUSE_REASON } from '@moor/shared'
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 

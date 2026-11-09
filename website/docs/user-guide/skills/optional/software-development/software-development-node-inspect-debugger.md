@@ -14,7 +14,7 @@ Debug Node.js via --inspect + Chrome DevTools Protocol CLI.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/software-development/node-inspect-debugger` |
+| Source | Optional — install with `moor skills install official/software-development/node-inspect-debugger` |
 | Path | `optional-skills/software-development/node-inspect-debugger` |
 | Version | `1.0.0` |
 | Author | Moor Agent |

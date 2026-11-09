@@ -105,19 +105,19 @@ def test_named_profile_start_all_starts_the_default_host_service(monkeypatch, tm
     """With no live owner, `-p X gateway start --all` must start the host root, never X's gateway.
 
     Skipping the generic named-profile guard alone is insufficient on Windows: the Windows backend
-    derives its Scheduled Task name, launcher HERMES_HOME and detached child from the active home.
+    derives its Scheduled Task name, launcher MOOR_HOME and detached child from the active home.
     """
-    import hermes_constants
+    import moor_constants
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     named = root / "profiles" / "leinad"
     root.mkdir()
     named.mkdir(parents=True)
     (root / "config.yaml").write_text("{}\n", encoding="utf-8")
     (named / "config.yaml").write_text("{}\n", encoding="utf-8")
 
-    monkeypatch.setenv("HERMES_HOME", str(named))
-    hermes_constants._default_hermes_root_memo = None
+    monkeypatch.setenv("MOOR_HOME", str(named))
+    moor_constants._default_moor_root_memo = None
     monkeypatch.setattr(
         gw, "_guard_named_profile_under_multiplexer",
         lambda **k: pytest.fail("the generic profile guard pre-empted start --all"),
@@ -131,8 +131,8 @@ def test_named_profile_start_all_starts_the_default_host_service(monkeypatch, tm
     def _observe(step):
         calls.append((
             step,
-            Path(hermes_constants.get_hermes_home()),
-            os.environ.get("HERMES_HOME"),
+            Path(moor_constants.get_moor_home()),
+            os.environ.get("MOOR_HOME"),
         ))
 
     def _kill(**kwargs):
@@ -161,8 +161,8 @@ def test_named_profile_start_all_starts_the_default_host_service(monkeypatch, tm
         ("start", root, str(root)),
     ]
     # The CLI's named-profile scope is restored after the host-scoped operation.
-    assert hermes_constants.get_hermes_home() == named
-    assert os.environ["HERMES_HOME"] == str(named)
+    assert moor_constants.get_moor_home() == named
+    assert os.environ["MOOR_HOME"] == str(named)
 
 
 def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monkeypatch, tmp_path):
@@ -175,9 +175,9 @@ def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monk
     CLI already loaded X's ``.env`` into ``os.environ``, and an in-process ``run_gateway`` served the
     default profile with X's credentials.
     """
-    import hermes_constants
+    import moor_constants
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     named = root / "profiles" / "leinad"
     named.mkdir(parents=True)
     (root / "config.yaml").write_text("{}\n", encoding="utf-8")
@@ -189,8 +189,8 @@ def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monk
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "leinad-telegram")
     monkeypatch.setenv("OPENAI_API_KEY", "leinad-openai")
 
-    monkeypatch.setenv("HERMES_HOME", str(named))
-    hermes_constants._default_hermes_root_memo = None
+    monkeypatch.setenv("MOOR_HOME", str(named))
+    moor_constants._default_moor_root_memo = None
     monkeypatch.setattr(gw, "_host_multiplexer_for_all_verb", lambda: None)
     monkeypatch.setattr(gw, "_stop_installed_service", lambda system: False)
     monkeypatch.setattr(gw, "kill_gateway_processes", lambda **k: 0)
@@ -213,12 +213,12 @@ def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monk
     assert cmd[-3:] == ["gateway", "run", "--replace"]
     assert cmd[-5:-3] == ["--profile", "default"] and "leinad" not in cmd
     env = kwargs["env"]
-    assert Path(env["HERMES_HOME"]) == root
+    assert Path(env["MOOR_HOME"]) == root
     assert env.get("DISCORD_BOT_TOKEN") == "root-discord"
     assert "TELEGRAM_BOT_TOKEN" not in env and "OPENAI_API_KEY" not in env, \
         "the host child inherited the named profile's credentials"
-    assert hermes_constants.get_hermes_home() == named
-    assert not hermes_constants.process_hermes_home_is_pinned()
+    assert moor_constants.get_moor_home() == named
+    assert not moor_constants.process_moor_home_is_pinned()
 
 
 def test_restart_all_refuses_to_sweep_a_host_multiplexer_owned_by_another_profile(

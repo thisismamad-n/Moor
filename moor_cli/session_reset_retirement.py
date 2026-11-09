@@ -2,15 +2,15 @@
 
 Core stopped rotating gateway conversations on timers (1d5d059410) and reads nothing under
 ``session_reset``. A household that relied on it silently gets conversations that never end and
-a bill that grows with them, so gateway startup and ``hermes doctor`` say so. The
-``hermes-session-reset-policy`` catalog plugin reads the top-level block unchanged, which is why
+a bill that grows with them, so gateway startup and ``moor doctor`` say so. The
+``moor-session-reset-policy`` catalog plugin reads the top-level block unchanged, which is why
 this module reports and never rewrites or drops the key.
 """
 from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-PLUGIN_NAME = "hermes-session-reset-policy"
+PLUGIN_NAME = "moor-session-reset-policy"
 _TIMED_MODES = frozenset({"idle", "daily", "both"})
 
 
@@ -35,7 +35,7 @@ def retired_reset_policy(config: Any) -> Optional[tuple[str, str]]:
 
 def reset_plugin_enabled() -> bool:
     """Whether the restoring plugin is installed and enabled in this process's plugin set."""
-    from hermes_cli.plugins import discover_plugins, get_plugin_manager
+    from moor_cli.plugins import discover_plugins, get_plugin_manager
     discover_plugins()
     return any(p["name"] == PLUGIN_NAME and p["enabled"] for p in get_plugin_manager().list_plugins())
 
@@ -44,5 +44,5 @@ def format_notice(path: str, mode: str) -> str:
     move = "" if path == "session_reset" else " (move the block to top-level session_reset first)"
     return (
         f"{path}.mode: {mode} is no longer applied: gateway conversations reset only on /new or "
-        f"/reset. To keep idle/daily resets, run `hermes plugins install {PLUGIN_NAME}`{move}."
+        f"/reset. To keep idle/daily resets, run `moor plugins install {PLUGIN_NAME}`{move}."
     )

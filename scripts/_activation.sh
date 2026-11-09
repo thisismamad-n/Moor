@@ -1,12 +1,12 @@
-# Sourced, never executed: how a POSIX shell gets the Hermes dev environment.
-# `activate` (interactive, reversible) and `scripts/run-in-hermes-env` (a child
+# Sourced, never executed: how a POSIX shell gets the Moor dev environment.
+# `activate` (interactive, reversible) and `scripts/run-in-moor-env` (a child
 # process, one-way) both build on it; neither owns any of it.
 #
-#   hermes_sync REPO [FLAG]         bring the install up to date (setup-hermes.sh)
-#   hermes_compose_env REPO DIALECT print the composed environment, `sh` or `fish`
-#   hermes_apply_env SCRIPT         evaluate a composed `sh` script into this shell
-#   hermes_activation_current REPO  is the inherited environment still REPO's?
-#   hermes_ensure_env REPO          sync, compose and apply unless it is current
+#   moor_sync REPO [FLAG]         bring the install up to date (setup-moor.sh)
+#   moor_compose_env REPO DIALECT print the composed environment, `sh` or `fish`
+#   moor_apply_env SCRIPT         evaluate a composed `sh` script into this shell
+#   moor_activation_current REPO  is the inherited environment still REPO's?
+#   moor_ensure_env REPO          sync, compose and apply unless it is current
 #
 # pm records, beside the installed-state file named by __MOOR_ACTIVATED, one
 # stamp per dependency input carrying the exact mtime that input had when the
@@ -19,26 +19,26 @@
 # stale, and so does an install that did not build the test environment:
 # every environment this library composes includes it.
 
-# hermes_sync REPO [--test-environment[=EXTRAS]]: run setup in a child, so a
+# moor_sync REPO [--test-environment[=EXTRAS]]: run setup in a child, so a
 # failure cannot exit or half-change the caller's shell and setup never
 # republishes launchers or shell config. Progress goes to stderr.
-hermes_sync() {
+moor_sync() {
     local repo="$1" test_environment="${2:---test-environment}"
     (
         unset PYTHONHOME PYTHONPATH VIRTUAL_ENV
-        bash "$repo/setup-hermes.sh" --runtime-only "$test_environment"
+        bash "$repo/setup-moor.sh" --runtime-only "$test_environment"
     ) >&2
 }
 
-# hermes_bootstrap_python REPO: print the interpreter that can run pm before
+# moor_bootstrap_python REPO: print the interpreter that can run pm before
 # any dependency is importable. It only emits the environment; it installs nothing.
-hermes_bootstrap_python() {
+moor_bootstrap_python() {
     local repo="$1" store candidate
     for candidate in "$repo/.venv/bin/python" "$repo/.venv/Scripts/python.exe" \
                      "$repo/venv/bin/python" "$repo/venv/Scripts/python.exe"; do
         [ -x "$candidate" ] && { printf '%s\n' "$candidate"; return 0; }
     done
-    for store in "${HERMES_RUNTIME_DIR:-}" "$repo/../tools" "${HERMES_HOME:-$HOME/.hermes}/tools"; do
+    for store in "${MOOR_RUNTIME_DIR:-}" "$repo/../tools" "${MOOR_HOME:-$HOME/.moor}/tools"; do
         [ -n "$store" ] || continue
         for candidate in "$store"/python-*/bin/python3 "$store"/python-*/python.exe \
                          "$store"/python-*/bin/python "$store"/python-*/bin/python.exe; do
@@ -48,24 +48,24 @@ hermes_bootstrap_python() {
     return 1
 }
 
-# hermes_compose_env REPO DIALECT: print the environment of the installed state
+# moor_compose_env REPO DIALECT: print the environment of the installed state
 # as a script for a shell of DIALECT (`sh` or `fish`).
-hermes_compose_env() {
+moor_compose_env() {
     local repo="$1" dialect="$2" python script
-    python="$(hermes_bootstrap_python "$repo")" || {
-        echo "no bootstrap Python found; run setup-hermes.sh" >&2
+    python="$(moor_bootstrap_python "$repo")" || {
+        echo "no bootstrap Python found; run setup-moor.sh" >&2
         return 1
     }
     script="$(PYTHONHOME= PYTHONPATH="$repo" "$python" -m pm.environments --format "$dialect")" &&
         [ -n "$script" ] || {
-        echo "could not read pm env (run ./setup-hermes.sh first)" >&2
+        echo "could not read pm env (run ./setup-moor.sh first)" >&2
         return 1
     }
     printf '%s\n' "$script"
 }
 
-# hermes_apply_env SCRIPT: evaluate a script from `hermes_compose_env REPO sh`.
-hermes_apply_env() {
+# moor_apply_env SCRIPT: evaluate a script from `moor_compose_env REPO sh`.
+moor_apply_env() {
     # Resolved before the eval replaces PATH.
     local cygpath name
     cygpath="$(command -v cygpath 2>/dev/null || :)"
@@ -112,15 +112,15 @@ moor_activation_current() {
     [ "$stamped" = 1 ]
 }
 
-# hermes_ensure_env REPO: leave this shell with REPO's environment, doing
+# moor_ensure_env REPO: leave this shell with REPO's environment, doing
 # nothing when the inherited one is current.
-hermes_ensure_env() {
+moor_ensure_env() {
     local repo="$1" script
-    hermes_activation_current "$repo" && return 0
-    hermes_sync "$repo" || {
+    moor_activation_current "$repo" && return 0
+    moor_sync "$repo" || {
         echo "setup failed" >&2
         return 1
     }
-    script="$(hermes_compose_env "$repo" sh)" || return 1
-    hermes_apply_env "$script"
+    script="$(moor_compose_env "$repo" sh)" || return 1
+    moor_apply_env "$script"
 }

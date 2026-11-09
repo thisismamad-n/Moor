@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from hermes_cli.version_info import hermes_user_agent
+from moor_cli.version_info import moor_user_agent
 from providers import register_provider
 from providers.base import LazyHeaders, ProviderProfile
 
@@ -35,8 +35,8 @@ fireworks = FireworksProfile(
     # survive switch_model and credential rotation.
     default_headers=LazyHeaders({
         "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-        "X-Title": "Hermes Agent",
-        "User-Agent": lambda: hermes_user_agent("HermesAgent"),
+        "X-Title": "Moor Agent",
+        "User-Agent": lambda: moor_user_agent("MoorAgent"),
     }),
     default_aux_model="accounts/fireworks/models/glm-5p2",
     # Picker safety net when the live catalog fetch fails.

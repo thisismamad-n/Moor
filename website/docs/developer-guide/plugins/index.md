@@ -45,11 +45,11 @@ Plugins that integrate **someone else's product or project** — observability/m
 :::
 
 :::tip Already built in: check here before you hand-roll it
-Hermes already ships these for plugin authors:
+Moor already ships these for plugin authors:
 
-- **Run the catalog check locally:** `hermes plugins validate /path/to/your-plugin --install-deps` runs the same check catalog CI runs. See [Submitting to the Plugin Catalog](./catalog-submission.md).
-- **Test your plugin in isolation:** `hermes plugins doctor [path-or-id]` runs the same discovery, manifest parser, `register(ctx)` and registries Hermes uses, with a temporary `HERMES_HOME`. See [Validate with Plugin Doctor](#validate-with-plugin-doctor).
-- **Keep state across updates:** `plugin_data_dir()` and `plugin_db()` give your plugin a data directory that survives `hermes plugins update` and `remove` and follows the active profile. See [Store durable state](#store-durable-state).
+- **Run the catalog check locally:** `moor plugins validate /path/to/your-plugin --install-deps` runs the same check catalog CI runs. See [Submitting to the Plugin Catalog](./catalog-submission.md).
+- **Test your plugin in isolation:** `moor plugins doctor [path-or-id]` runs the same discovery, manifest parser, `register(ctx)` and registries Moor uses, with a temporary `MOOR_HOME`. See [Validate with Plugin Doctor](#validate-with-plugin-doctor).
+- **Keep state across updates:** `plugin_data_dir()` and `plugin_db()` give your plugin a data directory that survives `moor plugins update` and `remove` and follows the active profile. See [Store durable state](#store-durable-state).
 - **Declare Python dependencies:** list them under `python_dependencies` in `plugin.yaml`, or in a `pyproject.toml` next to it. See [Python dependencies](#python-dependencies).
 - **Ship skills with your plugin:** register them with `ctx.register_skill()`. See [Bundle skills](#bundle-skills).
 - **Ask for privileged host surfaces:** declare them under `capabilities:` so users get a single consent screen. See [Declaring capabilities](#declaring-capabilities).
@@ -107,7 +107,7 @@ skipped at its own boundary when valid sibling components can still load.
 profile-scoped writable directory managed by Moor.
 Values declared in portable MCP `env` are visible package data, not a secret
 storage mechanism. Do not place credentials in `mcp.json`.
-To pass a user's variable through to a stdio server (Hermes otherwise hands MCP
+To pass a user's variable through to a stdio server (Moor otherwise hands MCP
 servers a filtered environment), declare it as `"NAME": "${NAME}"`. The value
 comes from the user's shell or profile `.env`; when the variable is unset (or
 empty), the entry is treated as if it weren't there: the server doesn't get the
@@ -125,7 +125,7 @@ skipped. Agent Plugins v1 does not define trust, permissions, provenance, or a
 sandbox. Enabling a package grants its instructions and local executable the
 same full-trust posture as other installed Moor plugins.
 
-A package can ask Hermes to gate one of its MCP servers, the same way a user's
+A package can ask Moor to gate one of its MCP servers, the same way a user's
 `trust: untrusted` does in `config.yaml`. Use it for servers whose tools spend
 money, trade, send messages or change accounts, so the user approves each
 write-capable call instead of relying on the skill's instructions alone:
@@ -133,7 +133,7 @@ write-capable call instead of relying on the skill's instructions alone:
 ```json
 {
   "extensions": {
-    "com.nousresearch.hermes": {
+    "com.moorinc.moor": {
       "servers": {
         "trade": { "trust": "untrusted" }
       }
@@ -153,14 +153,14 @@ and spend limit (below) unless it sets its own. Other harnesses ignore this exte
 entry (see [Application declarations](./application-declarations.md)).
 
 A server whose tools spend money or credits can declare what each call costs
-and a budget per chat. Hermes then names the cost in the approval prompt along
+and a budget per chat. Moor then names the cost in the approval prompt along
 with the chat's running total, and a call that would take the chat past
 `spend_limit` asks first even when the user has made the server trusted:
 
 ```json
 {
   "extensions": {
-    "com.nousresearch.hermes": {
+    "com.moorinc.moor": {
       "servers": {
         "renders": {
           "trust": "untrusted",
@@ -188,13 +188,13 @@ Costs are facts about the server, so they survive a user's same-name
 `config.yaml` entry (the way a user widens trust) unless that entry sets the
 key itself; the user's `spend_limit` wins, including `0` to turn it off.
 
-A long-running server can also declare a Hermes-specific tool-call `timeout`
+A long-running server can also declare a moor-specific tool-call `timeout`
 (in seconds) in `plugin.json`, without changing other servers' defaults:
 
 ```json
 {
   "extensions": {
-    "com.nousresearch.hermes": {
+    "com.moorinc.moor": {
       "servers": { "analysis": { "timeout": 1000 } }
     }
   }
@@ -209,16 +209,16 @@ extends the wait budget, not the cancellation or permission policy. Configure
 any server-internal analysis deadline separately and leave time for its result
 to reach the client. Other harnesses ignore this extension.
 
-A server entry key this Hermes does not know (one a newer release added) is
-ignored with a warning, which `hermes plugins validate` lists, and the package
+A server entry key this Moor does not know (one a newer release added) is
+ignored with a warning, which `moor plugins validate` lists, and the package
 still installs. Releases from before this rule reject the package instead, and a
 release that ignores a key may behave less safely than intended, so declare a new
-key together with a catalog `requires_hermes` floor. `plugin.json` has no
-`requires_hermes` field, so that catalog floor is a portable package's only one: an install by
-catalog name refuses on an older Hermes, and `hermes plugins update` keeps the
-installed pin until Hermes is updated.
+key together with a catalog `requires_moor` floor. `plugin.json` has no
+`requires_moor` field, so that catalog floor is a portable package's only one: an install by
+catalog name refuses on an older Moor, and `moor plugins update` keeps the
+installed pin until Moor is updated.
 
-An explicit per-server MCP call budget also reaches Hermes' outer tool executor. A call
+An explicit per-server MCP call budget also reaches Moor' outer tool executor. A call
 whose budget exceeds the shared concurrent-batch deadline becomes a sequential
 barrier, whether called directly or through tool search. It gets its own budget
 without extending unrelated tools in the same model response. Existing shorter
@@ -270,10 +270,10 @@ The compatibility rules are:
 
 The contract covers documented surfaces only. Replacing or wrapping core
 functions, methods, module attributes or private tables at runtime (assigning
-`AIAgent.<method>`, `setattr` on a Hermes module, writing into
+`AIAgent.<method>`, `setattr` on a Moor module, writing into
 `sys.modules` or a core dict) is not a supported extension point. It breaks
 whenever the internals move, and it collides with every other plugin patching
-the same seam. The plugin catalog refuses it at admission (`hermes plugins
+the same seam. The plugin catalog refuses it at admission (`moor plugins
 validate`, `no core override` check). If a public hook you need is missing,
 open an issue describing it.
 
@@ -302,14 +302,14 @@ than internal symbol lists or source-code shape.
 
 ### Sep 2026 module decomposition: old import paths removed
 
-Hermes's internals were split into `<stem>_<topic>` sibling modules in Sep 2026 (PR #102117). **Internal
+Moor's internals were split into `<stem>_<topic>` sibling modules in Sep 2026 (PR #102117). **Internal
 import paths were never part of the plugin contract** above. A temporary compatibility layer kept the old
 paths resolving until 2026-09-14; it has been removed, so a plugin that still imports an old path fails to
-load with an `ImportError` (the reason shows in `hermes plugins list`).
+load with an `ImportError` (the reason shows in `moor plugins list`).
 
 To fix such a plugin, import the name from the module that defines it now, or better, use `ctx` and the
 documented ABCs instead of internals. The full old-to-new map is the
-[`COMPAT_MANIFEST.md`](https://github.com/NousResearch/hermes-agent/blob/5912ed81ed9/COMPAT_MANIFEST.md)
+[`COMPAT_MANIFEST.md`](https://github.com/thisismamad-n/Moor/blob/5912ed81ed9/COMPAT_MANIFEST.md)
 from the last commit that shipped the layer.
 
 ## What you're building
@@ -369,9 +369,9 @@ This tells Moor: "I'm a plugin called calculator, I provide tools and hooks." Th
 
 List every tool your `register()` registers in `provides_tools`. The field does **not** decide whether a user-installed plugin's tools load: once the plugin is enabled, everything `register()` registers is available, declared or not. What it does drive:
 
-- **`hermes plugins validate`**: the "declared tools" check fails when the registered tools don't match the list, which blocks catalog admission.
+- **`moor plugins validate`**: the "declared tools" check fails when the registered tools don't match the list, which blocks catalog admission.
 - **Catalog listing**: the "N tools" chips and tool-name search in the catalog and the dashboard/Desktop Plugins page.
-- **Dashboard auth hint**: only declared tools' availability checks are used to show "needs auth" and the `hermes auth <name>` command.
+- **Dashboard auth hint**: only declared tools' availability checks are used to show "needs auth" and the `moor auth <name>` command.
 - **Bundled `kind: platform` plugins only**: the field is the switch that loads `tools.py` in CLI/TUI sessions while the adapter stays deferred. See [Outbound client tools](../adding-platform-adapters.md#outbound-client-tools-provides_tools).
 
 Optional fields you could add:
@@ -409,7 +409,7 @@ Known capability ids: `tools.override`, `llm.provider_override`,
 `llm.model_override`, `llm.agent_id_override`, `llm.profile_override`,
 `llm.task_override`, `llm.side_question` (ask the session's own agent after
 a turn, see [Plugin LLM Access](../plugin-llm-access.md#asking-the-sessions-own-agent-ctxside_question)),
-`gateway.platform_actions` (see `hermes_cli/plugin_capabilities.py` for the
+`gateway.platform_actions` (see `moor_cli/plugin_capabilities.py` for the
 canonical registry). Unknown ids are ignored. The older per-capability
 config keys (`plugins.entries.<id>.allow_tool_override`, …) still work but
 are deprecated — declare capabilities instead so users get a single,
@@ -438,10 +438,10 @@ installs.
 
 A plugin that needs the user's ChatGPT / Codex subscription (minting an OpenAI
 Realtime client secret, calling a Codex backend endpoint) must **not** read,
-refresh or rewrite `~/.codex/auth.json` or Hermes's `auth.json`. Codex refresh
-tokens are single-use: a plugin that refreshes on its own races Hermes's locked
+refresh or rewrite `~/.codex/auth.json` or Moor's `auth.json`. Codex refresh
+tokens are single-use: a plugin that refreshes on its own races Moor's locked
 refresh, and the loser's rotation chain gets revoked, signing the user out.
-Ask Hermes to make the request instead. Hermes resolves the credential through
+Ask Moor to make the request instead. Moor resolves the credential through
 its own refresh path, attaches `Authorization` itself and returns only the
 response. Your code never sees the token.
 
@@ -458,7 +458,7 @@ Then call the public helper. It is a plain function, so dashboard plugins
 `register(ctx)` code:
 
 ```python
-from hermes_cli.plugin_provider_requests import ProviderNotSignedIn, credentialed_provider_request
+from moor_cli.plugin_provider_requests import ProviderNotSignedIn, credentialed_provider_request
 
 def mint_client_secret(session: dict) -> dict:
     try:
@@ -481,7 +481,7 @@ returns a `ProviderResponse` (`status`, `headers`, `body`, `.text`, `.json()`).
 The rules:
 
 - **Declared plugins only.** The caller is the plugin whose file is on the call
-  stack. Hermes finds it under the plugins directory and reads its
+  stack. Moor finds it under the plugins directory and reads its
   `plugin.yaml`. A plugin that does not list the provider in `requires_auth`,
   and code outside any installed plugin, gets `PermissionError`. Call the helper
   from your own function. Handing the bare helper to `run_in_executor` leaves no
@@ -494,13 +494,13 @@ The rules:
 - **No redirects.** A 3xx response comes back as-is and is never followed, so
   the header cannot reach a third host.
 - **Profile-scoped.** The credential is the active profile's Codex sign-in, the
-  same one chat uses (`hermes auth add openai-codex`, or the Codex sign-in in the
+  same one chat uses (`moor auth add openai-codex`, or the Codex sign-in in the
   desktop app). When there is none you get `ProviderNotSignedIn`, whose message
   names the sign-in command.
 - Your own `headers` are sent too, except any that would replace the
-  `Authorization` (or account) headers Hermes attaches.
+  `Authorization` (or account) headers Moor attaches.
 
-`requires_auth` appears in `hermes plugins show <name>` and at install time, and
+`requires_auth` appears in `moor plugins show <name>` and at install time, and
 a catalog re-pin that adds it asks the user before updating. Like capabilities,
 this is consent and visibility. It is **not a sandbox**: in-process plugin code
 can still read any file the user can, and reviewers reject plugins that do.
@@ -509,15 +509,15 @@ can still read any file the user can, and reviewers reject plugins that do.
 `agent.account_usage.fetch_account_usage("openai-codex", read_only=True)`. It
 returns an `AccountUsageSnapshot` (plan, session/weekly windows with
 `used_percent` and `reset_at`) and never refreshes or rotates a credential.
-**Sign-out** belongs to Hermes, not to a plugin: point users at
-`hermes auth logout openai-codex` instead of deleting credential files.
+**Sign-out** belongs to Moor, not to a plugin: point users at
+`moor auth logout openai-codex` instead of deleting credential files.
 
 ### Use your own OAuth client (Google and other APIs)
 
 A plugin that calls a third-party API with the user's own OAuth client (a
 Google Cloud "Desktop app" client, for example) does not run the
 consent flow, store the refresh token or refresh it. Declare the client and
-Hermes owns the grant:
+Moor owns the grant:
 
 ```yaml
 name: gemini-voice
@@ -538,28 +538,28 @@ oauth:
     authorize_params: {access_type: offline, prompt: consent}  # Google issues a refresh token only with these
 ```
 
-The user signs in once from a terminal with `hermes auth add gemini-voice:google`
+The user signs in once from a terminal with `moor auth add gemini-voice:google`
 (the plugin's key, a colon, the entry's `id`). That is the same PKCE login the
 model-provider helper runs: a loopback redirect on `127.0.0.1`, with an SSH
-tunnel hint when Hermes runs on a remote host. If the IdP grants fewer scopes
-than declared, nothing is saved. `hermes auth status|refresh|logout
+tunnel hint when Moor runs on a remote host. If the IdP grants fewer scopes
+than declared, nothing is saved. `moor auth status|refresh|logout
 gemini-voice:google` show, refresh and remove the grant. It lives in the active
-profile's `auth.json`; Hermes refreshes it on use once less than two minutes
+profile's `auth.json`; Moor refreshes it on use once less than two minutes
 remain and never starts a sign-in under the gateway or cron.
 
 The plugin calls the API through the same helper, with the entry's `id` as the
 provider:
 
 ```python
-from hermes_cli.auth_constants import AuthError
-from hermes_cli.plugin_provider_requests import ProviderNotSignedIn, credentialed_provider_request
+from moor_cli.auth_constants import AuthError
+from moor_cli.plugin_provider_requests import ProviderNotSignedIn, credentialed_provider_request
 
 def create_document(title: str) -> dict:
     try:
         resp = credentialed_provider_request(
             "google", "POST", "https://docs.googleapis.com/v1/documents", json={"title": title}, timeout=20)
     except ProviderNotSignedIn as exc:
-        return {"ok": False, "error": str(exc)}  # names `hermes auth add gemini-voice:google`
+        return {"ok": False, "error": str(exc)}  # names `moor auth add gemini-voice:google`
     except AuthError as exc:
         return {"ok": False, "error": f"{exc.code}: {exc}"}
     return {"ok": resp.status < 300, "status": resp.status, "body": resp.json()}
@@ -568,18 +568,18 @@ def create_document(title: str) -> dict:
 The Codex rules above apply, plus:
 
 - **HTTPS only.** `authorize_url`, `token_url` and every `hosts` entry are
-  `https` (there is no loopback exception); `hermes plugins validate` and
+  `https` (there is no loopback exception); `moor plugins validate` and
   catalog admission fail anything else.
 - **Declared hosts only.** The bearer goes to `https://<host>` (port 443) for
   the entry's `hosts`, matched exactly (no subdomains). Any other URL, `http`,
   or a URL with user info raises `PermissionError` before a request is made.
   A host outside the sign-in provider's domains is a warning reviewers check.
 - **Your own client variables.** `client_id_env` and `client_secret_env` name
-  the plugin's own variables; a variable Hermes itself uses (a provider API key,
-  a platform token) is refused, since Hermes sends these to `token_url`.
+  the plugin's own variables; a variable Moor itself uses (a provider API key,
+  a platform token) is refused, since Moor sends these to `token_url`.
 - **The plugin's own grant.** The grant is stored under the calling plugin's
   key, so another plugin declaring the same `id` cannot use it, and the plugin's
-  own entry wins over a Hermes sign-in of the same name.
+  own entry wins over a Moor sign-in of the same name.
 - **The grant follows the declaration.** It remembers the entry it was made
   for: a plugin version that changes the token URL, hosts, scopes or client
   variables gets `ProviderNotSignedIn` until the user signs in again, and a
@@ -594,13 +594,13 @@ The Codex rules above apply, plus:
   network until the next sign-in. Errors reach the plugin without a traceback,
   chain or request object, so none leads back to the token, refresh token or
   client secret.
-- **Sign-in and removal.** `hermes auth add` prints which hosts get the code,
+- **Sign-in and removal.** `moor auth add` prints which hosts get the code,
   the client secret and the token before opening the browser, and refuses to
-  run from the gateway, cron or an agent session. `hermes plugins remove` drops
-  the plugin's grants, and `hermes auth logout <plugin>:<id>` still works after
+  run from the gateway, cron or an agent session. `moor plugins remove` drops
+  the plugin's grants, and `moor auth logout <plugin>:<id>` still works after
   the plugin is gone.
 
-`hermes plugins validate` checks the `oauth:` block and that its client
+`moor plugins validate` checks the `oauth:` block and that its client
 variables are declared, and warns when plugin code names the token URL. Like
 `requires_auth`, this is consent and visibility, not a sandbox.
 
@@ -620,13 +620,13 @@ this Moor understands still loads with a warning.
 | `python_dependencies` | list of str | Declared Python requirements (e.g. `"requests>=2.0,<3"`). Installation requests consent; enabling admits the candidate through PM with the existing core, extras, and enabled-plugin union. Successful preparation publishes the environment and configuration transactionally; failure preserves the previous selection and enabled set. Declining leaves the installed plugin disabled. Pin upper bounds. |
 | `python_runtime` | str | `external` — the plugin manages its own interpreter/venv (sidecar pattern); Moor installs nothing and leaves any `pyproject.toml` alone. |
 | `config_schema` | mapping | JSON-schema-ish description of keys under `plugins.entries.<id>.settings`: `api_url: {type: str, default: "", description: "...", required: false}`. Validated at load; mismatches log actionable warnings naming the key and expected type — never load failures. Types: `str`, `int`, `float`, `bool`, `list`, `dict` (plus JSON-schema aliases) and `secret`. Also drives the settings form in the Desktop Plugins tab — see [Settings form in the Desktop](#settings-form-in-the-desktop). |
-| `config_keys` | list | Dotted paths in Hermes' own config sections that your code reads (e.g. `memory.retaindb`). Each path covers itself and everything below it, so `hermes config get/set` recognizes those keys instead of warning "not a recognized config key", but only while the plugin is active (enabled, or the selected `memory.provider`). A path must be at least two segments deep, and paths Hermes already defines are ignored, so a declaration never hides a typo elsewhere in the section. Settings for your plugin alone belong in `config_schema`; use this only for a core section your plugin reads. Portable `plugin.json` packages put it under `extensions."com.nousresearch.hermes".config_keys`. |
+| `config_keys` | list | Dotted paths in Moor' own config sections that your code reads (e.g. `memory.retaindb`). Each path covers itself and everything below it, so `moor config get/set` recognizes those keys instead of warning "not a recognized config key", but only while the plugin is active (enabled, or the selected `memory.provider`). A path must be at least two segments deep, and paths Moor already defines are ignored, so a declaration never hides a typo elsewhere in the section. Settings for your plugin alone belong in `config_schema`; use this only for a core section your plugin reads. Portable `plugin.json` packages put it under `extensions."com.moorinc.moor".config_keys`. |
 | `license` | str | SPDX-style license id (e.g. `MIT`). |
 | `homepage` | str | Project URL. |
 | `tags` | list of str | Free-form discovery tags (e.g. `[gateway, telegram]`). |
 | `provides_locales` | list | Language pack declaration: ids (`- pl`) or `{id, endonym, rtl}` mappings whose `locales/<id>[.tui\|.desktop].yaml` the loader registers automatically — see [Ship a language pack](#ship-a-language-pack). |
-| `requires_auth` | list of str | Providers whose sign-in the plugin uses through Hermes (today: `openai-codex`). Required by `credentialed_provider_request`; shown at install and in `hermes plugins show`. See [Use the user's Codex sign-in](#use-the-users-codex-sign-in-core-made-requests). |
-| `oauth` | list of mappings | OAuth clients the plugin uses through Hermes: `id`, `authorize_url`, `token_url`, `scopes`, `client_id_env`, optional `client_secret_env`, `hosts`, optional `authorize_params`. Signed in with `hermes auth add <plugin>:<id>`, used through `credentialed_provider_request`. See [Use your own OAuth client](#use-your-own-oauth-client-google-and-other-apis). |
+| `requires_auth` | list of str | Providers whose sign-in the plugin uses through Moor (today: `openai-codex`). Required by `credentialed_provider_request`; shown at install and in `moor plugins show`. See [Use the user's Codex sign-in](#use-the-users-codex-sign-in-core-made-requests). |
+| `oauth` | list of mappings | OAuth clients the plugin uses through Moor: `id`, `authorize_url`, `token_url`, `scopes`, `client_id_env`, optional `client_secret_env`, `hosts`, optional `authorize_params`. Signed in with `moor auth add <plugin>:<id>`, used through `credentialed_provider_request`. See [Use your own OAuth client](#use-your-own-oauth-client-google-and-other-apis). |
 
 ```yaml
 # plugin.yaml — manifest v2 example
@@ -710,16 +710,16 @@ venv and the checkout, never the home directory.
 
 ### Dependency security policy
 
-Hermes checks the age of **its own** dependencies when it locks them: the checkout's
+Moor checks the age of **its own** dependencies when it locks them: the checkout's
 `[tool.uv] exclude-newer = "3 days"` keeps any release younger than three days out of `uv.lock`,
 so a hijacked upload has time to be caught upstream before it reaches users. Users install from
 that vetted lock; their machines never re-check dates. **The check does not apply to your
-plugin's dependencies.** When Hermes resolves your plugin into its environment, Hermes's exact
-pins stay put, other packages Hermes uses may move within the ranges Hermes declares, and
+plugin's dependencies.** When Moor resolves your plugin into its environment, Moor's exact
+pins stay put, other packages Moor uses may move within the ranges Moor declares, and
 everything else follows your requirements, so a plugin can floor on a release published
-yesterday and install today. The plugin's author, not Hermes, is responsible for what that pulls
-in. A plugin that requires a different version of a package Hermes pins exactly fails to install
-until Hermes's pin moves.
+yesterday and install today. The plugin's author, not Moor, is responsible for what that pulls
+in. A plugin that requires a different version of a package Moor pins exactly fails to install
+until Moor's pin moves.
 
 Set your own policy and hold yourself to it. Strongly recommended:
 
@@ -1025,13 +1025,13 @@ Never read `.env`, `auth.json` or another tool's credential files yourself (cata
 The `plugins.manage settings` action refuses secret keys and any value whose type
 or `choices` disagree with the schema.
 
-**Portable packages (`plugin.json`)** declare the same schema under the Hermes
+**Portable packages (`plugin.json`)** declare the same schema under the Moor
 vendor namespace, since Agent Plugins v1 rejects unknown top-level fields:
 
 ```json
 {
   "extensions": {
-    "com.nousresearch.hermes": {
+    "com.moorinc.moor": {
       "config_schema": {
         "api_key": { "type": "secret", "env": "MY_PLUGIN_API_KEY" },
         "show_chip": { "type": "bool", "default": true, "label": "Show the status-bar chip" }
@@ -1043,7 +1043,7 @@ vendor namespace, since Agent Plugins v1 rejects unknown top-level fields:
 
 A secret whose `env` names a variable your `mcp.json` passes through
 (`"env": { "MY_PLUGIN_API_KEY": "${MY_PLUGIN_API_KEY}" }`) reaches the MCP server
-right away: after a save, Hermes reconnects the plugin's servers whose resolved
+right away: after a save, Moor reconnects the plugin's servers whose resolved
 launch inputs changed (a new key does, a toggle does not), so the form is also
 where users set the server's key.
 
@@ -1051,7 +1051,7 @@ where users set the server's key.
 `plugin.<id>.settings.changed` (payload `{ written: [...keys] }`; a secret-only
 save sends an empty list), so a Desktop half re-reads its preferences at once:
 `ctx.onEvent('plugin.my-plugin.settings.changed', reload)`. Read the values from
-your own `plugin_api.py` with `load_config_readonly()` from `hermes_cli.config`
+your own `plugin_api.py` with `load_config_readonly()` from `moor_cli.config`
 (`plugins.entries.<id>.settings`), falling back to the schema defaults.
 
 ## Step 6: Test it
@@ -1252,11 +1252,11 @@ returns the on-disk catalog only.
 ### Ship a language pack
 
 A plugin can add a UI language or override the wording of an existing one for every surface at once —
-Python (`agent.i18n.t()`: approval prompts, gateway replies, tool verbs, tips), the `hermes --tui`
+Python (`agent.i18n.t()`: approval prompts, gateway replies, tool verbs, tips), the `moor --tui`
 interface and the Desktop app. Declare `provides_locales` and ship the YAML; **no Python is needed**:
 
 ```
-~/.hermes/plugins/hermes-lang-pl/
+~/.moor/plugins/moor-lang-pl/
 ├── plugin.yaml
 └── locales/
     ├── pl.yaml            # core (Python) strings — same key tree as the bundled locales/en.yaml
@@ -1265,7 +1265,7 @@ interface and the Desktop app. Declare `provides_locales` and ship the YAML; **n
 ```
 
 ```yaml
-name: hermes-lang-pl
+name: moor-lang-pl
 version: 1.0.0
 description: Polish language pack
 provides_locales:
@@ -1276,7 +1276,7 @@ provides_locales:
 
 When `provides_locales` is declared the loader calls `ctx.register_locale_dir(<plugin>/locales)` before
 `register()` (a manifest-only pack with no `__init__.py` loads like a manifest-only Desktop plugin).
-Catalogs are **layered and partial**: pack → user overlay (`<HERMES_HOME>/locales/`) → bundled →
+Catalogs are **layered and partial**: pack → user overlay (`<MOOR_HOME>/locales/`) → bundled →
 English → key; a pack only needs the keys it changes, and the last pack loaded wins per key.
 Core values keep English's named `{placeholders}`; TUI/Desktop entries whose English value is a
 function are written as strings with positional `{0}`, `{1}` placeholders.
@@ -1293,7 +1293,7 @@ def register(ctx):
     ctx.register_locale_dir(here / "locales")                                         # every <lang>[.surface].yaml
 ```
 
-`hermes plugins validate` checks each declared id has a parseable, text-only `locales/<id>.yaml`
+`moor plugins validate` checks each declared id has a parseable, text-only `locales/<id>.yaml`
 (a non-text leaf is an error) and **warns** with the names of keys absent from the English catalog of
 that surface. Renderers fetch the pack layer through the `i18n.languages` / `i18n.catalog` RPCs.
 User-facing guide: [Language Packs](../../user-guide/features/language-packs.md).
@@ -1424,7 +1424,7 @@ def reset_client():
     _slot.reset()
 ```
 
-Both serialize concurrent first calls with double-checked locking and run the factory at most once. If the factory raises, nothing is cached and the next call retries. The [Honcho memory plugin](https://github.com/plastic-labs/honcho/tree/main/hermes-plugin-honcho) (`client.py`) is the reference consumer.
+Both serialize concurrent first calls with double-checked locking and run the factory at most once. If the factory raises, nothing is cached and the next call retries. The [Honcho memory plugin](https://github.com/plastic-labs/honcho/tree/main/moor-plugin-honcho) (`client.py`) is the reference consumer.
 
 > Rule of thumb: any time you write `global _something` followed by a `is None` check and a build, reach for one of these instead.
 
@@ -1559,7 +1559,7 @@ The **API request hooks** are observers for the raw provider request, one level 
 
 ### `pre_llm_call` context injection
 
-When a `pre_llm_call` callback returns a dict with a `"context"` key (or a plain string), Hermes injects that text into the **current turn's user message**. This is the mechanism for memory plugins, RAG integrations, guardrails, and any plugin that needs to provide the model with additional context.
+When a `pre_llm_call` callback returns a dict with a `"context"` key (or a plain string), Moor injects that text into the **current turn's user message**. This is the mechanism for memory plugins, RAG integrations, guardrails, and any plugin that needs to provide the model with additional context.
 
 #### Return format
 
@@ -1813,13 +1813,13 @@ def register(ctx):
     ctx.register_command("whoami", handler=_handle_whoami, description="Show the calling session")
 ```
 
-`source` is transport identity, not an authorization grant: authorize from stable ids (`source.user_id`, `source.chat_id`), never from display names or the command text, and fail closed when a sensitive command gets `source=None`. Handler exceptions propagate; Hermes never retries the call with fewer arguments.
+`source` is transport identity, not an authorization grant: authorize from stable ids (`source.user_id`, `source.chat_id`), never from display names or the command text, and fail closed when a sensitive command gets `source=None`. Handler exceptions propagate; Moor never retries the call with fewer arguments.
 
-**Where handlers run:** a slash command handler runs in the gateway process that owns the session, also when the user types the command in the classic `hermes chat` CLI. The handler is not running in the user's terminal or directory, so:
+**Where handlers run:** a slash command handler runs in the gateway process that owns the session, also when the user types the command in the classic `moor chat` CLI. The handler is not running in the user's terminal or directory, so:
 
 - Return the text to show. `print()` writes to the gateway's stdout, and the user never sees it.
 - Take the session's working directory from `agent.runtime_cwd.resolve_agent_cwd()`, not `os.getcwd()`, which is the gateway's own directory. Resolve relative paths against it.
-- Read session identity with `gateway.session_context.get_session_env("HERMES_SESSION_PLATFORM")` and the other `HERMES_SESSION_*` names, not `os.environ`.
+- Read session identity with `gateway.session_context.get_session_env("MOOR_SESSION_PLATFORM")` and the other `MOOR_SESSION_*` names, not `os.environ`.
 
 ```python
 from agent.runtime_cwd import resolve_agent_cwd
@@ -1940,13 +1940,13 @@ it performs no origin, consent or ownership checks for you. Full contract:
 | Field | Meaning |
 |---|---|
 | `job_id`, `job_name` | The cron job. |
-| `execution_id` | This run's row in the executions ledger (`hermes cron runs`). |
-| `source` | Which path fired the run: `"builtin"` (the built-in scheduler), `"direct"` (a run fired outside it, e.g. `hermes cron run`), or an external scheduler's name. |
+| `execution_id` | This run's row in the executions ledger (`moor cron runs`). |
+| `source` | Which path fired the run: `"builtin"` (the built-in scheduler), `"direct"` (a run fired outside it, e.g. `moor cron run`), or an external scheduler's name. |
 | `scheduled_instant` | The schedule occurrence this run fires. `None` for a manual or other off-schedule run, so check this field to tell a scheduled run from a manual one. |
 | `started_at` | When the run started. |
 | `profile` | The profile that owns the job. |
 
-The scheduler sets it only after the run has won its execution claim, and clears it when the run ends. It is per-run, so two jobs or profiles firing at the same time never see each other's value. The model cannot forge it: hook arguments come from Hermes, and tool subprocesses (terminal, `execute_code`) run in a separate interpreter. Subagents spawned with `delegate_task` get `None` because they are not the scheduled run itself.
+The scheduler sets it only after the run has won its execution claim, and clears it when the run ends. It is per-run, so two jobs or profiles firing at the same time never see each other's value. The model cannot forge it: hook arguments come from Moor, and tool subprocesses (terminal, `execute_code`) run in a separate interpreter. Subagents spawned with `delegate_task` get `None` because they are not the scheduled run itself.
 
 ```python
 def register(ctx):
@@ -1984,7 +1984,7 @@ Users then run `/blueprint teamtools:standup` (or just `/blueprint standup`) or 
 
 - **Keys are namespaced.** The catalog key is `<plugin>:<key>` (`teamtools:standup`), so a plugin can never replace a built-in or another plugin's blueprint. Pass the bare key; a key containing `:` is rejected.
 - **Slots and templates.** Slot `type` is `time` (`HH:MM`), `enum`, `weekdays`, or `text`. `prompt_template` may use any slot as `{name}`. `schedule_template` may use slot names plus `{minute}`/`{hour}` (from a slot named `time`) and `{dow}` (from a `recurrence`/`day` slot, else `*`). A slot named `deliver` gets the profile's real delivery targets in the Desktop and dashboard forms.
-- **Validated at registration.** An unknown placeholder, bad slot type, duplicate key, or schedule that does not parse logs a warning and skips that blueprint; the rest of your plugin still loads. When every slot has a default, Hermes fills the blueprint once at load, so a broken template fails then instead of on the user's first *Schedule it*.
+- **Validated at registration.** An unknown placeholder, bad slot type, duplicate key, or schedule that does not parse logs a warning and skips that blueprint; the rest of your plugin still loads. When every slot has a default, Moor fills the blueprint once at load, so a broken template fails then instead of on the user's first *Schedule it*.
 - **Per profile.** Plugins load per profile, so the blueprint is listed only in profiles where your plugin is enabled.
 - **Jobs outlive the plugin.** Scheduling a blueprint creates an ordinary cron job with the prompt and schedule already filled in. Disabling or uninstalling the plugin removes the blueprint from the catalog but leaves those jobs running. If a job's `skills` name a skill your plugin bundles, the job skips that skill (and logs it) while the plugin is disabled.
 
@@ -2335,12 +2335,12 @@ description: Custom image generation backend
 The `computer_use` tool talks to exactly one **driver** through the `ComputerUseBackend` ABC
 (`tools/computer_use/backend.py`). `computer_use.backend` in `config.yaml` picks it; the default is the
 built-in cua-driver, which ships as an ordinary provider at `plugins/computer_use/cua/`. Another driver
-is a provider plugin in `~/.hermes/plugins/<name>/` whose `register(ctx)` calls
+is a provider plugin in `~/.moor/plugins/<name>/` whose `register(ctx)` calls
 `ctx.register_computer_use_provider()`. The directory name is the value you put in `computer_use.backend`.
 Computer-use providers are single-select, like memory providers and context engines:
 
 ```python
-# ~/.hermes/plugins/my-driver/__init__.py
+# ~/.moor/plugins/my-driver/__init__.py
 from tools.computer_use.backend import (
     ActionResult, CaptureResult, ComputerUseBackend, ComputerUseProvider,
 )
@@ -2373,7 +2373,7 @@ class MyDriverProvider(ComputerUseProvider):
     def is_available(self):                 # gates the tool; cheap, no network
         return True
 
-    def doctor(self):                       # optional: `hermes computer-use doctor`
+    def doctor(self):                       # optional: `moor computer-use doctor`
         print("my-driver: ok")
         return 0
 
@@ -2382,13 +2382,13 @@ def register(ctx):
 ```
 
 ```yaml
-# ~/.hermes/plugins/my-driver/plugin.yaml
+# ~/.moor/plugins/my-driver/plugin.yaml
 name: my-driver
 version: 1.0.0
 description: Alternative computer-use driver   # shown in the picker
 ```
 
-Select it in `hermes tools` → Computer Use (installed providers are listed under cua-driver, in the
+Select it in `moor tools` → Computer Use (installed providers are listed under cua-driver, in the
 CLI and in the Desktop toolset panel), or set it directly. No `plugins.enabled` entry is needed:
 
 ```yaml
@@ -2403,13 +2403,13 @@ Rules:
   providers that aren't selected stay on disk and are only listed (from `plugin.yaml`) as options. A
   provider never activates itself.
 - **Selection is per profile and read when a session starts its driver.** If the configured name
-  doesn't resolve, the call fails with an error naming it and the installed providers. Hermes never
+  doesn't resolve, the call fails with an error naming it and the installed providers. Moor never
   falls back to another driver.
 - **The model-facing schema is the same for every provider**, so the prompt cache survives a driver
   swap. Report gaps per action with `ActionResult(ok=False, code="unsupported_action", ...)`.
 - Approval gating, the Bot Desktop lease, screenshot dedup, element caps and vision routing all run
   in the tool, above the backend. The backend only drives the screen.
-- `hermes computer-use status`/`doctor`/`permissions` run cua-driver checks only when `cua` is
+- `moor computer-use status`/`doctor`/`permissions` run cua-driver checks only when `cua` is
   selected. For any other provider they report its `is_available()` and run its `doctor()` if it has one.
 - Providers return live driver sessions, so they load in-process only. Under
   `plugins.isolation: host`, a user provider is refused and the call reports that it could not be loaded.

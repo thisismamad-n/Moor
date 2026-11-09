@@ -60,7 +60,7 @@ test.skipIf(!powershell)(
   'the Windows remote marker judge agrees with every corpus judge case',
   async () => {
     const corpus = JSON.parse(readFileSync(corpusPath, 'utf8'))
-    const dir = mkdtempSync(path.join(os.tmpdir(), 'hermes-remote-ps-judge-'))
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'moor-remote-ps-judge-'))
     const script = path.join(dir, 'replay.ps1')
 
     try {
@@ -146,14 +146,14 @@ async function gate(args: string[]) {
 test.skipIf(process.platform === 'win32')(
   'the remote gate keeps a dead marker while the default checkout lock is held',
   async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'hermes-remote-gate-'))
-    const marker = path.join(root, '.hermes-update-in-progress')
+    const root = mkdtempSync(path.join(os.tmpdir(), 'moor-remote-gate-'))
+    const marker = path.join(root, '.moor-update-in-progress')
 
     try {
-      mkdirSync(path.join(root, 'hermes-agent', '.git'), { recursive: true })
+      mkdirSync(path.join(root, 'moor-agent', '.git'), { recursive: true })
       deadMarker(marker)
 
-      await withCheckoutLockHeld(path.join(root, 'hermes-agent', '.git', 'hermes-update.lock'), async () => {
+      await withCheckoutLockHeld(path.join(root, 'moor-agent', '.git', 'moor-update.lock'), async () => {
         assert.deepEqual(await gate([marker]), { code: 0, stdout: 'HELD', stderr: '' })
         assert.ok(existsSync(marker), 'a dead marker beside a held checkout lock must be kept')
         const refused = await gate([marker, 'echo PAYLOAD-RAN'])
@@ -169,12 +169,12 @@ test.skipIf(process.platform === 'win32')(
 )
 
 test.skipIf(process.platform === 'win32')(
-  'the remote gate probes the checkout of the hermes executable it is given (linked worktree)',
+  'the remote gate probes the checkout of the moor executable it is given (linked worktree)',
   async () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), 'hermes-remote-gate-'))
+    const root = mkdtempSync(path.join(os.tmpdir(), 'moor-remote-gate-'))
     const home = path.join(root, 'home')
-    const marker = path.join(home, '.hermes-update-in-progress')
-    const checkout = path.join(root, 'src', 'hermes-agent')
+    const marker = path.join(home, '.moor-update-in-progress')
+    const checkout = path.join(root, 'src', 'moor-agent')
     const common = path.join(root, 'repo.git')
 
     try {
@@ -183,15 +183,15 @@ test.skipIf(process.platform === 'win32')(
       mkdirSync(path.join(common, 'worktrees', 'co'), { recursive: true })
       writeFileSync(path.join(checkout, '.git'), `gitdir: ${path.join(common, 'worktrees', 'co')}\n`)
       writeFileSync(path.join(common, 'worktrees', 'co', 'commondir'), '../..\n')
-      writeFileSync(path.join(checkout, 'venv', 'bin', 'hermes'), '')
+      writeFileSync(path.join(checkout, 'venv', 'bin', 'moor'), '')
       mkdirSync(path.join(root, 'bin'))
-      symlinkSync(path.join(checkout, 'venv', 'bin', 'hermes'), path.join(root, 'bin', 'hermes'))
+      symlinkSync(path.join(checkout, 'venv', 'bin', 'moor'), path.join(root, 'bin', 'moor'))
       deadMarker(marker)
 
-      await withCheckoutLockHeld(path.join(common, 'hermes-update.lock'), async () => {
-        const hermes = path.join(root, 'bin', 'hermes')
-        assert.deepEqual(await gate([marker, '', hermes]), { code: 0, stdout: 'HELD', stderr: '' })
-        assert.deepEqual((await gate([marker, 'echo PAYLOAD-RAN', hermes])).code, 75)
+      await withCheckoutLockHeld(path.join(common, 'moor-update.lock'), async () => {
+        const moor = path.join(root, 'bin', 'moor')
+        assert.deepEqual(await gate([marker, '', moor]), { code: 0, stdout: 'HELD', stderr: '' })
+        assert.deepEqual((await gate([marker, 'echo PAYLOAD-RAN', moor])).code, 75)
         assert.ok(existsSync(marker))
       })
     } finally {
@@ -204,7 +204,7 @@ test.skipIf(process.platform === 'win32')(
 // for it in UTC (TZ=UTC0 + calendar.timegm); a local-time parse of the repeated
 // DST hour lands an hour off and judges a live owner dead (review G2).
 test.skipIf(process.platform === 'win32')('the remote judge reads ps lstart in UTC, not local time', async () => {
-  const root = mkdtempSync(path.join(os.tmpdir(), 'hermes-remote-lstart-'))
+  const root = mkdtempSync(path.join(os.tmpdir(), 'moor-remote-lstart-'))
 
   try {
     // Started 01:30 EST on 2026-11-01 (06:30 UTC): New York local time repeats 01:30.

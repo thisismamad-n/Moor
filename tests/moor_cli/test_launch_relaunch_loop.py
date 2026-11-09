@@ -26,7 +26,7 @@ import json
 command_args = json.loads(os.environ["LAUNCH_COMMAND"])  # an argv naming `update` alarms the test guard
 sys.path.insert(0, repo)
 import pm, pm.client
-from hermes_cli import _launchers, venv_sync
+from moor_cli import _launchers, venv_sync
 
 generations = Path(scratch, f"generations-{launch}")
 with generations.open("a") as fh:
@@ -50,11 +50,11 @@ pm.client.ensure_tools_for_sync = lambda: None
 _launchers.resolve_store_python = lambda *_a, **_k: Path(sys.executable)
 venv_sync.publish_launchers = lambda *_a, **_k: None
 
-if sync_mode == "restore" and getattr(sys, "_hermes_relaunched", False) and not Path(scratch, "restored").exists():
+if sync_mode == "restore" and getattr(sys, "_moor_relaunched", False) and not Path(scratch, "restored").exists():
     # The relaunched child restores a torn update: the restored tree's dependencies are stale again.
     Path(scratch, "restored").write_text("1")
     state.write_text("stale")
-    from hermes_cli import _early_recovery
+    from moor_cli import _early_recovery
     _early_recovery.relaunch_after_restore()
 
 try:
@@ -72,7 +72,7 @@ def _launch(tmp_path: Path, root: Path, sync_mode: str, launch: int, argv: list[
         (tmp_path / "state").write_text("stale", encoding="utf-8")
     script = tmp_path / "launch.py"
     script.write_text(_LAUNCH, encoding="utf-8")
-    env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "HERMES_HOME": str(tmp_path / "home"),
+    env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "MOOR_HOME": str(tmp_path / "home"),
            "LAUNCH_COMMAND": json.dumps(argv), "GENERATION_CAP": str(GENERATION_CAP)}
     result = subprocess.run(
         [sys.executable, str(script), str(REPO), str(root), str(tmp_path), sync_mode, str(launch)],
@@ -92,9 +92,9 @@ def _syncs(tmp_path: Path) -> int:
 def test_backed_off_failed_sync_boots_on_the_previous_dependencies(tmp_path, monkeypatch, argv):
     """#139952 records a failed launch sync so relaunches back off. A launch inside that backoff
     (or past the cap) has run no repair, so relaunching it would re-enter the same decision and
-    exec again forever; it must boot on the previous dependencies, and `hermes update` (the
+    exec again forever; it must boot on the previous dependencies, and `moor update` (the
     remedy every backed-off launch names) still tries the repair; its report-only `--check` does not."""
-    from hermes_cli import venv_sync
+    from moor_cli import venv_sync
 
     root = tmp_path / "checkout"
     root.mkdir()
@@ -111,8 +111,8 @@ def test_backed_off_failed_sync_boots_on_the_previous_dependencies(tmp_path, mon
     assert _syncs(tmp_path) == expected, "a backed-off launch re-ran the failing repair"
 
     if not argv:
-        # Past the cap, at any age: still one generation, and one pointer at `hermes update`.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        # Past the cap, at any age: still one generation, and one pointer at `moor update`.
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
         record = venv_sync._completion_attempts_path(root)
         assert record.is_file(), "the failed syncs were not recorded where completion_retry_state reads"
         record.write_text(f"{venv_sync.COMPLETION_RETRY_MAX_ATTEMPTS}\n", encoding="utf-8")
@@ -122,7 +122,7 @@ def test_backed_off_failed_sync_boots_on_the_previous_dependencies(tmp_path, mon
 
 
 def _committed_checkout(tmp_path: Path) -> Path:
-    from hermes_cli.source_stamp import write_source_stamp
+    from moor_cli.source_stamp import write_source_stamp
 
     root = tmp_path / "checkout"
     root.mkdir()

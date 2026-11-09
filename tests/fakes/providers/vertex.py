@@ -715,7 +715,7 @@ __all__ = [
     "Say",
     "ServiceAccount",
     "TokenPolicy",
-    "hermes_setup",
+    "moor_setup",
     "make_service_account",
     "make_tls_material",
     "signatures_on_wire",

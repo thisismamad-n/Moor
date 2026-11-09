@@ -23,7 +23,7 @@ _result: int | None = None
 # audit list is wider on purpose (helpers run *under* these frames and are found
 # by the frame walk).
 _HISTORICAL_UPDATE_FRAMES = (
-    ("hermes_cli.update_cmd", "hermes_cli.main"),
+    ("moor_cli.update_cmd", "moor_cli.main"),
     ("_cmd_update_impl", "cmd_update"),
 )
 
@@ -37,7 +37,7 @@ def _is_historical_update_frame(frame: Any) -> bool:
 def in_historical_update() -> bool:
     """True when an ancestor frame is a historical updater entrypoint.
 
-    The current tree's updater sets ``_hermes_current_updater_frame`` in its
+    The current tree's updater sets ``_moor_current_updater_frame`` in its
     entrypoints; no historical on-disk version contains that local, so its
     presence proves the caller is current code that must keep running rather
     than hand control to a takeover child.
@@ -46,7 +46,7 @@ def in_historical_update() -> bool:
     try:
         while frame is not None:
             if (_is_historical_update_frame(frame)
-                    and "_hermes_current_updater_frame" not in frame.f_code.co_varnames):
+                    and "_moor_current_updater_frame" not in frame.f_code.co_varnames):
                 return True
             frame = frame.f_back
     finally:
@@ -129,12 +129,12 @@ def _run_child(request: dict) -> tuple[int, dict]:
     # process's stdout in the ANSI code page, and a non-cp1252 character raised here, before the
     # takeover ever ran (review S1).
     print("-> Handing off to the new updater (package manager) for the rest of this update...", flush=True)
-    with tempfile.TemporaryDirectory(prefix="hermes-update-takeover-") as directory:
+    with tempfile.TemporaryDirectory(prefix="moor-update-takeover-") as directory:
         context = Path(directory) / "request.json"
         result = Path(directory) / "result.json"
         context.write_text(json.dumps(request), encoding="utf-8")
         code = _run_in_custody(
-            [sys.executable, "-I", "-S", "-B", "-X", "utf8", str(root / "hermes_cli/_update_takeover.py"),
+            [sys.executable, "-I", "-S", "-B", "-X", "utf8", str(root / "moor_cli/_update_takeover.py"),
              str(context), str(result)], root, cwd=root, env=env,
         )
         completed = json.loads(result.read_text(encoding="utf-8-sig")) if result.is_file() else {}
@@ -149,7 +149,7 @@ def _run_in_custody(argv: list, root: Path, **kwargs) -> int:
     suspended, bound to this updater's kill-on-close job, then resumed; a refused bind still runs
     (the update committed) and the takeover joins the lock holding its own lease. Releases
     without these helpers hold no checkout lock, and the takeover acquires it itself."""
-    lock = sys.modules.get("hermes_cli.update_lock")
+    lock = sys.modules.get("moor_cli.update_lock")
     bind, resume = (getattr(lock, name, None) for name in ("bind_child_to_update_tree", "resume_suspended_child"))
     if os.name != "nt" or bind is None or resume is None or getattr(lock, "_HELD", None) is None:
         # Unbounded for the same reason as the Windows wait below (review L7): the takeover is
@@ -177,7 +177,7 @@ def _checkout_custody(root: Path) -> dict:
     """The takeover child keeps the checkout lock this (old) updater holds: its fd, read from the
     update_lock module ALREADY loaded in this process (nothing new is imported here). Releases
     without a checkout lock hold none, and the takeover acquires it itself."""
-    held = getattr(sys.modules.get("hermes_cli.update_lock"), "checkout_lock_fds", None)
+    held = getattr(sys.modules.get("moor_cli.update_lock"), "checkout_lock_fds", None)
     try:
         fds = tuple(held(root)) if held is not None and os.name == "posix" else ()
     except Exception:  # health: allow BLE001 -- any older release's checkout_lock_fds; no fds = takeover locks itself
@@ -195,7 +195,7 @@ def stop_for_relaunch(*, incomplete: bool = False) -> NoReturn:
         # A newly retired completion hook has no complete captured worklist.
         # It must not start another update or invent a successful receipt. It names its stop on
         # the receipt the loaded update_receipt keeps open (an older one lacks the call: no-op).
-        record = getattr(sys.modules.get("hermes_cli.update_receipt"), "record_stop_reason", None)
+        record = getattr(sys.modules.get("moor_cli.update_receipt"), "record_stop_reason", None)
         if record is not None:
             record("old_version_handoff")
         print(

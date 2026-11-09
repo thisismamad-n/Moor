@@ -91,7 +91,7 @@ class TestRuntimeResolution:
     @pytest.fixture(autouse=True)
     def _stub_portal_credentials(self, monkeypatch):
         monkeypatch.setattr(rp, "load_config", dict)
-        monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "nous")
+        monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "moor")
         monkeypatch.setattr(rp, "load_pool", lambda p: SimpleNamespace(
             has_credentials=lambda: False,
         ))
@@ -326,7 +326,7 @@ class TestPortalBodyFields:
 
         kwargs = {"model": "claude-opus-4-8", "messages": []}
         agent = SimpleNamespace(provider="anthropic", session_id="s")
-        assert _merge_nous_portal_messages_extra_body(agent, kwargs, []) is kwargs
+        assert _merge_moor_portal_messages_extra_body(agent, kwargs, []) is kwargs
         assert "extra_body" not in kwargs
 
 

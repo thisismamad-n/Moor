@@ -210,15 +210,15 @@ def _raw_config_cache_clear() -> None:
 
 def _config_cache_key(config_path: Path) -> Optional[tuple[Any, ...]]:
     """``(path, *backend cache version)`` identity of config.yaml, or None when unreadable/absent."""
-    from hermes_cli.config_backend import config_cache_version_or_none
+    from moor_cli.config_backend import config_cache_version_or_none
     version = config_cache_version_or_none(config_path)
     return None if version is None else (str(config_path), *version)
 
 
 def _load_raw_config() -> dict[str, Any]:
-    """Read config.yaml with a version-keyed cache (no hermes_cli.config import)."""
+    """Read config.yaml with a version-keyed cache (no moor_cli.config import)."""
     from agent.safe_worker_policy import worker_config_snapshot
-    from hermes_cli.config_backend import config_exists, read_config_doc
+    from moor_cli.config_backend import config_exists, read_config_doc
 
     snapshot = worker_config_snapshot()
     if snapshot is not None:
@@ -335,8 +335,8 @@ def _config_str_list(raw) -> list[str]:
 
 def get_external_skills_dirs() -> list[Path]:
     """Validated, deduplicated ``skills.external_dirs`` (existing dirs only). Entries
-    are ``~``/``${VAR}`` expanded, relative to HERMES_HOME; the local skills dir is skipped."""
-    from hermes_cli.config_backend import config_exists
+    are ``~``/``${VAR}`` expanded, relative to MOOR_HOME; the local skills dir is skipped."""
+    from moor_cli.config_backend import config_exists
     config_path = get_config_path()
     if not config_exists(config_path):
         return []
@@ -421,7 +421,7 @@ def get_skill_search_roots(local: Optional[Path] = None, *, include_project: boo
 
 
 def get_all_skills_dirs() -> list[Path]:
-    """Skill dirs: local ``~/.hermes/skills/`` first, then create_dir, then external.
+    """Skill dirs: local ``~/.moor/skills/`` first, then create_dir, then external.
     Trusted project dirs are NOT included (higher precedence; see get_project_skills_dirs)."""
     return [d for _tier, d in get_skill_search_roots(include_project=False)]
 
@@ -721,8 +721,8 @@ def is_external_skill_path(path) -> bool:
     return any(candidate.is_relative_to(_resolve_for_skill_ownership(root)) for root in roots)
 
 
-def _hermes_metadata(frontmatter: dict[str, Any]) -> dict[str, Any]:
-    """``metadata.hermes`` mapping from frontmatter, or ``{}`` when malformed."""
+def _moor_metadata(frontmatter: dict[str, Any]) -> dict[str, Any]:
+    """``metadata.moor`` mapping from frontmatter, or ``{}`` when malformed."""
     metadata = frontmatter.get("metadata")
     moor = metadata.get("moor") if isinstance(metadata, dict) else None
     return moor if isinstance(moor, dict) else {}
@@ -740,7 +740,7 @@ def extract_skill_conditions(frontmatter: dict[str, Any]) -> dict[str, list]:
 
 
 def extract_skill_config_vars(frontmatter: dict[str, Any]) -> list[dict[str, Any]]:
-    """Extract ``metadata.hermes.config`` declarations (key/description/default/prompt).
+    """Extract ``metadata.moor.config`` declarations (key/description/default/prompt).
     Entries missing ``key`` or ``description`` are skipped; ``prompt`` defaults to the description."""
     raw = _moor_metadata(frontmatter).get("config")
     if isinstance(raw, dict):

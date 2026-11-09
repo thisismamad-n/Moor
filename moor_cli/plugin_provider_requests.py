@@ -1,10 +1,10 @@
 """Signed-in provider requests that core makes FOR plugins; the token never reaches plugin code.
 
 A plugin that needs the user's subscription sign-in (today: Codex / ChatGPT) must not read, refresh
-or rewrite Hermes's auth store or ``~/.codex/auth.json``. Codex refresh tokens are single-use, so a
-second refresher races Hermes's locked refresh and can sign the user out. Instead the plugin declares
+or rewrite Moor's auth store or ``~/.codex/auth.json``. Codex refresh tokens are single-use, so a
+second refresher races Moor's locked refresh and can sign the user out. Instead the plugin declares
 ``requires_auth: [openai-codex]`` in its ``plugin.yaml`` and calls :func:`credentialed_provider_request`.
-Hermes resolves the credential through its own locked-refresh path, attaches ``Authorization``
+Moor resolves the credential through its own locked-refresh path, attaches ``Authorization``
 itself, sends only to that provider's origins, never follows a redirect, and hands back
 status, headers and body.
 
@@ -21,11 +21,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
-from hermes_cli.urllib_security import url_origin
+from moor_cli.urllib_security import url_origin
 
 
 class ProviderNotSignedIn(RuntimeError):
-    """The user has no usable sign-in for the provider in this Hermes profile."""
+    """The user has no usable sign-in for the provider in this Moor profile."""
 
 
 @dataclass(frozen=True)
@@ -43,11 +43,11 @@ class ProviderResponse:
 
 
 def _codex_auth(url: str) -> tuple[dict[str, str], str]:
-    """``(auth headers, credential base URL)`` from Hermes's own locked-refresh resolver."""
+    """``(auth headers, credential base URL)`` from Moor's own locked-refresh resolver."""
     from agent.codex_headers import codex_account_headers
     from agent.turn_failure_copy import oauth_relogin_command
-    from hermes_cli.auth_codex import resolve_codex_runtime_credentials
-    from hermes_cli.auth_constants import AuthError
+    from moor_cli.auth_codex import resolve_codex_runtime_credentials
+    from moor_cli.auth_constants import AuthError
 
     try:
         creds = resolve_codex_runtime_credentials()
@@ -58,8 +58,8 @@ def _codex_auth(url: str) -> tuple[dict[str, str], str]:
     token = str(creds.get("api_key") or "").strip()
     if not token:
         raise ProviderNotSignedIn(
-            f"Not signed in to Codex in Hermes. Run `{oauth_relogin_command('openai-codex')}` "
-            "or sign in to OpenAI Codex under Providers in the Hermes desktop app.")
+            f"Not signed in to Codex in Moor. Run `{oauth_relogin_command('openai-codex')}` "
+            "or sign in to OpenAI Codex under Providers in the Moor desktop app.")
     headers = codex_account_headers(token) if url_origin(url)[1] == "chatgpt.com" else {}
     headers["Authorization"] = f"Bearer {token}"
     return headers, str(creds.get("base_url") or "")
@@ -74,11 +74,11 @@ _PROVIDERS: dict[str, tuple[frozenset, Callable[[str], tuple[dict[str, str], str
 
 def _plugin_roots() -> set[Path]:
     """Every plugins directory an installed plugin can live under, as given and resolved."""
-    from hermes_cli.plugins import get_bundled_plugins_dir
-    from hermes_constants import get_default_hermes_root, get_hermes_home, get_process_hermes_home
+    from moor_cli.plugins import get_bundled_plugins_dir
+    from moor_constants import get_default_moor_root, get_moor_home, get_process_moor_home
 
-    bases = (get_hermes_home() / "plugins", get_process_hermes_home() / "plugins",
-             get_default_hermes_root() / "plugins", get_bundled_plugins_dir())
+    bases = (get_moor_home() / "plugins", get_process_moor_home() / "plugins",
+             get_default_moor_root() / "plugins", get_bundled_plugins_dir())
     return {r for base in bases for r in (base.absolute(), base.resolve())}
 
 
@@ -116,10 +116,10 @@ def declared_auth_providers(manifest: Mapping[str, Any]) -> list[str]:
 
 def requires_auth_notice(manifest: Mapping[str, Any]) -> str:
     """One line for install/show surfaces; empty when the plugin declares no sign-in use."""
-    from hermes_cli.plugin_oauth import oauth_notice
+    from moor_cli.plugin_oauth import oauth_notice
 
     providers = declared_auth_providers(manifest)
-    sign_in = (f"Uses your sign-in for: {', '.join(providers)} (Hermes sends the requests; "
+    sign_in = (f"Uses your sign-in for: {', '.join(providers)} (Moor sends the requests; "
                "the plugin never receives the token)") if providers else ""
     return "; ".join(part for part in (sign_in, oauth_notice(manifest)) if part)
 
@@ -135,16 +135,16 @@ def credentialed_provider_request(
     provider: str, method: str, url: str, *, json: Any = None,
     headers: Optional[Mapping[str, str]] = None, timeout: float = 30.0,
 ) -> ProviderResponse:
-    """Send ``method url`` with the user's *provider* sign-in attached by Hermes.
+    """Send ``method url`` with the user's *provider* sign-in attached by Moor.
 
-    *provider* is a Hermes sign-in (listed under ``requires_auth``) or an ``id`` the calling plugin
-    declares under ``oauth:`` (:mod:`hermes_cli.plugin_oauth`); the plugin's own entry wins.
+    *provider* is a Moor sign-in (listed under ``requires_auth``) or an ``id`` the calling plugin
+    declares under ``oauth:`` (:mod:`moor_cli.plugin_oauth`); the plugin's own entry wins.
     Refuses (``PermissionError``) a caller outside an installed plugin, a plugin whose ``plugin.yaml``
     does not list *provider* under ``requires_auth``, and any origin outside the provider's
     allowlist; raises :class:`ProviderNotSignedIn` when this profile has no sign-in. Redirects are
     returned as-is, never followed. The result carries no credential.
     """
-    from hermes_cli.plugin_oauth import _plugin_oauth_spec
+    from moor_cli.plugin_oauth import _plugin_oauth_spec
 
     plugin_dir = _calling_plugin_dir()
     if plugin_dir is None:

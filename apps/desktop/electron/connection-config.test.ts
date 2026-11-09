@@ -257,11 +257,11 @@ test('SSH remains separate from URL-shaped remote modes and preserves an explici
 
 test('profileRemoteOverride preserves an explicit remote profile mapping on a URL override', () => {
   const config = {
-    profiles: { gris: { mode: 'remote', url: 'https://agent.example.com/hermes', remoteProfile: 'main-gris' } }
+    profiles: { gris: { mode: 'remote', url: 'https://agent.example.com/moor', remoteProfile: 'main-gris' } }
   }
 
   assert.deepEqual(profileRemoteOverride(config, 'gris'), {
-    url: 'https://agent.example.com/hermes',
+    url: 'https://agent.example.com/moor',
     authMode: 'token',
     token: undefined,
     remoteProfile: 'main-gris'
@@ -1284,14 +1284,14 @@ test('cookiesHaveSession handles non-arrays', () => {
 
 test('a gateway Webapp signs in with cookies named for its gateway, and they count as a session', () => {
   // Cookies are not scoped to a port, so the gateway's Webapp names its login cookies
-  // hermes_session_at_<gateway> and hermes_session_rt_<gateway>; the dashboard keeps the bare names.
+  // moor_session_at_<gateway> and moor_session_rt_<gateway>; the dashboard keeps the bare names.
   const gateway = '0123456789abcdef'
-  assert.equal(cookiesHaveSession([{ name: `hermes_session_at_${gateway}`, value: 'x' }]), true)
-  assert.equal(cookiesHaveSession([{ name: `__Host-hermes_session_at_${gateway}`, value: 'x' }]), true)
-  assert.equal(cookiesHaveSession([{ name: `hermes_session_rt_${gateway}`, value: 'x' }]), false)
-  assert.equal(cookiesHaveLiveSession([{ name: `__Secure-hermes_session_rt_${gateway}`, value: 'x' }]), true)
-  assert.equal(cookiesHaveSession([{ name: 'hermes_session_at_other', value: 'x' }]), false)
-  assert.equal(cookiesHaveLiveSession([{ name: `hermes_webapp_signin_${gateway}`, value: 'x' }]), false)
+  assert.equal(cookiesHaveSession([{ name: `moor_session_at_${gateway}`, value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: `__Host-moor_session_at_${gateway}`, value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: `moor_session_rt_${gateway}`, value: 'x' }]), false)
+  assert.equal(cookiesHaveLiveSession([{ name: `__Secure-moor_session_rt_${gateway}`, value: 'x' }]), true)
+  assert.equal(cookiesHaveSession([{ name: 'moor_session_at_other', value: 'x' }]), false)
+  assert.equal(cookiesHaveLiveSession([{ name: `moor_webapp_signin_${gateway}`, value: 'x' }]), false)
 })
 
 // --- cookiesHaveLiveSession (AT or RT — the connectivity check) ---

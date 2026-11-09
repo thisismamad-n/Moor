@@ -30,27 +30,27 @@ from typing import Dict, Any, Literal, Optional, List, Tuple, Set
 
 import moor_yaml as yaml
 
-from hermes_cli.cli_output import line_input
-from hermes_cli.colors import Colors, color
-from hermes_cli import managed_scope
-from hermes_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
-from hermes_cli.left_core_migration import profile_env_names as _left_core_profile_env
-from hermes_cli.secret_prompt import masked_secret_prompt
-# Managed-mode, container and HERMES_UID/GID policy live in hermes_constants (import-safe);
+from moor_cli.cli_output import line_input
+from moor_cli.colors import Colors, color
+from moor_cli import managed_scope
+from moor_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
+from moor_cli.left_core_migration import profile_env_names as _left_core_profile_env
+from moor_cli.secret_prompt import masked_secret_prompt
+# Managed-mode, container and MOOR_UID/GID policy live in moor_constants (import-safe);
 # re-exported here so existing callers/patch targets keep working.
-from hermes_constants import (
+from moor_constants import (
     _IGNORED_MANAGED_VALUES, _LEGACY_MANAGED_SYSTEM, _MANAGED_FALSE_VALUES, _MANAGED_TRUE_VALUES,
     _chown_to_moor_uid, _container_or_chmod_skipped, _resolve_moor_uid_gid,
     apply_secure_dir_policy, get_managed_system)
-# Re-export from hermes_constants — canonical definition lives there.
-from hermes_constants import get_hermes_home, get_process_hermes_home
+# Re-export from moor_constants — canonical definition lives there.
+from moor_constants import get_moor_home, get_process_moor_home
 from utils import atomic_replace, fast_safe_load, file_cache_version, file_signature, mkstemp_beside
-from hermes_cli.config_issues import ConfigIssue, _issue
-from hermes_cli.config_backend import (
+from moor_cli.config_issues import ConfigIssue, _issue
+from moor_cli.config_backend import (
     ConfigWriteError, config_cache_version, config_destination, config_exists, config_version,
     get_config_backend, probe_config_readable, read_config_doc, supports_file_tooling,
     write_config_document)
-from hermes_cli.config_read_errors import (
+from moor_cli.config_read_errors import (
     _CONFIG_PARSE_FAILURES, _FIX_PERMS, _FIX_YAML, FailedConfigRead, _backups_dir_display,
     _refuse_failed_read, _refuse_overwrite, _warn_config_parse_failure, _yaml_error_details,
     _yaml_error_location)
@@ -126,7 +126,7 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "MOOR_HOME", "MOOR_PROFILE", "MOOR_CONFIG", "MOOR_ENV",
     "MOOR_CONFIG_PATH", "MOOR_ENV_PATH",
     # MCP catalog trust root; package-manager wrappers may still set it in the process env.
-    "HERMES_OPTIONAL_MCPS",
+    "MOOR_OPTIONAL_MCPS",
     # Security policy / approval-routing context — set via their dedicated controls only.
     "MOOR_YOLO_MODE", "MOOR_ACCEPT_HOOKS", "MOOR_REDACT_SECRETS",
     "MOOR_INTERACTIVE", "MOOR_EXEC_ASK", "MOOR_GATEWAY_SESSION",
@@ -146,7 +146,7 @@ def validate_env_var_name_for_write(key: str) -> None:
     if not _ENV_VAR_NAME_RE.match(key):
         raise ValueError(f"Invalid environment variable name: {key!r}")
     policy_name = _env_var_policy_name(key)
-    from hermes_cli.auth_external_process import env_writer_launch_denylist as _launch_env  # ACP argv authority
+    from moor_cli.auth_external_process import env_writer_launch_denylist as _launch_env  # ACP argv authority
     if (policy_name in _ENV_VAR_NAME_DENYLIST or policy_name in map(_env_var_policy_name, _launch_env())
             or policy_name.startswith(_ENV_VAR_NAME_DENY_PREFIXES)):
         raise ValueError(
@@ -218,7 +218,7 @@ _EXTRA_ENV_KEYS = frozenset({
     "MATRIX_REQUIRE_MENTION", "MATRIX_FREE_RESPONSE_ROOMS", "MATRIX_AUTO_THREAD", "MATRIX_DM_AUTO_THREAD",
     "MATRIX_RECOVERY_KEY",
     # ACP (Agent Client Protocol) keys — profile-isolable so profiles can use different backends.
-    "HERMES_ACP_AUTH_METHOD", "HERMES_ACP_AUTO_APPROVE"}) | _left_core_profile_env()  # moved providers' env
+    "MOOR_ACP_AUTH_METHOD", "MOOR_ACP_AUTO_APPROVE"}) | _left_core_profile_env()  # moved providers' env
 
 
 # ---- Managed mode (NixOS declarative config) ----
@@ -585,10 +585,10 @@ def ensure_moor_home():
 
 # ---- Config loading/saving ----
 
-from hermes_cli.config_defaults import DEFAULT_CONFIG, OPTIONAL_ENV_VARS
-from hermes_cli import config_provider_env as _config_provider_env
-from hermes_cli.config_provider_env import core_declared_env_names
-from hermes_cli.config_providers import (
+from moor_cli.config_defaults import DEFAULT_CONFIG, OPTIONAL_ENV_VARS
+from moor_cli import config_provider_env as _config_provider_env
+from moor_cli.config_provider_env import core_declared_env_names
+from moor_cli.config_providers import (
     _API_MODE_ALIASES, _CAMEL_ALIASES, _KNOWN_PROVIDER_KEYS, _PROVIDER_NORMALIZE_WARNED,
     _canonical_api_mode, _coerce_ssl_verify, _custom_provider_entry_to_provider_config,
     _entries_for_route, _normalize_custom_provider_entry, _normalize_provider_models,
@@ -600,17 +600,17 @@ from hermes_cli.config_providers import (
     get_custom_provider_session_affinity_header,
     get_custom_provider_tls_settings, is_provider_enabled, normalize_extra_headers,
     providers_dict_to_custom_providers, stringify_provider_map)
-# Back-compat re-exports — :mod:`hermes_cli.personality` owns personality/overlay semantics.
-from hermes_cli.personality import (
+# Back-compat re-exports — :mod:`moor_cli.personality` owns personality/overlay semantics.
+from moor_cli.personality import (
     NEUTRAL_PERSONALITY_NAMES as _NEUTRAL_PERSONALITY_NAMES,
     prompt_text as _prompt_text,
     render_personality_prompt,
     resolve_ephemeral_system_prompt as resolve_ephemeral_system_prompt_from_config)
 
 # ---- Config schema-version stamp ----  (moved into config_version_stamp; re-exported here
-# because callers and tests import these from hermes_cli.config)
+# because callers and tests import these from moor_cli.config)
 
-from hermes_cli.config_version_stamp import (
+from moor_cli.config_version_stamp import (
     check_config_version, note_first_stamp, read_config_version_stamp, stamp_missing_config)
 
 
@@ -899,7 +899,7 @@ def _format_config_get_value(value, *, as_json: bool) -> str:
 
 def get_missing_config_fields() -> list[dict[str, Any]]:
     """Check which config fields are missing or outdated (recursive)."""
-    from hermes_cli.moa_config import skip_deep_merge
+    from moor_cli.moa_config import skip_deep_merge
 
     missing = []
 
@@ -1059,7 +1059,7 @@ def validate_config_structure(config: Optional[dict[str, Any]] = None) -> list[C
             from moor_cli.config_home import config_load_issue
             return [config_load_issue(exc)]
 
-    from hermes_cli.config_value_checks import (
+    from moor_cli.config_value_checks import (
         _validate_quoted_containers, _validate_timezone, _validate_voice, _validate_web_backends)
     issues: list[ConfigIssue] = []
     _validate_voice(config, issues)
@@ -1142,14 +1142,14 @@ def _persist_migration(config: dict[str, Any]) -> None:
     persist values that DIFFER from the schema default, plus explicit removals/renames of user
     data. Every migration step MUST write through here (``save_config`` with default-stripping
     ON, no ``merge_existing``) so the invariant cannot regress one migration at a time. A migration
-    is Hermes' own write, never a user turning a feature off. A backend without file tooling
+    is Moor' own write, never a user turning a feature off. A backend without file tooling
     migrates in memory on read and never writes back (D12)."""
-    from hermes_cli.observability.shared_metrics_disabled import hermes_applied_write
+    from moor_cli.observability.shared_metrics_disabled import moor_applied_write
 
     if not supports_file_tooling():
         get_config_backend().apply_in_memory(get_config_path().parent, config)
         return
-    with hermes_applied_write():
+    with moor_applied_write():
         save_config(config)
 
 
@@ -1283,7 +1283,7 @@ def _warn_invalid_platform_toolsets(results: dict[str, Any], quiet: bool) -> Non
     """Surface invalid toolset names in platform_toolsets: ``resolve_toolset()`` returns [] for an
     unknown name, silently disabling the affected tools. Best-effort; never blocks migration."""
     try:
-        from hermes_cli.toolset_validation import saved_toolset_resolver, validate_platform_toolsets
+        from moor_cli.toolset_validation import saved_toolset_resolver, validate_platform_toolsets
 
         config = read_raw_config()
         for w in validate_platform_toolsets(config.get("platform_toolsets"), saved_toolset_resolver(config)):
@@ -1777,7 +1777,7 @@ def _raw_config_cache_store(path_key: str, cache_key: tuple[Any, ...], data: dic
 
 
 def _worker_config_snapshot() -> Optional[dict[str, Any]]:
-    """A safe worker's frozen config, or None. Install-time loads run from ``hermes_cli`` alone
+    """A safe worker's frozen config, or None. Install-time loads run from ``moor_cli`` alone
     (the installer's completion step ships no ``agent`` package), and without ``agent`` there
     is no worker policy to consult."""
     try:
@@ -1936,7 +1936,7 @@ def _write_config_state(
     if not allow_omissions:
         # A guard read, not the caller's read: *data* came from the caller's own earlier read, so a
         # Remote Config save must still be diffed against THAT read, not a poll that landed since.
-        from hermes_cli.config_backend import keeping_read_base
+        from moor_cli.config_backend import keeping_read_base
         existing = keeping_read_base(lambda: require_readable_config_before_write(config_path))
         omitted = _omitted_config_paths(existing, data)
         if omitted:
@@ -2142,8 +2142,8 @@ def _last_known_good_fallback(config_path: Path, path_key: str, cache_sig, exc: 
         # fall back to the newest byte-exact copy the last successful parse left in backups/config/.
         # It holds the raw file (``${VAR}`` templates intact), so it goes through the same
         # canonicalize -> expand -> managed-overlay pipeline as a normal load.
-        from hermes_cli.config_backups import load_newest_good_backup
-        from hermes_cli.moa_config import apply_user_moa_presets
+        from moor_cli.config_backups import load_newest_good_backup
+        from moor_cli.moa_config import apply_user_moa_presets
         raw_good = load_newest_good_backup(config_path)
         if raw_good is not None:
             merged_good = _deep_merge(copy.deepcopy(DEFAULT_CONFIG), raw_good)
@@ -2260,7 +2260,7 @@ def _load_config_impl(*, want_deepcopy: bool) -> dict[str, Any]:
                     user_config.pop("max_turns", None)
 
                 config = _deep_merge(config, user_config)
-                from hermes_cli.moa_config import apply_user_moa_presets
+                from moor_cli.moa_config import apply_user_moa_presets
                 apply_user_moa_presets(config, user_config)
                 # A copy of the file that just parsed is what a FRESH process falls back to when the
                 # next edit breaks the YAML (see _last_known_good_fallback). backup_config() skips
@@ -2366,7 +2366,7 @@ def _commented_sections_for_save(normalized: dict[str, Any]) -> Optional[str]:
 def save_config(
     config: dict[str, Any], *, strip_defaults: bool = True,
     preserve_keys: Optional[set[tuple[str, ...]]] = None, merge_existing: bool = False):
-    """Save configuration to ~/.hermes/config.yaml.
+    """Save configuration to ~/.moor/config.yaml.
     Schema defaults are not written unless the user explicitly set them (the path exists in the
     raw config before normalisation), so config.yaml is never contaminated with defaults that
     would hide future default changes. ``merge_existing`` deep-merges the on-disk raw config
@@ -2386,9 +2386,9 @@ def save_config(
         # fail-closed read is the single authority here: ``read_raw_config()`` is cached and
         # swallows transient stat/open errors into ``{}``, and a ``{}`` at this point makes the
         # strip pass drop every user section whose value matches a default (#113301).
-        from hermes_cli.config_backend import keeping_read_base
+        from moor_cli.config_backend import keeping_read_base
         _raw_for_paths = keeping_read_base(lambda: require_readable_config_before_write(config_path))
-        from hermes_cli.config_worker_save import rebase_for_save  # frozen-worker writes + merge_existing
+        from moor_cli.config_worker_save import rebase_for_save  # frozen-worker writes + merge_existing
         config = rebase_for_save(config, _raw_for_paths, merge_existing)
 
         normalized = current_normalized = _canonicalize_config(config)
@@ -2407,12 +2407,12 @@ def save_config(
         _secure_file(config_path)
         _RAW_CONFIG_CACHE.pop(str(config_path), None)
         _LAST_EXPANDED_CONFIG_BY_PATH[str(config_path)] = copy.deepcopy(current_normalized)
-    from hermes_cli.observability.shared_metrics_disabled import record_config_saved
+    from moor_cli.observability.shared_metrics_disabled import record_config_saved
     record_config_saved(_raw_for_paths, current_normalized)
 
 
 def load_env() -> dict[str, str]:
-    """Load ~/.hermes/.env as a dict. Memoised inside ``load_env_file`` (``get_env_value()`` runs
+    """Load ~/.moor/.env as a dict. Memoised inside ``load_env_file`` (``get_env_value()`` runs
     hundreds of times per interactive menu render). Each assignment's value is opaque data for
     boundary discovery."""
     # A frozen-policy worker never opens the profile's files; its secrets arrive
@@ -2422,7 +2422,7 @@ def load_env() -> dict[str, str]:
     from agent.secret_scope import load_env_file  # the one .env tokenizer; also installs profile scopes
 
     env = load_env_file(get_env_path())
-    _note_policy("note_env_policy", env.get("HERMES_REDACT_SECRETS"))
+    _note_policy("note_env_policy", env.get("MOOR_REDACT_SECRETS"))
     return env
 
 
@@ -2430,8 +2430,8 @@ def _note_policy(setter: str, raw: Any) -> None:
     """Record the loaded profile's redaction policy for the log formatter, which never reads config."""
     note = getattr(sys.modules.get("agent.redact"), setter, None)
     if note is not None:
-        from hermes_constants import hermes_home_key
-        note(hermes_home_key(), raw)
+        from moor_constants import moor_home_key
+        note(moor_home_key(), raw)
 
 
 def _parse_env_value(raw_value: str) -> str:
@@ -2514,9 +2514,9 @@ def _env_write_lock(env_path: Path):
     snapshot the pre-write file and the loser's replace silently drops the
     winner's key. ``_CONFIG_LOCK`` cannot help: it guards in-memory config only.
 
-    Reuses ``hermes_cli.auth._file_lock`` (fcntl flock / msvcrt byte lock,
+    Reuses ``moor_cli.auth._file_lock`` (fcntl flock / msvcrt byte lock,
     cross-process, reentrant per thread) rather than growing a second kernel-lock
-    implementation. The import is call-time: ``hermes_cli.auth`` imports this
+    implementation. The import is call-time: ``moor_cli.auth`` imports this
     module at import time, so a module-level import would be circular. Nothing
     under this lock takes other locks, and the only nesting direction that exists
     (credential_lifecycle takes ``_auth_store_lock`` around its own auth-store
@@ -2524,7 +2524,7 @@ def _env_write_lock(env_path: Path):
     On a filesystem without flock the helper degrades to a depth-only guard
     (same behavior as auth's locks), never to a crash.
     """
-    from hermes_cli.auth import _file_lock
+    from moor_cli.auth import _file_lock
 
     with _file_lock(
         env_path.with_name(env_path.name + ".lock"),
@@ -2780,9 +2780,9 @@ def save_env_value_secure(key: str, value: str) -> dict[str, Any]:
 
 
 def reload_env() -> int:
-    """Re-read ~/.hermes/.env into os.environ; returns count of vars changed. Removes deleted vars only when
-    known to Hermes (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS), and none while the .env exists but is unreadable."""
-    from hermes_cli.env_loader import dotenv_unreadable
+    """Re-read ~/.moor/.env into os.environ; returns count of vars changed. Removes deleted vars only when
+    known to Moor (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS), and none while the .env exists but is unreadable."""
+    from moor_cli.env_loader import dotenv_unreadable
     env_vars = load_env()
     count = 0
     for key, value in env_vars.items():
@@ -2824,7 +2824,7 @@ def get_env_value(key: str) -> Optional[str]:
 
 
 def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
-    """Resolve a Hermes-managed credential preferring ``~/.hermes/.env`` over ``os.environ``, so a
+    """Resolve a moor-managed credential preferring ``~/.moor/.env`` over ``os.environ``, so a
     deliberate .env edit beats a stale value inherited from the parent shell.
 
     An unresolved ``op://`` reference left in .env yields to the already-resolved value from the
@@ -2899,8 +2899,8 @@ def edit_config():
     if not supports_file_tooling():
         # Exits 1 (unlike the managed refusal above, which every managed_error caller shares):
         # a script must not read this refusal as a successful edit.
-        _exit_invalid("`hermes config edit` opens the local config file, and this config backend has none. "
-                      "Use `hermes config set <key> <value>` instead.")
+        _exit_invalid("`moor config edit` opens the local config file, and this config backend has none. "
+                      "Use `moor config set <key> <value>` instead.")
     config_path = get_config_path()
     if not config_path.exists():  # config-reader: ok — file tooling, gated on supports_file_tooling()
         seed_config_file(config_path)
@@ -2981,7 +2981,7 @@ def _validate_config_key(key: str) -> tuple[bool, Optional[str]]:
     known, suggestion = _validate_schema_key(key)
     if known or not key:
         return known, suggestion
-    from hermes_cli.config_runtime_keys import is_runtime_read_key
+    from moor_cli.config_runtime_keys import is_runtime_read_key
     return (True, None) if is_runtime_read_key(_split_key_path(key)) else (False, suggestion)
 
 
@@ -2993,7 +2993,7 @@ def _validate_schema_key(key: str) -> tuple[bool, Optional[str]]:
     segments = _split_key_path(key)
     top = segments[0]
     # A leading ``_`` on the FIRST segment only marks an internal key (``agent._max_turns`` is caught).
-    from hermes_cli.left_core_migration import LEFT_CORE_TERMINAL_KEYS
+    from moor_cli.left_core_migration import LEFT_CORE_TERMINAL_KEYS
     if top.startswith("_") or top in _PLATFORM_CONTAINER_KEYS or key in LEFT_CORE_TERMINAL_KEYS:
         return True, None
 
@@ -3285,8 +3285,8 @@ def _exit_invalid(msg: str) -> None:
 
 def _write_user_config(config_path: Path, user_config: dict[str, Any]) -> None:
     """Write only the user's raw config back (never the merged defaults)."""
-    ensure_hermes_home()
-    from hermes_cli.observability.shared_metrics_disabled import recording_raw_config_write
+    ensure_moor_home()
+    from moor_cli.observability.shared_metrics_disabled import recording_raw_config_write
     recording_raw_config_write(config_path, user_config, atomic_config_replace)
 
 
@@ -3361,11 +3361,11 @@ def set_config_value(key: str, value: str, force: bool = False):
     # seeded default. Refuse only the positive wrong-prefix case from #112003; other unknown
     # paths keep the post-write warning so valid runtime settings remain configurable.
     if not is_known and not force and _is_wrong_prefix_suggestion(key, suggestion):
-        from hermes_cli.config_key_notices import unknown_subkey_refusal
+        from moor_cli.config_key_notices import unknown_subkey_refusal
         _exit_invalid(unknown_subkey_refusal(key, suggestion))
 
     if key == "display.language":
-        from hermes_cli.config_language import display_language_error
+        from moor_cli.config_language import display_language_error
         language_error = display_language_error(value)
         if language_error:
             _exit_invalid(language_error)
@@ -3379,7 +3379,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     _model_val = user_config.get("model")
     if key.strip().lower().startswith("model.") and isinstance(_model_val, str) and _model_val:
         user_config["model"] = {"default": _model_val}
-    from hermes_cli.config_section_guard import _guard_section_overwrite
+    from moor_cli.config_section_guard import _guard_section_overwrite
     key = _guard_section_overwrite(key, value, user_config, force)
     value = _refuse_container_type_mismatch(key, value, user_config, force)
     _old_provider = _model_val.get("provider") if isinstance(_model_val, dict) else None
@@ -3417,7 +3417,7 @@ def set_config_value(key: str, value: str, force: bool = False):
         user_config = _normalize_root_model_keys(user_config)
         key = "model.base_url"
         print("  (note: 'api_base' is an alias — saved as model.base_url)")
-    from hermes_cli.config_backend import pinning_keys
+    from moor_cli.config_backend import pinning_keys
     with pinning_keys(key):  # an explicit set is stored even when it equals the inherited value
         _write_user_config(config_path, user_config)
 
@@ -3508,7 +3508,7 @@ def unset_config_value(key: str):
     if _is_env_config_key(key):
         # Unified lifecycle: also prunes env-seeded credential_pool entries and model-cache rows so
         # the provider is fully removed instead of left resurrectable (#51071).
-        from hermes_cli.credential_lifecycle import remove_provider_env_credential
+        from moor_cli.credential_lifecycle import remove_provider_env_credential
 
         try:
             found = remove_provider_env_credential(key.upper()).get("found")
@@ -3543,7 +3543,7 @@ def unset_config_value(key: str):
     if legacy_key:
         removed = _unset_nested(user_config, legacy_key) or removed
 
-    from hermes_cli.left_core_migration import LEFT_CORE_TERMINAL_KEYS
+    from moor_cli.left_core_migration import LEFT_CORE_TERMINAL_KEYS
     env_var = terminal_config_env_var_for_key(key) or LEFT_CORE_TERMINAL_KEYS.get(key)
     if env_var and key != "terminal.cwd":
         removed = remove_env_value(env_var) or removed
@@ -3689,7 +3689,7 @@ def _cmd_config_check(args):
         print(color(f"  {len(missing_config)} new config option(s) available", Colors.YELLOW))
         print("    Run 'moor config migrate' to add them")
 
-    from hermes_cli.config_check_diagnostics import config_check_diagnostics
+    from moor_cli.config_check_diagnostics import config_check_diagnostics
 
     diagnostics = config_check_diagnostics(read_raw_config_readonly(), get_env_value)
     if diagnostics:
@@ -3702,7 +3702,7 @@ def _cmd_config_check(args):
 
 
 def _cmd_config_show() -> None:
-    from hermes_cli.config_show import show_config
+    from moor_cli.config_show import show_config
     show_config()
 
 
@@ -3719,15 +3719,15 @@ _CONFIG_SUBCOMMANDS = {
     "check": _cmd_config_check}
 
 _CONFIG_USAGE = """Available commands:
-  hermes config           Show current configuration
-  hermes config edit      Open config in editor
-  hermes config get <key>          Print a resolved config value
-  hermes config set <key> <value>   Set a config value
-  hermes config unset <key>        Remove a config value
-  hermes config check     Check for missing, outdated, or inactive config
-  hermes config migrate   Update config with new options
-  hermes config path      Show config file path
-  hermes config env-path  Show .env file path"""
+  moor config           Show current configuration
+  moor config edit      Open config in editor
+  moor config get <key>          Print a resolved config value
+  moor config set <key> <value>   Set a config value
+  moor config unset <key>        Remove a config value
+  moor config check     Check for missing, outdated, or inactive config
+  moor config migrate   Update config with new options
+  moor config path      Show config file path
+  moor config env-path  Show .env file path"""
 
 
 def config_command(args):
@@ -3762,7 +3762,7 @@ def _platform_manifest_paths(home: Optional[Path] = None, source: PlatformManife
     """Yield ``(dir_name, manifest_path, require_kind, stat)`` for every platform plugin manifest.
     ``source`` is ``"bundled"`` (shipped ``plugins/platforms/*``), ``"user"`` (``<home>/plugins/
     platforms/*`` plus flat ``<home>/plugins/*`` installs, which must declare ``kind: platform``,
-    #46600) or ``"all"``. ``home`` defaults to the bound Hermes home. A directory that cannot be
+    #46600) or ``"all"``. ``home`` defaults to the bound Moor home. A directory that cannot be
     listed or searched yields ``(name, None, require_kind, error)``: a plugin there can't load
     either, so callers skip it. One ``scandir`` per root and one ``stat`` per candidate, because
     the child-env scrub stamps these on every spawn."""
@@ -3770,7 +3770,7 @@ def _platform_manifest_paths(home: Optional[Path] = None, source: PlatformManife
     if source in ("all", "bundled"):
         roots.append((get_project_root() / "plugins" / "platforms", False))
     if source in ("all", "user"):
-        user_plugins = (home if home is not None else get_hermes_home()) / "plugins"
+        user_plugins = (home if home is not None else get_moor_home()) / "plugins"
         roots += [(user_plugins / "platforms", False), (user_plugins, True)]
     for root, require_kind in roots:
         try:
@@ -3900,7 +3900,7 @@ def platform_manifest_secret_scan(home: Optional[Path] = None) -> tuple[frozense
 
 def _inject_platform_plugin_env_vars() -> frozenset[str] | None:
     """Populate OPTIONAL_ENV_VARS from platform plugin manifests (bundled AND user-installed) so
-    Teams / IRC / Google Chat and third-party platforms are configurable in the ``hermes config`` /
+    Teams / IRC / Google Chat and third-party platforms are configurable in the ``moor config`` /
     Desktop Gateway form without the core knowing they exist. Failures are swallowed so a
     malformed plugin.yaml can't break CLI import. Returns the bundled manifests' secret names, or
     None when a bundled manifest could not be read (the policy then re-reads strictly).

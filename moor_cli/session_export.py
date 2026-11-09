@@ -221,7 +221,7 @@ def export_projection(transcript: bool) -> dict[str, bool]:
 def drop_undone_rows(export: dict[str, Any]) -> dict[str, Any]:
     """Keep live and compaction-archived rows in a ``/save`` JSON snapshot; rows removed by /undo, rewind
     or edit stay out. ``timings`` is rebuilt from the kept rows so it names no dropped row."""
-    from hermes_state_portability import _export_timings
+    from moor_state_portability import _export_timings
     export["messages"] = [m for m in export["messages"] if m["active"] or m["compacted"]]
     export["timings"] = _export_timings(export["messages"], export.get("id"))
     return export
@@ -230,7 +230,7 @@ def drop_undone_rows(export: dict[str, Any]) -> dict[str, Any]:
 def load_save_snapshot(db: Any, session_id: str, fmt: str) -> Optional[dict[str, Any]]:
     """The stored session a ``/save <fmt>`` writes, or None when it has no row. A JSON snapshot loads every
     stored row in memory, so it is refused past ``sessions.max_export_messages`` (raises
-    ``SessionExportTooLargeError``), like ``hermes sessions export``."""
+    ``SessionExportTooLargeError``), like ``moor sessions export``."""
     transcript = fmt in SAVE_TRANSCRIPT_FORMATS
     if not transcript:
         db.assert_export_safe(session_id)
@@ -271,7 +271,7 @@ def normalize_save_format(fmt: Optional[str]) -> str:
 
 
 def _render_html_for_save(session: dict[str, Any]) -> str:
-    from hermes_cli.session_export_html import generate_html_export
+    from moor_cli.session_export_html import generate_html_export
 
     return generate_html_export(session)
 

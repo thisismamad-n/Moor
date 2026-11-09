@@ -63,7 +63,7 @@ def test_all_refusals_point_at_the_data_mode():
 
 
 def _fake_project_root(monkeypatch, tmp_path: Path, *, git: bool, distribution: str | None = None) -> Path:
-    root = tmp_path / "hermes-agent"
+    root = tmp_path / "moor-agent"
     root.mkdir()
     if git:
         (root / ".git").mkdir()

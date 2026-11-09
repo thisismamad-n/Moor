@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli._subprocess_compat import (
+from moor_cli._subprocess_compat import (
     FILTER_DISCOVERY_FAILED,
     NO_DRIVER_DIFF_FLAGS,
     harden_git_argv,
@@ -199,8 +199,8 @@ def test_index_reading_probes_and_kanban_gc_git_are_safe(malicious_repo, tmp_pat
     dirty probe (kanban teardown), and the three unattended branch deletions: the reclaim sweep,
     the orphaned-branch pass and the cleanup after a failed ``worktree add``. The reclaim sweep's
     ``ls-remote`` and the shallow-repo ``fetch --unshallow`` must not run a repo ``core.sshCommand``."""
-    from hermes_cli import kanban_db_workspace as kw
-    from hermes_cli import worktree_gc, worktree_ops
+    from moor_cli import kanban_db_workspace as kw
+    from moor_cli import worktree_gc, worktree_ops
     from tools.async_delegation_recovery_hints import git_state_hint
     from tui_gateway import server
     repo, marker = malicious_repo
@@ -310,8 +310,8 @@ def test_repo_named_filters_never_run_from_kanban_gc_or_hints(tmp_path, attrs, c
     ``gitdir:`` the ``.git/worktrees/<name>`` dir of ``worktree add``), so its filters are neutralized
     too. Discovery that cannot be trusted refuses the git call: an include nested in an include
     target, a huge filter inventory (argv/env E2BIG), or a config git cannot parse."""
-    from hermes_cli import kanban_db_workspace as kw
-    from hermes_cli import worktree_gc
+    from moor_cli import kanban_db_workspace as kw
+    from moor_cli import worktree_gc
     from tools.async_delegation_recovery_hints import git_state_hint
     marker = (tmp_path / "FILTER").as_posix()
     repo = _make_filter_repo(tmp_path, attrs, config, marker)
@@ -338,14 +338,14 @@ def test_repo_named_filters_never_run_from_kanban_gc_or_hints(tmp_path, attrs, c
     sub = create_subagent_worktree(str(repo), "filters")
     assert sub is not None and (Path(sub["path"]) / "README").read_text() == "hi\n"
     # The subagent's automatic finalization and kanban teardown re-hash a touched file (status);
-    # hermes -w checks out a worktree of its own.
-    from hermes_cli import worktree_ops
+    # moor -w checks out a worktree of its own.
+    from moor_cli import worktree_ops
     from tools.subagent_worktree import finalize_subagent_worktree
     for tree in (Path(sub["path"]), tmp_path / "wt"):
         os.utime(tree / "README", (time.time() + 120, time.time() + 120))
     assert "inspection_failed" not in finalize_subagent_worktree(sub, prune=False)
     assert worktree_ops._worktree_is_dirty(str(tmp_path / "wt"), str(repo)) is False
-    assert worktree_ops._worktree_add(str(repo), tmp_path / "wt-w", "hermes/filters", "HEAD", "HEAD")
+    assert worktree_ops._worktree_add(str(repo), tmp_path / "wt-w", "moor/filters", "HEAD", "HEAD")
     assert sorted(p.name for p in tmp_path.glob("FILTER.*")) == []
 
 

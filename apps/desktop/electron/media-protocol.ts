@@ -76,7 +76,7 @@ function parseMediaProtocolTarget(rawUrl: string): MediaProtocolTarget {
 }
 
 /**
- * The file name a native save of a `hermes-media://` URL should offer. The
+ * The file name a native save of a `moor-media://` URL should offer. The
  * media path rides percent-encoded in the URL, so Chromium's own guess flattens
  * the whole path into the name (`C__Users_me_Videos_clip.mp4`). Returns null
  * for any other URL so ordinary downloads keep Chromium's name.

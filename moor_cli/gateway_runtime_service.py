@@ -18,7 +18,7 @@ import time
 from xml.parsers.expat import ExpatError
 
 from gateway.runtime_contract import RuntimeState
-from hermes_cli._subprocess_compat import windows_hide_flags
+from moor_cli._subprocess_compat import windows_hide_flags
 
 
 class RuntimeStartError(RuntimeError):
@@ -37,14 +37,14 @@ def remaining(deadline: float) -> float:
 def service_suffix(home: Path) -> str:
     """Host-service suffix for the REQUESTED home, never the initiating client's env.
 
-    Same rule as ``hermes_cli.gateway._profile_suffix``: only the platform-native
+    Same rule as ``moor_cli.gateway._profile_suffix``: only the platform-native
     default home owns the bare unit name; ``<root>/profiles/<name>`` yields the
     profile name; any other root (Docker, a temp harness) yields a path hash so a
-    custom root can never resolve to the production ``hermes-gateway`` unit.
+    custom root can never resolve to the production ``moor-gateway`` unit.
     """
-    from hermes_constants import account_default_hermes_home
-    from hermes_cli.gateway import _profile_name_from_home
-    default = account_default_hermes_home().resolve()
+    from moor_constants import account_default_moor_home
+    from moor_cli.gateway import _profile_name_from_home
+    default = account_default_moor_home().resolve()
     home = home.resolve()
     if home == default:
         return ""
@@ -90,17 +90,17 @@ def _exists(path: Path) -> bool:
 
 
 def _systemd(home: Path, deadline: float) -> ExistingService | None:
-    from hermes_cli import gateway as gw
-    from hermes_cli.service_manager import _s6_running
-    from hermes_cli.gateway_runtime_service_identity import ForeignRoot, SYSTEMD_IDENTITY_PROPERTIES, verify_systemd
+    from moor_cli import gateway as gw
+    from moor_cli.service_manager import _s6_running
+    from moor_cli.gateway_runtime_service_identity import ForeignRoot, SYSTEMD_IDENTITY_PROPERTIES, verify_systemd
     if _s6_running():
         raise RuntimeStartError("external_supervisor")
     suffix = service_suffix(home)
-    unit = f"hermes-gateway{'-' + suffix if suffix else ''}.service"
+    unit = f"moor-gateway{'-' + suffix if suffix else ''}.service"
     paths = (Path.home() / ".config/systemd/user" / unit, Path("/etc/systemd/system") / unit)
     # On non-systemd hosts there is no manager to own transient units. Installed
     # definitions still count: a broken manager is not permission to bypass one.
-    # Every Hermes entrypoint ensures the gateway, so a host with no installed unit must not
+    # Every Moor entrypoint ensures the gateway, so a host with no installed unit must not
     # touch the service manager at all (a headless runner has no user bus to answer it).
     # With a unit installed anywhere, both scopes are asked: two claiming the name is a conflict.
     installed = (*paths, Path("/usr/lib/systemd/system") / unit, Path("/lib/systemd/system") / unit)
@@ -156,13 +156,13 @@ def _s6(home: Path, deadline: float) -> ExistingService | None:
     They must request that s6 starts the registered slot, rather than falling
     through the Linux systemd probe and treating s6 as inaccessible.
     """
-    from hermes_cli.service_manager import S6ServiceManager
-    from hermes_cli.gateway_runtime_multiplex import implied_host_root
+    from moor_cli.service_manager import S6ServiceManager
+    from moor_cli.gateway_runtime_multiplex import implied_host_root
 
     # with-contenv is also the service run script's authority. The initiating
     # client may have selected a named profile or a different install root.
     try:
-        container_home = Path("/run/s6/container_environment/HERMES_HOME").read_text(encoding="utf-8-sig").strip()
+        container_home = Path("/run/s6/container_environment/MOOR_HOME").read_text(encoding="utf-8-sig").strip()
     except (OSError, UnicodeError):
         raise RuntimeStartError("service_identity_unverified") from None
     if not container_home:
@@ -186,11 +186,11 @@ def _s6(home: Path, deadline: float) -> ExistingService | None:
 def _launchd(home: Path, deadline: float) -> ExistingService | None:
     import pwd
     suffix = service_suffix(home)
-    label = f"ai.hermes.gateway{'-' + suffix if suffix else ''}"
+    label = f"ai.moor.gateway{'-' + suffix if suffix else ''}"
     account = pwd.getpwuid(os.getuid())  # windows-footgun: ok — native launchd only
     account_home = Path(account.pw_dir)
     plist = account_home / "Library/LaunchAgents" / f"{label}.plist"
-    from hermes_cli.gateway_runtime_service_identity import verify_launchd_loaded, verify_launchd_plist, read_definition
+    from moor_cli.gateway_runtime_service_identity import verify_launchd_loaded, verify_launchd_plist, read_definition
     installed = _exists(plist)
     domains = [f"gui/{os.getuid()}", f"user/{os.getuid()}"]  # windows-footgun: ok — native launchd only
     found = []
@@ -219,9 +219,9 @@ def _launchd(home: Path, deadline: float) -> ExistingService | None:
 
 
 def _windows(home: Path, deadline: float) -> ExistingService | None:
-    from hermes_cli.gateway_windows import _decode_schtasks_output
+    from moor_cli.gateway_windows import _decode_schtasks_output
     suffix = service_suffix(home)
-    name = f"Hermes_Gateway{'_' + suffix if suffix else ''}"
+    name = f"Moor_Gateway{'_' + suffix if suffix else ''}"
 
     def query(refusal: str, *argv: str) -> str:
         # schtasks/whoami write the console code page, and /XML declares UTF-16 over those bytes:
@@ -235,7 +235,7 @@ def _windows(home: Path, deadline: float) -> ExistingService | None:
     # Orphaned TaskCache entries print localized one-field diagnostics among the rows (#142140). Only a
     # well-formed row can name our task, so skipping the rest can only fall through to the unmanaged path.
     if any(len(row) == 3 and row[0].lstrip("\\") == name for row in rows):
-        from hermes_cli.gateway_runtime_service_identity import verify_windows_task
+        from moor_cli.gateway_runtime_service_identity import verify_windows_task
         unverified = "service_identity_unverified"
         definition = query(unverified, "schtasks.exe", "/Query", "/TN", name, "/XML")
         accounts = list(csv.reader(io.StringIO(query(unverified, "whoami.exe", "/USER", "/FO", "CSV", "/NH"))))
@@ -245,7 +245,7 @@ def _windows(home: Path, deadline: float) -> ExistingService | None:
         return ExistingService("windows", ("schtasks.exe", "/Run", "/TN", name))
     # A Startup-folder entry (the fallback when Scheduled Task install was declined/blocked) is login
     # persistence only, with no start verb or identity to verify. Starting a stopped owner is the
-    # same detached direct spawn manual `hermes gateway start` uses beside it; the unmanaged path
+    # same detached direct spawn manual `moor gateway start` uses beside it; the unmanaged path
     # pins the explicit home and refuses a job-bound (no-breakaway) child, and the runtime lock
     # plus host attach arbitrate against the entry firing again at the next login.
     return None
@@ -253,13 +253,13 @@ def _windows(home: Path, deadline: float) -> ExistingService | None:
 
 def _no_supervisor(home: Path, deadline: float) -> None:
     """Android/Termux has no service manager (main refuses `gateway install/start` there and says
-    "Run manually: hermes gateway"): an unmanaged detached start is its only owner. Python 3.13+
+    "Run manually: moor gateway"): an unmanaged detached start is its only owner. Python 3.13+
     reports ``sys.platform == "android"``; older Termux interpreters report linux and reach the
     systemd probe, which finds no unit and lands on the same unmanaged start."""
 
 
 def discover_existing_gateway_service(home: Path, *, deadline: float) -> ExistingService | None:
-    from hermes_cli.service_manager import _s6_running
+    from moor_cli.service_manager import _s6_running
 
     backend = _s6 if _s6_running() else {"linux": _systemd, "darwin": _launchd, "win32": _windows,
                                          "android": _no_supervisor}.get(sys.platform)
@@ -278,7 +278,7 @@ def start_existing_gateway_service(service: ExistingService, *, deadline: float)
     if service.running:
         return
     if service.backend == "s6":
-        from hermes_cli.service_manager import S6ServiceManager
+        from moor_cli.service_manager import S6ServiceManager
         try:
             S6ServiceManager().start(service.start_argv[0])
         except subprocess.TimeoutExpired:

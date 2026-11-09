@@ -16,7 +16,7 @@ import pytest
 
 from tests.waiting import wait_until
 
-SCRIPT = Path(__file__).resolve().parents[2] / "hermes_cli" / "backup_sqlite.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "moor_cli" / "backup_sqlite.py"
 
 
 def _home_with_db(tmp_path: Path, rows: int, journal_mode: str = "WAL") -> Path:

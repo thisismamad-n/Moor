@@ -95,7 +95,7 @@ def _capture_required_environment_variables(
     # Messaging-platform gateway surfaces can't prompt for a secret, so they get the "unsupported"
     # hint. Interactive gateway surfaces (desktop app / TUI) set MOOR_INTERACTIVE (same flag
     # tools/approval.py uses) and register a callback routing to a secure secret.request overlay.
-    if callback is None and _is_gateway_surface() and not env_var_enabled("HERMES_INTERACTIVE"):
+    if callback is None and _is_gateway_surface() and not env_var_enabled("MOOR_INTERACTIVE"):
         try:
             from gateway.platforms.base import GATEWAY_SECRET_CAPTURE_UNSUPPORTED_MESSAGE as hint
         except Exception:

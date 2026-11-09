@@ -41,7 +41,7 @@ def test_show_status_termux_gateway_section_skips_systemctl(monkeypatch, capsys,
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
-    monkeypatch.setattr(auth_mod, "get_nous_auth_status_local", dict, raising=False)
+    monkeypatch.setattr(auth_mod, "get_moor_auth_status_local", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status", dict, raising=False)
     monkeypatch.setattr(gateway_mod, "find_gateway_pids", lambda exclude_pids=None: [], raising=False)
@@ -69,7 +69,7 @@ def test_show_status_reports_vercel_backend_contract(monkeypatch, capsys, tmp_pa
     monkeypatch.setenv("VERCEL_OIDC_TOKEN", "oidc-token")
     monkeypatch.setattr(status_mod.importlib.util, "find_spec", lambda name: object() if name == "vercel" else None)
     monkeypatch.setattr(status_mod, "load_config", lambda: {"terminal": {"backend": "vercel_sandbox"}}, raising=False)
-    monkeypatch.setattr(auth_mod, "get_nous_auth_status", dict, raising=False)
+    monkeypatch.setattr(auth_mod, "get_moor_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_qwen_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status", dict, raising=False)
@@ -100,7 +100,7 @@ def _base_xai_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
-    monkeypatch.setattr(auth_mod, "get_nous_auth_status_local", dict, raising=False)
+    monkeypatch.setattr(auth_mod, "get_moor_auth_status_local", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_qwen_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_minimax_oauth_auth_status", dict, raising=False)
@@ -199,7 +199,7 @@ def test_show_status_reports_gateway_session_last_activity(monkeypatch, capsys, 
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "provider_label", lambda provider: "OpenAI Codex", raising=False)
-    monkeypatch.setattr(auth_mod, "get_nous_auth_status", dict, raising=False)
+    monkeypatch.setattr(auth_mod, "get_moor_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_codex_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_qwen_auth_status", dict, raising=False)
     monkeypatch.setattr(auth_mod, "get_xai_oauth_auth_status", dict, raising=False)
@@ -209,7 +209,7 @@ def test_show_status_reports_gateway_session_last_activity(monkeypatch, capsys, 
     from contextlib import closing
 
     path = tmp_path / "state.db"
-    db = hermes_state.SessionDB(db_path=path)
+    db = moor_state.SessionDB(db_path=path)
     for sid in ("gw-old", "gw-new"):
         db.create_session(sid, "telegram")
     db.close()
@@ -230,7 +230,7 @@ def test_show_status_reports_gateway_session_last_activity(monkeypatch, capsys, 
 
 def _status_args(*argv):
     import argparse
-    from hermes_cli.subcommands.status import build_status_parser
+    from moor_cli.subcommands.status import build_status_parser
 
     parser = argparse.ArgumentParser()
     build_status_parser(parser.add_subparsers(), cmd_status=None)
@@ -238,9 +238,9 @@ def _status_args(*argv):
 
 
 def test_status_defaults_to_summary_and_full_or_all_prints_every_section(monkeypatch, capsys, tmp_path):
-    from hermes_cli import model_switch
+    from moor_cli import model_switch
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(model_switch, "list_authenticated_providers", lambda **_: [{"name": "Acme AI"}])
 
     show_status(_status_args())
@@ -257,7 +257,7 @@ def test_platform_rows_follow_the_gateway_verdict_not_check_fn(monkeypatch, caps
     import gateway.config as gateway_config
     from gateway.platform_registry import platform_registry
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     entries = [SimpleNamespace(name=n, label=n.title(), check_fn=lambda: True) for n in ("telegram", "discord")]
     monkeypatch.setattr(platform_registry, "plugin_entries", lambda: entries)
     monkeypatch.setattr(gateway_config, "load_gateway_config", lambda: SimpleNamespace(

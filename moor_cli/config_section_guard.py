@@ -1,6 +1,6 @@
-"""Guard ``hermes config set`` against a single-segment key overwriting a whole config section.
+"""Guard ``moor config set`` against a single-segment key overwriting a whole config section.
 
-Split out of :mod:`hermes_cli.config` (code-health size ratchet); ``set_config_value`` late-imports it.
+Split out of :mod:`moor_cli.config` (code-health size ratchet); ``set_config_value`` late-imports it.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ def _guard_section_overwrite(key: str, value: Any, user_config: dict[str, Any], 
     Bare ``model`` is a documented shorthand — redirected to ``model.default`` so siblings survive;
     a list (or a mapping over an existing section) under it is refused without ``force``.
     Returns the (possibly redirected) key."""
-    from hermes_cli.config import _exit_invalid
+    from moor_cli.config import _exit_invalid
     existing = user_config.get(key)
     kind = "mapping" if isinstance(value, dict) else "list"
     # Containers under the model-id shorthand have no reader slot (#131435).
@@ -25,10 +25,10 @@ def _guard_section_overwrite(key: str, value: Any, user_config: dict[str, Any], 
             "the bare 'model' shorthand takes a model id, and a container value has no "
             "slot there.\n"
             "  Set the section's keys individually instead:\n"
-            "    hermes config set model.provider <provider>\n"
-            "    hermes config set model.default <model-id>\n"
+            "    moor config set model.provider <provider>\n"
+            "    moor config set model.default <model-id>\n"
             "  Or replace the whole section deliberately:\n"
-            "    hermes config set --force model '{provider: <provider>, default: <model-id>}'")
+            "    moor config set --force model '{provider: <provider>, default: <model-id>}'")
     if "." in key or not isinstance(existing, dict):
         return key
     if key == "model":
@@ -54,8 +54,8 @@ def _guard_section_overwrite(key: str, value: Any, user_config: dict[str, Any], 
             err.append(f"  ... and {len(sub) - 8} more")
     err += [
         "  Use a dotted path to set a specific leaf key:",
-        f"    hermes config set {key}.<sub-key> <value>",
+        f"    moor config set {key}.<sub-key> <value>",
         "  Or use --force to replace the entire section:",
-        f"    hermes config set --force {key} {value!r}"]
+        f"    moor config set --force {key} {value!r}"]
     print("\n".join(err), file=sys.stderr)
     sys.exit(1)

@@ -2,7 +2,7 @@
 profile's runtime scope on a multiplexed gateway.
 
 The housekeeping thread has no turn on the stack, so nothing bound a profile for it: under
-``gateway.multiplex_profiles`` credential-reading chores resolved Nous credentials through the
+``gateway.multiplex_profiles`` credential-reading chores resolved Moor credentials through the
 fail-closed reader and logged ``no profile secret scope on a multiplexed call`` on every hourly
 tick, while the launch profile's home/credentials leaked into every served profile's chore. The
 MCP config reconciler already iterated the served profiles under ``_profile_runtime_scope``; the
@@ -67,10 +67,10 @@ def two_homes(tmp_path, monkeypatch):
 
 
 def _record_credential_chores(monkeypatch):
-    """Replace the credential-reading chores with recorders of (home, Nous override) they see."""
+    """Replace the credential-reading chores with recorders of (home, Moor override) they see."""
     from agent import curator
-    from hermes_cli.auth_nous import _nous_inference_env_override
-    from hermes_constants import get_hermes_home
+    from moor_cli.auth_moor import _moor_inference_env_override
+    from moor_constants import get_moor_home
 
     seen: dict = {"curator": []}
 

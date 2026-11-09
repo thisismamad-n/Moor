@@ -653,7 +653,7 @@ class TestImageSelection:
     ):
         """Vercel deprecated runtimes and rejects runtime+image together and runtime with a snapshot
         source, so: fresh sandbox -> image only; legacy runtime pin -> runtime only; restore -> neither."""
-        from hermes_cli.config_defaults import DEFAULT_VERCEL_IMAGE
+        from moor_cli.config_defaults import DEFAULT_VERCEL_IMAGE
 
         make_env(runtime=None)
         make_env(runtime=None, image="vercel/sandbox/python:3.14")
@@ -663,7 +663,7 @@ class TestImageSelection:
         assert (custom["image"], custom["runtime"]) == ("vercel/sandbox/python:3.14", None)
         assert (pinned["image"], pinned["runtime"]) == (None, "node22")
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         vercel_module._store_snapshot("task-123", "snap_saved")
         make_env(runtime="node22")
         restore = vercel_sdk.create_kwargs[-1]

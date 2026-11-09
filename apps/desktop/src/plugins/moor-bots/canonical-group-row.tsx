@@ -6,7 +6,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger
-} from '@hermes/plugin-sdk'
+} from '@moor/plugin-sdk'
 import { useState } from 'react'
 
 import { useCanonicalGroupLabels } from './canonical-group-labels'

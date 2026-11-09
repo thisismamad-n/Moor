@@ -122,7 +122,7 @@ MOOR_CUA_DRIVER_CMD=/opt/homebrew/bin/cua-driver
 ```
 
 完全替换驱动：在 `config.yaml` 中用 `computer_use.backend` 指定后端（默认 `cua`，或已安装的 provider 插件目录名）。
-`hermes tools` → Computer Use 会列出所有已安装的后端。
+`moor tools` → Computer Use 会列出所有已安装的后端。
 
 ### Windows 自动启动（可选）
 
@@ -141,7 +141,7 @@ computer_use:
 （参见 [windows-ssh](https://cua.ai/docs/how-to-guides/driver/windows-ssh)）。如果任务已
 存在但你不再需要它，可从管理员终端运行 `cua-driver autostart disable`（或
 `schtasks /Delete /TN cua-driver-serve`）删除——`computer_use.autostart` 为 false 时
-Hermes 不会重新注册。
+Moor 不会重新注册。
 
 ## 故障排查
 

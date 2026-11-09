@@ -26,7 +26,7 @@ def channel_request(commit: str, sequence: int = 65536) -> dict:
             "cliName": "moor-unregistered-preview", "windowsExecutableName": "moor-unregistered-preview",
             "msixAppIdWithOrg": f"Moor inc..MoorChannel{token}",
         },
-        "bundleEnv": {"HERMES_PREVIEW_FULL_CONNECTORS": "1", "HERMES_HOME": None},
+        "bundleEnv": {"MOOR_PREVIEW_FULL_CONNECTORS": "1", "MOOR_HOME": None},
         "publicBase": "https://builds.example.test",
     }
 

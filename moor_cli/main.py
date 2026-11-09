@@ -13,7 +13,7 @@ Usage:
 # ``moor update`` the editable install's ``.pth`` may not list it yet; crashing
 # here would block ``moor update``.
 try:
-    import hermes_bootstrap
+    import moor_bootstrap
 except ModuleNotFoundError as exc:
     if exc.name != "moor_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
@@ -44,7 +44,7 @@ import sys
 _bootstrap_root = os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir))
 if _bootstrap_root not in sys.path:
     sys.path.insert(0, _bootstrap_root)
-from hermes_cli import _startup_fast
+from moor_cli import _startup_fast
 import itertools
 
 # A literal ``~``/``$VAR`` in MOOR_HOME (fish, or any quoted value) must become absolute
@@ -107,9 +107,9 @@ _ONESHOT_CLEANUPS = (
     ("tools.mcp_tool_lifecycle", "shutdown_mcp_servers", {}, BaseException),
     ("agent.auxiliary_client", "shutdown_cached_clients", {}, Exception),
     # A no-op unless this run booted the managed llama-server (atexit's hook is skipped here).
-    ("hermes_cli.local_runtime.bootstrap", "shutdown_local_runtime", {}, Exception),
+    ("moor_cli.local_runtime.bootstrap", "shutdown_local_runtime", {}, Exception),
     # The atexit hook that closes the metrics session never runs past os._exit.
-    ("hermes_cli.observability.relay_shared_metrics", "shutdown_runtimes", {}, Exception),
+    ("moor_cli.observability.relay_shared_metrics", "shutdown_runtimes", {}, Exception),
 )
 
 
@@ -259,7 +259,7 @@ def _config_default_interface_early() -> str:
     """Return the configured default interface ("cli"/"tui") via a minimal
     YAML read. Best-effort: any error falls back to "cli" (legacy behavior)."""
     global _EARLY_INTERFACE_CACHE
-    from hermes_cli.config_backend import config_exists, read_config_doc
+    from moor_cli.config_backend import config_exists, read_config_doc
     cfg_path = _early_interface_config_path()
     if _EARLY_INTERFACE_CACHE is not None and _EARLY_INTERFACE_CACHE[0] == cfg_path:
         return _EARLY_INTERFACE_CACHE[1]
@@ -292,7 +292,7 @@ def _wants_tui_early(argv: list[str] | None = None) -> bool:
         argv = sys.argv[1:]
     if "--cli" in argv:
         return False
-    if os.environ.get("HERMES_TUI") == "1" or any(flag in argv for flag in ("--tui", "--native", "--tui-native")):
+    if os.environ.get("MOOR_TUI") == "1" or any(flag in argv for flag in ("--tui", "--native", "--tui-native")):
         return True
     try:
         if not (sys.stdin.isatty() and sys.stdout.isatty()):
@@ -344,67 +344,67 @@ from pathlib import Path
 from typing import Optional
 
 
-from hermes_cli.subcommands.cron import build_cron_parser
-from hermes_cli.subcommands.gateway import build_gateway_parser
-from hermes_cli.subcommands.profile import build_profile_parser
-from hermes_cli.subcommands.model import build_model_parser
-from hermes_cli.subcommands.setup import build_setup_parser
+from moor_cli.subcommands.cron import build_cron_parser
+from moor_cli.subcommands.gateway import build_gateway_parser
+from moor_cli.subcommands.profile import build_profile_parser
+from moor_cli.subcommands.model import build_model_parser
+from moor_cli.subcommands.setup import build_setup_parser
 
-from hermes_cli.subcommands.whatsapp import build_whatsapp_parser, build_whatsapp_cloud_parser
-from hermes_cli.subcommands.slack import build_slack_parser
-from hermes_cli.subcommands.login import build_login_parser
-from hermes_cli.subcommands.logout import build_logout_parser
-from hermes_cli.subcommands.auth import build_auth_parser
-from hermes_cli.subcommands.status import build_status_parser
-from hermes_cli.subcommands.pause import build_pause_parser
-from hermes_cli.subcommands.webhook import build_webhook_parser
-from hermes_cli.subcommands.hooks import build_hooks_parser
-from hermes_cli.subcommands.doctor import build_doctor_parser
-from hermes_cli.subcommands.verify import build_verify_parser
-from hermes_cli.subcommands.security import build_security_parser
-from hermes_cli.subcommands.approvals import build_approvals_parser
-from hermes_cli.subcommands.dump import build_dump_parser
-from hermes_cli.subcommands.debug import build_debug_parser
-from hermes_cli.subcommands.backup import build_backup_parser
-from hermes_cli.subcommands.import_cmd import build_import_cmd_parser
-from hermes_cli.subcommands.config import build_config_parser
-from hermes_cli.subcommands.skin import build_skin_parser
-from hermes_cli.subcommands.console import build_console_parser
-from hermes_cli.subcommands.update import build_update_parser
-from hermes_cli.subcommands.uninstall import build_uninstall_parser
-from hermes_cli.subcommands.dashboard import build_dashboard_parser, build_serve_parser
-from hermes_cli.subcommands.webapp import build_webapp_parser
-from hermes_cli.subcommands.gui import build_gui_parser
-from hermes_cli.subcommands.logs import build_logs_parser
-from hermes_cli.subcommands.prompt_size import build_prompt_size_parser
-from hermes_cli.subcommands.memory import build_memory_parser
-from hermes_cli.subcommands.acp import build_acp_parser
-from hermes_cli.subcommands.tools import build_tools_parser
-from hermes_cli.subcommands.insights import build_insights_parser
-from hermes_cli.subcommands.usage import build_usage_parser
-from hermes_cli.subcommands.monitoring import build_monitoring_parser
-from hermes_cli.subcommands.skills import build_skills_parser
-from hermes_cli.subcommands.pairing import build_pairing_parser
-from hermes_cli.subcommands.plugins import build_plugins_parser
-from hermes_cli.subcommands.mcp import build_mcp_parser
-from hermes_cli.subcommands.connectors import build_connectors_parser
-from hermes_cli.subcommands.vault import build_vault_parser
-from hermes_cli.subcommands.moa import build_moa_parser
-from hermes_cli.subcommands.fallback import build_fallback_parser
-from hermes_cli.subcommands.worktree import build_worktree_parser
-from hermes_cli.subcommands.browser import build_browser_parser
-from hermes_cli.subcommands.secrets import build_secrets_parser
-from hermes_cli.subcommands.codex_runtime import build_codex_runtime_parser
-from hermes_cli.subcommands.egress import build_egress_parser
-from hermes_cli.subcommands.migrate import build_migrate_parser
-from hermes_cli.subcommands.checkpoints import build_checkpoints_parser
-from hermes_cli.subcommands.bundles import build_bundles_parser
-from hermes_cli.subcommands.curator import build_curator_parser
-from hermes_cli.subcommands.pets import build_pets_parser
-from hermes_cli.subcommands.journey import build_journey_parser
-from hermes_cli.subcommands.computer_use import build_computer_use_parser
-from hermes_cli.subcommands.sessions import build_sessions_parser, cmd_sessions_lazy
-from hermes_cli.subcommands.completion import build_completion_parser
+from moor_cli.subcommands.whatsapp import build_whatsapp_parser, build_whatsapp_cloud_parser
+from moor_cli.subcommands.slack import build_slack_parser
+from moor_cli.subcommands.login import build_login_parser
+from moor_cli.subcommands.logout import build_logout_parser
+from moor_cli.subcommands.auth import build_auth_parser
+from moor_cli.subcommands.status import build_status_parser
+from moor_cli.subcommands.pause import build_pause_parser
+from moor_cli.subcommands.webhook import build_webhook_parser
+from moor_cli.subcommands.hooks import build_hooks_parser
+from moor_cli.subcommands.doctor import build_doctor_parser
+from moor_cli.subcommands.verify import build_verify_parser
+from moor_cli.subcommands.security import build_security_parser
+from moor_cli.subcommands.approvals import build_approvals_parser
+from moor_cli.subcommands.dump import build_dump_parser
+from moor_cli.subcommands.debug import build_debug_parser
+from moor_cli.subcommands.backup import build_backup_parser
+from moor_cli.subcommands.import_cmd import build_import_cmd_parser
+from moor_cli.subcommands.config import build_config_parser
+from moor_cli.subcommands.skin import build_skin_parser
+from moor_cli.subcommands.console import build_console_parser
+from moor_cli.subcommands.update import build_update_parser
+from moor_cli.subcommands.uninstall import build_uninstall_parser
+from moor_cli.subcommands.dashboard import build_dashboard_parser, build_serve_parser
+from moor_cli.subcommands.webapp import build_webapp_parser
+from moor_cli.subcommands.gui import build_gui_parser
+from moor_cli.subcommands.logs import build_logs_parser
+from moor_cli.subcommands.prompt_size import build_prompt_size_parser
+from moor_cli.subcommands.memory import build_memory_parser
+from moor_cli.subcommands.acp import build_acp_parser
+from moor_cli.subcommands.tools import build_tools_parser
+from moor_cli.subcommands.insights import build_insights_parser
+from moor_cli.subcommands.usage import build_usage_parser
+from moor_cli.subcommands.monitoring import build_monitoring_parser
+from moor_cli.subcommands.skills import build_skills_parser
+from moor_cli.subcommands.pairing import build_pairing_parser
+from moor_cli.subcommands.plugins import build_plugins_parser
+from moor_cli.subcommands.mcp import build_mcp_parser
+from moor_cli.subcommands.connectors import build_connectors_parser
+from moor_cli.subcommands.vault import build_vault_parser
+from moor_cli.subcommands.moa import build_moa_parser
+from moor_cli.subcommands.fallback import build_fallback_parser
+from moor_cli.subcommands.worktree import build_worktree_parser
+from moor_cli.subcommands.browser import build_browser_parser
+from moor_cli.subcommands.secrets import build_secrets_parser
+from moor_cli.subcommands.codex_runtime import build_codex_runtime_parser
+from moor_cli.subcommands.egress import build_egress_parser
+from moor_cli.subcommands.migrate import build_migrate_parser
+from moor_cli.subcommands.checkpoints import build_checkpoints_parser
+from moor_cli.subcommands.bundles import build_bundles_parser
+from moor_cli.subcommands.curator import build_curator_parser
+from moor_cli.subcommands.pets import build_pets_parser
+from moor_cli.subcommands.journey import build_journey_parser
+from moor_cli.subcommands.computer_use import build_computer_use_parser
+from moor_cli.subcommands.sessions import build_sessions_parser, cmd_sessions_lazy
+from moor_cli.subcommands.completion import build_completion_parser
 
 
 def _require_tty(command_name: str) -> None:
@@ -423,13 +423,13 @@ PROJECT_ROOT = Path(_startup_fast.project_root_str())
 _startup_fast.ensure_project_root_on_path()
 
 
-# Profile override — MUST happen before any hermes module import: many modules
-# cache HERMES_HOME at import time. --profile/-p is pre-parsed from sys.argv,
-# HERMES_HOME set, and the flag stripped so argparse never sees it. Falls back
-# to ~/.hermes/active_profile for the sticky default.
-_PROFILE_NAME_RE = r"^[a-z0-9][a-z0-9_-]{0,63}$"  # mirrors hermes_cli.profiles._PROFILE_ID_RE
+# Profile override — MUST happen before any moor module import: many modules
+# cache MOOR_HOME at import time. --profile/-p is pre-parsed from sys.argv,
+# MOOR_HOME set, and the flag stripped so argparse never sees it. Falls back
+# to ~/.moor/active_profile for the sticky default.
+_PROFILE_NAME_RE = r"^[a-z0-9][a-z0-9_-]{0,63}$"  # mirrors moor_cli.profiles._PROFILE_ID_RE
 # Set only when -p/--profile was on argv. Sticky active_profile must not count:
-# `hermes desktop` with no flag must not overwrite Desktop's stored profile.
+# `moor desktop` with no flag must not overwrite Desktop's stored profile.
 _explicit_cli_profile: str | None = None
 
 
@@ -548,8 +548,8 @@ def _under_gateway_supervisor(argv: list) -> bool:
     MOOR_S6_SUPERVISED_CHILD (legacy s6 container), INVOCATION_ID (systemd
     service children only — consulted ONLY for gateway commands because it is
     inherited by every descendant of a systemd-launched process, e.g.
-    self-hosted CI runners), HERMES_GATEWAY_EXTERNAL_SUPERVISOR (explicit
-    opt-in) and HERMES_GATEWAY_PROFILE_PIN (its tool children's copy, which is
+    self-hosted CI runners), MOOR_GATEWAY_EXTERNAL_SUPERVISOR (explicit
+    opt-in) and MOOR_GATEWAY_PROFILE_PIN (its tool children's copy, which is
     no supervisor claim). XPC_SERVICE_NAME is deliberately NOT consulted:
     interactive macOS terminals set it too.
     """
@@ -559,7 +559,7 @@ def _under_gateway_supervisor(argv: list) -> bool:
     if is_gateway_cmd and os.environ.get("INVOCATION_ID"):
         return True
     return any(os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
-               for name in ("HERMES_GATEWAY_EXTERNAL_SUPERVISOR", "HERMES_GATEWAY_PROFILE_PIN"))
+               for name in ("MOOR_GATEWAY_EXTERNAL_SUPERVISOR", "MOOR_GATEWAY_PROFILE_PIN"))
 
 
 def _s6_supervised_gateway_run(argv: list) -> bool:
@@ -590,7 +590,7 @@ def explicit_cli_profile() -> str | None:
 
 
 def _apply_profile_override() -> None:
-    """Pre-parse --profile/-p and set HERMES_HOME before imports."""
+    """Pre-parse --profile/-p and set MOOR_HOME before imports."""
     global _explicit_cli_profile
     _explicit_cli_profile = None
     argv = sys.argv[1:]
@@ -628,21 +628,21 @@ def _apply_profile_override() -> None:
 
         moor_home = resolve_profile_env(profile_name)
     except FileNotFoundError as exc:
-        hermes_home = _resolve_sudo_user_profile_env(profile_name)
+        moor_home = _resolve_sudo_user_profile_env(profile_name)
         error = str(exc)
-        if not hermes_home and from_sticky_profile:
-            from hermes_cli.main_profile_recovery import is_stale_profile_recovery_command
+        if not moor_home and from_sticky_profile:
+            from moor_cli.main_profile_recovery import is_stale_profile_recovery_command
 
             if is_stale_profile_recovery_command(argv):
-                hermes_home = resolve_profile_env("default")
+                moor_home = resolve_profile_env("default")
                 print(
                     f"Warning: saved profile '{profile_name}' no longer exists; "
                     "running this recovery command in the default profile.",
                     file=sys.stderr,
                 )
             else:
-                error = f"Saved profile '{profile_name}' no longer exists. Switch back with: hermes profile use default"
-        if not hermes_home:
+                error = f"Saved profile '{profile_name}' no longer exists. Switch back with: moor profile use default"
+        if not moor_home:
             print(f"Error: {error}", file=sys.stderr)
             sys.exit(1)
     except ValueError as exc:
@@ -652,7 +652,7 @@ def _apply_profile_override() -> None:
         # A bug in profiles.py must NEVER prevent moor from starting
         print(f"Warning: profile override failed ({exc}), using default", file=sys.stderr)
         return
-    os.environ["HERMES_HOME"] = hermes_home
+    os.environ["MOOR_HOME"] = moor_home
     if consume > 0:
         _explicit_cli_profile = profile_name
     # Strip the flag from argv so argparse doesn't choke
@@ -662,9 +662,9 @@ def _apply_profile_override() -> None:
 
 
 if __name__ == "__main__" and getattr(sys.modules.get("__main__"), "__file__", None) == __file__:
-    # `python -m`: a later `import hermes_cli.main` reuses THIS module; a second copy would re-run the
+    # `python -m`: a later `import moor_cli.main` reuses THIS module; a second copy would re-run the
     # override on the stripped argv, and `--profile default` would fall to the sticky profile.
-    sys.modules.setdefault("hermes_cli.main", sys.modules["__main__"])
+    sys.modules.setdefault("moor_cli.main", sys.modules["__main__"])
 _apply_profile_override()
 from agent.legacy_home_migration import ensure_legacy_home_migrated
 ensure_legacy_home_migrated()
@@ -684,13 +684,13 @@ if sys.argv[1:2] == ["pm"]:
 
     raise SystemExit(_pm_main(sys.argv[2:]))
 
-# Windows launcher self-heal: the ``hermes`` command is a COPY of the venv console script staged into
-# the managed bin dir, outside the checkout because ``hermes update``'s autostash (``git stash push
+# Windows launcher self-heal: the ``moor`` command is a COPY of the venv console script staged into
+# the managed bin dir, outside the checkout because ``moor update``'s autostash (``git stash push
 # --include-untracked``) once swept ``<checkout>\bin`` copies off disk, the desktop updater's
-# ``--keep-stash`` never restored them, and ``hermes`` stopped resolving (venv\Scripts must stay off
+# ``--keep-stash`` never restored them, and ``moor`` stopped resolving (venv\Scripts must stay off
 # PATH: it shadows the user's ``python``, #83797). Re-staging at process start reaches already-broken
-# installs via the desktop app's ``python -m hermes_cli.main`` spawn. Sits AFTER the profile override
-# on purpose (no hermes module may import before profiles resolve); the helper anchors on the DEFAULT
+# installs via the desktop app's ``python -m moor_cli.main`` spawn. Sits AFTER the profile override
+# on purpose (no moor module may import before profiles resolve); the helper anchors on the DEFAULT
 # root, so profile sessions heal the same shared dir. A few stat calls when healthy; gates fail toward
 # inaction so source checkouts are untouched.
 if sys.platform == "win32":
@@ -716,14 +716,14 @@ load_moor_dotenv(project_env=PROJECT_ROOT / ".env")
 # .env value still wins — this is config.yaml fallback only. network.force_ipv4
 # is read from the same parse to avoid a second full load_config() (~17ms).
 _FORCE_IPV4_EARLY = False
-from hermes_cli.config_backend import config_exists
+from moor_cli.config_backend import config_exists
 try:
     # The effective-config cache (shared raw parse with read_raw_config()) means this SAME parse
     # serves moor_logging, moor_time and later raw reads: 3-4 config.yaml parses become one.
     # Managed overlay included: administrator-pinned redact_secrets / force_ipv4 win here too.
     from moor_cli.config_effective import load_user_config_effective as _load_effective_early
 
-    _cfg_path = get_hermes_home() / "config.yaml"
+    _cfg_path = get_moor_home() / "config.yaml"
     if config_exists(_cfg_path):
         _early_cfg_raw = _load_effective_early(_cfg_path)
         if "MOOR_REDACT_SECRETS" not in os.environ:
@@ -741,7 +741,7 @@ except Exception:
     pass  # best-effort — redaction stays at default (enabled) on config errors
 
 # Servers cap glibc malloc arenas HERE, before any thread exists: glibc latches its limit later.
-from hermes_cli.resource_limits import apply_malloc_arena_max, server_process_argv
+from moor_cli.resource_limits import apply_malloc_arena_max, server_process_argv
 if server_process_argv(sys.argv[1:]):
     apply_malloc_arena_max()
 
@@ -796,7 +796,7 @@ from moor_cli.model_setup_flows import (
     _is_profile_plugin_flow_provider,
     _profile_model_setup_flow,
 )
-from hermes_cli.model_setup_flows_local import _model_flow_local
+from moor_cli.model_setup_flows_local import _model_flow_local
 logger = logging.getLogger(__name__)
 from moor_cli.main_agent_cmds import (
     cmd_acp,
@@ -869,8 +869,8 @@ from moor_cli.old_updater_main import (
     _windows_shim_in_process_chain,
     _write_web_ui_build_stamp,
 )
-from hermes_cli.main_install_repair import _cleanup_quarantined_exes, _recover_update_debts_on_startup
-from hermes_cli.main_install_repair import (  # frozen updater surface: update_cmd*.py resolve these via _m()
+from moor_cli.main_install_repair import _cleanup_quarantined_exes, _recover_update_debts_on_startup
+from moor_cli.main_install_repair import (  # frozen updater surface: update_cmd*.py resolve these via _m()
     _UPDATE_REEXEC_ENV,
     _clear_lazy_refresh_incomplete_marker,
     _clear_marker_file,
@@ -906,7 +906,7 @@ from moor_cli.main_web_build import (  # frozen updater surface: update_cmd*.py 
     _record_bytecode_fingerprint,
     _run_npm_install_deterministic,
 )
-from hermes_cli.main_tui_launch import (
+from moor_cli.main_tui_launch import (
     _bypass_chat_launch,
     _launch_tui,
     _pin_kanban_board_env,
@@ -1095,8 +1095,8 @@ def _auth_store_logged_in(auth_file: Path, registry, strict_profile_scope: bool)
 
 
 def _has_any_provider_configured(*, strict_profile_scope: bool = False) -> bool:
-    """Check if at least one inference provider is usable. Never creates one: the Nous free tier
-    counts only once its identity exists, and the boot bootstrap (``hermes_cli.free_tier_bootstrap``)
+    """Check if at least one inference provider is usable. Never creates one: the Moor free tier
+    counts only once its identity exists, and the boot bootstrap (``moor_cli.free_tier_bootstrap``)
     creates it at boot (a first connector use can too); ``cmd_chat`` runs the bootstrap before asking.
 
     ``strict_profile_scope``: the caller has bound a NAMED profile's home and
@@ -1306,12 +1306,12 @@ def _session_db():
     try:
         from moor_state import SessionDB
 
-        db = SessionDB(db_path=get_hermes_home() / "state.db", read_only=True)
+        db = SessionDB(db_path=get_moor_home() / "state.db", read_only=True)
     except Exception:
         pass
     try:
         # Gateway rows the CLI/TUI created are labelled ``local``; source-scoped lookups read main's labels.
-        from hermes_cli.gateway_session_store import SurfaceLabelReader
+        from moor_cli.gateway_session_store import SurfaceLabelReader
         yield SurfaceLabelReader(db) if db is not None else None  # body errors (incl. AttributeError on a None db) are swallowed
     except Exception:
         pass
@@ -1390,7 +1390,7 @@ def _create_titled_session(title: str) -> Optional[str]:
     no-op.
     """
     try:
-        from hermes_cli.gateway_session_store import create_titled_session
+        from moor_cli.gateway_session_store import create_titled_session
         return create_titled_session(title)
     except Exception:
         # Programmatic callers rely on --create-if-missing being deterministic;
@@ -1426,7 +1426,7 @@ def _resolve_continue_arg(args, *, use_tui: bool) -> None:
                 if use_tui:
                     new_sid = _create_titled_session(continue_val)
                 else:
-                    from hermes_cli.gateway_session_store import create_titled_session
+                    from moor_cli.gateway_session_store import create_titled_session
                     new_sid = create_titled_session(continue_val)
                 if new_sid:
                     args.resume = new_sid
@@ -1536,7 +1536,7 @@ def _resolve_chat_session_args(args, use_tui: bool) -> None:
 
     _resolve_continue_arg(args, use_tui=use_tui)
 
-    from hermes_cli.main_resume_args import import_foreign_resume, recreate_resumed_tui_worktree
+    from moor_cli.main_resume_args import import_foreign_resume, recreate_resumed_tui_worktree
     import_foreign_resume(args)
 
     resume_val = getattr(args, "resume", None)
@@ -1682,11 +1682,11 @@ _CHAT_PASSTHROUGH = (
 
 def cmd_chat(args):
     """Run interactive chat CLI."""
-    from hermes_cli.stream_json import stream_json_requested
+    from moor_cli.stream_json import stream_json_requested
     # stream-json and the --safe-mode / --ignore-user-config bypass keep the transport client; the
-    # classic CLI (interactive, -q/-Q) is main's HermesCLI with a gateway-backed agent (gateway_agent.py).
+    # classic CLI (interactive, -q/-Q) is main's MoorCLI with a gateway-backed agent (gateway_agent.py).
     if stream_json_requested(args) or _bypass_chat_launch(args):
-        from hermes_cli.gateway_chat_startup import launch_gateway_chat
+        from moor_cli.gateway_chat_startup import launch_gateway_chat
         sys.exit(launch_gateway_chat(args))
     _apply_safe_mode(args)
     _apply_user_config_bypass(args)
@@ -1723,10 +1723,10 @@ def cmd_chat(args):
         os.environ["MOOR_SESSION_SOURCE"] = args.source
         # Explicit flag, not a label inherited from a parent TUI/Desktop session — one-shot
         # runs must keep it (see agent.session_source.session_source_for).
-        os.environ["HERMES_SESSION_SOURCE_EXPLICIT"] = "1"
+        os.environ["MOOR_SESSION_SOURCE_EXPLICIT"] = "1"
 
     _pin_kanban_board_env()
-    from hermes_cli.observability.shared_metrics_consent import offer_consent_before_chat
+    from moor_cli.observability.shared_metrics_consent import offer_consent_before_chat
 
     # Not before setup: a blank install meets "Setup Required" first. The offer stays
     # undecided, so it is asked on the first launch with a provider.
@@ -1745,7 +1745,7 @@ def cmd_chat(args):
             **passthrough,
         )
 
-    from hermes_cli.main_query_file import _read_query_file
+    from moor_cli.main_query_file import _read_query_file
     _read_query_file(args)
 
     safe_mode = getattr(args, "safe_mode", False)
@@ -1766,7 +1766,7 @@ def cmd_chat(args):
 
     try:
         from cli import main as cli_main
-        from hermes_cli.observability.shared_metrics_process import begin_process
+        from moor_cli.observability.shared_metrics_process import begin_process
 
         begin_process("cli")
         cli_main(**kwargs)
@@ -1791,7 +1791,7 @@ def cmd_gateway(args):
     # `gateway run` seeds skills itself (run_bootstrap._start_gateway_configure_logging) inside its
     # own home; a second pass here doubled a cold boot on a fresh home while every attaching client
     # waited on the ensure deadline. Management verbs never need the library.
-    from hermes_cli.gateway import gateway_command
+    from moor_cli.gateway import gateway_command
 
     gateway_command(args)
 
@@ -1825,28 +1825,28 @@ def _forward_command(name: str, module: str, attr: str, *, forward_return: bool 
     return _cmd
 
 
-cmd_setup = _forward_command("cmd_setup", "hermes_cli.setup", "run_setup_wizard", doc='Interactive setup wizard.')
-cmd_login = _forward_command("cmd_login", "hermes_cli.auth", "login_command", doc='Authenticate Hermes CLI with a provider.')
-cmd_logout = _forward_command("cmd_logout", "hermes_cli.auth", "logout_command", doc='Clear provider authentication.')
-cmd_auth = _forward_command("cmd_auth", "hermes_cli.auth_commands", "auth_command", doc='Manage pooled credentials.')
-cmd_status = _forward_command("cmd_status", "hermes_cli.status", "show_status", doc='Show status of all components.')
-cmd_cron = _forward_command("cmd_cron", "hermes_cli.cron", "cron_command", forward_return=True, doc='Cron job management.')
-cmd_webhook = _forward_command("cmd_webhook", "hermes_cli.webhook", "webhook_command", forward_return=True, doc='Webhook subscription management.')
-cmd_kanban = _forward_command("cmd_kanban", "hermes_cli.kanban", "kanban_command", forward_return=True, doc='Multi-profile collaboration board.')
-cmd_project = _forward_command("cmd_project", "hermes_cli.projects_cmd", "projects_command", forward_return=True, doc='Manage projects (named, multi-folder workspaces).')
-cmd_hooks = _forward_command("cmd_hooks", "hermes_cli.hooks", "hooks_command", doc='Shell-hook inspection and management.')
-cmd_doctor = _forward_command("cmd_doctor", "hermes_cli.doctor", "run_doctor", forward_return=True, doc='Check configuration and dependencies.')
-cmd_dump = _forward_command("cmd_dump", "hermes_cli.dump", "run_dump", doc='Dump setup summary for support/debugging.')
-cmd_debug = _forward_command("cmd_debug", "hermes_cli.debug", "run_debug", doc='Debug tools (share report, etc.).')
-cmd_skin = _forward_command("cmd_skin", "hermes_cli.skin_cmd", "skin_command", doc='Skin management (list / use / set).')
-cmd_import = _forward_command("cmd_import", "hermes_cli.backup", "run_import", forward_return=True, doc='Restore a Hermes backup from a zip file.')
-cmd_dashboard_register = _forward_command("cmd_dashboard_register", "hermes_cli.dashboard_register", "cmd_dashboard_register", doc='Register a self-hosted dashboard OAuth client with Nous Portal.')
-cmd_webapp = _forward_command("cmd_webapp", "hermes_cli.webapp_launcher", "cmd_webapp", forward_return=True, doc='Open the browser-hosted Desktop the gateway serves.')
-cmd_gateway_enroll = _forward_command("cmd_gateway_enroll", "hermes_cli.gateway_enroll", "cmd_gateway_enroll", doc='Enroll a self-hosted gateway with a relay connector.')
-cmd_prompt_size = _forward_command("cmd_prompt_size", "hermes_cli.prompt_size", "cmd_prompt_size", doc='Show a byte/char breakdown of the system prompt + tool schemas.')
-cmd_pairing = _forward_command("cmd_pairing", "hermes_cli.pairing", "pairing_command")
-cmd_plugins = _forward_command("cmd_plugins", "hermes_cli.plugins_cmd", "plugins_command")
-cmd_mcp = _forward_command("cmd_mcp", "hermes_cli.mcp_config", "mcp_command", forward_return=True)
+cmd_setup = _forward_command("cmd_setup", "moor_cli.setup", "run_setup_wizard", doc='Interactive setup wizard.')
+cmd_login = _forward_command("cmd_login", "moor_cli.auth", "login_command", doc='Authenticate Moor CLI with a provider.')
+cmd_logout = _forward_command("cmd_logout", "moor_cli.auth", "logout_command", doc='Clear provider authentication.')
+cmd_auth = _forward_command("cmd_auth", "moor_cli.auth_commands", "auth_command", doc='Manage pooled credentials.')
+cmd_status = _forward_command("cmd_status", "moor_cli.status", "show_status", doc='Show status of all components.')
+cmd_cron = _forward_command("cmd_cron", "moor_cli.cron", "cron_command", forward_return=True, doc='Cron job management.')
+cmd_webhook = _forward_command("cmd_webhook", "moor_cli.webhook", "webhook_command", forward_return=True, doc='Webhook subscription management.')
+cmd_kanban = _forward_command("cmd_kanban", "moor_cli.kanban", "kanban_command", forward_return=True, doc='Multi-profile collaboration board.')
+cmd_project = _forward_command("cmd_project", "moor_cli.projects_cmd", "projects_command", forward_return=True, doc='Manage projects (named, multi-folder workspaces).')
+cmd_hooks = _forward_command("cmd_hooks", "moor_cli.hooks", "hooks_command", doc='Shell-hook inspection and management.')
+cmd_doctor = _forward_command("cmd_doctor", "moor_cli.doctor", "run_doctor", forward_return=True, doc='Check configuration and dependencies.')
+cmd_dump = _forward_command("cmd_dump", "moor_cli.dump", "run_dump", doc='Dump setup summary for support/debugging.')
+cmd_debug = _forward_command("cmd_debug", "moor_cli.debug", "run_debug", doc='Debug tools (share report, etc.).')
+cmd_skin = _forward_command("cmd_skin", "moor_cli.skin_cmd", "skin_command", doc='Skin management (list / use / set).')
+cmd_import = _forward_command("cmd_import", "moor_cli.backup", "run_import", forward_return=True, doc='Restore a Moor backup from a zip file.')
+cmd_dashboard_register = _forward_command("cmd_dashboard_register", "moor_cli.dashboard_register", "cmd_dashboard_register", doc='Register a self-hosted dashboard OAuth client with Moor Portal.')
+cmd_webapp = _forward_command("cmd_webapp", "moor_cli.webapp_launcher", "cmd_webapp", forward_return=True, doc='Open the browser-hosted Desktop the gateway serves.')
+cmd_gateway_enroll = _forward_command("cmd_gateway_enroll", "moor_cli.gateway_enroll", "cmd_gateway_enroll", doc='Enroll a self-hosted gateway with a relay connector.')
+cmd_prompt_size = _forward_command("cmd_prompt_size", "moor_cli.prompt_size", "cmd_prompt_size", doc='Show a byte/char breakdown of the system prompt + tool schemas.')
+cmd_pairing = _forward_command("cmd_pairing", "moor_cli.pairing", "pairing_command")
+cmd_plugins = _forward_command("cmd_plugins", "moor_cli.plugins_cmd", "plugins_command")
+cmd_mcp = _forward_command("cmd_mcp", "moor_cli.mcp_config", "mcp_command", forward_return=True)
 
 
 def cmd_model(args):
@@ -1859,8 +1859,8 @@ def cmd_model(args):
             print("  Cleared model picker cache.")
         except Exception:
             pass
-    from hermes_cli.observability.shared_metrics_setup import provider_setup_surface
-    from hermes_cli.setup import run_setup_action_with_navigation
+    from moor_cli.observability.shared_metrics_setup import provider_setup_surface
+    from moor_cli.setup import run_setup_action_with_navigation
 
     with provider_setup_surface("cli_model"):
         run_setup_action_with_navigation(
@@ -1933,9 +1933,9 @@ def _resolve_active_provider(config, model_cfg, effective_provider, custom_provi
                     active,
                 )
         else:
-            from hermes_cli.left_core_migration import provider_install_hint
-            hint = provider_install_hint(effective_provider) or ("Check 'hermes model' for available providers, or run "
-                                                                  "'hermes doctor' to diagnose config issues.")
+            from moor_cli.left_core_migration import provider_install_hint
+            hint = provider_install_hint(effective_provider) or ("Check 'moor model' for available providers, or run "
+                                                                  "'moor doctor' to diagnose config issues.")
             print(f"Warning: Unknown provider '{effective_provider}'. {hint} Falling back to auto provider detection.")
     if not active:
         try:
@@ -2032,9 +2032,9 @@ def select_provider_and_model(args=None):
 
     # Provider-specific setup + model selection. Flows resolve the
     # _model_flow_* names at call time so test monkeypatches on
-    # hermes_cli.main keep intercepting.
+    # moor_cli.main keep intercepting.
     saves_before = _model_choice_save_count()
-    from hermes_cli.observability.shared_metrics_setup import cli_provider_setup
+    from moor_cli.observability.shared_metrics_setup import cli_provider_setup
     with cli_provider_setup(selected_provider):
         # Bespoke core flow, else the profile's own (``model_setup_flow``), else the generic one.
         flow = _PROVIDER_MODEL_FLOWS.get(selected_provider) or _profile_model_setup_flow(selected_provider)
@@ -2277,14 +2277,14 @@ def _finalize_update_receipt(code: int, reason: str) -> None:
 
 def _update_preflight_handled(args) -> bool:
     """Managed-install refusal, --plan, admission gate, --check. True = nothing more to do."""
-    from hermes_cli.config import is_managed, managed_error
-    from hermes_cli.update_channel import handle_metadata_args
-    from hermes_cli.update_cmd_common import _record_stop
+    from moor_cli.config import is_managed, managed_error
+    from moor_cli.update_channel import handle_metadata_args
+    from moor_cli.update_cmd_common import _record_stop
 
     if handle_metadata_args(args, PROJECT_ROOT):
         sys.exit(0)
     if is_managed():
-        managed_error("update Hermes Agent")
+        managed_error("update Moor Agent")
         if not any(getattr(args, flag, False) for flag in ("plan", "check", "list_venv_holders")):
             _record_stop("managed_install", without_receipt="refused")  # an update attempt: a metrics row only
         return True
@@ -2320,7 +2320,7 @@ def _update_preflight_handled(args) -> bool:
     # on malformed), then docker/nix/apt heuristics; one shared decision for every mutation surface, so
     # --check never reports git state for an image-managed install. Prints the real update command,
     # records a `refused` receipt and exits 2 (refused-by-contract, distinct from exit 1 errors).
-    from hermes_cli.update_contract import (
+    from moor_cli.update_contract import (
         evaluate_update_admission,
         record_refusal_receipt,
     )
@@ -2350,12 +2350,12 @@ from moor_cli.update_receipt import update_receipt_scope
 
 @update_receipt_scope()
 def cmd_update(args):
-    """Update Hermes Agent: hangup protection + update lock around ``_cmd_update_impl``."""
+    """Update Moor Agent: hangup protection + update lock around ``_cmd_update_impl``."""
     # Marks this frame as the CURRENT updater for
     # _old_updater.in_historical_update(); historical on-disk updaters do not
     # declare this local, so only they hand off through retired shims.
-    _hermes_current_updater_frame = True
-    from hermes_cli.update_owning_install import retarget_to_owning_install
+    _moor_current_updater_frame = True
+    from moor_cli.update_owning_install import retarget_to_owning_install
 
     retarget_to_owning_install(PROJECT_ROOT)
     if _update_preflight_handled(args):
@@ -2376,17 +2376,17 @@ def cmd_update(args):
     if not _update_lock.acquire():
         print(describe_holder(_update_lock.holder))
         _finalize_update_output(_update_io_state)
-        from hermes_cli.update_cmd_common import _record_stop
+        from moor_cli.update_cmd_common import _record_stop
         _record_stop("lock_held", without_receipt="refused")  # no receipt: latest.json is the holder's
         sys.exit(UPDATE_EXIT_CONCURRENT)
 
-    from hermes_cli.update_cmd import _cmd_update_impl
+    from moor_cli.update_cmd import _cmd_update_impl
     from pm import InstallError
 
     def _custody_refusal() -> str | None:
         # m2: readers swallow an OSError, so a refused update child can end the run as a misleading
         # downstream error; the refusal is what stopped it. Never on POSIX (nothing refuses there).
-        custody = sys.modules.get("hermes_cli.update_custody")
+        custody = sys.modules.get("moor_cli.update_custody")
         return custody.refusal_notice() if custody is not None else None
 
     try:
@@ -2566,7 +2566,7 @@ def _require_dashboard_web_deps() -> None:
         import fastapi
         import uvicorn
     except ImportError as e:
-        from hermes_cli.main_dep_hints import (
+        from moor_cli.main_dep_hints import (
             missing_optional_deps_message,
             smart_app_control_block_message,
         )
@@ -2695,8 +2695,8 @@ def cmd_dashboard(args):
     _ssh_session_token = _read_ssh_session_token_file(_token_file) if _token_file else None
     _mcp_discovery_after_bind = _dashboard_prepare_runtime(args, _headless_backend)
 
-    from hermes_cli.dashboard_procs import BACKEND_LOCK_NAME
-    from hermes_cli.web_server import start_server
+    from moor_cli.dashboard_procs import BACKEND_LOCK_NAME
+    from moor_cli.web_server import start_server
 
     # Interactive auth setup: if this bind will engage the auth gate but no
     # provider is registered yet, offer to configure one here (TTY only)
@@ -2705,7 +2705,7 @@ def cmd_dashboard(args):
     # fail-closed SystemExit unchanged.
     _maybe_setup_dashboard_auth_interactively(args)
     if _headless_backend:
-        from hermes_cli.observability.shared_metrics_process import begin_process
+        from moor_cli.observability.shared_metrics_process import begin_process
         begin_process("serve")
 
     # The in-browser Chat tab (embedded TUI over PTY/WebSocket) is always
@@ -2853,7 +2853,7 @@ _AGENT_SUBCOMMANDS = {
 def _is_tui_chat_launch(args) -> bool:
     if _bypass_chat_launch(args):
         return False
-    if getattr(args, "tui", False) or os.environ.get("HERMES_TUI") == "1":
+    if getattr(args, "tui", False) or os.environ.get("MOOR_TUI") == "1":
         return True
     # The chat path decides TUI-vs-classic via _resolve_use_tui (--cli/--tui
     # flags, TTY gate, MOOR_TUI env, display.interface config). Bare
@@ -2879,7 +2879,7 @@ def _should_background_mcp_startup(args) -> bool:
 
 
 def _chat_runs_at_gateway(args) -> bool:
-    """Every ``hermes`` / ``hermes chat`` turn (classic view, ``-q``, ``-z``, TUI) executes in the
+    """Every ``moor`` / ``moor chat`` turn (classic view, ``-q``, ``-z``, TUI) executes in the
     gateway, which discovers and owns MCP servers itself. Discovery in this client only spawns a
     second copy of every server and holds the cross-process discovery lock the cold-starting gateway
     then waits on (measured 2.0 s with one stdio server) for tools nothing here ever calls."""
@@ -2894,7 +2894,7 @@ def _prepare_agent_startup(args) -> None:
     # here directly, so the guarantee lives where the import is triggered.
     # See #7994.
     if getattr(args, "yolo", False):
-        os.environ["HERMES_YOLO_MODE"] = "1"
+        os.environ["MOOR_YOLO_MODE"] = "1"
     if args.command in {None, "chat"} and _bypass_chat_launch(args):
         # Bypass launches are frozen by the gateway owner and executed out of process. This
         # client is a transport: no env mutation (it would ride into an authority spawn),
@@ -2936,7 +2936,7 @@ def _prepare_agent_startup(args) -> None:
     # TUI launches background MCP discovery with a bounded join; acp/gateway/cron do their own.
     if _chat_runs_at_gateway(args):  # chat turns run in the gateway: it owns MCP, hooks, webhooks
         if _accept_hooks:  # rides session.create (env_launch_flags) and the classic CLI's consent check
-            os.environ["HERMES_ACCEPT_HOOKS"] = "1"
+            os.environ["MOOR_ACCEPT_HOOKS"] = "1"
         return
     if _should_background_mcp_startup(args):
         try:
@@ -3035,7 +3035,7 @@ def _run_oneshot_from_args(args) -> None:
 
     Bypasses cli.py entirely; the transport launcher never returns.
     """
-    from hermes_cli.gateway_chat_startup import launch_gateway_chat
+    from moor_cli.gateway_chat_startup import launch_gateway_chat
     sys.exit(launch_gateway_chat(args))
 
 
@@ -3187,8 +3187,8 @@ def _try_termux_fast_cli_launch() -> bool:
         if not getattr(args, "query", None) and not getattr(args, "image", None):  # interactive prompt
             # Reach the prompt first; agent-only discovery on the first turn.
             args.compact = True
-            os.environ["HERMES_DEFER_AGENT_STARTUP"] = "1"
-            os.environ["HERMES_FAST_STARTUP_BANNER"] = "1"
+            os.environ["MOOR_DEFER_AGENT_STARTUP"] = "1"
+            os.environ["MOOR_FAST_STARTUP_BANNER"] = "1"
             if getattr(args, "accept_hooks", False):
                 os.environ["MOOR_ACCEPT_HOOKS"] = "1"
         else:
@@ -3273,8 +3273,8 @@ def _register_plugin_cli_commands(subparsers) -> None:
         return
     try:
         from plugins.memory import discover_plugin_cli_commands
-        from hermes_cli.plugins import discover_plugins, get_plugin_manager
-        from hermes_cli.left_core_migration import recover_for_command
+        from moor_cli.plugins import discover_plugins, get_plugin_manager
+        from moor_cli.left_core_migration import recover_for_command
 
         recover_for_command(_first_positional_argv())
         seen_plugin_commands = set()
@@ -3396,7 +3396,7 @@ def _build_cli_parser():
     build_dashboard_parser(
         subparsers, cmd_dashboard=cmd_dashboard, cmd_dashboard_register=cmd_dashboard_register)
     build_webapp_parser(subparsers, cmd_webapp=cmd_webapp)
-    # "desktop" is canonical (Hermes-Setup.exe tells users to run it, so it
+    # "desktop" is canonical (moor-setup.exe tells users to run it, so it
     # must be the name --help shows); "gui" is a deprecated alias.
     build_gui_parser(subparsers, cmd_gui=cmd_gui)
     build_logs_parser(subparsers, cmd_logs=cmd_logs)
@@ -3525,7 +3525,7 @@ def main():
 
     container_info = get_container_exec_info()
     if container_info:
-        from hermes_cli.main_container import exec_in_container
+        from moor_cli.main_container import exec_in_container
 
         exec_in_container(container_info, sys.argv[1:])
         sys.exit(1)  # unreachable: execvp replaces the process or raises
@@ -3549,7 +3549,7 @@ def main():
     if getattr(args, "oneshot", None):
         _run_oneshot_from_args(args)
 
-    from hermes_cli.observability.shared_metrics_disabled import set_process_surface
+    from moor_cli.observability.shared_metrics_disabled import set_process_surface
     set_process_surface(args.command)
     # No subcommand (optionally with top-level --resume / --continue) → chat.
     if args.command is None:

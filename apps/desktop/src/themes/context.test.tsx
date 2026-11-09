@@ -17,7 +17,7 @@ const bloomberg = (foreground: string) => ({
 
 const cssVar = (name: string) => window.document.documentElement.style.getPropertyValue(name)
 
-const customStyleEl = () => window.document.getElementById('hermes-desktop-custom-css') as HTMLStyleElement | null
+const customStyleEl = () => window.document.getElementById('moor-desktop-custom-css') as HTMLStyleElement | null
 
 describe('ThemeProvider ← backend skin sync', () => {
   beforeEach(() => {
@@ -359,7 +359,7 @@ describe('ThemeProvider theme typography (#41766)', () => {
     cleanup()
   })
 
-  // The merged typography is DEFAULT ← nous ← theme, so a user theme that sets
+  // The merged typography is DEFAULT ← moor ← theme, so a user theme that sets
   // only the new knobs still inherits the font stacks.
   const bigTypeTheme: DesktopTheme = {
     ...midnightTheme,
@@ -443,9 +443,9 @@ describe('ThemeProvider boot-failure palette', () => {
     act(() => ctx!.setTheme('boot-palette'))
 
     const midground = colors.midground ?? colors.ring
-    const snapshot = JSON.parse(window.localStorage.getItem('hermes-boot-palette')!)
+    const snapshot = JSON.parse(window.localStorage.getItem('moor-boot-palette')!)
     expect(snapshot).toEqual({
-      background: window.localStorage.getItem('hermes-boot-background'),
+      background: window.localStorage.getItem('moor-boot-background'),
       foreground: colors.foreground,
       accent: midground,
       accentForeground: colors.midgroundForeground ?? readableInk(midground)
@@ -454,7 +454,7 @@ describe('ThemeProvider boot-failure palette', () => {
   })
 
   it('stores no snapshot for a theme whose accent is a var() the notice could not resolve', () => {
-    window.localStorage.setItem('hermes-boot-palette', '{"stale":true}')
+    window.localStorage.setItem('moor-boot-palette', '{"stale":true}')
     const colors = { ...midnightTheme.colors, midground: 'var(--theme-primary)', midgroundForeground: '#161616' }
     installUserTheme({ ...midnightTheme, name: 'boot-palette-var', colors, darkColors: colors })
     let ctx: ReturnType<typeof useTheme>
@@ -466,7 +466,7 @@ describe('ThemeProvider boot-failure palette', () => {
 
     act(() => ctx!.setTheme('boot-palette-var'))
 
-    expect(window.localStorage.getItem('hermes-boot-palette')).toBeNull()
-    expect(window.localStorage.getItem('hermes-boot-background')).not.toBeNull()
+    expect(window.localStorage.getItem('moor-boot-palette')).toBeNull()
+    expect(window.localStorage.getItem('moor-boot-background')).not.toBeNull()
   })
 })

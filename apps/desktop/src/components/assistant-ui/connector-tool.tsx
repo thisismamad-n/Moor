@@ -39,7 +39,7 @@ import {
 import { requestGatewayForAgent } from '@/store/gateway'
 import { notifyError } from '@/store/notifications'
 
-/** The browser leg of a connection came back through `hermes://connections/done`. Show the session
+/** The browser leg of a connection came back through `moor://connections/done`. Show the session
  *  that opened the operation and tell its backend to read the account now instead of at its next
  *  tick. Nothing in the link is trusted to move a row: the op id only names which card to show, and
  *  the backend reads the account itself. An operation this window holds no card for, or one that
@@ -441,7 +441,7 @@ export function ConnectorOffer({ owner, request }: ConnectorOfferProps) {
   )
 }
 
-/** One line per account Hermes named and connected; Rename opens that account's editor on the Connectors tab. */
+/** One line per account Moor named and connected; Rename opens that account's editor on the Connectors tab. */
 function NamedAccountNotices({ owner, targets }: { owner: ConnectionOwner; targets: readonly ConnectionTarget[] }) {
   const named = targets.filter(target => target.state === 'connected' && target.alias)
 

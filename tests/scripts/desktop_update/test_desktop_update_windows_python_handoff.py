@@ -44,7 +44,7 @@ def test_pm_handoff_reports_update_and_gateway_results(
 ) -> None:
     install = tmp_path / 'checkout with spaces'
     publish_fixture_launcher(install, CLI)
-    (install / 'hermes_cli/desktop_update_verify.py').write_text('pass\n', encoding='utf-8')
+    (install / 'moor_cli/desktop_update_verify.py').write_text('pass\n', encoding='utf-8')
     home = tmp_path / 'profile'; home.mkdir()
     calls = tmp_path / 'calls.jsonl'
     command = ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
@@ -66,7 +66,7 @@ def test_pm_handoff_reports_update_and_gateway_results(
     if code == 0 and not no_gateway:
         expected.append({'argv': ['gateway', 'start', '--all'], 'cwd': str(install)})
     assert [json.loads(line) for line in calls.read_text(encoding='utf-8-sig').splitlines()] == expected
-    receipt = json.loads((home / '.hermes-update-result.json').read_text(encoding='utf-8-sig'))
+    receipt = json.loads((home / '.moor-update-result.json').read_text(encoding='utf-8-sig'))
     assert receipt['ok'] == (code == 0)
     assert receipt.get('manual', False) == (code == 0 and not no_gateway and gateway_code != 0)
     assert not (home / '.moor-update-in-progress').exists()
@@ -75,7 +75,7 @@ def test_pm_handoff_reports_update_and_gateway_results(
 @pytest.mark.platforms('windows')
 @pytest.mark.parametrize(('output', 'code'), [
     ('✓ Update complete! (v1.0.0)', 0),
-    ('✓ Update complete! (v1.0.0)|  ✗ hermes-gateway failed to come back after restart.', 124),
+    ('✓ Update complete! (v1.0.0)|  ✗ moor-gateway failed to come back after restart.', 124),
     ('✓ Update complete! (v1.0.0)|Update incomplete — some units were not restarted', 124),
     ('Cloning into the checkout...', 124),
 ])
@@ -86,23 +86,23 @@ def test_update_killed_by_idle_watchdog_after_completing_is_a_success(
     unless anything after its banner already reported a failure."""
     install = tmp_path / 'checkout'
     publish_fixture_launcher(install, CLI)
-    (install / 'hermes_cli/desktop_update_verify.py').write_text('pass\n', encoding='utf-8')
+    (install / 'moor_cli/desktop_update_verify.py').write_text('pass\n', encoding='utf-8')
     home = tmp_path / 'profile'; home.mkdir()
     calls = tmp_path / 'calls.jsonl'
     result = subprocess.run(
         ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
          str(ROOT / 'scripts/desktop-update/windows.ps1'), '-InstallRoot', str(install), '-NoUi'],
-        cwd=tmp_path, env={**os.environ, 'HERMES_HOME': str(home),
-                          'HERMES_RUNTIME_DIR': str(tmp_path / 'empty-store'),
+        cwd=tmp_path, env={**os.environ, 'MOOR_HOME': str(home),
+                          'MOOR_RUNTIME_DIR': str(tmp_path / 'empty-store'),
                           'HANDOFF_CALLS': str(calls), 'HANDOFF_EXIT': '0', 'HANDOFF_HANG': output,
-                          'HERMES_UPDATE_STEP_IDLE_SECONDS': '3', 'PYTHONIOENCODING': 'utf-8'},
+                          'MOOR_UPDATE_STEP_IDLE_SECONDS': '3', 'PYTHONIOENCODING': 'utf-8'},
         capture_output=True, text=True, timeout=180,
         check=False,
     )
     assert result.returncode == code, result.stdout + result.stderr
     argv = [json.loads(line)['argv'][:2] for line in calls.read_text(encoding='utf-8-sig').splitlines()]
     assert argv == ([['update', '--yes'], ['gateway', 'start']] if code == 0 else [['update', '--yes']])
-    receipt = json.loads((home / '.hermes-update-result.json').read_text(encoding='utf-8-sig'))
+    receipt = json.loads((home / '.moor-update-result.json').read_text(encoding='utf-8-sig'))
     assert receipt['ok'] == (code == 0)
 
 
@@ -122,7 +122,7 @@ def test_earlier_pm_userbin_launcher_is_identity_checked(tmp_path: Path) -> None
     for target, expected_code in [(root, 0), (wrong, 1)]:
         script = f". '{helper}'; try {{ @(Get-MoorRuntimeCommand -InstallRoot '{target}') | ConvertTo-Json -Compress }} catch {{ exit 1 }}"
         result = subprocess.run(['powershell', '-NoProfile', '-Command', script],
-                                env={**os.environ, 'HERMES_HOME': str(home)},
+                                env={**os.environ, 'MOOR_HOME': str(home)},
                                 capture_output=True, text=True, timeout=45, check=False)
         assert result.returncode == expected_code, result.stdout + result.stderr
         if expected_code == 0:
@@ -134,13 +134,13 @@ def test_command_file_launcher_probe_runs_through_cmd_exe_explicitly(tmp_path: P
     """A .cmd launcher probe goes through `cmd.exe /d /s /c` exactly like the update step,
     never through CreateProcess's implicit batch handling; unquotable arguments are refused."""
     bin_dir = tmp_path / 'launcher dir'; bin_dir.mkdir()
-    launcher = bin_dir / 'hermes.cmd'
+    launcher = bin_dir / 'moor.cmd'
     launcher.write_text('@echo off\r\necho CMDLINE=%CMDCMDLINE%\r\necho ARGS=%*\r\n', encoding='ascii')
     helper = str(ROOT / 'scripts/desktop-update/runtime.ps1').replace("'", "''")
     target = str(launcher).replace("'", "''")
 
     def probe(argument: str) -> subprocess.CompletedProcess:
-        script = (f". '{helper}'; try {{ $r = Invoke-HermesProbe '{target}' @('--version', '{argument}'); "
+        script = (f". '{helper}'; try {{ $r = Invoke-MoorProbe '{target}' @('--version', '{argument}'); "
                   "[Console]::Out.Write(\"code=$($r.Code)`n$($r.Output)\") } catch { [Console]::Out.Write('refused'); exit 3 }")
         return subprocess.run(['powershell', '-NoProfile', '-Command', script],
                               capture_output=True, text=True, timeout=60, check=False)

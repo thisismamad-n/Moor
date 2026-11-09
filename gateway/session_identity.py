@@ -320,7 +320,7 @@ def authenticated_subject(identity):
 
 def is_authenticated_identity(identity: object) -> bool:
     """True for a server-minted, non-internal ``{user_id, provider}`` WS-upgrade identity."""
-    from hermes_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
+    from moor_cli.dashboard_auth.ws_tickets import INTERNAL_PROVIDER, INTERNAL_USER_ID
     if not isinstance(identity, dict):
         return False
     user_id, provider = identity.get("user_id"), identity.get("provider")

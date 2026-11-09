@@ -108,7 +108,7 @@ class ModelCapabilities:
     model_family: str = ""
 
 
-# Hermes provider names → models.dev provider IDs
+# Moor provider names → models.dev provider IDs
 PROVIDER_TO_MODELS_DEV: dict[str, str] = {
     "openrouter": "openrouter", "novita": "novita-ai", "anthropic": "anthropic",
     "openai": "openai", "openai-api": "openai", "openai-codex": "openai", "zai": "zai",
@@ -131,7 +131,7 @@ PROVIDER_TO_MODELS_DEV: dict[str, str] = {
     "togetherai": "togetherai", "perplexity": "perplexity", "cohere": "cohere",
     "ollama-cloud": "ollama-cloud",
 }
-# Reverse mapping: models.dev id → Hermes ids (built lazily; many-to-one).
+# Reverse mapping: models.dev id → Moor ids (built lazily; many-to-one).
 _MODELS_DEV_TO_PROVIDER: Optional[dict[str, list[str]]] = None
 
 
@@ -144,25 +144,25 @@ def _profile_models_dev_ids() -> dict[str, str]:
 
 
 def models_dev_provider_map() -> dict[str, str]:
-    """Hermes provider id → models.dev id: ``PROVIDER_TO_MODELS_DEV``, then profile ``models_dev_id``s."""
+    """Moor provider id → models.dev id: ``PROVIDER_TO_MODELS_DEV``, then profile ``models_dev_id``s."""
     return {**PROVIDER_TO_MODELS_DEV, **_profile_models_dev_ids()}
 
 
 def models_dev_id_for(provider: str) -> Optional[str]:
-    """models.dev id for an exact Hermes provider id (static map first, then its profile), or None."""
+    """models.dev id for an exact Moor provider id (static map first, then its profile), or None."""
     key = (provider or "").strip()
     if not key or key in PROVIDER_TO_MODELS_DEV:
         return PROVIDER_TO_MODELS_DEV.get(key)
     return _profile_models_dev_ids().get(key)
 
 
-def _models_dev_to_hermes_ids(mdev_id: str) -> list[str]:
-    """Return the Hermes provider ids that map to *mdev_id* (may be [])."""
+def _models_dev_to_moor_ids(mdev_id: str) -> list[str]:
+    """Return the Moor provider ids that map to *mdev_id* (may be [])."""
     global _MODELS_DEV_TO_PROVIDER
     if _MODELS_DEV_TO_PROVIDER is None:
         _MODELS_DEV_TO_PROVIDER = {}
-        for hermes_id, mapped in PROVIDER_TO_MODELS_DEV.items():
-            _MODELS_DEV_TO_PROVIDER.setdefault(mapped, []).append(hermes_id)
+        for moor_id, mapped in PROVIDER_TO_MODELS_DEV.items():
+            _MODELS_DEV_TO_PROVIDER.setdefault(mapped, []).append(moor_id)
     profile_ids = [name for name, mapped in _profile_models_dev_ids().items() if mapped == mdev_id]
     return [*_MODELS_DEV_TO_PROVIDER.get(mdev_id, []), *profile_ids]
 
@@ -565,7 +565,7 @@ def _registry_models(mdev_id: str, *, allow_network: bool) -> Optional[dict[str,
 def _get_provider_models(
     provider: str, *, allow_network: bool = False, config: Optional[dict[str, Any]] = None,
 ) -> Optional[dict[str, Any]]:
-    """Resolve a Hermes provider ID to its models dict, or None if unknown.
+    """Resolve a Moor provider ID to its models dict, or None if unknown.
     ``allow_network`` defaults to False — hot-path callers must never block."""
     mdev_id = _models_dev_id(provider, config=config)
     return _registry_models(mdev_id, allow_network=allow_network) if mdev_id else None
@@ -720,7 +720,7 @@ def _load_model_overrides(*, config: Optional[dict[str, Any]] = None) -> dict[st
 
 
 def _provider_override_section(provider: str, *, config: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
-    """Override section for *provider* (keyed by Hermes OR models.dev id), or None."""
+    """Override section for *provider* (keyed by Moor OR models.dev id), or None."""
     overrides = (
         _load_model_overrides(config=config)
         if config is not None
@@ -729,8 +729,8 @@ def _provider_override_section(provider: str, *, config: Optional[dict[str, Any]
     provider_key = (provider or "").strip()
     if not overrides or not provider_key:
         return None
-    # Forward (Hermes → models.dev id) and reverse (caller passed a models.dev id, config keyed by Hermes id) aliases.
-    candidates = [provider_key, models_dev_id_for(provider_key), *_models_dev_to_hermes_ids(provider_key)]
+    # Forward (Moor → models.dev id) and reverse (caller passed a models.dev id, config keyed by Moor id) aliases.
+    candidates = [provider_key, models_dev_id_for(provider_key), *_models_dev_to_moor_ids(provider_key)]
     return next((section for section in (overrides.get(key) if key else None for key in candidates) if isinstance(section, dict)), None)
 
 
@@ -846,7 +846,7 @@ def _merge_catalog_entry_with_override(raw: dict[str, Any], override: dict[str, 
 def _builtin_model_metadata(
     provider: str, model: str, *, config: Optional[dict[str, Any]] = None,
 ) -> Optional[dict[str, Any]]:
-    """Built-in metadata for a provider/model pair, if Hermes has a vendor-specific entry."""
+    """Built-in metadata for a provider/model pair, if Moor has a vendor-specific entry."""
     provider_key = _models_dev_id(provider, config=config) or (provider or "").strip()
     return _BUILTIN_MODEL_METADATA.get((provider_key, (model or "").strip().lower()))
 

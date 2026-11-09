@@ -14,9 +14,9 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.auth as auth_mod
-from hermes_cli import auth_codex
-from hermes_cli.auth import (
+import moor_cli.auth as auth_mod
+from moor_cli import auth_codex
+from moor_cli.auth import (
     AuthError,
     _codex_usage_probe_url,
     _is_codex_rate_limit_shaped,
@@ -420,11 +420,11 @@ def test_pool_selection_keeps_probe_rotated_tokens_when_quota_restored(tmp_path,
     probe rotated, not on the selection loop's pre-probe copy, or the consumed refresh token
     goes back into the pool and the same select() replays it (``refresh_token_reused``)."""
     now = time.time()
-    hermes_home = tmp_path / "hermes"
+    moor_home = tmp_path / "moor"
     store = _expired_jwt_pool_store(now)
     store["credential_pool"]["openai-codex"][0]["source"] = "manual:device_code"  # no singleton re-sync
-    _write_auth_store(hermes_home, store)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    _write_auth_store(moor_home, store)
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     fresh = _jwt({"exp": now + 3600})
     refresh_calls: list = []
     _fake_refresh(monkeypatch, fresh, refresh_calls)
@@ -438,7 +438,7 @@ def test_pool_selection_keeps_probe_rotated_tokens_when_quota_restored(tmp_path,
     assert [c["headers"]["Authorization"] for c in http_calls] == [f"Bearer {fresh}"]
     assert (selected.access_token, selected.refresh_token, selected.last_status) == (fresh, "rf-new", "ok")
     assert pool.entries()[0].refresh_token == "rf-new"  # the pool's own row, not just the returned copy
-    disk = json.loads((hermes_home / "auth.json").read_text())
+    disk = json.loads((moor_home / "auth.json").read_text())
     assert disk["credential_pool"]["openai-codex"][0]["refresh_token"] == "rf-new"
 
 

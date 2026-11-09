@@ -7,7 +7,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Mapping, Optional
 
-from hermes_platform.resolver.app import LOCATION_KINDS, AppDef, AppLocation
+from moor_platform.resolver.app import LOCATION_KINDS, AppDef, AppLocation
 
 __all__ = [
     "AppSpec",

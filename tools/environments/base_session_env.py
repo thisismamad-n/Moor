@@ -27,9 +27,9 @@ from typing import Iterable
 # identity. Used by unit tests as the Python-side contract for the exclusion set; the dump path unsets by
 # name/prefix instead of grepping declare lines (see below / issue #71296).
 _SNAPSHOT_EXCLUDED_ENV_REGEX = (
-    "^declare -x (HERMES_SESSION_|HERMES_UI_SESSION_ID|HERMES_CRON_AUTO_DELIVER_|"
-    "HERMES_CRON_SESSION|HERMES_DELEGATED_CHILD_CONTEXT|"
-    "HERMES_RPC_|HERMES_KERNEL_DIR)")
+    "^declare -x (MOOR_SESSION_|MOOR_UI_SESSION_ID|MOOR_CRON_AUTO_DELIVER_|"
+    "MOOR_CRON_SESSION|MOOR_DELEGATED_CHILD_CONTEXT|"
+    "MOOR_RPC_|MOOR_KERNEL_DIR)")
 _SHELL_ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # mktemp template suffix + the shell variable holding the allocated temp path.
@@ -42,7 +42,7 @@ def _cwd_marker(session_id: str) -> str:
 
 
 def _pipe_marker(session_id: str) -> str:
-    return f"__HERMES_PIPE_{session_id}__"
+    return f"__MOOR_PIPE_{session_id}__"
 
 
 def _pipe_marker_printf(marker: str) -> str:
@@ -52,7 +52,7 @@ def _pipe_marker_printf(marker: str) -> str:
     passed. The array holds each segment's own status and is captured before anything
     else runs.
     """
-    return f"printf '\\n{marker}%s{marker}\\n' \"${{__hermes_ps[*]-}}\""
+    return f"printf '\\n{marker}%s{marker}\\n' \"${{__moor_ps[*]-}}\""
 
 
 def _eval_capturing_pipestatus(escaped: str) -> str:
@@ -64,7 +64,7 @@ def _eval_capturing_pipestatus(escaped: str) -> str:
     continued by a trailing backslash. The restore sits on the left of ``&&`` so its
     non-zero status fires neither a user's ``ERR`` trap a second time nor ``set -e``.
     """
-    return f"eval '{escaped}\n\n__hermes_rc=$? __hermes_ps=(\"${{PIPESTATUS[@]}}\"); (exit $__hermes_rc) && :'"
+    return f"eval '{escaped}\n\n__moor_rc=$? __moor_ps=(\"${{PIPESTATUS[@]}}\"); (exit $__moor_rc) && :'"
 
 
 def _can_capture_pipestatus(command: str) -> bool:
@@ -99,20 +99,20 @@ def _export_dump_excluding_session_vars(tmp_path: str, excluded_names: Iterable[
     safe_names = {name for name in excluded_names if isinstance(name, str) and name}
     extra_unset = "".join(f" {shlex.quote(name)}" for name in sorted(safe_names))
     return (
-        "{ ( unset ${!HERMES_SESSION_*} ${!HERMES_CRON_AUTO_DELIVER_*} "
-        # AI_AGENT / HERMES_AGENT are per-command attribution markers re-exported
+        "{ ( unset ${!MOOR_SESSION_*} ${!MOOR_CRON_AUTO_DELIVER_*} "
+        # AI_AGENT / MOOR_AGENT are per-command attribution markers re-exported
         # by every wrapper with ${VAR:-default} semantics; persisting them would
         # let the FIRST command's value override a later outer-harness value.
         "AI_AGENT MOOR_AGENT "
         # Scope markers stamped onto a delegate_task child's / cron run's subprocess
         # env; a snapshot taken inside that window would re-assert them on every
         # later ``source`` and fence the PARENT session's kanban CLI (#90782).
-        "HERMES_DELEGATED_CHILD_CONTEXT HERMES_CRON_SESSION "
+        "MOOR_DELEGATED_CHILD_CONTEXT MOOR_CRON_SESSION "
         # Remote code-execution channel vars (RPC token, kernel/rpc dirs): a
         # leaked token in the snapshot would re-export into every later command
         # on the backend and outlive the private dir it protects.
-        "${!HERMES_RPC_*} HERMES_KERNEL_DIR "
-        f"HERMES_UI_SESSION_ID{extra_unset} 2>/dev/null; "
+        "${!MOOR_RPC_*} MOOR_KERNEL_DIR "
+        f"MOOR_UI_SESSION_ID{extra_unset} 2>/dev/null; "
         "export -p; ) || true; } "
         f"> {tmp_path}")
 
@@ -189,7 +189,7 @@ def _wrap_command_script(
         # ``--`` keeps hyphen-prefixed directory names from being parsed as options.
         f"builtin cd -- {quoted_cwd} || exit 126",
         _eval_capturing_pipestatus(escaped) if capture else f"eval '{escaped}'",
-        "__hermes_ec=$?",
+        "__moor_ec=$?",
         "umask 077"]
     if snapshot_ready and persist_env:
         parts.append(
@@ -199,7 +199,7 @@ def _wrap_command_script(
             f"2>/dev/null || rm -f {_SNAP_TMP} 2>/dev/null || true")
     if capture:
         parts.append(_pipe_marker_printf(pipe_marker))
-    parts += [_cwd_marker_printf(cwd_marker), "exit $__hermes_ec"]
+    parts += [_cwd_marker_printf(cwd_marker), "exit $__moor_ec"]
     return "\n".join(parts)
 
 

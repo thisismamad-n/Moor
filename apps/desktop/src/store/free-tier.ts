@@ -3,7 +3,7 @@ import { atom, computed } from 'nanostores'
 import { runFreeTierChallenge } from '@/store/free-tier-challenge'
 import { setModeContext } from '@/store/interface-mode'
 import { $onboardingSurfaceClear, onboardingSurfaceActive } from '@/store/onboarding-presence'
-import type { FreeTierStatus } from '@/types/hermes'
+import type { FreeTierStatus } from '@/types/moor'
 
 /** The model the free-tier route runs on. Used to recognise a session that is
  *  still homed on the free tier after a sign-in. */

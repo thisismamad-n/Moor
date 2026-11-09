@@ -20,7 +20,7 @@ from agent.context_compressor import (
     _is_summary_access_or_quota_error,
 )
 from agent.compression_marker import _COMPRESSION_MARKER_PREFIX
-from hermes_state import SessionDB
+from moor_state import SessionDB
 from agent.auxiliary_client import CODEX_STREAM_STALL_MARKER
 import itertools
 
@@ -238,8 +238,8 @@ class TestSummarizeToolResultOutcome:
     @pytest.mark.parametrize("tool_name, args, payload, expected", [
         ("read_file", {"path": "gone.py", "offset": 1}, {"error": "File not found: gone.py"},
          "[read_file] read gone.py from line 1 (36 chars) FAILED: File not found: gone.py"),
-        ("web_search", {"query": "hermes"}, {"error": "rate limited"},
-         "[web_search] query='hermes' (25 chars result) FAILED: rate limited"),
+        ("web_search", {"query": "moor"}, {"error": "rate limited"},
+         "[web_search] query='moor' (25 chars result) FAILED: rate limited"),
         ("memory", {"action": "add", "target": "a note"}, {"error": "unknown action"},
          "[memory] add on a note FAILED: unknown action"),
         ("text_to_speech", {}, {"error": "no voice available"},
@@ -264,8 +264,8 @@ class TestSummarizeToolResultOutcome:
         assert self._stub(tool_name, args, payload) == expected
 
     @pytest.mark.parametrize("tool_name, args, payload, expected", [
-        ("web_search", {"query": "hermes"}, {"results": [{"title": "hit"}]},
-         "[web_search] query='hermes' (31 chars result)"),
+        ("web_search", {"query": "moor"}, {"results": [{"title": "hit"}]},
+         "[web_search] query='moor' (31 chars result)"),
         ("write_file", {"path": "a.md", "content": "line 1\nline 2"}, {"bytes_written": 13},
          "[write_file] wrote to a.md (2 lines)"),
         ("text_to_speech", {}, {"success": True, "path": "/tmp/out.wav"}, "[text_to_speech] generated audio (41 chars)"),
@@ -2313,7 +2313,7 @@ class TestThresholdTokensCap:
     def test_default_config_compacts_at_the_ratio_trigger(self, context_length):
         """Shipped defaults carry no token cap: every window compacts at its ratio trigger, so a 1M
         window is not cut to a fixed count that suits some models and not others."""
-        from hermes_cli.config import DEFAULT_CONFIG
+        from moor_cli.config import DEFAULT_CONFIG
 
         default_pct = DEFAULT_CONFIG["compression"]["threshold"]
         default_cap = DEFAULT_CONFIG["compression"]["threshold_tokens"]

@@ -14,10 +14,10 @@ from pathlib import Path
 import pytest
 
 from gateway import runtime_bootstrap_windows as native
-from hermes_cli import gateway_runtime as runtime
-from hermes_cli.gateway_runtime_cli import ensure_exit_code
+from moor_cli import gateway_runtime as runtime
+from moor_cli.gateway_runtime_cli import ensure_exit_code
 
-# The owner stand-in is a stub ``hermes gateway run`` child that each test reaps itself.
+# The owner stand-in is a stub ``moor gateway run`` child that each test reaps itself.
 pytestmark = pytest.mark.spawns_gateway_lookalike
 
 
@@ -38,8 +38,8 @@ def test_classify_refused_owner(facts, expected):
 
 
 def _gateway_child(tmp_path: Path):
-    """A real live process whose command line is a gateway's (``.../hermes gateway run``)."""
-    entry = tmp_path / "bin" / "hermes"
+    """A real live process whose command line is a gateway's (``.../moor gateway run``)."""
+    entry = tmp_path / "bin" / "moor"
     entry.parent.mkdir(exist_ok=True)
     entry.write_text("import sys\nsys.stdin.read()\n", encoding="utf-8")
     return subprocess.Popen([sys.executable, str(entry), "gateway", "run"], stdin=subprocess.PIPE)
@@ -47,8 +47,8 @@ def _gateway_child(tmp_path: Path):
 
 def _record(home: Path, pid: int, **extra) -> dict:
     from gateway.status import _get_process_start_time
-    return {"pid": pid, "kind": "hermes-gateway", "argv": ["hermes", "gateway", "run"],
-            "start_time": _get_process_start_time(pid), "hermes_home": str(home), **extra}
+    return {"pid": pid, "kind": "moor-gateway", "argv": ["moor", "gateway", "run"],
+            "start_time": _get_process_start_time(pid), "moor_home": str(home), **extra}
 
 
 @pytest.fixture()
@@ -84,7 +84,7 @@ def test_refusal_names_the_elevated_owner_with_its_remedy(monkeypatch, tmp_path,
     home, _ = _refusing_owner(monkeypatch, tmp_path, named, gateway_owner)
     result = runtime._refused(home, windows=True)
     assert result.reason_code == "gateway_elevated"
-    assert result.detail and "administrator" in result.detail and "hermes gateway stop" in result.detail
+    assert result.detail and "administrator" in result.detail and "moor gateway stop" in result.detail
 
 
 def test_unnamed_or_unprobeable_refusal_keeps_authorization(monkeypatch, tmp_path, gateway_owner):
@@ -100,7 +100,7 @@ def test_discovery_routes_a_refused_control_channel_through_refused(monkeypatch,
     """The real discovery path: ``query_identify`` raising PermissionError is what Windows' pipe
     ``CreateFile`` err=5 / peer-identity refusal produces; it reaches ``_refused`` for this home.
     The Windows naming itself is ``_refused(home, windows=True)`` above."""
-    from hermes_cli import gateway_runtime_discovery as discovery
+    from moor_cli import gateway_runtime_discovery as discovery
     home = tmp_path / "home"
     home.mkdir()
     seen = []
@@ -154,7 +154,7 @@ def test_an_unverifiable_owner_is_never_named(monkeypatch, tmp_path, shape):
         if shape == "no start time":
             del record["start_time"]
         elif shape == "another home":
-            record["hermes_home"] = str(tmp_path / "other-profile")
+            record["moor_home"] = str(tmp_path / "other-profile")
         (home / "gateway.pid").write_text(json.dumps(record), encoding="utf-8")
         seen = _probe_recorder(monkeypatch)
         assert runtime._refused(home, windows=True).reason_code == "authorization" and seen == []

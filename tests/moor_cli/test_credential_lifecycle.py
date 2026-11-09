@@ -324,7 +324,7 @@ def test_scrub_never_touches_providers_base_url_alias(moor_home):
 # of alibaba-coding-plan-cn), could be a FOREIGN tier's key.
 
 
-def test_get_api_env_passes_provider_primary_through(hermes_home):
+def test_get_api_env_passes_provider_primary_through(moor_home):
     """Every provider card's own index-0 credential must stay its main field."""
     resp = client.get("/api/env", headers=HEADERS)
     assert resp.status_code == 200, resp.text

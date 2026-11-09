@@ -253,14 +253,14 @@ class TurnExplainersMixin:
         if key is not None:
             body = t(key, model=model or t("explainer.shared.the_model"))
         elif reason == "session_persistence_failed":
-            from hermes_constants import display_hermes_home, profile_cli_selector
-            from hermes_state_errors import STORAGE_RECOVERY_DOCS_URL
+            from moor_constants import display_moor_home, profile_cli_selector
+            from moor_state_errors import STORAGE_RECOVERY_DOCS_URL
 
             # Copy-pasteable, so pin every `moor` command to the profile whose store failed:
             # a multi-profile backend (Desktop serve) hosts sessions whose state.db is NOT the
-            # process default, and a bare `hermes` follows active_profile (#105887).
+            # process default, and a bare `moor` follows active_profile (#105887).
             fill: dict[str, str] = {
-                "home": display_hermes_home(), "profile_arg": profile_cli_selector(),
+                "home": display_moor_home(), "profile_arg": profile_cli_selector(),
                 "recovery_docs": STORAGE_RECOVERY_DOCS_URL, "db_path": "", "backups_dir": "",
             }
             if persistence_cause in ("corrupt", "fts_index"):
@@ -268,7 +268,7 @@ class TurnExplainersMixin:
                 from moor_state import _default_db_path
 
                 fill["db_path"] = str(db_path or _default_db_path())
-                fill["backups_dir"] = str(get_default_hermes_root() / "backups")
+                fill["backups_dir"] = str(get_default_moor_root() / "backups")
             body = t(_persistence_explanation_key(persistence_cause), **fill)
         else:
             body = None

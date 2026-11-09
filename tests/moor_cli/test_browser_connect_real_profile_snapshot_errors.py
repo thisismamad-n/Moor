@@ -33,7 +33,7 @@ def test_snapshot_succeeds_while_the_browser_locks_password_and_autofill_dbs(tmp
     fail the snapshot: the cookie DB lands, the locked ones are skipped quickly."""
     root = tmp_path / "real"
     _fake_profile(root)
-    monkeypatch.setattr(bc, "get_hermes_home", lambda: tmp_path / "hh")
+    monkeypatch.setattr(bc, "get_moor_home", lambda: tmp_path / "hh")
     holders = []
     for name in _LOCKED:
         h = sqlite3.connect(root / "Default" / name)

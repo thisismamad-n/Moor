@@ -11,8 +11,8 @@ import {
 import { atom } from 'nanostores'
 
 import { canonicalOwnerProfile } from '@/api/canonical-protocol'
-import type { HermesConnection } from '@/global'
-import { HermesGateway, setApiRequestConnection } from '@/hermes'
+import type { MoorConnection } from '@/global'
+import { MoorGateway, setApiRequestConnection } from '@/moor'
 import { translateNow } from '@/i18n'
 import { UnservedProfileError } from '@/lib/browser-served-profiles'
 import {
@@ -59,7 +59,7 @@ export { useGatewayActivationEpoch } from '@/store/gateway-activation-epoch'
 const normKey = (profile: string | null | undefined): string => (profile ?? '').trim() || 'default'
 
 // Dial intent callers attach to a user-initiated open. The canonical
-// `hermes gateway ensure` path has no local slot pool, so the hint changes
+// `moor gateway ensure` path has no local slot pool, so the hint changes
 // nothing about the dial itself; it survives as the option shape the SDK,
 // Settings scopes and session creation pass so an explicit user gesture stays
 // distinguishable from ambient hydration at the call site.
@@ -223,7 +223,7 @@ const ACTIVATION_LEASE_MS = SOURCE_SWITCH_DIAL_TIMEOUT_MS + 15_000
 // runtime behavior is identical to plain module state.
 interface GatewayRegistryState {
   config: RegistryConfig | null
-  primaryGateway: HermesGateway | null
+  primaryGateway: MoorGateway | null
   primaryProfile: string
   activeKey: string
   secondaries: Map<string, Secondary>
@@ -390,7 +390,7 @@ function primaryConnectionId(): null | string {
 // to the primary the route was resolved against.
 const primaryIdentity = (): PrimaryIdentity => ({ connectionId: primaryConnectionId(), gateway: g.primaryGateway })
 
-export function setPrimaryGateway(gateway: HermesGateway | null, profile = 'default'): void {
+export function setPrimaryGateway(gateway: MoorGateway | null, profile = 'default'): void {
   const next = normKey(profile)
 
   if (g.primaryGateway !== gateway) {
@@ -714,7 +714,7 @@ function clearTimer(entry: Secondary): void {
 }
 
 async function openSecondary(entry: Secondary): Promise<void> {
-  const desktop = window.hermesDesktop
+  const desktop = window.moorDesktop
 
   const reauthError = g.reauthFailures.get(entry.scope)?.error
 
@@ -1024,7 +1024,7 @@ async function reconnectSecondary(entry: Secondary): Promise<void> {
 
     // An ensure refusal no redial can fix (incompatible runtime, no ensure protocol, an invalid
     // endpoint, an unsafe control path): each automatic redial would spawn another
-    // `hermes gateway ensure` against the same install forever. Park at once, keeping the entry:
+    // `moor gateway ensure` against the same install forever. Park at once, keeping the entry:
     // an explicit open, focus/wake nudge or Reconnect re-arms it after the user's repair.
     if (isPermanentLocalGatewayEnsureError(error)) {
       console.warn(`[gateway] parking scope="${entry.scope}": local gateway ensure refused permanently`, error)
@@ -1296,8 +1296,8 @@ export async function requestGatewayForAgent<T>(
 
   traceAgentRoute(scope, 'secondary')
 
-  if (!window.hermesDesktop?.getConnectionFor) {
-    throw new Error('This Desktop build cannot dial registry connections. Update Hermes Desktop.')
+  if (!window.moorDesktop?.getConnectionFor) {
+    throw new Error('This Desktop build cannot dial registry connections. Update Moor Desktop.')
   }
 
   const entry = g.secondaries.get(scope) ?? createSecondary(key, connectionId)

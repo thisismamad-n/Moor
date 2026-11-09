@@ -552,7 +552,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
 
     def list_models(self) -> list[dict[str, Any]]:
         """Live catalog: OpenRouter = ``GET /images/models`` ∪ chat-completions image models (new
-        releases selectable); Nous Portal = chat-completions only. Offline: default chain + snapshot."""
+        releases selectable); Moor Portal = chat-completions only. Offline: default chain + snapshot."""
         merged: dict[str, dict[str, Any]] = {}
         if self._supports_image_api:
             merged = {entry["id"]: entry for entry in self._image_api_live_models()}

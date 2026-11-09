@@ -618,7 +618,7 @@ def test_replayed_unanswered_dm_precedes_mail_queued_after_it(root):
     claimed-but-unanswered one (sent first) must come first — not after the fresh outbox row."""
     first = bot_relay.enqueue_envelope(
         root, target=_target(), message="do this first",
-        sender_profile="default", sender_handle="hermes",
+        sender_profile="default", sender_handle="moor",
     )
     base = bot_relay.relay_root(root)
     now = _time2.time()
@@ -626,7 +626,7 @@ def test_replayed_unanswered_dm_precedes_mail_queued_after_it(root):
     assert [e["id"] for e in bot_relay.claim_pending_envelopes(root)] == [first["id"]]
     second = bot_relay.enqueue_envelope(
         root, target=_target(), message="then this",
-        sender_profile="default", sender_handle="hermes",
+        sender_profile="default", sender_handle="moor",
     )
     _os2.utime(base / bot_relay.OUTBOX_DIR / f"{second['id']}.json", (now - 1, now - 1))
 
@@ -644,8 +644,8 @@ def test_pre_upgrade_claim_settles_unknown_instead_of_stranding_its_waiter(root)
 
     base = bot_relay._ensure_dirs(root)
     legacy = {"id": "a" * 32, "created_at": int(_time2.time()) - 60, "from_profile": "default",
-              "from_handle": "hermes", "target_connection": "cloud-1", "target_profile": "default",
-              "target_handle": "hermes", "message": "legacy"}
+              "from_handle": "moor", "target_connection": "cloud-1", "target_profile": "default",
+              "target_handle": "moor", "message": "legacy"}
     path = base / bot_relay.CLAIMED_DIR / f"{legacy['id']}.json"
     path.write_text(json.dumps(legacy), encoding="utf-8")
     reply_path = base / bot_relay.REPLIES_DIR / f"{legacy['id']}.json"
@@ -752,31 +752,31 @@ def test_delivery_env_carries_only_the_given_author(monkeypatch):
     assert TURN_AUTHOR_ENV not in bot_relay.delivery_env(None)
     env = bot_relay.delivery_env(bot_relay.delivery_turn_author("ops", "ops"))
     assert json.loads(env[TURN_AUTHOR_ENV]) == {"id": "bot:ops", "name": "ops", "is_bot": True}
-    assert env["HERMES_RELAY_TEST_MARKER"] == "kept"
-    assert "HERMES_SESSION_KEY" not in env
-    assert "HERMES_UI_SESSION_ID" not in env
-    assert "HERMES_SESSION_ID" not in env
-    assert "HERMES_SESSION_PROFILE" not in env
-    assert env["HERMES_SESSION_STALL_TIMEOUT"] == "97"
+    assert env["MOOR_RELAY_TEST_MARKER"] == "kept"
+    assert "MOOR_SESSION_KEY" not in env
+    assert "MOOR_UI_SESSION_ID" not in env
+    assert "MOOR_SESSION_ID" not in env
+    assert "MOOR_SESSION_PROFILE" not in env
+    assert env["MOOR_SESSION_STALL_TIMEOUT"] == "97"
 
 
 def test_delivery_env_under_multiplex_names_the_pinned_launch_home(tmp_path, monkeypatch):
     """A relayed DM into the launch profile spawns with the launch home and its secrets, even after a
-    host mirrors another home into HERMES_HOME; a bound scope or home override still wins."""
+    host mirrors another home into MOOR_HOME; a bound scope or home override still wins."""
     from agent.secret_scope import reset_secret_scope, set_multiplex_active, set_secret_scope
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     launch, mirrored = tmp_path / "launch", tmp_path / "mirrored"
     launch.mkdir()
     mirrored.mkdir()
     (launch / ".env").write_text("OPENROUTER_API_KEY=sk-launch\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     set_multiplex_active(True)  # pins the launch home
-    monkeypatch.setenv("HERMES_HOME", str(mirrored))
+    monkeypatch.setenv("MOOR_HOME", str(mirrored))
 
     env = bot_relay.delivery_env(None, None)
-    assert env["HERMES_HOME"] == str(launch)
+    assert env["MOOR_HOME"] == str(launch)
     assert env["OPENROUTER_API_KEY"] == "sk-launch"
 
     token = set_secret_scope({"OPENROUTER_API_KEY": "sk-bound"})
@@ -786,18 +786,18 @@ def test_delivery_env_under_multiplex_names_the_pinned_launch_home(tmp_path, mon
         reset_secret_scope(token)
 
     (mirrored / ".env").write_text("OPENROUTER_API_KEY=sk-override\n", encoding="utf-8")
-    home_token = set_hermes_home_override(str(mirrored))
+    home_token = set_moor_home_override(str(mirrored))
     try:
         env = bot_relay.delivery_env(None, None)
-        assert (env["HERMES_HOME"], env["OPENROUTER_API_KEY"]) == (str(mirrored), "sk-override")
+        assert (env["MOOR_HOME"], env["OPENROUTER_API_KEY"]) == (str(mirrored), "sk-override")
     finally:
-        reset_hermes_home_override(home_token)
+        reset_moor_home_override(home_token)
 
 
 def test_delivery_env_single_profile_host_passes_the_process_env_through(tmp_path, monkeypatch):
     """Without multiplex nothing is pinned or overlaid: the child sees the process env as before."""
     (tmp_path / ".env").write_text("OPENROUTER_API_KEY=from-dotenv\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setenv("OPENROUTER_API_KEY", "from-shell")
 
     assert bot_relay.delivery_env(None, None)["OPENROUTER_API_KEY"] == "from-shell"

@@ -36,7 +36,7 @@ _FAST_SELECTIONS = {
 def _fast_route_supports(model: str, runtime: dict, tier: Optional[str] = None) -> bool:
     """The turn's own gate (``run_turn.py::_resolve_turn_agent_config``): a tier /fast accepts must be
     one the session's next request actually carries, so proxies and other providers are refused."""
-    from hermes_cli.models import resolve_fast_mode_overrides
+    from moor_cli.models import resolve_fast_mode_overrides
 
     return resolve_fast_mode_overrides(
         model, provider=runtime.get("provider"), base_url=runtime.get("base_url"), tier=tier) is not None
@@ -311,7 +311,7 @@ class GatewayModelCommandsMixin:
             t("gateway.model.switched", model=format_model_for_display(result.new_model)),
             t("gateway.model.provider_label", provider=result.provider_label or result.target_provider),
         ]
-        # Provider-aware chain: Codex OAuth, Nous and profile live-catalog caps win over the raw models.dev entry.
+        # Provider-aware chain: Codex OAuth, Moor and profile live-catalog caps win over the raw models.dev entry.
         mi = result.model_info
         model_cfg: dict = {}
         config_ctx = None
@@ -394,8 +394,8 @@ class GatewayModelCommandsMixin:
     def _record_switch_metrics(self, result, ctx: _ModelSwitchContext, source) -> None:
         """Slash dispatch does not install the routed profile's scope, so a multiplexed runner binds
         the owning home for the switch row and its switch_away friction."""
-        from hermes_cli.observability.shared_metrics_events import record_model_switch
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_cli.observability.shared_metrics_events import record_model_switch
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         home = None
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
@@ -404,14 +404,14 @@ class GatewayModelCommandsMixin:
         session_id = None
         with contextlib.suppress(Exception):
             session_id = getattr(self._cached_agent_for(ctx.session_key), "session_id", None)
-        token = set_hermes_home_override(str(home)) if home else None
+        token = set_moor_home_override(str(home)) if home else None
         try:
             record_model_switch(
                 from_provider=ctx.route_provider, to_provider=result.target_provider, surface="gateway",
                 from_model=ctx.current_model, session_id=session_id)
         finally:
             if token is not None:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
 
     async def _commit_model_switch_locked(self, result, ctx: _ModelSwitchContext, *, source, picker: bool) -> str:
         one_turn = False if picker else ctx.one_turn
@@ -423,7 +423,7 @@ class GatewayModelCommandsMixin:
             # only commit, landing at the next turn boundary (this command is the running turn).
             if one_turn:
                 return t("gateway.model.error_prefix", error=t("gateway.model.err_once_local"))
-            from hermes_constants import parse_reasoning_effort
+            from moor_constants import parse_reasoning_effort
             effort = (ctx.reasoning_effort or "").strip().lower()
             level = effort if parse_reasoning_effort(effort) is not None else ""
             await asyncio.to_thread(defer_local_model_pick, authority, live, result, level)
@@ -668,7 +668,7 @@ class GatewayModelCommandsMixin:
         shown = default_model or t("gateway.shared.unknown_value")
         if previous is None:
             return t("gateway.model.reset_none", model=shown)
-        from hermes_cli.model_switch import format_model_for_display
+        from moor_cli.model_switch import format_model_for_display
         _sess_db = getattr(self, "_session_db", None)
         if _sess_db is not None:  # the dashboard's session-model column (#34850)
             try:
@@ -695,7 +695,7 @@ class GatewayModelCommandsMixin:
         Runs as the adapter's post-delivery callback, so the offer always lands under the reply (the reply
         is sent after this turn returns). The tap switches this session only (never the default) and
         re-sends the refused message, like /retry. No credits button in a chat: anyone in the room could
-        spend the owner's credits, so the Portal is named instead. Hermes never switches on its own."""
+        spend the owner's credits, so the Portal is named instead. Moor never switches on its own."""
         try:
             adapter = self._delivery_adapter_for(event.source) if event.source is not None else None
             register = getattr(adapter, "register_post_delivery_callback", None)
@@ -749,21 +749,21 @@ class GatewayModelCommandsMixin:
 
     async def _accept_usage_limit_switch(self, event: MessageEvent, model_id: str, *,
                                          offer: Optional[tuple[str, int]] = None) -> str:
-        """The tap: switch this session to *model_id* on Nous, then re-send the refused message.
+        """The tap: switch this session to *model_id* on Moor, then re-send the refused message.
         ``offer`` is the refused turn's ``(session_key, run_generation)``."""
-        from gateway.run import _hermes_home
+        from gateway.run import _moor_home
         source = await asyncio.to_thread(self._normalize_source_for_session_key, event.source)
         session_key = self._session_key_for_source(source)
         profile_home = None
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
             profile_home = self._resolve_profile_home_for_source(event.source)
         ctx = _ModelSwitchContext(session_key=session_key, source=source,
-                                  config_path=(profile_home or _hermes_home) / "config.yaml", persist_global=False)
+                                  config_path=(profile_home or _moor_home) / "config.yaml", persist_global=False)
 
         async def _switch() -> str:
             ctx.read_config()
             ctx.apply_override(self._session_model_overrides.get(session_key, {}))
-            result, error = await self._perform_model_switch(ctx, model_id, "nous", event.source)
+            result, error = await self._perform_model_switch(ctx, model_id, "moor", event.source)
             if error is not None:
                 return error
             return await self._commit_model_switch(result, ctx, source=event.source, picker=True)
@@ -776,7 +776,7 @@ class GatewayModelCommandsMixin:
             with _profile_runtime_scope(profile_home):
                 reply = await _switch()
         after = self._session_model_overrides.get(session_key)
-        switched = after is not None and after is not before and after.get("provider") == "nous"
+        switched = after is not None and after is not before and after.get("provider") == "moor"
         if switched:
             # Only after the switch landed (an error reply leaves the override unchanged). Exactly a typed /retry from the same sender (rewinds the refused turn, runs the message
             # again, and the adapter delivers the reply). Called directly, the re-run's reply would be
@@ -972,7 +972,7 @@ class GatewayModelCommandsMixin:
         # clamps is shown as "ultra (sends max on this route)" instead of a distinct level (#61634).
         from agent.reasoning_effort import effort_display_label
         from gateway.run import _load_gateway_config
-        from hermes_cli.codex_runtime_switch import get_current_runtime
+        from moor_cli.codex_runtime_switch import get_current_runtime
         _session_route = ((getattr(self, "_session_model_overrides", {}) or {}).get(session_key) or {})
         _model_cfg = {}
         with contextlib.suppress(Exception):  # fail-open on config read errors, like /model does

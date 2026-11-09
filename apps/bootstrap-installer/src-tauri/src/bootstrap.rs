@@ -222,7 +222,7 @@ pub(crate) fn resolve_moor_desktop_exe(install_root: &std::path::Path) -> Option
     } else {
         // electron-builder names the x64 dir `linux-unpacked` and every other
         // arch `linux-<arch>-unpacked` (#94703).
-        &[("linux-unpacked", "hermes"), ("linux-arm64-unpacked", "hermes")]
+        &[("linux-unpacked", "moor"), ("linux-arm64-unpacked", "moor")]
     };
     for (subdir, exe) in candidates {
         let p = release_dir.join(subdir).join(exe);
@@ -310,7 +310,7 @@ fn resolve_marker_commit(install_root: &Path, pin: &Pin, marker_path: &Path) -> 
 }
 
 /// UTC ISO-8601 with milliseconds, the `completedAt` format install.ps1,
-/// Electron (`toISOString`) and hermes_cli/source_stamp.py all write.
+/// Electron (`toISOString`) and moor_cli/source_stamp.py all write.
 fn iso8601_utc(since_epoch: std::time::Duration) -> String {
     let secs = since_epoch.as_secs();
     let (days, rem) = ((secs / 86_400) as i64, secs % 86_400);
@@ -1189,14 +1189,14 @@ mod tests {
     // x64 uses the bare `linux-unpacked` name (#94703).
     #[cfg(target_os = "linux")]
     #[test]
-    fn resolve_hermes_desktop_exe_finds_arm64_linux_build() {
+    fn resolve_moor_desktop_exe_finds_arm64_linux_build() {
         let root = unique_tmp_dir("app-linux-arm64");
         let dir = root.join("apps/desktop/release/linux-arm64-unpacked");
         std::fs::create_dir_all(&dir).unwrap();
-        let exe = dir.join("hermes");
+        let exe = dir.join("moor");
         std::fs::write(&exe, b"stub").unwrap();
 
-        assert_eq!(resolve_hermes_desktop_exe(&root), Some(exe));
+        assert_eq!(resolve_moor_desktop_exe(&root), Some(exe));
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -1272,7 +1272,7 @@ mod tests {
         let receipt = format!(
             "\u{feff}{{\"schemaVersion\":1,\"pinnedCommit\":\"{head}\",\"pinnedBranch\":\"main\",\"completedAt\":\"2026-01-01T00:00:00.000Z\"}}"
         );
-        std::fs::write(root.join(".hermes-bootstrap-complete"), receipt).unwrap();
+        std::fs::write(root.join(".moor-bootstrap-complete"), receipt).unwrap();
         let marker = write_bootstrap_complete_marker(&root, &pin).unwrap();
         assert_eq!(marker["pinnedCommit"], head);
         let _ = std::fs::remove_dir_all(&root);

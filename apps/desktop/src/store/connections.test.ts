@@ -684,7 +684,7 @@ describe('selectConnection', () => {
     })
 
     // A later resync republishes a profile-less primary descriptor (the
-    // startHermes shape). The remembered pair is the authority for "what was
+    // startMoor shape). The remembered pair is the authority for "what was
     // last used here" — picking away and back must still restore 'mac', and
     // the pick must not die in targetIsActive() on the descriptor gap.
     await selectConnection('homelab')

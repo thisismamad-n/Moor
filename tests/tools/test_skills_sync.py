@@ -531,10 +531,10 @@ class TestDroppedBuiltinProvenance:
             return sync_skills(quiet=True)
 
     def test_catalog_drop_keeps_builtin_provenance_while_a_copy_exists(self, tmp_path):
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
         from tools.skill_usage import provenance
 
-        skills = get_hermes_home() / "skills"
+        skills = get_moor_home() / "skills"
         self._sync(self._bundled(tmp_path, "kept", "dropped", "dropped-archived", "dropped-deleted"))
         (skills / ".archive").mkdir()
         shutil.move(str(skills / "cat" / "dropped-archived"), str(skills / ".archive" / "dropped-archived"))
@@ -548,10 +548,10 @@ class TestDroppedBuiltinProvenance:
 
     def test_suppressed_builtin_is_not_agent_authored_after_manifest_cleanup(self, tmp_path):
         """Profiles an older sync already cleaned: the curator suppression list only records built-ins."""
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
         from tools.skill_usage import provenance
 
-        skills = get_hermes_home() / "skills"
+        skills = get_moor_home() / "skills"
         (skills / "resurrected").mkdir(parents=True)
         (skills / "resurrected" / "SKILL.md").write_text("---\nname: resurrected\n---\n")
         (skills / ".curator_suppressed").write_text("resurrected\n")

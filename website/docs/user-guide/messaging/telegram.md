@@ -658,7 +658,7 @@ A bot that reads every group message can answer exactly `[SILENT]` (or another [
 
 A message still gets the notice while the bot's own identity is unknown, or when it replies to a message whose author is unknown or that was posted as a chat (a linked channel's post, an anonymous admin). A voice note, video note or audio file without a caption also gets the notice, because its words are not in the message text. A forum topic's root message is not a reply to another member.
 
-### Multiple Hermes bots in one group
+### Multiple Moor bots in one group
 
 If you run several Moor profiles in the same Telegram group, create one Telegram bot token per profile and start one gateway per profile. Do not reuse the same bot token in multiple running gateways; Telegram will reject concurrent polling for the same token.
 
@@ -919,7 +919,7 @@ Every topic gets its own conversation history, model state, tool execution, and 
 
 ### Messages sent in the root DM
 
-Some Telegram clients deliver a message typed in the root DM (General / **All Messages**) without a `message_thread_id`. By default Hermes treats such a message as a continuation and answers it in your **most recently active topic** (lobby recovery).
+Some Telegram clients deliver a message typed in the root DM (General / **All Messages**) without a `message_thread_id`. By default Moor treats such a message as a continuation and answers it in your **most recently active topic** (lobby recovery).
 
 To get a fresh session for every root-DM message instead, turn on `dm_topic_auto_transfer`:
 
@@ -931,7 +931,7 @@ gateway:
         dm_topic_auto_transfer: true   # default: false
 ```
 
-With it on, a plain message in the root DM makes Hermes create a new topic (named "Hermes Chat" until the auto-title renames it), start a new session there, and post the reply inside that topic. Slash commands typed in the root DM stay lobby commands and never create a topic. If creating the topic fails (for example Threaded Mode was switched off in BotFather), Hermes falls back to the default behaviour and answers in your most recently active topic. The key only matters while `/topic` mode is on. The top-level `telegram.extra.dm_topic_auto_transfer` key (shown in Desktop Settings) works too.
+With it on, a plain message in the root DM makes Moor create a new topic (named "Moor Chat" until the auto-title renames it), start a new session there, and post the reply inside that topic. Slash commands typed in the root DM stay lobby commands and never create a topic. If creating the topic fails (for example Threaded Mode was switched off in BotFather), Moor falls back to the default behaviour and answers in your most recently active topic. The key only matters while `/topic` mode is on. The top-level `telegram.extra.dm_topic_auto_transfer` key (shown in Desktop Settings) works too.
 
 ### Auto-renamed topics
 
@@ -1436,7 +1436,7 @@ When the agent calls the `clarify` tool — to ask which approach you prefer, ge
 
 Tap a button to answer, or tap **Other** to type a free-form response (the next message you send becomes the answer). Open-ended `clarify` calls (no preset choices) skip the buttons and just capture your next message.
 
-Configure the response timeout via `agent.clarify_timeout` in `~/.hermes/config.yaml` (default `3600` seconds). If you don't respond within the timeout, the agent unblocks with `"outcome": "timed_out"` and adapts rather than hanging. Reply `skip` to skip a question.
+Configure the response timeout via `agent.clarify_timeout` in `~/.moor/config.yaml` (default `3600` seconds). If you don't respond within the timeout, the agent unblocks with `"outcome": "timed_out"` and adapts rather than hanging. Reply `skip` to skip a question.
 
 If Telegram cannot render the button card (the Bot API rejects it, or the send fails after its 15-second acknowledgement window), Moor re-asks the same question as a plain numbered-list message and your typed reply (a number or the option text) is taken as the answer. When even that cannot be delivered, the agent is released at once with `[clarify prompt could not be delivered]` instead of waiting out the timeout and mistaking the silence for you not answering.
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.desktop_plugin_halves import reconcile_desktop_halves, reconcile_desktop_halves_report
+from moor_cli.desktop_plugin_halves import reconcile_desktop_halves, reconcile_desktop_halves_report
 
 pytestmark = pytest.mark.platforms("posix")
 
@@ -23,7 +23,7 @@ def _package(folder: Path, outside: Path, link: str = "leak.txt") -> None:
 # A root-layout half skips .git/__pycache__ when it copies and checks; a desktop/ folder copies them, so it checks them.
 @pytest.mark.parametrize("link", ["leak.txt", "__pycache__/leak.txt"])
 def test_an_installed_package_whose_desktop_folder_holds_a_link_is_not_published(tmp_path, link):
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     secret = tmp_path / "secret.txt"
     secret.write_text("host secret", encoding="utf-8")
     _package(root / "plugins" / "media", secret, link)
@@ -35,7 +35,7 @@ def test_an_installed_package_whose_desktop_folder_holds_a_link_is_not_published
 
 
 def test_a_linked_dev_checkout_still_publishes_its_desktop_folder(tmp_path):
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     asset = tmp_path / "asset.txt"
     asset.write_text("checkout file", encoding="utf-8")
     checkout = tmp_path / "src" / "media"

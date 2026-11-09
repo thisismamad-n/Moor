@@ -377,7 +377,7 @@ class TestBomHandling:
         target = tmp_path / "prompt.sh"
         original = (b'set_title() { printf "\x1b]0;%s\x07" "$1"; }\n'
                     b'beep() { printf "\x07"; }\n'
-                    b'SENTINEL = "__HERMES_FENCE_a9f7b3__\x07"  # marker text is file content too\n'
+                    b'SENTINEL = "__MOOR_FENCE_a9f7b3__\x07"  # marker text is file content too\n'
                     b'VERSION=1\n')
         target.write_bytes(original)
         patch = (
@@ -432,7 +432,7 @@ class TestBomHandling:
         # lands at the head of the file. Remote backends announce things on connect, so the local
         # native fast path is off here and the base64 transport is what runs.
         from tools.file_operations import ShellFileOperations
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")
 
         target = tmp_path / "conf.txt"
         original = b"HEADER\nVERSION=1\n"
@@ -449,7 +449,7 @@ class TestBomHandling:
         # file is editable at all and what a refusal reports about it. The sample must be the file's
         # own leading bytes, not the backend's banner decoded into them.
         from tools.file_operations import ShellFileOperations
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")
 
         target = tmp_path / "head.bin"
         original = b"\x00\x01\x02binary payload\n"
@@ -477,7 +477,7 @@ class TestBomHandling:
         # base64 is not on every backend. The sample path already degrades when it is missing
         # (_detect_binary), so the byte-exact read must too, and byte-exactly.
         from tools.file_operations import ShellFileOperations
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")
         target = tmp_path / "conf.txt"
         original = b"HEADER\nVERSION=1\n"
         target.write_bytes(original)
@@ -493,7 +493,7 @@ class TestBomHandling:
         # transport at all makes that read FAIL, which must not read as "the path is free" —
         # that writes the Add payload over the file the check exists to protect.
         from tools.file_operations import ShellFileOperations
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")
         target = tmp_path / "KEEP.txt"
         precious = b"KEEP ME\n"
         target.write_bytes(precious)
@@ -510,7 +510,7 @@ class TestBomHandling:
         # Validation must keep "the read failed" apart from "the path is absent" for a Move
         # destination too, and the apply must re-check it before `mv` replaces whatever is there.
         from tools.file_operations import ShellFileOperations
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")
         dst = tmp_path / "dst.txt"
         dst.write_bytes(b"PRECIOUS DESTINATION\n")
         ops = ShellFileOperations(self._env_without("base64", "od")(cwd=str(tmp_path)), cwd=str(tmp_path))
@@ -531,7 +531,7 @@ class TestBomHandling:
         # hook firing for the transport command alone puts text inside the payload that still
         # decodes ("TERM" is b"LDL"; "4c 44" is hex). Such a read must fail, and no edit may write.
         from tools.file_operations import ShellFileOperations
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")
         hook = tmp_path / "hook.sh"
         hook.write_text(f"trap '[[ $BASH_COMMAND == {transport}* ]] && echo \"{noise}\"' DEBUG\n")
         target = tmp_path / "conf.txt"
@@ -597,7 +597,7 @@ class TestBomHandling:
         from tools.environments.local import LocalEnvironment
         if not shutil.which("bash"):
             pytest.skip("bash not installed")
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")
         hook = tmp_path / "xtrace.sh"
         hook.write_text("set -x\n")
         target = tmp_path / "conf.txt"

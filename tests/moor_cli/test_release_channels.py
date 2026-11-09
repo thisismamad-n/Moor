@@ -32,7 +32,7 @@ def seed_manifest(pub, request, objects):
 
 
 def test_resolve_verifies_exact_manifest_and_preserves_retirement_constraints():
-    from hermes_cli.release_channels import ChannelReader, ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelReader, ChannelError, canonical_json
     with object_server() as (url, objects, _headers, _requests, _faults):
         pub = publisher(url)
         for name in ("old-preview", "next-preview"):
@@ -75,7 +75,7 @@ def test_names_are_validated_without_normalizing(name):
 def test_update_reads_retry_transient_http_and_honor_retry_after(monkeypatch):
     from email.message import Message
     from urllib.error import HTTPError
-    from hermes_cli.release_channels import ChannelReader, retrying_reads
+    from moor_cli.release_channels import ChannelReader, retrying_reads
 
     url = "http://127.0.0.1:12345/releases/fixture.json"
     headers = Message()
@@ -116,7 +116,7 @@ def test_passive_reads_and_missing_objects_make_one_attempt(monkeypatch):
     import errno
     from email.message import Message
     from urllib.error import HTTPError, URLError
-    from hermes_cli.release_channels import ChannelError, ChannelNotFound, ChannelReader, retrying_reads
+    from moor_cli.release_channels import ChannelError, ChannelNotFound, ChannelReader, retrying_reads
 
     waits = []
     monkeypatch.setattr("pm.network.time.sleep", waits.append)
@@ -150,7 +150,7 @@ def test_cdn_firewall_403_names_the_network_not_the_install(base, headers, block
     """#128295: a Cloudflare block that never reached our bucket must not read as a bare HTTP 403."""
     from email.message import Message
     from urllib.error import HTTPError
-    from hermes_cli.release_channels import ChannelError, ChannelReader
+    from moor_cli.release_channels import ChannelError, ChannelReader
 
     hdrs = Message()
     for key, value in headers.items():
@@ -166,7 +166,7 @@ def test_cdn_firewall_403_names_the_network_not_the_install(base, headers, block
 
 
 def test_reader_rejects_cycles_identity_substitution_and_cross_authority():
-    from hermes_cli.release_channels import ChannelReader, ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelReader, ChannelError, canonical_json
     with object_server() as (url, objects, _headers, _requests, _faults):
         pub = publisher(url)
         pub.create("alpha")
@@ -195,7 +195,7 @@ def test_reader_rejects_cycles_identity_substitution_and_cross_authority():
 
 
 def test_legacy_bootstrap_uses_real_archive_keys_and_source_main_has_no_bundle():
-    from hermes_cli.release_channels import canonical_json, ChannelError
+    from moor_cli.release_channels import canonical_json, ChannelError
     with object_server() as (url, objects, _headers, _requests, _faults):
         pub = publisher(url, verify_build=lambda request, manifest: True)
         preview = pub.create("temporary")
@@ -247,7 +247,7 @@ def test_sequence_exhaustion_never_wraps(sequence):
 
 
 def test_malformed_record_and_unqualified_retirement_never_resolve():
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelError, canonical_json
     with object_server() as (url, objects, _headers, _requests, _faults):
         pub = publisher(url)
         pub.create("preview")

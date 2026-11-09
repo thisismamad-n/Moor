@@ -58,7 +58,7 @@ def _git(repo_root: Path, *args: str, timeout: int) -> subprocess.CompletedProce
     :func:`noninteractive_repo_git_env` (GHSA-7x36-8jrh-v4pw): the dispatcher runs ``worktree add``
     unattended, which executes the repo's hooks, ``core.fsmonitor`` and smudge filters.
     """
-    from hermes_cli._subprocess_compat import FILTER_DISCOVERY_FAILED, noninteractive_repo_git_env
+    from moor_cli._subprocess_compat import FILTER_DISCOVERY_FAILED, noninteractive_repo_git_env
     env = noninteractive_repo_git_env(repo_root)
     if env is None:
         return subprocess.CompletedProcess(["git", "-C", str(repo_root), *args], 1, "", FILTER_DISCOVERY_FAILED)
@@ -123,12 +123,12 @@ def _conn_uses_path(
 def _sibling_board_db_files(conn: sqlite3.Connection) -> list[Path]:
     """Every other board's ``kanban.db``. Raises ``OSError`` when the set is unknown.
 
-    ``kanban_db_path`` follows ``HERMES_KANBAN_DB`` and would collapse every
+    ``kanban_db_path`` follows ``MOOR_KANBAN_DB`` and would collapse every
     slug onto the pinned file, so the scan uses the on-disk layout: the
     default board at ``<home>/kanban.db`` and named boards at
     ``<home>/kanban/boards/<slug>/kanban.db``.
     """
-    from hermes_cli.kanban_db_connect import _main_db_file  # late: import cycle
+    from moor_cli.kanban_db_connect import _main_db_file  # late: import cycle
 
     current_file = _main_db_file(conn)
     current = Path(current_file).resolve() if current_file else None
@@ -291,7 +291,7 @@ def _managed_scratch_path_info(p: Path) -> tuple[bool, Optional[str]]:
                 board,
             ))
 
-    override = os.environ.get("HERMES_KANBAN_WORKSPACES_ROOT", "").strip()
+    override = os.environ.get("MOOR_KANBAN_WORKSPACES_ROOT", "").strip()
     if override:
         override_root = Path(override).expanduser()
         with contextlib.suppress(OSError):
@@ -840,4 +840,4 @@ def set_branch_name(conn: sqlite3.Connection, task_id: str, branch_name: str) ->
 
 # Late-bound origin namespace (see module docstring); imported LAST so this
 # module is fully populated before ``kanban_db`` imports from it.
-from hermes_cli import kanban_db as _kb
+from moor_cli import kanban_db as _kb

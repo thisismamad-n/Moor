@@ -14,22 +14,22 @@ sidebar_position: 1
 
 | 提供商 | 配置方式 |
 |----------|-------|
-| **Nous Portal** | `hermes model`（OAuth，订阅制） |
-| **OpenAI Codex** | `hermes model` → **ChatGPT or Codex Subscription**（ChatGPT OAuth，使用 Codex 模型） |
-| **Anthropic** | `hermes model`（Claude Max + 额外用量积分，通过 OAuth；也支持 Anthropic API key 或手动 setup-token——见下方说明） |
-| **OpenRouter** | `~/.hermes/.env` 中的 `OPENROUTER_API_KEY` |
-| **NovitaAI** | `~/.hermes/.env` 中的 `NOVITA_API_KEY`（provider: `novita`，200+ 模型，Model API、Agent Sandbox、GPU Cloud） |
-| **AI Gateway** | `~/.hermes/.env` 中的 `AI_GATEWAY_API_KEY`（provider: `ai-gateway`） |
-| **z.ai / GLM** | `~/.hermes/.env` 中的 `GLM_API_KEY`（provider: `zai`） |
-| **Kimi / Moonshot** | `~/.hermes/.env` 中的 `KIMI_API_KEY`（provider: `kimi-coding`） |
-| **Kimi / Moonshot（中国）** | `~/.hermes/.env` 中的 `KIMI_CN_API_KEY`（provider: `kimi-coding-cn`；别名：`kimi-cn`、`moonshot-cn`） |
-| **Arcee AI** | `~/.hermes/.env` 中的 `ARCEEAI_API_KEY`（provider: `arcee`；别名：`arcee-ai`、`arceeai`） |
-| **GMI Cloud** | `~/.hermes/.env` 中的 `GMI_API_KEY`（provider: `gmi`；别名：`gmi-cloud`、`gmicloud`） |
-| **MiniMax** | `~/.hermes/.env` 中的 `MINIMAX_API_KEY`（provider: `minimax`） |
-| **MiniMax 中国** | `~/.hermes/.env` 中的 `MINIMAX_CN_API_KEY`（provider: `minimax-cn`） |
-| **xAI（Grok）— Responses API** | `~/.hermes/.env` 中的 `XAI_API_KEY`（provider: `xai`） |
-| **xAI Grok OAuth（SuperGrok）** | `hermes model` → "xAI Grok OAuth (SuperGrok / Premium+)"——浏览器登录，无需 API key。参见[指南](../guides/xai-grok-oauth.md) |
-| **Qwen Cloud（阿里 DashScope）** | `~/.hermes/.env` 中的 `DASHSCOPE_API_KEY`（provider: `alibaba`） |
+| **Moor Portal** | `moor model`（OAuth，订阅制） |
+| **OpenAI Codex** | `moor model` → **ChatGPT or Codex Subscription**（ChatGPT OAuth，使用 Codex 模型） |
+| **Anthropic** | `moor model`（Claude Max + 额外用量积分，通过 OAuth；也支持 Anthropic API key 或手动 setup-token——见下方说明） |
+| **OpenRouter** | `~/.moor/.env` 中的 `OPENROUTER_API_KEY` |
+| **NovitaAI** | `~/.moor/.env` 中的 `NOVITA_API_KEY`（provider: `novita`，200+ 模型，Model API、Agent Sandbox、GPU Cloud） |
+| **AI Gateway** | `~/.moor/.env` 中的 `AI_GATEWAY_API_KEY`（provider: `ai-gateway`） |
+| **z.ai / GLM** | `~/.moor/.env` 中的 `GLM_API_KEY`（provider: `zai`） |
+| **Kimi / Moonshot** | `~/.moor/.env` 中的 `KIMI_API_KEY`（provider: `kimi-coding`） |
+| **Kimi / Moonshot（中国）** | `~/.moor/.env` 中的 `KIMI_CN_API_KEY`（provider: `kimi-coding-cn`；别名：`kimi-cn`、`moonshot-cn`） |
+| **Arcee AI** | `~/.moor/.env` 中的 `ARCEEAI_API_KEY`（provider: `arcee`；别名：`arcee-ai`、`arceeai`） |
+| **GMI Cloud** | `~/.moor/.env` 中的 `GMI_API_KEY`（provider: `gmi`；别名：`gmi-cloud`、`gmicloud`） |
+| **MiniMax** | `~/.moor/.env` 中的 `MINIMAX_API_KEY`（provider: `minimax`） |
+| **MiniMax 中国** | `~/.moor/.env` 中的 `MINIMAX_CN_API_KEY`（provider: `minimax-cn`） |
+| **xAI（Grok）— Responses API** | `~/.moor/.env` 中的 `XAI_API_KEY`（provider: `xai`） |
+| **xAI Grok OAuth（SuperGrok）** | `moor model` → "xAI Grok OAuth (SuperGrok / Premium+)"——浏览器登录，无需 API key。参见[指南](../guides/xai-grok-oauth.md) |
+| **Qwen Cloud（阿里 DashScope）** | `~/.moor/.env` 中的 `DASHSCOPE_API_KEY`（provider: `alibaba`） |
 | **阿里云（Coding Plan）** | `DASHSCOPE_API_KEY`（provider: `alibaba-coding-plan`，别名：`alibaba_coding`）——独立计费 SKU，不同端点 |
 | **Kilo Code** | `~/.moor/.env` 中的 `KILOCODE_API_KEY`（provider: `kilocode`） |
 | **小米 MiMo** | `~/.moor/.env` 中的 `XIAOMI_API_KEY`（provider: `xiaomi`，别名：`mimo`、`xiaomi-mimo`） |
@@ -147,15 +147,15 @@ model:
 
 ### GitHub Copilot（labs 插件）
 
-GitHub Copilot 提供商（`copilot` 对应 Copilot API，`copilot-acp` 对应通过 ACP 驱动的 Copilot CLI）已不再内置于 Hermes，而是以 `github-copilot` **labs 插件**的形式发布——由 Nous Research 构建，但不提供支持：
+GitHub Copilot 提供商（`copilot` 对应 Copilot API，`copilot-acp` 对应通过 ACP 驱动的 Copilot CLI）已不再内置于 Moor，而是以 `github-copilot` **labs 插件**的形式发布——由 Moor inc. 构建，但不提供支持：
 
 ```bash
-hermes plugins install github-copilot
+moor plugins install github-copilot
 ```
 
-已在使用 `copilot` 或 `copilot-acp` 的 profile（主模型、回退、辅助任务、委托、MoA 或 cron）会在 `hermes update` 或下一次启动 agent 或网关时自动安装该插件。
+已在使用 `copilot` 或 `copilot-acp` 的 profile（主模型、回退、辅助任务、委托、MoA 或 cron）会在 `moor update` 或下一次启动 agent 或网关时自动安装该插件。
 
-使用 `hermes auth add copilot`（设备码登录）登录，或设置 `COPILOT_GITHUB_TOKEN`、`GH_TOKEN` 或 `GITHUB_TOKEN`。插件不再读取 `gh` CLI 或 Copilot CLI 的登录信息：如果你此前依赖它们，请运行 `hermes auth add copilot`。
+使用 `moor auth add copilot`（设备码登录）登录，或设置 `COPILOT_GITHUB_TOKEN`、`GH_TOKEN` 或 `GITHUB_TOKEN`。插件不再读取 `gh` CLI 或 Copilot CLI 的登录信息：如果你此前依赖它们，请运行 `moor auth add copilot`。
 
 安装、模型和环境变量说明：[github-copilot 插件文档](https://github.com/NousResearch/hermes-labs-plugins/tree/main/github-copilot)。
 
@@ -1037,7 +1037,7 @@ model:
 :::note 两个设置，容易混淆
 **`context_length`** 是**总上下文窗口**——输入和输出 token 的合计预算（例如 Claude Opus 4.6 为 200,000）。Moor 用它来决定何时压缩历史记录以及验证 API 请求。
 
-**输出上限**限制单次响应，而非对话历史。Hermes 不再读取 `model.max_tokens`、`HERMES_MAX_TOKENS` 或提供商及模型的输出上限设置。兼容端点使用服务器默认值；该值不一定是模型最大值。回复在流式输出中陷入重复循环时仍会被停止：循环（可见内容或推理内容）开始后约 130,000 个字符以内，Hermes 会关闭该流并以“Repetition Detected”提示结束本轮，因此没有输出上限的端点也不会让循环中的模型一直运行下去。原生 Anthropic Messages 仍要求 `max_tokens`，Hermes 会提供内部值。Bedrock Converse 的可选输出限制默认省略。
+**输出上限**限制单次响应，而非对话历史。Moor 不再读取 `model.max_tokens`、`MOOR_MAX_TOKENS` 或提供商及模型的输出上限设置。兼容端点使用服务器默认值；该值不一定是模型最大值。回复在流式输出中陷入重复循环时仍会被停止：循环（可见内容或推理内容）开始后约 130,000 个字符以内，Moor 会关闭该流并以“Repetition Detected”提示结束本轮，因此没有输出上限的端点也不会让循环中的模型一直运行下去。原生 Anthropic Messages 仍要求 `max_tokens`，Moor 会提供内部值。Bedrock Converse 的可选输出限制默认省略。
 
 当自动检测获取的窗口大小不正确时，设置 `context_length`。
 请删除旧的用户输出上限配置；内部任务预算与 MCP 采样安全预算保持不变。
@@ -1366,7 +1366,7 @@ fallback_model:
 
 激活时，故障转移在不丢失对话的情况下中途切换模型和提供商。链按条目逐一尝试；每个会话激活一次。
 
-支持的提供商：`openrouter`、`nous`、`openai-codex`、`anthropic`、`gemini`、`qwen-oauth`、`huggingface`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`deepseek`、`nvidia`、`xai`、`xai-oauth`、`ollama-cloud`、`bedrock`、`azure-foundry`、`opencode-zen`、`opencode-go`、`kilocode`、`xiaomi`、`arcee`、`gmi`、`stepfun`、`lmstudio`、`alibaba`、`alibaba-coding-plan`、`tencent-tokenhub`、`custom`。
+支持的提供商：`openrouter`、`moor`、`openai-codex`、`anthropic`、`gemini`、`qwen-oauth`、`huggingface`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`deepseek`、`nvidia`、`xai`、`xai-oauth`、`ollama-cloud`、`bedrock`、`azure-foundry`、`opencode-zen`、`opencode-go`、`kilocode`、`xiaomi`、`arcee`、`gmi`、`stepfun`、`lmstudio`、`alibaba`、`alibaba-coding-plan`、`tencent-tokenhub`、`custom`。
 
 :::tip
 故障转移仅通过 `config.yaml` 配置——或通过 `moor fallback` 交互式配置。有关触发时机、链推进方式以及与辅助任务和委托的交互，参见[故障转移提供商](../user-guide/features/fallback-providers.md)。

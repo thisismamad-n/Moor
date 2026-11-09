@@ -109,8 +109,8 @@ async def list_mcp_servers(profile: Optional[str] = None):
 
 @router.post("/api/mcp/servers")
 async def add_mcp_server(body: MCPServerCreate, profile: Optional[str] = None):
-    from hermes_cli.mcp_catalog import record_mcp_install
-    from hermes_cli.mcp_config import _get_mcp_servers, _save_bearer_auth_token, _save_mcp_server
+    from moor_cli.mcp_catalog import record_mcp_install
+    from moor_cli.mcp_config import _get_mcp_servers, _save_bearer_auth_token, _save_mcp_server
 
     try:
         name, server_config, bearer_token = _normalize_mcp_server_create(body)
@@ -438,7 +438,7 @@ def _catalog_entry_json(entry: Any, installed: bool, enabled: bool) -> dict[str,
 
 @router.get("/api/mcp/catalog")
 async def list_mcp_catalog(profile: Optional[str] = None):
-    """Browse the Nous-approved MCP catalog (optional-mcps/ manifests), each
+    """Browse the Moor-approved MCP catalog (optional-mcps/ manifests), each
     entry annotated with installed/enabled state for ``profile``."""
     with http_failure("mcp_catalog import failed", 500, "Catalog unavailable"):
         from moor_cli import mcp_catalog

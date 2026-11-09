@@ -350,7 +350,7 @@ describe("ChatPage", () => {
       </MemoryRouter>,
     );
     await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(1));
-    return container.querySelector(".hermes-chat-xterm-host")!;
+    return container.querySelector(".moor-chat-xterm-host")!;
   }
 
   function textPasteEvent(text: string) {

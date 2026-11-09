@@ -270,8 +270,8 @@ class TestPipeToShellNameCoverage:
         """End to end through check_all_command_guards: `curl | zsh` must reach the
         approval callback carrying the pipe description, not just the pattern scan."""
         from tools.approval import check_all_command_guards
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-        monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
+        monkeypatch.setenv("MOOR_INTERACTIVE", "1")
+        monkeypatch.delenv("MOOR_CRON_SESSION", raising=False)
         prompts = []
 
         def deny(*args, **kwargs):
@@ -830,7 +830,7 @@ class TestGatewayProtection:
     """Prevent agents from starting the gateway outside systemd management."""
 
     def test_gateway_run_backgrounded_detected(self):
-        cmd = "kill 1605 && cd ~/.hermes/hermes-agent && source venv/bin/activate && python -m hermes_cli.main gateway run --replace &disown; echo done"
+        cmd = "kill 1605 && cd ~/.moor/moor-agent && source venv/bin/activate && python -m moor_cli.main gateway run --replace &disown; echo done"
         dangerous, _key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "systemctl" in desc
@@ -843,7 +843,7 @@ class TestGatewayProtection:
 
     def test_systemctl_restart_flagged(self):
         """systemctl restart kills running agents and should require approval."""
-        cmd = "systemctl --user restart hermes-gateway"
+        cmd = "systemctl --user restart moor-gateway"
         dangerous, _key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "stop/restart" in desc

@@ -24,32 +24,32 @@ logger = logging.getLogger("moor_cli.auth")
 # ``refresh_token_reused``.
 # Profiles must never receive a copy: ONE grant lives at the global root and named profiles read
 # it through the ``read_credential_pool`` root fallback.
-SINGLE_USE_REFRESH_POOL_PROVIDERS = frozenset({"anthropic", "openai-codex", "xai-oauth", "nous"})
+SINGLE_USE_REFRESH_POOL_PROVIDERS = frozenset({"anthropic", "openai-codex", "xai-oauth", "moor"})
 
 # Singleton credential files holding the same single-use grants outside ``auth.json``. Copying one
 # into a profile re-seeds a forked pool row on the profile's next ``load_pool()``.
 SINGLE_USE_OAUTH_SINGLETON_FILES = (".anthropic_oauth.json",)
 
 # Providers whose device-code grants live under ``providers.<id>`` (not only the pool).
-# Only a block carrying a refresh token is a forkable grant: an agent_key-only ``nous`` block is
+# Only a block carrying a refresh token is a forkable grant: an agent_key-only ``moor`` block is
 # not single-use and must survive.
-_DEVICE_CODE_BLOCK_PROVIDERS = ("openai-codex", "xai-oauth", "nous")
+_DEVICE_CODE_BLOCK_PROVIDERS = ("openai-codex", "xai-oauth", "moor")
 
 
 def _block_tokens(block: dict[str, Any]) -> dict[str, Any]:
-    # Codex/xAI nest the pair under ``tokens``; Nous stores it flat on the block.
+    # Codex/xAI nest the pair under ``tokens``; Moor stores it flat on the block.
     tokens = block.get("tokens")
     return tokens if isinstance(tokens, dict) else block
 
 
 def _is_forkable_pool_row(provider_id: str, entry: Any) -> bool:
-    # An agent_key-only nous row carries no single-use refresh token: it is not a fork, and
-    # stripping it while its providers block survives lets the profile's next load_pool('nous')
+    # An agent_key-only moor row carries no single-use refresh token: it is not a fork, and
+    # stripping it while its providers block survives lets the profile's next load_pool('moor')
     # write that block over root's shared row. Same refresh_token gate the block strip uses.
     if not _is_oauth_pool_payload(entry):
         return False
     # Pool rows are flat (no ``tokens`` nesting), so read refresh_token directly.
-    return provider_id != "nous" or bool(str(entry.get("refresh_token") or "").strip())
+    return provider_id != "moor" or bool(str(entry.get("refresh_token") or "").strip())
 
 
 def _is_oauth_pool_payload(entry: Any) -> bool:
@@ -72,7 +72,7 @@ def merge_snapshot_auth_preserving_live_single_use_grants(
     lineage. Historical single-use refresh material with no live counterpart is dropped because
     there is no local evidence that it is still redeemable. Current live grants always survive.
     """
-    from hermes_cli.auth import _credential_token_pair, _merge_pool_row_generation
+    from moor_cli.auth import _credential_token_pair, _merge_pool_row_generation
 
     restored = copy.deepcopy(snapshot_store)
     snapshot_pool = restored.get("credential_pool")
@@ -205,7 +205,7 @@ def merge_snapshot_auth_preserving_live_single_use_grants(
     return restored
 
 def _is_pkce_row(row: dict[str, Any]) -> bool:
-    return str(row.get("source") or "").endswith("hermes_pkce")
+    return str(row.get("source") or "").endswith("moor_pkce")
 
 
 def strip_cloned_single_use_oauth_grants(profile_dir: Path) -> dict[str, Any]:
@@ -217,7 +217,7 @@ def strip_cloned_single_use_oauth_grants(profile_dir: Path) -> dict[str, Any]:
     "files": [...]}`` of what was stripped. Never raises: a clone must not fail because hygiene
     could not run — the caller logs the summary.
     """
-    from hermes_cli.auth import _same_path, _save_auth_store
+    from moor_cli.auth import _same_path, _save_auth_store
     stripped: dict[str, Any] = {"pool": [], "providers": [], "files": []}
     profile_dir = Path(profile_dir)
     for name in SINGLE_USE_OAUTH_SINGLETON_FILES:
@@ -567,7 +567,7 @@ def owned_profile_reads_root_state(
 
     Seeding that state re-copies root's single-use refresh token into the profile's pool, which
     is the fork #100339 forbids; the singleton seeders skip it."""
-    from hermes_cli.auth import _global_auth_file_path, _same_path
+    from moor_cli.auth import _global_auth_file_path, _same_path
     global_root = _global_auth_file_path()
     return bool(
         source_path is not None and global_root is not None and _same_path(source_path, global_root)
@@ -615,7 +615,7 @@ class _HealPass:
         kept_rows: list[Any] = []
         for row in self.p_rows:
             if not _is_forkable_pool_row(self.provider_id, row):
-                # API keys (and agent_key-only nous rows) are safe to duplicate
+                # API keys (and agent_key-only moor rows) are safe to duplicate
                 kept_rows.append(row)
                 continue
             match_idx = _find_root_counterpart(row, self.r_rows)
@@ -623,9 +623,9 @@ class _HealPass:
                 self.lineage_proven = True
                 self._adopt_root_row(match_idx, row)
             # No root pool counterpart. Root's grant may live only in its .anthropic_oauth.json
-            # (the ``hermes auth`` PKCE shape); a profile ``hermes_pkce`` row is its copy. Not
-            # ``manual:hermes_pkce``: that is an ``auth add`` login the pool owns, never a copy.
-            elif row.get("source") == "hermes_pkce" and self.root_singleton_row is not None and not self.r_oauth:
+            # (the ``moor auth`` PKCE shape); a profile ``moor_pkce`` row is its copy. Not
+            # ``manual:moor_pkce``: that is an ``auth add`` login the pool owns, never a copy.
+            elif row.get("source") == "moor_pkce" and self.root_singleton_row is not None and not self.r_oauth:
                 self._adopt_root_singleton(row)
             else:
                 # Root holds no copy of this lineage (independent account, or root never had the
@@ -723,7 +723,7 @@ class _HealPass:
 
 
 def _heal_forked_single_use_oauth_grants(provider_id: str) -> Optional[dict[str, Any]]:
-    from hermes_cli.auth import (
+    from moor_cli.auth import (
         _auth_file_path, _auth_store_lock, _global_auth_file_path, _load_auth_store,
         _is_same_auth_store, _oauth_heal_clean_marks, _oauth_heal_notices, _same_path,
         _save_auth_store)

@@ -23,8 +23,8 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import gateway_windows
-import hermes_cli.main as hm
+from moor_cli import gateway_windows
+import moor_cli.main as hm
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,7 @@ def _stub_post_relaunch_liveness(monkeypatch):
     )
     # The relaunch verifier polls every target in one loop through the same probe.
     monkeypatch.setattr(gateway_windows, "_live_gateway_pids", lambda *_a, **_kw: [4242])
-    monkeypatch.setattr("hermes_cli.update_cmd_windows._READY_CONFIRM_S", 0.0)
+    monkeypatch.setattr("moor_cli.update_cmd_windows._READY_CONFIRM_S", 0.0)
     monkeypatch.setattr(
         gateway_windows, "_write_start_attestation", lambda *_a, **_kw: None
     )
@@ -114,7 +114,7 @@ def test_service_readiness_filter_skips_vanished_gateways_but_never_swallows_bug
 
     import psutil
 
-    from hermes_cli import update_cmd_windows
+    from moor_cli import update_cmd_windows
 
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"], stdin=subprocess.DEVNULL)
     gone = subprocess.Popen([sys.executable, "-c", "pass"], stdin=subprocess.DEVNULL)

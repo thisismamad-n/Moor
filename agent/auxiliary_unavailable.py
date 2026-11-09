@@ -141,7 +141,7 @@ def pool_billing_message(
         if pool is not None:
             entries = list(pool.entries())
         else:
-            from hermes_cli.auth import read_credential_pool
+            from moor_cli.auth import read_credential_pool
 
             entries = [PooledCredential.from_dict(provider_id, e)
                        for e in read_credential_pool(provider_id) if isinstance(e, dict)]
@@ -173,7 +173,7 @@ def pool_billing_message(
     return (
         f"Provider '{provider_id}'{scope} is out of usable credentials: {which} exhausted"
         f"{code_text}. Add credits or update billing with that provider, then retry, or switch "
-        f"to a different provider with `hermes model`."
+        f"to a different provider with `moor model`."
     )
 
 
@@ -208,7 +208,7 @@ def missing_provider_credentials_message(provider_id: str) -> str:
         pconfig = PROVIDER_REGISTRY.get(provider_id)
     env_vars = tuple(getattr(pconfig, "api_key_env_vars", None) or ())
     problem, remedy = "no API key was found", ""
-    from hermes_cli.local_runtime.endpoint import LLAMACPP_ALIASES
+    from moor_cli.local_runtime.endpoint import LLAMACPP_ALIASES
     if provider_id in LLAMACPP_ALIASES:
         problem, remedy = "no local llama.cpp server is running", "Start it in Settings → Providers → Local models"
     elif env_vars:

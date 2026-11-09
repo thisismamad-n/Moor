@@ -10,11 +10,11 @@ from typing import Callable, Optional
 from moor_cli.cli_output import (
     print_info as _print_info, print_success as _print_success, print_warning as _print_warning, prompt as _prompt,
 )
-from hermes_cli.colors import Colors, color
-from hermes_cli.config import cfg_get, get_env_value, load_config, save_config, save_env_value
-from hermes_cli.nous_account import format_nous_portal_entitlement_message
-from hermes_cli.nous_subscription import MANAGED_FEATURE_COVERAGE_CATEGORY, NousSubscriptionFeatures
-from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, fal_key_is_configured
+from moor_cli.colors import Colors, color
+from moor_cli.config import cfg_get, get_env_value, load_config, save_config, save_env_value
+from moor_cli.moor_account import format_moor_portal_entitlement_message
+from moor_cli.moor_subscription import MANAGED_FEATURE_COVERAGE_CATEGORY, MoorSubscriptionFeatures
+from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, fal_key_is_configured
 from tools.transcription_common import STT_MODEL_CATALOG, STT_MODEL_CONFIG_KEY
 from utils import base_url_hostname, is_truthy_value
 
@@ -361,7 +361,7 @@ def _web_tier_matches(provider: dict, config: dict) -> bool:
 def _web_serving_backends(config: dict) -> set:
     """Backend names serving web search / extract as configured: each capability's own
     ``web.<cap>_backend`` override first, else the shared ``web.backend`` (``tools/web_tools.py``
-    dispatch order; legacy ``use_gateway: true`` reads as the managed ``nous`` selection).
+    dispatch order; legacy ``use_gateway: true`` reads as the managed ``moor`` selection).
     Lower-cased and stripped like the dispatchers."""
     raw_web_cfg = config.get("web")
     web_cfg = raw_web_cfg if isinstance(raw_web_cfg, dict) else {}
@@ -370,7 +370,7 @@ def _web_serving_backends(config: dict) -> set:
         value = web_cfg.get(key)
         return value.lower().strip() if isinstance(value, str) else ""
 
-    shared = NOUS_MANAGED_PROVIDER if is_truthy_value(web_cfg.get("use_gateway"), default=False) else _name("backend")
+    shared = MOOR_MANAGED_PROVIDER if is_truthy_value(web_cfg.get("use_gateway"), default=False) else _name("backend")
     serving = {_name(key) or shared for key in ("search_backend", "extract_backend")}
     serving.discard("")
     return serving
@@ -379,7 +379,7 @@ def _web_serving_backends(config: dict) -> set:
 def _web_backend_active(provider: dict, config: dict) -> bool:
     """True when a web row's ``web_backend`` serves either capability as configured: a vendor serving
     one capability through its override is in use even when the shared key names a different one,
-    and a shared vendor shadowed by both overrides serves nothing. Managed Nous rows never reach
+    and a shared vendor shadowed by both overrides serves nothing. Managed Moor rows never reach
     here — they answer in ``_managed_provider_active``."""
     backend = provider.get("web_backend")
     if not (backend and backend in _web_serving_backends(config) and _web_tier_matches(provider, config)):
@@ -388,7 +388,7 @@ def _web_backend_active(provider: dict, config: dict) -> bool:
     # the env var they configure, and the one whose var is set is what serves the call. A setup row needs its
     # var; the registry row also stays active keyless (explicit ``firecrawl`` with no key = anonymous cloud)
     # unless a sibling setup row's var is set instead.
-    from hermes_cli.tools_config import TOOL_CATEGORIES, _provider_env_ready
+    from moor_cli.tools_config import TOOL_CATEGORIES, _provider_env_ready
     if not provider.get("env_vars") or _provider_env_ready(provider):
         return True
     return bool(provider.get("web_search_plugin_name")) and not any(
@@ -427,16 +427,16 @@ def _managed_provider_active(provider: dict, config: dict, managed_feature: str,
                 and gen_cfg.get("use_gateway") is not None
                 and not is_truthy_value(gen_cfg.get("use_gateway"), default=False)):
                 return False
-        return feature.managed_by_nous
+        return feature.managed_by_moor
     if _has_marker(provider, "web_backend"):
         # Search and extract pick their route separately: the managed row serves whichever one
-        # resolves to the gateway (a ``nous`` override, or the shared ``nous`` selection).
-        return feature.managed_by_nous and NOUS_MANAGED_PROVIDER in _web_serving_backends(config)
+        # resolves to the gateway (a ``moor`` override, or the shared ``moor`` selection).
+        return feature.managed_by_moor and MOOR_MANAGED_PROVIDER in _web_serving_backends(config)
     for marker, section, key in _MANAGED_SELECTION_KEYS:
         if _has_marker(provider, marker):
             current = cfg_get(config, section, key)
-            return feature.managed_by_nous and current in {provider[marker], NOUS_MANAGED_PROVIDER}
-    return feature.managed_by_nous
+            return feature.managed_by_moor and current in {provider[marker], MOOR_MANAGED_PROVIDER}
+    return feature.managed_by_moor
 
 
 def _browser_provider_active(provider: dict, config: dict) -> bool:
@@ -664,11 +664,11 @@ _select_plugin_video_gen_provider = partial(_select_plugin_gen_provider, "video_
 
 def _configure_stt_model(stt_provider: str, config: dict) -> None:
     """Prompt for the STT model after a provider pick (static catalog, or DeepInfra's live one)."""
-    from hermes_cli.tools_config import _cfg_section, _prompt_choice
+    from moor_cli.tools_config import _cfg_section, _prompt_choice
 
     catalog = STT_MODEL_CATALOG.get(stt_provider)
     if catalog is None and stt_provider == "deepinfra":
-        from hermes_cli.models import deepinfra_model_ids
+        from moor_cli.models import deepinfra_model_ids
         catalog = deepinfra_model_ids("stt")
     if not catalog:
         return
@@ -714,7 +714,7 @@ def _write_provider_config(provider: dict, config: dict, *, managed_feature) -> 
         web_cfg = _select_into(config, "web", "backend", provider["web_backend"], managed_feature)
         if managed_feature:
             # A whole-toolset managed pick governs both capabilities: per-capability pins resolve FIRST,
-            # so a leftover one would keep outranking the "nous" selection just written.
+            # so a leftover one would keep outranking the "moor" selection just written.
             web_cfg.pop("search_backend", None)
             web_cfg.pop("extract_backend", None)
         tier = provider.get("web_tier")

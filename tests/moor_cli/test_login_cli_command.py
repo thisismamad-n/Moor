@@ -7,8 +7,8 @@ import pytest
 from rich.console import Console
 
 from agent.i18n import t
-from hermes_cli import anon_auth
-from hermes_cli import cli_commands_mixin as commands
+from moor_cli import anon_auth
+from moor_cli import cli_commands_mixin as commands
 
 class _Thread:
     def __init__(self, target):

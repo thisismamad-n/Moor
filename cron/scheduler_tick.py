@@ -32,7 +32,7 @@ def _log_tick_yield_once(reason: str) -> None:
 
 def tick(verbose=True, adapters=None, loop=None, sync=True, *, can_dispatch=None,
          headless: bool = False):
-    from hermes_cli.backend_retirement import retirement
+    from moor_cli.backend_retirement import retirement
 
     # Hold admission through the entire scan/advance/submit handoff. A predicate alone races
     # prepare after the check but before a due job enters the running-job ledger.
@@ -94,7 +94,7 @@ def _tick_admitted(
     headless: bool = False):
     """Check and run all due jobs. File-locked so only one tick runs at a time (gateway ticker vs
     standalone daemon / manual tick). ``can_dispatch``: optional gate; false leaves due jobs for the
-    next allowed tick. ``headless``: the tick runs outside any gateway (system crontab, ``hermes
+    next allowed tick. ``headless``: the tick runs outside any gateway (system crontab, ``moor
     cron tick``) and must refuse agent jobs rather than spawn one. Returns the number of jobs
     executed (0 if another tick holds the lock)."""
     from cron import scheduler as _sched
@@ -143,7 +143,7 @@ def _tick_admitted(
                 # load_config()). Still run the post-tick MCP orphan sweep: main intentionally sweeps on
                 # idle ticks so orphaned stdio children from crashed jobs are reaped even when nothing is
                 # due.
-                _sched.logger.info("%s - No jobs due", _sched._hermes_now().strftime('%H:%M:%S'))
+                _sched.logger.info("%s - No jobs due", _sched._moor_now().strftime('%H:%M:%S'))
             store_health.recheck_idle()
             _sched._sweep_mcp_orphans()
             return 0

@@ -39,7 +39,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # get_version_info() shells out to git 7 times (~0.55 s per process in a large local
 # clone; a whole local suite run spent ~48 CPU-minutes there). Seed the shape a shallow
 # CI checkout resolves to; tests of version resolution call _reset_version_info_cache().
-from hermes_cli import version_info as _version_info
+from moor_cli import version_info as _version_info
 
 _version_info._cached_version_info = _version_info.VersionInfo(
     "unknown", "git.0000000", None, "0" * 40, "main", "git")
@@ -118,13 +118,13 @@ def _moor_home_points_at_production(value: str) -> bool:
 # relocate even user-set temp directories inside a guarded home. Pin the
 # system default so the import-time hook stays a no-op. The parallel runner
 # exports its own disk-backed TMPDIR anyway.
-from hermes_constants import SCRATCH_DIR_MARKER_ENV, SCRATCH_TMP_ENV_VARS
-import hermes_constants
+from moor_constants import SCRATCH_DIR_MARKER_ENV, SCRATCH_TMP_ENV_VARS
+import moor_constants
 
 # The hourly scratch prune runs in a detached child process. An import-time boot hook during
 # collection must not start one: mark this process's once-per-process prune done. Tests that
-# reload hermes_constants reset that flag, so the per-test fixture below stubs the spawn itself.
-hermes_constants._scratch_pruned_once = True
+# reload moor_constants reset that flag, so the per-test fixture below stubs the spawn itself.
+moor_constants._scratch_pruned_once = True
 
 _MOOR_EXPORTED_TMP = os.environ.get(SCRATCH_DIR_MARKER_ENV, "")
 if _MOOR_EXPORTED_TMP:
@@ -250,7 +250,7 @@ if not HOST_LOCK_DIR_AT_CONFTEST_IMPORT:
 # conftest (that is the repo root), and pytest fails a run that loads a
 # non-root conftest carrying ``pytest_plugins`` after startup (e.g. ``pytest .``).
 # Fixtures imported here register exactly as if they were defined here.
-from tests._fixtures.env_filter import _HERMES_BEHAVIORAL_VARS, _looks_like_credential
+from tests._fixtures.env_filter import _MOOR_BEHAVIORAL_VARS, _looks_like_credential
 from tests._fixtures.live_system_guard import (
     _GATEWAY_LOOKALIKE_MARK,
     _LIVE_SYSTEM_GUARD_BYPASS_MARK,
@@ -316,15 +316,15 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
         monkeypatch.setattr(_hc, "_PINNED_PROCESS_MOOR_HOME", None, raising=False)
     except Exception:
         pass
-    # The install probe looks past HERMES_HOME (other roots, gateway services, the launcher on
+    # The install probe looks past MOOR_HOME (other roots, gateway services, the launcher on
     # PATH) and writes a marker at a fixed per-user path: confine it to this test's directory.
-    from hermes_cli import install_state
+    from moor_cli import install_state
 
     isolated_places = install_state.Places(markers=(tmp_path / "machine-marker",),
                                            sources=(install_state._active_root,))
     monkeypatch.setattr(install_state, "machine_places", lambda: isolated_places)
     install_state.probe.cache_clear()
-    from hermes_cli import onboarding_due
+    from moor_cli import onboarding_due
 
     onboarding_due.reset_for_tests()
     # Per-TEST host-rendezvous dir (see the session-level block at the top): the
@@ -336,11 +336,11 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
     # works (tests of the resolution rule itself rely on that).
     if not HOST_LOCK_DIR_AT_CONFTEST_IMPORT:
         monkeypatch.delenv("XDG_STATE_HOME", raising=False)
-        monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
+        monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
     # Relay normally discovers the user's XDG plugins.toml and merges the machine
     # policy above it. Select a per-test user file with a deny-by-default dynamic
     # plugin policy so ordinary tests do not activate ambient worker/native plugins,
-    # without changing XDG_CONFIG_HOME for unrelated Hermes code under test.
+    # without changing XDG_CONFIG_HOME for unrelated Moor code under test.
     # Outside tmp_path: tests that list or git-status their tmp dir must not see it.
     relay_plugins = tmp_path_factory.getbasetemp() / "relay-plugins.toml"
     if not relay_plugins.exists():
@@ -348,7 +348,7 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
             "version = 1\n\n[plugins.policy.defaults]\nallowed = false\n",
             encoding="utf-8",
         )
-    monkeypatch.setenv("HERMES_NEMO_RELAY_PLUGINS_TOML", str(relay_plugins))
+    monkeypatch.setenv("MOOR_NEMO_RELAY_PLUGINS_TOML", str(relay_plugins))
     # Keep the subprocess-surviving isolation marker pointed at THIS test's
     # home (#82770): children spawned by the test inherit it by default, so
     # moor_state's live-DB guard stays armed in them even when the test
@@ -382,7 +382,7 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
     if tui_server_mod is not None and hasattr(tui_server_mod, "_served_profile_homes"):
         monkeypatch.setattr(tui_server_mod, "_served_profile_homes", set())
     # A classic CLI's gateway-session toolset reader is process-global too (``_ensure_gateway_session``).
-    tools_config_mod = sys.modules.get("hermes_cli.tools_config")
+    tools_config_mod = sys.modules.get("moor_cli.tools_config")
     if tools_config_mod is not None and hasattr(tools_config_mod, "_gateway_plugin_toolsets"):
         monkeypatch.setattr(tools_config_mod, "_gateway_plugin_toolsets", None)
 
@@ -714,10 +714,10 @@ def scratch_prune_spawns(monkeypatch):
     """No test starts a real detached scratch prune (one would outlive the test, and get any
     Popen mock the test installed): ``spawn_prune`` only records the scratch dir it was given.
     A test that needs the real child runs a launcher in a subprocess."""
-    import hermes_constants_scratch_detach
+    import moor_constants_scratch_detach
 
     spawned: list = []
-    monkeypatch.setattr(hermes_constants_scratch_detach, "spawn_prune", spawned.append)
+    monkeypatch.setattr(moor_constants_scratch_detach, "spawn_prune", spawned.append)
     return spawned
 
 
@@ -1100,8 +1100,8 @@ def _remove_relocated_basetemp(config) -> None:
         shutil.rmtree(safe, ignore_errors=True)
 
 
-def _processes_with_hermes_home_under(roots) -> list[int]:
-    """PIDs (never this process) whose environment names a ``HERMES_HOME`` inside one of *roots*.
+def _processes_with_moor_home_under(roots) -> list[int]:
+    """PIDs (never this process) whose environment names a ``MOOR_HOME`` inside one of *roots*.
 
     Linux only (``/proc/<pid>/environ``; unreadable entries are another user's and skipped).
     Elsewhere the scan is empty: a test-spawned daemon there is the per-test guard's problem.
@@ -1118,7 +1118,7 @@ def _processes_with_hermes_home_under(roots) -> list[int]:
                 environ = handle.read().split(b"\0")
         except OSError:
             continue
-        home = next((item[12:] for item in environ if item.startswith(b"HERMES_HOME=")), None)
+        home = next((item[12:] for item in environ if item.startswith(b"MOOR_HOME=")), None)
         if not home:
             continue
         try:
@@ -1130,10 +1130,10 @@ def _processes_with_hermes_home_under(roots) -> list[int]:
     return found
 
 
-def _reap_session_hermes_processes(config) -> list[int]:
-    """SIGTERM every process still running against a Hermes home this session created.
+def _reap_session_moor_processes(config) -> list[int]:
+    """SIGTERM every process still running against a Moor home this session created.
 
-    Tests that run a real ``hermes chat -q`` child get a grandchild ``gateway run`` (detached, own
+    Tests that run a real ``moor chat -q`` child get a grandchild ``gateway run`` (detached, own
     session) that no per-test subprocess patch can see, and pytest's tmp cleanup removes only
     directories: each one used to outlive the run at ~250 MB. The session basetemp and the session
     sandbox home bound exactly what this run created, so nothing else is ever signalled.
@@ -1142,9 +1142,9 @@ def _reap_session_hermes_processes(config) -> list[int]:
 
     factory = getattr(config, "_tmp_path_factory", None)
     # The basetemp pytest already created (never create one at teardown just to scan it).
-    roots = [getattr(config, "_hermes_relocated_basetemp", None), os.environ.get("HERMES_TEST_SANDBOX_HOME"),
+    roots = [getattr(config, "_moor_relocated_basetemp", None), os.environ.get("MOOR_TEST_SANDBOX_HOME"),
              getattr(factory, "_basetemp", None)]
-    pids = _processes_with_hermes_home_under(roots)
+    pids = _processes_with_moor_home_under(roots)
     for pid in pids:
         try:
             os.kill(pid, signal.SIGTERM)
@@ -1188,7 +1188,7 @@ def require_mcp_2_sdk():
 
 
 def pytest_unconfigure(config):
-    _reap_session_hermes_processes(config)
+    _reap_session_moor_processes(config)
     _remove_relocated_basetemp(config)
 
 
@@ -1399,28 +1399,28 @@ def _audio_playback_guard(request, monkeypatch):
     yield
 
 
-# ── Live Nous services fence ─────────────────────────────────────────────────
-# A test home starts with no Nous identity, so any path that ends in a hosted
+# ── Live Moor services fence ─────────────────────────────────────────────────
+# A test home starts with no Moor identity, so any path that ends in a hosted
 # connector action (connect, rename, status, the tool's first call) mints a REAL
 # guest on the production Portal: up to GUEST_MINT_TIMEOUT_SECONDS per test,
 # red whenever the Portal is slow, and a new guest identity on production on
 # every CI run. The same holds for billing, plan limits, the dashboard OAuth
-# provider and every other client built on a Nous URL. Refusing the name lookup
+# provider and every other client built on a Moor URL. Refusing the name lookup
 # covers all of them at once (httpx, urllib, aiohttp and asyncio all resolve
 # through socket.getaddrinfo), and fails exactly like an offline host, which is
 # the path production already handles. Tests of these clients stub the
-# transport (tests/hermes_cli/anon_portal.py routes httpx at a fake Portal), so
+# transport (tests/moor_cli/anon_portal.py routes httpx at a fake Portal), so
 # they never reach the lookup. Live canaries opt in with ``@pytest.mark.live``.
-_NOUS_SERVICE_DOMAINS = ("nousresearch.com", "staging-nousresearch.com")
+_MOOR_SERVICE_DOMAINS = ("nousresearch.com", "staging-nousresearch.com")
 
 
-def _is_nous_service_host(host) -> bool:
+def _is_moor_service_host(host) -> bool:
     name = (host.decode() if isinstance(host, bytes) else str(host or "")).lower().rstrip(".")
-    return any(name == domain or name.endswith("." + domain) for domain in _NOUS_SERVICE_DOMAINS)
+    return any(name == domain or name.endswith("." + domain) for domain in _MOOR_SERVICE_DOMAINS)
 
 
 @pytest.fixture(autouse=True)
-def _no_live_nous_services(request, monkeypatch):
+def _no_live_moor_services(request, monkeypatch):
     if request.node.get_closest_marker("live"):
         return
     import socket
@@ -1428,11 +1428,11 @@ def _no_live_nous_services(request, monkeypatch):
     real_getaddrinfo = socket.getaddrinfo
 
     def fenced_getaddrinfo(host, *args, **kwargs):
-        if _is_nous_service_host(host):
+        if _is_moor_service_host(host):
             raise socket.gaierror(
                 socket.EAI_NONAME,
-                f"test fence: {host!r} is a live Nous service; stub the HTTP layer "
-                "(tests/hermes_cli/anon_portal.py) or mark the test live")
+                f"test fence: {host!r} is a live Moor service; stub the HTTP layer "
+                "(tests/moor_cli/anon_portal.py) or mark the test live")
         return real_getaddrinfo(host, *args, **kwargs)
 
     monkeypatch.setattr(socket, "getaddrinfo", fenced_getaddrinfo)
@@ -1567,11 +1567,11 @@ def _capture_real_moor_root() -> list[Path]:
     return roots
 
 
-_REAL_HERMES_ROOT_CANDIDATES = _capture_real_hermes_root()
+_REAL_MOOR_ROOT_CANDIDATES = _capture_real_moor_root()
 # Captured before any test can patch sys.platform, HOME or XDG_*: a test that runs the real
-# GUI uninstall or update swap would otherwise delete the developer's own Hermes app. Only the
+# GUI uninstall or update swap would otherwise delete the developer's own Moor app. Only the
 # ones present (none on CI runners, so the guard costs nothing there), each literal and resolved.
-from hermes_cli.gui_uninstall import packaged_gui_app_paths
+from moor_cli.gui_uninstall import packaged_gui_app_paths
 
 _REAL_INSTALLED_GUI_APPS = sorted({
     os.path.normcase(form) for app in packaged_gui_app_paths() if os.path.lexists(app)
@@ -1592,8 +1592,8 @@ def _forbid_real_user_path_writes(monkeypatch):
     def refuse(*_args, **_kwargs):
         raise AssertionError("TEST BUG: write to the real Windows User PATH (HKCU\\Environment)")
 
-    monkeypatch.setattr("hermes_cli._launchers._register_windows_user_path", refuse)
-    monkeypatch.setattr("hermes_cli._install_repair._write_user_path_raw", refuse)
+    monkeypatch.setattr("moor_cli._launchers._register_windows_user_path", refuse)
+    monkeypatch.setattr("moor_cli._install_repair._write_user_path_raw", refuse)
 
 
 @pytest.fixture(autouse=True)
@@ -1607,7 +1607,7 @@ def _forbid_real_moor_home_io(monkeypatch, request):
         return
     from tests.home_io_guard import HomeIOGuard
 
-    HomeIOGuard(lambda: _REAL_HERMES_ROOT_CANDIDATES, lambda: _REAL_INSTALLED_GUI_APPS).install(monkeypatch)
+    HomeIOGuard(lambda: _REAL_MOOR_ROOT_CANDIDATES, lambda: _REAL_INSTALLED_GUI_APPS).install(monkeypatch)
 
 
 @pytest.fixture

@@ -26,12 +26,12 @@ def test_windows_update_writes_locale_independent_marker_and_result(tmp_path, mo
     )
     started = int(time.time())
     result = subprocess.run([shell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
-                            env={**os.environ, "HERMES_TIMESTAMP_TEST_SCRIPT": str(script)},
+                            env={**os.environ, "MOOR_TIMESTAMP_TEST_SCRIPT": str(script)},
                             capture_output=True, text=True, timeout=60, check=False)
     finished = int(time.time())
     assert result.returncode == 0, result.stdout + result.stderr
-    marker = (tmp_path / ".hermes-update-in-progress").read_text(encoding="utf-8-sig").splitlines()
-    receipt = json.loads((tmp_path / ".hermes-update-result.json").read_text(encoding="utf-8-sig"))
+    marker = (tmp_path / ".moor-update-in-progress").read_text(encoding="utf-8-sig").splitlines()
+    receipt = json.loads((tmp_path / ".moor-update-result.json").read_text(encoding="utf-8-sig"))
     # v2 body (contract C1): the creation-time line is culture-invariant too,
     # and the claim names its stable run identity (receipt correlation).
     assert len(marker) == 4 and int(marker[0]) > 0

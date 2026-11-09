@@ -1,10 +1,10 @@
-import { JsonRpcGatewayError } from '@hermes/shared'
-import type { GatewayEventName } from '@hermes/shared'
+import { JsonRpcGatewayError } from '@moor/shared'
+import type { GatewayEventName } from '@moor/shared'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import type { MutableRefObject } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getLatestSessionMessages, getSession } from '@/hermes'
+import { getLatestSessionMessages, getSession } from '@/moor'
 import { en } from '@/i18n/en'
 import { textPart } from '@/lib/chat-messages'
 import { createClientSessionState } from '@/lib/chat-runtime'
@@ -44,7 +44,7 @@ beforeEach(() => {
   clearStoredJournal()
   // Queue mutations build on the persisted map, not the atom — a queue an
   // earlier test left in storage would otherwise sit ahead of this test's send.
-  window.localStorage.removeItem('hermes.desktop.composerQueue.v1')
+  window.localStorage.removeItem('moor.desktop.composerQueue.v1')
   vi.mocked(getLatestSessionMessages).mockReset()
   vi.mocked(getLatestSessionMessages).mockImplementation(async () => ({ messages: [], session_id: 'session' }))
 })
@@ -78,8 +78,8 @@ describe('durable submit acknowledgement', () => {
     const { preparedJournal } = await import(nativeJournalModule)
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'desktop-retire-'))
     const journal = preparedJournal(home, 'http://native-fixture')
-    const previous = window.hermesDesktop
-    window.hermesDesktop = { ...previous, preparedSubmissions: {
+    const previous = window.moorDesktop
+    window.moorDesktop = { ...previous, preparedSubmissions: {
       read: async () => JSON.stringify(journal.read()),
       update: async (key, entry) => { journal.update(key, entry === null ? null : JSON.parse(entry)) }
     } }
@@ -102,7 +102,7 @@ describe('durable submit acknowledgement', () => {
       expect(preparedJournal(home, 'http://native-fixture').read()).toEqual({})
       expect(fs.readdirSync(home)).toHaveLength(1)
     } finally {
-      window.hermesDesktop = previous
+      window.moorDesktop = previous
       fs.rmSync(home, { recursive: true, force: true })
       vi.doUnmock('electron')
     }
@@ -110,9 +110,9 @@ describe('durable submit acknowledgement', () => {
 
   it('a journal retirement that fails after admission still reports the delivered prompt and never reuses its identity', async () => {
     const entries = new Map<string, string>()
-    const previous = window.hermesDesktop
+    const previous = window.moorDesktop
     // The private-file journal accepts the preparation write, then the disk fills before retirement.
-    window.hermesDesktop = { ...previous, preparedSubmissions: {
+    window.moorDesktop = { ...previous, preparedSubmissions: {
       read: async () => JSON.stringify(Object.fromEntries([...entries].map(([key, entry]) => [key, JSON.parse(entry)]))),
       update: async (key, entry) => {
         if (entry === null) {throw Object.assign(new Error('ENOSPC: no space left on device'), { code: 'ENOSPC' })}
@@ -141,7 +141,7 @@ describe('durable submit acknowledgement', () => {
       expect(ids).toHaveLength(2)
       expect(ids[1]).not.toBe(ids[0])
     } finally {
-      window.hermesDesktop = previous
+      window.moorDesktop = previous
     }
   })
 
@@ -193,7 +193,7 @@ describe('durable submit acknowledgement', () => {
   })
 
   it('a legacy backend refusing submission_id as version skew (4000) gets one identityless retry', async () => {
-    // `hermes serve` validates params against a strict contract: an unknown key is refused
+    // `moor serve` validates params against a strict contract: an unknown key is refused
     // as 4000 before any handler ran (surfaced by the remote-topology E2E as "Session unavailable").
     const submits: Array<Record<string, unknown>> = []
 
@@ -202,7 +202,7 @@ describe('durable submit acknowledgement', () => {
       submits.push(params!)
 
       if ('submission_id' in params!) {
-        throw Object.assign(new Error('invalid params for prompt.submit: submission_id: Extra inputs are not permitted — the client and the Hermes backend are out of sync (different versions)'), { code: 4000 })
+        throw Object.assign(new Error('invalid params for prompt.submit: submission_id: Extra inputs are not permitted — the client and the Moor backend are out of sync (different versions)'), { code: 4000 })
       }
 
       return { status: 'streaming' } as never
@@ -3466,7 +3466,7 @@ describe('usePromptActions file attachment sync', () => {
     expect(calls[1]?.params).toEqual({
       session_id: RUNTIME_SESSION_ID,
       submission_id: expect.any(String),
-      text: '@file:.hermes/desktop-attachments/report.txt\n\nconvert this to epub'
+      text: '@file:.moor/desktop-attachments/report.txt\n\nconvert this to epub'
     })
   })
 
@@ -3523,7 +3523,7 @@ describe('usePromptActions file attachment sync', () => {
       params: {
         submission_id: expect.any(String),
         session_id: RUNTIME_SESSION_ID,
-        text: '@file:.hermes/desktop-attachments/report.txt\n\nsummarize'
+        text: '@file:.moor/desktop-attachments/report.txt\n\nsummarize'
       }
     })
   })

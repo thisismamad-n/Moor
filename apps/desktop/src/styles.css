@@ -851,7 +851,7 @@
    mobile-only component. The touch layout is the browser-hosted Desktop's;
    native Desktop keeps its compact rhythm on a coarse pointer too. */
 @media (hover: none), (pointer: coarse) {
-  html[data-hermes-desktop-host='browser'] {
+  html[data-moor-desktop-host='browser'] {
     --composer-control-size: 2.75rem;
     --composer-control-primary-size: 2.75rem;
     --composer-voice-menu-size: var(--composer-control-size);
@@ -860,11 +860,11 @@
   /* iOS Safari zooms the page into any focused text field under 16px and
      stays zoomed after the keyboard closes. Browser hosts floor text entry
      there; a larger chat-text scale still wins in the composer. */
-  html[data-hermes-desktop-host='browser'] :is(input, textarea, select) {
+  html[data-moor-desktop-host='browser'] :is(input, textarea, select) {
     font-size: max(16px, 1em);
   }
 
-  html[data-hermes-desktop-host='browser'] [data-slot='composer-rich-input'] {
+  html[data-moor-desktop-host='browser'] [data-slot='composer-rich-input'] {
     font-size: max(16px, var(--conversation-text-font-size));
   }
 }
@@ -1352,7 +1352,7 @@
       against the sidebar. With c0 a transparent sentinel and c2 invisible, only
       the bright c1 stop survives each pass, and it repeats along the ring:
       moving dots instead of an arc. Tying c2 to c1 gives each spike a
-      falloff. (`arc-nous` already overrides c2, so the hero is unaffected.) */
+      falloff. (`arc-moor` already overrides c2, so the hero is unaffected.) */
 .arc-border.arc-row,
 :root.dark .arc-border.arc-row {
   --arc-standoff: 0rem;
@@ -1478,7 +1478,7 @@ textarea,
 /* The browser host makes paragraphs and code in an assistant message
    selectable even inside a clickable row, so a touch long-press selects them.
    Native Desktop keeps text inside a clickable row part of the control. */
-html[data-hermes-desktop-host='browser'] [data-slot='aui_assistant-message-content'] :is(p, pre, code) {
+html[data-moor-desktop-host='browser'] [data-slot='aui_assistant-message-content'] :is(p, pre, code) {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -2577,32 +2577,32 @@ button[data-slot='aui_msg-reactions'] svg {
 }
 
 @media (hover: none), (pointer: coarse) {
-  html[data-hermes-desktop-host='browser'] [data-slot='aui_msg-actions'] {
+  html[data-moor-desktop-host='browser'] [data-slot='aui_msg-actions'] {
     opacity: 1;
     pointer-events: auto;
   }
 
-  html[data-hermes-desktop-host='browser'] [data-slot='aui_msg-actions'] .aui-message-actions-desktop {
+  html[data-moor-desktop-host='browser'] [data-slot='aui_msg-actions'] .aui-message-actions-desktop {
     display: none;
   }
 
-  html[data-hermes-desktop-host='browser'] [data-slot='aui_msg-actions'] .aui-message-actions-touch {
+  html[data-moor-desktop-host='browser'] [data-slot='aui_msg-actions'] .aui-message-actions-touch {
     display: flex;
   }
 
-  html[data-hermes-desktop-host='browser'] [data-slot='aui_msg-actions'] .aui-message-actions-touch button {
+  html[data-moor-desktop-host='browser'] [data-slot='aui_msg-actions'] .aui-message-actions-touch button {
     min-width: 2.75rem;
     min-height: 2.75rem;
   }
 
-  html[data-hermes-desktop-host='browser'] button[data-slot='aui_msg-reactions'] {
+  html[data-moor-desktop-host='browser'] button[data-slot='aui_msg-reactions'] {
     min-width: 2.75rem;
     min-height: 2.75rem;
     opacity: 0.5;
     pointer-events: auto;
   }
 
-  html[data-hermes-desktop-host='browser'] button[data-slot='aui_msg-reactions'][data-reacted] {
+  html[data-moor-desktop-host='browser'] button[data-slot='aui_msg-reactions'][data-reacted] {
     opacity: 1;
   }
 }
@@ -3957,18 +3957,18 @@ html[data-hud-window] [data-slot='popover-content'] {
 }
 
 /* CSS zoom scales viewport units too; browser shells must fit their parent. */
-html[data-hermes-desktop-host='browser'] #root[data-browser-viewport] {
+html[data-moor-desktop-host='browser'] #root[data-browser-viewport] {
   position: relative;
   top: var(--browser-viewport-top);
   height: var(--browser-viewport-height);
 }
 
-html[data-hermes-desktop-host='browser'] [data-contrib-shell] {
+html[data-moor-desktop-host='browser'] [data-contrib-shell] {
   width: 100%;
   height: 100%;
 }
 
-html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
+html[data-moor-desktop-host='browser'] [data-slot='sidebar-container'] {
   height: 100%;
 }
 
@@ -4106,7 +4106,7 @@ html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--err-ink) 30%, transparent);
 }
 
-/* Nous DS Button (portal /ds/components/button, controls.css geometry, size s):
+/* Moor DS Button (portal /ds/components/button, controls.css geometry, size s):
  * 32px box, 3px corners, 5px/12px padding, 500 weight. `secondary` is the quiet
  * slab (currentColor 5% → 10% on hover); `ghost` has no slab and brings up the
  * 0.5px brand hairline under the cursor. Both take the card's ink. */
@@ -4168,7 +4168,7 @@ html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
   pointer-events: none;
 }
 
-/* Details: Nous DS Copy (CommandBlock) slab, then the diagnostics links under it. */
+/* Details: Moor DS Copy (CommandBlock) slab, then the diagnostics links under it. */
 .aui-error-details {
   display: flex;
   flex-direction: column;
@@ -4186,7 +4186,7 @@ html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
   align-items: flex-start;
   gap: 12px;
   border-radius: 3px;
-  /* Nous DS Copy (CommandBlock): a code slab that stays dark in every theme, like a terminal. */
+  /* Moor DS Copy (CommandBlock): a code slab that stays dark in every theme, like a terminal. */
   box-shadow: inset 0 0 0 1px var(--ui-stroke-tertiary);
   background: color-mix(in srgb, black 88%, var(--ui-accent-secondary));
   padding: 12px 12px 12px 14px;

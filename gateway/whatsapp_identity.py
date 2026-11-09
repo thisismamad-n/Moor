@@ -72,7 +72,7 @@ def expand_whatsapp_aliases(identifier: str) -> set[str]:
     normalized = normalize_whatsapp_identifier(identifier)
     if not normalized:
         return set()
-    session_dir = get_hermes_dir("platforms/whatsapp/session", "whatsapp/session")
+    session_dir = get_moor_dir("platforms/whatsapp/session", "whatsapp/session")
     resolved: set[str] = set()
     queue = [normalized]
     while queue:

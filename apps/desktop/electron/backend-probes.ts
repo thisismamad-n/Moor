@@ -174,7 +174,7 @@ async function verifyMoorCli(moorCommand: string, opts?: { shell?: boolean }) {
   }
 
   try {
-    await execProbe(windowsShellCommand(hermesCommand, Boolean(opts?.shell)), ['--version'], {
+    await execProbe(windowsShellCommand(moorCommand, Boolean(opts?.shell)), ['--version'], {
       stdio: 'ignore',
       timeout: PROBE_TIMEOUT_MS,
       shell: Boolean(opts?.shell),

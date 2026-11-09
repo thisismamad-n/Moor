@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from gateway.run_shutdown import _log_suppressed
-from hermes_cli.config_backend import ConfigBackendUnavailable
+from moor_cli.config_backend import ConfigBackendUnavailable
 from utils import file_cache_version
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def profile_serve_signature(home: Path) -> tuple:
     digest going empty would read as a change and reconnect the profile's adapters. A remote layer
     changes with no local file change, so its signature is the backend's version. A config backend
     outage raises ``ConfigBackendUnavailable``; the reconcile cycle contains it and retries."""
-    from hermes_cli.config_backend import config_version_or_none, supports_file_tooling
+    from moor_cli.config_backend import config_version_or_none, supports_file_tooling
     cfg = Path(home) / "config.yaml"
     sig = [_stat_signature(cfg) if supports_file_tooling() else config_version_or_none(cfg)]
     for name in _PROFILE_SIGNATURE_FILES:
@@ -68,8 +68,8 @@ def profile_serve_signature(home: Path) -> tuple:
 def _added_profile_blocker(launch: Path) -> Optional[str]:
     """Why a single-profile boot must not start multiplexing now that a second profile exists: the
     ``gateway.auto_multiplex_migration: false`` opt-out on the default profile, else boot's preflight."""
-    from hermes_cli.gateway_migrate_guards import auto_migration_opted_out
-    from hermes_cli.gateway_multiplex_mode import AUTO_MIGRATION_OPTED_OUT_REASON, implicit_multiplex_blocker
+    from moor_cli.gateway_migrate_guards import auto_migration_opted_out
+    from moor_cli.gateway_multiplex_mode import AUTO_MIGRATION_OPTED_OUT_REASON, implicit_multiplex_blocker
     if auto_migration_opted_out(launch):
         return AUTO_MIGRATION_OPTED_OUT_REASON
     return implicit_multiplex_blocker()
@@ -134,8 +134,8 @@ class GatewayProfileReconcileMixin:
         changed since the last tick, under that home's scope: hooks consented since start register, revoked ones stop
         firing. A home seen for the first time syncs once (consent may have landed after startup
         registered). Hook registration only: adapters and sessions are never touched."""
-        from hermes_constants import get_process_hermes_home
-        homes = {Path(h) for h in (get_process_hermes_home(), *(self._served_profile_homes or {}).values())}
+        from moor_constants import get_process_moor_home
+        homes = {Path(h) for h in (get_process_moor_home(), *(self._served_profile_homes or {}).values())}
         self._hook_consent_signatures = await asyncio.to_thread(
             self._resync_changed_hook_consent, homes, self._hook_consent_signatures or {})
 
@@ -174,7 +174,7 @@ class GatewayProfileReconcileMixin:
         whose store is unusable is parked (logged, not served) and left for an explicit rescan.
         Returns ``{"added", "removed", "rescanned", "parked", "served_profiles"}``."""
         from gateway.run import MultiplexConfigError
-        from hermes_cli.profiles import profiles_to_serve
+        from moor_cli.profiles import profiles_to_serve
         result: dict[str, Any] = {"added": [], "removed": [], "rescanned": [], "parked": [], "reason": reason}
         if not self._multiplex_on() and not await self._multiplex_for_added_profile():
             return {**result, "multiplex": False, "served_profiles": self.served_profile_names()}
@@ -245,7 +245,7 @@ class GatewayProfileReconcileMixin:
         whose home another gateway owns or whose store is unusable is parked, not served."""
         from gateway.run import MultiplexConfigError
         from gateway.run_runtime import park_profile, unpark_profile
-        from hermes_cli.profiles import profiles_to_serve
+        from moor_cli.profiles import profiles_to_serve
         active = getattr(self, "_primary_profile_name", None) or "default"
         result = dict(result or {"added": [], "removed": [], "rescanned": [], "parked": [], "reason": reason})
         result.setdefault("parked", [])
@@ -352,7 +352,7 @@ class GatewayProfileReconcileMixin:
     async def _multiplex_for_added_profile(self) -> bool:
         """Start multiplexing in place when this gateway booted standalone ONLY because the host had
         one profile and a second now exists (#141623). Boot settles the mode once, so without this a
-        profile created afterwards (Desktop's New Agent, ``hermes profile create``) was never served:
+        profile created afterwards (Desktop's New Agent, ``moor profile create``) was never served:
         every ticket, session and delete for it was refused until a manual restart.
 
         No restart and no drain: the launch env is frozen and unscoped secret reads fail closed
@@ -364,11 +364,11 @@ class GatewayProfileReconcileMixin:
         latched, so the next rescan or watcher tick retries once the blocker clears. The switch is an
         automatic migration, so ``gateway.auto_multiplex_migration: false`` holds it back the same way
         (re-read on every rescan: setting it back to true converges without a restart). True when armed."""
-        from hermes_cli.gateway_multiplex_mode import (
+        from moor_cli.gateway_multiplex_mode import (
             AUTO_MIGRATION_OPTED_OUT_REASON, SINGLE_PROFILE_REASON, MultiplexDecision, log_multiplex_decision,
             record_multiplex_decision, recorded_standalone_reason)
-        from hermes_cli.profiles import profiles_to_serve
-        from hermes_constants import get_default_hermes_root, get_process_hermes_home
+        from moor_cli.profiles import profiles_to_serve
+        from moor_constants import get_default_moor_root, get_process_moor_home
         # Serialized with reconcile: a second rescan (watcher + creator) resuming mid-activation
         # reset the reservation the first one's reconcile had already grown.
         async with self._reconcile_lock():
@@ -378,8 +378,8 @@ class GatewayProfileReconcileMixin:
                 return False  # shutdown began: never arm fail-closed secrets under drain-time work
             if recorded_standalone_reason() not in (SINGLE_PROFILE_REASON, AUTO_MIGRATION_OPTED_OUT_REASON):
                 return False
-            launch = get_process_hermes_home().resolve()
-            if launch != get_default_hermes_root().resolve():
+            launch = get_process_moor_home().resolve()
+            if launch != get_default_moor_root().resolve():
                 return False  # only the default home runs the multiplexer (``_launch_home_may_multiplex``)
             if len(profiles_to_serve(multiplex=True, include_parked=True)) < 2:
                 return False
@@ -395,11 +395,11 @@ class GatewayProfileReconcileMixin:
                 return False
             if not self._running or getattr(self, "_draining", False):
                 return False  # shutdown began during the preflight await
-            from hermes_constants import hermes_home_key
+            from moor_constants import moor_home_key
             from tools.mcp_tool_scope import rekey_unscoped_connections
             from tui_gateway.launch_profile_policy import activate_multi_profile_hosting
             activate_multi_profile_hosting()
-            rekey_unscoped_connections(hermes_home_key(launch))
+            rekey_unscoped_connections(moor_home_key(launch))
             self.config.multiplex_profiles = True
             self.config._runtime_profile_homes = (("default", launch),)
             registry = getattr(self, "session_authorities", None)
@@ -529,7 +529,7 @@ class GatewayProfileReconcileMixin:
             # home as soon as it goes, so every handle this process holds there must close first.
             try:
                 with _log_suppressed(logging.DEBUG, "profile handle release failed", exc_info=True):
-                    from hermes_state_registry import close_all_under
+                    from moor_state_registry import close_all_under
                     close_all_under(home)
                 with _log_suppressed(logging.DEBUG, "memory-store release failed", exc_info=True):
                     from plugins.memory import import_provider_module  # catalog plugin since it left core
@@ -545,11 +545,11 @@ class GatewayProfileReconcileMixin:
                 # ``asyncio.to_thread`` copies the context, so the surrounding
                 # ``_profile_runtime_scope`` home/secret override stays visible in the worker.
                 with _log_suppressed(logging.DEBUG, "scoped MCP shutdown failed", exc_info=True):
-                    from hermes_constants import hermes_home_key
+                    from moor_constants import moor_home_key
                     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
-                    await asyncio.to_thread(shutdown_mcp_servers, scope=hermes_home_key(home))
+                    await asyncio.to_thread(shutdown_mcp_servers, scope=moor_home_key(home))
                 with _log_suppressed(logging.DEBUG, "profile log handler release failed", exc_info=True):
-                    from hermes_logging import release_profile_log_handlers
+                    from moor_logging import release_profile_log_handlers
                     await asyncio.to_thread(release_profile_log_handlers, home)
             finally:
                 release_profile_home(self, home)
@@ -690,7 +690,7 @@ def migrate_profile_identity_verb(runner):
             return {"ok": False, "error": "live gateway has no session store"}
         acquired = []
         try:
-            from hermes_state_registry import acquire, release_or_close
+            from moor_state_registry import acquire, release_or_close
             db_counts: dict[str, dict[str, int]] = {}
             routing_db = getattr(store, "_routing_db", None)
             if routing_db is not None and hasattr(routing_db, "rekey_profile_state"):

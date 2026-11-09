@@ -30,9 +30,9 @@ def no_policy(monkeypatch):
 class TestLoginMoor:
 
     def _run(self, monkeypatch, tmp_path):
-        import hermes_cli.auth as auth_mod
-        from hermes_cli import auth_nous
-        import hermes_cli.nous_subscription as ns
+        import moor_cli.auth as auth_mod
+        from moor_cli import auth_moor
+        import moor_cli.moor_subscription as ns
 
         seen: dict = {}
         monkeypatch.setenv("MOOR_HOME", str(tmp_path))

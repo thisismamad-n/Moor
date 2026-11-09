@@ -108,10 +108,10 @@ async def test_start_gateway_verbosity_imports_redacting_formatter(monkeypatch, 
     class _CleanExitRunner:
         def __init__(self, config):
             from gateway.session import SessionStore
-            from hermes_state import SessionDB
-            from hermes_constants import get_hermes_home
-            self.session_store = SessionStore(get_hermes_home() / 'sessions', config)
-            self._session_db = SessionDB(get_hermes_home() / 'state.db')
+            from moor_state import SessionDB
+            from moor_constants import get_moor_home
+            self.session_store = SessionStore(get_moor_home() / 'sessions', config)
+            self._session_db = SessionDB(get_moor_home() / 'state.db')
             self.session_store._db = self._session_db
             self._draining = False
             self.config = config
@@ -256,10 +256,10 @@ async def test_start_gateway_replace_writes_takeover_marker_before_sigterm(
     class _CleanExitRunner:
         def __init__(self, config):
             from gateway.session import SessionStore
-            from hermes_state import SessionDB
-            from hermes_constants import get_hermes_home
-            self.session_store = SessionStore(get_hermes_home() / 'sessions', config)
-            self._session_db = SessionDB(get_hermes_home() / 'state.db')
+            from moor_state import SessionDB
+            from moor_constants import get_moor_home
+            self.session_store = SessionStore(get_moor_home() / 'sessions', config)
+            self._session_db = SessionDB(get_moor_home() / 'state.db')
             self.session_store._db = self._session_db
             self._draining = False
             self.config = config
@@ -357,10 +357,10 @@ async def test_start_gateway_replace_clears_marker_on_permission_denied(
         "gateway.status._read_pid_record",
         lambda path=None: {
             "pid": 42,
-            "kind": "hermes-gateway",
-            "argv": ["python", "-m", "hermes_cli.main", "gateway", "run"],
+            "kind": "moor-gateway",
+            "argv": ["python", "-m", "moor_cli.main", "gateway", "run"],
             "start_time": 0,
-            "hermes_home": str(tmp_path),
+            "moor_home": str(tmp_path),
         },
     )
     monkeypatch.setattr(
@@ -494,10 +494,10 @@ async def test_start_gateway_propagates_fatal_config_exit_code(monkeypatch, tmp_
     class _FatalConfigRunner:
         def __init__(self, config):
             from gateway.session import SessionStore
-            from hermes_state import SessionDB
-            from hermes_constants import get_hermes_home
-            self.session_store = SessionStore(get_hermes_home() / 'sessions', config)
-            self._session_db = SessionDB(get_hermes_home() / 'state.db')
+            from moor_state import SessionDB
+            from moor_constants import get_moor_home
+            self.session_store = SessionStore(get_moor_home() / 'sessions', config)
+            self._session_db = SessionDB(get_moor_home() / 'state.db')
             self.session_store._db = self._session_db
             self._draining = False
             self.config = config

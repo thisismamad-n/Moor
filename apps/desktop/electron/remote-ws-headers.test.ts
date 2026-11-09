@@ -38,7 +38,7 @@ function expectRequestHeaders(
 ) {
   const callback = vi.fn()
 
-  applyRemoteRequestHeaders({ url, requestHeaders: { Origin: 'app://hermes' } }, callback, store.headersFor, new Map())
+  applyRemoteRequestHeaders({ url, requestHeaders: { Origin: 'app://moor' } }, callback, store.headersFor, new Map())
 
   expect(callback).toHaveBeenCalledOnce()
   expect(callback).toHaveBeenCalledWith(expected ? { requestHeaders: { Origin: 'app://moor', ...expected } } : {})
@@ -205,38 +205,38 @@ describe('OAuth login and registry extra headers', () => {
     const scopedHeaders = { ...accessHeaders, 'X-Api-Key': 'configured-secret' }
 
     const sources = collectRemoteHeaderSources({
-      connections: [{ kind: 'remote', url: 'https://gateway.example/hermes', headers: scopedHeaders }]
+      connections: [{ kind: 'remote', url: 'https://gateway.example/moor', headers: scopedHeaders }]
     })
 
     attachRemoteRequestHeaderListener(oauthSession, url => resolveRemoteRequestHeaders(url, { sources }))
 
     const initial = vi.fn()
     listeners[0](
-      { id: 1, url: 'https://gateway.example/hermes/login', requestHeaders: { Origin: 'app://hermes' } },
+      { id: 1, url: 'https://gateway.example/moor/login', requestHeaders: { Origin: 'app://moor' } },
       initial
     )
     expect(initial).toHaveBeenCalledWith({
-      requestHeaders: { Origin: 'app://hermes', ...scopedHeaders }
+      requestHeaders: { Origin: 'app://moor', ...scopedHeaders }
     })
 
     const sameScope = vi.fn()
     listeners[0](
       {
         id: 1,
-        url: 'https://gateway.example/hermes/ready',
-        requestHeaders: { Origin: 'app://hermes', Cookie: 'session=live', ...scopedHeaders }
+        url: 'https://gateway.example/moor/ready',
+        requestHeaders: { Origin: 'app://moor', Cookie: 'session=live', ...scopedHeaders }
       },
       sameScope
     )
     expect(sameScope).toHaveBeenCalledWith({
-      requestHeaders: { Origin: 'app://hermes', Cookie: 'session=live', ...scopedHeaders }
+      requestHeaders: { Origin: 'app://moor', Cookie: 'session=live', ...scopedHeaders }
     })
 
     for (const [id, redirectUrl] of [
       [2, 'https://gateway.example/login'],
       [3, 'https://identity.example/callback']
     ] as const) {
-      listeners[0]({ id, url: 'https://gateway.example/hermes/start', requestHeaders: {} }, vi.fn())
+      listeners[0]({ id, url: 'https://gateway.example/moor/start', requestHeaders: {} }, vi.fn())
 
       const redirected = vi.fn()
       listeners[0](
@@ -244,7 +244,7 @@ describe('OAuth login and registry extra headers', () => {
           id,
           url: redirectUrl,
           requestHeaders: {
-            Origin: 'app://hermes',
+            Origin: 'app://moor',
             Cookie: 'idp-session=live',
             'x-api-key': scopedHeaders['X-Api-Key'],
             'cf-access-client-id': scopedHeaders['CF-Access-Client-Id'],
@@ -254,7 +254,7 @@ describe('OAuth login and registry extra headers', () => {
         redirected
       )
       expect(redirected).toHaveBeenCalledWith({
-        requestHeaders: { Origin: 'app://hermes', Cookie: 'idp-session=live' }
+        requestHeaders: { Origin: 'app://moor', Cookie: 'idp-session=live' }
       })
     }
 

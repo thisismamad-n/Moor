@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_constants import reset_moor_home_override, set_moor_home_override
 
 SLUG = "acme-static"
 
@@ -32,8 +32,8 @@ def _plugin(models: tuple) -> str:
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
     import providers
-    from hermes_cli import auth_plugin_providers as app
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli import auth_plugin_providers as app
+    from moor_cli.auth import PROVIDER_REGISTRY
 
     found = {}
     for name, models in (("f", ("acme-f-only",)), ("g", ("acme-g-small", "acme-g-large")), ("a", None)):
@@ -43,7 +43,7 @@ def homes(tmp_path, monkeypatch):
             plugin = home / "plugins" / "model-providers" / SLUG
             plugin.mkdir(parents=True)
             (plugin / "__init__.py").write_text(_plugin(models), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(found["a"]))
+    monkeypatch.setenv("MOOR_HOME", str(found["a"]))
     monkeypatch.setattr(providers, "_REGISTRY", dict(providers._REGISTRY))
     monkeypatch.setattr(providers, "_ALIASES", dict(providers._ALIASES))
     monkeypatch.setattr(providers, "_PROVIDER_LIST_CACHE", None)
@@ -53,21 +53,21 @@ def homes(tmp_path, monkeypatch):
     yield found
     PROVIDER_REGISTRY.clear()
     PROVIDER_REGISTRY.update(rows)
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_moor_user_provider")]:
         del sys.modules[mod]
 
 
 def _bound(home: Path, fn):
-    token = set_hermes_home_override(home)
+    token = set_moor_home_override(home)
     try:
         return fn()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _view():
-    from hermes_cli import models
-    from hermes_cli.models_catalog_static import sync_plugin_provider_catalog
+    from moor_cli import models
+    from moor_cli.models_catalog_static import sync_plugin_provider_catalog
 
     sync_plugin_provider_catalog()  # what every registration in this home runs
     return (models.get_default_model_for_provider(SLUG), models.static_catalog(SLUG),

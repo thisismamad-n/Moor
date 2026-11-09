@@ -209,7 +209,7 @@ class UsageLimitSuggestion(Payload):
     model: str
     label: str
     note: str                    # "free" | "included"
-    provider: str = "nous"
+    provider: str = "moor"
 
 
 class UsageLimitCredits(Payload):

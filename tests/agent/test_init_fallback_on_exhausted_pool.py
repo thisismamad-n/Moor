@@ -146,7 +146,7 @@ _RELAY = _PerModelWireProfile(name="acme-relay", base_url="https://api.acme-rela
 
 
 def test_init_fallback_recomputes_api_mode_for_per_model_profile_exception():
-    """#46527: Nous primary (api_mode=codex_responses, no creds) -> a fallback whose profile
+    """#46527: Moor primary (api_mode=codex_responses, no creds) -> a fallback whose profile
     serves gpt-5-mini on chat completions must end up with api_mode=chat_completions,
     not codex_responses.
 
@@ -165,7 +165,7 @@ def test_init_fallback_recomputes_api_mode_for_per_model_profile_exception():
                      explicit_base_url=None, explicit_api_key=None):
         if provider == "acme-relay":
             return fb_client, "gpt-5-mini"
-        return None, None  # primary (nous) has no usable credentials
+        return None, None  # primary (moor) has no usable credentials
 
     with patch("agent.auxiliary_client.resolve_provider_client", side_effect=fake_resolve), \
          patch("providers.get_provider_profile",
@@ -175,7 +175,7 @@ def test_init_fallback_recomputes_api_mode_for_per_model_profile_exception():
          patch("agent.process_bootstrap.OpenAI", return_value=MagicMock()):
 
         agent = AIAgent(
-            provider="nous",
+            provider="moor",
             model="gpt-5.4-mini",
             api_mode="codex_responses",
             api_key=None,
@@ -193,7 +193,7 @@ def test_init_fallback_recomputes_api_mode_for_per_model_profile_exception():
 
 
 def test_init_fallback_keeps_codex_responses_for_openai_codex():
-    """#46527: Nous primary (api_mode=codex_responses, no creds) -> openai-codex
+    """#46527: Moor primary (api_mode=codex_responses, no creds) -> openai-codex
     fallback must keep api_mode=codex_responses (openai-codex always uses the
     Responses API)."""
     fb_client = _mock_client(base_url="https://chatgpt.com/backend-api/codex")
@@ -210,7 +210,7 @@ def test_init_fallback_keeps_codex_responses_for_openai_codex():
          patch("agent.process_bootstrap.OpenAI", return_value=MagicMock()):
 
         agent = AIAgent(
-            provider="nous",
+            provider="moor",
             model="gpt-5.4-mini",
             api_mode="codex_responses",
             api_key=None,

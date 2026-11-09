@@ -48,8 +48,8 @@ def test_blank_memory_provider_stays_opt_out():
     cfg = {"memory": {"provider": ""}, "agent": {}}
 
     with (
-        patch("hermes_cli.config.load_config", return_value=cfg), patch("hermes_cli.config.load_config_readonly", return_value=cfg),
-        patch("hermes_cli.config.save_config") as save_config,
+        patch("moor_cli.config.load_config", return_value=cfg), patch("moor_cli.config.load_config_readonly", return_value=cfg),
+        patch("moor_cli.config.save_config") as save_config,
         patch("plugins.memory.load_memory_provider") as load_memory_provider,
         patch("agent.model_metadata.get_model_context_length", return_value=204_800),
         patch("model_tools.get_tool_definitions", return_value=[]),

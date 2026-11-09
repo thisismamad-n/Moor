@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from cli import HermesCLI
+from cli import MoorCLI
 from tools.process_registry_notifications import (
     PROCESS_COMPLETE_DISPLAY_KIND, format_process_notification, process_completion_display_text)
 from tui_gateway import server
@@ -26,7 +26,7 @@ def test_drain_honors_background_process_notifications_off(monkeypatch, mode, ex
     turn, #123114); every other documented mode keeps injecting, and the durable claim/ack chain
     runs in all modes so an ``off`` session never leaves pending rows to replay on restart."""
     events = [_event("proc_off", 0)]
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id = "display-session"
     cli._pending_input = queue.Queue()
     monkeypatch.setattr("tools.process_registry.process_registry", _registry(events))
@@ -47,7 +47,7 @@ def test_off_mutes_process_wakes_but_subagent_results_still_land(monkeypatch):
     delegation = {"type": "async_delegation", "delegation_id": "d1", "session_key": "display-session",
                   "results": [{"status": "completed", "summary": "done", "goal": "audit"}]}
     events = [_event("proc_a", 0), {**_event("proc_b", 0), "type": "heartbeat", "seq": 1, "output": "line"}, delegation]
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id = "display-session"
     cli._pending_input = queue.Queue()
     monkeypatch.setattr("tools.process_registry.process_registry", _registry(events))
@@ -66,7 +66,7 @@ def test_heartbeat_wake_paints_one_line_and_persists_hidden(monkeypatch):
     from tools.process_registry_notifications import HEARTBEAT_DISPLAY_KIND, heartbeat_display_text
     beat = {**_event("proc_hb", None), "type": "heartbeat", "seq": 3, "elapsed": 422, "interval": 60,
             "output": "web tsc=0\nSECRET_OUTPUT_LINE"}
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id = "display-session"
     cli._pending_input = queue.Queue()
     monkeypatch.setattr("tools.process_registry.process_registry", _registry([beat]))

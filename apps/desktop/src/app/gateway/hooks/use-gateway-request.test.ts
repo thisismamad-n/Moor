@@ -55,8 +55,8 @@ vi.mock('@/moor', async importOriginal => {
 // out on a loaded runner.
 import '@/store/session-states'
 
-import type * as HermesModule from '@/hermes'
-import type { HermesGateway } from '@/hermes'
+import type * as MoorModule from '@/moor'
+import type { MoorGateway } from '@/moor'
 import {
   $gateway,
   closeSecondaryGateways,
@@ -259,8 +259,8 @@ describe('useGatewayRequest', () => {
     const primary = makePrimaryGateway()
     primary.request.mockRejectedValueOnce(new Error('connection closed')).mockResolvedValueOnce({ recovered: true })
 
-    setPrimaryGateway(primary as unknown as HermesGateway, 'default')
-    $gateway.set(primary as unknown as HermesGateway)
+    setPrimaryGateway(primary as unknown as MoorGateway, 'default')
+    $gateway.set(primary as unknown as MoorGateway)
     $gatewayState.set('open')
 
     const { result } = renderHook(() => useGatewayRequest())
@@ -279,8 +279,8 @@ describe('useGatewayRequest', () => {
     primary.connectionState = 'closed'
     primary.request.mockRejectedValueOnce(new Error('connection closed')).mockResolvedValueOnce({ recovered: true })
 
-    setPrimaryGateway(primary as unknown as HermesGateway, 'default')
-    $gateway.set(primary as unknown as HermesGateway)
+    setPrimaryGateway(primary as unknown as MoorGateway, 'default')
+    $gateway.set(primary as unknown as MoorGateway)
     $gatewayState.set('open')
 
     const { result } = renderHook(() => useGatewayRequest())
@@ -334,8 +334,8 @@ describe('useGatewayRequest', () => {
           rejectRequest = reject
         })
     )
-    setPrimaryGateway(primary as unknown as HermesGateway, 'default')
-    $gateway.set(primary as unknown as HermesGateway)
+    setPrimaryGateway(primary as unknown as MoorGateway, 'default')
+    $gateway.set(primary as unknown as MoorGateway)
     $gatewayState.set('open')
     const { result } = renderHook(() => useGatewayRequest())
 
@@ -370,8 +370,8 @@ describe('useGatewayRequest', () => {
           finishRecovery = resolve
         })
     )
-    setPrimaryGateway(primary as unknown as HermesGateway, 'default')
-    $gateway.set(primary as unknown as HermesGateway)
+    setPrimaryGateway(primary as unknown as MoorGateway, 'default')
+    $gateway.set(primary as unknown as MoorGateway)
     $gatewayState.set('closed')
     const { result } = renderHook(() => useGatewayRequest())
     const pending = result.current.requestGateway('prompt.submit', { text: 'local-only' }).catch(error => error)
@@ -408,8 +408,8 @@ describe('useGatewayRequest', () => {
               outcome === 'resolves' ? resolve(localConnection) : reject(new Error('local backend unavailable'))
           })
       )
-      setPrimaryGateway(primary as unknown as HermesGateway, 'default')
-      $gateway.set(primary as unknown as HermesGateway)
+      setPrimaryGateway(primary as unknown as MoorGateway, 'default')
+      $gateway.set(primary as unknown as MoorGateway)
       $gatewayState.set('closed')
       const { result } = renderHook(() => useGatewayRequest())
       const pending = result.current.requestGateway('prompt.submit', { text: 'local-only' }).catch(error => error)
@@ -443,8 +443,8 @@ describe('useGatewayRequest', () => {
           releaseMint = () => resolve({ ok: true as const, wsUrl: 'ws://127.0.0.1:5151/api/ws?token=fresh-local' })
         })
     )
-    setPrimaryGateway(primary as unknown as HermesGateway, 'default')
-    $gateway.set(primary as unknown as HermesGateway)
+    setPrimaryGateway(primary as unknown as MoorGateway, 'default')
+    $gateway.set(primary as unknown as MoorGateway)
     $gatewayState.set('closed')
     const { result } = renderHook(() => useGatewayRequest())
     const pending = result.current.requestGateway('prompt.submit', { text: 'local-only' }).catch(error => error)

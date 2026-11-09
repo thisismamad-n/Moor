@@ -60,7 +60,7 @@ def _reclone_plugin_update(target: Path, source: str, previous_revision: object,
     Replacing the tree needs the install core's ``force``; accepting a caution scan is a separate
     decision (*force* / *scan_decision_cb*), the same as the git-pull path.
     """
-    from hermes_cli.plugins_cmd_catalog import _carry_user_files
+    from moor_cli.plugins_cmd_catalog import _carry_user_files
 
     new_target, _manifest, _name = _pc()._install_plugin_core(
         source,
@@ -81,13 +81,13 @@ def update_one(name: str, target: Path, console, *, interactive: bool = True, fo
 
     Every update is scanned. A caution verdict on a git update asks ``Update anyway? [y/N]`` when
     *interactive*; *force* (``--force``) accepts it without asking. A dangerous verdict always blocks.
-    Refusals raise :class:`~hermes_cli.plugins_cmd_catalog.RepinConsentRequired` or
+    Refusals raise :class:`~moor_cli.plugins_cmd_catalog.RepinConsentRequired` or
     ``PluginOperationError`` with nothing changed; :func:`cmd_update` turns them into exit 1 and
-    ``hermes plugins update`` with no name records them per plugin and moves on.
+    ``moor plugins update`` with no name records them per plugin and moves on.
     """
     from rich.markup import escape
-    from hermes_cli import plugins_cmd_catalog as catalog
-    from hermes_cli.plugins_cmd_install import interactive_scan_decision
+    from moor_cli import plugins_cmd_catalog as catalog
+    from moor_cli.plugins_cmd_install import interactive_scan_decision
     sidecar = catalog.catalog_install_record(target)
     if sidecar:  # catalog installs re-pin to the reviewed SHA — never `git pull`
         return catalog.cmd_update_catalog(name, target, sidecar, console, interactive=interactive)
@@ -95,7 +95,7 @@ def update_one(name: str, target: Path, console, *, interactive: bool = True, fo
         target,
         lambda rec: (
             f"Plugin '{name}' is pinned to {rec.get('revision')}. To move it, run "
-            f"`hermes plugins install {escape(str(rec.get('source', '<source>')))} --force "
+            f"`moor plugins install {escape(str(rec.get('source', '<source>')))} --force "
             "--ref <40-character commit SHA>`."),
         lambda: f"Plugin '{name}' was not installed from git (no .git directory). Cannot update.",
         before_pull=lambda: console.print(f"[dim]Updating {name}...[/dim]"),
@@ -130,8 +130,8 @@ def update_one(name: str, target: Path, console, *, interactive: bool = True, fo
 
 
 def cmd_update(name: str, *, interactive: bool = True, force: bool = False) -> None:
-    """``hermes plugins update <name> [--force]``: :func:`update_one`, exit 1 on a refusal."""
-    from hermes_cli.plugins_cmd_catalog import RepinConsentRequired
+    """``moor plugins update <name> [--force]``: :func:`update_one`, exit 1 on a refusal."""
+    from moor_cli.plugins_cmd_catalog import RepinConsentRequired
     console = _pc()._console()
     target = _pc()._require_installed_plugin(name, _pc()._plugins_dir(), console)
     try:
@@ -269,9 +269,9 @@ def cmd_check_updates(args: Any | None = None) -> None:
     console = Console()
     plugins_dir = _pc()._plugins_dir()
 
-    from hermes_cli.plugins_updates import held_for_newer_hermes, run_checks
+    from moor_cli.plugins_updates import held_for_newer_moor, run_checks
 
-    from hermes_cli.plugins_cadence import record_check_results, snapshot_installs
+    from moor_cli.plugins_cadence import record_check_results, snapshot_installs
 
     checked_installs = snapshot_installs(plugins_dir)
     results = run_checks(plugins_dir)
@@ -290,8 +290,8 @@ def cmd_check_updates(args: Any | None = None) -> None:
     for r in results:
         if r.needs_fixing:
             status = f"[red]needs fixing[/red]\n[dim]{r.needs_fixing}[/dim]"
-        elif r.update_available is True and (held := held_for_newer_hermes(r)):
-            status = f"[yellow]update available after updating Hermes[/yellow]\n[dim]{held}[/dim]"
+        elif r.update_available is True and (held := held_for_newer_moor(r)):
+            status = f"[yellow]update available after updating Moor[/yellow]\n[dim]{held}[/dim]"
         elif r.update_available is True:
             status = "[green]update available[/green]"
         elif r.update_available is False:
@@ -304,20 +304,20 @@ def cmd_check_updates(args: Any | None = None) -> None:
     console.print()
     console.print(table)
     console.print()
-    console.print("[dim]Check-only. Apply with: hermes plugins update <name>, or "
-                  "hermes plugins update to update them all[/dim]")
+    console.print("[dim]Check-only. Apply with: moor plugins update <name>, or "
+                  "moor plugins update to update them all[/dim]")
 
 
 def dashboard_update_user_plugin(name: str, *, accept_capabilities: bool = False, force: bool = False) -> dict[str, Any]:
     """The one non-interactive update for the dashboard and Desktop: ``git pull`` inside
-    ``~/.hermes/plugins/<name>``; catalog installs re-pin instead. Nothing changes on a refusal:
+    ``~/.moor/plugins/<name>``; catalog installs re-pin instead. Nothing changes on a refusal:
     a re-pin that widens the plugin returns ``{"ok": False, "consent_required": True, "delta": {...}}``
     (retry with *accept_capabilities*), and a git update the security scan blocks returns
     ``{"ok": False, "scan_blocked": True, "scan_verdict", "scan_findings"}`` (retry a caution verdict
     with *force* after the user saw the findings; a dangerous verdict never updates)."""
-    from hermes_cli import plugins_cmd_catalog as catalog
-    from hermes_cli.plugins_activation import activate_plugin_now
-    from hermes_cli.plugins_cmd_install import scan_blocked_result
+    from moor_cli import plugins_cmd_catalog as catalog
+    from moor_cli.plugins_activation import activate_plugin_now
+    from moor_cli.plugins_cmd_install import scan_blocked_result
     target = _pc()._user_installed_plugin_dir(name)
     if target is None:
         return {"ok": False, "error": f"Plugin '{name}' was not found under {_pc()._plugins_dir()}."}

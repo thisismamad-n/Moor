@@ -1,5 +1,5 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
-"""Hermes Agent release entrypoint.
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-moor-env" python3 "$0" "$@"'
+"""Moor Agent release entrypoint.
 
 Stable releases use the ``release``, ``publish``, and ``abandon`` subcommands.
 Canary, commit, and dynamic-channel operations retain their top-level flags.
@@ -22,7 +22,7 @@ from pathlib import Path
 # is import-light: only os/sys + version constants).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from hermes_cli.update_channel import (
+from moor_cli.update_channel import (
     _CANARY_TAG_RE, STABLE_TAG_RE, canary_tag_for_date, canary_timestamp,
     is_canary_tag,
 )

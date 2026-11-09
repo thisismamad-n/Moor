@@ -1,4 +1,4 @@
-"""The classic CLI is main's HermesCLI again: `hermes` / `hermes chat` (interactive and -q) reach
+"""The classic CLI is main's MoorCLI again: `moor` / `moor chat` (interactive and -q) reach
 ``cli.main``; only stream-json and the safe-mode bypass keep the gateway transport client."""
 import argparse
 import sys
@@ -20,12 +20,12 @@ def _args(**kw):
 
 @pytest.fixture
 def routed(monkeypatch):
-    import hermes_cli.main as m
+    import moor_cli.main as m
     calls = {}
     fake_cli = types.ModuleType("cli")
     fake_cli.main = lambda **kw: calls.setdefault("cli_main", kw)
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
-    import hermes_cli.gateway_chat_startup as startup
+    import moor_cli.gateway_chat_startup as startup
     monkeypatch.setattr(startup, "launch_gateway_chat", lambda args: calls.setdefault("gateway", args) and 0)
     for name in ("_resolve_chat_session_args", "_warn_retired_xai_models", "_start_chat_background_prefetch",
                  "_pin_kanban_board_env", "_confirm_startup_expensive_model_override",
@@ -33,22 +33,22 @@ def routed(monkeypatch):
         monkeypatch.setattr(m, name, lambda *a, **k: None)
     monkeypatch.setattr(m, "_resolve_use_tui", lambda args: False)
     monkeypatch.setattr(m, "_has_any_provider_configured", lambda: True)
-    import hermes_cli.free_tier_bootstrap as boot
+    import moor_cli.free_tier_bootstrap as boot
     monkeypatch.setattr(boot, "run_bootstrap", lambda **k: None)
-    import hermes_cli.observability.shared_metrics_consent as consent
+    import moor_cli.observability.shared_metrics_consent as consent
     monkeypatch.setattr(consent, "offer_consent_before_chat", lambda args: None)
-    import hermes_cli.observability.shared_metrics_process as proc
+    import moor_cli.observability.shared_metrics_process as proc
     monkeypatch.setattr(proc, "begin_process", lambda name: None)
     return m, calls
 
 
-def test_interactive_chat_runs_main_hermes_cli(routed):
+def test_interactive_chat_runs_main_moor_cli(routed):
     m, calls = routed
     m.cmd_chat(_args())
     assert "cli_main" in calls and "gateway" not in calls
 
 
-def test_query_runs_main_hermes_cli(routed):
+def test_query_runs_main_moor_cli(routed):
     m, calls = routed
     m.cmd_chat(_args(query="hello"))
     assert calls["cli_main"]["query"] == "hello" and "gateway" not in calls

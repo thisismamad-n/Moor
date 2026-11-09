@@ -22,7 +22,7 @@ from moor_cli.model_switch import ModelSwitchResult
 
 @pytest.fixture(autouse=True)
 def model_config(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     path = tmp_path / "config.yaml"
     path.write_text(
         "model:\n  default: old-model\n  provider: copilot\n"
@@ -33,7 +33,7 @@ def model_config(tmp_path, monkeypatch):
 
 
 def _saved_model():
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
     return {f"model.{key}": value for key, value in read_user_config_raw()["model"].items()}
 
 
@@ -95,12 +95,12 @@ def _run_switch(monkeypatch, result, cmd="/model MiniMax-M3 --global"):
     import cli as cli_mod
 
     monkeypatch.setattr(cli_mod, "_cprint", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: result)
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", lambda **kw: result)
     monkeypatch.setattr(
         "moor_cli.inventory.load_picker_context",
         lambda: (_ for _ in ()).throw(RuntimeError("no picker context in test")),
     )
-    cli_mod.HermesCLI._handle_model_switch(_StubCLI(), cmd)
+    cli_mod.MoorCLI._handle_model_switch(_StubCLI(), cmd)
     return _saved_model()
 
 
@@ -122,7 +122,7 @@ def test_session_only_switch_does_not_touch_config(monkeypatch, model_config):
 
     monkeypatch.setattr(cli_mod, "_cprint", lambda *a, **k: None)
     original = model_config.read_bytes()
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **kw: _make_result())
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", lambda **kw: _make_result())
     monkeypatch.setattr(
         "moor_cli.inventory.load_picker_context",
         lambda: (_ for _ in ()).throw(RuntimeError("no picker context in test")),
@@ -142,7 +142,7 @@ def _run_apply(monkeypatch, result, persist_global=True):
     import cli as cli_mod
 
     monkeypatch.setattr(cli_mod, "_cprint", lambda *a, **k: None)
-    cli_mod.HermesCLI._apply_model_switch_result(_StubCLI(), result, persist_global)
+    cli_mod.MoorCLI._apply_model_switch_result(_StubCLI(), result, persist_global)
     return _saved_model()
 
 

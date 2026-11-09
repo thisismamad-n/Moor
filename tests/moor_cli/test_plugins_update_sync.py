@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-from tests.hermes_cli.test_plugin_update_transaction import installed, _version
+from tests.moor_cli.test_plugin_update_transaction import installed, _version
 from tests.pm.test_plugin_survival_contract import admission_env
 
 

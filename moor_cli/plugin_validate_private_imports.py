@@ -1,8 +1,8 @@
-"""Admission lint: name a plugin's imports of private Hermes core modules (a warning, never a refusal).
+"""Admission lint: name a plugin's imports of private Moor core modules (a warning, never a refusal).
 
 Catalog rule 9 ("public surfaces only") is enforced for runtime rebinds by
 ``plugin_validate_core_override``; an import of a core internal (``tools.tirith_security``,
-``hermes_cli.cli_config_load._parse_service_tier_config``) passes that check yet breaks the plugin on
+``moor_cli.cli_config_load._parse_service_tier_config``) passes that check yet breaks the plugin on
 the release that moves or removes the internal. This static pass lists those imports, with
 file:line, so reviewers see the coupling at admission. Imports of the plugin's own modules, the
 standard library and third-party packages are never flagged; neither are ``TYPE_CHECKING`` imports.
@@ -15,37 +15,37 @@ import tomllib
 from functools import lru_cache
 from pathlib import Path
 
-from hermes_cli.plugin_validate_core_override import _hermes_top_level, _python_files
+from moor_cli.plugin_validate_core_override import _moor_top_level, _python_files
 
-# WHY: "public" must mean what Hermes documents for plugin authors, not a reviewer's taste.
-# Derived from every Hermes-module ``import`` in website/docs/developer-guide/**/*.md and
+# WHY: "public" must mean what Moor documents for plugin authors, not a reviewer's taste.
+# Derived from every moor-module ``import`` in website/docs/developer-guide/**/*.md and
 # website/docs/user-guide/features/plugins*.md code blocks (plus extending-the-dashboard.md, which
 # desktop-plugin-sdk.md names as the plugin backend reference), and what PluginContext hands out in
-# hermes_cli/plugins.py (property/return types, base classes its ``register_*`` methods check), and
+# moor_cli/plugins.py (property/return types, base classes its ``register_*`` methods check), and
 # the names those plugin pages tell authors to call, raise, return or subclass in prose. ``module`` entries allow the module (underscore names excepted);
 # ``module:Name`` entries allow one name. Re-harvest when those docs or PluginContext change.
 _PUBLIC = frozenset({
     # developer-guide / plugins docs
     "agent.account_usage", "agent.acp_client", "agent.browser_provider", "agent.context_engine", "agent.credential_pool",
-    "agent.delegation_backends", "agent.delegation_provider", "hermes_cli.auth_model_picker:prompt_model_selection",
-    "hermes_cli.auth:resolve_external_process_provider_credentials", "hermes_cli.model_setup",
+    "agent.delegation_backends", "agent.delegation_provider", "moor_cli.auth_model_picker:prompt_model_selection",
+    "moor_cli.auth:resolve_external_process_provider_credentials", "moor_cli.model_setup",
     "agent.image_gen_provider", "agent.memory_manager", "agent.memory_provider", "agent.secret_scope",
     "agent.secret_sources.base", "agent.subagent_lifecycle", "agent.terminal_env_provider",
     "agent.transports", "agent.transports.chat_completions", "agent.video_gen_provider",
     "agent.web_search_provider", "cli", "gateway.config", "gateway.platform_registry",
     "gateway.platforms._shared", "gateway.platforms.base", "gateway.platforms.event",
-    "gateway.platforms.helpers", "gateway.status", "hermes_cli.auth_oauth_pkce_plugin",
-    "hermes_cli.config", "hermes_cli.plugin_events", "hermes_cli.plugin_provider_requests",
-    "hermes_constants", "hermes_platform", "hermes_state", "plugins.plugin_storage", "plugins.plugin_utils", "pm",
+    "gateway.platforms.helpers", "gateway.status", "moor_cli.auth_oauth_pkce_plugin",
+    "moor_cli.config", "moor_cli.plugin_events", "moor_cli.plugin_provider_requests",
+    "moor_constants", "moor_platform", "moor_state", "plugins.plugin_storage", "plugins.plugin_utils", "pm",
     "providers", "providers.base", "tools.browser_supervisor", "tools.browser_supervisor_capture",
     "tools.computer_use.backend", "tools.registry",
-    # PluginContext (hermes_cli/plugins.py)
+    # PluginContext (moor_cli/plugins.py)
     "agent.context_references", "agent.plugin_llm", "agent.transcription_provider", "agent.tts_provider",
     "cron.execution_identity",
-    "hermes_cli.dashboard_auth", "hermes_cli.platform_actions", "hermes_cli.plugins:PluginContext",
-    "hermes_cli.plugins_ledger:PluginRegistration", "hermes_cli.plugins_state:PluginState",
+    "moor_cli.dashboard_auth", "moor_cli.platform_actions", "moor_cli.plugins:PluginContext",
+    "moor_cli.plugins_ledger:PluginRegistration", "moor_cli.plugins_state:PluginState",
     # prose in memory-provider / model-provider / terminal-environment plugin pages
-    "agent.runtime_cwd:resolve_agent_cwd", "agent.usage_pricing:CostResult", "hermes_cli.auth_constants:AuthError",
+    "agent.runtime_cwd:resolve_agent_cwd", "agent.usage_pricing:CostResult", "moor_cli.auth_constants:AuthError",
     "tools.environments.base:BaseEnvironment", "tools.environments:BaseEnvironment",  # package ``__all__``
     "utils:atomic_json_write", "utils:read_json_or_empty",
     # adding-platform-adapters.md § Public helpers for platform plugins
@@ -54,10 +54,10 @@ _PUBLIC = frozenset({
     "tools.clarify_gateway:mark_awaiting_text", "tools.clarify_gateway:SKIPPED",
     "tools.url_safety:is_safe_url", "tools.url_safety:create_ssrf_safe_async_client",
     "gateway.platforms._http_client_limits:platform_httpx_limits",
-    "hermes_cli.gateway_setup_wizard:print_setup_header", "hermes_cli.gateway_setup_wizard:confirm_reconfigure",
-    "hermes_cli.gateway_setup_wizard:offer_home_channel", "hermes_cli.gateway_setup_wizard:save_env_values",
-    "hermes_cli.gateway_setup_wizard:prompt_csv", "hermes_cli.setup:prompt", "hermes_cli.setup:prompt_choice",
-    "hermes_cli.setup:prompt_yes_no", "hermes_cli.cli_output",
+    "moor_cli.gateway_setup_wizard:print_setup_header", "moor_cli.gateway_setup_wizard:confirm_reconfigure",
+    "moor_cli.gateway_setup_wizard:offer_home_channel", "moor_cli.gateway_setup_wizard:save_env_values",
+    "moor_cli.gateway_setup_wizard:prompt_csv", "moor_cli.setup:prompt", "moor_cli.setup:prompt_choice",
+    "moor_cli.setup:prompt_yes_no", "moor_cli.cli_output",
     # plugins/index.md § Read the skill catalog
     "tools.skills_tool:find_all_skills", "tools.skills_tool:sort_skills", "tools.skills_tool:skill_search_dirs",
     "tools.skills_tool:locate_skill", "tools.skills_tool:skill_lookup_path_error",
@@ -70,15 +70,15 @@ _SHOWN = 10
 
 
 @lru_cache(maxsize=1)
-def _hermes_packages() -> frozenset:
-    """Hermes-owned top-level names: pyproject's ``packages.find`` includes plus the root modules
+def _moor_packages() -> frozenset:
+    """moor-owned top-level names: pyproject's ``packages.find`` includes plus the root modules
     setup.py ships as ``py-modules`` (every root ``*.py``)."""
     root = Path(__file__).resolve().parents[1]
     try:
         pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8-sig"))
         packages = {name.split(".")[0] for name in pyproject["tool"]["setuptools"]["packages"]["find"]["include"]}
     except (OSError, KeyError, ValueError):
-        packages = set(_hermes_top_level()) - {"hermes_plugins", "tests", "evals"}
+        packages = set(_moor_top_level()) - {"moor_plugins", "tests", "evals"}
     return frozenset((packages | {p.stem for p in root.glob("*.py")}) - {"setup", "conftest"})
 
 
@@ -120,7 +120,7 @@ def _core_module_exists(module: str) -> bool:
 
 
 def _is_own_module_path(module: str, local: set[str]) -> bool:
-    """A Hermes-shaped path that core does not ship but whose tail is one of the plugin's own modules:
+    """A moor-shaped path that core does not ship but whose tail is one of the plugin's own modules:
     the fallback spelling of the plugin's install location (``plugins.memory.openltm._db`` beside
     ``from . import _db``). A path core DOES ship stays a core import."""
     parts = module.split(".")
@@ -128,17 +128,17 @@ def _is_own_module_path(module: str, local: set[str]) -> bool:
 
 
 def _private_target(module: str, name: str, core: frozenset, local: set[str]) -> str:
-    """The dotted target to report, or "" when the import is public, local or not Hermes's."""
+    """The dotted target to report, or "" when the import is public, local or not Moor's."""
     target = f"{module}.{name}" if name else module
     own = _is_own_module_path(module, local) or bool(name) and _is_own_module_path(target, local)
-    hermes = module.split(".")[0] in core and module not in local and not own
+    moor = module.split(".")[0] in core and module not in local and not own
     public = target in _PUBLIC or f"{module}:{name}" in _PUBLIC \
         or (module in _PUBLIC and not name.startswith("_"))  # ``from gateway.platforms import base`` too
-    return target if hermes and not public else ""
+    return target if moor and not public else ""
 
 
 def _parsed_files(plugin_dir: Path) -> list[tuple[Path, ast.AST]]:
-    """``(rel, tree)`` for every plugin module that can load inside Hermes. Hidden dirs (``.github/``
+    """``(rel, tree)`` for every plugin module that can load inside Moor. Hidden dirs (``.github/``
     CI helpers) never do; tests and vendored envs are skipped by ``_python_files``."""
     parsed = []
     for path, rel in _python_files(plugin_dir):
@@ -152,12 +152,12 @@ def _parsed_files(plugin_dir: Path) -> list[tuple[Path, ast.AST]]:
 
 
 def private_import_findings(plugin_dir: Path) -> list[str]:
-    """``["<rel>:<line> <module>[.<name>]", ...]`` for every import of a private Hermes core module:
+    """``["<rel>:<line> <module>[.<name>]", ...]`` for every import of a private Moor core module:
     the first site of each distinct module first (so a truncated list still shows the breadth),
     then the rest, each group in file/line order."""
     files = _parsed_files(Path(plugin_dir))
     local = _local_modules(rel for rel, _tree in files)
-    core = _hermes_packages()
+    core = _moor_packages()
     found: set[tuple[str, int, str, str]] = set()
     for rel, tree in files:
         skipped = _type_checking_nodes(tree)
@@ -179,8 +179,8 @@ def private_import_findings(plugin_dir: Path) -> list[str]:
 # facade + sibling files. Calling one of their private methods (``db._execute_write(...)``,
 # ``runner._evict_cached_agent(...)``) couples the plugin to core internals exactly like a private
 # import, but no import names it, so the import pass above cannot see it.
-_CORE_HANDLE_SOURCES = ("hermes_state.py", "hermes_state_*.py", "run_agent.py", "agent/turn_*.py",
-                        "gateway/run.py", "gateway/run_*.py", "hermes_cli/plugins.py")
+_CORE_HANDLE_SOURCES = ("moor_state.py", "moor_state_*.py", "run_agent.py", "agent/turn_*.py",
+                        "gateway/run.py", "gateway/run_*.py", "moor_cli/plugins.py")
 
 
 @lru_cache(maxsize=1)
@@ -234,7 +234,7 @@ def _warn_sites(report, label: str, hits: list[str]) -> None:
 
 
 def check_private_imports(report, plugin_dir: Path) -> None:
-    """Warn (never fail) when the plugin imports private Hermes core modules or calls private
+    """Warn (never fail) when the plugin imports private Moor core modules or calls private
     methods on the core objects it is handed."""
     if hits := private_import_findings(plugin_dir):
         _warn_sites(report, "private core imports", hits)

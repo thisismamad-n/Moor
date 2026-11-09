@@ -284,17 +284,17 @@ def test_removing_the_last_plugin_source_revokes_its_process_env_value(
     has its own view disturbed by the revocation."""
     import agent.secret_sources.registry as reg
     from agent.secret_scope import get_secret
-    from hermes_cli import env_loader
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_cli import env_loader
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     reg._reset_registry_for_tests()
     env_loader.reset_secret_source_cache()
-    home_a = tmp_path / "a" / ".hermes"
-    home_b = tmp_path / "b" / ".hermes"
+    home_a = tmp_path / "a" / ".moor"
+    home_b = tmp_path / "b" / ".moor"
     _write_plugin_home(home_a, plugin_enabled=True)
     home_b.mkdir(parents=True)
     (home_b / ".env").write_text("SIBLING_ONLY=sibling\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home_a))
+    monkeypatch.setenv("MOOR_HOME", str(home_a))
     monkeypatch.delenv("REVIEW_PLUGIN_SECRET", raising=False)
 
     try:
@@ -304,11 +304,11 @@ def test_removing_the_last_plugin_source_revokes_its_process_env_value(
         assert get_secret("REVIEW_PLUGIN_SECRET") == "from-plugin"
 
         # B: a sibling profile's activity in between does not touch A's record or value.
-        token = set_hermes_home_override(str(home_b))
+        token = set_moor_home_override(str(home_b))
         try:
             env_loader.hydrate_profile_secret_sources(home_b)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
         assert os.environ["REVIEW_PLUGIN_SECRET"] == "from-plugin"
 
         if replaced_by_other_owner:

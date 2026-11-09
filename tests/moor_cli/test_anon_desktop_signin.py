@@ -1,9 +1,9 @@
-"""Desktop (dashboard API) Nous sign-in: the plain device-code login, then the free tier's handoff.
+"""Desktop (dashboard API) Moor sign-in: the plain device-code login, then the free tier's handoff.
 
-``POST /api/providers/oauth/nous/start`` hands the renderer the device page and code; the poller
+``POST /api/providers/oauth/moor/start`` hands the renderer the device page and code; the poller
 takes the token grant, persists the account, moves a replaced free tier's apps, and settles the
 default model. Driven through the real FastAPI routes against a fake portal (the same fake
-``hermes auth upgrade`` is tested with).
+``moor auth upgrade`` is tested with).
 """
 
 from __future__ import annotations
@@ -13,11 +13,11 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from hermes_cli import anon_auth
-from hermes_cli.auth import _load_auth_store
-from hermes_cli.web_server import _SESSION_TOKEN, app
-from tests.hermes_cli.anon_portal import as_local_desktop_backend, claimed_trial
-from tests.hermes_cli.test_anon_upgrade import (
+from moor_cli import anon_auth
+from moor_cli.auth import _load_auth_store
+from moor_cli.web_server import _SESSION_TOKEN, app
+from tests.moor_cli.anon_portal import as_local_desktop_backend, claimed_trial
+from tests.moor_cli.test_anon_upgrade import (
     EMAIL, FREE_PICK, INFERENCE, PORTAL, WELCOME, _model_config, _write_model_config, free_account, portal)
 
 client = TestClient(app)
@@ -52,7 +52,7 @@ def test_start_shows_the_device_code_and_completion_reports_what_moved(portal, f
     assert body["model"] == FREE_PICK
     assert body["handoff"] == [f"Your apps moved to {EMAIL}: Gmail."]
     assert not [p for _, p in portal.calls if "promotion" in p]
-    state = _load_auth_store()["providers"]["nous"]
+    state = _load_auth_store()["providers"]["moor"]
     assert "anon_token" not in state and not anon_auth.is_guest_state(state)
     model_cfg = _model_config()
     assert model_cfg["default"] == FREE_PICK
@@ -68,7 +68,7 @@ def test_an_expired_code_reports_the_timeout_reason_and_keeps_the_free_tier(port
     body = _wait_for_terminal(start["session_id"])
     assert body["status"] == "error"
     assert body["reason"] == "timeout"
-    assert _load_auth_store()["providers"]["nous"]["anon_token"] == guest["anon_token"]
+    assert _load_auth_store()["providers"]["moor"]["anon_token"] == guest["anon_token"]
 
 
 def test_status_routes_report_the_free_tier(portal, monkeypatch):
@@ -86,8 +86,8 @@ def test_a_connector_only_guest_is_not_reported_as_the_free_tier(portal, monkeyp
     anon_auth.ensure_portal_identity(explicit=True)
     assert client.get("/api/portal", headers=HEADERS).json()["free_tier"] is False
     providers = client.get("/api/providers/oauth", headers=HEADERS).json()["providers"]
-    nous = next(p for p in providers if p["id"] == "nous")
-    assert not nous["status"].get("free_tier")
+    moor = next(p for p in providers if p["id"] == "moor")
+    assert not moor["status"].get("free_tier")
 
 
 def test_a_sign_in_cancelled_while_waiting_stops_the_token_poll_and_persists_nothing(portal, free_account):

@@ -29,13 +29,13 @@ from pathlib import Path
 import psutil
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
-from hermes_cli import kanban_diagnostics as kd
-from hermes_cli import kanban_owner_recovery
-from hermes_cli.process_identity import worker_birth
-from hermes_cli.kanban_owner_recovery import (
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_diagnostics as kd
+from moor_cli import kanban_owner_recovery
+from moor_cli.process_identity import worker_birth
+from moor_cli.kanban_owner_recovery import (
     bound_interpreter_gone,
     owner_attempt_provably_over,
     owner_reclaim_blocked,
@@ -151,7 +151,7 @@ class _Board:
 
 @pytest.fixture
 def board(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("MOOR_KANBAN_CRASH_GRACE_SECONDS", "0")
     scratch = _Board(tmp_path)
     yield scratch
     scratch.close()

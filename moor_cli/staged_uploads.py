@@ -7,7 +7,7 @@ layout, so the writer and the reader of the layout live here together. The file 
 file back from this host by the same layout when the profile's workspace is an SSH machine.
 
 A named profile that is missing or deleted is refused on both sides by the rule every named-home
-write follows (``hermes_constants.assert_named_profile_home_live`` / ``mkdir_under_hermes_home``):
+write follows (``moor_constants.assert_named_profile_home_live`` / ``mkdir_under_moor_home``):
 an upload never recreates a deleted home, and a receipt from one is never redeemed.
 """
 
@@ -23,13 +23,13 @@ import time
 
 from fastapi import HTTPException
 
-from hermes_constants import WEBAPP_ATTACHMENT_MAX_BYTES
-from hermes_cli.install_identity import get_install_id
-from hermes_cli.web_deps import late
+from moor_constants import WEBAPP_ATTACHMENT_MAX_BYTES
+from moor_cli.install_identity import get_install_id
+from moor_cli.web_deps import late
 
 
-_is_current_profile = late("_is_current_profile", "hermes_cli.web_server_profiles")
-_resolve_profile_dir = late("_resolve_profile_dir", "hermes_cli.web_server_profiles")
+_is_current_profile = late("_is_current_profile", "moor_cli.web_server_profiles")
+_resolve_profile_dir = late("_resolve_profile_dir", "moor_cli.web_server_profiles")
 _UPLOADS_DIR = "uploads"
 _STAGED_PREFIX = "web-"
 _CHUNK_BYTES = 1024 * 1024
@@ -82,10 +82,10 @@ def resolve_upload_home(profile: str | None) -> Path:
     on its process-wide skills lock or wait on its secret-source hydration. A named home that is
     missing or deleted is a 404.
     """
-    from hermes_constants import assert_named_profile_home_live, get_hermes_home
+    from moor_constants import assert_named_profile_home_live, get_moor_home
 
     if _is_current_profile(profile):
-        home = get_hermes_home()
+        home = get_moor_home()
     else:
         home = _resolve_profile_dir(profile.strip())
     try:
@@ -105,14 +105,14 @@ def ensure_profile_subdir(
 ) -> Path:
     """``<home>/<name>``, created without ever recreating a missing or deleted named home.
 
-    That case is a 404 (``mkdir_under_hermes_home``). Other directory errors are 403 *denied* and
+    That case is a 404 (``mkdir_under_moor_home``). Other directory errors are 403 *denied* and
     500 ``"<failed>: <exc>"``; *mode* is applied inside that mapping.
     """
-    from hermes_constants import mkdir_under_hermes_home
+    from moor_constants import mkdir_under_moor_home
 
     directory = home / name
     try:
-        mkdir_under_hermes_home(directory)
+        mkdir_under_moor_home(directory)
         if mode is not None:
             directory.chmod(mode)
     except FileNotFoundError as exc:
@@ -126,7 +126,7 @@ def ensure_profile_subdir(
 
 def publish_staged_upload(staged, profile_home: Path, filename: str) -> Path:
     """Publish staged bytes as a new owner-only file under ``<profile_home>/uploads``."""
-    from hermes_constants import assert_named_profile_home_live
+    from moor_constants import assert_named_profile_home_live
 
     upload_root = ensure_profile_subdir(
         profile_home,
@@ -163,7 +163,7 @@ def staged_upload_descriptor(path: Path, profile_home: Path) -> dict | None:
     """The ``staged_upload`` receipt for a published file, or None without an install identity."""
     install_id = get_install_id()
     if not install_id:
-        # Identity is already persisted by Hermes. If it is unavailable, keep
+        # Identity is already persisted by Moor. If it is unavailable, keep
         # the legacy path/byte-upload flow rather than invent an ephemeral id.
         return None
     return {
@@ -183,7 +183,7 @@ def parse_staged_upload(descriptor: object) -> tuple[str, str]:
         raise ValueError("invalid staged upload")
     install_id = get_install_id()
     if not install_id or descriptor.get("install_id") != install_id:
-        raise ValueError("Staged attachment belongs to another Hermes backend; select the file again")
+        raise ValueError("Staged attachment belongs to another Moor backend; select the file again")
     raw_home = descriptor.get("profile_home")
     raw_path = descriptor.get("path")
     if not isinstance(raw_home, str) or not raw_home or not isinstance(raw_path, str) or not raw_path:
@@ -197,7 +197,7 @@ def resolve_staged_upload(home: Path, raw_path: str) -> Path:
     The check is anchored on *home*, never on where the descriptor's path claims to point. A named
     *home* that is missing or deleted raises ``FileNotFoundError``: its receipts are void.
     """
-    from hermes_constants import assert_named_profile_home_live
+    from moor_constants import assert_named_profile_home_live
 
     assert_named_profile_home_live(home)
     source = Path(raw_path)

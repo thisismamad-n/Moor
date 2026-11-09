@@ -1,8 +1,8 @@
-"""The Nous Portal client the listener this process serves signs in with instead of the configured one.
+"""The Moor Portal client the listener this process serves signs in with instead of the configured one.
 
 The gateway's Webapp listener signs browsers in with the client Web Access registered for it
-(``hermes_cli.webapp_access.sign_in_client``), so the dashboard's ``HERMES_DASHBOARD_OAUTH_CLIENT_ID``
-keeps the redirect URI its own sign-in needs. Plugin discovery imports the bundled Nous sign-in
+(``moor_cli.webapp_access.sign_in_client``), so the dashboard's ``MOOR_DASHBOARD_OAUTH_CLIENT_ID``
+keeps the redirect URI its own sign-in needs. Plugin discovery imports the bundled Moor sign-in
 plugin under a module name of its own, so the plugin and the gateway meet here: the plugin offers
 its provider swap when discovery loads it (:func:`offer`), and reads :func:`current` whenever it
 builds its provider, a plugin reload included.
@@ -21,7 +21,7 @@ def current() -> Optional[tuple[str, str]]:
 
 
 def offer(swap: Callable[[], Callable[[], None]]) -> None:
-    """Called by the Nous sign-in plugin as discovery loads it: ``swap()`` puts its provider on the
+    """Called by the Moor sign-in plugin as discovery loads it: ``swap()`` puts its provider on the
     :func:`current` client in place of the registered one and returns the undo."""
     global _swap
     _swap = swap
@@ -29,7 +29,7 @@ def offer(swap: Callable[[], Callable[[], None]]) -> None:
 
 def use(client_id: str, portal_url: str) -> Optional[Callable[[], None]]:
     """Sign in with *client_id* on *portal_url* until the returned undo runs, which puts the
-    configured provider (or none) back. None, changing nothing, where the Nous sign-in plugin is
+    configured provider (or none) back. None, changing nothing, where the Moor sign-in plugin is
     not loaded (``plugins.disabled``)."""
     global _current
     if _swap is None:

@@ -39,8 +39,8 @@ from pathlib import Path
 # re-typed regex (moor_cli/__init__.py is import-light).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from hermes_cli import update_channel
-from hermes_cli.steward import UPDATE_MECHANISMS
+from moor_cli import update_channel
+from moor_cli.steward import UPDATE_MECHANISMS
 
 STAMP_SCHEMA_VERSION = 2
 _REPO_ROOT = Path(__file__).parent.parent.resolve()

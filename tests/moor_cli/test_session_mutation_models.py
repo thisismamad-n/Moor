@@ -2,7 +2,7 @@
 import pytest
 from pydantic import ValidationError
 
-from hermes_cli.web_models import SessionImport, SessionRename
+from moor_cli.web_models import SessionImport, SessionRename
 
 
 def test_mutation_counters_reject_coercion():

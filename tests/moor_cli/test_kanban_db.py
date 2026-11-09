@@ -1593,7 +1593,7 @@ def test_resolve_moor_argv_prefers_module_form_over_path_shim(monkeypatch):
 
 
 
-def test_resolve_hermes_argv_module_actually_runs():
+def test_resolve_moor_argv_module_actually_runs():
     """The fallback module name must be importable + runnable.
 
     A unit test that pins the literal string is necessary but not
@@ -1610,7 +1610,7 @@ def test_resolve_hermes_argv_module_actually_runs():
     with mock.patch.dict(os.environ, {}, clear=False):
         os.environ.pop("MOOR_BIN", None)
         with mock.patch.object(shutil, "which", return_value=None):
-            argv = kbd._resolve_hermes_argv()
+            argv = kbd._resolve_moor_argv()
     offline = {**os.environ, "HTTPS_PROXY": "http://127.0.0.1:9", "https_proxy": "http://127.0.0.1:9", "NO_PROXY": "", "no_proxy": ""}
     r = subprocess.run(argv + ["--version"], capture_output=True, text=True, timeout=30, check=False, env=offline)
     assert r.returncode == 0, (
@@ -1622,28 +1622,28 @@ def test_resolve_hermes_argv_module_actually_runs():
 def test_default_spawn_pins_repo_root_on_module_worker_pythonpath(tmp_path, monkeypatch):
     """The dispatcher's worker must carry the import context of the install that spawned it.
 
-    The worker is always ``sys.executable -m hermes_cli.kanban_worker_client`` (it only submits
-    the claim to the profile owner), and the worker env scrub strips Hermes-owned PYTHONPATH
+    The worker is always ``sys.executable -m moor_cli.kanban_worker_client`` (it only submits
+    the claim to the profile owner), and the worker env scrub strips moor-owned PYTHONPATH
     entries, so a bare module child died on import and the board auto-blocked (#122299,
     #122487, #122500). The spawned env must put the running install's root first on
-    PYTHONPATH. Main's carve-out for a resolved ``hermes`` shim path does not apply here: the
-    worker never runs the resolved CLI argv, so a ``$HERMES_BIN``/PATH shim can neither replace
+    PYTHONPATH. Main's carve-out for a resolved ``moor`` shim path does not apply here: the
+    worker never runs the resolved CLI argv, so a ``$MOOR_BIN``/PATH shim can neither replace
     the module child nor drop the pin.
     """
     import os
     import sys
     from pathlib import Path
 
-    from hermes_cli import kanban_db_dispatch as kbd
+    from moor_cli import kanban_db_dispatch as kbd
 
     root = str(Path(kbd.__file__).resolve().parents[1])
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_KANBAN_HOME", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.delenv("MOOR_KANBAN_HOME", raising=False)
     monkeypatch.delenv("PYTHONPATH", raising=False)
-    monkeypatch.delenv("HERMES_BIN", raising=False)
+    monkeypatch.delenv("MOOR_BIN", raising=False)
 
     captured = {}
 
@@ -1662,10 +1662,10 @@ def test_default_spawn_pins_repo_root_on_module_worker_pythonpath(tmp_path, monk
         claim_expires=None, tenant=None, branch_name=None,
     )
 
-    for resolved in ([sys.executable, "-m", "hermes_cli.main"], ["/opt/hermes/bin/hermes"]):
-        monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda resolved=resolved: resolved)
+    for resolved in ([sys.executable, "-m", "moor_cli.main"], ["/opt/moor/bin/moor"]):
+        monkeypatch.setattr(kbd, "_resolve_moor_argv", lambda resolved=resolved: resolved)
         kbd._default_spawn(task, str(tmp_path / "ws"))
-        assert captured["cmd"][-3:] == [sys.executable, "-m", "hermes_cli.kanban_worker_client"]
+        assert captured["cmd"][-3:] == [sys.executable, "-m", "moor_cli.kanban_worker_client"]
         assert captured["env"]["PYTHONPATH"].split(os.pathsep)[0] == root
 
 

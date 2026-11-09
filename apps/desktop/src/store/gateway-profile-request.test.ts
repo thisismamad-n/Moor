@@ -65,7 +65,7 @@ const {
 } = await import('./gateway')
 
 function installDesktop(getConnection: ReturnType<typeof vi.fn>): void {
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+  ;(window as unknown as { moorDesktop: unknown }).moorDesktop = {
     getConnection
   }
 }
@@ -119,7 +119,7 @@ describe('requestGatewayForProfile', () => {
       // The target profile's backend never comes up.
       const getConnection = vi.fn(async (profile: null | string) => {
         if (profile === 'jody') {
-          throw new Error('Failed to connect to Hermes gateway')
+          throw new Error('Failed to connect to Moor gateway')
         }
 
         return { port: 4242, token: 'primary-token' }
@@ -163,7 +163,7 @@ describe('requestGatewayForProfile', () => {
       const getConnection = vi.fn(async (profile: null | string) => {
         if (profile === 'jody') {
           if (!jodyUp) {
-            throw new Error('Failed to connect to Hermes gateway')
+            throw new Error('Failed to connect to Moor gateway')
           }
 
           return { port: 5151, profile, token: 'secondary-token' }

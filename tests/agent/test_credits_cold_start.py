@@ -78,7 +78,7 @@ class _FakeAgent:
     the real policy against the latch (mirroring run_agent._emit_credits_notices,
     including the free-model suppression flag)."""
 
-    def __init__(self, provider="nous", model="", base_url="", session_id="session-1"):  # session_id may be None
+    def __init__(self, provider="moor", model="", base_url="", session_id="session-1"):  # session_id may be None
         from agent.credits_tracker import evaluate_credits_notices, is_free_tier_model
 
         self.provider = provider
@@ -297,7 +297,7 @@ def _run_bg_seed(monkeypatch, agent, *, warm):
     import threading
 
     from agent import memory_provider
-    from hermes_cli import nous_account
+    from moor_cli import moor_account
     from agent import credits_tracker
 
     release_worker = threading.Event()

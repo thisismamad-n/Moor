@@ -1,6 +1,6 @@
 """A dispatcher-authored ``chat -q`` run carries its turn author, as ``chat -Q`` already does.
 
-``HERMES_TURN_AUTHOR`` names who wrote a one-shot run's prompts. The non-quiet ``-q`` path ignored it,
+``MOOR_TURN_AUTHOR`` names who wrote a one-shot run's prompts. The non-quiet ``-q`` path ignored it,
 so the turn reached memory providers as the operator's and tool subprocesses inherited the variable.
 """
 
@@ -17,9 +17,9 @@ from agent.turn_author import TURN_AUTHOR_ENV
 
 
 def _one_shot_cli(monkeypatch):
-    """A real HermesCLI whose ``chat`` runs the real agent-thread body against a recording agent."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
+    """A real MoorCLI whose ``chat`` runs the real agent-thread body against a recording agent."""
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_GOAL_MODE", raising=False)
     monkeypatch.setattr(cli, "_should_seed_interactive", lambda *a, **k: False)
     monkeypatch.setattr(cli, "_collect_query_images", lambda q, i: (q, []))
     monkeypatch.setattr(cli, "_collect_kanban_task_images", lambda imgs: [])
@@ -31,7 +31,7 @@ def _one_shot_cli(monkeypatch):
         calls.append({**kwargs, "env_author": os.environ.get(TURN_AUTHOR_ENV)})
         return {"final_response": "done"}
 
-    the_cli = cli.HermesCLI.__new__(cli.HermesCLI)
+    the_cli = cli.MoorCLI.__new__(cli.MoorCLI)
     the_cli.session_id = "s-1"
     the_cli.conversation_history = [{"role": "user", "content": "summarize the report"}]
     the_cli.agent = SimpleNamespace(run_conversation=Mock(side_effect=run_conversation))

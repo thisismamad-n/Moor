@@ -9,7 +9,7 @@ import threading
 
 import pytest
 
-from hermes_cli import anon_auth, free_tier_offer
+from moor_cli import anon_auth, free_tier_offer
 
 DELAY = free_tier_offer.OFFER_DELAY_S
 BACKOFF = free_tier_offer.REOFFER_AFTER_S
@@ -25,7 +25,7 @@ class _Clock:
 
 @pytest.fixture
 def clock(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "root" / "profiles" / "setup"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "root" / "profiles" / "setup"))
     monkeypatch.setattr(anon_auth, "free_inference_active", lambda state=None: True)
     fake = _Clock()
     monkeypatch.setattr(free_tier_offer, "_clock", fake)
@@ -100,7 +100,7 @@ def test_concurrent_claims_grant_exactly_one(clock):
 
 def test_record_is_install_wide_across_profiles(clock, tmp_path, monkeypatch):
     free_tier_offer.record_task_done()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "root" / "profiles" / "work"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "root" / "profiles" / "work"))
     assert free_tier_offer.offer_due_in() == DELAY
 
 
@@ -118,14 +118,14 @@ def test_never_offered_off_the_free_tier(clock, monkeypatch):
     (True, False, False, True, False),   # a guest that connected nothing
     (True, True, True, True, False),     # the trial makes its own offer
     (False, True, False, True, False),   # signed in: no guest, no offer
-    (True, True, False, False, False),   # nous.guest: false, the guest left on disk
+    (True, True, False, False, False),   # moor.guest: false, the guest left on disk
 ], ids=["connector-guest", "nothing-connected", "on-trial", "signed-in", "guests-off"])
 def test_connector_offer_is_only_for_a_guest_that_connected_an_app_without_the_trial(
         clock, monkeypatch, guest, connected, trial, allowed, offered):
     state = {"auth_method": anon_auth.ANON_AUTH_METHOD if guest else "device_code"}
     if connected:
         state[free_tier_offer.CONNECTED_APP_FLAG] = True
-    monkeypatch.setattr(anon_auth, "current_nous_state", lambda: state)
+    monkeypatch.setattr(anon_auth, "current_moor_state", lambda: state)
     monkeypatch.setattr(anon_auth, "free_inference_active", lambda state=None: trial)
     monkeypatch.setattr(anon_auth, "guest_allowed", lambda: allowed)
     free_tier_offer.record_task_done(free_tier_offer.CONNECTOR)

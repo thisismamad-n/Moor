@@ -9,18 +9,18 @@ from typing import IO
 
 
 class DesktopBuildLock:
-    """Advisory lock held while npm installs and packages Hermes Desktop.
+    """Advisory lock held while npm installs and packages Moor Desktop.
 
     ``node_modules`` and ``apps/desktop/release`` are checkout-scoped even
-    when two commands use different Hermes profiles.  The lock therefore
-    lives under the profile-common Hermes root and is keyed by the resolved
+    when two commands use different Moor profiles.  The lock therefore
+    lives under the profile-common Moor root and is keyed by the resolved
     checkout path.  Keeping it out of the checkout preserves ``--skip-build``
     launches from read-only/prebuilt source trees.  The open handle owns the
     lock, so the OS releases it automatically if a builder crashes.
 
     The build also writes the checkout an update writes, so the lock first takes the
     checkout lock every updater holds (``update_lock``; review C5), then its own: one lock
-    order (checkout, then desktop build) for a direct ``hermes desktop`` build and for the
+    order (checkout, then desktop build) for a direct ``moor desktop`` build and for the
     update's build (which already holds the checkout lock and only joins it again), and no
     gap in which an updater could take the checkout while npm still writes.  Holding the
     checkout lock also puts the build in the update custody (``update_custody``): its
@@ -28,11 +28,11 @@ class DesktopBuildLock:
     """
 
     def __init__(self, project_root: Path) -> None:
-        from hermes_constants import get_default_hermes_root
+        from moor_constants import get_default_moor_root
 
         resolved = os.path.normcase(str(project_root.resolve(strict=False)))
         checkout_key = hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:24]
-        self.path = get_default_hermes_root() / "locks" / f"desktop-build-{checkout_key}.lock"
+        self.path = get_default_moor_root() / "locks" / f"desktop-build-{checkout_key}.lock"
         self.project_root = project_root
         self._handle: IO[str] | None = None
         self._checkout = None
@@ -62,7 +62,7 @@ class DesktopBuildLock:
         """Take (or, inside an update, join) the checkout lock before the build lock (C5)."""
         import time
 
-        from hermes_cli import update_lock
+        from moor_cli import update_lock
 
         held, wanted = update_lock._HELD, update_lock.checkout_lock_path(self.project_root)
         if held is not None and held["path"] != str(wanted):
@@ -82,7 +82,7 @@ class DesktopBuildLock:
             if not wait:
                 return False
             if not announced:
-                print("→ Waiting for a running Hermes update to release this checkout...")
+                print("→ Waiting for a running Moor update to release this checkout...")
                 announced = True
             time.sleep(1.0)
         self._checkout = lock
@@ -108,7 +108,7 @@ class DesktopBuildLock:
         # Blocking mode queues behind the holder; say so instead of appearing
         # to hang with no output (the update path would rather wait for the
         # in-flight build it depends on than fail the update).
-        print("→ Waiting for another Hermes desktop dependency install or build to finish...")
+        print("→ Waiting for another Moor desktop dependency install or build to finish...")
         print(f"  Lock: {self.path}")
         from gateway.status import _release_file_lock
 

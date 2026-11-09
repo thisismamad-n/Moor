@@ -109,7 +109,7 @@ describe('settings helpers', () => {
 
   it('Reasoning Blocks shows and writes the local key a local /reasoning saved', () => {
     // After a local `/reasoning hide`: the local key wins on every local surface.
-    const config: HermesConfigRecord = { display: { show_reasoning: true, platforms: { cli: { show_reasoning: false } } } }
+    const config: MoorConfigRecord = { display: { show_reasoning: true, platforms: { cli: { show_reasoning: false } } } }
 
     expect(configFieldValue(config, 'display.show_reasoning')).toBe(false)
     const next = setConfigField(config, 'display.show_reasoning', true)
@@ -125,7 +125,7 @@ describe('settings helpers', () => {
 
   it('Reasoning Blocks reads a quoted local value as the gateway does', () => {
     const shown = (value: unknown) =>
-      configFieldValue({ display: { show_reasoning: true, platforms: { cli: { show_reasoning: value } } } } as HermesConfigRecord, 'display.show_reasoning')
+      configFieldValue({ display: { show_reasoning: true, platforms: { cli: { show_reasoning: value } } } } as MoorConfigRecord, 'display.show_reasoning')
 
     for (const off of ['false', 'False', '0', 'no', 'off', ' false ']) {
       expect(shown(off)).toBe(false)
@@ -304,10 +304,10 @@ describe('settings helpers', () => {
 
   describe('enumOptionsFor — display.personality dropdown', () => {
     it('lists a root-level `personalities` block alongside the built-ins (#123297)', () => {
-      // The Python spec (`hermes_cli.personality.available_personalities`) overlays
+      // The Python spec (`moor_cli.personality.available_personalities`) overlays
       // the built-ins with the root `personalities` block then `agent.personalities`;
       // the dropdown must surface a root-registered persona the CLI/gateway resolve.
-      const config: HermesConfigRecord = { personalities: { root_persona: { prompt: 'hi' } } }
+      const config: MoorConfigRecord = { personalities: { root_persona: { prompt: 'hi' } } }
       const opts = enumOptionsFor('display.personality', '', config)
 
       // Derive the expected built-ins from the source of truth, per the repo's
@@ -321,7 +321,7 @@ describe('settings helpers', () => {
     })
 
     it('merges root and agent personalities, deduping a clashing name', () => {
-      const config: HermesConfigRecord = {
+      const config: MoorConfigRecord = {
         personalities: { root_persona: {}, shared: {} },
         agent: { personalities: { agent_persona: {}, shared: {} } }
       }
@@ -335,7 +335,7 @@ describe('settings helpers', () => {
 
     it('ignores a non-object or array `personalities` block', () => {
       for (const bad of [[], 'nope', 42, null]) {
-        const opts = enumOptionsFor('display.personality', '', { personalities: bad } as HermesConfigRecord)!
+        const opts = enumOptionsFor('display.personality', '', { personalities: bad } as MoorConfigRecord)!
         // still the built-ins + empty sentinel, no crash on a malformed block
         expect(opts).toContain('')
 
@@ -350,9 +350,9 @@ describe('settings helpers', () => {
       // spellings; without matching that, the dropdown offers a case-variant duplicate,
       // a whitespace-padded name, or a neutral name the runtime canonicalises away —
       // rows the user can pick but that never load the definition shown (#123297).
-      const config: HermesConfigRecord = {
+      const config: MoorConfigRecord = {
         personalities: { Catgirl: {}, '  Spaced  ': {}, none: {}, Default: {}, NEUTRAL: {} }
-      } as HermesConfigRecord
+      } as MoorConfigRecord
 
       const opts = enumOptionsFor('display.personality', '', config)!
 

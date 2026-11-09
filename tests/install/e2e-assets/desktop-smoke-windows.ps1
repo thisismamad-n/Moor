@@ -31,7 +31,7 @@ function Start-DesktopJourneyMock([string]$Node, [string]$Assets, [string]$Work,
 
 # The Actions runner holds every step process in a job object that refuses
 # CREATE_BREAKAWAY_FROM_JOB (limit flags 0), and so does Task Scheduler for a task's
-# process; Hermes deliberately refuses to start a gateway it cannot detach
+# process; Moor deliberately refuses to start a gateway it cannot detach
 # (gateway_runtime_start.py::spawn_unmanaged_gateway), so an app launched from either
 # reports "Gateway inaccessible (windows_breakaway_unavailable)". A user's
 # Explorer/Start-menu launch is in no job, and neither is a Win32_Process.Create child,

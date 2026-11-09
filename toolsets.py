@@ -36,7 +36,7 @@ _MOOR_CORE_TOOLS = [
 ]
 
 # Webhook payloads are untrusted third-party content: no file/system execution.
-_HERMES_WEBHOOK_SAFE_TOOLS = ["web_search", "web_extract", "vision_analyze", "clarify"]
+_MOOR_WEBHOOK_SAFE_TOOLS = ["web_search", "web_extract", "vision_analyze", "clarify"]
 _FEISHU_TOOLS = [
     "feishu_doc_read", "feishu_drive_list_comments", "feishu_drive_list_comment_replies",
     "feishu_drive_reply_comment", "feishu_drive_add_comment",
@@ -109,7 +109,7 @@ TOOLSETS = {
     "browser": _ts(
         "Browser automation: drive a real browser with Python over CDP (navigate, "
         "click, type, extract, screenshots), raw CDP, dialogs and vault logins",
-        [t for t in _HERMES_CORE_TOOLS if t.startswith("browser_")],
+        [t for t in _MOOR_CORE_TOOLS if t.startswith("browser_")],
     ),
     "cronjob": _ts(
         "Cronjob management tool - create, list, update, pause, resume, remove, and "
@@ -206,20 +206,20 @@ TOOLSETS = {
         "command approval)",
         ["discord", "discord_admin"],
     ),
-    "hermes-whatsapp": _bundle("WhatsApp bot toolset - similar to Telegram (personal messaging, more trusted)"),
-    "hermes-slack": _bundle("Slack bot toolset - full access for workspace use (terminal has safety checks)"),
-    "hermes-signal": _bundle("Signal bot toolset - encrypted messaging platform (full access)"),
-    "hermes-bluebubbles": _bundle("BlueBubbles iMessage bot toolset - Apple iMessage via local BlueBubbles server"),
-    "hermes-email": _bundle("Email bot toolset - interact with Hermes via email (IMAP/SMTP)"),
-    "hermes-mattermost": _bundle("Mattermost bot toolset - self-hosted team messaging (full access)"),
-    "hermes-matrix": _bundle("Matrix bot toolset - decentralized encrypted messaging (full access)"),
-    "hermes-dingtalk": _bundle("DingTalk bot toolset - enterprise messaging platform (full access)"),
-    "hermes-feishu": _bundle("Feishu/Lark bot toolset - enterprise messaging via Feishu/Lark (full access)", _FEISHU_TOOLS),
-    "hermes-weixin": _bundle("Weixin bot toolset - personal WeChat messaging via iLink (full access)"),
-    "hermes-qqbot": _bundle("QQBot toolset - QQ messaging via Official Bot API v2 (full access)"),
-    "hermes-wecom": _bundle("WeCom bot toolset - enterprise WeChat messaging (full access)"),
-    "hermes-wecom-callback": _bundle("WeCom callback toolset - enterprise self-built app messaging (full access)"),
-    "hermes-yuanbao": {
+    "moor-whatsapp": _bundle("WhatsApp bot toolset - similar to Telegram (personal messaging, more trusted)"),
+    "moor-slack": _bundle("Slack bot toolset - full access for workspace use (terminal has safety checks)"),
+    "moor-signal": _bundle("Signal bot toolset - encrypted messaging platform (full access)"),
+    "moor-bluebubbles": _bundle("BlueBubbles iMessage bot toolset - Apple iMessage via local BlueBubbles server"),
+    "moor-email": _bundle("Email bot toolset - interact with Moor via email (IMAP/SMTP)"),
+    "moor-mattermost": _bundle("Mattermost bot toolset - self-hosted team messaging (full access)"),
+    "moor-matrix": _bundle("Matrix bot toolset - decentralized encrypted messaging (full access)"),
+    "moor-dingtalk": _bundle("DingTalk bot toolset - enterprise messaging platform (full access)"),
+    "moor-feishu": _bundle("Feishu/Lark bot toolset - enterprise messaging via Feishu/Lark (full access)", _FEISHU_TOOLS),
+    "moor-weixin": _bundle("Weixin bot toolset - personal WeChat messaging via iLink (full access)"),
+    "moor-qqbot": _bundle("QQBot toolset - QQ messaging via Official Bot API v2 (full access)"),
+    "moor-wecom": _bundle("WeCom bot toolset - enterprise WeChat messaging (full access)"),
+    "moor-wecom-callback": _bundle("WeCom callback toolset - enterprise self-built app messaging (full access)"),
+    "moor-yuanbao": {
         "description": "Yuanbao Bot 元宝消息平台工具集 - 群信息、成员查询、私聊、贴纸表情",
         "tools": _MOOR_CORE_TOOLS + _YUANBAO_TOOLS,
         "module": "tools.yuanbao_tools",
@@ -231,11 +231,11 @@ TOOLSETS = {
         "Gateway toolset - union of all messaging platform tools",
         [],
         includes=[
-            "hermes-telegram", "hermes-discord", "hermes-whatsapp", "hermes-slack",
-            "hermes-signal", "hermes-bluebubbles", "hermes-email",
-            "hermes-sms", "hermes-mattermost", "hermes-matrix", "hermes-dingtalk",
-            "hermes-feishu", "hermes-wecom", "hermes-wecom-callback", "hermes-weixin",
-            "hermes-qqbot", "hermes-webhook", "hermes-yuanbao",
+            "moor-telegram", "moor-discord", "moor-whatsapp", "moor-slack",
+            "moor-signal", "moor-bluebubbles", "moor-email",
+            "moor-sms", "moor-mattermost", "moor-matrix", "moor-dingtalk",
+            "moor-feishu", "moor-wecom", "moor-wecom-callback", "moor-weixin",
+            "moor-qqbot", "moor-webhook", "moor-yuanbao",
         ],
     ),
 }
@@ -316,7 +316,7 @@ def get_toolset(name: str, *, include_registry: bool = True) -> Optional[dict[st
 
 
 def bundle_non_core_tools(toolset_name: str) -> set[str]:
-    """A bundle's tools minus _HERMES_CORE_TOOLS (one level of includes).
+    """A bundle's tools minus _MOOR_CORE_TOOLS (one level of includes).
 
     Disabling a `core + extras` bundle must not strip the core tools every other
     toolset shares. One `includes` pass suffices (only moor-gateway nests
@@ -341,7 +341,7 @@ _resolve_toolset_memo: dict[tuple[str, bool, int, int, str], list[str]] = {}
 
 
 def _plugin_platform_bundle(name: str) -> list[str]:
-    """Implicit `hermes-<platform>` bundle for a registered plugin platform: core
+    """Implicit `moor-<platform>` bundle for a registered plugin platform: core
     tools plus whatever the plugin registered under the platform name. [] otherwise."""
     if not name.startswith("moor-"):
         return []

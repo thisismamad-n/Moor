@@ -1,4 +1,4 @@
-"""A consented launch reaches main's HermesCLI (``cli.main``) with its scoped options."""
+"""A consented launch reaches main's MoorCLI (``cli.main``) with its scoped options."""
 import os
 import sys
 import types
@@ -7,10 +7,10 @@ import pytest
 
 
 def test_gateway_launch_honors_interactive_consent_without_policy_environment_mutation(monkeypatch):
-    from hermes_cli import main
-    from tests.hermes_cli.test_cli_startup_model_cost_guard import _chat_args
+    from moor_cli import main
+    from tests.moor_cli.test_cli_startup_model_cost_guard import _chat_args
     captured = []
-    monkeypatch.setattr('hermes_cli.config.load_config', lambda: {
+    monkeypatch.setattr('moor_cli.config.load_config', lambda: {
         'model': {'provider': 'openai-codex', 'default': 'gpt-5.5'}})
     monkeypatch.setattr(main, '_has_any_provider_configured', lambda: True)
     monkeypatch.setattr(main, '_pin_kanban_board_env', lambda: None)

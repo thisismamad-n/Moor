@@ -127,7 +127,7 @@ class TestExplicitEmptySelection:
     @staticmethod
     def _config(no_desktop_env, platform_toolsets):
         import agent.coding_context as cc
-        import hermes_cli.config as config_mod
+        import moor_cli.config as config_mod
 
         no_desktop_env.setattr(cc, "coding_selection", lambda **_: None)
         no_desktop_env.setattr(

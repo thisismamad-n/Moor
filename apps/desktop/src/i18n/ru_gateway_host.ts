@@ -4,12 +4,12 @@ import type { GatewayHostTranslations } from './types_gateway_host'
 export const ruGatewayHost: GatewayHostTranslations = {
   unavailableTitle: 'Настройки шлюза недоступны',
   unavailableDesc: 'IPC-мост приложения не предоставляет настройки шлюза.',
-  webappHostTitle: 'Хост Hermes',
+  webappHostTitle: 'Хост Moor',
   webappHostDesc:
-    'Webapp всегда использует хост Hermes, который его обслуживает. Чтобы сменить шлюз, войти в Hermes Cloud или управлять сохранёнными подключениями, используйте приложение Hermes Desktop.',
+    'Webapp всегда использует хост Moor, который его обслуживает. Чтобы сменить шлюз, войти в Moor Cloud или управлять сохранёнными подключениями, используйте приложение Moor Desktop.',
   webAccess: {
     title: 'Веб-доступ',
-    intro: 'Откройте Hermes этого компьютера с телефона или другого компьютера, войдя через аккаунт Nous. Вошедший может запускать команды на этом компьютере.',
+    intro: 'Откройте Moor этого компьютера с телефона или другого компьютера, войдя через аккаунт Moor. Вошедший может запускать команды на этом компьютере.',
     failed: 'Не удалось изменить веб-доступ',
     running: 'Работает',
     stopped: 'Остановлен',
@@ -17,8 +17,8 @@ export const ruGatewayHost: GatewayHostTranslations = {
     stopping: 'Останавливается',
     restartNeeded: 'Нужен перезапуск',
     unavailable: 'Недоступен',
-    notRunningDetail: 'Запустите его, чтобы открыть Hermes с другого устройства.',
-    needsNous: 'Сначала войдите в аккаунт Nous в разделе «Провайдеры».',
+    notRunningDetail: 'Запустите его, чтобы открыть Moor с другого устройства.',
+    needsMoor: 'Сначала войдите в аккаунт Moor в разделе «Провайдеры».',
     runningLan: 'Откройте этот адрес на устройстве в той же сети.',
     runningPublic: 'Доступен через ваш URL.',
     runningLocal: 'Открыть его можно только на этом компьютере. Остановите и снова запустите его, чтобы открыть с других устройств.',

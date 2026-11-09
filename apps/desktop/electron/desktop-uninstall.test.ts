@@ -71,17 +71,17 @@ test('nativeRemovalInstructions names the steward per kind and OS', () => {
   assert.match(nativeRemovalInstructions('nix', 'darwin'), /flake or profile/)
 
   for (const platform of ['linux', 'darwin', 'win32']) {
-    const steps = nativeRemovalInstructions('external', platform, '/usr/lib/hermes/hermes')
+    const steps = nativeRemovalInstructions('external', platform, '/usr/lib/moor/moor')
     assert.match(steps, /with that package manager/)
     assert.doesNotMatch(steps, /Delete|Trash/)
   }
 
   assert.match(nativeRemovalInstructions('bundled', 'win32'), /Installed apps/)
   assert.equal(
-    nativeRemovalInstructions('bundled', 'darwin', '/Applications/Hermes Agent Canary.app'),
-    'Quit the app and drag Hermes Agent Canary.app from /Applications to the Trash.'
+    nativeRemovalInstructions('bundled', 'darwin', '/Applications/Moor Agent Canary.app'),
+    'Quit the app and drag Moor Agent Canary.app from /Applications to the Trash.'
   )
-  assert.match(nativeRemovalInstructions('bundled', 'darwin'), /drag the Hermes app from Applications to the Trash/)
+  assert.match(nativeRemovalInstructions('bundled', 'darwin'), /drag the Moor app from Applications to the Trash/)
   assert.match(
     nativeRemovalInstructions('bundled', 'linux', '/home/x/Apps/Moor.AppImage'),
     /\/home\/x\/Apps\/Moor\.AppImage/
@@ -156,11 +156,11 @@ test('resolveRemovableAppPath uses APPIMAGE on Linux when set', () => {
 })
 
 // AppImage apps (terminals, IDEs) export APPIMAGE to everything they start;
-// uninstalling an unpacked Hermes launched from one must never rm -rf that app.
+// uninstalling an unpacked Moor launched from one must never rm -rf that app.
 test('resolveRemovableAppPath ignores an APPIMAGE inherited from another AppImage', () => {
   assert.equal(
-    resolveRemovableAppPath('/opt/hermes/linux-unpacked/hermes', 'linux', { APPIMAGE: '/home/x/Apps/Other.AppImage' }),
-    '/opt/hermes/linux-unpacked'
+    resolveRemovableAppPath('/opt/moor/linux-unpacked/moor', 'linux', { APPIMAGE: '/home/x/Apps/Other.AppImage' }),
+    '/opt/moor/linux-unpacked'
   )
 })
 

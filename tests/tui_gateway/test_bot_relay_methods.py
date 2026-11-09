@@ -105,7 +105,7 @@ def test_deliver_forwards_stable_id_to_target_profile_authority(home, monkeypatc
 
     def _fake_run(argv, *a, **k):
         # The server module's import-time update prefetch runs `git ...`; only
-        # a `hermes` spawn would be a delivery attempt.
+        # a `moor` spawn would be a delivery attempt.
         if argv and argv[0] != "git":
             spawned.append(argv)
         return type("P", (), {"returncode": 0, "stdout": "", "stderr": ""})()
@@ -126,8 +126,8 @@ def test_deliver_forwards_stable_id_to_target_profile_authority(home, monkeypatc
     _result(srv._methods["bot_relay.deliver"](2, {"id": envelope_id, "profile": "ops", "message": "ping"}))
     assert [p["id"] for _h, p in forwarded] == [envelope_id, envelope_id]
 
-    # 'hermes' alias resolves to the default profile's home.
-    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "hermes", "message": "x"}))
+    # 'moor' alias resolves to the default profile's home.
+    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "moor", "message": "x"}))
     assert forwarded[-1][0] == home and forwarded[-1][1]["profile"] == "default"
     assert not spawned
 
@@ -209,7 +209,7 @@ def test_deliver_accepts_a_sender_from_an_admitted_non_login_client(home, monkey
     """A caller with no identity, or one holding the ``?internal=`` credential, keeps its sender fields.
 
     NOT the Desktop: it mints a ws-ticket carrying the signed-in ``{user_id, provider}`` on every
-    gateway that requires sign-in (``hermes_cli/dashboard_auth/routes.py``), so it is a login
+    gateway that requires sign-in (``moor_cli/dashboard_auth/routes.py``), so it is a login
     identity and takes the principal-author branch below."""
     from tools import bot_live_delivery as live
     forwarded = []
@@ -257,7 +257,7 @@ def test_deliver_from_a_logged_in_client_is_attributed_to_its_principal_never_to
 
 def test_deliver_restamps_relayed_sender_with_a_reply_safe_handle(home, monkeypatch):
     """#103731: the sender signs with its bare @handle, which for another machine's ``default`` is
-    ``@hermes`` — the recipient's OWN default. The text forwarded to the target authority names the
+    ``@moor`` — the recipient's OWN default. The text forwarded to the target authority names the
     sender by the form this gateway resolves back to it: its title slug when the local relay roster
     carries it, else ``handle@connection``. A stamp that is not the relay's is left alone."""
     from tools import bot_live_delivery as live
@@ -265,18 +265,18 @@ def test_deliver_restamps_relayed_sender_with_a_reply_safe_handle(home, monkeypa
     monkeypatch.setattr(live, "authority_delivery",
                         lambda home, params: seen.append(params["message"]) or {"status": "queued"})
     bot_relay.write_remote_roster(home, [
-        {"profile": "default", "handle": "hermes", "connection_id": "vps-1", "title": "CoS Bot"},
+        {"profile": "default", "handle": "moor", "connection_id": "vps-1", "title": "CoS Bot"},
     ])
-    stamp = "Message from 🤖 CoS Bot (@hermes): are we done?"
-    sender = {"from_profile": "default", "from_handle": "hermes", "from_connection": "vps-1"}
+    stamp = "Message from 🤖 CoS Bot (@moor): are we done?"
+    sender = {"from_profile": "default", "from_handle": "moor", "from_connection": "vps-1"}
     _result(srv._methods["bot_relay.deliver"](1, {"id": "a" * 32, "profile": "ops", "message": stamp, **sender}))
     _result(srv._methods["bot_relay.deliver"](2, {"id": "b" * 32, "profile": "ops", "message": stamp, **sender,
                                                  "from_connection": "lan-2"}))
-    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "ops", "message": "plain text (@hermes): x",
+    _result(srv._methods["bot_relay.deliver"](3, {"id": "c" * 32, "profile": "ops", "message": "plain text (@moor): x",
                                                  **sender}))
     assert seen == ["Message from 🤖 CoS Bot (@cos-bot): are we done?",
-                    "Message from 🤖 CoS Bot (@hermes@lan-2): are we done?",
-                    "plain text (@hermes): x"]
+                    "Message from 🤖 CoS Bot (@moor@lan-2): are we done?",
+                    "plain text (@moor): x"]
 
 
 @pytest.mark.parametrize("subdir", ["profiles/ops", "dev"])

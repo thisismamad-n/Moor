@@ -457,7 +457,7 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   const nanostores = await import('nanostores')
   const { Textarea } = await import('@/components/ui/textarea')
   const { cn } = await import('@/lib/utils')
-  const { randomUuid } = await import('@hermes/shared')
+  const { randomUuid } = await import('@moor/shared')
 
   // The gateway Group Chat row's right-click menu (#143571) renders the real one.
   const { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } =

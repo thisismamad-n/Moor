@@ -74,7 +74,7 @@ vi.mock('@/moor', async importOriginal => ({
 // Loaded once at collection, outside every test's budget: vi.resetModules() keeps each module's
 // transformed code, so the fresh copy a test imports only re-evaluates it. session-states is the
 // graph a reopened secondary imports lazily (store/gateway.ts). Top-level await rather than a static
-// import: the mock above reads FakeHermesGateway, which a hoisted import would reach before it exists.
+// import: the mock above reads FakeMoorGateway, which a hoisted import would reach before it exists.
 await import('@/store/gateway')
 await import('@/store/session-states')
 

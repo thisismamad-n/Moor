@@ -1,7 +1,7 @@
 """#124058: catalog ``known_issues`` is an informational field.
 
 The catalog (``plugin-catalog/hindsight.yaml``) documents in prose that
-``local_embedded`` mode is unsupported on PM-managed Hermes with the current
+``local_embedded`` mode is unsupported on PM-managed Moor with the current
 pin (it calls the retired lazy-install path for ``hindsight-all`` and loops
 update takeovers). The field is machine-readable but informational: it must
 parse and round-trip, and the install summaries must surface the text — it
@@ -11,7 +11,7 @@ see teknium1's review on #124037 and #122341 / #123771).
 
 from pathlib import Path
 
-from hermes_cli.plugin_catalog import (
+from moor_cli.plugin_catalog import (
     PluginCatalogEntry,
     entry_capability_summary,
     entry_from_mapping,
@@ -64,28 +64,28 @@ def test_known_issues_parse_round_trip(tmp_path):
 
 def test_install_summary_shows_known_issues(monkeypatch):
     """The dashboard install result and capability summary surface the text; install still proceeds."""
-    from hermes_cli.plugins_cmd_install import dashboard_install_plugin
+    from moor_cli.plugins_cmd_install import dashboard_install_plugin
 
-    entry = _entry(known_issues=["Local embedded mode is not supported on PM-managed Hermes."])
-    monkeypatch.setattr("hermes_cli.plugins_cmd_catalog.get_live_catalog_entry", lambda _n: entry)
+    entry = _entry(known_issues=["Local embedded mode is not supported on PM-managed Moor."])
+    monkeypatch.setattr("moor_cli.plugins_cmd_catalog.get_live_catalog_entry", lambda _n: entry)
     monkeypatch.setattr(
-        "hermes_cli.plugins_cmd._resolve_git_url",
+        "moor_cli.plugins_cmd._resolve_git_url",
         lambda _i: ("https://github.com/vectorize-io/hindsight.git", None))
-    monkeypatch.setattr("hermes_cli.plugins_cmd_catalog.raise_if_removed", lambda *a: None)
+    monkeypatch.setattr("moor_cli.plugins_cmd_catalog.raise_if_removed", lambda *a: None)
     monkeypatch.setattr(
-        "hermes_cli.plugins_cmd_catalog.install_catalog_entry",
+        "moor_cli.plugins_cmd_catalog.install_catalog_entry",
         lambda *a, **k: (Path("/tmp/hindsight-target"), {"manifest": 1}, "hindsight"))
-    monkeypatch.setattr("hermes_cli.plugins_cmd._python_dependency_summary", lambda _t, w: None)
-    monkeypatch.setattr("hermes_cli.plugins_cmd._set_plugin_enabled", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.plugins_cmd._missing_env_specs", lambda _m: [])
-    monkeypatch.setattr("hermes_cli.plugins_activation.activate_plugin_now", lambda _n: {})
+    monkeypatch.setattr("moor_cli.plugins_cmd._python_dependency_summary", lambda _t, w: None)
+    monkeypatch.setattr("moor_cli.plugins_cmd._set_plugin_enabled", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.plugins_cmd._missing_env_specs", lambda _m: [])
+    monkeypatch.setattr("moor_cli.plugins_activation.activate_plugin_now", lambda _n: {})
 
     result = dashboard_install_plugin("", force=False, enable=False, catalog_name="hindsight")
     assert result["ok"] is True  # informational — the install is not refused
-    assert result["known_issues"] == ["Local embedded mode is not supported on PM-managed Hermes."]
+    assert result["known_issues"] == ["Local embedded mode is not supported on PM-managed Moor."]
     assert any(w.startswith("Known issue:") for w in result["warnings"])
 
     # The catalog capability summary (shown at install/enable prompts and in the UI) carries the text.
     summary = entry_capability_summary(entry)
     assert "Known issues:" in summary
-    assert "Local embedded mode is not supported on PM-managed Hermes." in summary
+    assert "Local embedded mode is not supported on PM-managed Moor." in summary

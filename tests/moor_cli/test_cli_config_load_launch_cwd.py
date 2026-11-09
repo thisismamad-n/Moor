@@ -6,12 +6,12 @@ import os
 import sys
 import types
 
-from hermes_cli.cli_config_load import _mirror_config_to_env
+from moor_cli.cli_config_load import _mirror_config_to_env
 
 
 def _mirror(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("_HERMES_GATEWAY", "1")  # inherited from the gateway that spawned the shell
+    monkeypatch.setenv("_MOOR_GATEWAY", "1")  # inherited from the gateway that spawned the shell
     monkeypatch.setenv("TERMINAL_CWD", "/gateway/terminal/cwd")
     _mirror_config_to_env({"terminal": {"backend": "local", "cwd": "/configured/cwd"}}, True)
     return os.environ["TERMINAL_CWD"]

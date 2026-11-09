@@ -166,7 +166,7 @@ on:
         type: string
         default: ''
       branding:
-        description: 'Channel app name, icon and package ID: preview (own app) or stable (the regular Hermes app). Fixed when the channel is first created.'
+        description: 'Channel app name, icon and package ID: preview (own app) or stable (the regular Moor app). Fixed when the channel is first created.'
         required: false
         type: choice
         options: [preview, stable]
@@ -668,7 +668,7 @@ jobs:
               python scripts/bundles/desktop.py --prepared "$env:RUNNER_TEMP/desktop-job/prepared.json" --variant bundled
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-          if ($env:SKIP_STORE -ne 'true' -and -not $env:CHANNEL_BUILD -and -not $env:HERMES_BUILD_COMMIT -and $env:HERMES_PAYLOAD_TAG -notlike "*+canary.*") {
+          if ($env:SKIP_STORE -ne 'true' -and -not $env:CHANNEL_BUILD -and -not $env:MOOR_BUILD_COMMIT -and $env:MOOR_PAYLOAD_TAG -notlike "*+canary.*") {
               python scripts/bundles/desktop.py --prepared "$env:RUNNER_TEMP/desktop-job/prepared.json" --variant store
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -733,7 +733,7 @@ jobs:
         # A Store-only candidate has no signed package to describe, so no metadata.
         run: |
           args=(--include '*.msix')
-          if [ "$SKIP_SIGNED" != true ] && { [ "$RELEASE_PHASE" = candidate ] || { [ "$HERMES_DESKTOP_VARIANT" = bundled ] && [[ "$HERMES_PAYLOAD_TAG" == *+canary.* ]]; }; }; then
+          if [ "$SKIP_SIGNED" != true ] && { [ "$RELEASE_PHASE" = candidate ] || { [ "$MOOR_DESKTOP_VARIANT" = bundled ] && [[ "$MOOR_PAYLOAD_TAG" == *+canary.* ]]; }; }; then
             python -m scripts.bundles.release_artifacts record --platform windows --arch "${TARGET##*-}" \
               --root apps/desktop/release --tag "$MOOR_PAYLOAD_TAG" --commit "$RELEASE_COMMIT" \
               --out "apps/desktop/release/metadata-windows-${TARGET##*-}.json"
@@ -1035,8 +1035,8 @@ jobs:
         shell: bash
         timeout-minutes: 330
         env:
-          HERMES_BUNDLE_ENV_JSON: ${{ inputs.bundle_env }}
-          HERMES_MAC_SIGNATURE_CACHE: ${{ github.workspace }}/.cache/mac-payload-signatures
+          MOOR_BUNDLE_ENV_JSON: ${{ inputs.bundle_env }}
+          MOOR_MAC_SIGNATURE_CACHE: ${{ github.workspace }}/.cache/mac-payload-signatures
           PYTHONUTF8: '1'
           # electron-osx-sign*/electron-notarize* keep the sign+notarize
           # phase visible: without them NOTHING logs between "signing
@@ -1506,9 +1506,9 @@ jobs:
       CHANNEL_REQUEST_SHA256: ${{ needs.validate.outputs.channel-request-sha256 }}
       MOOR_PAYLOAD_TAG: ${{ inputs.tag }}
       # Archive ref for the universal-bundle handoff: attempt ref for stable.
-      HERMES_ARCHIVE_TAG: ${{ needs.validate.outputs.archive-tag }}
-      HERMES_BUILD_COMMIT: ${{ inputs.build_commit != '' && needs.validate.outputs.channel-build == '' && needs.validate.outputs.sha || '' }}
-      HERMES_PAYLOAD_VERSION: ${{ needs.validate.outputs.payload-version }}
+      MOOR_ARCHIVE_TAG: ${{ needs.validate.outputs.archive-tag }}
+      MOOR_BUILD_COMMIT: ${{ inputs.build_commit != '' && needs.validate.outputs.channel-build == '' && needs.validate.outputs.sha || '' }}
+      MOOR_PAYLOAD_VERSION: ${{ needs.validate.outputs.payload-version }}
       # The paths build-win32-x64 saves its bundle-assembly caches from.
       ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/desktop-inputs/packager/builder
       npm_config_cache: ${{ github.workspace }}/.cache/desktop-inputs/npm
@@ -1632,10 +1632,10 @@ jobs:
           args=()
           if [ "$RELEASE_PHASE" = candidate ]; then args+=(--candidate); fi
           if [ "$SKIP_SIGNED" != true ]; then
-            node scripts/stage-msixbundle.mjs --tag "$HERMES_PAYLOAD_TAG" --variant bundled "${args[@]}"
+            node scripts/stage-msixbundle.mjs --tag "$MOOR_PAYLOAD_TAG" --variant bundled "${args[@]}"
           fi
           if [ "$RELEASE_PHASE" = candidate ] && [ "$SKIP_STORE" != true ]; then
-            node scripts/bundle-store-msixbundle.mjs --tag "$HERMES_PAYLOAD_TAG"
+            node scripts/bundle-store-msixbundle.mjs --tag "$MOOR_PAYLOAD_TAG"
           fi
 
       - name: Stage universal bundles to R2
@@ -2426,7 +2426,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ inputs.tag }}
       RELEASE_COMMIT: ${{ needs.validate.outputs.sha }}
-      HERMES_ARCHIVE_TAG: ${{ needs.validate.outputs.archive-tag }}
+      MOOR_ARCHIVE_TAG: ${{ needs.validate.outputs.archive-tag }}
       CANDIDATE_MANIFEST_SHA256: ${{ inputs.manifest-sha256 }}
       CLOUDFLARE_R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_R2_ACCOUNT_ID }}
       CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
@@ -2460,7 +2460,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ inputs.tag }}
       RELEASE_COMMIT: ${{ needs.validate.outputs.sha }}
-      HERMES_ARCHIVE_TAG: ${{ needs.validate.outputs.archive-tag }}
+      MOOR_ARCHIVE_TAG: ${{ needs.validate.outputs.archive-tag }}
       CANDIDATE_MANIFEST_SHA256: ${{ inputs.manifest-sha256 }}
       CLOUDFLARE_R2_PUBLIC_URL: ${{ vars.CLOUDFLARE_R2_PUBLIC_URL }}
       MS_STORE_TENANT_ID: ${{ secrets.MS_STORE_TENANT_ID }}
@@ -2495,7 +2495,7 @@ jobs:
         shell: bash
         run: |
           name=$(cd verified 2>/dev/null && ls Store-*.msixbundle 2>/dev/null | head -1)
-          base="${CLOUDFLARE_R2_PUBLIC_URL%/}/releases/tag/$HERMES_ARCHIVE_TAG"
+          base="${CLOUDFLARE_R2_PUBLIC_URL%/}/releases/tag/$MOOR_ARCHIVE_TAG"
           url="$base/${name:-handoff-windows-universal.json}"
           msg="Store submission failed; the release is still publishable. Upload this package in Partner Center: $url"
           echo "::warning title=Microsoft Store::$msg"

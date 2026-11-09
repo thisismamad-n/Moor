@@ -73,7 +73,7 @@ def _env_on_all_adapters_down_override() -> str | None:
 
     ``None`` when unset, blank, or unrecognized so the caller keeps the config.yaml value
     (env > config > default). Launchers without a supervising service manager (the desktop app
-    spawns ``hermes serve`` directly) set ``stay_alive``: a failure exit there only severs the
+    spawns ``moor serve`` directly) set ``stay_alive``: a failure exit there only severs the
     UI's websocket connections and drops in-flight assistant messages (#118080).
     """
     raw = os.getenv("GATEWAY_ON_ALL_ADAPTERS_DOWN")
@@ -574,7 +574,7 @@ def _discovered_registry_entry(platform: Platform):
     passive "is the SDK importable?" probe — must never make a platform the user never opted into
     look connected (``_platform_status`` was fixed for the same bug class in commit 7849a3d73)."""
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()
     with contextlib.suppress(Exception):  # registry not initialised yet during early import
         from gateway.platform_registry import platform_registry
@@ -595,7 +595,7 @@ class GatewayConfig:
     platforms: dict[Platform, PlatformConfig] = field(default_factory=dict)
     reset_triggers: list[str] = field(default_factory=lambda: ["/new", "/reset"])
     quick_commands: dict[str, Any] = field(default_factory=dict)  # slash commands that bypass the agent loop
-    sessions_dir: Path = field(default_factory=lambda: get_hermes_home() / "sessions")
+    sessions_dir: Path = field(default_factory=lambda: get_moor_home() / "sessions")
     # Legacy sessions.json mirror of the routing index (primary: state.db) for external tooling / downgrades.
     # The primary copy lives in state.db (gateway_routing table, #9006). Default True for backward
     # compatibility with external tooling and downgrade safety; set gateway.write_sessions_json: false in
@@ -639,7 +639,7 @@ class GatewayConfig:
     # What happens when the LAST messaging adapter goes down. ``exit`` (default) shuts the gateway
     # down with the failure verdict so a supervising service manager (systemd/launchd) restarts it;
     # ``stay_alive`` keeps the process running and leaves recovery to the reconnect watcher — for
-    # launchers with no supervisor (the desktop app spawns ``hermes serve`` directly), where a
+    # launchers with no supervisor (the desktop app spawns ``moor serve`` directly), where a
     # failure exit only severs the UI's websockets and drops in-flight assistant messages (#118080).
     # Retryable failures are recoverable in both modes; non-retryable adapter loss always exits.
     on_all_adapters_down: str = "exit"  # "exit" | "stay_alive"; GATEWAY_ON_ALL_ADAPTERS_DOWN overrides

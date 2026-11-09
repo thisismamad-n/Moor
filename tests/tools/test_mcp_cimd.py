@@ -29,7 +29,7 @@ pytest.importorskip(
 )
 
 from tools.mcp_oauth import (
-    HermesTokenStorage,
+    MoorTokenStorage,
     _CIMD_CLIENT_METADATA_URL,
     _CIMD_PORTS,
     _CIMD_REDIRECT_HOSTS,

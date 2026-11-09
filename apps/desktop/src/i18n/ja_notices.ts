@@ -11,7 +11,7 @@ export const jaNotices = {
   butterbar: {
     goTo: (index, total) => `お知らせ ${index} / ${total} を表示`,
     legal: {
-      before: 'Hermes Agent のご利用には',
+      before: 'Moor Agent のご利用には',
       terms: '利用規約',
       between: 'および',
       privacy: 'プライバシーポリシー',
@@ -32,13 +32,13 @@ export const jaNotices = {
     desktopCommands: jaDesktopCommands
   },
   keepAwakeOffer: {
-    title: 'Hermes の作業中にコンピューターがスリープしました',
+    title: 'Moor の作業中にコンピューターがスリープしました',
     message:
-      'タスクの実行中は、Hermes がコンピューターのスリープを防げます。画面はいつもどおりオフになり、バッテリー駆動中はスリープすることがあります。',
+      'タスクの実行中は、Moor がコンピューターのスリープを防げます。画面はいつもどおりオフになり、バッテリー駆動中はスリープすることがあります。',
     action: '実行中はスリープしない'
   },
   billingBlock: {
-    titleNous: 'Nous クレジットが不足しています',
+    titleMoor: 'Moor クレジットが不足しています',
     titleProvider: provider => `クレジット不足 — ${provider}`,
     fallbackMessage: 'アカウントのクレジットが不足しています。続行するにはクレジットを追加してください。',
     openBilling: '請求を開く',

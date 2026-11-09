@@ -555,7 +555,7 @@ def get_entry(entry_id: str) -> Optional[dict[str, Any]]:
 
 
 def _validate_entry_paths(entry: dict[str, Any]) -> Optional[str]:
-    """Every entry path must be under HERMES_HOME — a hand-edited ledger must not
+    """Every entry path must be under MOOR_HOME — a hand-edited ledger must not
     become a write-anywhere primitive."""
     home = get_moor_home()
     for section in ("before", "after"):

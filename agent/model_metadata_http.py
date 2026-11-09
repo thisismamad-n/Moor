@@ -29,7 +29,7 @@ def resolve_verify(base_url: str = ""):
 def stream(url: str, *, headers=None, params=None, timeout=10.0, verify=None):
     import httpx
     from agent.deadline import DeadlineExpired, run_bounded_sync
-    from hermes_cli.urllib_security import url_origin
+    from moor_cli.urllib_security import url_origin
 
     origin = url_origin(url)
     private_headers = {name.lower() for name in headers or {} if name.lower() not in {"accept", "user-agent"}}

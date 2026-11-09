@@ -70,7 +70,7 @@ export const zhHantOverrides = {
     retry: '再試一次',
     more: '顯示更多',
     pinned: '已審核的提交',
-    snapshotHint: '內容來自 Hermes 目錄。瀏覽時不會連線至來源程式碼儲存庫。',
+    snapshotHint: '內容來自 Moor 目錄。瀏覽時不會連線至來源程式碼儲存庫。',
     installHint: '安裝前請檢查原始碼。變更將於新的工作階段生效。',
     results: (count: number) => `${count.toLocaleString('zh-Hant')} 個結果`,
     back: '返回結果'
@@ -107,7 +107,7 @@ export const zhHantOverrides = {
     consentTitle: '分享使用統計？',
     dialogTitle: '使用統計',
     consentBody:
-      'Hermes 可以統計你的使用方式：工作階段長度、執行了哪些模型和工具，以及何時發生失敗。它絕不記錄你的訊息、檔案、路徑或錯誤文字。',
+      'Moor 可以統計你的使用方式：工作階段長度、執行了哪些模型和工具，以及何時發生失敗。它絕不記錄你的訊息、檔案、路徑或錯誤文字。',
     whatIsCollected: '統計哪些內容',
     collectedActivity: '工作階段：長度、結果、錯誤類型、每日活躍時間',
     collectedModels: '模型：使用哪些模型、token 總量',
@@ -115,19 +115,19 @@ export const zhHantOverrides = {
     collectedMilestones: '設定：完成了哪些步驟、提供方連線、技能、外掛和排程工作的數量',
     collectedReliability: '應用程式健康狀態：當機、啟動與回覆速度、更新、訊息平台連線',
     collectedUsage: '代理品質：未成功的編輯、損壞的工具呼叫、卡住的迴圈、每個任務的成本',
-    collectedMachine: '機器：作業系統、記憶體範圍、GPU 類型、Hermes 版本、本機模型使用情況',
+    collectedMachine: '機器：作業系統、記憶體範圍、GPU 類型、Moor 版本、本機模型使用情況',
     sending:
-      '如果你選擇分享，Hermes 每天傳送一次統計資料給 Nous，並附帶此設定檔的隨機 ID。除了一則 Hermes 已安裝的一次性記錄之外，你同意之前的統計資料永遠不會被傳送。你可以隨時在設定中變更。',
+      '如果你選擇分享，Moor 每天傳送一次統計資料給 Moor，並附帶此設定檔的隨機 ID。除了一則 Moor 已安裝的一次性記錄之外，你同意之前的統計資料永遠不會被傳送。你可以隨時在設定中變更。',
     readDocs: '查看完整說明',
-    share: '與 Nous 分享',
+    share: '與 Moor 分享',
     off: '不用了',
     saveFailed: '無法儲存你的選擇',
-    sendLabel: '與 Nous 分享使用統計',
+    sendLabel: '與 Moor 分享使用統計',
     sendDesc: '僅限計數，每天傳送一次，並附帶此設定檔的隨機 ID。絕不包含你的訊息、檔案、路徑或錯誤文字。',
-    unavailable: '請更新 Hermes 後端以變更此設定。',
+    unavailable: '請更新 Moor 後端以變更此設定。',
     stripBody: '僅限計數，絕不包含你的訊息或檔案。',
     stripReaskBody: '再次詢問：舊版本可能在你看到此問題之前就已儲存了「不用了」。',
-    stripChoices: { share: '與 Nous 分享', off: '不用了' },
+    stripChoices: { share: '與 Moor 分享', off: '不用了' },
     stripDetails: '詳細資訊'
   },
   firstRun: zhHantFirstRun,
@@ -205,8 +205,8 @@ export const zhHantOverrides = {
   ui: zhHantCommon.ui,
   freeTier: {
     offer: {
-      heading: '繼續使用 Hermes',
-      body: '你正在使用免費額度。繼續使用 Hermes 的話，你會開始遇到限制。登入免費的 Nous 帳戶，即可獲得更多額度。',
+      heading: '繼續使用 Moor',
+      body: '你正在使用免費額度。繼續使用 Moor 的話，你會開始遇到限制。登入免費的 Moor 帳戶，即可獲得更多額度。',
       signIn: '登入',
       notNow: '暫不'
     }

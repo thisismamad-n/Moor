@@ -126,7 +126,7 @@ class TestGenerate:
     def test_custom_codex_route_keeps_image_request_on_configured_host(
         self, provider, codex_backend, monkeypatch, edit,
     ):
-        monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://images.example.test/codex/")
+        monkeypatch.setenv("MOOR_CODEX_BASE_URL", "https://images.example.test/codex/")
         kwargs = {"image_url": "data:image/png;base64," + _b64_png()} if edit else {}
         result = provider.generate("a cat", **kwargs)
         assert result["success"] is True
@@ -140,11 +140,11 @@ class TestGenerate:
     def test_blank_override_preserves_official_route(
         self, provider, codex_backend, monkeypatch, override,
     ):
-        monkeypatch.setenv("HERMES_CODEX_BASE_URL", override)
+        monkeypatch.setenv("MOOR_CODEX_BASE_URL", override)
         assert provider.generate("a cat")["success"] is True
         (request,) = codex_backend["requests"]
         assert str(request.url) == "https://chatgpt.com/backend-api/codex/images/generations"
-        assert request.headers["originator"] == "hermes-agent"
+        assert request.headers["originator"] == "moor-agent"
 
     def test_profile_scope_routes_each_request_without_borrowing_process_override(
         self, provider, codex_backend, monkeypatch,
@@ -153,9 +153,9 @@ class TestGenerate:
         from agent.secret_scope import reset_secret_scope, set_secret_scope
 
         monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", True)
-        monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://other-profile.example.test/codex")
+        monkeypatch.setenv("MOOR_CODEX_BASE_URL", "https://other-profile.example.test/codex")
         for scope, expected in [
-            ({"HERMES_CODEX_BASE_URL": "https://profile.example.test/images-api/"},
+            ({"MOOR_CODEX_BASE_URL": "https://profile.example.test/images-api/"},
              "https://profile.example.test/images-api/images/generations"),
             ({}, "https://chatgpt.com/backend-api/codex/images/generations"),
         ]:
@@ -170,7 +170,7 @@ class TestGenerate:
     def test_custom_route_failure_never_retries_on_official_host(
         self, provider, codex_backend, monkeypatch, failure,
     ):
-        monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://images.example.test/codex")
+        monkeypatch.setenv("MOOR_CODEX_BASE_URL", "https://images.example.test/codex")
 
         def respond(request):
             if failure == "exception":
@@ -221,9 +221,9 @@ class TestGenerate:
         assert not any(key in body for key in ("tools", "input", "instructions"))
 
     def test_custom_codex_base_receives_the_image_request(self, provider, codex_backend, tmp_path, monkeypatch):
-        """With ``HERMES_CODEX_BASE_URL`` set, image requests go to the gateway's base instead of
+        """With ``MOOR_CODEX_BASE_URL`` set, image requests go to the gateway's base instead of
         the hard-coded chatgpt.com host (#121486) — the text client honours the same override."""
-        monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://codex-gw.example/backend-api/codex")
+        monkeypatch.setenv("MOOR_CODEX_BASE_URL", "https://codex-gw.example/backend-api/codex")
 
         result = provider.generate("a cat")
 

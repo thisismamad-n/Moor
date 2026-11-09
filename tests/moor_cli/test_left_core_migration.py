@@ -1,4 +1,4 @@
-"""``hermes_cli.left_core_migration``: homes that used a feature that left core get its catalog plugin.
+"""``moor_cli.left_core_migration``: homes that used a feature that left core get its catalog plugin.
 
 Real config/.env files under a temp home; the catalog lookup and the network install are stand-ins
 (the live install is exercised end to end outside the unit suite).
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.left_core_migration as lcm
+import moor_cli.left_core_migration as lcm
 
 
 @pytest.fixture(autouse=True)
@@ -18,7 +18,7 @@ def _fresh(monkeypatch):
     monkeypatch.setattr(lcm, "_attempted", set())
     monkeypatch.delenv("HASS_TOKEN", raising=False)
     # A catalog that lists every left-core plugin; never the network.
-    import hermes_cli.memory_provider_migration as mpm
+    import moor_cli.memory_provider_migration as mpm
     monkeypatch.setattr(mpm, "catalog_source", lambda name: name)
 
 
@@ -34,20 +34,20 @@ def _home(tmp_path: Path, name: str = "home", *, env: str = "", config: str = ""
 
 # The uncommented platform_toolsets block cli-config.yaml.example carried (the homeassistant row from
 # 1aa7badb3c until fb9fc8a3dd). The installers (install.sh, install.ps1, the Docker hook) and
-# `hermes doctor` seed config.yaml from that file, so the block alone says nothing about use.
+# `moor doctor` seed config.yaml from that file, so the block alone says nothing about use.
 _EXAMPLE_PLATFORM_TOOLSETS = (
     "platform_toolsets:\n"
-    "  cli: [hermes-cli]\n"
-    "  telegram: [hermes-telegram]\n"
-    "  discord: [hermes-discord]\n"
-    "  whatsapp: [hermes-whatsapp]\n"
-    "  slack: [hermes-slack]\n"
-    "  signal: [hermes-signal]\n"
-    "  homeassistant: [hermes-homeassistant]\n"
-    "  qqbot: [hermes-qqbot]\n"
-    "  yuanbao: [hermes-yuanbao]\n"
-    "  teams: [hermes-teams]\n"
-    "  google_chat: [hermes-google_chat]\n"
+    "  cli: [moor-cli]\n"
+    "  telegram: [moor-telegram]\n"
+    "  discord: [moor-discord]\n"
+    "  whatsapp: [moor-whatsapp]\n"
+    "  slack: [moor-slack]\n"
+    "  signal: [moor-signal]\n"
+    "  homeassistant: [moor-homeassistant]\n"
+    "  qqbot: [moor-qqbot]\n"
+    "  yuanbao: [moor-yuanbao]\n"
+    "  teams: [moor-teams]\n"
+    "  google_chat: [moor-google_chat]\n"
 )
 
 
@@ -56,11 +56,11 @@ _EXAMPLE_PLATFORM_TOOLSETS = (
     ("", "platforms:\n  homeassistant:\n    enabled: true\n"),
     ("", "gateway:\n  platforms:\n    homeassistant:\n      enabled: true\n"),
     ("", "platforms:\n  homeassistant:\n    token: inline-token\n"),
-    ("", "platform_toolsets:\n  cli: [hermes-cli, homeassistant]\n"),
-    ("", "toolsets: [hermes-cli, homeassistant]\n"),
+    ("", "platform_toolsets:\n  cli: [moor-cli, homeassistant]\n"),
+    ("", "toolsets: [moor-cli, homeassistant]\n"),
     # The Home Assistant row counts once the platform itself is on.
     ("", "platforms:\n  homeassistant:\n    enabled: true\n"
-         "platform_toolsets:\n  homeassistant: [hermes-homeassistant]\n"),
+         "platform_toolsets:\n  homeassistant: [moor-homeassistant]\n"),
 ])
 def test_homeassistant_in_use_matches_what_core_activated(tmp_path, env, config):
     assert lcm.homeassistant_in_use(_home(tmp_path, env=env, config=config)) is True
@@ -70,10 +70,10 @@ def test_homeassistant_in_use_matches_what_core_activated(tmp_path, env, config)
     ("", ""),
     ("HASS_TOKEN=\n", ""),
     ("", "platforms:\n  homeassistant:\n    enabled: false\n    token: t\n"),
-    ("", "platform_toolsets:\n  cli: [hermes-cli]\n"),
+    ("", "platform_toolsets:\n  cli: [moor-cli]\n"),
     ("OPENAI_API_KEY=sk\n", "platforms:\n  telegram:\n    enabled: true\n"),
     # The platform's own row only scoped Home Assistant's own sessions, which need the platform on.
-    ("", "platform_toolsets:\n  homeassistant: [hermes-homeassistant]\n"),
+    ("", "platform_toolsets:\n  homeassistant: [moor-homeassistant]\n"),
     ("", _EXAMPLE_PLATFORM_TOOLSETS),
 ])
 def test_homeassistant_not_in_use(tmp_path, env, config):
@@ -127,15 +127,15 @@ def test_migrate_home_installs_the_catalog_plugin_once(tmp_path):
 def test_migration_keeps_a_toolset_off_where_core_had_it_off(tmp_path):
     """Core's homeassistant toolset was on only where a platform's saved list (or default composite)
     carried it; as a plugin toolset it is on everywhere not in known_plugin_toolsets."""
-    from hermes_cli.tools_config import _enabled_plugin_toolsets
+    from moor_cli.tools_config import _enabled_plugin_toolsets
     home = _home(tmp_path, env="HASS_TOKEN=abc\n", config=(
-        "platform_toolsets:\n  telegram: [web, terminal, file]\n  discord: [hermes-discord]\n"
+        "platform_toolsets:\n  telegram: [web, terminal, file]\n  discord: [moor-discord]\n"
         "  slack: [web, homeassistant]\n"))
     lcm.migrate_home(home, install=lambda n: {"ok": True}, say=lambda m: None)
     config = lcm._read_config(home)
     enabled = {p: bool(_enabled_plugin_toolsets(config, p, sel, {"homeassistant"})) for p, sel in {
-        "telegram": ["web", "terminal", "file"], "discord": ["hermes-discord"], "slack": ["web", "homeassistant"],
-        "cli": ["hermes-cli"], "webhook": ["hermes-webhook"], "acp": ["hermes-acp"]}.items()}
+        "telegram": ["web", "terminal", "file"], "discord": ["moor-discord"], "slack": ["web", "homeassistant"],
+        "cli": ["moor-cli"], "webhook": ["moor-webhook"], "acp": ["moor-acp"]}.items()}
     assert enabled == {"telegram": False, "discord": True, "slack": True, "cli": True,
                        "webhook": False, "acp": False}
 
@@ -164,11 +164,11 @@ def test_a_disabled_or_present_plugin_is_left_alone(tmp_path):
 def test_a_preinstalled_plugin_gets_the_scope_conversion_once(tmp_path):
     """A plugin installed before the update (inert while core shipped HA) is not proof the core-era
     toolset scope was converted; the conversion runs once and never undoes a later user choice."""
-    from hermes_cli.config import read_user_config_raw, save_config
-    from hermes_cli.tools_config import _enabled_plugin_toolsets, _save_platform_tools
+    from moor_cli.config import read_user_config_raw, save_config
+    from moor_cli.tools_config import _enabled_plugin_toolsets, _save_platform_tools
     home = _home(tmp_path, env="HASS_TOKEN=abc\n", config="platform_toolsets:\n  telegram: [web]\n")
     (home / "plugins" / "homeassistant").mkdir(parents=True)
-    selections = {"telegram": ["web"], "acp": ["hermes-acp"], "webhook": ["hermes-webhook"]}
+    selections = {"telegram": ["web"], "acp": ["moor-acp"], "webhook": ["moor-webhook"]}
 
     def ha_on() -> dict:
         config = lcm._read_config(home)
@@ -180,18 +180,18 @@ def test_a_preinstalled_plugin_gets_the_scope_conversion_once(tmp_path):
 
     config = read_user_config_raw(home / "config.yaml")
     _save_platform_tools(config, "telegram", {"web", "homeassistant"})  # the user's later choice
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(home)
+    from moor_constants import reset_moor_home_override, set_moor_home_override
+    token = set_moor_home_override(home)
     try:
         save_config(config)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     lcm.migrate_home(home, install=lambda n: pytest.fail("reinstalled"), say=print)
     assert ha_on() == {"telegram": True, "acp": False, "webhook": False}
 
 
 def test_catalog_miss_is_reported_not_installed(tmp_path, monkeypatch):
-    import hermes_cli.memory_provider_migration as mpm
+    import moor_cli.memory_provider_migration as mpm
     monkeypatch.setattr(mpm, "catalog_source", lambda name: None)
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
     said = []
@@ -221,7 +221,7 @@ def test_migrate_all_homes_migrates_only_the_profile_that_used_it(tmp_path, monk
 
 def test_startup_honours_lazy_install_opt_out(tmp_path, monkeypatch):
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     import pm.install
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: False)
     monkeypatch.setattr(lcm, "_install_into", lambda h, **_kw: pytest.fail("installed"))
@@ -234,7 +234,7 @@ def test_startup_honours_lazy_install_opt_out(tmp_path, monkeypatch):
 
 def test_gateway_start_outcome_waits_for_the_first_agent(tmp_path, monkeypatch):
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     import pm.install
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)
     consents = []
@@ -255,7 +255,7 @@ def test_an_agent_start_install_of_a_platform_keeps_the_restart_hint(tmp_path, m
     """An agent start keeps its outcome for the next turn someone sees, with the hint to restart the gateway
     serving the home; the gateway's own start loads the platform right after, so it needs none."""
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     import pm.install
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)
     monkeypatch.setattr(lcm, "_install_into", lambda h, consent=None: lambda name: {"ok": True})
@@ -263,7 +263,7 @@ def test_an_agent_start_install_of_a_platform_keeps_the_restart_hint(tmp_path, m
     assert lcm.recover_at_startup(gateway_start=gateway_start) == ["homeassistant"]
     kept = lcm._claim_notices(home)
     assert kept[0].startswith("✓ Home Assistant moved out of core")
-    assert any("hermes gateway restart" in message for message in kept) is not gateway_start
+    assert any("moor gateway restart" in message for message in kept) is not gateway_start
 
 
 
@@ -271,7 +271,7 @@ def test_a_malformed_route_url_does_not_abort_the_home_migration(tmp_path, monke
     """`urlparse` raises on an unclosed IPv6 bracket: that one slot is at no host, and the home's other
     features (Home Assistant here) still migrate."""
     home = _home(tmp_path, env="HASS_TOKEN=abc\n", config="model:\n  provider: custom\n  base_url: http://[fe80::1/v1\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     import pm.install
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)
     monkeypatch.setattr(lcm, "_install_into", lambda h, consent=None: lambda name: {"ok": True})
@@ -279,9 +279,9 @@ def test_a_malformed_route_url_does_not_abort_the_home_migration(tmp_path, monke
 
 
 def test_the_migration_installs_once_so_a_removal_sticks(tmp_path, monkeypatch):
-    """At most one automatic install per home: after `hermes plugins remove`, neither `hermes update`
+    """At most one automatic install per home: after `moor plugins remove`, neither `moor update`
     nor startup reinstalls it. Until an install succeeds (catalog miss, failed install) it retries."""
-    import hermes_cli.memory_provider_migration as mpm
+    import moor_cli.memory_provider_migration as mpm
     import pm.install
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
     plugin = home / "plugins" / "homeassistant"
@@ -300,9 +300,9 @@ def test_the_migration_installs_once_so_a_removal_sticks(tmp_path, monkeypatch):
     assert lcm.migrate_home(home, install=install, say=quiet) == ["homeassistant"]
 
     import shutil
-    shutil.rmtree(plugin)  # `hermes plugins remove homeassistant`
+    shutil.rmtree(plugin)  # `moor plugins remove homeassistant`
     assert lcm.migrate_home(home, install=install, say=quiet) == []
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)
     monkeypatch.setattr(lcm, "_install_into", lambda h, **_kw: install)
     assert lcm.recover_at_startup(say=quiet) == []
@@ -311,11 +311,11 @@ def test_the_migration_installs_once_so_a_removal_sticks(tmp_path, monkeypatch):
 
 def test_a_failed_startup_install_backs_off_and_reports_one_line(tmp_path, monkeypatch):
     """With the catalog or git unreachable, only the first agent start in a while pays the network
-    round trip, and its notice is one line naming the cause; `hermes update` always retries."""
-    import hermes_cli.memory_provider_migration as mpm
+    round trip, and its notice is one line naming the cause; `moor update` always retries."""
+    import moor_cli.memory_provider_migration as mpm
     import pm.install
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)
     lookups = []
     monkeypatch.setattr(mpm, "catalog_source", lambda name: lookups.append(name) or name)
@@ -329,7 +329,7 @@ def test_a_failed_startup_install_backs_off_and_reports_one_line(tmp_path, monke
     assert len(said) == 1 and "\n" not in said[0] and "Could not resolve host: github.com" in said[0]
     assert "plugins install homeassistant" in said[0]
 
-    lcm._attempted.clear()  # the next `hermes chat` process
+    lcm._attempted.clear()  # the next `moor chat` process
     assert lcm.recover_at_startup(say=said.append) == []
     assert lookups == ["homeassistant"] and len(said) == 1
     assert lcm.migrate_home(home, install=failing, say=said.append) == []
@@ -342,10 +342,10 @@ def test_repeated_startup_failures_back_off_exponentially(tmp_path, monkeypatch)
     import os
     import time
 
-    import hermes_cli.memory_provider_migration as mpm
+    import moor_cli.memory_provider_migration as mpm
     import pm.install
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)
     attempts = []
     monkeypatch.setattr(lcm, "_install_into", lambda h, **_kw: lambda n: attempts.append(n) or {"ok": False, "error": "x"})
@@ -370,7 +370,7 @@ def test_repeated_startup_failures_back_off_exponentially(tmp_path, monkeypatch)
     assert len(attempts) == 3
     start_after(24 * 7.1)
     assert len(attempts) == 4
-    stamp.write_text("", encoding="utf-8")               # an older Hermes's empty stamp counts once
+    stamp.write_text("", encoding="utf-8")               # an older Moor's empty stamp counts once
     start_after(1.5)
     assert len(attempts) == 5
 
@@ -378,9 +378,9 @@ def test_repeated_startup_failures_back_off_exponentially(tmp_path, monkeypatch)
 @pytest.mark.parametrize(("auth_json", "config", "in_use"), [
     ('{"providers": {"spotify": {"refresh_token": "r"}}}', "", True),
     ('{"providers": {"spotify": {"access_token": "a"}}}', "", True),
-    ("", "platform_toolsets:\n  cli: [hermes-cli, spotify]\n", True),
+    ("", "platform_toolsets:\n  cli: [moor-cli, spotify]\n", True),
     ('{"providers": {"spotify": {"client_id": "only-the-app"}}}', "", False),
-    ('{"providers": {"nous": {"access_token": "a"}}}', "platform_toolsets:\n  cli: [hermes-cli]\n", False),
+    ('{"providers": {"moor": {"access_token": "a"}}}', "platform_toolsets:\n  cli: [moor-cli]\n", False),
 ])
 def test_spotify_in_use_is_a_stored_login_or_the_toolset(tmp_path, auth_json, config, in_use):
     """Core's Spotify tools were opt-in and login-gated: a login in auth.json or the toolset selected is
@@ -392,49 +392,49 @@ def test_spotify_in_use_is_a_stored_login_or_the_toolset(tmp_path, auth_json, co
 
 
 def test_old_spotify_commands_point_at_the_plugin(tmp_path, monkeypatch):
-    """`hermes auth spotify` / `hermes spotify` name the new command and how to get it for this home."""
+    """`moor auth spotify` / `moor spotify` name the new command and how to get it for this home."""
     home = _home(tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    hint = lcm.moved_command_hint("hermes auth", "spotify", "status")
-    assert "`hermes auth status spotify` is now `hermes spotify status`" in hint
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    hint = lcm.moved_command_hint("moor auth", "spotify", "status")
+    assert "`moor auth status spotify` is now `moor spotify status`" in hint
     assert "plugins install spotify" in hint
-    assert "plugins install spotify" in lcm.moved_command_hint("hermes", "spotify")
+    assert "plugins install spotify" in lcm.moved_command_hint("moor", "spotify")
     (home / "plugins" / "spotify").mkdir(parents=True)  # installed but disabled
-    assert "plugins enable spotify" in lcm.moved_command_hint("hermes", "spotify")
-    assert lcm.moved_command_hint("hermes", "honcho") == ""
+    assert "plugins enable spotify" in lcm.moved_command_hint("moor", "spotify")
+    assert lcm.moved_command_hint("moor", "honcho") == ""
 
 
 def test_old_mcp_serve_spelling_names_the_plugin_command(tmp_path, monkeypatch, capsys):
-    """`hermes mcp serve` (what MCP client configs launch) exits 2 with the new spelling and the install
+    """`moor mcp serve` (what MCP client configs launch) exits 2 with the new spelling and the install
     line on stderr, never on stdout (the MCP wire); once the plugin is installed only the spelling."""
     import sys
 
-    from hermes_cli import main as main_mod
+    from moor_cli import main as main_mod
     home = _home(tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(sys, "argv", ["hermes", "mcp", "serve", "--tools"])
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setattr(sys, "argv", ["moor", "mcp", "serve", "--tools"])
     parser, _ = main_mod._build_cli_parser()
     with pytest.raises(SystemExit) as exc:
         parser.parse_args(["mcp", "serve", "--tools"])
     out, err = capsys.readouterr()
     assert exc.value.code == 2 and out == ""
-    assert "`hermes mcp serve` is now `hermes mcp-serve`" in err
+    assert "`moor mcp serve` is now `moor mcp-serve`" in err
     assert "plugins install mcp-serve" in err
     (home / "plugins" / "mcp-serve").mkdir(parents=True)
-    hint = lcm.moved_command_hint("hermes mcp", "serve")
-    assert "is now `hermes mcp-serve`" in hint and "install" not in hint
+    hint = lcm.moved_command_hint("moor mcp", "serve")
+    assert "is now `moor mcp-serve`" in hint and "install" not in hint
 
 
 def test_mcp_serve_is_never_installed_automatically(tmp_path):
-    """MCP clients live outside Hermes, so no home shows the feature in use: hint only, no install."""
+    """MCP clients live outside Moor, so no home shows the feature in use: hint only, no install."""
     installs = []
-    home = _home(tmp_path, config="mcp_servers:\n  hermes:\n    command: hermes\n    args: [mcp, serve]\n")
+    home = _home(tmp_path, config="mcp_servers:\n  moor:\n    command: moor\n    args: [mcp, serve]\n")
     assert lcm.migrate_home(home, install=lambda name: installs.append(name) or {"ok": True},
                             say=lambda _m: None) == []
     assert installs == []
 
 
-_LANGFUSE_KEYS_ENV = "HERMES_LANGFUSE_PUBLIC_KEY=pk-lf-x\nHERMES_LANGFUSE_SECRET_KEY=sk-lf-x\n"
+_LANGFUSE_KEYS_ENV = "MOOR_LANGFUSE_PUBLIC_KEY=pk-lf-x\nMOOR_LANGFUSE_SECRET_KEY=sk-lf-x\n"
 
 
 @pytest.mark.parametrize(("config", "managed", "in_use"), [
@@ -451,22 +451,22 @@ def test_langfuse_in_use_is_the_bundled_plugin_enabled(tmp_path, monkeypatch, co
     managed_dir.mkdir()
     if managed:
         (managed_dir / "config.yaml").write_text(managed, encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed_dir))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed_dir))
     assert lcm.langfuse_in_use(home) is in_use
 
 
 def test_old_langfuse_plugin_key_keeps_naming_the_catalog_plugin(tmp_path, monkeypatch):
     """`observability/langfuse` (every pre-move doc, an administrator's pinned list) names the install
     while the plugin is absent, and selects/resolves the installed plugin once it is there."""
-    from hermes_cli.plugins_cmd import _find_plugin_entry, _unknown_plugin_message
-    from hermes_cli.plugins_discovery import IN_BOTH_LISTS, gate_manifest
-    from hermes_cli.plugins_manifest import PluginManifest
+    from moor_cli.plugins_cmd import _find_plugin_entry, _unknown_plugin_message
+    from moor_cli.plugins_discovery import IN_BOTH_LISTS, gate_manifest
+    from moor_cli.plugins_manifest import PluginManifest
     home = _home(tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     for name in ("observability/langfuse", "langfuse"):
         message = _unknown_plugin_message(name)
         assert "moved out of core into the 'langfuse' plugin" in message
-        assert "hermes plugins install langfuse" in message
+        assert "moor plugins install langfuse" in message
     assert "moved out of core" not in _unknown_plugin_message("nonexistent")
 
     plugin_dir = home / "plugins" / "langfuse"

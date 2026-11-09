@@ -40,7 +40,7 @@ def _subscriptions_lock_path() -> Path:
 @contextmanager
 def _subscriptions_lock():
     """Serialize subscription snapshots and mutations across threads and processes."""
-    from hermes_cli.active_sessions import _FileLock
+    from moor_cli.active_sessions import _FileLock
 
     with _SUBSCRIPTIONS_THREAD_LOCK:
         with _FileLock(_subscriptions_lock_path()):
@@ -247,7 +247,7 @@ def _cmd_subscribe(args):
             print(f"Error: {e}")
             return 1
         if job is None:
-            print(f"Error: no cron job matches '{cron_job}'. List jobs with: hermes cron list")
+            print(f"Error: no cron job matches '{cron_job}'. List jobs with: moor cron list")
             return 1
         route["cron_job"] = job["id"]
     script = (getattr(args, "script", "") or "").strip()
@@ -286,7 +286,7 @@ def _cmd_subscribe(args):
 def _resolve_route_cron_job(profile: str, reference: str):
     """Match runtime routing without changing the caller's subscription/config home."""
     from cron.jobs import resolve_job_ref, use_cron_store
-    from hermes_cli.profiles import get_profile_dir
+    from moor_cli.profiles import get_profile_dir
 
     # Bare/default routes execute in the ambient home, including standalone installs.
     if profile == "default":

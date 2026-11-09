@@ -29,7 +29,7 @@ export interface HostBackendRecord {
   registeredAt: number
 }
 
-/** Filename the CLI writes under the machine Hermes root. */
+/** Filename the CLI writes under the machine Moor root. */
 export const SPAWN_LEDGER_FILENAME = 'spawn-ledger.json'
 
 /** Ledger purposes that denote a JSON-RPC/WebSocket backend we can attach to. */
@@ -47,7 +47,7 @@ function asInteger(value: unknown): number | null {
  *
  * A record without a bound port predates the structured detail (or belongs to
  * a purpose that never binds) and is skipped: a port is the whole point.
- * A record marked `isolated` (`hermes serve --isolated`, e.g. the backend
+ * A record marked `isolated` (`moor serve --isolated`, e.g. the backend
  * another machine's Desktop spawned here over SSH) opted out of the host
  * singleton and belongs to that client, so it is skipped too; the CLI's
  * `_attach_to_host_backend` honours the same flag.

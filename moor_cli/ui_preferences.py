@@ -1,7 +1,7 @@
 """Machine-level Desktop/Webapp UI preferences (#145213).
 
-One JSON document per machine, beside the ROOT Hermes home (``get_default_hermes_root()``, never a
-profile's ``HERMES_HOME``): native Desktop writes it through its preload capability
+One JSON document per machine, beside the ROOT Moor home (``get_default_moor_root()``, never a
+profile's ``MOOR_HOME``): native Desktop writes it through its preload capability
 (``apps/desktop/electron/ui-preferences.ts``) and every browser that opens this machine's Webapp
 writes it through ``/api/ui-preferences``. It is deliberately neither per profile nor per gateway
 connection; a key that is scoped (``….profile.<name>``) carries its scope in its own name.
@@ -39,7 +39,7 @@ from typing import Callable, Iterator, Mapping, Optional
 from utils import atomic_json_write
 
 STORE_NAME = "ui-preferences.json"
-KEY_PREFIXES = ("hermes.desktop.", "hermes-desktop-", "hermes-onboarding-")
+KEY_PREFIXES = ("moor.desktop.", "moor-desktop-", "moor-onboarding-")
 MAX_KEY_CHARS = 256
 MAX_VALUE_CHARS = 256 * 1024
 MAX_KEYS = 512
@@ -61,15 +61,15 @@ class PreferencesBusy(RuntimeError):
 
 def store_path(root: Optional[Path] = None) -> Path:
     """The machine's preferences file, resolved by the same rule native Desktop applies to its
-    ``HERMES_HOME`` (``resolveDesktopHermesHome`` + ``uiPreferencesRoot``): a profile home
+    ``MOOR_HOME`` (``resolveDesktopMoorHome`` + ``uiPreferencesRoot``): a profile home
     (``<root>/profiles/<name>``, judged on the path as given, so a symlinked profile directory
     still names its root) names its root, any other home is its own root, and that root is then
     resolved through symlinks on both sides. Every profile one process serves maps to the same
     root, so this read is profile-independent by design (not a launch-profile leak)."""
     if root is None:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
-        home = Path(os.path.abspath(get_hermes_home()))
+        home = Path(os.path.abspath(get_moor_home()))
         root = (home.parent.parent if home.parent.name.lower() == "profiles" else home).resolve()
     return Path(root) / STORE_NAME
 

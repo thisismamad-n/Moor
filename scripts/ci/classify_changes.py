@@ -169,8 +169,8 @@ _DESKTOP_UPDATER_FILES = {
     "apps/desktop/electron/remote-update-marker-programs.ts",
     "apps/desktop/electron/remote-update-marker-programs.test.ts",
     # Python the script runs: the post-update verify and the staged app swap.
-    "hermes_cli/desktop_update_verify.py",
-    "hermes_cli/main_desktop.py",
+    "moor_cli/desktop_update_verify.py",
+    "moor_cli/main_desktop.py",
     "tests/conftest.py",
     "pyproject.toml",
 }
@@ -184,7 +184,7 @@ _DESKTOP_UPDATER_FILES = {
 _SHARED_FIXTURE_CONSUMERS: dict[str, tuple[str, ...]] = {
     # A7 rule 7: the update-marker parse / judge / release corpus.
     "tests/fixtures/update_marker_corpus.json": (
-        "tests/hermes_cli/test_update_marker_corpus.py",  # Python: update_lock
+        "tests/moor_cli/test_update_marker_corpus.py",  # Python: update_lock
         "apps/bootstrap-installer/src-tauri/src/marker_tests.rs",  # Rust: cargo test
         "apps/desktop/electron/update-marker-corpus.test.ts",  # Electron: vitest
         "tests/scripts/desktop_update/test_desktop_update_posix_marker_corpus.py",  # marker.sh
@@ -194,7 +194,7 @@ _SHARED_FIXTURE_CONSUMERS: dict[str, tuple[str, ...]] = {
     ),
     # Which halves a plugin folder ships: the gateway's and native Desktop's inspectors.
     "tests/fixtures/plugin_component_detection.json": (
-        "tests/hermes_cli/test_plugins_cmd_inspect.py",  # Python: detect_components
+        "tests/moor_cli/test_plugins_cmd_inspect.py",  # Python: detect_components
         "apps/desktop/electron/desktop-plugin-install.test.ts",  # Electron: detectPluginComponents
     ),
 }
@@ -203,7 +203,7 @@ _SHARED_FIXTURE_CONSUMERS: dict[str, tuple[str, ...]] = {
 # electron/update-* starts the Desktop update E2E, which never reads the corpus).
 _FIXTURE_CONSUMER_LANES = ("python", "rust", "frontend", "desktop_updater")
 
-# Rust crates — currently just the Tauri bootstrap installer (Hermes-Setup).
+# Rust crates — currently just the Tauri bootstrap installer (moor-setup).
 # These live under ``apps/``, so before this lane existed a ``.rs`` edit matched
 # ``frontend`` and nothing more: the TypeScript matrix built, cargo never ran,
 # and the crate's unit tests had never executed in CI at all.
@@ -254,43 +254,43 @@ _DESKTOP_E2E_SHARED = (
 # The Tauri updater (update.rs, its marker claim marker.rs, the paths.rs both resolve) is
 # compiled and tested by ``cargo test`` alone (the ``rust`` lane, via ``.rs``): no slow lane
 # builds the bootstrap installer, so none of the three starts one.
-# What `hermes update` runs outside the update_* module family: the steps of the
+# What `moor update` runs outside the update_* module family: the steps of the
 # pipeline (entry, lock, early recovery, completion tail, launchers, fleet
 # restart/verify, Windows pause/resume) and the lock / marker / recovery state
 # the update_* modules import. Editing any of these changes what a real update
 # does, so the real-update suites (Linux e2e-upgrade and the Windows
 # install + update journey, including its crash cells) must run on the PR.
 _UPDATE_PIPELINE = (
-    "hermes_cli/main.py",  # cmd_update: lock, pre-update backup, receipt boundary
-    "hermes_cli/main_dashboard.py",  # hangup protection + update.log mirror
+    "moor_cli/main.py",  # cmd_update: lock, pre-update backup, receipt boundary
+    "moor_cli/main_dashboard.py",  # hangup protection + update.log mirror
     # Prefix: main_desktop.py (staged Desktop swap / rebuild in the tail) and the
     # main_desktop_* siblings it imports (macOS signing identity).
-    "hermes_cli/main_desktop",
+    "moor_cli/main_desktop",
     # Prefix: _early_recovery.py and its _early_recovery_* siblings (ZIP swap journal).
-    "hermes_cli/_early_recovery",  # interrupted pull / shim restore at launch
-    "hermes_cli/venv_sync.py",  # completion obligation + launch-time tail
-    "hermes_cli/source_",  # source_completion/_build/_releases/_check/_stamp
-    "hermes_cli/_launchers.py",
-    "hermes_cli/release_channels.py",
-    "hermes_cli/gitlock.py",  # git self-heal + partial-clone fetch
-    "hermes_cli/git_commit_graph.py",  # every update starts the install checkout's graph refresh
-    "hermes_cli/process_identity.py",  # marker owner liveness
-    "hermes_cli/runtime_state.py",
-    "hermes_cli/relaunch.py",
-    "hermes_cli/managed_uv.py",
-    "hermes_cli/npm_engine.py",
-    "hermes_cli/_scan_venv_blockers.py",
-    "hermes_cli/dashboard_procs.py",
-    "hermes_cli/desktop_update",  # desktop_update_verify
-    "hermes_cli/gateway.py",  # fleet restart / verify
-    "hermes_cli/gateway_windows",  # Windows pause / resume
-    "hermes_cli/gateway_launchd.py",
-    "hermes_cli/gateway_migrate",
-    "hermes_cli/gateway_supervised_restart.py",
-    "hermes_cli/git_pack_tidy.py",  # partial-clone pack tidy: every update's pre-fetch runs it
-    "hermes_bootstrap.py",  # every launch's prepare_launch
-    "hermes_constants.py",  # root home = update marker location
-    "hermes_dir_acl.py",  # update restores the Windows user ACL on the home after elevation
+    "moor_cli/_early_recovery",  # interrupted pull / shim restore at launch
+    "moor_cli/venv_sync.py",  # completion obligation + launch-time tail
+    "moor_cli/source_",  # source_completion/_build/_releases/_check/_stamp
+    "moor_cli/_launchers.py",
+    "moor_cli/release_channels.py",
+    "moor_cli/gitlock.py",  # git self-heal + partial-clone fetch
+    "moor_cli/git_commit_graph.py",  # every update starts the install checkout's graph refresh
+    "moor_cli/process_identity.py",  # marker owner liveness
+    "moor_cli/runtime_state.py",
+    "moor_cli/relaunch.py",
+    "moor_cli/managed_uv.py",
+    "moor_cli/npm_engine.py",
+    "moor_cli/_scan_venv_blockers.py",
+    "moor_cli/dashboard_procs.py",
+    "moor_cli/desktop_update",  # desktop_update_verify
+    "moor_cli/gateway.py",  # fleet restart / verify
+    "moor_cli/gateway_windows",  # Windows pause / resume
+    "moor_cli/gateway_launchd.py",
+    "moor_cli/gateway_migrate",
+    "moor_cli/gateway_supervised_restart.py",
+    "moor_cli/git_pack_tidy.py",  # partial-clone pack tidy: every update's pre-fetch runs it
+    "moor_bootstrap.py",  # every launch's prepare_launch
+    "moor_constants.py",  # root home = update marker location
+    "moor_dir_acl.py",  # update restores the Windows user ACL on the home after elevation
     "gateway/status.py",  # code_sha stamp the fleet verify reads
     "gateway/status_inline_source.py",  # the Windows pause identifies inline-bootstrapped gateways
     "gateway/status_lock_dir.py",  # gateway/status.py imports it at module level
@@ -299,41 +299,41 @@ _UPDATE_PIPELINE = (
     "gateway/host_rendezvous.py",
     "gateway/shutdown_forensics.py",
     "gateway/restart.py",
-    "scripts/desktop-update/",  # the hand-off scripts run `hermes update`
+    "scripts/desktop-update/",  # the hand-off scripts run `moor update`
 )
 # Selectors are owned by the import graph, not remembered. The update
-# transaction's own modules (what `hermes update` and the launch-time completion
+# transaction's own modules (what `moor update` and the launch-time completion
 # run between the lock and the receipt) are the entry points;
 # tests/ci/test_update_ci_routing.py reads every repo module they import (AST,
 # module level and lazy) and every build script they run, and fails until each
 # one is routed to the suite below or is a _SHARED_HUBS entry.
 _UPDATE_ENTRY_POINTS = (
-    "hermes_cli/update_",
-    "hermes_cli/_update_",
-    "hermes_cli/source_",
-    "hermes_cli/old_updater",
-    "hermes_cli/_old_updater",
-    "hermes_cli/post_update",
-    "hermes_cli/venv_sync.py",
-    "hermes_cli/_early_recovery",
-    "hermes_cli/main_desktop.py",
-    "hermes_cli/desktop_update_verify.py",
-    "hermes_cli/desktop_build_lock.py",
-    "hermes_cli/subcommands/update",
+    "moor_cli/update_",
+    "moor_cli/_update_",
+    "moor_cli/source_",
+    "moor_cli/old_updater",
+    "moor_cli/_old_updater",
+    "moor_cli/post_update",
+    "moor_cli/venv_sync.py",
+    "moor_cli/_early_recovery",
+    "moor_cli/main_desktop.py",
+    "moor_cli/desktop_update_verify.py",
+    "moor_cli/desktop_build_lock.py",
+    "moor_cli/subcommands/update",
 )
 # The entry points that build or verify the Desktop app inside an update
-# (`hermes desktop --build-only`, the source build/completion that feeds it).
+# (`moor desktop --build-only`, the source build/completion that feeds it).
 _DESKTOP_BUILD_ENTRY_POINTS = (
-    "hermes_cli/source_build.py",
-    "hermes_cli/source_completion.py",
-    "hermes_cli/main_desktop.py",
-    "hermes_cli/desktop_update_verify.py",
-    "hermes_cli/desktop_build_lock.py",
+    "moor_cli/source_build.py",
+    "moor_cli/source_completion.py",
+    "moor_cli/main_desktop.py",
+    "moor_cli/desktop_update_verify.py",
+    "moor_cli/desktop_build_lock.py",
 )
 # What the entry points import, outside the update_* family and the pipeline above.
 _UPDATE_DEPENDENCIES = (
-    "hermes_cli/_subprocess_compat.py",  # update git env, process-tree kill, PM git exposure
-    "hermes_cli/local_runtime/processes.py",  # bounded probes' spawn_server/job custody
+    "moor_cli/_subprocess_compat.py",  # update git env, process-tree kill, PM git exposure
+    "moor_cli/local_runtime/processes.py",  # bounded probes' spawn_server/job custody
     "agent/deadline.py",  # bounded probes' process-tree timeout cleanup
     # migrate_all_homes' second-hop provider/profile decisions, run on every update. Its
     # plugin-install branch (plugins_cmd, plugins_cmd_install) runs only for a home whose
@@ -342,46 +342,46 @@ _UPDATE_DEPENDENCIES = (
     "agent/memory_provider.py",
     "pm/plugins_state.py",
     "pm/install.py",  # also sealed()/lazy_installs_allowed(): every update's default-tool install
-    "hermes_cli/desktop_build_lock.py",
-    "hermes_cli/desktop_build_reuse.py",  # source_build keeps the packaged app when no input changed
-    "hermes_cli/desktop_release_holders.py",  # main_desktop names/closes a holder of release/ on a failed swap
-    "hermes_cli/memory_provider_migration.py",
-    "hermes_cli/left_core_migration.py",  # source_build migrates plugins that left core
-    "hermes_cli/config_version_stamp.py",  # post_update converts legacy AGENT_BROWSER_* before stamping
-    "hermes_cli/web_build_limits.py",  # source_build caps the dashboard Node build
-    "hermes_cli/desktop_console.py",
-    "hermes_cli/bundled_app.py",
-    "hermes_cli/gui_uninstall.py",
-    "hermes_cli/linux_desktop_entry.py",
-    "hermes_cli/github_api.py",  # source_check's release lookup
-    "hermes_cli/build_info.py",
-    "hermes_cli/image_provenance.py",
-    "hermes_cli/backup.py",  # pre-update backup
-    "hermes_cli/backup_cron_prompts.py",  # restore_cron_prompt_fields_if_degraded (update_cmd_config)
-    "hermes_cli/backup_restore.py",
-    "hermes_cli/config_backend.py",  # update_channel writes the channel key through the seam
-    "hermes_cli/env_loader.py",  # update_proxy_env keeps proxy keys a .env load wrote
+    "moor_cli/desktop_build_lock.py",
+    "moor_cli/desktop_build_reuse.py",  # source_build keeps the packaged app when no input changed
+    "moor_cli/desktop_release_holders.py",  # main_desktop names/closes a holder of release/ on a failed swap
+    "moor_cli/memory_provider_migration.py",
+    "moor_cli/left_core_migration.py",  # source_build migrates plugins that left core
+    "moor_cli/config_version_stamp.py",  # post_update converts legacy AGENT_BROWSER_* before stamping
+    "moor_cli/web_build_limits.py",  # source_build caps the dashboard Node build
+    "moor_cli/desktop_console.py",
+    "moor_cli/bundled_app.py",
+    "moor_cli/gui_uninstall.py",
+    "moor_cli/linux_desktop_entry.py",
+    "moor_cli/github_api.py",  # source_check's release lookup
+    "moor_cli/build_info.py",
+    "moor_cli/image_provenance.py",
+    "moor_cli/backup.py",  # pre-update backup
+    "moor_cli/backup_cron_prompts.py",  # restore_cron_prompt_fields_if_degraded (update_cmd_config)
+    "moor_cli/backup_restore.py",
+    "moor_cli/config_backend.py",  # update_channel writes the channel key through the seam
+    "moor_cli/env_loader.py",  # update_proxy_env keeps proxy keys a .env load wrote
     "agent/proxy_bypass.py",  # update_proxy_env reads NO_PROXY entries with it
-    "hermes_cli/relay_plugin_migrate.py",
-    "hermes_cli/macos_tcc_anchor.py",
-    "hermes_cli/model_catalog.py",
-    "hermes_cli/sqlite_runtime.py",
-    "hermes_cli/sqlite_safe_read.py",
-    "hermes_cli/sizefmt.py",
-    "hermes_cli/tools_config_cua.py",
-    "hermes_cli/_startup_fast.py",
-    "hermes_cli/_parser.py",
-    "hermes_cli/gateway_multiplex_mode.py",
-    "hermes_cli/plugin_catalog.py",
-    "hermes_cli/steward.py",
-    "hermes_cli/observability/shared_metrics_update.py",
-    "hermes_cli/main_install_repair.py",
-    "hermes_logging.py",
-    "hermes_platform/host/__init__.py",
-    "hermes_platform/host/facts.py",
-    "hermes_platform/resolver/__init__.py",  # update_cmd_commit's interpreter lookup
-    "hermes_platform/resolver/base.py",
-    "hermes_platform/resolver/core.py",
+    "moor_cli/relay_plugin_migrate.py",
+    "moor_cli/macos_tcc_anchor.py",
+    "moor_cli/model_catalog.py",
+    "moor_cli/sqlite_runtime.py",
+    "moor_cli/sqlite_safe_read.py",
+    "moor_cli/sizefmt.py",
+    "moor_cli/tools_config_cua.py",
+    "moor_cli/_startup_fast.py",
+    "moor_cli/_parser.py",
+    "moor_cli/gateway_multiplex_mode.py",
+    "moor_cli/plugin_catalog.py",
+    "moor_cli/steward.py",
+    "moor_cli/observability/shared_metrics_update.py",
+    "moor_cli/main_install_repair.py",
+    "moor_logging.py",
+    "moor_platform/host/__init__.py",
+    "moor_platform/host/facts.py",
+    "moor_platform/resolver/__init__.py",  # update_cmd_commit's interpreter lookup
+    "moor_platform/resolver/base.py",
+    "moor_platform/resolver/core.py",
     "agent/curator.py",
     "plugins/memory/__init__.py",
     "tools/checkpoint_maintenance.py",
@@ -392,7 +392,7 @@ _UPDATE_DEPENDENCIES = (
     # tui, web, desktop and their shared frontend-common).
     "scripts/build/",
     "apps/desktop/scripts/build-webapp.mjs",  # source_build's Webapp renderer build
-    "hermes_cli/webapp.py",  # source_build rebuilds the Webapp bundle a home serves
+    "moor_cli/webapp.py",  # source_build rebuilds the Webapp bundle a home serves
     "gateway/webapp_listener.py",  # source_build reads which homes serve the Webapp
 )
 # General-purpose modules an entry point imports but that half the product
@@ -402,17 +402,17 @@ _UPDATE_DEPENDENCIES = (
 # them run on most PRs. Never an update-specific module: own those above.
 HUB_MIN_IMPORTERS = 25
 _SHARED_HUBS = frozenset({
-    "hermes_cli/__init__.py",
-    "hermes_cli/config.py",
-    "hermes_cli/profiles.py",
-    "hermes_cli/version_info.py",
+    "moor_cli/__init__.py",
+    "moor_cli/config.py",
+    "moor_cli/profiles.py",
+    "moor_cli/version_info.py",
     "utils.py",
-    "hermes_state.py",
+    "moor_state.py",
     "agent/__init__.py",
     "cron/jobs.py",
     "tools/environments/local.py",
     # Desktop lane only (the upgrade lane owns these outright):
-    "hermes_constants.py",
+    "moor_constants.py",
     "gateway/status.py",
     "pm/__init__.py",
     "pm/paths.py",
@@ -424,7 +424,7 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "tests/e2e/",
         # The state.db torture chamber and the compaction/exactly-once
         # suites are the only tests that run real concurrent writers.
-        "hermes_state",
+        "moor_state",
         # Messaging-gated gateway cases: only the e2e job installs the real
         # Discord/Telegram SDKs (tests.yml "Run messaging-gated gateway cases").
         "tests/gateway/test_native_role_reauthorization.py",
@@ -440,21 +440,21 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "tests/compat/",
         "pm/",
         "scripts/install.",
-        "setup-hermes.sh",
-        "hermes_cli/update_",
-        "hermes_cli/_update_",
-        "hermes_cli/old_updater",
-        # The downgrade refusal (hermes_cli/update_downgrade_guard.py) reads state.db through it.
-        "hermes_state_holders.py",
-        # The search-index notice (hermes_cli/update_cmd_maint.py) reads the stored FTS layout through it.
-        "hermes_state_fts.py",
-        "hermes_cli/_old_updater",
-        "hermes_cli/post_update",
-        "hermes_cli/config_migrations",
-        "hermes_cli/subcommands/update",
-        "hermes_cli/install_",
-        "hermes_cli/_install_",
-        "hermes_cli/main_install",
+        "setup-moor.sh",
+        "moor_cli/update_",
+        "moor_cli/_update_",
+        "moor_cli/old_updater",
+        # The downgrade refusal (moor_cli/update_downgrade_guard.py) reads state.db through it.
+        "moor_state_holders.py",
+        # The search-index notice (moor_cli/update_cmd_maint.py) reads the stored FTS layout through it.
+        "moor_state_fts.py",
+        "moor_cli/_old_updater",
+        "moor_cli/post_update",
+        "moor_cli/config_migrations",
+        "moor_cli/subcommands/update",
+        "moor_cli/install_",
+        "moor_cli/_install_",
+        "moor_cli/main_install",
         *_UPDATE_PIPELINE,
         *_UPDATE_ENTRY_POINTS,
         *_UPDATE_DEPENDENCIES,
@@ -498,22 +498,22 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "apps/desktop/electron/app-installer-file",
         "scripts/desktop-update/",
         "scripts/install.sh",
-        "hermes_cli/update_",
-        "hermes_cli/main_desktop",  # the entry point and the main_desktop_* siblings it imports
+        "moor_cli/update_",
+        "moor_cli/main_desktop",  # the entry point and the main_desktop_* siblings it imports
         *_DESKTOP_BUILD_ENTRY_POINTS,
         *_UPDATE_DEPENDENCIES,
         # Pipeline modules the Desktop build entry points import directly.
-        "hermes_cli/main.py",  # `hermes desktop --build-only`
-        "hermes_cli/venv_sync.py",
-        "hermes_cli/source_stamp.py",
+        "moor_cli/main.py",  # `moor desktop --build-only`
+        "moor_cli/venv_sync.py",
+        "moor_cli/source_stamp.py",
         # Imported by the Desktop build's scripts (scripts/build/desktop.mjs closure).
         "apps/desktop/product-identity.cjs",
         "scripts/msix-shared.mjs",
         # The launchers the Desktop relaunches through reach the launch-time repair first.
-        "hermes_cli/_launchers.py",
+        "moor_cli/_launchers.py",
         # The backend's /api/health `commit`, which the Desktop compares to the checkout
         # before attaching to a running backend after an update.
-        "hermes_cli/web_routers/status.py",
+        "moor_cli/web_routers/status.py",
     ),
 }
 

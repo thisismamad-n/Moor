@@ -228,14 +228,14 @@ class TestGatewayRunImportDoesNotSetExecAsk:
         """Incidental imports must not poison CLI ask-mode process-wide."""
         script = rf"""
 import os, sys
-os.environ.pop("HERMES_EXEC_ASK", None)
+os.environ.pop("MOOR_EXEC_ASK", None)
 sys.path.insert(0, {str(REPO_ROOT)!r})
 # Avoid starting the gateway; only import the module for _gateway_runner_ref
 # style side imports.
 import gateway.run  # noqa: F401
-print("EXEC_ASK=" + repr(os.environ.get("HERMES_EXEC_ASK")))
+print("EXEC_ASK=" + repr(os.environ.get("MOOR_EXEC_ASK")))
 """
-        hermes_home = tmp_path / "import-test-home"
+        moor_home = tmp_path / "import-test-home"
         proc = subprocess.run(
             [sys.executable, "-c", script],
             cwd=str(REPO_ROOT),

@@ -30,22 +30,22 @@ def _state_file(name: str) -> Path:
 
 
 def is_safe_path(path: Path) -> bool:
-    """Accept only paths under HERMES_HOME or ``/tmp/hermes-*``.
+    """Accept only paths under MOOR_HOME or ``/tmp/moor-*``.
 
     Rejects Windows mounts (``/mnt/c`` etc.) and any system directory.
     """
-    hermes_home = get_hermes_home()
+    moor_home = get_moor_home()
     try:
         resolved = path.resolve()
     except (OSError, RuntimeError):
         return False
     try:
-        resolved.relative_to(hermes_home)
+        resolved.relative_to(moor_home)
         return True
     except ValueError:
         pass
 
-    # Allow /tmp/hermes-* explicitly. Compare resolved roots rather than raw
+    # Allow /tmp/moor-* explicitly. Compare resolved roots rather than raw
     # path parts because macOS resolves /tmp to /private/tmp.
     try:
         # Deliberate /tmp alias detection (#98854): we resolve the POSIX root
@@ -53,7 +53,7 @@ def is_safe_path(path: Path) -> bool:
         relative_tmp = resolved.relative_to(Path("/tmp").resolve())  # no-tmp: ok — alias detection, not a scratch path
     except (ValueError, OSError):
         return False
-    return bool(relative_tmp.parts and relative_tmp.parts[0].startswith("hermes-"))
+    return bool(relative_tmp.parts and relative_tmp.parts[0].startswith("moor-"))
 
 
 def _log(message: str) -> None:
@@ -316,7 +316,7 @@ def _sweep_empty_dirs(moor_home: Path) -> int:
     Iterative post-order so parents emptied by child removal are caught."""
     removed = 0
     stack: list[tuple[Path, bool]] = [
-        (top, False) for top in _subdirs(hermes_home, _EMPTY_DIR_PROTECTED_TOP_LEVEL | _EMPTY_DIR_SWEEP_PRUNE_DIRS)]
+        (top, False) for top in _subdirs(moor_home, _EMPTY_DIR_PROTECTED_TOP_LEVEL | _EMPTY_DIR_SWEEP_PRUNE_DIRS)]
     while stack:
         dirpath, visited = stack.pop()
         if visited:
@@ -370,13 +370,13 @@ def _git_tracks(path: Path) -> bool:
     Asked per candidate: ``guess_category`` only reaches this for ``test_*``/``tmp_*``
     names, so one ``ls-files --error-unmatch`` is cheap, needs no cache that could outlive
     the index (a file committed after first classification is seen immediately), and covers
-    both a HERMES_HOME that IS a checkout and one nested in an enclosing repo (a ``~/.git``
-    dotfiles repo tracking ``~/.hermes/scripts/test_x.py``). Unlike a bare ``.git`` probe
-    above HERMES_HOME, an exact tracked check cannot make untracked scratch look Git-owned.
+    both a MOOR_HOME that IS a checkout and one nested in an enclosing repo (a ``~/.git``
+    dotfiles repo tracking ``~/.moor/scripts/test_x.py``). Unlike a bare ``.git`` probe
+    above MOOR_HOME, an exact tracked check cannot make untracked scratch look Git-owned.
     ``:(literal)`` stops git globbing the name (``test_[1].py`` must not match ``test_1.py``).
     Git missing / not a repo / file untracked all mean "not tracked".
     """
-    from hermes_cli.source_check import _git_ok
+    from moor_cli.source_check import _git_ok
 
     return _git_ok(["-C", str(path.parent), "ls-files", "--error-unmatch", "--",
                     ":(literal)" + path.name], timeout=5)
@@ -384,22 +384,22 @@ def _git_tracks(path: Path) -> bool:
 
 def _inside_git_worktree(path: Path) -> bool:
     """True if *path* is Git-owned: a ``.git`` entry (a directory in a normal checkout, a
-    pointer FILE in a linked worktree) exists on the directory chain below HERMES_HOME, or
-    an enclosing repo (HERMES_HOME itself, or one above it) actually TRACKS the file.
+    pointer FILE in a linked worktree) exists on the directory chain below MOOR_HOME, or
+    an enclosing repo (MOOR_HOME itself, or one above it) actually TRACKS the file.
 
     Files whose repo tracks them are Git-owned — a ``test_*`` file in a worktree is typically
     a committed regression test, not session scratch (#115295).
 
-    Only ``.git`` entries strictly BELOW ``HERMES_HOME`` count for the parent-chain probe: a
+    Only ``.git`` entries strictly BELOW ``MOOR_HOME`` count for the parent-chain probe: a
     home kept in a dotfiles repo (``~/.git``) would otherwise make every scratch file look
-    Git-owned. Git is only asked when a ``.git`` exists at or above HERMES_HOME; otherwise no
+    Git-owned. Git is only asked when a ``.git`` exists at or above MOOR_HOME; otherwise no
     repo can track the file and the spawn is skipped.
     """
     resolved = path.resolve()
     parents = list(resolved.parents)
     above: list[Path] = []
     with contextlib.suppress(ValueError):
-        i = parents.index(get_hermes_home())
+        i = parents.index(get_moor_home())
         parents, above = parents[:i], parents[i:]
     if any((parent / ".git").exists() for parent in parents):
         return True

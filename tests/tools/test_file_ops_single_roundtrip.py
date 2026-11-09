@@ -135,7 +135,7 @@ class TestReadFileOneRoundTrip:
 
     def test_sentinel_lookalike_in_content_reads_intact(self, shell, tmp_path):
         ops, _calls = shell
-        lookalike = "__HERMES_RF_" + "ab" * 16 + "__"
+        lookalike = "__MOOR_RF_" + "ab" * 16 + "__"
         p = _write(tmp_path, "s.txt", f"x\n{lookalike}\ny\n".encode())
         r = ops.read_file(p)
         assert r.error is None and r.total_lines == 3

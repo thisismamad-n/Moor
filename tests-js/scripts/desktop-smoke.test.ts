@@ -133,9 +133,9 @@ test.runIf(process.platform !== 'win32')('shell wrapper exports the live witness
       log_group() { :; }
       source "$ASSETS/mock-provider.sh"
       trap mock_stop EXIT
-      mock_start "$HERMES_HOME"
-      node --input-type=module -e 'const r=await fetch(process.env.HERMES_E2E_MOCK_URL+"/__e2e__/prompts"); if(!r.ok || (await r.json()).receivedPrompts.length!==0)process.exit(1)'
-    `], { env: { ...process.env, ASSETS: assets, HERMES_HOME: home, LOG_DIR: home }, encoding: 'utf8', timeout: 20_000 })
+      mock_start "$MOOR_HOME"
+      node --input-type=module -e 'const r=await fetch(process.env.MOOR_E2E_MOCK_URL+"/__e2e__/prompts"); if(!r.ok || (await r.json()).receivedPrompts.length!==0)process.exit(1)'
+    `], { env: { ...process.env, ASSETS: assets, MOOR_HOME: home, LOG_DIR: home }, encoding: 'utf8', timeout: 20_000 })
 
     expect(result.status, result.stdout + result.stderr).toBe(0)
     expect(yaml.load(fs.readFileSync(path.join(home, 'config.yaml'), 'utf8'))).toMatchObject({ updates: { desktop_feed_base_url: 'http://127.0.0.1:1234/feed' } })
@@ -248,7 +248,7 @@ test.runIf(process.platform === 'linux' || process.platform === 'darwin')('the c
       ? Number(fs.readFileSync(`/proc/${child.pid}/stat`, 'utf8').split(')').pop()!.trim().split(/\s+/)[19])
       : Math.round(spawnedAt * 100)
 
-    const state = { pid: child.pid, kind: 'hermes-gateway', gateway_state: 'running', start_time: startTime }
+    const state = { pid: child.pid, kind: 'moor-gateway', gateway_state: 'running', start_time: startTime }
     const statePath = path.join(root, 'gateway_state.json')
     // `gateway ensure` leaves the daemon outside the app's tree and out of the spawn ledger.
     expect(() => localBackendProcess(port, child.pid!, home)).toThrow('found 0')
@@ -278,12 +278,12 @@ test('a canonical gateway proves its tree by the cwd `gateway ensure` starts it 
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-gateway-origin-'))
 
   try {
-    // spawn_unmanaged_gateway: `sys.executable -m hermes_cli.main --profile default gateway run`, cwd=<install root>.
+    // spawn_unmanaged_gateway: `sys.executable -m moor_cli.main --profile default gateway run`, cwd=<install root>.
     // The interpreter is the managed one beside the checkout, so argv never names the root.
-    const executable = path.join(os.tmpdir(), 'hermes-tools', 'python', 'bin', 'python3.14')
+    const executable = path.join(os.tmpdir(), 'moor-tools', 'python', 'bin', 'python3.14')
 
     const backend = { pid: 2, parentPid: 1, executable, cwd: root, ownership: 'host-gateway' as const,
-      command: [executable, '-m', 'hermes_cli.main', '--profile', 'default', 'gateway', 'run', '--quiet'].map(arg => JSON.stringify(arg)).join(' ') }
+      command: [executable, '-m', 'moor_cli.main', '--profile', 'default', 'gateway', 'run', '--quiet'].map(arg => JSON.stringify(arg)).join(' ') }
 
     expect(() => assertBackendOrigin(backend, root, 'source', { appReportedRoot: root })).not.toThrow()
     // The app's own report never vouches for a listener that is not its descendant.
@@ -296,11 +296,11 @@ test('a canonical gateway whose cwd is unreadable proves its tree by the commit 
 
   try {
     // Windows: CIM exposes neither cwd nor environment for the detached `gateway run`.
-    const executable = path.join(os.tmpdir(), 'hermes-tools', 'python', 'python.exe')
+    const executable = path.join(os.tmpdir(), 'moor-tools', 'python', 'python.exe')
     const commit = 'a'.repeat(40)
 
     const backend = { pid: 2, parentPid: 1, executable, ownership: 'host-gateway' as const, codeSha: commit,
-      command: [executable, '-m', 'hermes_cli.main', '--profile', 'default', 'gateway', 'run', '--quiet'].map(arg => JSON.stringify(arg)).join(' ') }
+      command: [executable, '-m', 'moor_cli.main', '--profile', 'default', 'gateway', 'run', '--quiet'].map(arg => JSON.stringify(arg)).join(' ') }
 
     expect(() => assertBackendOrigin(backend, root, 'source', { appReportedRoot: root, installedCommit: commit })).not.toThrow()
     // A gateway started from another commit (or one that stamped none) is not vouched for.
@@ -323,7 +323,7 @@ test('a backend bound to the tree by environment needs no root in argv', (): voi
     fs.symlinkSync(resolvedPython, interpreter)
 
     const base = { pid: process.pid, parentPid: 1, executable: interpreter, cwd: home, ownership: 'child' as const,
-      command: `"${resolvedPython}" "-m" "hermes_cli.main" serve --host 127.0.0.1 --port 0` }
+      command: `"${resolvedPython}" "-m" "moor_cli.main" serve --host 127.0.0.1 --port 0` }
 
     // Control: with no environment evidence this is still a different tree.
     expect((): void => { assertBackendOrigin(base, root, 'source') }).toThrow('source tree')
@@ -359,7 +359,7 @@ test('a platform that cannot read the backend environment proves ownership by th
       pid: process.pid,
       parentPid: 1,
       executable: path.join(home, 'python.exe'),
-      command: `"${path.join(home, 'python.exe')}" "-m" "hermes_cli.main" serve --host 127.0.0.1 --port 0`,
+      command: `"${path.join(home, 'python.exe')}" "-m" "moor_cli.main" serve --host 127.0.0.1 --port 0`,
       ownership: 'child' as const,
     }
 
@@ -407,7 +407,7 @@ test('OLD update-window source provenance carries its verified app identity to t
 
     // As `localBackendProcess` reports a listener that descends from the app.
     const backend = { pid: 2, parentPid: 1, executable: path.join(home, 'python.exe'), ownership: 'child' as const,
-      command: `"${path.join(home, 'python.exe')}" -m hermes_cli.main dashboard --port 0` }
+      command: `"${path.join(home, 'python.exe')}" -m moor_cli.main dashboard --port 0` }
 
     expect((): void => {
       assertUpdateWindowBackendOrigin(backend, { moorRoot: root }, root, 'source')
@@ -436,25 +436,25 @@ test('source launch restores only an explicitly captured exact editable root', (
 
   try {
     writeSpec(home)
-    expect(resolveSmokeLaunch(options).env.HERMES_PYTHON_SRC_ROOT).toBe(home)
+    expect(resolveSmokeLaunch(options).env.MOOR_PYTHON_SRC_ROOT).toBe(home)
 
     for (const wrong of [childRoot, path.dirname(home), 'relative-root']) {
       writeSpec(wrong)
       expect((): void => { resolveSmokeLaunch(options) }).toThrow('expected source installation')
     }
 
-    expect(smokeEnvironment({ HERMES_PYTHON_SRC_ROOT: home }, home, options['user-data']).HERMES_PYTHON_SRC_ROOT).toBeUndefined()
+    expect(smokeEnvironment({ MOOR_PYTHON_SRC_ROOT: home }, home, options['user-data']).MOOR_PYTHON_SRC_ROOT).toBeUndefined()
   } finally { fs.rmSync(home, { recursive: true, force: true }) }
 })
 
 test.runIf(process.platform === 'linux')('module-launched source listener proves its import root without an argv path', async (): Promise<void> => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-module-'))
-  fs.mkdirSync(path.join(home, 'hermes_cli'))
-  fs.writeFileSync(path.join(home, 'hermes_cli', '__init__.py'), '')
-  fs.writeFileSync(path.join(home, 'hermes_cli', 'main.py'), 'import socket, time\ns = socket.socket()\ns.bind(("127.0.0.1", 0))\ns.listen()\nprint(s.getsockname()[1], flush=True)\ntime.sleep(60)\n')
+  fs.mkdirSync(path.join(home, 'moor_cli'))
+  fs.writeFileSync(path.join(home, 'moor_cli', '__init__.py'), '')
+  fs.writeFileSync(path.join(home, 'moor_cli', 'main.py'), 'import socket, time\ns = socket.socket()\ns.bind(("127.0.0.1", 0))\ns.listen()\nprint(s.getsockname()[1], flush=True)\ntime.sleep(60)\n')
 
-  const child = spawn('python3', ['-m', 'hermes_cli.main'], {
-    cwd: home, env: { ...process.env, HERMES_PYTHON_SRC_ROOT: home }, stdio: ['ignore', 'pipe', 'pipe'],
+  const child = spawn('python3', ['-m', 'moor_cli.main'], {
+    cwd: home, env: { ...process.env, MOOR_PYTHON_SRC_ROOT: home }, stdio: ['ignore', 'pipe', 'pipe'],
   })
 
   try {
@@ -485,7 +485,7 @@ test('a module launch proves its tree without leaning on the app-owned cwd', ():
     const launched = (executable: string, command: string): Parameters<typeof assertBackendOrigin>[0] =>
       ({ pid: 1, parentPid: 1, executable, command, cwd: path.join(os.tmpdir(), 'app-owned-cwd'), ownership: 'child' })
 
-    const venv = launched(python, `"${python}" "-m" "hermes_cli.main" "serve" --host 127.0.0.1 --port 0`)
+    const venv = launched(python, `"${python}" "-m" "moor_cli.main" "serve" --host 127.0.0.1 --port 0`)
     // The app owns the backend's cwd; the installation's own venv interpreter is the evidence.
     expect((): void => assertBackendOrigin(venv, root, 'source')).not.toThrow()
     // A foreign interpreter whose command names no tree is still rejected.
@@ -519,13 +519,13 @@ test('driver strips caller secrets and records missing executables as failure wi
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-admission-'))
 
   try {
-    const env = smokeEnvironment({ PATH: '/usr/bin', DISPLAY: ':1', OPENAI_API_KEY: 'secret', HERMES_DESKTOP_BOOT_FAKE: '1',
-      HERMES_DESKTOP_HERMES_ROOT: '/wrong', PYTHONPATH: '/wrong', NODE_OPTIONS: '--inspect', HERMES_HOME: '/wrong' }, home, path.join(home, 'user-data'))
+    const env = smokeEnvironment({ PATH: '/usr/bin', DISPLAY: ':1', OPENAI_API_KEY: 'secret', MOOR_DESKTOP_BOOT_FAKE: '1',
+      MOOR_DESKTOP_MOOR_ROOT: '/wrong', PYTHONPATH: '/wrong', NODE_OPTIONS: '--inspect', MOOR_HOME: '/wrong' }, home, path.join(home, 'user-data'))
 
-    expect(env).toMatchObject({ PATH: '/usr/bin', DISPLAY: ':1', HERMES_HOME: home,
-      HERMES_DESKTOP_SKIP_QUIT_CONFIRM: '1' })
+    expect(env).toMatchObject({ PATH: '/usr/bin', DISPLAY: ':1', MOOR_HOME: home,
+      MOOR_DESKTOP_SKIP_QUIT_CONFIRM: '1' })
 
-    for (const key of ['OPENAI_API_KEY', 'HERMES_DESKTOP_BOOT_FAKE', 'HERMES_DESKTOP_HERMES_ROOT', 'PYTHONPATH', 'NODE_OPTIONS']) {
+    for (const key of ['OPENAI_API_KEY', 'MOOR_DESKTOP_BOOT_FAKE', 'MOOR_DESKTOP_MOOR_ROOT', 'PYTHONPATH', 'NODE_OPTIONS']) {
       expect(env[key]).toBeUndefined()
     }
 
@@ -647,8 +647,8 @@ test('update-window process checks use the isolated launch environment, not the 
     fs.writeFileSync(executable, '')
     fs.mkdirSync(isolated)
     fs.mkdirSync(driver)
-    const prior = process.env.HERMES_DESKTOP_USER_DATA_DIR
-    process.env.HERMES_DESKTOP_USER_DATA_DIR = driver
+    const prior = process.env.MOOR_DESKTOP_USER_DATA_DIR
+    process.env.MOOR_DESKTOP_USER_DATA_DIR = driver
 
     try {
       expect(() => assertUpdateWindowProcess(
@@ -692,7 +692,7 @@ test('readBundledBundleEnv reads the stamped defaults/clears and is absent when 
 })
 
 test.each<[Record<string, string | null> | undefined]>([
-  [undefined], [{ HERMES_PREVIEW_FULL_CONNECTORS: '1' }], [{ HERMES_HOME: null }],
+  [undefined], [{ MOOR_PREVIEW_FULL_CONNECTORS: '1' }], [{ MOOR_HOME: null }],
 ])(
   'bundled smoke admits a fresh home and seeds the resolved provider with defaults %j', async (bundleEnv: Record<string, string | null> | undefined): Promise<void> => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-bundle-clear-'))
@@ -722,7 +722,7 @@ test.each<[Record<string, string | null> | undefined]>([
       await expect(runInstalledDesktopSmoke({ exe, root: path.join(root, 'root'), origin: 'bundled', home,
         'user-data': userData, out: root, phase: 'installed', 'expect-commit': 'a'.repeat(40) }, refuseLaunch)).rejects.toThrow('launch refused by test')
 
-      for (const candidate of candidateSmokeHermesHomes(home, userData)) {
+      for (const candidate of candidateSmokeMoorHomes(home, userData)) {
         expect(yaml.load(fs.readFileSync(path.join(candidate, 'config.yaml'), 'utf8'))).toMatchObject({ model: { provider: 'custom' } })
         const env = fs.readFileSync(path.join(candidate, '.env'), 'utf8')
         expect(env).toMatch(/MOCK_API_KEY=/)
@@ -737,7 +737,7 @@ test.each<[Record<string, string | null> | undefined]>([
       }
 
       if (bundleEnv) {
-        const predicted = predictSmokeHermesHome(smokeEnvironment({}, home, userData), bundleEnv)
+        const predicted = predictSmokeMoorHome(smokeEnvironment({}, home, userData), bundleEnv)
         const config = path.join(predicted, 'config.yaml')
         const before = fs.readFileSync(config)
         await expect(runInstalledDesktopSmoke({ exe, root: path.join(root, 'root'), origin: 'bundled', home,

@@ -511,7 +511,7 @@ test.runIf(process.platform !== 'win32')(
 test.runIf(process.platform !== 'win32')(
   'a committed update that still owes a step stays a success but names the owed step',
   async () => {
-    const home = await mkdtemp(path.join(os.tmpdir(), 'hermes-managed-owed-'))
+    const home = await mkdtemp(path.join(os.tmpdir(), 'moor-managed-owed-'))
 
     const run = async (
       followups: unknown[],
@@ -533,7 +533,7 @@ test.runIf(process.platform !== 'win32')(
       )
 
       const command = buildRemoteUpdateObservationCommand(
-        { ssh: { exec: async () => '' }, platform: 'Linux', hermesPath: '/opt/hermes/hermes', hermesHome: home },
+        { ssh: { exec: async () => '' }, platform: 'Linux', moorPath: '/opt/moor/moor', moorHome: home },
         CORRELATION
       )
 
@@ -565,14 +565,14 @@ test.runIf(process.platform !== 'win32')(
       assert.equal(owed.restoreOk, true)
       assert.deepEqual(owed.owed, [{ step: 'dependencies', reason: 'sync failed' }])
       assert.match(owed.message || '', /still owed: dependencies \(sync failed\)/)
-      assert.match(owed.message || '', /hermes update/)
+      assert.match(owed.message || '', /moor update/)
       assert.match(managedSshUpdateAllRow({ id: 'home' }, owed).detail || '', /dependencies/)
 
       const clean = await run([])
 
       assert.equal(clean.ok, true)
       assert.equal(clean.owed, undefined)
-      assert.equal(clean.message, 'Remote Hermes updated and every managed SSH profile is ready.')
+      assert.equal(clean.message, 'Remote Moor updated and every managed SSH profile is ready.')
 
       // The debt survives a failed restoration: update and restore verdicts stay independent.
       const unrestored = await run([{ step: 'dependencies', reason: 'sync failed' }], { restoreFails: true })
@@ -587,7 +587,7 @@ test.runIf(process.platform !== 'win32')(
 
       // record_user_action turns a success into partial/exit 1: its exact manual instruction is shown,
       // and the rerun advice is never offered for a parked stash.
-      const instruction = 'Run `git stash apply stash@{0}` in /opt/hermes to restore your local changes.'
+      const instruction = 'Run `git stash apply stash@{0}` in /opt/moor to restore your local changes.'
 
       const partial = await run([], {
         exitCode: 1,
@@ -601,7 +601,7 @@ test.runIf(process.platform !== 'win32')(
       const detail = managedSshUpdateAllRow({ id: 'home' }, partial).detail || ''
       assert.ok(detail.includes(instruction), detail)
       assert.match(detail, /local_changes/)
-      assert.doesNotMatch(detail, /Re-run `hermes update`/)
+      assert.doesNotMatch(detail, /Re-run `moor update`/)
     } finally {
       await rm(home, { force: true, recursive: true })
     }
@@ -627,7 +627,7 @@ test.runIf(process.platform !== 'win32')(
       const now = Math.floor(Date.now() / 1000)
       await mkdir(profileHome, { recursive: true })
       await writeFile(
-        path.join(root, '.hermes-update-in-progress'),
+        path.join(root, '.moor-update-in-progress'),
         `0\n${now}\nct:${ct}\ndelegate:${delegate.pid} ct:${ct}\nrun:desk-1\n`
       )
 
@@ -656,7 +656,7 @@ test.runIf(process.platform !== 'win32')(
 test.runIf(process.platform !== 'win32')(
   'managed observer reads a named profile update receipt from the root home the CLI writes',
   async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'hermes-managed-profile-receipt-'))
+    const root = await mkdtemp(path.join(os.tmpdir(), 'moor-managed-profile-receipt-'))
     const profileHome = path.join(root, 'profiles', 'research')
 
     const receipt = (outcome: string) =>
@@ -682,8 +682,8 @@ test.runIf(process.platform !== 'win32')(
         {
           ssh: { exec: async () => '' },
           platform: 'Linux',
-          hermesPath: '/opt/hermes/hermes',
-          hermesHome: profileHome
+          moorPath: '/opt/moor/moor',
+          moorHome: profileHome
         },
         CORRELATION
       )

@@ -16,12 +16,12 @@ import time
 from fastapi import APIRouter, HTTPException, Request, WebSocket
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from hermes_cli.dashboard_auth.request_utils import _http_origin
-from hermes_cli.web_server_surface import policy, private_launch
-from hermes_cli.web_session_sockets import (
+from moor_cli.dashboard_auth.request_utils import _http_origin
+from moor_cli.web_server_surface import policy, private_launch
+from moor_cli.web_session_sockets import (
     GATEWAY_SOCKET, HOST_TERMINAL_SOCKET, SPEAK_STREAM_SOCKET, TRANSCRIBE_STREAM_SOCKET)
 
-_log = logging.getLogger("hermes_cli.web_server")
+_log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
 WINDOW_TICKET_TTL_SECONDS = 30
 #: A sandboxed (snap/Flatpak) browser's cold start can take several seconds to reach the page.
@@ -40,9 +40,9 @@ def _require_private_webapp(request: Request) -> None:
 
 @router.websocket("/api/host-terminal")
 async def host_terminal_ws(ws: WebSocket) -> None:
-    from hermes_cli import web_host_terminal
-    from hermes_cli.web_host_terminal_sessions import host_terminal
-    from hermes_cli.web_server_chat import _PTY_BRIDGE_AVAILABLE, PtyUnavailableError, _pty_fail, _ws_gate
+    from moor_cli import web_host_terminal
+    from moor_cli.web_host_terminal_sessions import host_terminal
+    from moor_cli.web_server_chat import _PTY_BRIDGE_AVAILABLE, PtyUnavailableError, _pty_fail, _ws_gate
 
     gate = await _ws_gate(ws, HOST_TERMINAL_SOCKET)
     if gate is None:
@@ -63,7 +63,7 @@ async def host_terminal_ws(ws: WebSocket) -> None:
 def _mint_handoff_ticket(state, ttl: float, *, launch: bool) -> str:
     """One-use ticket that ``/webapp/window-session`` exchanges for this start's session token. The
     store keeps ``(expiry, browser credential generation, launch)``, never the credential itself."""
-    from hermes_cli import browser_credential
+    from moor_cli import browser_credential
 
     now = time.monotonic()
     with _ticket_lock:
@@ -86,7 +86,7 @@ def mint_launch_ticket(state) -> str:
 def mint_printed_launch_ticket(state) -> str:
     """Ticket for a launch link the user opens by hand where nothing identifies the redeeming
     connection's owner (macOS, the BSDs, WSL): it spends without that check, as a window ticket does, so
-    ``hermes webapp`` prints it and never passes it to a browser launcher."""
+    ``moor webapp`` prints it and never passes it to a browser launcher."""
     return _mint_handoff_ticket(state, LAUNCH_TICKET_TTL_SECONDS, launch=False)
 
 
@@ -138,7 +138,7 @@ def _peer_is_server_user(request: Request, platform: str = sys.platform) -> bool
     launcher's command line, which only its own user, SYSTEM and elevated administrators can read.
     Elsewhere (macOS, the BSDs) every local user can read the launcher's argv and nothing here
     identifies the connection's owner, so an argv-carried launch ticket cannot be redeemed; WSL
-    never mints one. Authenticated child-window tickets and the launch tickets ``hermes webapp``
+    never mints one. Authenticated child-window tickets and the launch tickets ``moor webapp``
     prints for the user to open by hand (``mint_printed_launch_ticket``) do not use this launcher
     channel.
     """
@@ -154,7 +154,7 @@ def _peer_is_server_user(request: Request, platform: str = sys.platform) -> bool
 
 @router.post("/api/webapp/window-ticket")
 async def issue_window_ticket(request: Request):
-    from hermes_cli.web_server import _require_token
+    from moor_cli.web_server import _require_token
 
     _require_private_webapp(request)
     _require_token(request)
@@ -171,7 +171,7 @@ def _ticket_principal(request: Request) -> tuple[dict, str | None]:
         return {"user_id": session.user_id, "provider": session.provider,
                 "issuer": getattr(session, "issuer", "") or ""}, None
     if not getattr(request.app.state, "auth_required", False):
-        from hermes_cli.web_server import _SESSION_HEADER_NAME, _has_valid_session_token
+        from moor_cli.web_server import _SESSION_HEADER_NAME, _has_valid_session_token
         presented = (request.headers.get(_SESSION_HEADER_NAME)
                      or request.headers.get("authorization", "").removeprefix("Bearer "))
         if _has_valid_session_token(request):
@@ -184,12 +184,12 @@ def mint_socket_ticket(identity: dict, socket: str, *, session_token: str | None
     """A one-use ticket that opens only *socket* (``web_session_sockets.GATEWAY_SOCKET``,
     ``HOST_TERMINAL_SOCKET`` or one of ``AUDIO_SOCKETS``) as *identity*. Minted with
     *session_token*, or by a login whose sign-in binding was checked against the browser credential
-    of generation *sign_in* (``hermes_cli.webapp_sign_in``), it records that credential's generation
-    (``hermes_cli.browser_credential``): it opens nothing once that credential is replaced, and the
+    of generation *sign_in* (``moor_cli.webapp_sign_in``), it records that credential's generation
+    (``moor_cli.browser_credential``): it opens nothing once that credential is replaced, and the
     socket it opens closes when the browser signs out. With *profile_home* the socket it opens answers
     for that profile (``chat_ws.gateway_ws``)."""
-    from hermes_cli.browser_credential import generation_of
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from moor_cli.browser_credential import generation_of
+    from moor_cli.dashboard_auth.ws_tickets import mint_ticket
 
     extra = {"socket": socket}
     if session_token is not None:
@@ -204,8 +204,8 @@ def mint_socket_ticket(identity: dict, socket: str, *, session_token: str | None
 
 def _socket_ticket_response(request: Request, identity: dict, socket: str, session_token: str | None,
                             profile_home: str | None = None) -> JSONResponse:
-    from hermes_cli.dashboard_auth.ws_tickets import TTL_SECONDS
-    from hermes_cli.webapp_sign_in import sign_in_of
+    from moor_cli.dashboard_auth.ws_tickets import TTL_SECONDS
+    from moor_cli.webapp_sign_in import sign_in_of
 
     ticket = mint_socket_ticket(identity, socket, session_token=session_token, sign_in=sign_in_of(request),
                                 profile_home=profile_home)
@@ -227,14 +227,14 @@ SOCKET_TICKETS: dict[str, tuple[str, bool]] = {
 @router.post("/api/webapp/socket-ticket")
 async def issue_socket_ticket(request: Request, socket: str = "", profile: str | None = None):
     """The browser's one-use ticket for one dial of *socket* on this same origin: ``gateway`` for
-    ``/api/ws`` (also offered as the ``hermes-gateway-ticket.`` subprotocol), ``host-terminal`` for
+    ``/api/ws`` (also offered as the ``moor-gateway-ticket.`` subprotocol), ``host-terminal`` for
     ``/api/host-terminal``, ``speak-stream`` and ``transcribe-stream`` for ``/api/audio/<name>``. The
     upgrade gate (``web_server_chat._consume_ws_ticket``) redeems it as this caller's login; it opens
     that socket and nothing else, so the browser mints one per dial. Minted locally: the server that
     serves this page runs the socket's sessions. A ``gateway`` ticket minted with *profile* names
     it: that socket answers a request that names no profile for *profile*, as a native ticket does
     (``chat_ws.gateway_ws``), never for the gateway's launch profile."""
-    from hermes_cli.web_server_cron import _cron_profile_home
+    from moor_cli.web_server_cron import _cron_profile_home
 
     if socket not in SOCKET_TICKETS:
         raise HTTPException(400, "Unknown socket")
@@ -252,7 +252,7 @@ async def issue_socket_ticket(request: Request, socket: str = "", profile: str |
 
 @router.post("/webapp/window-session")
 async def redeem_window_ticket(request: Request):
-    from hermes_cli import browser_credential
+    from moor_cli import browser_credential
 
     _require_private_webapp(request)
     # This endpoint deliberately sits outside /api: the child window or launch
@@ -268,7 +268,7 @@ async def redeem_window_ticket(request: Request):
         raise HTTPException(403, "Webapp window handoff requires a same-origin request")
     # Keep the unauthenticated exchange body-free; never parse an arbitrary
     # JSON/multipart payload just to extract a fixed-size capability.
-    ticket = request.headers.get("X-Hermes-Window-Ticket", "")
+    ticket = request.headers.get("X-moor-window-Ticket", "")
     with _ticket_lock:
         tickets = getattr(request.app.state, "webapp_window_tickets", {})
         entry = tickets.get(ticket)
@@ -292,19 +292,19 @@ const params = new URLSearchParams(location.hash.slice(1));
 history.replaceState(null, '', location.pathname);
 const ticket = params.get('ticket') || '';
 const show = message => { document.getElementById('status').textContent = message; };
-const fail = () => show('This launch link was already used or has expired. Run hermes webapp again for a new one.');
+const fail = () => show('This launch link was already used or has expired. Run moor webapp again for a new one.');
 if (!/^[A-Za-z0-9_-]{43}$/.test(ticket)) {
   fail();
 } else {
   fetch(`${basePath}/webapp/window-session`, {
-    method: 'POST', credentials: 'same-origin', headers: {'X-Hermes-Window-Ticket': ticket}
+    method: 'POST', credentials: 'same-origin', headers: {'X-moor-window-Ticket': ticket}
   }).then(response => response.ok ? response.json() : Promise.reject()).then(({token}) => {
     if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new Error();
     try {
-      sessionStorage.setItem(`hermes.webapp.session.v1:${JSON.stringify([location.origin, basePath])}`, token);
+      sessionStorage.setItem(`moor.webapp.session.v1:${JSON.stringify([location.origin, basePath])}`, token);
     } catch {
       show('This browser does not let the Webapp keep its sign-in in this tab. Allow site data for this '
-        + 'address, then run hermes webapp again.');
+        + 'address, then run moor webapp again.');
       return;
     }
     const target = new URL(`${basePath}/`, location.origin);
@@ -317,7 +317,7 @@ if (!/^[A-Za-z0-9_-]{43}$/.test(ticket)) {
 
 def _handoff_page(request: Request, title: str, status: str, script: str) -> HTMLResponse:
     """Credential-free, uncached page whose only script is *script* (``__BASE_PATH__`` bound)."""
-    from hermes_cli.web_server_dashboard import _normalise_prefix
+    from moor_cli.web_server_dashboard import _normalise_prefix
 
     prefix = _normalise_prefix(request.headers.get("x-forwarded-prefix"))
     nonce = secrets.token_urlsafe(16)
@@ -340,7 +340,7 @@ async def launch_page(request: Request):
     fragment (never sent to the server), keeps the credential it receives in this tab's
     sessionStorage and enters the Webapp at an address that carries neither."""
     _require_private_webapp(request)
-    return _handoff_page(request, "Opening Hermes", "Opening Hermes Webapp…", _LAUNCH_SCRIPT)
+    return _handoff_page(request, "Opening Moor", "Opening Moor Webapp…", _LAUNCH_SCRIPT)
 
 
 # No credential appears in this public page or in its URL. The fragment
@@ -352,9 +352,9 @@ history.replaceState(null, '', location.pathname);
 const id = params.get('channel') || '';
 const status = document.getElementById('status');
 if (!/^[a-f0-9-]{36}$/.test(id)) {
-  status.textContent = 'Open this window from an authorized Hermes Webapp tab.';
+  status.textContent = 'Open this window from an authorized Moor Webapp tab.';
 } else {
-  const channel = new BroadcastChannel(`hermes.webapp.window:${id}`);
+  const channel = new BroadcastChannel(`moor.webapp.window:${id}`);
   let receiving = false;
   let finished = false;
   const controller = new AbortController();
@@ -377,13 +377,13 @@ if (!/^[a-f0-9-]{36}$/.test(id)) {
     try {
       const response = await fetch(`${basePath}/webapp/window-session`, {
         method: 'POST', credentials: 'same-origin',
-        headers: {'X-Hermes-Window-Ticket': ticket}, signal: controller.signal
+        headers: {'X-moor-window-Ticket': ticket}, signal: controller.signal
       });
       if (!response.ok) throw new Error('Window authorization expired. Open a new window from the original tab.');
       const {token} = await response.json();
       if (finished) return;
       if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new Error('Invalid window authorization.');
-      sessionStorage.setItem(`hermes.webapp.session.v1:${JSON.stringify([location.origin, basePath])}`, token);
+      sessionStorage.setItem(`moor.webapp.session.v1:${JSON.stringify([location.origin, basePath])}`, token);
       const target = new URL(`${basePath}/`, location.origin);
       target.search = params.get('query') || '';
       target.hash = params.get('route') || '/';
@@ -402,4 +402,4 @@ if (!/^[a-f0-9-]{36}$/.test(id)) {
 @router.get("/webapp/window")
 async def child_window_page(request: Request):
     _require_private_webapp(request)
-    return _handoff_page(request, "Opening Hermes", "Authorizing this Hermes window…", _WINDOW_SCRIPT)
+    return _handoff_page(request, "Opening Moor", "Authorizing this Moor window…", _WINDOW_SCRIPT)

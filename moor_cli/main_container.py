@@ -1,4 +1,4 @@
-"""NixOS container mode: route a ``hermes`` invocation into the managed container (``main()``)."""
+"""NixOS container mode: route a ``moor`` invocation into the managed container (``main()``)."""
 
 from __future__ import annotations
 
@@ -35,14 +35,14 @@ def exec_in_container(container_info: dict, cli_args: list):
     On failure, OSError propagates naturally.
 
     Args:
-        container_info: dict with backend, container_name, exec_user, hermes_bin
-        cli_args: the original CLI arguments (everything after 'hermes')
+        container_info: dict with backend, container_name, exec_user, moor_bin
+        cli_args: the original CLI arguments (everything after 'moor')
     """
 
     backend = container_info["backend"]
     container_name = container_info["container_name"]
     exec_user = container_info["exec_user"]
-    hermes_bin = container_info["hermes_bin"]
+    moor_bin = container_info["moor_bin"]
 
     runtime = shutil.which(backend)
     if not runtime:
@@ -62,7 +62,7 @@ def exec_in_container(container_info: dict, cli_args: list):
         if not sudo_path:
             print(
                 f"Error: container '{container_name}' not found via {backend}.\n"
-                f"The container may be running under root. Try: sudo hermes {' '.join(cli_args)}",
+                f"The container may be running under root. Try: sudo moor {' '.join(cli_args)}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -83,7 +83,7 @@ def exec_in_container(container_info: dict, cli_args: list):
                 f'    commands = [{{ command = "{runtime}"; options = [ "NOPASSWD" ]; }}];\n'
                 f"  }}];\n"
                 f"\n"
-                f"Or run: sudo hermes {' '.join(cli_args)}",
+                f"Or run: sudo moor {' '.join(cli_args)}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -98,7 +98,7 @@ def exec_in_container(container_info: dict, cli_args: list):
         cmd_prefix
         + ["exec", "-it" if sys.stdin.isatty() else "-i", "-u", exec_user]
         + env_flags
-        + [container_name, hermes_bin]
+        + [container_name, moor_bin]
         + cli_args
     )
     os.execvp(exec_cmd[0], exec_cmd)

@@ -1,4 +1,4 @@
-import { makeNousCloudBackendDownError } from './backend-health'
+import { makeMoorCloudBackendDownError } from './backend-health'
 import { gatewayTicketFailure, gatewayTicketTransportMessage } from './connection-config'
 import { oauthTicketFailureAuthMessage } from './native-auth-decisions'
 
@@ -32,7 +32,7 @@ export async function resolveRemoteOauthTicket(
     // an HTTP fault — so fleet logs stop hiding three different upstream
     // causes behind one sentence (#98647).
     throw (
-      makeNousCloudBackendDownError(baseUrl, error) ??
+      makeMoorCloudBackendDownError(baseUrl, error) ??
       gatewayTicketFailure(error, oauthTicketFailureAuthMessage(hadNativeSession), gatewayTicketTransportMessage(error))
     )
   }

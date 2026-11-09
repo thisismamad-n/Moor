@@ -95,16 +95,16 @@ class TestMultiprofileRawConfigCache:
     @staticmethod
     def _load_under(home) -> list:
         from agent import skill_utils
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
-        token = set_hermes_home_override(str(home))
+        token = set_moor_home_override(str(home))
         try:
             return skill_utils._load_raw_config()["skills"]["disabled"]
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     def test_watcher_rotation_reparses_no_unchanged_config(self, tmp_path, monkeypatch):
         from agent import skill_utils

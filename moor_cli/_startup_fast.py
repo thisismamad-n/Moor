@@ -34,7 +34,7 @@ __all__ = [
     "is_container_startup_environment",
     "is_desktop_ssh_backend_argv",
     "is_global_fast_version_argv",
-    "normalize_hermes_home_env",
+    "normalize_moor_home_env",
     "print_fast_version_info",
     "project_root_str",
     "read_install_method",

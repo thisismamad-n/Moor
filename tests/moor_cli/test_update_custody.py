@@ -1,4 +1,4 @@
-"""R2: every updater git runner shares ONE custody policy (hermes_cli.update_custody).
+"""R2: every updater git runner shares ONE custody policy (moor_cli.update_custody).
 
 Real git, real processes, no mocks:
 * every runner passes ``-c gc.autoDetach=false -c maintenance.auto=false`` (git reports the
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import update_lock as ul
+from moor_cli import update_lock as ul
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -48,7 +48,7 @@ def repo(tmp_path, monkeypatch):
 
 def _runners(repo: Path):
     """Every updater git runner, as ``args -> stdout``."""
-    from hermes_cli import gitlock, update_cmd, update_cmd_check, update_cmd_git, update_cmd_stash
+    from moor_cli import gitlock, update_cmd, update_cmd_check, update_cmd_git, update_cmd_stash
 
     yield "update_cmd._git_run", lambda a: update_cmd._git_run(["git"], a, cwd=repo).stdout
     yield "update_cmd_git._git_run", lambda a: update_cmd_git._git_run(["git"], a, cwd=repo).stdout
@@ -69,7 +69,7 @@ def test_every_updater_git_runner_forbids_detached_children(repo):
 # Records whether the checkout lock file is among this process's open fds, then hands over.
 _RECORDER = textwrap.dedent("""\
     #!/bin/sh
-    lock="$HERMES_TEST_LOCK"; out="$HERMES_TEST_OUT"
+    lock="$MOOR_TEST_LOCK"; out="$MOOR_TEST_OUT"
     held=no
     for fd in /proc/$$/fd/*; do
       [ "$(readlink "$fd")" = "$lock" ] && held=yes
@@ -81,7 +81,7 @@ _RECORDER = textwrap.dedent("""\
 
 @pytest.mark.skipif(not Path("/proc/self/fd").is_dir(), reason="needs /proc fd listing")
 def test_lock_fd_reaches_local_mutators_only(repo, tmp_path, monkeypatch):
-    from hermes_cli import update_cmd
+    from moor_cli import update_cmd
 
     recorder = tmp_path / "recorder.sh"
     recorder.write_text(_RECORDER, encoding="utf-8")
@@ -96,12 +96,12 @@ def test_lock_fd_reaches_local_mutators_only(repo, tmp_path, monkeypatch):
     lock = ul.UpdateLock(path=tmp_path / "marker", install_root=repo)
     assert lock.acquire()
     try:
-        monkeypatch.setenv("HERMES_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
-        monkeypatch.setenv("HERMES_TEST_OUT", str(out_fetch))
+        monkeypatch.setenv("MOOR_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
+        monkeypatch.setenv("MOOR_TEST_OUT", str(out_fetch))
         fetched = update_cmd._git_run(["git"], ["fetch", f"--upload-pack={recorder} git-upload-pack", "origin"],
                                       cwd=repo, network=True)
         assert fetched.returncode == 0, fetched.stderr
-        monkeypatch.setenv("HERMES_TEST_OUT", str(out_stash))
+        monkeypatch.setenv("MOOR_TEST_OUT", str(out_stash))
         (repo / "f.txt").write_text("two\n", encoding="utf-8")
         stashed = update_cmd._git_run(["git"], ["stash", "push", "-m", "custody"], cwd=repo)
         assert stashed.returncode == 0, stashed.stderr
@@ -128,7 +128,7 @@ def test_a_background_hook_never_keeps_a_completed_update_locked(repo, tmp_path)
     hook = repo / ".git" / "hooks" / "post-merge"
     hook.write_text(f"#!/bin/sh\nsleep 60 </dev/null >/dev/null 2>&1 &\necho $! > {pid_file}\n", encoding="utf-8")
     hook.chmod(0o755)
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     lock = ul.UpdateLock(path=tmp_path / "marker", install_root=repo)
     assert lock.acquire()
@@ -157,7 +157,7 @@ def test_network_git_dies_with_its_killed_owner(repo, tmp_path):
 def test_network_git_dies_with_its_killed_owner_without_a_parent_death_signal(repo, tmp_path):
     """R3: where there is no parent-death signal (macOS), the fetch must still die with its owner."""
     _assert_fetch_dies_with_killed_owner(
-        repo, tmp_path, "from hermes_cli import update_custody\nupdate_custody._death_signal_preexec = lambda: None\n")
+        repo, tmp_path, "from moor_cli import update_custody\nupdate_custody._death_signal_preexec = lambda: None\n")
 
 
 def _assert_fetch_dies_with_killed_owner(repo, tmp_path, prelude: str) -> None:
@@ -165,7 +165,7 @@ def _assert_fetch_dies_with_killed_owner(repo, tmp_path, prelude: str) -> None:
         import sys
         sys.path.insert(0, {str(REPO_ROOT)!r})
         from pathlib import Path
-        from hermes_cli import update_lock as ul, update_cmd
+        from moor_cli import update_lock as ul, update_cmd
     """) + prelude + textwrap.dedent("""
         lock = ul.UpdateLock(path=Path(sys.argv[2]), install_root=sys.argv[1])
         assert lock.acquire()
@@ -221,18 +221,18 @@ def test_a_refused_build_join_is_logged_and_noted_in_the_receipt(tmp_path, monke
     import json
     import logging
 
-    import hermes_cli.update_receipt as ur
-    from hermes_cli import update_custody
+    import moor_cli.update_receipt as ur
+    from moor_cli import update_custody
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     report = tmp_path / "report.txt"
     note = f"{update_custody._CUSTODY_UNAVAILABLE} (could not join the update job: 5); the command was not run"
     report.write_text(note, encoding="utf-8")
     with ur.update_receipt_scope():
         ur.begin_update_receipt()
-        with caplog.at_level(logging.WARNING, logger="hermes_cli.update_custody"):
+        with caplog.at_level(logging.WARNING, logger="moor_cli.update_custody"):
             assert update_custody._report_refused_join(str(report), ["node", "scripts/build/tui.mjs"]) == note
         payload = json.loads(ur.finalize_update_receipt("success").read_text(encoding="utf-8-sig"))
     assert any(note in rec.getMessage() and "tui.mjs" in rec.getMessage() for rec in caplog.records)
@@ -247,17 +247,17 @@ def test_a_refused_build_join_is_logged_and_noted_in_the_receipt(tmp_path, monke
 
 def test_a_swallowed_refusal_is_what_the_update_reports(tmp_path, monkeypatch, capsys):
     """R8 m2: readers swallow an OSError (``_git_stdout``, ``_capture_head_sha``), so a refused
-    child used to end ``hermes update`` as whatever error followed downstream. The refusal is
+    child used to end ``moor update`` as whatever error followed downstream. The refusal is
     receipted and kept for the run, and the command's failure path prints it, actionably."""
     import contextlib
     from types import SimpleNamespace
 
-    import hermes_cli.update_receipt as ur
-    from hermes_cli import main, update_cmd, update_custody, update_owning_install
+    import moor_cli.update_receipt as ur
+    from moor_cli import main, update_cmd, update_custody, update_owning_install
 
     monkeypatch.setattr(update_custody, "_RUN", {"ran": False, "refused": None})
     monkeypatch.setattr(update_owning_install, "retarget_to_owning_install", lambda root: None)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     (tmp_path / "checkout").mkdir()
     monkeypatch.setattr(main, "PROJECT_ROOT", tmp_path / "checkout")
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
@@ -276,8 +276,8 @@ def test_a_swallowed_refusal_is_what_the_update_reports(tmp_path, monkeypatch, c
         main.cmd_update(SimpleNamespace(gateway=False))
     assert stop.value.code == 1
     out = capsys.readouterr().out
-    assert "`hermes update` stopped: Windows would not put `git` in this update's process job" in out, out
-    assert "Nothing was changed" in out and "Run `hermes update` again from a regular terminal" in out, out
+    assert "`moor update` stopped: Windows would not put `git` in this update's process job" in out, out
+    assert "Nothing was changed" in out and "Run `moor update` again from a regular terminal" in out, out
     payload = ur.read_latest_receipt()
     steps = [s for s in payload["steps"] if s["name"] == "update_custody"]
     assert steps and steps[0]["ok"] is False and "rev-parse" in steps[0]["detail"], payload["steps"]
@@ -308,10 +308,10 @@ def test_a_partial_clone_move_never_fetches_under_the_lock_fd(repo, tmp_path, mo
     missing = [o for o in _git(clone, "rev-list", "--objects", "--missing=print", "origin/main").split() if o[0] == "?"]
     assert missing, "fixture: the new blob must be missing locally"
     out = tmp_path / "upload-pack.out"
-    monkeypatch.setenv("HERMES_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(clone)))
-    monkeypatch.setenv("HERMES_TEST_OUT", str(out))
+    monkeypatch.setenv("MOOR_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(clone)))
+    monkeypatch.setenv("MOOR_TEST_OUT", str(out))
 
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     lock = ul.UpdateLock(path=tmp_path / "marker", install_root=clone)
     assert lock.acquire()
@@ -331,15 +331,15 @@ def test_a_partial_clone_move_never_fetches_under_the_lock_fd(repo, tmp_path, mo
 def test_run_git_hands_the_lock_fd_to_local_mutators_only(repo, tmp_path, monkeypatch, args, holds):
     """Through the production runner: `gc` (packs refs, repacks) is a local mutator and runs
     holding the checkout lock; a reader does not. `pull` is never one (its network half)."""
-    from hermes_cli.update_custody import LOCAL_MUTATORS, run_git
+    from moor_cli.update_custody import LOCAL_MUTATORS, run_git
 
     assert "pull" not in LOCAL_MUTATORS
     git = tmp_path / "git-recorder.sh"
     git.write_text(_RECORDER.replace('exec "$@"', 'exec git "$@"'), encoding="utf-8")
     git.chmod(0o755)
     out = tmp_path / "git.out"
-    monkeypatch.setenv("HERMES_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
-    monkeypatch.setenv("HERMES_TEST_OUT", str(out))
+    monkeypatch.setenv("MOOR_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
+    monkeypatch.setenv("MOOR_TEST_OUT", str(out))
     lock = ul.UpdateLock(path=tmp_path / "marker", install_root=repo)
     assert lock.acquire()
     try:
@@ -364,7 +364,7 @@ def test_a_timed_out_child_never_waits_on_a_grandchild_holding_its_pipes(monkeyp
     """N14: the in-update (Windows) run() killed only the direct child on a timeout, then waited
     unbounded for the pipes a grandchild still held (git-remote-https under a stalled fetch).
     Driven here through that branch with a POSIX grandchild the tree kill (taskkill) cannot reach."""
-    from hermes_cli import update_custody
+    from moor_cli import update_custody
 
     # Only update_custody sees win32: patching sys.platform itself would send every lazy import
     # in this window (the suite's Popen guard imports gateway.status) down its Windows branch.
@@ -392,13 +392,13 @@ def test_no_build_descendant_outlives_the_build_call(repo, tmp_path, monkeypatch
     """N13: node marks the donated lock fd close-on-exec, so npm/esbuild under it never hold the
     checkout; custody rested on node alone. A node that dies leaving a writer behind must not
     leave it running once the build call returns: the next lock owner would share the checkout."""
-    from hermes_cli.source_build import run_source_script
+    from moor_cli.source_build import run_source_script
 
     late = tmp_path / "late"
     writer = f"import os, time; os.closerange(3, 4096); time.sleep(2); __import__('pathlib').Path({str(late)!r}).touch()"
     node = _held_lock_recorder(tmp_path, "node", f"{sys.executable} -c \"{writer}\" >/dev/null 2>&1 &\nexit 1")
-    monkeypatch.setenv("HERMES_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
-    monkeypatch.setenv("HERMES_TEST_OUT", str(tmp_path / "node.out"))
+    monkeypatch.setenv("MOOR_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
+    monkeypatch.setenv("MOOR_TEST_OUT", str(tmp_path / "node.out"))
     lock = ul.UpdateLock(path=tmp_path / "marker", install_root=repo)
     assert lock.acquire()
     try:
@@ -440,7 +440,7 @@ def _launch_in_custody(repo: Path, tmp_path: Path, command: list[str], *, platfo
                        **popen) -> subprocess.Popen:
     """Start ``command`` the way the build runner does (contained_command under a held checkout
     lock); ``platform`` makes the launcher see another ``sys.platform`` (its no-subreaper path)."""
-    from hermes_cli.update_custody import contained_command
+    from moor_cli.update_custody import contained_command
 
     lock = ul.UpdateLock(path=tmp_path / "marker", install_root=repo)
     assert lock.acquire()
@@ -489,8 +489,8 @@ def test_a_group_kill_of_the_caller_keeps_custody_until_a_detached_writer_is_gon
         import subprocess, sys
         sys.path.insert(0, {str(REPO_ROOT)!r})
         from pathlib import Path
-        from hermes_cli import update_lock as ul
-        from hermes_cli.update_custody import contained_command
+        from moor_cli import update_lock as ul
+        from moor_cli.update_custody import contained_command
         repo = Path({str(repo)!r})
         lock = ul.UpdateLock(path=Path({str(tmp_path / "marker")!r}), install_root=repo)
         assert lock.acquire()
@@ -543,10 +543,10 @@ def test_a_ctrl_c_keeps_custody_until_a_detached_writer_is_gone(repo, tmp_path, 
     caller = textwrap.dedent(f"""
         import os, sys
         sys.path.insert(0, {str(REPO_ROOT)!r})
-        os.environ["HERMES_VERBOSE"] = {verbose!r}
+        os.environ["MOOR_VERBOSE"] = {verbose!r}
         from pathlib import Path
-        from hermes_cli import update_lock as ul
-        from hermes_cli.source_build import run_in_custody
+        from moor_cli import update_lock as ul
+        from moor_cli.source_build import run_in_custody
         repo = Path({str(repo)!r})
         assert ul.UpdateLock(path=Path({str(tmp_path / "marker")!r}), install_root=repo).acquire()
         run_in_custody(repo, {command!r}, "probe build", stdin=__import__("subprocess").DEVNULL)
@@ -608,12 +608,12 @@ def test_a_terminated_launcher_takes_node_and_its_descendants_with_it(repo, tmp_
 def test_the_desktop_build_runs_in_checkout_custody(repo, tmp_path, monkeypatch):
     """F04: the desktop app build (npm run build / builder) writes the checkout like the other
     product builds, so it holds the checkout lock while it runs."""
-    from hermes_cli import main_desktop
+    from moor_cli import main_desktop
 
     npm = _held_lock_recorder(tmp_path, "npm", "exit 0")
     out = tmp_path / "npm.out"
-    monkeypatch.setenv("HERMES_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
-    monkeypatch.setenv("HERMES_TEST_OUT", str(out))
+    monkeypatch.setenv("MOOR_TEST_LOCK", os.path.realpath(ul.checkout_lock_path(repo)))
+    monkeypatch.setenv("MOOR_TEST_OUT", str(out))
     desktop = repo / "apps" / "desktop"
     desktop.mkdir(parents=True)
     lock = ul.UpdateLock(path=tmp_path / "marker", install_root=repo)
@@ -649,7 +649,7 @@ def _run_join_launcher(monkeypatch, *, stray_polls: int, escaped: bool = False, 
     import ctypes
     import types
 
-    from hermes_cli.update_custody import _JOIN_JOB
+    from moor_cli.update_custody import _JOIN_JOB
 
     events = []
     live = {"left": stray_polls}
@@ -736,7 +736,7 @@ def test_a_build_command_that_starts_outside_the_update_job_is_put_in_it_before_
 def test_a_build_command_the_update_job_will_not_take_never_runs(monkeypatch, tmp_path):
     """F54 kept: a suspended command outside the job that Windows also refuses to assign to it
     is killed before its first instruction and the launcher refuses."""
-    from hermes_cli.update_custody import _REFUSED_EXIT
+    from moor_cli.update_custody import _REFUSED_EXIT
 
     monkeypatch.chdir(tmp_path)
     events = _run_join_launcher(monkeypatch, stray_polls=0, escaped=True, rebind=0)

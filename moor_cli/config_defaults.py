@@ -4,7 +4,7 @@ Pure-data leaf module — must not import from moor_cli.config. Comments are the
 docs of config.yaml.
 """
 
-from hermes_cli.config_defaults_auxiliary import _aux
+from moor_cli.config_defaults_auxiliary import _aux
 
 #: Image every container terminal backend (docker/modal/daytona, the singularity plugin) uses unless the
 #: user pins one. LEGACY_SANDBOX_IMAGES are the plain defaults that preceded the desktop stack
@@ -51,14 +51,14 @@ DEFAULT_CONFIG = {
         "terminal_continue": True,
     },
     # Where the TUI/desktop gateway stages session file attachments (uploads, pasted
-    # text). "hermes-home" (default) keeps <profile home>/attachments — the dir
+    # text). "moor-home" (default) keeps <profile home>/attachments — the dir
     # container backends bind-mount, so @file: refs resolve in the sandbox (#76577).
-    # "workspace" opts into <session workspace>/.hermes/attachments: staging lands
+    # "workspace" opts into <session workspace>/.moor/attachments: staging lands
     # inside the allowed ref root, so the same profile's agent can always read its
     # own attachments back (#110662). Read per profile from that profile's config;
     # a remote (ssh) workspace keeps the profile home dir either way.
     "attachments": {
-        "storage": "hermes-home",
+        "storage": "moor-home",
     },
     "agent": {
         # Turn cap. null = unlimited (default; caps caused silent mid-task truncation). Positive int
@@ -255,7 +255,7 @@ DEFAULT_CONFIG = {
         "gateway_startup_warmup_timeout": 20,
         # Stale-stream ceiling (s) for local providers (Ollama, oMLX, llama-cpp) when the base stale
         # timeout is at its 180s default, so a wedged local server eventually trips the detector
-        # instead of hanging forever. Env HERMES_LOCAL_STREAM_STALE_TIMEOUT overrides.
+        # instead of hanging forever. Env MOOR_LOCAL_STREAM_STALE_TIMEOUT overrides.
         "local_stream_stale_timeout": 900,
         "stream_max_lifetime": 0,  # opt-in whole-stream cap in s, 0 = off (agent/stream_max_lifetime.py)
         # How user-attached images reach the main model (gateway, TUI, CLI /attach). "auto" = native
@@ -425,7 +425,7 @@ DEFAULT_CONFIG = {
         # (faster navigation, no screenshots); "chrome" is read as "auto". Ignored while a cloud
         # provider, cdp_url or use_real_profile is active.
         "engine": "auto",
-        # Chromium binary for local sessions. "" = pm's chromium (`hermes pm install chromium`), the
+        # Chromium binary for local sessions. "" = pm's chromium (`moor pm install chromium`), the
         # Docker image's build, else a system chromium where pm builds none (Termux).
         "executable_path": "",
         # Persistent Chromium profile directory shared by local sessions; "" = a fresh throwaway
@@ -439,14 +439,14 @@ DEFAULT_CONFIG = {
         # of the ACTIVE default-Chromium profile (Local State -> profile.last_used; cookies, logins,
         # prefs copied and re-synced per fresh session) driven by Moor' packaged Chromium. The
         # snapshot dir sidesteps Chrome 136+'s default-profile debugging block and never contends
-        # with the running browser. Turning off deletes ~/.hermes/browser-profile/ so credentials
+        # with the running browser. Turning off deletes ~/.moor/browser-profile/ so credentials
         # don't outlive consent. Chromium-family only; a profile that can't be copied (Firefox default,
         # Windows browser holding its cookies) gives a fresh, signed-out browser plus a note saying why.
         # Also gates the browser_exec `local` arg (real-profile session under a cloud backend). Desktop Settings -> Browser.
         "use_real_profile": False,
         # Windows only: a running Chrome/Edge/Brave locks its cookie DB (the last snapshot is reused;
         # with none yet, a fresh browser runs). When on, the agent ASKS first; on approval it runs
-        # `hermes browser close-profile` (kills that profile's browser tree, unsaved tabs lost) so a
+        # `moor browser close-profile` (kills that profile's browser tree, unsaved tabs lost) so a
         # new session can copy it; no auto-kill. No effect on macOS/Linux, where a running
         # browser only locks the password/autofill DBs, which are skipped (cookies still copy).
         "real_profile_autoclose": False,
@@ -461,14 +461,14 @@ DEFAULT_CONFIG = {
         "dialog_policy": "must_respond",  # must_respond | auto_dismiss | auto_accept
         "dialog_timeout_s": 300,  # safety auto-dismiss after N seconds under must_respond
         # Read by the `camofox` catalog plugin (Camofox left core). An empty free-form mapping, so
-        # `hermes config set browser.camofox.<key>` is accepted and user values are never stripped.
+        # `moor config set browser.camofox.<key>` is accepted and user values are never stripped.
         "camofox": {},
     },
-    # Stale git worktree lifecycle (`hermes -w`, `/worktree new`, subagent isolation, Desktop). The
-    # sweep runs at `hermes -w` startup and every 6h from the cron ticker over every repo Hermes made
-    # a worktree in. Trees idle past their tier (hermes-*/subagent-* 24h, named 72h) that are clean
-    # and merged are removed; dirty or unpushed ones are archived to refs/hermes/archive/<tree>
-    # first (`hermes worktree restore <name>`). Live trees and Kanban t_<hex> trees are never touched.
+    # Stale git worktree lifecycle (`moor -w`, `/worktree new`, subagent isolation, Desktop). The
+    # sweep runs at `moor -w` startup and every 6h from the cron ticker over every repo Moor made
+    # a worktree in. Trees idle past their tier (moor-*/subagent-* 24h, named 72h) that are clean
+    # and merged are removed; dirty or unpushed ones are archived to refs/moor/archive/<tree>
+    # first (`moor worktree restore <name>`). Live trees and Kanban t_<hex> trees are never touched.
     "worktrees": {
         "archive_dirty": True,  # false = never remove a dirty/unpushed tree (the pre-archive behaviour)
         # Untracked files larger than this (MB) are not archived, so a tree holding one is kept.
@@ -822,14 +822,14 @@ DEFAULT_CONFIG = {
         # continues, Shift+Enter reported distinctly. False restores the c-j submit fallback for
         # POSIX PTYs whose plain Enter arrives as LF.
         "cli_multiline_shortcuts": True,
-        # `hermes`/`hermes chat` launches "cli" (prompt_toolkit REPL) | "tui" (Ink); --cli, --tui, HERMES_TUI=1 win.
+        # `moor`/`moor chat` launches "cli" (prompt_toolkit REPL) | "tui" (Ink); --cli, --tui, MOOR_TUI=1 win.
         # cli_layout = the REPL's look: "modern" (glyph rows, status under the composer) | "classic" (boxed panels).
         "interface": "cli", "cli_layout": "modern",
         # Native TUI uses the terminal's primary buffer and scrollback instead of the custom
         # alternate-screen viewport. Flags win: `--native` / `--tui-native` and `--cli`.
         "tui_native": False,
-        # `hermes --tui` auto-resumes the most recent human-facing session (like `hermes -c`).
-        # HERMES_TUI_RESUME=<id> always wins.
+        # `moor --tui` auto-resumes the most recent human-facing session (like `moor -c`).
+        # MOOR_TUI_RESUME=<id> always wins.
         "tui_auto_resume_recent": False,
         # Desktop reopens the last chat/page on cold start (also in Settings → Appearance).
         "resume_last_session": True,
@@ -1040,9 +1040,9 @@ DEFAULT_CONFIG = {
             "secret": "",
             "session_ttl_seconds": 0,  # 0 → plugin default (12h)
         },
-        "session_token_auth": {"enabled": True},  # session_token plugin: a provisioned HERMES_DASHBOARD_SESSION_TOKEN (literal or file:<path>) authorizes the gated dashboard; enabled: false opts out
+        "session_token_auth": {"enabled": True},  # session_token plugin: a provisioned MOOR_DASHBOARD_SESSION_TOKEN (literal or file:<path>) authorizes the gated dashboard; enabled: false opts out
         # Drain-control token auth (dashboard_auth/drain plugin): the secret is NOT here (env
-        # HERMES_DASHBOARD_DRAIN_SECRET); no-op unless >=256-bit, weak secrets rejected (fail-closed).
+        # MOOR_DASHBOARD_DRAIN_SECRET); no-op unless >=256-bit, weak secrets rejected (fail-closed).
         "drain_auth": {"scope": "drain", "min_secret_chars": 43},
         # Public URL (env MOOR_DASHBOARD_PUBLIC_URL): full authority (scheme + host + optional
         # prefix, e.g. https://example.com/moor) for the OAuth redirect_uri; its hostname is
@@ -1508,7 +1508,7 @@ DEFAULT_CONFIG = {
         },
     },
     # Honcho memory plugin (plugin catalog) — ~/.honcho/config.json is the source of truth (apiKey,
-    # workspace, peerName, sessions, enabled); the plugin reads hermes-specific overrides from here.
+    # workspace, peerName, sessions, enabled); the plugin reads moor-specific overrides from here.
     "honcho": {},
     # IANA timezone (e.g. "Asia/Kolkata", "America/New_York"). Empty = server-local time.
     "timezone": "",
@@ -1693,7 +1693,7 @@ DEFAULT_CONFIG = {
     # substitutes it; a bare string is shorthand for append. `replace` wins over `append` if both
     # are given.
     "platform_hints": {},
-    # Plugin system. `enabled`/`disabled` (`hermes plugins enable|disable`) and `disabled_by_update` (pm.plugin_eviction:
+    # Plugin system. `enabled`/`disabled` (`moor plugins enable|disable`) and `disabled_by_update` (pm.plugin_eviction:
     # plugins an update turned off, retried by later updates) are omitted so an empty default never clobbers a user's lists.
     "plugins": {
         # Deadline (seconds) for one plugin Git clone, fetch or checkout. Slow repositories may
@@ -1713,10 +1713,10 @@ DEFAULT_CONFIG = {
         # Opt-in unattended apply for the cadence check. Git-row plugins ONLY; every apply runs the
         # same security scan / consent pipeline as the manual update command.
         "auto_apply": False,
-        # Where third-party Python plugins run. in_process: imported into Hermes (default).
-        # host: one plugin-host process per profile runs them and they reach Hermes only through
-        # ctx (a crashing or hanging plugin takes down its host, which restarts; Hermes keeps
-        # running). Bundled plugins stay in-process; `hermes plugins validate` says whether a
+        # Where third-party Python plugins run. in_process: imported into Moor (default).
+        # host: one plugin-host process per profile runs them and they reach Moor only through
+        # ctx (a crashing or hanging plugin takes down its host, which restarts; Moor keeps
+        # running). Bundled plugins stay in-process; `moor plugins validate` says whether a
         # plugin can run in the host.
         "isolation": "in_process",
         "host": {
@@ -2262,9 +2262,9 @@ DEFAULT_CONFIG = {
         # process died are *closed*, then get a full retention window before removal.
         # Off by default (deleting history is opt-in). While the user's config.yaml has no
         # auto_prune key, every surface asks once the disk holding state.db runs low
-        # (hermes_cli/prune_advisor.py); either answer writes the key and ends the question.
+        # (moor_cli/prune_advisor.py); either answer writes the key and ends the question.
         "auto_prune": False,
-        # Inactive days of ended-session history to keep (= `hermes sessions prune`).
+        # Inactive days of ended-session history to keep (= `moor sessions prune`).
         "retention_days": 90,
         # Auto-archive (soft-hide, never delete) sessions with no activity for auto_archive_days,
         # once per min_interval_hours. Pinned sessions are exempt.
@@ -2284,8 +2284,8 @@ DEFAULT_CONFIG = {
         "min_interval_hours": 24,
 
         # Notice about the compact FTS layout (reclaims ~60%+ of state.db). OPT-IN: legacy indexes
-        # stay until `hermes sessions optimize-storage` runs, since the rebuild is disk-heavy on
-        # large DBs. advise = `hermes update` prints a one-line notice with reclaimable size when a
+        # stay until `moor sessions optimize-storage` runs, since the rebuild is disk-heavy on
+        # large DBs. advise = `moor update` prints a one-line notice with reclaimable size when a
         # legacy index is detected (a later layout change gets a rebuild notice without a size estimate);
         # require = the same notices worded as REQUIRED (tooling may gate on it); off = none.
         "fts_optimize_notice": "advise",
@@ -2317,7 +2317,7 @@ DEFAULT_CONFIG = {
         "run": None,
     },
     # Privacy-safe aggregate metrics in this profile's local telemetry dir. Collection (`enabled`)
-    # and upload to Nous (`send`) are separate keys that every consent surface sets together; see
+    # and upload to Moor (`send`) are separate keys that every consent surface sets together; see
     # website/docs/developer-guide/relay-shared-metrics.md Appendix A for consent/retention.
     "telemetry": {
         "shared_metrics": {
@@ -2396,12 +2396,12 @@ DEFAULT_CONFIG = {
         # Directories (~ expanded; everything under an entry counts) whose projects a language
         # server may load code from: the project's own .venv/venv interpreter, node_modules
         # TypeScript SDK, svelte.config.js, build files (cargo, Gradle, mix, ...). The worktree of
-        # the launch dir or the session's workspace (hermes -w, a Desktop project, terminal.cwd) is
+        # the launch dir or the session's workspace (moor -w, a Desktop project, terminal.cwd) is
         # always trusted; in any other checkout (a clone the agent made) only servers that run no
-        # project code start, pinned to Hermes-side tools, and the npx tsc / rustfmt lint fallbacks
+        # project code start, pinned to moor-side tools, and the npx tsc / rustfmt lint fallbacks
         # are skipped.
         "trusted_workspaces": [],
-        # Missing server binaries: auto = install via npm/go/pip into <HERMES_HOME>/lsp/bin/ on
+        # Missing server binaries: auto = install via npm/go/pip into <MOOR_HOME>/lsp/bin/ on
         # first use; manual = only binaries on PATH; off = alias for manual.
         "install_strategy": "auto",
         # Node package manager for the npm-recipe servers: npm | pnpm | yarn. Installs still land in
@@ -2434,13 +2434,13 @@ DEFAULT_CONFIG = {
         "retries": 2,
     },
     # External secret sources — pull credentials from secret managers at startup instead of storing
-    # them in ~/.hermes/.env.
+    # them in ~/.moor/.env.
     # Browser credential vault: which login sources browser_vault may draw from. The local
-    # encrypted vault (`hermes vault add`, Desktop → Settings → Credential Vault) is always on.
+    # encrypted vault (`moor vault add`, Desktop → Settings → Credential Vault) is always on.
     # External password managers are unlocked per session with a masked master-password prompt;
     # headless sessions (cron, webhook, API) never prompt and see them as locked.
     "vault": {
-        "key_storage": "file",  # NEW vault's key: file (0600 vault.key) | keychain (OS; file if none). See `hermes vault key`.
+        "key_storage": "file",  # NEW vault's key: file (0600 vault.key) | keychain (OS; file if none). See `moor vault key`.
         "onepassword": {  # detected managers are login sources unless the user opts out (enabled: false)
             "enabled": True,        # `op` CLI: Login items with a website URL become fillable handles.
             "account": "",          # account shorthand for `op --account`; empty = default account.
@@ -2640,7 +2640,7 @@ DEFAULT_CONFIG = {
         "password_store": "auto",
         # Expose the renderer's accessibility tree to the OS (macOS/Windows) so dictation/IME tools
         # that insert text via the accessibility APIs can reach the composer (#118271, #92607).
-        # False bridges to HERMES_DESKTOP_RENDERER_ACCESSIBILITY=0 and skips the tree (perf opt-out).
+        # False bridges to MOOR_DESKTOP_RENDERER_ACCESSIBILITY=0 and skips the tree (perf opt-out).
         "renderer_accessibility": True,
         # Linux: False preserves an existing custom XDG launcher entry; missing entries
         # are still created. True keeps the generated entry current on each launch.
@@ -2712,7 +2712,7 @@ DEFAULT_CONFIG = {
 }
 
 
-from hermes_cli.config_defaults_env import OptionalEnvVars, _base_url, _env, _msg, _prov, _setting, _skill, _tool
+from moor_cli.config_defaults_env import OptionalEnvVars, _base_url, _env, _msg, _prov, _setting, _skill, _tool
 
 
 # Optional environment variables that enhance functionality. Feeds the dashboard keys page and setup

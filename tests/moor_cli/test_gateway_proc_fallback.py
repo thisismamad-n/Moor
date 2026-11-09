@@ -78,8 +78,8 @@ class TestProcFallback:
             patch("builtins.open", side_effect=_open),
             # The fake /proc entries are ours: the other-users filter stats the REAL /proc/<pid>,
             # so a root-owned runner process that happens to hold PID 12345 dropped the fake gateway.
-            patch("hermes_cli.gateway_migrate_guards.pid_is_other_users", return_value=False),
-            patch("hermes_cli.gateway._get_ancestor_pids", return_value=set()),
+            patch("moor_cli.gateway_migrate_guards.pid_is_other_users", return_value=False),
+            patch("moor_cli.gateway._get_ancestor_pids", return_value=set()),
             patch("subprocess.run") as mock_ps,
         ):
             pids = gateway_mod._scan_gateway_pids(set(), all_profiles=True)
@@ -126,8 +126,8 @@ def test_other_users_gateways_are_not_ours_unless_root(euid, expected):
     with (
         patch("os.path.isdir", side_effect=lambda p: p != "/proc"),
         patch("os.geteuid", return_value=euid),  # windows-footgun: ok — POSIX-only test (platforms marker)
-        patch("hermes_cli.gateway_migrate_guards._pid_uid", side_effect=owners.get),
-        patch("hermes_cli.gateway._get_ancestor_pids", return_value=set()),
+        patch("moor_cli.gateway_migrate_guards._pid_uid", side_effect=owners.get),
+        patch("moor_cli.gateway._get_ancestor_pids", return_value=set()),
         patch("subprocess.run", return_value=MagicMock(returncode=0, stdout=ps_out, stderr="")),
     ):
         assert gateway_mod._scan_gateway_pids(set(), all_profiles=True) == expected

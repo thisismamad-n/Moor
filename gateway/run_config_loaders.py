@@ -91,11 +91,11 @@ class GatewayConfigLoadersMixin:
 
     @staticmethod
     def _load_ephemeral_system_prompt() -> str:
-        """HERMES_EPHEMERAL_SYSTEM_PROMPT env first (a local session's: its client's), then
+        """MOOR_EPHEMERAL_SYSTEM_PROMPT env first (a local session's: its client's), then
         ``display.personality`` / ``agent.system_prompt``."""
         from agent.session_client_env import session_env
         from gateway.run import _load_gateway_config
-        prompt = session_env("HERMES_EPHEMERAL_SYSTEM_PROMPT")
+        prompt = session_env("MOOR_EPHEMERAL_SYSTEM_PROMPT")
         if prompt:
             return prompt
         return resolve_ephemeral_system_prompt_from_config(_load_gateway_config())
@@ -275,8 +275,8 @@ class GatewayConfigLoadersMixin:
 
     @classmethod
     def _load_service_tier(cls) -> str | None:
-        """``agent.service_tier`` parsed like the CLI (``hermes_cli.cli_config_load``); None when unset/unknown."""
-        from hermes_cli.cli_config_load import _parse_service_tier_config
+        """``agent.service_tier`` parsed like the CLI (``moor_cli.cli_config_load``); None when unset/unknown."""
+        from moor_cli.cli_config_load import _parse_service_tier_config
 
         return _parse_service_tier_config(cls._cfg_str("agent", "service_tier"))
 
@@ -575,7 +575,7 @@ class GatewayConfigLoadersMixin:
         and keeps one last-known-good chain per home: a single runner-wide slot filled from the launch
         home handed every secondary profile the default profile's fallback chain.
         """
-        from hermes_cli.config_backend import config_exists
+        from moor_cli.config_backend import config_exists
         from gateway.run import _gateway_config_home
         from moor_constants import moor_home_key
         home = _gateway_config_home()

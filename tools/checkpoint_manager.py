@@ -58,9 +58,9 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path, PurePosixPath
-from hermes_constants import get_hermes_home
-from hermes_cli._subprocess_compat import selected_git_env, windows_hide_flags
-from hermes_cli.gitlock import clear_stale_tmp_packs
+from moor_constants import get_moor_home
+from moor_cli._subprocess_compat import selected_git_env, windows_hide_flags
+from moor_cli.gitlock import clear_stale_tmp_packs
 from typing import Dict, List, Optional, Set, Tuple
 
 from utils import env_int, rmtree_readonly
@@ -1282,7 +1282,7 @@ class CheckpointManager:
 
         if restore_paths is not None:
             # Split into files present in the checkpoint (checkout) and
-            # Hermes-created files absent from it (delete to restore state).
+            # moor-created files absent from it (delete to restore state).
             checkout_targets: list[str] = []
             delete_targets: list[str] = []
             for rel in restore_paths:

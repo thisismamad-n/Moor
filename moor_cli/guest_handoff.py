@@ -1,17 +1,17 @@
-"""Guest handoff: after a Nous account replaces the free tier, move the free tier's apps into it.
+"""Guest handoff: after a Moor account replaces the free tier, move the free tier's apps into it.
 
 The account service moves a free-tier identity's connected apps (and its preview cohort) into a
 signed-in account with one call, ``POST /api/anonymous/claim {"token": "<anon_...>"}``, authorized by
-the account's own ``hermes-cli`` Bearer token. Hermes never asks first: the move just happens after
+the account's own ``moor-cli`` Bearer token. Moor never asks first: the move just happens after
 the account is saved, and the result (the account email, what moved, what needs reconnecting) is
 shown afterwards. Two halves:
 
 - :func:`note_replacement` runs at the lowest write seams (``auth._store_provider_state`` and
-  ``auth_nous._write_shared_nous_state``), under the caller's auth-store locks, whenever a non-guest
-  Nous state replaces a guest. It writes a pending record and does no network. Records sit beside
-  the shared Nous store, keyed by a hash of the ``anon_`` credential.
+  ``auth_moor._write_shared_moor_state``), under the caller's auth-store locks, whenever a non-guest
+  Moor state replaces a guest. It writes a pending record and does no network. Records sit beside
+  the shared Moor store, keyed by a hash of the ``anon_`` credential.
 - :func:`drain` makes one attempt per due record, outside every lock: each sign-in surface calls it
-  after its save, and the retry worker, ``hermes auth status`` and ``hermes auth upgrade`` call it
+  after its save, and the retry worker, ``moor auth status`` and ``moor auth upgrade`` call it
   for a move a transient error left retrying.
 
 User copy never says guest / anonymous / claim.
@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
-logger = logging.getLogger("hermes_cli.auth")
+logger = logging.getLogger("moor_cli.auth")
 
 IDLE, PENDING, RETRYING, CLAIMED, GONE, FAILED = "idle", "pending", "retrying", "claimed", "gone", "failed"
 _ACTIVE = frozenset({PENDING, RETRYING})
@@ -46,8 +46,8 @@ _FORCE_REFRESH_SKEW = 10**9
 _CLAIMED, _GONE, _RETRY, _FAIL = "claimed", "gone", "retry", "fail"
 # A plain reason per final code; any other code shows only the generic sentence, never the code.
 _FAILURE_COPY = {
-    "client_not_allowed": "This sign-in can't receive them. Sign in again with `hermes auth add nous`.",
-    "account_locked": "This Nous account is locked.",
+    "client_not_allowed": "This sign-in can't receive them. Sign in again with `moor auth add moor`.",
+    "account_locked": "This Moor account is locked.",
 }
 # The service's refusal codes; anything unlisted retries (``_classify``).
 _REFUSALS = {
@@ -71,13 +71,13 @@ def _token_key(anon_token: str) -> str:
 
 
 def _home_key() -> str:
-    from hermes_constants import hermes_home_key
-    return hermes_home_key()
+    from moor_constants import moor_home_key
+    return moor_home_key()
 
 
 def _records_path() -> Path:
-    from hermes_cli.auth_nous import _nous_shared_store_path
-    return _nous_shared_store_path().with_name(HANDOFF_FILENAME)
+    from moor_cli.auth_moor import _moor_shared_store_path
+    return _moor_shared_store_path().with_name(HANDOFF_FILENAME)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -98,7 +98,7 @@ def _update(path: Path, key: str, change) -> Optional[dict[str, Any]]:
     """Apply *change(record) -> record | None* to one record under the records lock and return what
     was written (None: nothing written). The innermost lock: the hook takes it under the auth-store
     locks, and it never holds another lock itself."""
-    from hermes_cli.auth import _file_lock, _save_private_json
+    from moor_cli.auth import _file_lock, _save_private_json
     with _file_lock(path.with_suffix(".lock"), _records_lock_holder, 15.0, f"Timed out waiting for {path.name}"):
         data = _load(path)
         record = change(data["records"].get(key))
@@ -112,17 +112,17 @@ def _update(path: Path, key: str, change) -> Optional[dict[str, Any]]:
 # --- The hook: no network, runs under the writer's locks ------------------------------------------
 
 def note_store_write(auth_store: dict[str, Any], provider_id: str, state: Any) -> None:
-    """``auth._store_provider_state``'s hook: the Nous state the store holds now is the one replaced
+    """``auth._store_provider_state``'s hook: the Moor state the store holds now is the one replaced
     (the profile's own, else the root store's it falls back to)."""
-    if provider_id == "nous":
-        from hermes_cli.auth import _load_provider_state
-        note_replacement(_load_provider_state(auth_store, "nous"), state)
+    if provider_id == "moor":
+        from moor_cli.auth import _load_provider_state
+        note_replacement(_load_provider_state(auth_store, "moor"), state)
 
 
 def note_replacement(previous: Any, new: Any) -> None:
-    """Record that a non-guest Nous state replaced the guest *previous*. Idempotent per ``anon_``
+    """Record that a non-guest Moor state replaced the guest *previous*. Idempotent per ``anon_``
     credential; a finished record is never reopened."""
-    from hermes_cli.anon_auth import is_guest_state
+    from moor_cli.anon_auth import is_guest_state
     if not is_guest_state(previous) or is_guest_state(new) or not isinstance(new, dict):
         return
     anon_token = previous.get("anon_token")
@@ -143,7 +143,7 @@ def note_replacement(previous: Any, new: Any) -> None:
         return record
 
     record = _update(path, _token_key(anon_token), change)
-    logger.info("Nous sign-in replaced the free tier; handoff %s (%s)", record["state"],
+    logger.info("Moor sign-in replaced the free tier; handoff %s (%s)", record["state"],
                 _token_key(anon_token)[:8])
 
 
@@ -162,8 +162,8 @@ def drain() -> list[dict[str, Any]]:
 
 
 def _run_one(path: Path, key: str) -> Optional[dict[str, Any]]:
-    from hermes_cli.auth import get_provider_auth_state
-    from hermes_cli.auth_constants import AuthError
+    from moor_cli.auth import get_provider_auth_state
+    from moor_cli.auth_constants import AuthError
     try:
         bearer = _bearer()
     except (AuthError, TimeoutError) as exc:  # a busy store lock defers the move like a missing token
@@ -174,7 +174,7 @@ def _run_one(path: Path, key: str) -> Optional[dict[str, Any]]:
     if record is None:
         return None  # another run holds it, or it settled meanwhile
     prior = record["attempts"] - 1
-    outcome, payload, retry_after = _post(record["anon_token"], bearer, get_provider_auth_state("nous") or {})
+    outcome, payload, retry_after = _post(record["anon_token"], bearer, get_provider_auth_state("moor") or {})
     logger.info("Free-tier handoff attempt %d (%s): %s", prior + 1, key[:8], payload.get("error") or outcome)
     record = _update(path, key, lambda r: _apply(r, outcome, payload, retry_after, prior))
     if outcome == _CLAIMED and payload.get("cohort_carried") is True:
@@ -193,19 +193,19 @@ def _reserve(record: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
 
 
 def _bearer(*, force: bool = False) -> str:
-    from hermes_cli import auth
+    from moor_cli import auth
     # The resolver's 5 s memo can still hold the guest's token from just before the save.
     with auth._RESOLVE_TOKEN_CACHE_LOCK:
         auth._RESOLVE_TOKEN_CACHE.pop(_home_key(), None)
     if force:
-        return auth.resolve_nous_access_token(timeout_seconds=CLAIM_TIMEOUT_SECONDS,
+        return auth.resolve_moor_access_token(timeout_seconds=CLAIM_TIMEOUT_SECONDS,
                                               refresh_skew_seconds=_FORCE_REFRESH_SKEW)
-    return auth.resolve_nous_access_token(timeout_seconds=CLAIM_TIMEOUT_SECONDS)
+    return auth.resolve_moor_access_token(timeout_seconds=CLAIM_TIMEOUT_SECONDS)
 
 
 def _refresh_account_token() -> None:
     """The account's token picks up the carried cohort only on its next mint, so mint it now."""
-    from hermes_cli.auth_constants import AuthError
+    from moor_cli.auth_constants import AuthError
     try:
         _bearer(force=True)
     except AuthError as exc:
@@ -214,15 +214,15 @@ def _refresh_account_token() -> None:
 
 def _post(anon_token: str, bearer: str, account: dict[str, Any]) -> tuple[str, dict[str, Any], Optional[float]]:
     from agent.retry_utils import parse_retry_after_seconds
-    from hermes_cli.anon_auth import _anon_headers
-    from hermes_cli.auth import _nous_portal_base_url, _resolve_verify
-    from hermes_cli.auth_constants import httpx
-    from hermes_cli.auth_nous import _nous_http_client
+    from moor_cli.anon_auth import _anon_headers
+    from moor_cli.auth import _moor_portal_base_url, _resolve_verify
+    from moor_cli.auth_constants import httpx
+    from moor_cli.auth_moor import _moor_http_client
     verify = _resolve_verify(insecure=None, ca_bundle=None, auth_state=account)
     try:
-        with _nous_http_client(CLAIM_TIMEOUT_SECONDS, verify) as client:
+        with _moor_http_client(CLAIM_TIMEOUT_SECONDS, verify) as client:
             response = client.post(
-                f"{_nous_portal_base_url(account).rstrip('/')}/api/anonymous/claim",
+                f"{_moor_portal_base_url(account).rstrip('/')}/api/anonymous/claim",
                 headers={**_anon_headers(), "authorization": f"Bearer {bearer}"}, json={"token": anon_token})
     except httpx.HTTPError as exc:
         return _RETRY, {"error": "unreachable", "detail": type(exc).__name__}, None
@@ -284,7 +284,7 @@ def start_worker() -> threading.Thread:
             return _worker_thread
         _worker_stop.clear()
         # health: allow HX012 -- process-wide worker for the process's own profile; it must not inherit the starter's scope
-        _worker_thread = threading.Thread(target=_worker_loop, daemon=True, name="nous-guest-handoff")
+        _worker_thread = threading.Thread(target=_worker_loop, daemon=True, name="moor-guest-handoff")
         _worker_thread.start()
         return _worker_thread
 
@@ -350,7 +350,7 @@ def wire_status(status: dict[str, Any]) -> dict[str, Any]:
 
 
 def status_lines(status: dict[str, Any]) -> list[str]:
-    """User copy for a non-idle handoff (``hermes auth status nous``)."""
+    """User copy for a non-idle handoff (``moor auth status moor``)."""
     lines = result_lines(status)
     kind = status.get("connectors_kind")
     moved_some = kind in ("moved", "swapped") and status.get("moved_toolkits")
@@ -368,7 +368,7 @@ def result_lines(status: dict[str, Any]) -> list[str]:
     moved = [app_title(slug) for slug in status.get("moved_toolkits") or []]
     dropped = [app_title(slug) for slug in status.get("dropped_toolkits") or []]
     if state in _ACTIVE:
-        return ["Moving your free-tier apps to this account; Hermes keeps trying in the background."]
+        return ["Moving your free-tier apps to this account; Moor keeps trying in the background."]
     if state == FAILED:
         reason = _FAILURE_COPY.get(str(status.get("error") or ""))
         return ["Your free-tier apps could not be moved." + (f" {reason}" if reason else "")]

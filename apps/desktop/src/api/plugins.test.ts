@@ -1,7 +1,7 @@
-import { RECONNECT_STABLE_OPEN_MS } from '@hermes/shared'
+import { RECONNECT_STABLE_OPEN_MS } from '@moor/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { setApiRequestConnection, setApiRequestProfile } from '@/hermes'
+import { setApiRequestConnection, setApiRequestProfile } from '@/moor'
 import { RECONNECT_ATTEMPT_TIMEOUT_MS } from '@/lib/with-timeout'
 
 import { activeConnection, pluginSocket } from './plugins'
@@ -72,7 +72,7 @@ describe('pluginSocket credentials and refusals (PLG-1)', () => {
 
   const desktop = (connection: Record<string, unknown>, minted: unknown = 'ws://127.0.0.1:9/api/plugins/kanban/events?native_dial=n') => {
     const getPluginWsUrl = vi.fn(async (): Promise<unknown> => minted)
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'moorDesktop', {
       configurable: true,
       value: { getConnection: vi.fn(async () => connection), getPluginWsUrl }
     })
@@ -94,7 +94,7 @@ describe('pluginSocket credentials and refusals (PLG-1)', () => {
     vi.unstubAllGlobals()
     setApiRequestConnection(null)
     setApiRequestProfile(null)
-    Reflect.deleteProperty(window, 'hermesDesktop')
+    Reflect.deleteProperty(window, 'moorDesktop')
     vi.useRealTimers()
   })
 
@@ -165,7 +165,7 @@ describe('pluginSocket credentials and refusals (PLG-1)', () => {
     vi.useFakeTimers()
     vi.stubGlobal('WebSocket', FakeSocket)
     desktop(local)
-    const getConnection = vi.mocked(window.hermesDesktop.getConnection)
+    const getConnection = vi.mocked(window.moorDesktop.getConnection)
     const frames: unknown[] = []
 
     const dispose = pluginSocket('kanban', '/events', frame => frames.push(frame))
@@ -190,7 +190,7 @@ describe('pluginSocket credentials and refusals (PLG-1)', () => {
     vi.useFakeTimers()
     vi.stubGlobal('WebSocket', FakeSocket)
     desktop(local)
-    const getConnection = vi.mocked(window.hermesDesktop.getConnection)
+    const getConnection = vi.mocked(window.moorDesktop.getConnection)
     const frames: unknown[] = []
 
     const dispose = pluginSocket('kanban', '/events', frame => frames.push(frame))
@@ -212,7 +212,7 @@ describe('pluginSocket credentials and refusals (PLG-1)', () => {
     vi.stubGlobal('WebSocket', FakeSocket)
     setApiRequestProfile('coder')
     const mint = desktop(local)
-    const getConnection = vi.mocked(window.hermesDesktop.getConnection)
+    const getConnection = vi.mocked(window.moorDesktop.getConnection)
 
     const dispose = pluginSocket('kanban', '/events', () => undefined)
     await vi.advanceTimersByTimeAsync(0)
@@ -280,7 +280,7 @@ describe('pluginSocket credentials and refusals (PLG-1)', () => {
 
   const profileDesktop = () => {
     const getPluginWsUrl = vi.fn(async ({ profile }: { profile: null | string }): Promise<unknown> => urlFor(profile))
-    Object.defineProperty(window, 'hermesDesktop', {
+    Object.defineProperty(window, 'moorDesktop', {
       configurable: true,
       value: { getConnection: vi.fn(async () => local), getPluginWsUrl }
     })
@@ -319,7 +319,7 @@ describe('pluginSocket credentials and refusals (PLG-1)', () => {
 
     const getConnection = vi.fn(async (profile: string): Promise<unknown> => remote(profile))
     getConnection.mockImplementationOnce(() => new Promise(resolve => (resolveAlpha = resolve)))
-    Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { getConnection } })
+    Object.defineProperty(window, 'moorDesktop', { configurable: true, value: { getConnection } })
 
     const dispose = pluginSocket('kanban', '/events', () => undefined)
     await vi.advanceTimersByTimeAsync(0)

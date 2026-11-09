@@ -81,7 +81,7 @@ def _note_connected(operation: ConnectionOperation, noted: set[str]) -> None:
     """Each app that connects counts once toward the connector sign-in offer."""
     fresh = {t.name for t in operation.targets if t.state == TargetState.connected} - noted
     if fresh:
-        from hermes_cli.free_tier_offer import note_app_connected
+        from moor_cli.free_tier_offer import note_app_connected
 
         noted.update(fresh)
         note_app_connected()
@@ -356,7 +356,7 @@ def _no_card_result(client: Any, action: str, targets: list[HostedTarget], force
 
 def _status_result(client: Any, connectors: list[str]) -> str:
     items = client.list_connectors()
-    from hermes_cli.free_tier_offer import note_connected_apps_seen
+    from moor_cli.free_tier_offer import note_connected_apps_seen
 
     note_connected_apps_seen(items)
     known = {str(i.get("connector", "")).lower() for i in items}
@@ -418,10 +418,10 @@ def _rename_result(target: HostedTarget) -> str:
     except GatewayUnavailable as exc:
         if exc.code == "connection_not_found":
             return tool_error(f"That {target.name} account no longer exists. Use action status to list accounts.")
-        return tool_error("This Nous Portal cannot rename connector accounts yet.")
+        return tool_error("This Moor Portal cannot rename connector accounts yet.")
     except ToolGatewayError as exc:
         if exc.status == 405:
-            return tool_error("This Nous Portal cannot rename connector accounts yet.")
+            return tool_error("This Moor Portal cannot rename connector accounts yet.")
         raise
     return json.dumps({
         "renamed": {"connector": account["connector"], "alias": account.get("alias"), "label": account["label"]},

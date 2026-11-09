@@ -18,13 +18,13 @@ from typing import Any, Callable, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 
-from hermes_cli.auth_constants import _codex_err
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_oauth import (
+from moor_cli.auth_constants import _codex_err
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_oauth import (
     _external_process_cli_command, _oauth_profile_name, _oauth_sessions, _oauth_sessions_lock, _truncate_token,
 )
-from hermes_cli.web_models import OAuthSubmitBody
-from hermes_cli.web_routers._common import config_scoped_to_thread, scoped_to_thread
+from moor_cli.web_models import OAuthSubmitBody
+from moor_cli.web_routers._common import config_scoped_to_thread, scoped_to_thread
 
 _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
@@ -38,10 +38,10 @@ _OAUTH_PROVIDER_CATALOG = LateState("_OAUTH_PROVIDER_CATALOG", "moor_cli.web_ser
 # test's monkeypatch on web_server_oauth must win at spawn time, not router-import time.
 # A direct import here made those mocks no-ops — the real poller then hit the network
 # from the leaked thread and segfaulted a later test's collection (CI flake, 2026-09-09).
-_nous_sign_in_poller = late("_nous_sign_in_poller", "hermes_cli.web_server_oauth")
-_minimax_poller = late("_minimax_poller", "hermes_cli.web_server_oauth")
-_xai_device_poller = late("_xai_device_poller", "hermes_cli.web_server_oauth")
-_profile_device_poller = late("_profile_device_poller", "hermes_cli.web_server_oauth")
+_moor_sign_in_poller = late("_moor_sign_in_poller", "moor_cli.web_server_oauth")
+_minimax_poller = late("_minimax_poller", "moor_cli.web_server_oauth")
+_xai_device_poller = late("_xai_device_poller", "moor_cli.web_server_oauth")
+_profile_device_poller = late("_profile_device_poller", "moor_cli.web_server_oauth")
 
 _CODEX_ISSUER = "https://auth.openai.com"
 _JSON_HEADERS = {"Content-Type": "application/json"}
@@ -116,7 +116,7 @@ def _start_poller(target, sid: str, prefix: str = "oauth-poll") -> None:
         try:
             target(sid)
         finally:  # the session's status is final once its poller returns
-            from hermes_cli.observability.shared_metrics_setup import settle_oauth_setup
+            from moor_cli.observability.shared_metrics_setup import settle_oauth_setup
             settle_oauth_setup(sess)
 
     # The poller saves credentials under ``_profile_scope(sess['profile'])``; an implicit
@@ -128,7 +128,7 @@ def _start_poller(target, sid: str, prefix: str = "oauth-poll") -> None:
 
 def _track_oauth_setup(flow, session_id: str) -> None:
     """Hand the setup flow to its session; settle it now if the poller already ended."""
-    from hermes_cli.observability.shared_metrics_setup import (
+    from moor_cli.observability.shared_metrics_setup import (
         attach_oauth_setup, finish_provider_setup, settle_oauth_setup,
     )
     with _oauth_sessions_lock:
@@ -337,7 +337,7 @@ def _codex_full_login_worker(session_id: str) -> None:
         # flip "cancelled" between the check and the save and tokens would be
         # persisted after the user believed the login was aborted. The profile scope
         # (which holds _SKILLS_PROFILE_LOCK) is entered first, as in every other saver:
-        # the reverse order deadlocks against a Nous/xAI/MiniMax save finishing at once.
+        # the reverse order deadlocks against a Moor/xAI/MiniMax save finishing at once.
         with _profile_scope(session_profile), _oauth_sessions_lock:
             if _codex_cancelled(sess, session_id, " before token save"):
                 return
@@ -345,7 +345,7 @@ def _codex_full_login_worker(session_id: str) -> None:
             sess["status"] = "approved"
         _log.info("oauth/device: openai-codex login completed (session=%s)", session_id)
     except Exception as e:
-        from hermes_cli.observability.shared_metrics_setup import note_oauth_failure
+        from moor_cli.observability.shared_metrics_setup import note_oauth_failure
         _log.warning("codex device-code worker failed (session=%s): %s", session_id, e)
         with _oauth_sessions_lock:
             s = _oauth_sessions.get(session_id)
@@ -381,8 +381,8 @@ def _epoch_ms_to_iso(value: Any) -> Optional[str]:
 # refresh. xai: source_label is a human-readable origin (auth-store path /
 # credential source), not the internal auth_mode string ("oauth_pkce").
 _PROVIDER_STATUS: dict[str, tuple[str, Callable[[dict], dict]]] = {
-    "nous": ("get_nous_auth_status_local", lambda r: {**_status_card(
-        r, "nous_portal", r.get("portal_base_url") or "Nous Portal",
+    "moor": ("get_moor_auth_status_local", lambda r: {**_status_card(
+        r, "moor_portal", r.get("portal_base_url") or "Moor Portal",
         _truncate_token(r.get("access_token")), r.get("access_expires_at"), bool(r.get("has_refresh_token")),
     ), "free_tier": bool(r.get("free_tier")), "account_tier": r.get("account_tier")}),
     "openai-codex": ("get_codex_auth_status", lambda r: _status_card(
@@ -432,15 +432,15 @@ def _resolve_provider_status(provider_id: str, status_fn) -> dict[str, Any]:
     return {"logged_in": False}
 
 
-async def _start_nous_device_code(profile: Optional[str]) -> dict[str, Any]:
-    """Start a Nous sign-in: the shared ``anon_auth.run_sign_in`` flow, the plain device-code login.
+async def _start_moor_device_code(profile: Optional[str]) -> dict[str, Any]:
+    """Start a Moor sign-in: the shared ``anon_auth.run_sign_in`` flow, the plain device-code login.
     This route creates the generator, pulls its first state (the device page link and code) and
     hands that to the UI, then the poller drains the rest. A free tier the account replaces hands
     its apps over after the save, inside the flow."""
-    from hermes_cli import anon_auth
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.web_server_profiles import _config_profile_scope
-    pconfig = PROVIDER_REGISTRY["nous"]
+    from moor_cli import anon_auth
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.web_server_profiles import _config_profile_scope
+    pconfig = PROVIDER_REGISTRY["moor"]
     portal_base_url = (
         os.getenv("MOOR_PORTAL_BASE_URL") or os.getenv("MOOR_PORTAL_BASE_URL") or pconfig.portal_base_url
     ).rstrip("/")
@@ -491,7 +491,7 @@ async def _start_nous_device_code(profile: Optional[str]) -> dict[str, Any]:
             portal_base_url=portal_base_url, client_id=pconfig.client_id, scope=pconfig.scope,
             device_code="", interval=first.interval,
             expires_at=time.time() + first.expires_in, _sign_in=gen))
-    _start_poller(_nous_sign_in_poller, sid)   # last: nothing observes `sess` before it is complete
+    _start_poller(_moor_sign_in_poller, sid)   # last: nothing observes `sess` before it is complete
     return {
         "session_id": sid, "flow": "device_code", "user_code": first.code,
         "verification_url": first.link, "expires_in": first.expires_in,
@@ -515,7 +515,7 @@ async def _start_codex_device_code(profile: Optional[str]) -> dict[str, Any]:
     with _oauth_sessions_lock:
         s = _oauth_sessions.get(sid, {})
     if s.get("status") == "error":
-        from hermes_cli.observability.shared_metrics_setup import _OAUTH_FAILURE_KEY
+        from moor_cli.observability.shared_metrics_setup import _OAUTH_FAILURE_KEY
         err = HTTPException(status_code=500, detail=s.get("error_message") or "device-auth failed")
         err.setup_failure_class = s.get(_OAUTH_FAILURE_KEY) or "other"  # the worker's class, not "500"
         raise err
@@ -565,7 +565,7 @@ async def _start_minimax_device_code(profile: Optional[str]) -> dict[str, Any]:
 
 
 async def _start_xai_device_code(profile: Optional[str]) -> dict[str, Any]:
-    from hermes_cli.auth import _xai_oauth_request_device_code
+    from moor_cli.auth import _xai_oauth_request_device_code
     device_data = await _httpx_call(_xai_oauth_request_device_code, timeout=20.0)
     return _device_session_started(
         "xai-oauth", profile, _xai_device_poller,
@@ -675,7 +675,7 @@ def _oauth_provider_disconnect_hint(provider: dict[str, Any], status: dict[str, 
 def _build_oauth_catalog() -> list[dict[str, Any]]:
     """Accounts-tab provider list: ``_OAUTH_PROVIDER_CATALOG`` cards first (curated
     order, win on metadata), then every other accounts-tab ``provider_catalog()`` entry
-    in ``hermes model`` order, so plugin-added OAuth/external providers appear automatically."""
+    in ``moor model`` order, so plugin-added OAuth/external providers appear automatically."""
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
     for entry in _OAUTH_PROVIDER_CATALOG:
@@ -709,7 +709,7 @@ def _profile_account_row(d) -> Optional[dict[str, Any]]:
     return {
         "id": d.slug, "name": card.get("name") or d.label,
         "flow": "device_code" if device else card.get("flow") or "external",
-        "cli_command": card.get("cli_command") or f"hermes auth add {d.slug}",
+        "cli_command": card.get("cli_command") or f"moor auth add {d.slug}",
         "docs_url": card.get("docs_url") or d.signup_url or "",
         "status_fn": getattr(prof, "account_status", None),
     }
@@ -800,8 +800,8 @@ async def disconnect_oauth_provider(provider_id: str, request: Request, profile:
         try:
             from moor_cli.auth import clear_provider_auth, invalidate_moor_auth_status_cache
             cleared = clear_provider_auth(provider_id)
-            if provider_id == "nous":
-                invalidate_nous_auth_status_cache()
+            if provider_id == "moor":
+                invalidate_moor_auth_status_cache()
             if not cleared:
                 raise _disconnect_http_error(409, provider["name"])
             _log.info("oauth/disconnect: %s (cleared=%s)", provider_id, cleared)
@@ -870,7 +870,7 @@ async def start_oauth_login(provider_id: str, request: Request, profile: Optiona
 async def _begin_oauth_setup_metric(provider_id: str, profile: Optional[str]):
     """Start the provider-setup metric off the event loop (a cold metrics runtime blocks); None when the
     owning profile does not collect. Never raises: the start route's own validation owns errors."""
-    from hermes_cli.observability.shared_metrics_setup import begin_oauth_setup, collection_enabled
+    from moor_cli.observability.shared_metrics_setup import begin_oauth_setup, collection_enabled
     try:
         profile_name = _oauth_profile_name(profile)
         home = _resolve_profile_dir(profile_name) if profile_name else None
@@ -884,7 +884,7 @@ async def _begin_oauth_setup_metric(provider_id: str, profile: Optional[str]):
 async def _end_oauth_setup_metric(flow, exc: Exception) -> None:
     if flow is None:
         return
-    from hermes_cli.observability.shared_metrics_setup import finish_provider_setup, setup_failure_class
+    from moor_cli.observability.shared_metrics_setup import finish_provider_setup, setup_failure_class
     with contextlib.suppress(Exception):
         # A 401/403 from the start route is the provider refusing this account/client; a 504 is the
         # provider not answering in time.
@@ -942,19 +942,19 @@ async def poll_oauth_session(provider_id: str, session_id: str, profile: Optiona
     return {
         "session_id": session_id, "status": sess["status"],
         "error_message": sess.get("error_message"), "expires_at": sess.get("expires_at"),
-        # Nous: why a sign-in ended, who signed in, and the default model the completion settled on
+        # Moor: why a sign-in ended, who signed in, and the default model the completion settled on
         # (None when the config was on the user's own model).
         "reason": sess.get("reason"), "account_email": sess.get("account_email"), "model": sess.get("model"),
         # What the replaced free tier's handoff did: one user-facing line each (moved, reconnect),
         # and the same result as fields (``guest_handoff.wire_status``; None without a handoff).
         "handoff": sess.get("handoff"), "handoff_status": sess.get("handoff_status"),
-        # Failed Nous sign-ins: can a later attempt succeed, and after how long.
+        # Failed Moor sign-ins: can a later attempt succeed, and after how long.
         "retryable": sess.get("retryable"), "retry_after": sess.get("retry_after"),
     }
 
 
-@router.get("/api/providers/oauth/nous/handoff")
-async def nous_handoff_status(
+@router.get("/api/providers/oauth/moor/handoff")
+async def moor_handoff_status(
     request: Request, profile: Optional[str] = None, since: Optional[str] = None, wait: float = 0,
 ):
     """The profile's latest free-tier handoff (``guest_handoff.wire_status``). Token-protected. A
@@ -964,7 +964,7 @@ async def nous_handoff_status(
     profile_name = _validate_oauth_profile(profile)
 
     def _read() -> dict[str, Any]:
-        from hermes_cli.guest_handoff import handoff_status, wire_status
+        from moor_cli.guest_handoff import handoff_status, wire_status
         return wire_status(handoff_status())
 
     return await _long_poll(
@@ -992,7 +992,7 @@ async def cancel_oauth_session(session_id: str, request: Request, profile: Optio
             _oauth_sessions.pop(session_id, None)
     if sess is None:
         return {"ok": False, "message": "session not found"}
-    # Recorded now, not when the poller next wakes: a Nous/xAI poll can block for the code's lifetime.
-    from hermes_cli.observability.shared_metrics_setup import settle_oauth_setup
+    # Recorded now, not when the poller next wakes: a Moor/xAI poll can block for the code's lifetime.
+    from moor_cli.observability.shared_metrics_setup import settle_oauth_setup
     await asyncio.to_thread(settle_oauth_setup, sess)
     return {"ok": True, "session_id": session_id}

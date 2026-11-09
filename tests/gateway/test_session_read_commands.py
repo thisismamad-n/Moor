@@ -46,7 +46,7 @@ def test_local_session_reads_report_this_session_and_refuse_their_write_forms(tm
                          'auxiliary': {'title_generation': {'enabled': False}}})
     (home / 'config.yaml').write_text(config)
     env = child_env()
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), MOOR_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url, PYTHONUNBUFFERED='1')
     out = {}
 
@@ -89,7 +89,7 @@ def test_local_session_reads_report_this_session_and_refuse_their_write_forms(tm
     assert 'reads-model' in out['usage'] and 'API calls: 1' in out['usage'], out['usage']
     assert '**Sessions:** 1' in out['insights'] and '**Messages:** 2' in out['insights'], out['insights']
     assert str(home) in out['profile'] and out['dispatch profile'] == out['profile'], out['profile']
-    assert 'Nous' in out['topup'], out['topup']
+    assert 'Moor' in out['topup'], out['topup']
     # Workspace report: the session's frozen cwd.
     assert 'SESSION_CWD_MARKER.txt' in out['diff'], out['diff']
     # Review queues and boards, read-only views.

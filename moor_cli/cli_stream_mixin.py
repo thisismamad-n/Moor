@@ -185,7 +185,7 @@ class CLIStreamMixin:
             f" [dim]{datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}[/]"
             if getattr(self, "show_timestamps", False) else "")
         lines = user_input.split("\n")
-        from hermes_cli.cli_modern_layout import is_modern, prompt_glyph
+        from moor_cli.cli_modern_layout import is_modern, prompt_glyph
         mark = _escape(prompt_glyph()) if is_modern(self) else "●"
         if len(lines) <= 1:
             return f"[bold {_accent_hex()}]{mark}[/] [bold]{_escape(user_input)}[/]{ts_suffix}"
@@ -239,7 +239,7 @@ class CLIStreamMixin:
             return
         modern = getattr(self, "_modern_layout", False)
         if modern:
-            from hermes_cli.cli_modern_layout import separator
+            from moor_cli.cli_modern_layout import separator
             _cprint("\n" + separator(True))
         else:
             ChatConsole().print(f"[{_accent_hex()}]{'─' * 40}[/]")
@@ -248,12 +248,12 @@ class CLIStreamMixin:
             # soft_wrap in the glyph layout: the terminal wraps a long prompt, so a resize re-flows it.
             ChatConsole().print(self._format_submitted_user_message_preview(text), soft_wrap=modern)
         elif modern:
-            from hermes_cli.cli_modern_layout import user_echo_markup
+            from moor_cli.cli_modern_layout import user_echo_markup
             ChatConsole().print(user_echo_markup(text, _accent_hex()), soft_wrap=True)
         else:
             ChatConsole().print(f"[bold {_accent_hex()}]●[/] [bold]{_escape(text)}[/]")
         if modern:
-            from hermes_cli.cli_modern_layout import closing_separator
+            from moor_cli.cli_modern_layout import closing_separator
             _cprint(closing_separator(True))
 
     def _stream_reasoning_delta(self, text: str) -> None:
@@ -270,7 +270,7 @@ class CLIStreamMixin:
         if getattr(self, "_stream_box_opened", False):
             return
         if getattr(self, "_modern_layout", False):
-            from hermes_cli.cli_modern_layout import reasoning_text_line, separator
+            from moor_cli.cli_modern_layout import reasoning_text_line, separator
             if not getattr(self, "_reasoning_box_opened", False):
                 self._reasoning_box_opened, self._reasoning_started_at = True, time.monotonic()
                 self._reasoning_buf, self._reasoning_full_text = "", ""
@@ -327,7 +327,7 @@ class CLIStreamMixin:
         if not getattr(self, "_reasoning_box_opened", False):
             return
         if getattr(self, "_modern_layout", False):
-            from hermes_cli.cli_modern_layout import closing_separator, reasoning_text_line, thought_line
+            from moor_cli.cli_modern_layout import closing_separator, reasoning_text_line, thought_line
             if getattr(self, "_reasoning_buf", ""):
                 _cprint(reasoning_text_line(self._reasoning_buf))
             started = getattr(self, "_reasoning_started_at", 0.0)
@@ -494,12 +494,12 @@ class CLIStreamMixin:
             if self.show_timestamps:
                 label = f"{label} {datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}"
             if getattr(self, "_modern_layout", False):
-                from hermes_cli.cli_modern_layout import answer_label
+                from moor_cli.cli_modern_layout import answer_label
                 _cprint(answer_label(datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))
                                      if self.show_timestamps else ""))
             else:
                 w = self._scrollback_box_width()
-                fill = w - 2 - HermesCLI._status_bar_display_width(label)
+                fill = w - 2 - MoorCLI._status_bar_display_width(label)
                 _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
 
         # Turn-level record of what actually reached the screen; survives _reset_stream_state at
@@ -568,7 +568,7 @@ class CLIStreamMixin:
             self._stream_buf = ""
         if self._stream_box_opened and getattr(self, "_stream_box_live", False):
             if getattr(self, "_modern_layout", False):
-                from hermes_cli.cli_modern_layout import closing_separator
+                from moor_cli.cli_modern_layout import closing_separator
                 _cprint(closing_separator(True))
             else:
                 w = self._scrollback_box_width()
@@ -787,7 +787,7 @@ class CLIStreamMixin:
                     return
                 self._last_scrollback_tool = function_name
                 try:
-                    from hermes_cli.cli_modern_layout import completed_tool_line
+                    from moor_cli.cli_modern_layout import completed_tool_line
                     _cprint(completed_tool_line(self, function_name, stored_args, duration, kwargs.get("result"),
                                                 kwargs.get("is_error", False)))
                 except Exception:
@@ -875,7 +875,7 @@ class CLIStreamMixin:
         snapshot = self._pending_edit_snapshots.pop(tool_call_id, None)
         try:
             from agent.display import render_edit_diff_with_delta
-            from hermes_cli.cli_modern_layout import diff_printer
+            from moor_cli.cli_modern_layout import diff_printer
             render_edit_diff_with_delta(
                 function_name, function_result, function_args=function_args, snapshot=snapshot,
                 print_fn=diff_printer(_cprint))

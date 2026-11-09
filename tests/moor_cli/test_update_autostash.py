@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import main as hermes_main, update_cmd
-from tests.hermes_cli.test_update_target_identity import git, update_tree
+from moor_cli import main as moor_main, update_cmd
+from tests.moor_cli.test_update_target_identity import git, update_tree
 from datetime import UTC
 
 
@@ -90,7 +90,7 @@ def test_rescue_retention_uses_real_refs(tmp_path, monkeypatch, mode):
     git(tmp_path, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
         '-c', 'commit.gpgsign=false', 'commit', '--allow-empty', '-qm', 'base')
     now = datetime.now(UTC)
-    prefix = 'refs/hermes-update-backups/orphan-main-'
+    prefix = 'refs/moor-update-backups/orphan-main-'
     if mode == 'count':
         refs = [prefix + (now - timedelta(hours=20-i)).strftime('%Y%m%d-%H%M%S') + '-abc'
                 for i in range(update_cmd._ORPHAN_RESCUE_REFS_TO_KEEP + 2)]
@@ -165,10 +165,10 @@ def test_restore_without_python_is_not_judged_by_install_state_imports(probe_roo
     git(probe_root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
         '-c', 'commit.gpgsign=false', 'commit', '-qm', 'base')
     notes.write_text('my local docs edit\n', encoding='utf-8')
-    ref = hermes_main._stash_local_changes_if_needed(['git'], probe_root)
+    ref = moor_main._stash_local_changes_if_needed(['git'], probe_root)
     monkeypatch.setattr(update_cmd, '_UPDATE_CRITICAL_MODULES', ('consumer',))
 
-    assert hermes_main._restore_stashed_changes(['git'], probe_root, ref, prompt_user=False)
+    assert moor_main._restore_stashed_changes(['git'], probe_root, ref, prompt_user=False)
     assert notes.read_text(encoding='utf-8') == 'my local docs edit\n'
     assert not git(probe_root, 'stash', 'list')
 
@@ -194,11 +194,11 @@ def test_restore_without_python_that_breaks_an_import_is_rejected(probe_root, mo
     else:
         local = probe_root / 'consumer.json'
         local.write_text('{not json\n', encoding='utf-8')
-    ref = hermes_main._stash_local_changes_if_needed(['git'], probe_root)
+    ref = moor_main._stash_local_changes_if_needed(['git'], probe_root)
     monkeypatch.setattr(update_cmd, '_UPDATE_CRITICAL_MODULES', ('consumer',))
 
     with pytest.raises(SystemExit) as error:
-        hermes_main._restore_stashed_changes(['git'], probe_root, ref, prompt_user=False)
+        moor_main._restore_stashed_changes(['git'], probe_root, ref, prompt_user=False)
     assert error.value.code == 1
     assert 'agent import consumer' in capsys.readouterr().out
     assert not git(probe_root, 'status', '--porcelain')
@@ -374,8 +374,8 @@ def test_restore_stays_parked_when_untracked_baseline_is_unknown(
     monkeypatch, tmp_path, capsys
 ):
     """Unknown cleanup scope must not turn into a destructive empty baseline."""
-    from hermes_cli import update_cmd
-    from hermes_cli import update_cmd_stash
+    from moor_cli import update_cmd
+    from moor_cli import update_cmd_stash
 
     monkeypatch.setattr(update_cmd, "_git_untracked_paths", lambda *_args: None)
     monkeypatch.setattr(update_cmd_stash, "_git_untracked_paths", lambda *_args: None)
@@ -395,8 +395,8 @@ def test_reject_does_not_claim_cleanup_when_git_state_is_unknown(
     monkeypatch, tmp_path, capsys
 ):
     """Cleanup failures must not be reported as a restored clean tree."""
-    from hermes_cli import update_cmd
-    from hermes_cli import update_cmd_stash
+    from moor_cli import update_cmd
+    from moor_cli import update_cmd_stash
 
     monkeypatch.setattr(update_cmd, "_git_untracked_paths", lambda *_args: None)
     monkeypatch.setattr(update_cmd_stash, "_git_untracked_paths", lambda *_args: None)
@@ -651,17 +651,17 @@ def _repo_with_stash(tmp_path, local_source):
     git("commit", "-qm", "init")
     (tmp_path / "mod.py").write_text(local_source, encoding="utf-8")
     (tmp_path / "notes.md").write_text("my private notes\n", encoding="utf-8")
-    stash_ref = hermes_main._stash_local_changes_if_needed(["git"], tmp_path)
+    stash_ref = moor_main._stash_local_changes_if_needed(["git"], tmp_path)
     assert stash_ref
     return git, stash_ref
 
 
-@pytest.mark.parametrize("local_source", ["X = 2\n", "X = (\n"], ids=["healthy", "breaks-hermes"])
+@pytest.mark.parametrize("local_source", ["X = 2\n", "X = (\n"], ids=["healthy", "breaks-moor"])
 def test_untracked_file_replaced_by_the_update_keeps_the_stash(tmp_path, local_source):
     """#124641: the update adds a file where the user had an untracked file of the same name.
     ``stash apply`` refuses it ("already exists, no checkout"); the stash is the only copy of the
     user's version, so it is never dropped. The restored tree still gets the health check: a restore
-    that breaks Hermes resets the tree and exits 1."""
+    that breaks Moor resets the tree and exits 1."""
     git, stash_ref = _repo_with_stash(tmp_path, local_source)
     # The pull adds its own notes.md.
     (tmp_path / "notes.md").write_text("upstream notes\n", encoding="utf-8")
@@ -671,11 +671,11 @@ def test_untracked_file_replaced_by_the_update_keeps_the_stash(tmp_path, local_s
     probe = _ReceiptProbe()
     with _active_receipt(probe):
         if local_source == "X = 2\n":
-            restored = hermes_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False)
+            restored = moor_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False)
             assert restored is False
         else:
             with pytest.raises(SystemExit) as exc:
-                hermes_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False)
+                moor_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False)
             assert exc.value.code == 1
 
     healthy = local_source == "X = 2\n"
@@ -696,7 +696,7 @@ def test_untracked_file_the_update_does_not_track_is_never_reported_replaced(tmp
     # The occupant survived the stash and was edited during the update window.
     (tmp_path / "notes.md").write_text("edited while locked\n", encoding="utf-8")
 
-    assert hermes_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False) is True
+    assert moor_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False) is True
 
     assert (tmp_path / "mod.py").read_text(encoding="utf-8") == "X = 2\n"
     assert "The update added" not in capsys.readouterr().out
@@ -705,7 +705,7 @@ def test_untracked_file_the_update_does_not_track_is_never_reported_replaced(tmp
 def test_unrequested_park_is_never_reported_as_update_complete(monkeypatch, tmp_path):
     """A restore that conflicts leaves the patch parked: the completion line must say so (#122557);
     a park the user asked for (--keep-stash) stays a normal completion."""
-    import hermes_cli.update_cmd_stash as stash_mod
+    import moor_cli.update_cmd_stash as stash_mod
 
     monkeypatch.setattr(stash_mod, "_pending_autostash", None)
 
@@ -720,11 +720,11 @@ def test_unrequested_park_is_never_reported_as_update_complete(monkeypatch, tmp_
     git("add", "-A")
     git("commit", "-qm", "init")
     source.write_text("VALUE = 2\n", encoding="utf-8")
-    stash_ref = hermes_main._stash_local_changes_if_needed(["git"], tmp_path)
+    stash_ref = moor_main._stash_local_changes_if_needed(["git"], tmp_path)
     source.write_text("VALUE = 3\n", encoding="utf-8")
     git("commit", "-qam", "pulled change")
 
-    assert hermes_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False) is False
+    assert moor_main._restore_stashed_changes(["git"], tmp_path, stash_ref, prompt_user=False) is False
     notice = stash_mod._unrestored_autostash_notice()
     assert notice and not notice.startswith("\u2713") and stash_ref in notice
 

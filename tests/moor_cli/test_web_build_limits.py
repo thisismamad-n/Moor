@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.web_build_limits import (
+from moor_cli.web_build_limits import (
     apply_web_build_limits,
     web_build_limits,
 )
@@ -20,8 +20,8 @@ class TestWebBuildLimits:
     def test_heap_and_thread_caps_applied(self, monkeypatch):
         monkeypatch.delenv("NODE_OPTIONS", raising=False)
         monkeypatch.delenv("RAYON_NUM_THREADS", raising=False)
-        monkeypatch.delenv("HERMES_WEB_BUILD_MAX_OLD_SPACE_SIZE", raising=False)
-        monkeypatch.delenv("HERMES_WEB_BUILD_THREADS", raising=False)
+        monkeypatch.delenv("MOOR_WEB_BUILD_MAX_OLD_SPACE_SIZE", raising=False)
+        monkeypatch.delenv("MOOR_WEB_BUILD_THREADS", raising=False)
         env = web_build_limits({})
         assert "--max-old-space-size=" in env["NODE_OPTIONS"]
         assert int(env["RAYON_NUM_THREADS"]) >= 1
@@ -43,8 +43,8 @@ class TestWebBuildLimits:
         monkeypatch.delenv("NODE_OPTIONS", raising=False)
         monkeypatch.delenv("RAYON_NUM_THREADS", raising=False)
         env = web_build_limits({
-            "HERMES_WEB_BUILD_MAX_OLD_SPACE_SIZE": "3072",
-            "HERMES_WEB_BUILD_THREADS": "1",
+            "MOOR_WEB_BUILD_MAX_OLD_SPACE_SIZE": "3072",
+            "MOOR_WEB_BUILD_THREADS": "1",
         })
         assert "--max-old-space-size=3072" in env["NODE_OPTIONS"]
         assert env["RAYON_NUM_THREADS"] == "1"
@@ -52,7 +52,7 @@ class TestWebBuildLimits:
     def test_cgroup_limit_shrinks_heap_floor(self, monkeypatch):
         monkeypatch.delenv("NODE_OPTIONS", raising=False)
         monkeypatch.setattr(
-            "hermes_cli.web_build_limits._cgroup_memory_limit_mb", lambda: 2048
+            "moor_cli.web_build_limits._cgroup_memory_limit_mb", lambda: 2048
         )
         env = web_build_limits({})
         # 75% of a 2GB container, above the GC-thrash floor but below the
@@ -60,15 +60,15 @@ class TestWebBuildLimits:
         assert "--max-old-space-size=1536" in env["NODE_OPTIONS"]
 
     def test_bounded_threads_half_cores(self, monkeypatch):
-        monkeypatch.setattr("hermes_cli.web_build_limits._available_cores", lambda: 16)
+        monkeypatch.setattr("moor_cli.web_build_limits._available_cores", lambda: 16)
         env = web_build_limits({})
         assert env["RAYON_NUM_THREADS"] == "8"  # clamped ceiling
 
-        monkeypatch.setattr("hermes_cli.web_build_limits._available_cores", lambda: 4)
+        monkeypatch.setattr("moor_cli.web_build_limits._available_cores", lambda: 4)
         env = web_build_limits({})
         assert env["RAYON_NUM_THREADS"] == "2"  # half of 4 — the issue's host
 
-        monkeypatch.setattr("hermes_cli.web_build_limits._available_cores", lambda: 1)
+        monkeypatch.setattr("moor_cli.web_build_limits._available_cores", lambda: 1)
         env = web_build_limits({})
         assert env["RAYON_NUM_THREADS"] == "1"  # single-core host never gets 0
 
@@ -84,19 +84,19 @@ class TestWebBuildLimits:
     def test_light_mode_tightens_caps(self, monkeypatch):
         monkeypatch.delenv("NODE_OPTIONS", raising=False)
         monkeypatch.delenv("RAYON_NUM_THREADS", raising=False)
-        monkeypatch.delenv("HERMES_WEB_BUILD_MAX_OLD_SPACE_SIZE", raising=False)
-        monkeypatch.delenv("HERMES_WEB_BUILD_THREADS", raising=False)
-        monkeypatch.setattr("hermes_cli.web_build_limits._available_cores", lambda: 8)
-        env = web_build_limits({"HERMES_WEB_BUILD_LIGHT": "1"})
+        monkeypatch.delenv("MOOR_WEB_BUILD_MAX_OLD_SPACE_SIZE", raising=False)
+        monkeypatch.delenv("MOOR_WEB_BUILD_THREADS", raising=False)
+        monkeypatch.setattr("moor_cli.web_build_limits._available_cores", lambda: 8)
+        env = web_build_limits({"MOOR_WEB_BUILD_LIGHT": "1"})
         assert "--max-old-space-size=1024" in env["NODE_OPTIONS"]
         assert env["RAYON_NUM_THREADS"] == "1"
 
 
 class TestBuildSourceWebPropagatesLimits:
-    """The install/update/``hermes dashboard`` build path must apply the caps."""
+    """The install/update/``moor dashboard`` build path must apply the caps."""
 
     def test_build_source_web_applies_limits(self, tmp_path, monkeypatch):
-        from hermes_cli import source_build
+        from moor_cli import source_build
 
         captured: dict = {}
 

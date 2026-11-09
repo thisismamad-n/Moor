@@ -20,8 +20,8 @@ from tests.waiting import wait_until
 
 @pytest.fixture
 def runner_with_home(tmp_path, monkeypatch):
-    """Create a runner with a writable HERMES_HOME."""
-    monkeypatch.setattr("gateway.run._hermes_home", tmp_path)
+    """Create a runner with a writable MOOR_HOME."""
+    monkeypatch.setattr("gateway.run._moor_home", tmp_path)
     runner, _adapter = make_restart_runner()
     return runner, tmp_path
 

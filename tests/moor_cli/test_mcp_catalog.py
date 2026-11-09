@@ -517,8 +517,8 @@ class TestInstall:
 
     def test_first_install_records_one_extension_install_and_reinstall_none(self, catalog_dir, monkeypatch):
         _write_manifest(catalog_dir, "demo", _basic_manifest())
-        import hermes_cli.observability.shared_metrics_events as events
-        from hermes_cli.mcp_catalog import install_entry
+        import moor_cli.observability.shared_metrics_events as events
+        from moor_cli.mcp_catalog import install_entry
 
         calls = []
         monkeypatch.setattr(events, "record_extension_install", lambda **kw: calls.append(kw))

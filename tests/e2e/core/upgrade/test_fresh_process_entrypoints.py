@@ -119,7 +119,7 @@ _POST_PURGE_IMPORTS = (
 # What the pre-hand-off ``moor update`` process had imported before the pull.
 _OLD_UPDATER_GRAPH = ("moor_cli.main", "moor_cli.update_cmd", "moor_cli.config", "moor_cli.gateway")
 
-_READY_RE = re.compile(r"^HERMES_(?:BACKEND|DASHBOARD)_READY port=(\d+)", re.MULTILINE)  # electron/backend-ready.ts
+_READY_RE = re.compile(r"^MOOR_(?:BACKEND|DASHBOARD)_READY port=(\d+)", re.MULTILINE)  # electron/backend-ready.ts
 
 
 # --------------------------------------------------------------------------- packaging model

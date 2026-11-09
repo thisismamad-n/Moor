@@ -1,6 +1,6 @@
 """``browser.*`` reads go through the effective user config: the managed overlay wins over the profile's
-file and ``${VAR}`` references expand, as for every other runtime reader (hermes_cli/AGENTS.md, Three
-loaders). A raw read would launch Chromium on a literal ``${HOME}/...`` dir under HERMES_HOME, or ignore
+file and ``${VAR}`` references expand, as for every other runtime reader (moor_cli/AGENTS.md, Three
+loaders). A raw read would launch Chromium on a literal ``${HOME}/...`` dir under MOOR_HOME, or ignore
 an administrator's pinned profile and flags."""
 
 import textwrap
@@ -14,8 +14,8 @@ def homes(tmp_path, monkeypatch):
     home.mkdir()
     managed = tmp_path / "managed"
     managed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     for name in ("BROWSER_USE_API_KEY", "BROWSERBASE_API_KEY", "BROWSERBASE_PROJECT_ID"):
         monkeypatch.delenv(name, raising=False)
     _reset()
@@ -24,8 +24,8 @@ def homes(tmp_path, monkeypatch):
 
 
 def _reset():
-    import hermes_cli.config as cfg
-    from hermes_cli import config_effective, managed_scope
+    import moor_cli.config as cfg
+    from moor_cli import config_effective, managed_scope
     from tools import browser_session_cloud
 
     cfg._LOAD_CONFIG_CACHE.clear()
@@ -94,7 +94,7 @@ def test_managed_local_cloud_provider_wins_over_the_user_file(homes, monkeypatch
 
 
 def test_browser_exec_cloud_routing_reads_the_managed_gateway_selection(homes):
-    """``browser_exec``'s own ``browser:`` read (Browser Use direct API vs the Nous gateway) sees the managed
+    """``browser_exec``'s own ``browser:`` read (Browser Use direct API vs the Moor gateway) sees the managed
     selection the session layer sees."""
     from tools import browser_use_cli
 
@@ -105,7 +105,7 @@ def test_browser_exec_cloud_routing_reads_the_managed_gateway_selection(homes):
         """)
     _write(managed / "config.yaml", """
         browser:
-          cloud_provider: nous
+          cloud_provider: moor
         """)
     assert browser_use_cli._use_gateway(browser_use_cli._read_browser_cfg()) is True
 
@@ -113,7 +113,7 @@ def test_browser_exec_cloud_routing_reads_the_managed_gateway_selection(homes):
 def test_real_profile_pin_follows_the_managed_overlay(homes):
     """The real-profile copy's source pin is a ``browser.*`` read too: a managed pin decides which identity
     the agent gets."""
-    from hermes_cli.browser_connect import _real_profile_pin
+    from moor_cli.browser_connect import _real_profile_pin
 
     home, managed = homes
     _write(home / "config.yaml", """

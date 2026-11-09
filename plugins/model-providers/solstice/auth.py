@@ -1,10 +1,10 @@
 """Solstice sign-in: browser PKCE with a loopback redirect, token exchange and refresh brokered by the
-Nous portal (NAS), which holds the confidential client secret. Hermes keeps its own PKCE verifier and
+Moor portal (NAS), which holds the confidential client secret. Moor keeps its own PKCE verifier and
 the user's tokens; NAS never sees a prompt.
 
-The generic ``hermes_cli.auth_oauth_pkce_plugin`` flow runs the browser leg, the credential-pool row
+The generic ``moor_cli.auth_oauth_pkce_plugin`` flow runs the browser leg, the credential-pool row
 and the single-use-safe refresh. This module supplies only what is NAS-specific: the client config it
-discovers and the token POSTs it brokers. Every NAS call carries the user's Nous access token.
+discovers and the token POSTs it brokers. Every NAS call carries the user's Moor access token.
 """
 
 from __future__ import annotations
@@ -18,35 +18,35 @@ _TIMEOUT_SECONDS = 30.0
 
 
 def _err(message: str, code: str, *, relogin: bool = False):
-    from hermes_cli.auth_constants import AuthError
+    from moor_cli.auth_constants import AuthError
     return AuthError(f"solstice: {message}", provider="solstice", code=code, relogin_required=relogin)
 
 
 def _nas_base_url() -> str:
-    """The Nous portal the user is signed into (``HERMES_PORTAL_BASE_URL`` override first)."""
-    from hermes_cli.auth import _nous_portal_base_url, get_provider_auth_state
-    return _nous_portal_base_url(get_provider_auth_state("nous") or {})
+    """The Moor portal the user is signed into (``MOOR_PORTAL_BASE_URL`` override first)."""
+    from moor_cli.auth import _moor_portal_base_url, get_provider_auth_state
+    return _moor_portal_base_url(get_provider_auth_state("moor") or {})
 
 
 def _nas_request(method: str, path: str, *, json: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    from hermes_cli.auth import _default_verify, resolve_nous_access_token
-    from hermes_cli.auth_constants import httpx
+    from moor_cli.auth import _default_verify, resolve_moor_access_token
+    from moor_cli.auth_constants import httpx
 
     try:
-        token = resolve_nous_access_token()
+        token = resolve_moor_access_token()
     except Exception as exc:
-        raise _err("sign in to Nous Portal first (`hermes auth add nous`).", "solstice_nous_login_required",
+        raise _err("sign in to Moor Portal first (`moor auth add moor`).", "solstice_moor_login_required",
                    relogin=True) from exc
     try:
         response = httpx.request(method, _nas_base_url() + path, json=json, timeout=_TIMEOUT_SECONDS,
                                  headers={"Accept": "application/json", "Authorization": f"Bearer {token}"},
                                  verify=_default_verify())
     except Exception as exc:
-        raise _err(f"Nous portal request failed: {type(exc).__name__}", "solstice_broker_unreachable") from exc
+        raise _err(f"Moor portal request failed: {type(exc).__name__}", "solstice_broker_unreachable") from exc
     if response.status_code == 404:
-        raise _err("not available on this Nous account yet.", "solstice_not_configured")
+        raise _err("not available on this Moor account yet.", "solstice_not_configured")
     if response.status_code >= 400:
-        raise _err(f"Nous portal returned HTTP {response.status_code}.", "solstice_broker_failed")
+        raise _err(f"Moor portal returned HTTP {response.status_code}.", "solstice_broker_failed")
     return response.json()
 
 
@@ -55,7 +55,7 @@ def discover_client() -> dict[str, str]:
     payload = _nas_request("GET", _CONFIG_PATH)
     missing = [k for k in ("client_id", "authorize_url", "scope") if not str(payload.get(k) or "").strip()]
     if missing:
-        raise _err(f"Nous portal config is missing {', '.join(missing)}.", "solstice_config_invalid")
+        raise _err(f"Moor portal config is missing {', '.join(missing)}.", "solstice_config_invalid")
     return {k: str(payload[k]).strip() for k in ("client_id", "authorize_url", "scope")}
 
 
@@ -71,6 +71,6 @@ def broker_token_request(grant: Mapping[str, str]) -> Mapping[str, Any]:
         return _nas_request("POST", path, json=body)
     except Exception as exc:
         if grant["grant_type"] == "refresh_token" and getattr(exc, "code", "") == "solstice_broker_failed":
-            raise _err("the stored sign-in was rejected; run `hermes auth add solstice` again.",
+            raise _err("the stored sign-in was rejected; run `moor auth add solstice` again.",
                        "invalid_grant", relogin=True) from exc
         raise

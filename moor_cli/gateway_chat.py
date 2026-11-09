@@ -9,8 +9,8 @@ from pathlib import Path
 import sys
 import uuid
 
-from hermes_cli.gateway_client import RESUME_KEY_MISMATCH, GatewayClientError, connect_gateway
-from hermes_cli.gateway_connection import RESUME_REFUSALS
+from moor_cli.gateway_client import RESUME_KEY_MISMATCH, GatewayClientError, connect_gateway
+from moor_cli.gateway_connection import RESUME_REFUSALS
 
 # These options change execution or require frontend facilities not yet exposed by
 # the authority. Reject them, rather than mutate process-wide gateway settings.
@@ -23,24 +23,24 @@ _POLICY = ("model", "provider", "reasoning", "toolsets", "max_turns", "base_url"
            "yolo", "safe_mode", "ignore_user_config", "skills", "checkpoints", "accept_hooks", "pass_session_id")
 # Where each refused option lives now; the refusal names it so the user is not left guessing.
 _RELOCATED = {
-    "image": "`hermes --tui` or the Desktop app to attach the image",
-    "worktree": "`hermes --tui -w`",
-    "w": "`hermes --tui -w`",
+    "image": "`moor --tui` or the Desktop app to attach the image",
+    "worktree": "`moor --tui -w`",
+    "w": "`moor --tui -w`",
     "no_restore_cwd": "`--in <dir>` (the gateway keeps the session's frozen cwd)",
     "run_budget": "`agent.run_budget_seconds` in config.yaml",
-    "verbose": "`hermes logs --follow`, or `hermes chat --tui -v`",
+    "verbose": "`moor logs --follow`, or `moor chat --tui -v`",
     "compact": "`display.compact: true` in config.yaml",
     "create-if-missing without -c <name>": "`-c <name> --create-if-missing`",
 }
-_SAFE_MODE_EXAMPLE = 'hermes chat --safe-mode --provider openrouter --model anthropic/claude-sonnet-4 -q "hello"'
+_SAFE_MODE_EXAMPLE = 'moor chat --safe-mode --provider openrouter --model anthropic/claude-sonnet-4 -q "hello"'
 
 
 # The documented environment equivalents of creation flags (the set Ink's localCreationOptions
 # maps). The auto-started owner no longer inherits them (R14 scrub), so they only take effect
 # by riding THIS session's session.create; a resume keeps the frozen route.
-_ENV_LAUNCH_FLAGS = (("yolo", "HERMES_YOLO_MODE"), ("ignore_rules", "HERMES_IGNORE_RULES"),
-                     ("safe_mode", "HERMES_SAFE_MODE"), ("ignore_user_config", "HERMES_IGNORE_USER_CONFIG"),
-                     ("accept_hooks", "HERMES_ACCEPT_HOOKS"))
+_ENV_LAUNCH_FLAGS = (("yolo", "MOOR_YOLO_MODE"), ("ignore_rules", "MOOR_IGNORE_RULES"),
+                     ("safe_mode", "MOOR_SAFE_MODE"), ("ignore_user_config", "MOOR_IGNORE_USER_CONFIG"),
+                     ("accept_hooks", "MOOR_ACCEPT_HOOKS"))
 
 
 def env_launch_flags() -> dict:
@@ -55,8 +55,8 @@ def shell_client_env() -> dict:
     from agent.session_client_env import collect_client_env
     if {'safe_mode', 'ignore_user_config'} & set(env_launch_flags()):
         return collect_client_env()
-    from hermes_cli.config import get_config_path
-    from hermes_cli.config_effective import load_user_config_effective
+    from moor_cli.config import get_config_path
+    from moor_cli.config_effective import load_user_config_effective
     return collect_client_env(config=load_user_config_effective(get_config_path()))
 
 
@@ -104,7 +104,7 @@ def validate_options(args):
     # A resume reuses the frozen route and reads no default (the TUI launcher's rule too).
     resuming = getattr(args, "resume", None) or getattr(args, "continue_last", None)
     if bypass_launch(args) and not getattr(args, "model", None) and not resuming:
-        raise GatewayClientError("--safe-mode / --ignore-user-config (or HERMES_SAFE_MODE / HERMES_IGNORE_USER_CONFIG) "
+        raise GatewayClientError("--safe-mode / --ignore-user-config (or MOOR_SAFE_MODE / MOOR_IGNORE_USER_CONFIG) "
                                  "read no profile default: pass --model explicitly."
                                  f"\n  Example: {_SAFE_MODE_EXAMPLE}")
 
@@ -116,7 +116,7 @@ def _caller_cwd(args) -> str:
 
 def _workspace_key(cwd):
     """The classic CLI's workspace identity for ``-c`` (git root, else the cwd)."""
-    from hermes_cli.main import _resolve_workspace_key
+    from moor_cli.main import _resolve_workspace_key
     previous = os.getcwd()
     try:
         os.chdir(cwd)
@@ -141,7 +141,7 @@ async def _resume(client, args, **params):
 async def _resume_latest(client, args):
     """Bare ``-c``: this terminal's breadcrumb session when the owner still has it, else (and for
     ``--resume latest``) the owner's most recent CLI session, this workspace first."""
-    from hermes_cli.terminal_breadcrumbs import read_breadcrumb
+    from moor_cli.terminal_breadcrumbs import read_breadcrumb
     crumb = (read_breadcrumb() or {}).get("session_id") if getattr(args, "continue_last", None) is True else None
     if isinstance(crumb, str) and crumb:
         try:
@@ -155,12 +155,12 @@ async def _resume_latest(client, args):
     except GatewayClientError as exc:
         if str(exc) != "not_found":
             raise
-        raise GatewayClientError("No previous CLI session to continue. Start a new one with `hermes`, "
-                                 "or list sessions with `hermes sessions list`.") from None
+        raise GatewayClientError("No previous CLI session to continue. Start a new one with `moor`, "
+                                 "or list sessions with `moor sessions list`.") from None
 
 
 async def run_gateway_chat(args, emitter=None):
-    from hermes_cli.gateway_chat_view import GatewayChatView
+    from moor_cli.gateway_chat_view import GatewayChatView
     query = getattr(args, "query", None) or getattr(args, "q", None)
     oneshot_prompt = getattr(args, "oneshot", None)
     if isinstance(oneshot_prompt, str):
@@ -191,7 +191,7 @@ async def run_gateway_chat(args, emitter=None):
                     if str(exc) != "not_found":
                         raise
                     raise GatewayClientError(
-                        f"No session found matching '{name}'. Use 'hermes sessions list' to see available "
+                        f"No session found matching '{name}'. Use 'moor sessions list' to see available "
                         "sessions, or pass -c <name> --create-if-missing to start a new session with that title.")
             check_resume_policy(args, snapshot)
         else:
@@ -226,7 +226,7 @@ async def run_gateway_chat(args, emitter=None):
         if not isinstance(oneshot_prompt, str):  # main's -z writes nothing to stderr on success
             print("Session: " + snapshot["stored_session_id"], file=sys.stderr, flush=True)
         if not oneshot:
-            from hermes_cli.terminal_breadcrumbs import write_breadcrumb
+            from moor_cli.terminal_breadcrumbs import write_breadcrumb
             await asyncio.to_thread(write_breadcrumb, snapshot["stored_session_id"])
         if emitter is not None:
             emitter.bind_session(snapshot["stored_session_id"])
@@ -313,10 +313,10 @@ def check_resume_policy(args, snapshot):
     elif "model" in requested and requested["model"] != frozen.get("model") and "model_requested" not in frozen:
         # The owner froze the resolved id of a `-m <alias>`; the same alias again is the same route.
         from gateway.session_local_route import resolve_launch_route
-        from hermes_cli.config_effective import load_user_config_effective
-        from hermes_constants import get_hermes_home
+        from moor_cli.config_effective import load_user_config_effective
+        from moor_constants import get_moor_home
         flags = {key: requested[key] for key in ("model", "provider", "base_url", "api_key") if key in requested}
-        requested["model"] = resolve_launch_route(flags, load_user_config_effective(get_hermes_home() / "config.yaml"))["model"]
+        requested["model"] = resolve_launch_route(flags, load_user_config_effective(get_moor_home() / "config.yaml"))["model"]
     # api_key is never durable; a repeated key is not a policy change.
     differs = [key for key, value in requested.items() if key != "api_key" and frozen.get(key) != value]
     if differs:
@@ -324,10 +324,10 @@ def check_resume_policy(args, snapshot):
 
 
 def _register_terminal_process() -> None:
-    """The chat client is still a terminal on this HERMES_HOME: record it in the process ledger
+    """The chat client is still a terminal on this MOOR_HOME: record it in the process ledger
     (purpose ``cli`` is never update-reapable) and warn once when another install shares the home."""
-    from hermes_cli.process_identity import register_self
-    from hermes_cli.shared_profile_warning import shared_profile_warning
+    from moor_cli.process_identity import register_self
+    from moor_cli.shared_profile_warning import shared_profile_warning
 
     register_self("cli")
     warning = shared_profile_warning()
@@ -341,7 +341,7 @@ def launch_from_args(args) -> int:
     if getattr(args, "output_format", "text") == "stream-json":
         # Built before validation/connection so any failed start still closes the protocol
         # (init + result) instead of exiting with an empty stdout.
-        from hermes_cli.stream_json import StreamJsonEmitter
+        from moor_cli.stream_json import StreamJsonEmitter
         emitter = StreamJsonEmitter(model=getattr(args, "model", None) or "")
 
     def failed(message, code):
@@ -354,10 +354,10 @@ def launch_from_args(args) -> int:
         validate_options(args)
         if getattr(args, "list_tools", False) or getattr(args, "list_toolsets", False):
             # A catalog listing needs no session and no gateway (main printed it and exited).
-            from hermes_cli.gateway_chat_listing import print_tool_listing
+            from moor_cli.gateway_chat_listing import print_tool_listing
             return print_tool_listing(args)
         _register_terminal_process()
-        from hermes_cli.gateway_chat_startup import ensure_launch_provider
+        from moor_cli.gateway_chat_startup import ensure_launch_provider
         if emitter is None:
             if not ensure_launch_provider(args):
                 return 0

@@ -101,17 +101,17 @@ function providerStatus(provider: ToolProvider, envState: Record<string, boolean
 
 /**
  * Whether a web provider row serves a capability right now. The managed
- * "Nous Subscription" row and the BYOK Firecrawl rows resolve to the same
- * backend name, so the server's `*_via_nous` flag decides which one is lit.
+ * "Moor Subscription" row and the BYOK Firecrawl rows resolve to the same
+ * backend name, so the server's `*_via_moor` flag decides which one is lit.
  */
-function capabilityServedBy(provider: ToolProvider, backend: null | string | undefined, viaNous?: boolean): boolean {
-  if (provider.managed_nous_feature) {
-    return Boolean(viaNous)
+function capabilityServedBy(provider: ToolProvider, backend: null | string | undefined, viaMoor?: boolean): boolean {
+  if (provider.managed_moor_feature) {
+    return Boolean(viaMoor)
   }
 
   // Rows sharing a backend name (cloud vs self-hosted Firecrawl) are told apart by the server's
   // is_active, which knows which one's credential is set.
-  return Boolean(provider.web_backend && backend === provider.web_backend && !viaNous && provider.is_active)
+  return Boolean(provider.web_backend && backend === provider.web_backend && !viaMoor && provider.is_active)
 }
 
 interface EnvVarFieldProps {
@@ -742,19 +742,19 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
     try {
       const result = await selectToolsetProvider(toolset, provider.name, capability, profile)
 
-      if (result.needs_nous_auth) {
+      if (result.needs_moor_auth) {
         notify({
           kind: 'warning',
           title: copy.nousAuthNeededTitle,
           message: copy.nousAuthNeededMessage(provider.name),
-          action: { label: copy.nousAuthSignIn, onClick: () => void signInToNousPortal() }
+          action: { label: copy.nousAuthSignIn, onClick: () => void signInToMoorPortal() }
         })
         await refresh()
 
         return
       }
 
-      // Refetch rather than mirror: whether the capability now rides the Nous
+      // Refetch rather than mirror: whether the capability now rides the Moor
       // Tool Gateway or the user's own key is resolved server-side (the
       // managed and BYOK Firecrawl rows share one web_backend).
       await refresh()
@@ -795,7 +795,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
   }
 
   // The gateway route is labelled with the managed row's own (server-provided) name.
-  const managedRowName = providers.find(p => p.managed_nous_feature)?.name
+  const managedRowName = providers.find(p => p.managed_moor_feature)?.name
 
   return (
     <div className="grid gap-2">
@@ -806,12 +806,12 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
         <div className="flex flex-wrap items-center gap-2 px-1">
           <Pill>
             {copy.webSearchActive(
-              (cfg.search_via_nous && managedRowName) || cfg.active_search_backend || copy.webCapabilityUnset
+              (cfg.search_via_moor && managedRowName) || cfg.active_search_backend || copy.webCapabilityUnset
             )}
           </Pill>
           <Pill>
             {copy.webExtractActive(
-              (cfg.extract_via_nous && managedRowName) || cfg.active_extract_backend || copy.webCapabilityUnset
+              (cfg.extract_via_moor && managedRowName) || cfg.active_extract_backend || copy.webCapabilityUnset
             )}
           </Pill>
         </div>
@@ -821,8 +821,8 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
         const isBackendActive = provider.is_active || cfg?.active_provider === provider.name
         const status = providerStatus(provider, envState)
         const webCaps = toolset === 'web' ? (provider.capabilities ?? []) : []
-        const isSearchBackend = capabilityServedBy(provider, cfg.active_search_backend, cfg.search_via_nous)
-        const isExtractBackend = capabilityServedBy(provider, cfg.active_extract_backend, cfg.extract_via_nous)
+        const isSearchBackend = capabilityServedBy(provider, cfg.active_search_backend, cfg.search_via_moor)
+        const isExtractBackend = capabilityServedBy(provider, cfg.active_extract_backend, cfg.extract_via_moor)
 
         return (
           <div className="overflow-hidden rounded-xl bg-background/60" key={provider.name}>
@@ -913,7 +913,7 @@ export function ToolsetConfigPanel({ toolset, onConfiguredChange, profile }: Too
                     )}
                   </div>
                 )}
-                {provider.requires_nous_auth && status === 'needs_auth' && (
+                {provider.requires_moor_auth && status === 'needs_auth' && (
                   <p className="text-[0.72rem] text-muted-foreground">{copy.nousIncluded}</p>
                 )}
                 {provider.env_vars.length === 0 ? (

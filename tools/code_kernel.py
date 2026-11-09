@@ -74,7 +74,7 @@ def run_cell(request, execution_count):
 '''
 
 KERNEL_RUNNER_SOURCE = f'''\
-"""Auto-generated Hermes session-kernel runner. One exec cell per request."""
+"""Auto-generated Moor session-kernel runner. One exec cell per request."""
 import contextlib
 import io
 import json
@@ -83,11 +83,11 @@ import sys
 import threading
 import traceback
 
-_SENTINEL = os.environ["HERMES_KERNEL_SENTINEL"]
+_SENTINEL = os.environ["MOOR_KERNEL_SENTINEL"]
 _CAPTURE_LIMIT = {_RUNNER_CAPTURE_BYTES}
-_SPILL_DIR = os.environ.get("HERMES_KERNEL_SPILL_DIR", "")
+_SPILL_DIR = os.environ.get("MOOR_KERNEL_SPILL_DIR", "")
 _SPILL_CAP = {5_000_000}
-_PARENT_PROCESS_HANDLE = os.environ.pop("HERMES_KERNEL_PARENT_PROCESS_HANDLE", "")
+_PARENT_PROCESS_HANDLE = os.environ.pop("MOOR_KERNEL_PARENT_PROCESS_HANDLE", "")
 
 
 def _start_parent_process_watchdog():
@@ -307,7 +307,7 @@ class SessionKernel:
             from tools.code_execution_tool import _kill_process_group
             _kill_process_group(self.proc, escalate=True)
         if self.proc is not None and not _IS_WINDOWS:
-            from hermes_cli.process_identity import release_process_group_once_empty
+            from moor_cli.process_identity import release_process_group_once_empty
             release_process_group_once_empty(self.proc.pid, proc=self.proc)
         sock, self.server_sock = self.server_sock, None
         try:
@@ -587,16 +587,16 @@ def _spawn(kernel: SessionKernel, *, child_python: str, child_cwd: str,
     # Full clipped stdout spills to the kernel's tmpdir so the agent can read_file the middle.
     child_env["MOOR_KERNEL_SPILL_DIR"] = kernel.tmpdir
     # Generated client reconnects after the RPC server's 300s idle timeout between cells.
-    child_env["HERMES_RPC_PERSISTENT"] = "1"
+    child_env["MOOR_RPC_PERSISTENT"] = "1"
     # Owner death: Windows inherits a SYNCHRONIZE handle to this process for the runner's watchdog.
     parent_handle, close_handle, startupinfo = _parent_process_handle(child_env) if _IS_WINDOWS else (None, None, None)
     # POSIX: spawn_owned makes the kernel lead its own group, which everything a cell spawns joins,
     # and hands that group to the owner-death supervisor: the whole group dies the moment this
     # process dies, by any cause. A kernel-only death pipe let a cell's subprocesses outlive the host.
-    from hermes_cli.process_identity import spawn_owned
+    from moor_cli.process_identity import spawn_owned
     try:
         kernel.proc = spawn_owned(
-            [child_python, os.path.join(kernel.tmpdir, "hermes_kernel_runner.py")], purpose="code-kernel",
+            [child_python, os.path.join(kernel.tmpdir, "moor_kernel_runner.py")], purpose="code-kernel",
             # Strict mode passes an empty cwd: the kernel's staging dir plays the per-call tmpdir's role.
             cwd=child_cwd or kernel.tmpdir, env=child_env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE,

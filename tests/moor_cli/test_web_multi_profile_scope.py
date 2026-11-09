@@ -82,7 +82,7 @@ def test_console_send_for_named_profile_does_not_write_process_env(two_homes, mo
     seen = {}
 
     def fake_send(args):
-        from hermes_cli import send_cmd
+        from moor_cli import send_cmd
         from gateway.config import _getenv
         send_cmd._load_moor_env()
         seen["loader_sees"] = _getenv("TELEGRAM_BOT_TOKEN")
@@ -110,9 +110,9 @@ def _native_ticket(home):
 def test_secondary_native_ticket_implicit_selector_expands_only_the_ticket_profiles_secrets(two_homes, selector):
     """R16: under a secondary-profile native ticket, a nested ``_config_profile_scope(None/''/current)``
     installed the LAUNCH profile's secret scope, so B's YAML expanded with A's credentials."""
-    from hermes_cli.config import load_config
-    from hermes_cli.dashboard_auth.native_http import native_profile_scope
-    from hermes_cli.web_server_profiles import _config_profile_scope
+    from moor_cli.config import load_config
+    from moor_cli.dashboard_auth.native_http import native_profile_scope
+    from moor_cli.web_server_profiles import _config_profile_scope
 
     _root, b = two_homes
     environ_before = dict(os.environ)
@@ -126,9 +126,9 @@ def test_secondary_native_ticket_implicit_selector_expands_only_the_ticket_profi
 def test_concurrent_launch_and_secondary_native_requests_keep_their_own_secrets(two_homes):
     import threading
 
-    from hermes_cli.config import load_config
-    from hermes_cli.dashboard_auth.native_http import native_profile_scope
-    from hermes_cli.web_server_profiles import _config_profile_scope
+    from moor_cli.config import load_config
+    from moor_cli.dashboard_auth.native_http import native_profile_scope
+    from moor_cli.web_server_profiles import _config_profile_scope
 
     root, b = two_homes
     barrier, seen = threading.Barrier(2, timeout=10), {}

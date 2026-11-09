@@ -6,14 +6,14 @@ import { AccentSwatch } from '@/components/ui/accent-swatch'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { useTheme } from '@/themes'
-import { accentsFor, CUSTOM_ACCENT_PREFIX, NOUS_ACCENT } from '@/themes/accents'
+import { accentsFor, CUSTOM_ACCENT_PREFIX, MOOR_ACCENT } from '@/themes/accents'
 
 import { CARD_ACTION_CLASS } from '../setup-beat/card-type'
 
 import { useLookPreview } from './look-preview'
 
 export interface AccentPickerCardProps {
-  /** Answers with a swatch id, `custom:#rrggbb`, or null for the theme's own accent (Nous blue); true once sent. */
+  /** Answers with a swatch id, `custom:#rrggbb`, or null for the theme's own accent (Moor blue); true once sent. */
   onContinue: (accent: null | string) => boolean
 }
 
@@ -29,7 +29,7 @@ export function AccentPickerCard({ onContinue }: AccentPickerCardProps) {
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center gap-2.5 p-1" role="group">
         {accentsFor(renderedMode === 'dark').map(swatch => {
-          const value = swatch.id === 'nous' ? null : swatch.id
+          const value = swatch.id === 'moor' ? null : swatch.id
 
           return (
             <AccentSwatch
@@ -43,7 +43,7 @@ export function AccentPickerCard({ onContinue }: AccentPickerCardProps) {
         })}
         <AccentSwatch
           active={custom !== null && staged?.value === `${CUSTOM_ACCENT_PREFIX}${custom}`}
-          hex={custom ?? NOUS_ACCENT}
+          hex={custom ?? MOOR_ACCENT}
           name={t.assistant.themePicker.customColor}
           onColorChange={hex => {
             const value = hex.toLowerCase()

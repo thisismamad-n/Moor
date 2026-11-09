@@ -102,7 +102,7 @@ async def test_stalled_input_closes_only_the_keepalive_socket(
 
 def test_chat_without_a_pty_bridge_says_what_to_install_as_on_main(pty_keepalive_harness, monkeypatch):
     """On a host whose PTY bridge cannot load, the dashboard's /chat tab prints main's message, which
-    says the rest of the dashboard works and where to install Hermes for chat, and closes 1011."""
+    says the rest of the dashboard works and where to install Moor for chat, and closes 1011."""
     from starlette.testclient import TestClient
     from starlette.websockets import WebSocketDisconnect
 
@@ -114,7 +114,7 @@ def test_chat_without_a_pty_bridge_says_what_to_install_as_on_main(pty_keepalive
             ws.receive_text()
 
     assert "Chat unavailable: the embedded terminal requires a POSIX PTY" in text
-    assert "Install Hermes inside WSL2 to use the dashboard's /chat tab" in text
+    assert "Install Moor inside WSL2 to use the dashboard's /chat tab" in text
     assert closed.value.code == 1011
     assert pty_keepalive_harness == []
 
@@ -125,8 +125,8 @@ async def test_a_takeover_during_input_leaves_the_chat_session_to_the_new_tab():
     waits on the PTY, that write is cancelled and the session stays alive for the new tab, which
     closes this one as superseded (4409), never as stalled input (1013). Only the attached tab's
     resize reaches the PTY."""
-    from hermes_cli.pty_session import WS_CLOSE_SUPERSEDED, PtySession
-    from hermes_cli.web_routers.chat_ws import _pump_keepalive_input
+    from moor_cli.pty_session import WS_CLOSE_SUPERSEDED, PtySession
+    from moor_cli.web_routers.chat_ws import _pump_keepalive_input
 
     entered, release = asyncio.Event(), asyncio.Event()
 
@@ -238,7 +238,7 @@ async def test_attach_token_reuses_default_chat_after_active_session_fallback(
 # --- #63553: pty_active_session_files must not grow without bound -----------
 
 def _pty_marker_dict():
-    from hermes_cli.web_server import _get_pty_active_session_files
+    from moor_cli.web_server import _get_pty_active_session_files
 
     return _get_pty_active_session_files(web_server.app)
 

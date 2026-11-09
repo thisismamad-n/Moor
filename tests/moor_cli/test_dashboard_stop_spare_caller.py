@@ -1,6 +1,6 @@
 """Root selection for ``dashboard --stop`` / update cleanup must spare the caller.
 
-The dashboard scan also selects the shell the ``--stop`` was typed into (``bash -c 'hermes
+The dashboard scan also selects the shell the ``--stop`` was typed into (``bash -c 'moor
 dashboard --stop'``: same entry token, same subcommand). Killing it takes down
 the invoking terminal; the historical fix for the hosted-TUI case is descendant hygiene
 (#113819), which is orthogonal to root selection.

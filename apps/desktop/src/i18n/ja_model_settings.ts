@@ -1,4 +1,4 @@
-import type { TranslationOverride } from '@hermes/shared/i18n'
+import type { TranslationOverride } from '@moor/shared/i18n'
 
 import { jaAuxTasks } from './ja_aux_tasks'
 import { jaDelegationRouting } from './ja_delegation_routing'

@@ -12,12 +12,12 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
-from hermes_cli.web_deps import late
-from hermes_cli.web_server_profiles import _hub_action_name, _installed_hub_identifiers
-from hermes_cli.web_models import (
+from moor_cli.web_deps import late
+from moor_cli.web_server_profiles import _hub_action_name, _installed_hub_identifiers
+from moor_cli.web_models import (
     SkillContentUpdate, SkillCreate, SkillInstallRequest, SkillLock, SkillToggle,
     SkillUninstallRequest, SkillsUpdateRequest)
-from hermes_cli.web_routers._common import (
+from moor_cli.web_routers._common import (
     _profile_scope, config_write_scope, http_failure, log as _log, require, scoped_to_thread,
     spawn_profile_action)
 
@@ -343,7 +343,7 @@ async def scan_skill_hub(identifier: str = "", profile: Optional[str] = None):
 @router.get("/api/skills")
 async def get_skills(profile: Optional[str] = None):
     from tools.skills_tool import find_all_skills
-    from hermes_cli.skills_config import get_disabled_skills
+    from moor_cli.skills_config import get_disabled_skills
     from tools.skill_usage import (
         _external_skill_names, _read_bundled_names, _read_hub_installed_names, activity_count, load_usage)
 
@@ -394,7 +394,7 @@ def _locked_index() -> tuple[set, dict]:
 
 @router.put("/api/skills/lock")
 async def lock_skill(body: SkillLock, profile: Optional[str] = None):
-    """Lock/unlock a skill against AGENT edits (same record as ``hermes curator lock``).
+    """Lock/unlock a skill against AGENT edits (same record as ``moor curator lock``).
     The user's own edits (this dashboard's editor, their editor) stay allowed."""
     from tools import skill_usage
     from tools.skill_manager_tool import _find_skill

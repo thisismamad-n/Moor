@@ -686,7 +686,7 @@ def _tts_schema_overrides() -> dict:
     the multiplexed gateway serves every profile from one process, so a path baked in at import
     would name the launch profile's home for everyone else (#95685)."""
     params = copy.deepcopy(TTS_SCHEMA["parameters"])
-    params["properties"]["output_path"]["description"] = _output_path_description(display_hermes_home())
+    params["properties"]["output_path"]["description"] = _output_path_description(display_moor_home())
     if not elevenlabs_voice_selection_active():
         return {"parameters": params}
     from tools.tts_elevenlabs_voices import FIND_VOICES_SCHEMA

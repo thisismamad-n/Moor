@@ -35,7 +35,7 @@ from agent.turn_failure_copy import (
 )
 from agent.turn_retry_state import TurnRetryState
 from agent.turn_recovery_codex import _is_codex_token_expired, _recover_stale_codex_reasoning
-from hermes_constants import display_hermes_home
+from moor_constants import display_moor_home
 from utils import base_url_host_matches
 
 logger = logging.getLogger("agent.conversation_loop")
@@ -401,9 +401,9 @@ def _print_anthropic_401_diagnostics(agent: Any, key: Any) -> None:
 def _refresh_credentials_after_401(
     agent: Any, api_error: Exception, _retry: TurnRetryState, status_code: Optional[int]
 ) -> bool:
-    """Per-provider one-shot credential refresh on 401 (codex/xai, vertex, nous, a profile's
+    """Per-provider one-shot credential refresh on 401 (codex/xai, vertex, moor, a profile's
     ``refresh_runtime_credentials``, anthropic), printing user-facing diagnostics when the
-    nous/anthropic refresh fails. Returns True when a refresh succeeded and the call should be retried."""
+    moor/anthropic refresh fails. Returns True when a refresh succeeded and the call should be retried."""
     from agent.conversation_loop import _credential_refresh_profile
 
     if status_code != 401:
@@ -432,7 +432,7 @@ def _refresh_credentials_after_401(
         if agent._try_refresh_moor_client_credentials(force=True):
             agent._buffer_vprint("🔐 Moor agent key refreshed after 401. Retrying request...")
             return True
-        _print_nous_401_diagnostics(agent, api_error)
+        _print_moor_401_diagnostics(agent, api_error)
     if not _retry.provider_auth_refresh_attempted and (profile := _credential_refresh_profile(agent)) is not None:
         _retry.provider_auth_refresh_attempted = True
         if agent._try_refresh_provider_runtime_credentials(reason="unauthorized"):
@@ -545,7 +545,7 @@ def _recover_format_errors(
 
 _WELCOME_ROUTE_HEAL_COPY = {
     "anon_on_paid_host": "Reconnected to the free model's own route.",
-    "named_on_welcome_host": "Reconnected to your Nous account's own route.",
+    "named_on_welcome_host": "Reconnected to your Moor account's own route.",
     "session_expired": "Renewed the connection to the free model.",
 }
 
@@ -558,7 +558,7 @@ def _recover_welcome_tier(agent: Any, classified: Any, _retry: TurnRetryState) -
     turn. ``anon_on_paid_host`` / ``named_on_welcome_host``: this process is pointed at the other
     identity's host (a stale route); re-read the credentials, which heals the URL, and retry. The
     refresh reports False when the store yields the same route, so a user-set
-    ``NOUS_INFERENCE_BASE_URL`` falls straight through to the terminal copy. ``session_expired``
+    ``MOOR_INFERENCE_BASE_URL`` falls straight through to the terminal copy. ``session_expired``
     (403 ``invalid jwt``): the same forced refresh re-exchanges the free credential.
 
     Reads the CLASSIFIER's context (``classified.error_context``): that is where
@@ -651,7 +651,7 @@ def recover_after_classification(
 ) -> tuple[bool, bool]:
     """One-shot recovery chain that runs AFTER ``classify_api_error`` and before the
     generic retry path. Order is load-bearing (each branch may ``return`` early):
-    welcome-tier repair → credit-limited 402 output-cap clamp → ``reasoning.context`` opt-out → Nous paid-entitlement refresh →
+    welcome-tier repair → credit-limited 402 output-cap clamp → ``reasoning.context`` opt-out → Moor paid-entitlement refresh →
     Codex stale-reasoning strip on 401 ``token_expired`` → credential-pool rotation → image shrink → multimodal-tool-content strip → corrupt-image
     strip → Anthropic OAuth 1M-beta disable → per-provider 401 credential refresh →
     format-recovery strips.
@@ -679,7 +679,7 @@ def recover_after_classification(
         classified.reason == FailoverReason.billing
         # A usage-window 402 is the plan's own limit: refreshing credentials cannot lift it.
         and not (getattr(classified, "error_context", None) or {}).get("usage_window")
-        and _is_nous_inference_route(
+        and _is_moor_inference_route(
             getattr(agent, "provider", "") or "", getattr(agent, "base_url", "") or ""
         )
         and not _retry.moor_paid_entitlement_refresh_attempted
@@ -880,7 +880,7 @@ def _print_nonretryable_auth_guidance(
     """Actionable guidance for a terminal auth / billing error."""
     if (getattr(classified, "error_context", None) or {}).get("usage_window"):
         return  # a plan limit's refusal line and limit panel are its guidance: no second copy, no portal fetch
-    from agent.conversation_loop import _print_billing_or_entitlement_guidance, _print_nous_entitlement_guidance
+    from agent.conversation_loop import _print_billing_or_entitlement_guidance, _print_moor_entitlement_guidance
 
     if classified.reason == FailoverReason.billing and _print_billing_or_entitlement_guidance(
         agent, capability="model access", provider=provider, base_url=str(base_url),
@@ -923,7 +923,7 @@ def _print_nonretryable_auth_guidance(
                     f"         Moor catalog model, or run `/model openrouter:{model}` to use OpenRouter.",
                 )
         return
-    from hermes_cli.auth_plugin_providers import plugin_refresh_hook
+    from moor_cli.auth_plugin_providers import plugin_refresh_hook
     if status_code == 401 and plugin_refresh_hook(str(provider or "")) is not None:
         # A plugin OAuth grant the pool could not refresh: the fix is a fresh sign-in, not a key.
         from agent.turn_failure_copy import oauth_relogin_command
@@ -987,10 +987,10 @@ def _stamp_free_tier(result: dict[str, Any], kind: str, message: str) -> dict[st
 
 
 def _welcome_outage_copy(agent: Any, base_url: Any, classified: Any) -> str:
-    """On the Nous free tier, a transport / server failure that outlived every retry reads as one
+    """On the Moor free tier, a transport / server failure that outlived every retry reads as one
     plain sentence (the free model is having trouble) rather than the technical summary. Empty
     for every other route and for rate limits / billing, which have their own copy."""
-    from hermes_cli.anon_auth import FREE_TIER_OUTAGE_COPY, on_free_model
+    from moor_cli.anon_auth import FREE_TIER_OUTAGE_COPY, on_free_model
     # Not ``unknown``: that is the classifier's catch-all for status-less local failures, which
     # are not the free model's trouble.
     if on_free_model(agent, base_url) and classified.reason in (
@@ -1054,7 +1054,7 @@ def nonretryable_client_error_result(
         )
     _welcome_hint = _welcome_tier_guidance(classified, model=model, in_chat=False)
     _prefix_suggestion = _missing_vendor_prefix_suggestion(api_error, provider, model)
-    from hermes_cli.left_core_migration import host_install_hint
+    from moor_cli.left_core_migration import host_install_hint
     if _moved_hint := host_install_hint(base_url):  # a host whose plugin left core: install it first
         _vlines(agent, f"   💡 {_moved_hint}")
     if _welcome_hint:
@@ -1418,7 +1418,7 @@ def interruptible_backoff_sleep(
             agent._touch_activity(f"{activity_label}, {int(sleep_end - time.time())}s remaining")
     # A long wait can outlive a short-lived credential (the free tier's JWT lives 15 minutes), and
     # the per-iteration pre-expiry adoption does not run between retries.
-    agent._adopt_nous_key_before_expiry()
+    agent._adopt_moor_key_before_expiry()
     return None
 
 
@@ -1458,7 +1458,7 @@ def compute_error_backoff(
         LIVE_RETRY_WAIT_CAP_S, RETRY_AFTER_CAP_S, adaptive_rate_limit_backoff, jittered_backoff,
         provider_retry_after_seconds,
     )
-    from hermes_cli.anon_auth import on_free_model
+    from moor_cli.anon_auth import on_free_model
 
     # Respect Retry-After on every retryable provider error, not just 429s. Retryable
     # 5xx responses (e.g. Cloudflare 520/524) also carry the header or a structured
@@ -1515,11 +1515,11 @@ def free_tier_cooldown_ends_turn(agent: Any, api_error: Exception, base_url: Any
     sits through. The free tier's pause is service-wide: a 600 s retry met a second 429 while its
     1069 s window ran, so the caller ends the attempt cycle now (fallback, or the reset time and
     the sign-in / model doors). Every other provider, and every unattended run (cron, messaging,
-    ``hermes chat -q``), waits out its ``Retry-After``: a paid bucket reopens on time, and
+    ``moor chat -q``), waits out its ``Retry-After``: a paid bucket reopens on time, and
     ``fallback.min_switch_reset_seconds`` relies on that wait."""
     from agent.retry_utils import LIVE_RETRY_WAIT_CAP_S, provider_retry_after_seconds
     from agent.session_source import is_attended
-    from hermes_cli.anon_auth import on_free_model
+    from moor_cli.anon_auth import on_free_model
     if not (on_free_model(agent, base_url) and is_attended(agent)):
         return False
     cooldown = provider_retry_after_seconds(api_error)

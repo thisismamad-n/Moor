@@ -224,9 +224,9 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | System prompt hints | `platform_hint` injected into LLM context |
 | Message chunking | `max_message_length` for smart splitting |
 | PII redaction | `pii_safe` flag |
-| `hermes status` | Lists plugin platforms alongside built-ins, one row each, using the gateway's own configured check |
-| `hermes gateway setup` | Plugin platforms appear in setup menu |
-| `hermes tools` / `hermes skills` | Plugin platforms in per-platform config |
+| `moor status` | Lists plugin platforms alongside built-ins, one row each, using the gateway's own configured check |
+| `moor gateway setup` | Plugin platforms appear in setup menu |
+| `moor tools` / `moor skills` | Plugin platforms in per-platform config |
 | Token lock (multi-profile) | Use `acquire_scoped_lock()` in your `connect()` |
 | Orphaned config warning | Descriptive log when plugin is missing |
 | Service-event authorization | `trusted_inbound=True` skips user allowlists/pairing (see below) |
@@ -269,7 +269,7 @@ def register(ctx):
 ```
 
 Feature-detect these fields with `dataclasses.fields(PlatformEntry)` as above so the plugin stays loadable on
-older Hermes cores that predate them.
+older Moor cores that predate them.
 
 ## Authorization fields for chat platforms
 
@@ -294,9 +294,9 @@ ctx.register_platform(**kwargs)
 
 ## Public helpers for platform plugins
 
-A platform adapter needs more of core than a tool plugin does. These names are public: `hermes plugins
+A platform adapter needs more of core than a tool plugin does. These names are public: `moor plugins
 validate` raises no private-import warning for them, and they keep their names and signatures across
-releases. Anything else under `gateway.*`, `tools.*` or `hermes_cli.*` is internal, and the validator
+releases. Anything else under `gateway.*`, `tools.*` or `moor_cli.*` is internal, and the validator
 lists each import of it.
 
 | Need | Import |
@@ -307,7 +307,7 @@ lists each import of it.
 | Own DM/group policy (`dm_policy` / `group_policy` / allowlists) | `from gateway.platforms.access_policy_mixin import OwnAccessPolicyMixin` |
 | Resolve an approval from a native button | `from tools.approval import resolve_gateway_approval` |
 | Native clarify buttons | `tools.clarify_gateway`: `get_pending(clarify_id)` (the pending entry or `None`; read `session_key`, `choices`, `multi_select`), `resolve_gateway_clarify(clarify_id, text)`, `mark_awaiting_text(clarify_id)`, `SKIPPED` |
-| `setup_fn` wizard steps | `hermes_cli.gateway_setup_wizard`: `print_setup_header(title)`, `confirm_reconfigure(label, *env_vars)`, `offer_home_channel(home_var, user_id, what)`, `save_env_values(**values)`, `prompt_csv(text, default)`; prompts from `hermes_cli.setup` (`prompt`, `prompt_choice`, `prompt_yes_no`); output from `hermes_cli.cli_output` (`print_info`, `print_success`, `print_warning`, `print_error`); `.env` access through `hermes_cli.config` (`save_env_value`, `get_env_value`) |
+| `setup_fn` wizard steps | `moor_cli.gateway_setup_wizard`: `print_setup_header(title)`, `confirm_reconfigure(label, *env_vars)`, `offer_home_channel(home_var, user_id, what)`, `save_env_values(**values)`, `prompt_csv(text, default)`; prompts from `moor_cli.setup` (`prompt`, `prompt_choice`, `prompt_yes_no`); output from `moor_cli.cli_output` (`print_info`, `print_success`, `print_warning`, `print_error`); `.env` access through `moor_cli.config` (`save_env_value`, `get_env_value`) |
 
 ```python
 from gateway.platforms.helpers import platform_http_client

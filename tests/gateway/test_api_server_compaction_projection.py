@@ -245,7 +245,7 @@ class TestMessagesEndpointProjection:
 
     @pytest.mark.asyncio
     async def test_messages_endpoint_honours_include_compacted(self, adapter, session_db, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         sid = session_db.create_session("compacted-history", "api_server")
         for i in range(1, 4):
             session_db.append_message(sid, "user", f"question {i}")
@@ -272,7 +272,7 @@ class TestMessagesEndpointProjection:
 
     @pytest.mark.asyncio
     async def test_include_compacted_keeps_compression_ancestors(self, adapter, session_db, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         session_db.create_session("rotated-parent", "api_server")
         session_db.append_message("rotated-parent", "user", "parent ask")
         session_db.append_message("rotated-parent", "assistant", "parent answer")

@@ -84,7 +84,7 @@ export function getPluginProfile(): string {
 /** Whether the bundle now running was loaded for a profile no longer selected. */
 function _fromOtherProfile(): boolean {
   const script = typeof document === "undefined" ? null : document.currentScript;
-  const owner = script?.getAttribute("data-hermes-profile");
+  const owner = script?.getAttribute("data-moor-profile");
   return owner != null && owner !== _profile;
 }
 

@@ -630,7 +630,7 @@ class TestUpdateCommandInstallMethodRefusal:
         assert f"Update with: steward-update --{method}" in result
         # No update attempt: nothing spawned, no pending marker written.
         mock_popen.assert_not_called()
-        assert not (hermes_home / ".update_pending.json").exists()
+        assert not (moor_home / ".update_pending.json").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -642,7 +642,7 @@ class TestDetachedUpdateExitCodePublication:
     """The detached wrapper never exposes an empty ``.update_exit_code`` to the 2 s watcher poll."""
 
     @pytest.mark.platforms("linux", "macos")
-    @pytest.mark.live_system_guard_bypass  # runs the wrapper around `sh -c 'exit 3'`, never hermes
+    @pytest.mark.live_system_guard_bypass  # runs the wrapper around `sh -c 'exit 3'`, never moor
     def test_bash_wrapper_never_exposes_an_empty_exit_code(self, tmp_path, monkeypatch):
         import subprocess
         from gateway.slash_commands import _spawn_detached_update

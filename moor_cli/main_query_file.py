@@ -1,6 +1,6 @@
 """``--query-file``: the single-query transport that never passes through a shell.
 
-Split out of ``hermes_cli/main.py``.
+Split out of ``moor_cli/main.py``.
 """
 
 import sys

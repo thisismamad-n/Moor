@@ -218,7 +218,7 @@ class PluginLedgerMixin:
 
     @staticmethod
     def _resolve_plugin_key(plugin: str | PluginManifest | LoadedPlugin) -> str:
-        from hermes_cli.plugins import LoadedPlugin
+        from moor_cli.plugins import LoadedPlugin
         if isinstance(plugin, LoadedPlugin):
             return manifest_key(plugin.manifest)
         return manifest_key(plugin) if isinstance(plugin, PluginManifest) else str(plugin)

@@ -5,8 +5,8 @@ import subprocess
 
 import pytest
 
-from hermes_cli import doctor
-from hermes_cli.doctor_state import check_legacy_desktop_checkout
+from moor_cli import doctor
+from moor_cli.doctor_state import check_legacy_desktop_checkout
 
 
 def _git(cwd, *args):

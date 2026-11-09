@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.plugin_validate import validate_plugin_dir
 from moor_cli.plugin_validate_desktop import desktop_surface_hits, is_desktop_surface
@@ -296,15 +296,15 @@ class TestDesktopSurface:
         from CSS text or ``closest()`` pass the refusal rules, so review gets a warning (listed plugins
         still need the bridge where the SDK has no verb). A comment naming them is not a use."""
         d = self._desktop_plugin(tmp_path, (
-            "// window.hermesDesktop.readDir and [data-slot=x] are what we avoid\n"
-            "const git = () => window.hermesDesktop?.git || null\n"
+            "// window.moorDesktop.readDir and [data-slot=x] are what we avoid\n"
+            "const git = () => window.moorDesktop?.git || null\n"
             "rules.push('[data-tree-tab=\"bots:pane\"]{display:none!important}')\n"
             "const root = el.closest('[data-tree-split]')\n"
         ))
         report = validate_plugin_dir(d)
         assert any(name == "desktop surface" and ok for name, ok, _ in report.checks)
         [warning] = [w for w in report.warnings if w.startswith("desktop surface review")]
-        assert "raw bridge window.hermesDesktop (desktop/plugin.js:2)" in warning
+        assert "raw bridge window.moorDesktop (desktop/plugin.js:2)" in warning
         assert "app markup selector (desktop/plugin.js:3)" in warning
         assert "app markup selector (desktop/plugin.js:4)" in warning
         assert ":1)" not in warning
@@ -430,7 +430,7 @@ class TestDesktopSurface:
         (d / "sidecar").mkdir()
         (d / "plugin.yaml").write_text(yaml.safe_dump(dict(BASE_MANIFEST, name="root-desk")), encoding="utf-8")
         (d / "plugin.js").write_text(
-            "import { definePlugin } from '@hermes/plugin-sdk'\n"
+            "import { definePlugin } from '@moor/plugin-sdk'\n"
             "document.querySelectorAll('[data-slot=\"dialog-overlay\"]').forEach(el => el.remove())\n",
             encoding="utf-8")
         (d / "helper.js").write_text("const s = document.createElement('script')\n", encoding="utf-8")
@@ -445,15 +445,15 @@ class TestDesktopSurface:
         failed = {name: detail for name, ok, detail in report.checks if not ok}
         assert "app DOM reach (plugin.js:2)" in failed["desktop surface"]
 
-        (d / "plugin.js").write_text("import { definePlugin } from '@hermes/plugin-sdk'\n", encoding="utf-8")
+        (d / "plugin.js").write_text("import { definePlugin } from '@moor/plugin-sdk'\n", encoding="utf-8")
         (d / "helper.js").unlink()
         (d / "desktop" / "plugin.js").unlink()
         report = validate_plugin_dir(d)
         assert ("desktop surface", True, "stays inside the plugin SDK surface") in report.checks
 
 
-def test_runtime_rebind_of_hermes_core_fails_admission(tmp_path):
-    """A plugin that replaces Hermes core in place fails ``no core override``: through a module
+def test_runtime_rebind_of_moor_core_fails_admission(tmp_path):
+    """A plugin that replaces Moor core in place fails ``no core override``: through a module
     import, a helper that ``setattr``s its parameter, a local helper returning
     ``import_module(...)`` under an alias, and a write into a core module's dict. Ordinary use of
     core (calling it, mutating its return values, its own ``tools`` package, tests) passes."""
@@ -467,14 +467,14 @@ def test_runtime_rebind_of_hermes_core_fails_admission(tmp_path):
         "    _wrap(run_agent.AIAgent, '_replace_primary_openai_client', print)\n"
         "    srv = gateway_server()\n"
         "    setattr(srv, 'handle_request', print)\n"
-        "    import hermes_cli.models_catalog_static as m\n"
+        "    import moor_cli.models_catalog_static as m\n"
         "    m._PROVIDER_MODELS['x'] = ['y']\n"
     ))
     (bad / "compat.py").write_text(
         "from importlib import import_module\ndef server():\n    return import_module('tui_gateway.server')\n",
         encoding="utf-8")
     good = _make_plugin(tmp_path, manifest=dict(BASE_MANIFEST, name="good"), init_py=(
-        "from hermes_cli.config import load_config\n"
+        "from moor_cli.config import load_config\n"
         "from .tools import helper\n"
         "class Box:\n"
         "    def set(self, v):\n"
@@ -492,7 +492,7 @@ def test_runtime_rebind_of_hermes_core_fails_admission(tmp_path):
         "from unittest import mock\nimport run_agent\nrun_agent.AIAgent.x = 1\nmock.patch('run_agent.AIAgent.y')\n",
         encoding="utf-8")
 
-    from hermes_cli.plugin_validate_core_override import core_override_findings
+    from moor_cli.plugin_validate_core_override import core_override_findings
 
     assert core_override_findings(bad) == [
         "run_agent.AIAgent.run_conversation (__init__.py:6)",
@@ -514,7 +514,7 @@ def test_core_override_through_a_method_patch_helper(tmp_path):
         "    Patches().bind(auxiliary_client, '_relay_sync_stream', print)\n"
     ))
 
-    from hermes_cli.plugin_validate_core_override import core_override_findings
+    from moor_cli.plugin_validate_core_override import core_override_findings
 
     assert core_override_findings(bad) == ["bind(auxiliary_client, ...) (__init__.py:6)"]
 
@@ -527,7 +527,7 @@ def test_install_deps_probe_imports_from_the_synced_environment(tmp_path: Path, 
 
     import pm
     from pm import environments
-    from hermes_cli.plugins_cmd_catalog import cmd_validate
+    from moor_cli.plugins_cmd_catalog import cmd_validate
 
     deps = tmp_path / "synced-site-packages"
     deps.mkdir()
@@ -580,9 +580,9 @@ def test_oauth_block_passes_and_a_token_url_in_code_is_only_a_warning(tmp_path):
     ({"authorize_url": "http://accounts.example.com/o/oauth2/auth"}, "authorize_url"),
     ({"authorize_url": "http://127.0.0.1:8080/auth"}, "must use https"),  # no loopback exception
     ({"token_url": "http://[::1]:8080/token"}, "must use https"),
-    ({"client_secret_env": "OPENROUTER_API_KEY"}, "Hermes uses itself"),  # would be POSTed to token_url
-    ({"client_id_env": "TELEGRAM_BOT_TOKEN"}, "Hermes uses itself"),
-    ({"client_secret_env": "MATRIX_PASSWORD"}, "Hermes uses itself"),  # platform secrets too
+    ({"client_secret_env": "OPENROUTER_API_KEY"}, "Moor uses itself"),  # would be POSTed to token_url
+    ({"client_id_env": "TELEGRAM_BOT_TOKEN"}, "Moor uses itself"),
+    ({"client_secret_env": "MATRIX_PASSWORD"}, "Moor uses itself"),  # platform secrets too
     ({"id": 123}, "id"),
     ({"authorize_url": "https://accounts.example.com/o/oauth2/auth#consent"}, "authorize_url"),
     ({"token_url": "https://[oauth2.example.com/token"}, "token_url"),

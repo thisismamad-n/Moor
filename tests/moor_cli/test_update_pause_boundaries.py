@@ -27,12 +27,12 @@ def _wait(path, process):
 def cell(tmp_path):
     # An unchanged copy owns its private checkout lock/root; never the live install's.
     root = tmp_path / "checkout"
-    (root / "hermes_cli").mkdir(parents=True)
-    shutil.copyfile(REPO / "hermes_cli/update_pause_record.py", root / "hermes_cli/update_pause_record.py")
+    (root / "moor_cli").mkdir(parents=True)
+    shutil.copyfile(REPO / "moor_cli/update_pause_record.py", root / "moor_cli/update_pause_record.py")
     home = tmp_path / "home"
-    (home / ".hermes").mkdir(parents=True)
+    (home / ".moor").mkdir(parents=True)
     env = {**os.environ, "HOME": str(home), "USERPROFILE": str(home),
-           "HERMES_HOME": str(home / ".hermes"), "PYTHONPATH": str(REPO),
+           "MOOR_HOME": str(home / ".moor"), "PYTHONPATH": str(REPO),
            "PYTHONDONTWRITEBYTECODE": "1"}
     children = []
 
@@ -42,7 +42,7 @@ def cell(tmp_path):
             import importlib.util, json, os, sys, time
             from pathlib import Path
             root = Path(sys.argv[1])
-            spec = importlib.util.spec_from_file_location("hermes_cli.update_pause_record", root / "hermes_cli/update_pause_record.py")
+            spec = importlib.util.spec_from_file_location("moor_cli.update_pause_record", root / "moor_cli/update_pause_record.py")
             r = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = r
             spec.loader.exec_module(r)
@@ -53,7 +53,7 @@ def cell(tmp_path):
         children.append(proc)
         return proc
 
-    yield tmp_path, home / ".hermes", launch
+    yield tmp_path, home / ".moor", launch
     for proc in children:
         if proc.poll() is None:
             proc.kill()
@@ -79,14 +79,14 @@ def test_consumption_checkpoints_debt_before_unlink_and_producer_death(cell, cla
     ''', base / "ready", base / "consume", base / "consumed")
     _wait(base / "ready", consumer)
     owner = launch('''
-        from hermes_cli import update_cmd_windows as w
+        from moor_cli import update_cmd_windows as w
         from types import SimpleNamespace
         pid = int(sys.argv[2])
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["MOOR_HOME"])
         token = r.record_pause({"resume_needed": True, "profiles": {"default": pid},
                                "identities": {str(pid): r.identity(pid)["ct"]}}, None, [])
         # Discovery and the gateway can spell the same profile path differently.
-        r.mark_stop_requested(token, [pid], {pid: home / ".." / ".hermes" / ".gateway-planned-stop.json"})
+        r.mark_stop_requested(token, [pid], {pid: home / ".." / ".moor" / ".gateway-planned-stop.json"})
         # The real callback is the first operation after marker publication. Hold it
         # before its checkpoint while another interpreter runs the actual consumer.
         def on_request(pid):
@@ -134,9 +134,9 @@ def test_failed_consumer_checkpoint_keeps_request_and_user_stop_is_not_update_de
     _, _, launch = cell
     result = _result(launch('''
         from gateway import status
-        from hermes_cli.update_cmd_windows import _write_update_planned_stop_marker
+        from moor_cli.update_cmd_windows import _write_update_planned_stop_marker
         pid = os.getpid()
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["MOOR_HOME"])
         path = home / ".gateway-planned-stop.json"
         token = r.record_pause({"resume_needed": True, "profiles": {"default": pid},
                                "identities": {str(pid): r.identity(pid)["ct"]}}, None, [])
@@ -178,9 +178,9 @@ def test_a_busy_pause_mutex_never_turns_a_planned_stop_into_an_unplanned_one(cel
     try:
         result = _result(launch('''
             from gateway import status
-            from hermes_cli.update_cmd_windows import _write_update_planned_stop_marker
+            from moor_cli.update_cmd_windows import _write_update_planned_stop_marker
             pid = os.getpid()
-            home = Path(os.environ["HERMES_HOME"])
+            home = Path(os.environ["MOOR_HOME"])
             assert _write_update_planned_stop_marker(home, pid)
             started = time.monotonic()
             try:
@@ -202,7 +202,7 @@ def test_recovery_only_accepts_markers_the_live_consumer_accepts(cell):
         from datetime import datetime, timedelta, timezone
         from gateway import status
         pid = os.getpid()
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["MOOR_HOME"])
         marker_path = home / ".gateway-planned-stop.json"
         token = {"profiles": {"default": pid}, "identities": {str(pid): r.identity(pid)["ct"]},
                  "stopper_pid": pid, "stop_requested": [str(pid)], "stop_markers": {str(pid): str(marker_path)}}

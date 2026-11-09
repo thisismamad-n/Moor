@@ -19,7 +19,7 @@ def skin_payload(config: dict) -> dict:
     """The ``skin.changed`` / ``gateway.ready`` skin for ``config``'s ``display.skin`` (``{}`` when the
     skin engine fails). Pure of server state: the shared owner calls it under the profile's scope."""
     try:
-        from hermes_cli.skin_engine import init_skin_from_config, get_active_skin
+        from moor_cli.skin_engine import init_skin_from_config, get_active_skin
         init_skin_from_config(config)
         skin = get_active_skin()
         # light/dark are paired palettes: the TUI prefers the block matching terminal polarity.
@@ -97,24 +97,24 @@ def _skin_home_for(profile_id) -> str | None:
     """The profile home a peer's skin follows, or None for the launch home (the ambient scope)."""
     with contextlib.suppress(Exception):
         home = Path(str(profile_id))
-        if home.is_absolute() and home.is_dir() and home.resolve() != Path(_hermes_home).resolve():
+        if home.is_absolute() and home.is_dir() and home.resolve() != Path(_moor_home).resolve():
             return str(home)
     return None
 
 
 def _under_home(home: str, fn):
-    token = set_hermes_home_override(home)
+    token = set_moor_home_override(home)
     try:
         return fn()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _note_skin_broadcast() -> None:
     """Sync the baseline after the /skin RPC emits so the watcher doesn't re-broadcast it."""
     global _last_skin_sig
     with contextlib.suppress(Exception):
-        if home := _skin_home_for(get_hermes_home_override()):
+        if home := _skin_home_for(get_moor_home_override()):
             _skin_sig_by_home[home] = _skin_sig()
         else:
             _last_skin_sig = _skin_sig()
@@ -225,8 +225,8 @@ def _session_db_content_sig(db_path: Path):
     conn = None
     try:
         import hashlib
-        from hermes_state import _connect_tracked_db
-        from hermes_state_holders import read_only_db_uri
+        from moor_state import _connect_tracked_db
+        from moor_state_holders import read_only_db_uri
 
         conn = _connect_tracked_db(read_only_db_uri(db_path), tracking_path=db_path,
                                    uri=True, timeout=0.05)
@@ -364,7 +364,7 @@ def _bot_relay_outbox_sig():
 def _skills_sig():
     """The skill roots' stat signature for every scope a session resolved commands in (each profile
     home and session repo, not only the launch one: ``agent.skill_commands.published_scopes_signature``):
-    a skill installed or removed from another terminal (``hermes skills install``, a dropped SKILL.md,
+    a skill installed or removed from another terminal (``moor skills install``, a dropped SKILL.md,
     nested under a category) moves it, and attached clients refetch ``commands.catalog`` from this
     gateway instead of rescanning disk."""
     from agent.skill_commands import published_scopes_signature

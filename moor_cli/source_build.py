@@ -44,7 +44,7 @@ def source_build_env(base_env: dict | None = None, *, explicit: bool = False, ve
     # scripts/build/electron-runtime.mjs copies it beside that module.
     vc_runtime = Path(sys.base_prefix) / "vcruntime140.dll"
     if vc_runtime.is_file():
-        env["HERMES_VC_RUNTIME"] = str(vc_runtime)
+        env["MOOR_VC_RUNTIME"] = str(vc_runtime)
     env.pop("ESBUILD_BINARY_PATH", None)
     npmrc = get_moor_home() / "npmrc"
     if npmrc.is_file():
@@ -59,7 +59,7 @@ def run_in_custody(project_root: Path, command: list, label: str, **kwargs):
     kill-on-close job), so the checkout is never handed to a contender while one of them still
     writes. Outside an update it is ``run_contained`` as is."""
     from pm.progress import run_contained
-    from hermes_cli.update_custody import contained_command
+    from moor_cli.update_custody import contained_command
 
     with contained_command(command, root=project_root) as (argv, custody):
         return run_contained(argv, label, **kwargs, **custody)
@@ -106,7 +106,7 @@ def build_source_tui(project_root: Path, *, env: dict) -> None:
 def build_source_web(project_root: Path, *, env: dict, icons: Path | None = None) -> None:
     # Bounded build (#63338): the Vite/Rolldown dashboard build saturates small
     # hosts; cap the V8 heap and the native bundler's rayon thread pool.
-    from hermes_cli.web_build_limits import apply_web_build_limits
+    from moor_cli.web_build_limits import apply_web_build_limits
 
     apply_web_build_limits(env)
     # Default-brand icons are committed; installs never render them.
@@ -155,8 +155,8 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
     """
     # Both current updates and historical takeover reach this in a fresh target
     # interpreter, never in the updater's pre-sync import graph.
-    from hermes_cli.main_install_repair import _install_configured_features_missing_deps
-    from hermes_cli.update_stage import publish_stage
+    from moor_cli.main_install_repair import _install_configured_features_missing_deps
+    from moor_cli.update_stage import publish_stage
 
     failures: list[tuple[str, BaseException]] = []
     publish_stage("Building the apps")
@@ -198,7 +198,7 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
                 failures.append(("desktop dependencies", failed[1]))
         desktop_reason = failures[-1][0] if failures else ""
         if desktop and (desktop_skipped or _headless_linux()):
-            print("  ⓘ If this host never runs the desktop app, `hermes uninstall --gui` removes it "
+            print("  ⓘ If this host never runs the desktop app, `moor uninstall --gui` removes it "
                   "and future updates stop building it.")
         if prepared:
             # An update that changed no TUI/web input reuses the receipted output, as the
@@ -213,7 +213,7 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
                     publish_stage("Building the TUI")
                     attempt("TUI build", lambda: build_source_tui(project_root, env=env))
             if "web" in frontends:
-                if source_product_current(project_root, "web", project_root / "hermes_cli/web_dist"):
+                if source_product_current(project_root, "web", project_root / "moor_cli/web_dist"):
                     print("  ✓ Web UI is up to date")
                 else:
                     publish_stage("Building the web UI")
@@ -238,9 +238,9 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
     except Exception as exc:  # health: allow BLE001 -- post-commit boundary: printed as ⚠, never fails the committed update; every later update/tail re-runs it
         print(f"  ⚠ Memory provider migration skipped: {exc}")
     # Same for a gateway platform / toolset that left core (Home Assistant): every home that used
-    # it gets its catalog plugin (hermes_cli/left_core_migration.py).
+    # it gets its catalog plugin (moor_cli/left_core_migration.py).
     try:
-        from hermes_cli.left_core_migration import migrate_all_homes as migrate_left_core
+        from moor_cli.left_core_migration import migrate_all_homes as migrate_left_core
 
         migrate_left_core()
     except Exception as exc:  # health: allow BLE001 -- post-commit boundary: printed as ⚠, never fails the committed update; every later update/tail re-runs it
@@ -252,11 +252,11 @@ def build_update_products(project_root: Path, *, desktop: bool) -> None:
 def _rebuild_served_webapp(project_root: Path, publish_stage) -> None:
     """The Webapp bundle (``apps/desktop/dist-webapp``), when a home sharing this install serves it
     (``webapp.enabled``): its gateway serves the bundle as built, so one older than the updated
-    backend would talk to it with an outdated contract. Built with the function ``hermes webapp``
+    backend would talk to it with an outdated contract. Built with the function ``moor webapp``
     uses, which reuses a current bundle. A failed build leaves the previous bundle on disk, marked
-    out of date: its gateways report the Webapp unavailable until ``hermes webapp`` rebuilds it."""
+    out of date: its gateways report the Webapp unavailable until ``moor webapp`` rebuilds it."""
     from gateway.webapp_listener import webapp_settings
-    from hermes_cli.webapp import mark_webapp_stale, prepare_webapp_renderer
+    from moor_cli.webapp import mark_webapp_stale, prepare_webapp_renderer
     from pm.plugins_state import dependency_homes
 
     if not any(webapp_settings(home).enabled for home in dependency_homes()):
@@ -267,15 +267,15 @@ def _rebuild_served_webapp(project_root: Path, publish_stage) -> None:
     except BaseException:
         try:
             if mark_webapp_stale(project_root):
-                print("  ⓘ The Webapp stays unavailable until `hermes webapp` rebuilds it.")
+                print("  ⓘ The Webapp stays unavailable until `moor webapp` rebuilds it.")
         except OSError as exc:
             print(f"  ⚠ Could not mark the Webapp out of date: {exc}")
         raise
 
 
 def _build_desktop_product(project_root: Path, env: dict, publish_stage) -> None:
-    from hermes_cli.desktop_build_reuse import packaged_desktop_reusable
-    from hermes_cli.main_desktop import (
+    from moor_cli.desktop_build_reuse import packaged_desktop_reusable
+    from moor_cli.main_desktop import (
         _packaged_desktop_current_for_head, _refresh_installed_desktop_apps, build_prepared_desktop)
 
     desktop_dir = project_root / "apps/desktop"
@@ -287,10 +287,10 @@ def _build_desktop_product(project_root: Path, env: dict, publish_stage) -> None
         publish_stage("Building the desktop app")
         # The desktop build mutates checkout-scoped node_modules and
         # apps/desktop/release; serialize it against a concurrent manual
-        # `hermes desktop` (#93940). The update path waits rather than exits:
+        # `moor desktop` (#93940). The update path waits rather than exits:
         # the in-flight build it queues behind produces the same fresh tree
         # this update needs.
-        from hermes_cli.desktop_build_lock import DesktopBuildLock
+        from moor_cli.desktop_build_lock import DesktopBuildLock
 
         build_lock = DesktopBuildLock(project_root)
         build_lock.acquire(wait=True)

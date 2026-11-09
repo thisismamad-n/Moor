@@ -421,8 +421,8 @@ class GoogleChatAdapter(BasePlatformAdapter):
         # Last inbound thread per space: DMs get a NEW thread per top-level message but users
         # see one conversation, so thread_id leaves the source (stable session key) and is cached here.
         self._last_inbound_thread: dict[str, str] = {}
-        from hermes_constants import get_hermes_home as _get_hermes_home
-        self._thread_count_store = _ThreadCountStore(_get_hermes_home() / "google_chat_thread_counts.json")
+        from moor_constants import get_moor_home as _get_moor_home
+        self._thread_count_store = _ThreadCountStore(_get_moor_home() / "google_chat_thread_counts.json")
         # In-flight typing-card creates per chat_id: reserved BEFORE the API call so
         # concurrent _keep_typing calls wait instead of duplicating cards.
         self._typing_card_inflight: dict[str, asyncio.Event] = {}
@@ -928,7 +928,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
         return await handle_setup_files_command(self, chat_id, thread_id, raw_text, sender_email)
 
     async def _build_message_event(self, msg: dict[str, Any], envelope: dict[str, Any]) -> Optional[MessageEvent]:
-        """Parse a Chat API message into a hermes MessageEvent."""
+        """Parse a Chat API message into a moor MessageEvent."""
         space = envelope.get("space") or msg.get("space") or {}
         space_name = space.get("name") or ""  # "spaces/XXX"
         space_type = (space.get("type") or space.get("spaceType") or "").upper()
@@ -1143,7 +1143,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
             return await super().send_clarify(chat_id, question, choices, clarify_id, session_key, metadata)
 
         def _button(text: str, choice: str) -> dict[str, Any]:
-            return {"text": text, "action": "hermes_clarify", "parameters": {"clarify_id": clarify_id, "choice": choice}}
+            return {"text": text, "action": "moor_clarify", "parameters": {"clarify_id": clarify_id, "choice": choice}}
         buttons: list[dict[str, Any]] = []
         for choice in choices:
             choice_text = str(choice).strip()
@@ -1775,7 +1775,7 @@ def register(ctx) -> None:
     """Plugin entry point: registers the ``google_chat`` adapter with the platform registry."""
     ctx.register_platform(
         name="google_chat",
-        dashboard_description="Connect Hermes to Google Chat via Cloud Pub/Sub.",
+        dashboard_description="Connect Moor to Google Chat via Cloud Pub/Sub.",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat",
         label="Google Chat",
         adapter_factory=lambda cfg: GoogleChatAdapter(cfg),

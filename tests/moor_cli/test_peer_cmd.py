@@ -79,20 +79,20 @@ class _ProfilePeer(BaseHTTPRequestHandler):
         pass
 
 
-_NOT_SERVED = {"error": {"message": "Profile 'hermes' exists on this host but this gateway does not serve it"}}
+_NOT_SERVED = {"error": {"message": "Profile 'moor' exists on this host but this gateway does not serve it"}}
 
 
 @pytest.mark.parametrize("served,probe_status,refusal,expected", [
-    ({"default", "hermes"}, 200, None, "hermes"),   # a real legacy 'hermes' profile keeps precedence
-    # An older peer's generic 404 also covers a real 'hermes' profile it parks or runs standalone:
+    ({"default", "moor"}, 200, None, "moor"),   # a real legacy 'moor' profile keeps precedence
+    # An older peer's generic 404 also covers a real 'moor' profile it parks or runs standalone:
     # ambiguous, so it is an error naming box/default, never a guessed delivery into the default.
     ({"default"}, 200, None, None),
-    ({"default", "hermes"}, 503, None, "hermes"),   # a transient failure is no verdict, so never reroute
+    ({"default", "moor"}, 503, None, "moor"),   # a transient failure is no verdict, so never reroute
     ({"default"}, 200, _NOT_SERVED, None),          # it has one but does not serve it: an error, not default
 ])
-def test_hermes_handle_reaches_the_profile_the_peer_serves(
+def test_moor_handle_reaches_the_profile_the_peer_serves(
         monkeypatch, capsys, served, probe_status, refusal, expected):
-    """``box/hermes`` names the peer's real 'hermes' profile when it has one; the client never
+    """``box/moor`` names the peer's real 'moor' profile when it has one; the client never
     reroutes it to /p/default on its own (an upgraded peer aliases the handle server-side); dm,
     status and stop all address the same mirror."""
     _ProfilePeer.served, _ProfilePeer.probe_status, _ProfilePeer.hits = served, probe_status, []
@@ -103,9 +103,9 @@ def test_hermes_handle_reaches_the_profile_the_peer_serves(
     monkeypatch.setattr(peer_cmd, "_peer_secret", lambda name: "secret-key-123456")
     try:
         replies = [
-            peer_cmd.cmd_peer(SimpleNamespace(peer_action="dm", target="box/hermes", message="hi", json=True)),
-            peer_cmd.cmd_peer(SimpleNamespace(peer_action="status", target="box/hermes", run_id="run_1", json=True)),
-            peer_cmd.cmd_peer(SimpleNamespace(peer_action="stop", target="box/hermes", run_id="run_1", json=True)),
+            peer_cmd.cmd_peer(SimpleNamespace(peer_action="dm", target="box/moor", message="hi", json=True)),
+            peer_cmd.cmd_peer(SimpleNamespace(peer_action="status", target="box/moor", run_id="run_1", json=True)),
+            peer_cmd.cmd_peer(SimpleNamespace(peer_action="stop", target="box/moor", run_id="run_1", json=True)),
         ]
     finally:
         server.shutdown()
@@ -114,8 +114,8 @@ def test_hermes_handle_reaches_the_profile_the_peer_serves(
     if expected is None:
         assert (replies, out) == ([1, 1, 1], [])
         # A generic 404 is ambiguous (names box/default); a distinct refusal is relayed as the peer said it.
-        assert ("Profile 'hermes' exists" if refusal else "box/default") in err
-        assert {hit.split("/")[2] for hit in _ProfilePeer.hits} == {"hermes"}
+        assert ("Profile 'moor' exists" if refusal else "box/default") in err
+        assert {hit.split("/")[2] for hit in _ProfilePeer.hits} == {"moor"}
         return
     assert replies == [0, 0, 0]
     assert [out[0]["reply"], out[1]["status"], out[2]["status"]] == [
@@ -123,12 +123,12 @@ def test_hermes_handle_reaches_the_profile_the_peer_serves(
     assert {hit.split("/")[2] for hit in _ProfilePeer.hits if not hit.endswith("/health")} == {expected}
 
 
-@pytest.mark.parametrize("target", ["box/Hermes", "box/HERMES"])
-def test_mixed_case_hermes_target_reaches_the_peers_real_hermes_profile(monkeypatch, capsys, target):
-    """Profile ids are lowercase, so ``box/Hermes`` is ``box/hermes``. A peer comparing prefixes
-    exactly (every peer before the case fix) answers ``/p/Hermes`` with its unknown-profile 404,
-    which the @hermes fallback read as "no hermes here" and rerouted the DM to the default."""
-    _ProfilePeer.served, _ProfilePeer.probe_status, _ProfilePeer.hits = {"default", "hermes"}, 200, []
+@pytest.mark.parametrize("target", ["box/Moor", "box/MOOR"])
+def test_mixed_case_moor_target_reaches_the_peers_real_moor_profile(monkeypatch, capsys, target):
+    """Profile ids are lowercase, so ``box/Moor`` is ``box/moor``. A peer comparing prefixes
+    exactly (every peer before the case fix) answers ``/p/Moor`` with its unknown-profile 404,
+    which the @moor fallback read as "no moor here" and rerouted the DM to the default."""
+    _ProfilePeer.served, _ProfilePeer.probe_status, _ProfilePeer.hits = {"default", "moor"}, 200, []
     _ProfilePeer.refusal = {"error": "Unknown or unconfigured profile"}
     server = HTTPServer(("127.0.0.1", 0), _ProfilePeer)
     threading.Thread(target=server.serve_forever, daemon=True).start()
@@ -138,7 +138,7 @@ def test_mixed_case_hermes_target_reaches_the_peers_real_hermes_profile(monkeypa
         rc = peer_cmd.cmd_peer(SimpleNamespace(peer_action="dm", target=target, message="hi", json=True))
     finally:
         server.shutdown()
-    assert (rc, json.loads(capsys.readouterr().out)["reply"]) == (0, "from hermes")
+    assert (rc, json.loads(capsys.readouterr().out)["reply"]) == (0, "from moor")
 
 
 # ── registry round-trip (isolated config) ────────────────────────────────────

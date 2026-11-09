@@ -7,7 +7,7 @@ from __future__ import annotations
 # Only as ``python -m``: tests import this module, and the bootstrap's TMPDIR/scratch exports
 # must not fire in a library importer.
 if __name__ == "__main__":
-    import hermes_bootstrap
+    import moor_bootstrap
 
 import argparse
 import concurrent.futures
@@ -24,7 +24,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, Collection
 
-from hermes_cli.config_backend import ConfigBackendUnavailable
+from moor_cli.config_backend import ConfigBackendUnavailable
 from tui_gateway.host_supervisor import MUTATOR_ROUTE_TABLE, _build_sha
 
 
@@ -109,7 +109,7 @@ class ComputeHost:
             from tools.environments.base import kill_live_foreground_processes
             kill_live_foreground_processes()
         # ...and the opt-in shared-metrics rows that atexit hook would have written (bounded).
-        from hermes_cli.observability.shared_metrics_process import flush_before_hard_exit
+        from moor_cli.observability.shared_metrics_process import flush_before_hard_exit
         flush_before_hard_exit()
 
     def shutdown(self, *, reason: str = "shutdown", wait: float = 10.0) -> None:

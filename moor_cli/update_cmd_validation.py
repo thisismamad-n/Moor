@@ -37,7 +37,7 @@ def _critical_module_import_failures(
         # A missing *third-party* module means deps aren't installed, not a skewed checkout;
         # only our own packages count. Roots come from moor_constants so the user hint can't drift.
         "        missing = (getattr(exc, 'name', '') or '').split('.')[0]\n"
-        f"        if missing in {tuple(sorted(FIRST_PARTY_MODULE_ROOTS))!r} or missing.startswith('hermes_') or {report_runtime_errors!r}:\n"
+        f"        if missing in {tuple(sorted(FIRST_PARTY_MODULE_ROOTS))!r} or missing.startswith('moor_') or {report_runtime_errors!r}:\n"
         "            failures.append((name, type(exc).__name__, str(exc)))\n"
         "    except ImportError as exc:\n"
         "        failures.append((name, type(exc).__name__, str(exc)))\n"

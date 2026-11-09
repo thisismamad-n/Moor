@@ -203,7 +203,7 @@ class TestMessageEdited:
         a.set_platform_event_handler(handler)
         a._thread_id_and_chat_for_channel = MagicMock()
 
-        from hermes_cli import lifecycle
+        from moor_cli import lifecycle
         orig = lifecycle.has_hook
         lifecycle.has_hook = lambda _n: False
         try:
@@ -354,7 +354,7 @@ class TestRunnerBoundaryIntegration:
         a = _adapter()
         a.set_platform_event_handler(runner._handle_gateway_platform_event)
 
-        from hermes_cli import lifecycle
+        from moor_cli import lifecycle
         orig_invoke = lifecycle.invoke_hook
         lifecycle.invoke_hook = invoked
         try:
@@ -373,7 +373,7 @@ class TestRunnerBoundaryIntegration:
         a = _adapter()
         a.set_platform_event_handler(runner._handle_gateway_platform_event)
 
-        from hermes_cli import lifecycle
+        from moor_cli import lifecycle
         orig_invoke = lifecycle.invoke_hook
         lifecycle.invoke_hook = invoked
         try:

@@ -20,7 +20,7 @@ from collections import namedtuple
 from functools import partial
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 from agent.image_eviction_policy import image_dimensions_from_bytes
 from tools.computer_use.backend import ActionResult, CaptureResult, ComputerUseBackend, UIElement
@@ -347,7 +347,7 @@ def handle_computer_use(args: dict[str, Any], **kwargs) -> Any:
         backend = call.enter_context(_backend_for_call(session_id))
     except Exception as e:
         from plugins.computer_use import DEFAULT_BACKEND, configured_backend_name
-        hint = ({"hint": "If the cua-driver binary is missing, run `hermes computer-use install`. If a Python "
+        hint = ({"hint": "If the cua-driver binary is missing, run `moor computer-use install`. If a Python "
                          "dependency is missing, the error above shows the exact install command."}
                 if configured_backend_name() == DEFAULT_BACKEND else {})
         return json.dumps({"error": f"computer_use backend unavailable: {e}", **hint})
@@ -764,15 +764,15 @@ def _maybe_follow_capture(backend: ComputerUseBackend, res: ActionResult, do_cap
 
 # ── Cache files (screenshots, element spills, vision temps) ─────────────────
 def _secure_dir_policy(cache_dir) -> None:
-    """Create/reconcile a Hermes media-cache dir owner-only (0700), except managed.
+    """Create/reconcile a Moor media-cache dir owner-only (0700), except managed.
 
     A capture is as sensitive as the screen it came from — an open password
     manager, a private chat, a bank tab. The umask-derived 0755 these dirs
     used to get made every local account able to list (and read) those
-    frames whenever ``HERMES_HOME`` itself is traversable, which is exactly
-    what the documented ``HERMES_HOME_MODE=0701`` web-server escape hatch
-    arranges. Delegates to the same house policy as every Hermes secret dir —
-    ``hermes_cli.config._secure_dir`` — with the mode passed to ``mkdir`` so
+    frames whenever ``MOOR_HOME`` itself is traversable, which is exactly
+    what the documented ``MOOR_HOME_MODE=0701`` web-server escape hatch
+    arranges. Delegates to the same house policy as every Moor secret dir —
+    ``moor_cli.config._secure_dir`` — with the mode passed to ``mkdir`` so
     there is no window between mkdir and chmod; managed/NixOS installs keep
     their group-share design (the mode is left to the configured umask/setgid
     because these lazily-created dirs are not covered by the module's
@@ -781,7 +781,7 @@ def _secure_dir_policy(cache_dir) -> None:
     try:
         managed = False
         try:
-            from hermes_cli.config import is_managed
+            from moor_cli.config import is_managed
 
             managed = bool(is_managed())
         except Exception:  # pragma: no cover - defensive
@@ -791,7 +791,7 @@ def _secure_dir_policy(cache_dir) -> None:
             return
         make_user_dir(cache_dir, parents=True, exist_ok=True, mode=0o700)
         try:
-            from hermes_cli.config import _secure_dir
+            from moor_cli.config import _secure_dir
 
             _secure_dir(cache_dir)
         except Exception as exc:  # pragma: no cover - defensive
@@ -822,11 +822,11 @@ def _write_private_bytes(path, data: bytes) -> None:
 
 
 def _cache_file(subdir: str, legacy: str, name: str, pattern: str = "", cap: int = 0):
-    """Path for a new file under ``$HERMES_HOME/<subdir>`` (dir created owner-only, per #77579).
+    """Path for a new file under ``$MOOR_HOME/<subdir>`` (dir created owner-only, per #77579).
     With ``pattern``/``cap``, first unlinks the oldest matching files so at most ``cap - 1`` remain
     (best-effort)."""
-    from hermes_constants import get_hermes_dir  # lazy so tests can patch get_hermes_dir
-    cache_dir = get_hermes_dir(subdir, legacy)
+    from moor_constants import get_moor_dir  # lazy so tests can patch get_moor_dir
+    cache_dir = get_moor_dir(subdir, legacy)
     _secure_dir_policy(cache_dir)
     with contextlib.suppress(Exception):
         files = sorted(cache_dir.glob(pattern), key=lambda p: p.stat().st_mtime) if pattern else []
@@ -896,7 +896,7 @@ def _should_route_through_aux_vision() -> bool:
     stage = "import"
     try:
         from agent.auxiliary_client import _read_main_model, _read_main_provider
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         from tools.vision_tools import _native_tool_result_images
         stage = "decision"
         provider, model = _read_main_provider() or "", _read_main_model() or ""

@@ -310,7 +310,7 @@ class TestGenerate:
         cap, and a path the credential-read guard denies (before its existence is probed)."""
         from plugins.image_gen import krea
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         monkeypatch.setattr(krea, "_MAX_LOCAL_REFERENCE_BYTES", 10)
         for name in ("a.png", "b.png"):
             (tmp_path / name).write_bytes(b"\x89PNG\r\n")
@@ -808,7 +808,7 @@ class TestKrea3:
         import plugins.image_gen.krea as krea_mod
 
         monkeypatch.setenv("KREA_IMAGE_MODEL", "krea-2-large")
-        for provider, gateway in (("nous", _managed_cfg()), ("krea", None)):
+        for provider, gateway in (("moor", _managed_cfg()), ("krea", None)):
             monkeypatch.setattr(krea_mod, "_load_krea_config", lambda p=provider: {"provider": p, "model": "krea-3"})
             monkeypatch.setattr(krea_mod, "_resolve_managed_krea_gateway", lambda g=gateway: g)
             assert krea_mod.KreaImageGenProvider().capabilities()["creative_controls"] == ["thinking", "resolution"]

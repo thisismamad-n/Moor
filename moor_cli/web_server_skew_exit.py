@@ -1,7 +1,7 @@
-"""Code-skew retirement for Desktop-owned ``hermes serve --isolated`` backends reached over SSH.
+"""Code-skew retirement for Desktop-owned ``moor serve --isolated`` backends reached over SSH.
 
 Such a backend belongs to a Desktop on another machine: the host's updater never restarts it (only
-the remote client holds its token and owner nonce), so after ``hermes update`` it keeps serving the
+the remote client holds its token and owner nonce), so after ``moor update`` it keeps serving the
 code it imported at startup against a tree that has moved on, and lazily imports new modules into
 an old process. The idle watchdog (``web_server_idle_exit``) only fires once every client has left,
 which a connected Desktop never does.
@@ -38,7 +38,7 @@ def should_retire_for_skew(*, skew: Skew, update_in_progress: bool) -> bool:
 
 def _update_in_progress() -> bool:
     try:
-        from hermes_cli.update_lock import update_in_progress
+        from moor_cli.update_lock import update_in_progress
 
         return update_in_progress()
     except Exception:
@@ -51,7 +51,7 @@ def _run_retirement_watchdog(server, *, observe: Callable[[], Optional[str]], fe
     reason while retirement is warranted (else None); after ``_CONFIRMATIONS`` consecutive reasons
     the backend exits only through the retirement fence (proven idle, admission closed first)."""
     if fence is None:
-        from hermes_cli.backend_retirement import retirement
+        from moor_cli.backend_retirement import retirement
 
         fence = retirement
 

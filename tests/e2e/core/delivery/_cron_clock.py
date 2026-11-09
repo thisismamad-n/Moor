@@ -244,7 +244,7 @@ def install(clock: VirtualClock, control: Control, setattr_fn=setattr) -> None:
     from cron import executions
     from cron import jobs
     from cron import scheduler
-    import hermes_time
+    import moor_time
     from tools import send_message_tool
 
     setattr_fn(moor_time, "datetime", _virtual_datetime_class(clock))
@@ -269,7 +269,7 @@ def install(clock: VirtualClock, control: Control, setattr_fn=setattr) -> None:
     # Durability is not under test (SIGKILL keeps the page cache); per-write fsync of
     # jobs.json/markers dominates wall time at virtual cadence. Atomic renames stay real.
     setattr_fn(os, "fsync", lambda _fd: None)
-    from hermes_cli import sqlite_util
+    from moor_cli import sqlite_util
 
     real_open_db = sqlite_util.open_db
 

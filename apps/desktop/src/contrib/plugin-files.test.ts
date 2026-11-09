@@ -16,12 +16,12 @@ const door = {
 }
 
 beforeEach(() => {
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = { pluginFiles: door }
+  ;(window as unknown as { moorDesktop: unknown }).moorDesktop = { pluginFiles: door }
 })
 
 afterEach(() => {
   vi.clearAllMocks()
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
 })
 
 describe('ctx.files', () => {
@@ -47,7 +47,7 @@ describe('ctx.files', () => {
   })
 
   it('answers unavailable on a shell without the door instead of throwing', async () => {
-    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
     const files = createPluginContext('plexus').files
 
     expect(await files.requestFolder()).toMatchObject({ ok: false, error: 'unavailable' })

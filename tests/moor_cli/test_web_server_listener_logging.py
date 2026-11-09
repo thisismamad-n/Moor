@@ -1,4 +1,4 @@
-"""Building a listener's ``uvicorn.Config`` must leave Hermes's own file logging alone.
+"""Building a listener's ``uvicorn.Config`` must leave Moor's own file logging alone.
 
 uvicorn's default ``log_config`` runs ``logging.config.dictConfig``, which calls
 ``logging.shutdown()`` on every live handler. A multiplexed gateway installs its profile log
@@ -11,10 +11,10 @@ import logging
 
 import pytest
 
-import hermes_cli.web_server as ws_mod
-import hermes_logging
-from hermes_cli.web_server_lifecycle import build_listener_server
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+import moor_cli.web_server as ws_mod
+import moor_logging
+from moor_cli.web_server_lifecycle import build_listener_server
+from moor_constants import reset_moor_home_override, set_moor_home_override
 
 _UVICORN_LOGGERS = ("uvicorn", "uvicorn.error", "uvicorn.access", "uvicorn.asgi")
 
@@ -26,10 +26,10 @@ def _isolated_logging():
     saved_root_level = root.level
     saved = {name: (lg.level, lg.propagate, list(lg.handlers))
              for name in _UVICORN_LOGGERS for lg in (logging.getLogger(name),)}
-    hermes_logging._reset_queued_handlers()
+    moor_logging._reset_queued_handlers()
     yield
-    hermes_logging._reset_queued_handlers()
-    hermes_logging._logging_initialized = False
+    moor_logging._reset_queued_handlers()
+    moor_logging._logging_initialized = False
     root.setLevel(saved_root_level)
     for name, (level, propagate, handlers) in saved.items():
         logger = logging.getLogger(name)
@@ -56,18 +56,18 @@ def test_listener_config_keeps_every_profile_log_file_writing(tmp_path, monkeypa
     beta = root / "profiles" / "beta"
     beta.mkdir(parents=True)
     (beta / "config.yaml").write_text("{}", encoding="utf-8")
-    hermes_logging.setup_logging(hermes_home=root, mode="gateway", force=True)
-    assert hermes_logging.enable_profile_log_routing([root, beta])
+    moor_logging.setup_logging(moor_home=root, mode="gateway", force=True)
+    assert moor_logging.enable_profile_log_routing([root, beta])
     logger = logging.getLogger("gateway.listener_logging")
 
     def log_in_every_home(marker):
         for home in (root, beta):
-            token = set_hermes_home_override(str(home))
+            token = set_moor_home_override(str(home))
             try:
                 logger.warning(marker)
             finally:
-                reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+                reset_moor_home_override(token)
+        moor_logging.flush_log_queue()
 
     log_in_every_home("before-listener")
     build(monkeypatch)
@@ -79,24 +79,24 @@ def test_listener_config_keeps_every_profile_log_file_writing(tmp_path, monkeypa
             assert "after-listener" in text, f"building the listener silenced {home / 'logs' / name}"
 
 
-def test_listener_config_keeps_uvicorn_on_the_console_and_out_of_the_hermes_logs(tmp_path, monkeypatch, capsys):
+def test_listener_config_keeps_uvicorn_on_the_console_and_out_of_the_moor_logs(tmp_path, monkeypatch, capsys):
     """Without uvicorn's ``dictConfig`` its loggers still print where they did: ``uvicorn.error``
     to stderr, access lines nowhere at ``log_level="warning"``, neither into agent.log."""
     root = tmp_path / "root"
-    hermes_logging.setup_logging(hermes_home=root, mode="gateway", force=True)
+    moor_logging.setup_logging(moor_home=root, mode="gateway", force=True)
     _gateway_listener(monkeypatch)
     _dashboard_listener(monkeypatch)  # a second listener in the process adds no second console handler
 
     logging.getLogger("uvicorn.error").warning("uvicorn-console-warning")
     logging.getLogger("uvicorn.access").info(
         '%s - "%s %s HTTP/%s" %d', "127.0.0.1:50000", "GET", "/access-line", "1.1", 200)
-    logging.getLogger("gateway.listener_logging").warning("hermes-file-warning")
-    hermes_logging.flush_log_queue()
+    logging.getLogger("gateway.listener_logging").warning("moor-file-warning")
+    moor_logging.flush_log_queue()
 
     out, err = capsys.readouterr()
     assert logging.getLogger("uvicorn").level == logging.INFO  # LOGGING_CONFIG's, not the root's
     assert err.count("uvicorn-console-warning") == 1
     assert "/access-line" not in out + err
     agent_log = (root / "logs" / "agent.log").read_text(encoding="utf-8-sig")
-    assert "hermes-file-warning" in agent_log
+    assert "moor-file-warning" in agent_log
     assert "uvicorn-console-warning" not in agent_log and "/access-line" not in agent_log

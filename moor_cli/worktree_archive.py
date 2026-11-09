@@ -1,4 +1,4 @@
-"""Restorable snapshots of git worktrees: ``refs/hermes/archive/<tree>``.
+"""Restorable snapshots of git worktrees: ``refs/moor/archive/<tree>``.
 
 A snapshot is two commits built with a TEMPORARY index (the tree's real index and working files
 are only read): ``I`` = the staged state (tree of a copy of the real index, parent ``HEAD``) and
@@ -33,11 +33,11 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-ARCHIVE_PREFIX = "refs/hermes/archive/"
-_SUBJECT = "hermes worktree archive: "
+ARCHIVE_PREFIX = "refs/moor/archive/"
+_SUBJECT = "moor worktree archive: "
 _IDENTITY = {
-    "GIT_AUTHOR_NAME": "Hermes worktree archive", "GIT_AUTHOR_EMAIL": "hermes-archive@localhost",
-    "GIT_COMMITTER_NAME": "Hermes worktree archive", "GIT_COMMITTER_EMAIL": "hermes-archive@localhost",
+    "GIT_AUTHOR_NAME": "Moor worktree archive", "GIT_AUTHOR_EMAIL": "moor-archive@localhost",
+    "GIT_COMMITTER_NAME": "Moor worktree archive", "GIT_COMMITTER_EMAIL": "moor-archive@localhost",
 }
 # Raw bytes in, raw bytes out: no line-ending conversion on either side of the round trip.
 _RAW_CONFIG = (("core.autocrlf", "false"), ("core.safecrlf", "false"), ("core.eol", "lf"))
@@ -58,7 +58,7 @@ class Archive:
 
 
 def _env(cwd, index: Optional[str] = None) -> dict:
-    from hermes_cli._subprocess_compat import noninteractive_repo_git_env
+    from moor_cli._subprocess_compat import noninteractive_repo_git_env
     env = noninteractive_repo_git_env(cwd)
     if env is None:
         raise ArchiveError("git filter discovery failed")
@@ -219,7 +219,7 @@ def archive_preflight(wt_path, max_untracked_mb: float = 50) -> Optional[tuple[s
     """``(keep-action, reason)`` when archiving and removing *wt_path* would lose something
     (``worktree_retention.removal_blocker``: submodule, embedded repository, per-worktree ref,
     an untracked file over the size cap), else None. Read-only."""
-    from hermes_cli.worktree_retention import KEEP_UNARCHIVABLE, removal_blocker
+    from moor_cli.worktree_retention import KEEP_UNARCHIVABLE, removal_blocker
     try:
         wt = Path(wt_path)
         skipped = _split_oversized(wt, _untracked(wt, _env(wt)), max_untracked_mb)
@@ -248,7 +248,7 @@ def _create_ref(repo_root: str, name: str, sha: str, env) -> str:
     stamp = time.strftime("%Y%m%dT%H%M%S")
     for ref in (base, f"{base}--{stamp}", *(f"{base}--{stamp}-{i}" for i in range(2, 50))):
         # Empty old value = create only: two racing sweeps never overwrite each other's archive.
-        if _run(["update-ref", "-m", "hermes worktree archive", ref, sha, ""], repo_root, env).returncode == 0:
+        if _run(["update-ref", "-m", "moor worktree archive", ref, sha, ""], repo_root, env).returncode == 0:
             return ref
     raise ArchiveError(f"could not create an archive ref for {name}")
 
@@ -273,7 +273,7 @@ def snapshot_worktree(repo_root: str, wt_path, *, reason: str, max_untracked_mb:
         raise ArchiveError(f"untracked embedded repository {embedded[0].rstrip('/')} cannot be archived")
     skipped = _split_oversized(wt, untracked, max_untracked_mb)
 
-    token = f"hermes-archive-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+    token = f"moor-archive-{os.getpid()}-{uuid.uuid4().hex[:8]}"
     tmp_index, pathspec = git_dir / f"{token}.index", git_dir / f"{token}.pathspec"
     try:
         tenv = _env(wt, index=str(tmp_index))
@@ -409,7 +409,7 @@ def restore_archive(repo_root: str, name: str, target=None) -> dict:
     _write_raw(dest, wenv)  # checkout-index still converted per info/attributes
     _ok(["read-tree", f"{index_commit}^{{tree}}"], dest, wenv)
     _run(["update-index", "-q", "--refresh"], dest, wenv)
-    from hermes_cli.worktree_registry import record_worktree_repo
+    from moor_cli.worktree_registry import record_worktree_repo
     record_worktree_repo(repo_root)
     return {"path": str(dest), "branch": meta.get("branch"), "detached": detached, "head": head,
             "ref": arc.ref, "skipped_untracked": meta.get("skipped_untracked") or []}

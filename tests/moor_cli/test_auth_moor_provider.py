@@ -85,7 +85,7 @@ class TestResolveVerifyFallback:
 
 
 class TestDefaultVerifyAfterAnInstallRotation:
-    """The Nous credential exchange can be the first TLS client a long-lived gateway builds
+    """The Moor credential exchange can be the first TLS client a long-lived gateway builds
     after the package manager replaced the environment certifi was imported from (#137255).
 
     It must never hand httpx a bundle path that no longer exists.
@@ -95,9 +95,9 @@ class TestDefaultVerifyAfterAnInstallRotation:
     def test_credential_verify_re_derives_the_rotated_bundle(self, tmp_path, monkeypatch):
         import ssl
 
-        from hermes_cli.auth import _resolve_verify
+        from moor_cli.auth import _resolve_verify
 
-        for var in ("HERMES_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"):
+        for var in ("MOOR_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"):
             monkeypatch.delenv(var, raising=False)
         from tests.agent.test_ssl_verify import _rotated_certifi
 
@@ -116,8 +116,8 @@ class TestDefaultVerifyAfterAnInstallRotation:
             assert transport._pool._ssl_context.verify_mode == ssl.CERT_REQUIRED
 
 
-def _setup_nous_auth(
-    hermes_home: Path,
+def _setup_moor_auth(
+    moor_home: Path,
     *,
     access_token: str = "",
     refresh_token: str = "refresh-old",
@@ -209,8 +209,8 @@ def test_resolve_moor_runtime_credentials_invoke_jwt_is_idempotent(
     tmp_path,
     monkeypatch,
 ):
-    import hermes_cli.auth as auth_mod
-    from hermes_cli import auth_nous
+    import moor_cli.auth as auth_mod
+    from moor_cli import auth_moor
 
     moor_home = tmp_path / "moor"
     moor_home.mkdir(parents=True, exist_ok=True)
@@ -322,8 +322,8 @@ def test_moor_inference_auth_logs_do_not_include_secret_values(
     monkeypatch,
     caplog,
 ):
-    import hermes_cli.auth as auth_mod
-    from hermes_cli import auth_nous
+    import moor_cli.auth as auth_mod
+    from moor_cli import auth_moor
 
     moor_home = tmp_path / "moor"
     token = _invoke_jwt(seconds=3600)
@@ -463,12 +463,12 @@ class TestLoginMoorSkipKeepsCurrent:
         return moor_home, config_path, auth_path
 
     def _patch_login_internals(self, monkeypatch, *, prompt_returns):
-        """Patch OAuth + model-list + prompt so _login_nous doesn't hit network."""
-        import hermes_cli.auth as auth_mod
-        from hermes_cli import auth_nous
-        import hermes_cli.models as models_mod
-        from hermes_cli import models_pricing
-        import hermes_cli.nous_subscription as ns
+        """Patch OAuth + model-list + prompt so _login_moor doesn't hit network."""
+        import moor_cli.auth as auth_mod
+        from moor_cli import auth_moor
+        import moor_cli.models as models_mod
+        from moor_cli import models_pricing
+        import moor_cli.moor_subscription as ns
 
         fake_auth_state = {
             "access_token": "fake-moor-token",
@@ -503,8 +503,8 @@ class TestLoginMoorSkipKeepsCurrent:
         )
         monkeypatch.setattr(ns, "prompt_enable_tool_gateway", lambda cfg: None)
         # Not a usage-window account, and no live portal read of the fake token.
-        import hermes_cli.model_picker_usage as mpu
-        monkeypatch.setattr(mpu, "nous_picker_usage", lambda **kw: None)
+        import moor_cli.model_picker_usage as mpu
+        monkeypatch.setattr(mpu, "moor_picker_usage", lambda **kw: None)
         return free_tier_calls
 
     def test_skip_keep_current_preserves_provider_and_model(self, tmp_path, monkeypatch):
@@ -513,7 +513,7 @@ class TestLoginMoorSkipKeepsCurrent:
         import moor_yaml as yaml
         from moor_cli.auth import PROVIDER_REGISTRY, _login_moor
 
-        _hermes_home, config_path, auth_path = self._setup_home_with_openrouter(
+        _moor_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
         )
         self._patch_login_internals(monkeypatch, prompt_returns=None)
@@ -544,7 +544,7 @@ class TestLoginMoorSkipKeepsCurrent:
         import moor_yaml as yaml
         from moor_cli.auth import PROVIDER_REGISTRY, _login_moor
 
-        _hermes_home, config_path, auth_path = self._setup_home_with_openrouter(
+        _moor_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
         )
         self._patch_login_internals(
@@ -788,8 +788,8 @@ def test_runtime_refresh_503_preserves_moor_oauth_credentials(
     """The real runtime resolver must not quarantine a still-valid refresh token or demand a
     re-login during a Portal outage (#120976) or a Vercel Security Checkpoint deny/challenge on
     the token endpoint (#120602)."""
-    import hermes_cli.auth as auth_mod
-    from hermes_cli import auth_nous
+    import moor_cli.auth as auth_mod
+    from moor_cli import auth_moor
 
     moor_home = tmp_path / "moor"
     access_token = _invoke_jwt(seconds=3600)
@@ -919,7 +919,7 @@ def test_shared_store_write_and_read_roundtrip(shared_store_env):
     )
 
     state = _full_state_fixture()
-    _write_shared_nous_state(state, renewal=False)
+    _write_shared_moor_state(state, renewal=False)
 
     path = _moor_shared_store_path()
     assert path.is_file()
@@ -978,10 +978,10 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     returns a fresh access_token JWT, and the returned dict has
     every field persist_moor_credentials() needs.
     """
-    from hermes_cli import auth as auth_mod
-    from hermes_cli import auth_nous
+    from moor_cli import auth as auth_mod
+    from moor_cli import auth_moor
 
-    auth_mod._write_shared_nous_state(_full_state_fixture(), renewal=False)
+    auth_mod._write_shared_moor_state(_full_state_fixture(), renewal=False)
     fresh_jwt = _invoke_jwt(seconds=7200)
 
     def _fake_refresh(state, **kwargs):
@@ -1036,8 +1036,8 @@ class TestStalePortalBaseUrlMigration:
         self, tmp_path, monkeypatch,
     ):
         """An allowlisted production host is still unsafe over plain HTTP."""
-        from hermes_cli import auth as auth_mod
-        from hermes_cli import auth_nous
+        from moor_cli import auth as auth_mod
+        from moor_cli import auth_moor
 
         moor_home = tmp_path / "moor"
         monkeypatch.setenv("MOOR_HOME", str(moor_home))

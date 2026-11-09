@@ -1,6 +1,6 @@
-"""A symlinked profile that is really another install must not fail `hermes update` (#120240).
+"""A symlinked profile that is really another install must not fail `moor update` (#120240).
 
-``~/.hermes/profiles/work -> ~/.hermes-work`` where ``~/.hermes-work`` has its own checkout and
+``~/.moor/profiles/work -> ~/.moor-work`` where ``~/.moor-work`` has its own checkout and
 gateway: the plan inventories that gateway, the restart phase correctly leaves it alone, and the
 fleet matrix already classifies it ``external``. Reconciliation must agree instead of reporting it
 ``unaccounted`` and exiting 1.
@@ -13,10 +13,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import update_cmd_fleet as fleet
-from hermes_cli import update_cmd_fleet_verify as fleet_verify
-from hermes_cli import update_receipt
-from hermes_cli.update_inventory import (
+from moor_cli import update_cmd_fleet as fleet
+from moor_cli import update_cmd_fleet_verify as fleet_verify
+from moor_cli import update_receipt
+from moor_cli.update_inventory import (
     RuntimeRecord,
     UpdatePlan,
     match_runtime_outcomes,
@@ -27,15 +27,15 @@ SHA = "a" * 40
 
 
 def _checkout(root: Path) -> Path:
-    (root / "hermes_cli").mkdir(parents=True)
-    (root / "hermes_cli" / "main.py").write_text("", encoding="utf-8")
+    (root / "moor_cli").mkdir(parents=True)
+    (root / "moor_cli" / "main.py").write_text("", encoding="utf-8")
     return root
 
 
 def _gateway_state(home: Path, pid: int, entrypoint: Path, sha: str) -> None:
     home.mkdir(parents=True, exist_ok=True)
     (home / "gateway_state.json").write_text(json.dumps({
-        "gateway_state": "running", "kind": "hermes-gateway", "pid": pid,
+        "gateway_state": "running", "kind": "moor-gateway", "pid": pid,
         "argv": [str(entrypoint), "gateway", "run"], "code_sha": sha, "code_version": "1.0",
     }), encoding="utf-8")
 
@@ -48,33 +48,33 @@ def _gateway(profile: str, pid: int) -> RuntimeRecord:
 def external_profile_host(tmp_path, monkeypatch):
     """Root install with its own gateway plus ``profiles/work`` symlinked to a separate install."""
     root = tmp_path / "root_home"
-    updater_main = update_receipt._updater_code_root() / "hermes_cli" / "main.py"
+    updater_main = update_receipt._updater_code_root() / "moor_cli" / "main.py"
     _gateway_state(root, 1111, updater_main, SHA)
 
-    other_checkout = _checkout(tmp_path / "other_install" / "hermes-agent")
+    other_checkout = _checkout(tmp_path / "other_install" / "moor-agent")
     other_home = tmp_path / "other_install" / "home"
-    _gateway_state(other_home, 4242, other_checkout / "hermes_cli" / "main.py", "f" * 40)
+    _gateway_state(other_home, 4242, other_checkout / "moor_cli" / "main.py", "f" * 40)
     (root / "profiles").mkdir()
     (root / "profiles" / "work").symlink_to(other_home, target_is_directory=True)
 
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setattr(update_receipt, "_code_identity", lambda refresh=False: {"sha": SHA, "version": "1.0"})
     monkeypatch.setattr(update_receipt, "_socket_identity", lambda _home: None)
     live = {root.resolve(): 1111, other_home.resolve(): 4242}
     monkeypatch.setattr("gateway.status.live_gateway_pid_for_home", lambda home: live.get(Path(home).resolve()))
     monkeypatch.setattr(fleet_verify, "_time", SimpleNamespace(sleep=lambda _s: None, monotonic=time.monotonic))
     monkeypatch.setattr(fleet_verify, "_print_legacy_units_warning", lambda: None)
-    monkeypatch.setattr("hermes_cli.update_cmd._finish_dashboard_update_cleanup", lambda *a, **k: None)
-    # The live post-update dashboard pass restarts a managed hermes-dashboard unit.
-    monkeypatch.setattr("hermes_cli.update_cmd_maint._refresh_dashboard_after_update", lambda **k: set())
-    monkeypatch.setattr("hermes_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
+    monkeypatch.setattr("moor_cli.update_cmd._finish_dashboard_update_cleanup", lambda *a, **k: None)
+    # The live post-update dashboard pass restarts a managed moor-dashboard unit.
+    monkeypatch.setattr("moor_cli.update_cmd_maint._refresh_dashboard_after_update", lambda **k: set())
+    monkeypatch.setattr("moor_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
     return SimpleNamespace(other_checkout=other_checkout)
 
 
 def _restart_outcome() -> fleet._GatewayRestartOutcome:
     # The root's own LaunchAgent was restarted; the other install's gateway was left alone.
     return fleet._GatewayRestartOutcome(
-        False, [], [1111, 4242], ["ai.hermes.gateway"], [], [], [], set(),
+        False, [], [1111, 4242], ["ai.moor.gateway"], [], [], [], set(),
     )
 
 

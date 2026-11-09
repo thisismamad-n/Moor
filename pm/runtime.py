@@ -27,8 +27,8 @@ def runtime_environment() -> dict[str, str]:
     from pm.environment import _base_environment
 
     env = _base_environment()
-    env["HERMES_HOME"] = str(get_hermes_home())
-    env["HERMES_RUNTIME_DIR"] = native(store_root())
+    env["MOOR_HOME"] = str(get_moor_home())
+    env["MOOR_RUNTIME_DIR"] = native(store_root())
     return env
 
 
@@ -44,7 +44,7 @@ def _inputs(project: Path, python: Path, *, as_spelled: bool = False) -> str:
         digest.update((project / name).read_bytes())
         digest.update(b"\0")
     # A different interpreter must not reuse a venv pointing at the old one, but
-    # the same one reached through a symlinked store (a per-task HERMES_HOME whose
+    # the same one reached through a symlinked store (a per-task MOOR_HOME whose
     # tools/ links back) must. Only the directories resolve: the pinned
     # bin/python3 is itself a symlink, so resolving it would re-key every install.
     # A store spells its root extended-length on Windows; the identity must not.

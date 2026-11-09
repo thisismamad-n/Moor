@@ -107,7 +107,7 @@ def _cmd_status(args) -> int:
     _print_curator_config(curator)
     if locked := skill_usage.locked_skill_names():
         print(f"\nlocked ({len(locked)}): {', '.join(locked)}  "
-              f"(the agent cannot change these; `hermes curator unlock <skill>` lifts it)")
+              f"(the agent cannot change these; `moor curator unlock <skill>` lifts it)")
     rows = skill_usage.curated_report()
     if not rows:
         print("\nno curator-managed skills")
@@ -241,7 +241,7 @@ def _cmd_unpin(args) -> int: return _set_pin(args, False)
 
 
 def _set_lock(args, locked: bool) -> int:
-    """``hermes curator lock|unlock``: a user declaration stored beside ``pinned`` in the active
+    """``moor curator lock|unlock``: a user declaration stored beside ``pinned`` in the active
     profile's skills/.usage.json, enforced by tools/skill_lock on every agent write path. Any skill
     can be locked, but the name must resolve in this profile, so a typo never forges a record."""
     from tools import skill_usage
@@ -250,7 +250,7 @@ def _set_lock(args, locked: bool) -> int:
     existing = _find_skill(args.skill)
     if existing is None:
         print(f"curator: no skill named '{args.skill}' in the active profile — nothing to {verb}. "
-              f"`hermes skills list` shows the names.")
+              f"`moor skills list` shows the names.")
         return 1
     key = existing["path"].name  # directory name: the key the skill_manage guard resolves to
     if not skill_usage.set_locked(key, locked):
@@ -260,7 +260,7 @@ def _set_lock(args, locked: bool) -> int:
         print(f"curator: locked '{key}'. The agent can no longer change it: skill_manage, write_file, "
               f"patch and terminal refuse, in normal turns and the background passes alike, and the "
               f"curator won't archive it. It stays readable and auto-loadable, and you can still edit it "
-              f"yourself. Unlock with `hermes curator unlock {key}`.")
+              f"yourself. Unlock with `moor curator unlock {key}`.")
     else:
         print(f"curator: unlocked '{key}'. The agent may edit it again.")
     return 0
@@ -455,7 +455,7 @@ def _cmd_purge(args) -> int:
     entry, so even a purge is auditable and blob-recoverable."""
     import shutil
     import time
-    from hermes_cli.config import cfg_get, load_config
+    from moor_cli.config import cfg_get, load_config
     from tools import skill_ledger, skill_usage
     ttl_days = getattr(args, "days", None)
     if ttl_days is None:

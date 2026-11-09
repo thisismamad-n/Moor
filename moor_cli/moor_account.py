@@ -21,9 +21,9 @@ MoorAccountInfoSource = Literal["jwt", "account_api", "inference_key", "none", "
 TOOL_COVERAGE_CATEGORIES = ("firecrawl", "fal", "fal-video", "openai-audio", "browser-use", "modal")
 
 _ACCOUNT_INFO_CACHE_TTL = 60
-_account_info_cache: tuple[str, float, NousPortalAccountInfo] | None = None
+_account_info_cache: tuple[str, float, MoorPortalAccountInfo] | None = None
 _ACCOUNT_INFO_CACHE_LOCK = threading.Lock()
-# Who ``_account_info_cache`` belongs to (portal + JWT user/org), for ``cached_nous_portal_account_info``:
+# Who ``_account_info_cache`` belongs to (portal + JWT user/org), for ``cached_moor_portal_account_info``:
 # that read must survive a token refresh, which changes the cache key above.
 _account_info_identity: Optional[str] = None
 
@@ -60,7 +60,7 @@ class MoorPaidServiceAccessInfo:
 
 
 @dataclass(frozen=True)
-class NousUsageWindowInfo:
+class MoorUsageWindowInfo:
     """Portal ``usage_window`` block: a usage-window plan's allowances (``gauges``, the server's list in
     display order; see agent/usage_gauges.py), auto top-up, a paused reason while the plan's renewal is
     unpaid, and the plan's picks. Absent from the account body for every other account."""
@@ -78,7 +78,7 @@ class NousUsageWindowInfo:
 
 
 @dataclass(frozen=True)
-class NousToolAccessInfo:
+class MoorToolAccessInfo:
     """Free tool-pool entitlement (Portal ``tool_access``), decoupled from paid/billing access.
 
     ``enabled``: a positive pool balance is live and not gated off; ``coverage``: tool category ->
@@ -95,7 +95,7 @@ FREE_TIER_NEEDS_ACCOUNT = "This needs a Moor account. Run `moor auth upgrade`."
 FREE_TIER_NEEDS_ACCOUNT_CHAT = "This needs a Moor account. Use /login to sign in."
 
 
-def _is_anonymous_tier(account_info: Optional[NousPortalAccountInfo]) -> bool:
+def _is_anonymous_tier(account_info: Optional[MoorPortalAccountInfo]) -> bool:
     return account_info is not None and account_info.is_anonymous_tier
 
 
@@ -127,10 +127,10 @@ class MoorPortalAccountInfo:
     privy_did: Optional[str] = None
     subscription: Optional[MoorPortalSubscriptionInfo] = None
     paid_service_access: Optional[bool] = None
-    paid_service_access_info: Optional[NousPaidServiceAccessInfo] = None
-    tool_access: Optional[NousToolAccessInfo] = None
+    paid_service_access_info: Optional[MoorPaidServiceAccessInfo] = None
+    tool_access: Optional[MoorToolAccessInfo] = None
     # Portal ``usage_window`` (account API only): None for every account not on a usage-window plan.
-    usage_window: Optional[NousUsageWindowInfo] = None
+    usage_window: Optional[MoorUsageWindowInfo] = None
     raw_claims: Optional[dict[str, Any]] = None
     raw_account: Optional[dict[str, Any]] = None
     error: Optional[str] = None
@@ -146,7 +146,7 @@ class MoorPortalAccountInfo:
 
     @property
     def is_anonymous_tier(self) -> bool:
-        """The free tier: no Nous account, so no billing, credits, or entitlement to speak of.
+        """The free tier: no Moor account, so no billing, credits, or entitlement to speak of.
         Compared case- and whitespace-insensitively — the claim is wire data."""
         return _normalize_tier(self.account_tier) == _ANON_ACCOUNT_TIER
 
@@ -199,7 +199,7 @@ def moor_portal_topup_url(account_info: Optional[MoorPortalAccountInfo] = None) 
     return f"{base}/billing?topup=open"
 
 
-def format_usage_window_block_guidance(account_info: Optional[NousPortalAccountInfo]) -> Optional[str]:
+def format_usage_window_block_guidance(account_info: Optional[MoorPortalAccountInfo]) -> Optional[str]:
     """Next step after a usage-window 402: the credits step from :func:`agent.plan_limits.credits_action`
     (turn on Keep going, add credits, or both), plus the auto top-up nudge when it is off. None for every
     account not on a usage-window plan, so the credit-grant guidance is unchanged. A paused plan points
@@ -213,24 +213,24 @@ def format_usage_window_block_guidance(account_info: Optional[NousPortalAccountI
         # A paused plan bills credits whatever the setting says: no credits is why this 402 came.
         from agent.usage_gauges import paused_for_payment
         fix = "Update your card to restore included usage" if paused_for_payment(paused) else "Included usage is paused"
-        return f"{fix}, or add credits to keep going now: {nous_portal_billing_url(account_info)}"
+        return f"{fix}, or add credits to keep going now: {moor_portal_billing_url(account_info)}"
     from agent.plan_limits import ADD_CREDITS_AND_KEEP_GOING, USE_CREDITS, credits_action
     purchased = getattr(account_info.paid_service_access_info, "purchased_credits_remaining", None)
     action = credits_action(getattr(window, "keep_going_on_credits", None),
                             int(purchased * 1_000_000) if isinstance(purchased, (int, float)) else None)
     if action == USE_CREDITS:
-        return f"Turn on Keep going in /topup to use your credits now: {nous_portal_billing_url(account_info)}"
+        return f"Turn on Keep going in /topup to use your credits now: {moor_portal_billing_url(account_info)}"
     if action == ADD_CREDITS_AND_KEEP_GOING:
         # With the setting off the gateway refuses whatever the balance, so a top-up alone won't do.
-        return f"Add credits and turn on Keep going in /topup to keep going now: {nous_portal_billing_url(account_info)}"
-    lines = [f"Add credits to keep going now: {nous_portal_topup_url(account_info)}"]
+        return f"Add credits and turn on Keep going in /topup to keep going now: {moor_portal_billing_url(account_info)}"
+    lines = [f"Add credits to keep going now: {moor_portal_topup_url(account_info)}"]
     if getattr(window, "auto_top_up_enabled", None) is False:
         lines.append("Turn on auto top-up in the same place so this doesn't stop you next time.")
     return "\n".join(lines)
 
 
-def format_nous_portal_entitlement_message(
-    account_info: Optional[NousPortalAccountInfo], *, capability: str = "this feature",
+def format_moor_portal_entitlement_message(
+    account_info: Optional[MoorPortalAccountInfo], *, capability: str = "this feature",
     include_refresh_hint: bool = True, coverage_category: Optional[str] = None,
     in_chat: bool = False,
 ) -> Optional[str]:
@@ -367,7 +367,7 @@ def get_moor_portal_account_info(*, force_fresh: bool = False, min_jwt_ttl_secon
 
     # A guest that has only used connectors holds just a connectors-only token (same claims). With
     # the free tier off a guest is not an account login: the pool and logged-out answers apply.
-    from hermes_cli.anon_auth import guest_without_free_tier, held_connectors_token
+    from moor_cli.anon_auth import guest_without_free_tier, held_connectors_token
 
     access_token = "" if guest_without_free_tier(state) else (held_connectors_token(state) or "")
     portal_base_url = _portal_base_url(state)
@@ -401,7 +401,7 @@ def moor_policy_present() -> Optional[bool]:
         return None
 
 
-def cached_nous_portal_account_info(*, any_age: bool = False) -> Optional[NousPortalAccountInfo]:
+def cached_moor_portal_account_info(*, any_age: bool = False) -> Optional[MoorPortalAccountInfo]:
     """The account snapshot in the 60s cache, or None when empty/expired. Never a fresh fetch, never raises —
     for UI chrome that must not add a round trip (the pickers) after a flow has already fetched the account.
     ``any_age`` returns the last snapshot even past the TTL, for callers that read only the plan's shape
@@ -420,13 +420,13 @@ def cached_nous_portal_account_info(*, any_age: bool = False) -> Optional[NousPo
             return None
         return info
     except Exception:
-        logging.getLogger(__name__).debug("Cached Nous account info unreadable", exc_info=True)
+        logging.getLogger(__name__).debug("Cached Moor account info unreadable", exc_info=True)
         return None
 
 
 def _account_identity(access_token: str, portal_base_url: Optional[str]) -> str:
     """Portal + the token's user and org (stable across a refresh); an opaque token falls back to its hash."""
-    from hermes_cli.auth_constants import _decode_jwt_claims
+    from moor_cli.auth_constants import _decode_jwt_claims
 
     claims = _decode_jwt_claims(access_token)
     sub, org = claims.get("sub"), claims.get("org_id")
@@ -438,18 +438,18 @@ def _account_identity(access_token: str, portal_base_url: Optional[str]) -> str:
 
 
 def _current_account_identity() -> Optional[str]:
-    """``_account_identity`` for the persisted Nous login, without a refresh or network call. None
+    """``_account_identity`` for the persisted Moor login, without a refresh or network call. None
     when logged out."""
-    from hermes_cli.auth import get_provider_auth_state
+    from moor_cli.auth import get_provider_auth_state
 
-    state = get_provider_auth_state("nous") or {}
+    state = get_provider_auth_state("moor") or {}
     access_token = state.get("access_token")
     if not _nonblank(access_token):
         return None
     return _account_identity(access_token, _portal_base_url(state))
 
 
-def nous_policy_notice(*, removed: bool) -> str:
+def moor_policy_notice(*, removed: bool) -> str:
     """One-line notice for a list the org's policy narrowed, else ``""``.
 
     Blocked models are omitted, which reads as "unsupported"; this says which it is without
@@ -464,7 +464,7 @@ def nous_policy_notice(*, removed: bool) -> str:
     )
 
 
-def _fresh_account_info(state: dict[str, Any], force_fresh: bool, portal_base_url: Optional[str]) -> NousPortalAccountInfo:
+def _fresh_account_info(state: dict[str, Any], force_fresh: bool, portal_base_url: Optional[str]) -> MoorPortalAccountInfo:
     global _account_info_cache, _account_info_identity
 
     try:
@@ -546,7 +546,7 @@ def _info_from_fetched_account(
     access_token: str, state: dict[str, Any], portal_base_url: Optional[str]
 ) -> MoorPortalAccountInfo:
     """Call ``/api/oauth/account`` and normalize; empty or ``error`` payloads become error infos."""
-    payload = _fetch_nous_account_info(access_token, portal_base_url)
+    payload = _fetch_moor_account_info(access_token, portal_base_url)
     tier = _coerce_str(state.get("account_tier"))
     if not payload:
         return _error_info(error="empty_account_response", logged_in=True,
@@ -660,7 +660,7 @@ def _info_from_account_payload(
         subscription=_subscription_from_payload(payload.get("subscription")),
         paid_service_access=paid_access, paid_service_access_info=access,
         tool_access=_tool_access_from_value(payload.get("tool_access")),
-        usage_window=_coerced_dataclass(NousUsageWindowInfo, payload.get("usage_window")),
+        usage_window=_coerced_dataclass(MoorUsageWindowInfo, payload.get("usage_window")),
         raw_account=dict(payload),
         account_tier=_coerce_str(payload.get("account_tier")) or _coerce_str(user.get("account_tier"))
         or _coerce_str(state.get("account_tier")),
@@ -692,11 +692,11 @@ def _subscription_from_payload(value: Any) -> Optional[MoorPortalSubscriptionInf
 def _error_info(
     *, error: object, logged_in: bool, portal_base_url: Optional[str] = None,
     raw_account: Optional[dict[str, Any]] = None, account_tier: Optional[str] = None,
-) -> NousPortalAccountInfo:
+) -> MoorPortalAccountInfo:
     """A failed-lookup snapshot. ``account_tier`` is carried through when the caller still holds the
-    stored state, so a guest whose lookup failed still gets the "needs a Nous account" copy rather
+    stored state, so a guest whose lookup failed still gets the "needs a Moor account" copy rather
     than billing or re-login guidance."""
-    return NousPortalAccountInfo(
+    return MoorPortalAccountInfo(
         logged_in=logged_in, source="error", fresh=False, portal_base_url=portal_base_url,
         raw_account=raw_account, error=str(error), account_tier=account_tier,
     )
@@ -717,9 +717,9 @@ def resolve_moor_portal_base_url() -> str:
 
 
 def _portal_base_url(state: dict[str, Any]) -> Optional[str]:
-    from hermes_cli.auth_nous import _nous_portal_env_override
+    from moor_cli.auth_moor import _moor_portal_env_override
 
-    value = _nous_portal_env_override() or state.get("portal_base_url")
+    value = _moor_portal_env_override() or state.get("portal_base_url")
     return value.strip().rstrip("/") if _nonblank(value) else None
 
 

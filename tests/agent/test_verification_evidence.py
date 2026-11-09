@@ -94,7 +94,7 @@ def test_shell_wrappers_match_but_echo_does_not(tmp_path, monkeypatch):
 @pytest.mark.parametrize("pipeline_status, expected", [([0, 0], "passed"), ([1, 0], "failed")])
 def test_piped_verifier_uses_its_own_pipeline_status(tmp_path, monkeypatch, pipeline_status, expected):
     """``pytest | tail`` exits with tail's status; PIPESTATUS carries pytest's own."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -109,7 +109,7 @@ def test_piped_verifier_uses_its_own_pipeline_status(tmp_path, monkeypatch, pipe
 
 def test_piped_verifier_without_pipeline_status_is_not_evidence(tmp_path, monkeypatch):
     """Without PIPESTATUS the shell's code belongs to the filter, so nothing is proven."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
 
     assert classify_verification_command(
@@ -125,7 +125,7 @@ def test_piped_verifier_behind_and_counts_only_when_the_chain_ran(
     tmp_path, monkeypatch, command, exit_code, pipeline_status, expected,
 ):
     """A short-circuited ``&&`` skips the verifier and leaves an earlier pipeline's PIPESTATUS."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -140,7 +140,7 @@ def test_piped_verifier_with_single_pipeline_status_is_not_evidence(
     tmp_path, monkeypatch, pipeline_status,
 ):
     """A one-element PIPESTATUS belongs to a compound command (``!``, ``if``), not a pipe."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
 
     assert classify_verification_command(
@@ -163,7 +163,7 @@ def test_piped_verifier_with_single_pipeline_status_is_not_evidence(
 )
 def test_venv_interpreter_path_matches_detected_pytest(tmp_path, monkeypatch, command):
     """A venv interpreter path is the same ``pytest`` run: the agent's usual spelling."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -185,7 +185,7 @@ def test_venv_interpreter_path_matches_detected_pytest(tmp_path, monkeypatch, co
 )
 def test_interpreter_flag_that_skips_the_module_is_not_evidence(tmp_path, monkeypatch, command):
     """A flag that exits before ``-m`` runs cannot produce passing evidence."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
 
     assert classify_verification_command(
@@ -195,7 +195,7 @@ def test_interpreter_flag_that_skips_the_module_is_not_evidence(tmp_path, monkey
 
 def test_dot_slash_script_invocation_matches_detected_script(tmp_path, monkeypatch):
     """``./scripts/run_tests.sh`` is the detected command run the obvious way."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _node_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -213,7 +213,7 @@ def test_dot_slash_script_invocation_matches_detected_script(tmp_path, monkeypat
 ])
 def test_flag_that_skips_the_script_is_not_evidence(tmp_path, monkeypatch, command):
     """``bash -s`` reads stdin and ``--help`` exits 0: the script named after it never runs."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _node_project(tmp_path)
 
     assert classify_verification_command(
@@ -228,7 +228,7 @@ def test_flag_that_skips_the_script_is_not_evidence(tmp_path, monkeypatch, comma
 )
 def test_status_preserving_wrapper_still_attributes_the_run(tmp_path, monkeypatch, command):
     """``timeout``/``nice`` return the child's status, so the run proves the verifier's."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
 
     evidence = classify_verification_command(
@@ -497,9 +497,9 @@ def test_file_tool_stales_evidence_by_session_id_for_absolute_edit(tmp_path, mon
 
 
 def test_workspace_verify_clears_stale_on_other_session(tmp_path, monkeypatch):
-    """A hermes verify pass is a property of the workspace, not the session
+    """A moor verify pass is a property of the workspace, not the session
     that ran the CLI (#103271)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
     changed = str(tmp_path / "changed.py")
     mark_workspace_edited(session_id="s-edit", cwd=tmp_path, paths=[changed])
@@ -509,11 +509,11 @@ def test_workspace_verify_clears_stale_on_other_session(tmp_path, monkeypatch):
     assert event is not None
     status = verification_status(session_id="s-edit", cwd=tmp_path)
     assert status["status"] == "passed"
-    assert status["evidence"]["canonical_command"] == "hermes verify"
+    assert status["evidence"]["canonical_command"] == "moor verify"
 
 
 def test_targeted_partial_verify_does_not_clear_other_session(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
     record_verify_run(root=tmp_path, session_id="s-edit", ok=True)
     mark_workspace_edited(session_id="s-edit", cwd=tmp_path, paths=[str(tmp_path / "a.py")])
@@ -526,8 +526,8 @@ def test_targeted_partial_verify_does_not_clear_other_session(tmp_path, monkeypa
 
 
 def test_failed_verify_does_not_erase_other_session_edit_record(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".moor"
+    monkeypatch.setenv("MOOR_HOME", str(home))
     _python_project(tmp_path)
     mark_workspace_edited(session_id="s-edit", cwd=tmp_path, paths=[str(tmp_path / "a.py")])
 
@@ -542,7 +542,7 @@ def test_failed_verify_does_not_erase_other_session_edit_record(tmp_path, monkey
 
 
 def test_older_workspace_verify_does_not_clear_later_edit(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     _python_project(tmp_path)
     record_verify_run(root=tmp_path, session_id="default", ok=True, output="old pass")
     mark_workspace_edited(

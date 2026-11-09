@@ -3,8 +3,8 @@ delete-with-confirmation; numbered-list fallback when curses is unavailable (Win
 
 from typing import Optional
 
-from hermes_cli.timefmt import relative_time as _relative_time
-from hermes_state_errors import SessionActiveWriteGuardError
+from moor_cli.timefmt import relative_time as _relative_time
+from moor_state_errors import SessionActiveWriteGuardError
 
 
 def _session_status_tag(status: Optional[str]) -> str:

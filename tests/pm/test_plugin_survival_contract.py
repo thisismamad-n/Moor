@@ -330,7 +330,7 @@ def test_plugin_whose_pyproject_installs_nothing_keeps_the_environment(admission
     of locking and syncing a new one. A plugin with a real dependency still joins the workspace."""
     import tomllib
 
-    from hermes_cli import plugins_admission as admission
+    from moor_cli import plugins_admission as admission
     from pm.environments import runtime_facts_path, selected_venv
     from pm.install import sync_venv, venv_is_current
     from pm.lock import Facts
@@ -404,7 +404,7 @@ def test_update_sync_disables_plugin_excluded_by_requires_python(admission_env):
     work = yaml.safe_load((profile / "config.yaml").read_text(encoding="utf-8"))
     assert work["memory"]["provider"] == "too-old" and work["plugins"]["disabled"] == ["too-old"]
     assert "too-old" in json.dumps(_latest_receipt(home).get("warnings"))
-    assert "hermes plugins enable too-old" in json.dumps(_latest_receipt(home).get("warnings"))
+    assert "moor plugins enable too-old" in json.dumps(_latest_receipt(home).get("warnings"))
     assert venv_is_current(project_root=core) is True
 
     for plugin in (home / "plugins" / "too-old", profile / "plugins" / "too-old"):
@@ -570,7 +570,7 @@ def test_plugin_our_version_rejects_sits_out_without_being_disabled(admission_en
     from pm.install import sync_venv, venv_is_current
     from pm.lock import Facts
 
-    from hermes_cli import plugins_manifest
+    from moor_cli import plugins_manifest
 
     tmp_path, home = admission_env
     core = tmp_path / "core"

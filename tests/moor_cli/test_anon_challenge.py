@@ -1,6 +1,6 @@
-"""Nous free tier: the browser challenge in front of a token exchange (``hermes_cli.anon_challenge``).
+"""Moor free tier: the browser challenge in front of a token exchange (``moor_cli.anon_challenge``).
 
-Driven through the fake NAS with Hermes' real client code: the exchange hits a 428, the challenge is
+Driven through the fake NAS with Moor' real client code: the exchange hits a 428, the challenge is
 presented and polled OUTSIDE the auth locks, and the exchange runs once more.
 """
 
@@ -9,9 +9,9 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from hermes_cli import anon_auth, anon_challenge
+from moor_cli import anon_auth, anon_challenge
 
-from tests.hermes_cli.anon_portal import PORTAL, claimed_trial, install_portal
+from tests.moor_cli.anon_portal import PORTAL, claimed_trial, install_portal
 
 
 @pytest.fixture
@@ -28,23 +28,23 @@ def presented(monkeypatch):
 
 def _desktop_backend(monkeypatch):
     """The backend Desktop spawned: the inherited flag plus the per-spawn credential."""
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
-    monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "spawn-token")
+    monkeypatch.setenv("MOOR_DESKTOP", "1")
+    monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "spawn-token")
 
 
 def _resolve(monkeypatch):
     """A free-model call: only a guest that claimed the welcome trial on the desktop's local backend
     mints an inference token."""
-    from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+    from moor_cli.auth_moor import resolve_moor_runtime_credentials
     claimed_trial(monkeypatch)
-    return resolve_nous_runtime_credentials()
+    return resolve_moor_runtime_credentials()
 
 
 def _connectors_token():
     """A connectors / managed-tool token read: the one exchange a terminal guest makes."""
-    from hermes_cli.auth import resolve_nous_access_token
+    from moor_cli.auth import resolve_moor_access_token
     assert anon_auth.is_guest_state(anon_auth.ensure_portal_identity(explicit=True))
-    return resolve_nous_access_token()
+    return resolve_moor_access_token()
 
 
 class TestWhatTheClientSends:
@@ -53,8 +53,8 @@ class TestWhatTheClientSends:
         sent = nas.token_requests[-1]
         assert sent["body"]["client"]["capabilities"] == ["browser-v1"]
         assert sent["body"]["client"]["surface"] == "cli"
-        assert sent["body"]["client"]["name"] == "hermes-agent"
-        assert sent["user_agent"].startswith("hermes-agent/") and "(cli;" in sent["user_agent"]
+        assert sent["body"]["client"]["name"] == "moor-agent"
+        assert sent["user_agent"].startswith("moor-agent/") and "(cli;" in sent["user_agent"]
 
 class TestRequiredChallenge:
     def test_a_host_failure_wakes_the_waiter_but_still_requires_an_authoritative_mint(self, nas, monkeypatch):
@@ -70,9 +70,9 @@ class TestRequiredChallenge:
         assert [p for _, p in nas.calls].count("/api/anonymous/challenge/status") == 1
         # A window that crashed is not a reason to let a boot burst of callers each re-mint and
         # reopen a window: the second 428 starts the same fail-fast cooldown as a timeout.
-        from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+        from moor_cli.auth_moor import resolve_moor_runtime_credentials
         with pytest.raises(anon_auth.AuthError):
-            resolve_nous_runtime_credentials()
+            resolve_moor_runtime_credentials()
         assert [p for _, p in nas.calls].count("/api/anonymous/challenge/status") == 1
 
     def test_a_poll_the_service_refuses_ends_the_wait_instead_of_running_out_the_clock(self, nas, presented, monkeypatch):
@@ -97,20 +97,20 @@ class TestRequiredChallenge:
     def test_the_status_poll_trusts_what_the_credential_was_minted_with(self, nas, presented, monkeypatch):
         """A guest whose ``auth.json`` carries a ``tls`` block polls under it (a private CA, say),
         not under a fresh default context that would fail every read and run out the clock."""
-        from hermes_cli import auth_nous
-        from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+        from moor_cli import auth_moor
+        from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
         claimed_trial(monkeypatch)
         with _auth_store_lock():
             store = _load_auth_store()
-            store["providers"]["nous"]["tls"] = {"insecure": True}
+            store["providers"]["moor"]["tls"] = {"insecure": True}
             _save_auth_store(store)
         polled_with = []
-        real = auth_nous._nous_http_client
-        monkeypatch.setattr(auth_nous, "_nous_http_client",
+        real = auth_moor._moor_http_client
+        monkeypatch.setattr(auth_moor, "_moor_http_client",
                             lambda timeout, verify: polled_with.append(verify) or real(timeout, verify))
         nas.challenge_required = True
-        from hermes_cli.auth_nous import resolve_nous_runtime_credentials
-        resolve_nous_runtime_credentials()
+        from moor_cli.auth_moor import resolve_moor_runtime_credentials
+        resolve_moor_runtime_credentials()
         assert [p for _, p in nas.calls].count("/api/anonymous/challenge/status") >= 1
         assert polled_with and all(verify is False for verify in polled_with)
 
@@ -144,12 +144,12 @@ class TestRequiredChallenge:
 
     def test_the_wait_happens_outside_the_auth_locks(self, nas, monkeypatch):
         """A sibling process must be able to take the shared-store lock while the page runs."""
-        from hermes_cli.auth_nous import _nous_shared_store_lock
+        from moor_cli.auth_moor import _moor_shared_store_lock
         nas.challenge_required = True
         nas.challenge_statuses = ["pending"]
 
         def present(_challenge):
-            with _nous_shared_store_lock(timeout_seconds=0.5):
+            with _moor_shared_store_lock(timeout_seconds=0.5):
                 pass
         monkeypatch.setattr(anon_challenge, "present", present)
         assert _resolve(monkeypatch)["api_key"]
@@ -164,9 +164,9 @@ class TestRequiredChallenge:
         assert exc.value.code == anon_auth.ANON_CHALLENGE_REQUIRED and exc.value.retryable is True
         assert "browser" in str(exc.value)
         # The callers queued behind it fail fast instead of each parking for a full wait.
-        from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+        from moor_cli.auth_moor import resolve_moor_runtime_credentials
         with pytest.raises(anon_auth.AuthError):
-            resolve_nous_runtime_credentials()
+            resolve_moor_runtime_credentials()
         assert len(presented) == 1
 
     def test_a_second_challenge_after_the_retry_is_not_looped_on(self, nas, presented, monkeypatch):
@@ -187,25 +187,25 @@ class TestRequiredChallenge:
 
     def test_the_managed_tool_token_path_works_a_challenge_too(self, nas, presented):
         """Against a NAS from before the connectors purpose, which still challenges that mint."""
-        from hermes_cli.auth import resolve_nous_access_token
+        from moor_cli.auth import resolve_moor_access_token
         assert anon_auth.is_guest_state(anon_auth.ensure_portal_identity(explicit=True))
         nas.honours_purpose = False
         nas.challenge_required = True
         nas.challenge_statuses = ["pending"]
-        assert resolve_nous_access_token()
+        assert resolve_moor_access_token()
         assert len(presented) == 1
 
 
 class TestWhoWaits:
     def test_a_background_caller_announces_and_returns_at_once(self, nas, presented, monkeypatch):
         """A keepalive tick or a status paint has nobody waiting on it: no poll, no parked thread."""
-        from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+        from moor_cli.auth_moor import resolve_moor_runtime_credentials
         claimed_trial(monkeypatch)
         nas.challenge_required = True
         nas.challenge_never_clears = True
         with anon_challenge.background_caller():
             with pytest.raises(anon_auth.AuthError) as exc:
-                resolve_nous_runtime_credentials()
+                resolve_moor_runtime_credentials()
         assert exc.value.code == anon_auth.ANON_CHALLENGE_REQUIRED and exc.value.retryable is True
         assert len(presented) == 1
         assert "/api/anonymous/challenge/status" not in [p for _, p in nas.calls]
@@ -235,13 +235,13 @@ class TestWhoWaits:
         assert capsys.readouterr().err == ""
 
     def test_the_keepalive_and_the_status_paint_are_background_callers(self, nas, presented):
-        from hermes_cli.auth_nous import _compute_nous_auth_status
-        from hermes_cli.nous_auth_keepalive import refresh_nous_auth_keepalive_once
+        from moor_cli.auth_moor import _compute_moor_auth_status
+        from moor_cli.moor_auth_keepalive import refresh_moor_auth_keepalive_once
         assert anon_auth.is_guest_state(anon_auth.ensure_portal_identity(explicit=True))
         nas.challenge_required = True
         nas.challenge_never_clears = True
-        assert refresh_nous_auth_keepalive_once() is False
-        _compute_nous_auth_status()
+        assert refresh_moor_auth_keepalive_once() is False
+        _compute_moor_auth_status()
         assert "/api/anonymous/challenge/status" not in [p for _, p in nas.calls]
 
     def test_a_poll_error_is_a_blip_not_a_verdict(self, nas, presented, monkeypatch):
@@ -253,11 +253,11 @@ class TestWhoWaits:
         assert len(presented) == 1                       # the 429 did not skip presenting
 
     def test_an_inherited_desktop_flag_is_not_the_desktop_surface(self, nas, monkeypatch, capsys):
-        """A ``hermes`` run in the desktop's terminal pane inherits HERMES_DESKTOP but not the spawn
+        """A ``moor`` run in the desktop's terminal pane inherits MOOR_DESKTOP but not the spawn
         credential: it reports ``cli`` to the service and prints the link where its user is."""
         import webbrowser
-        monkeypatch.setenv("HERMES_DESKTOP", "1")
-        monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
+        monkeypatch.setenv("MOOR_DESKTOP", "1")
+        monkeypatch.delenv("MOOR_DASHBOARD_SESSION_TOKEN", raising=False)
         monkeypatch.setenv("SSH_TTY", "/dev/pts/0")
         monkeypatch.setattr(webbrowser, "open", lambda _url: False)
         _connectors_token()
@@ -412,7 +412,7 @@ class TestPresenting:
 
     def test_a_terminal_opens_one_tab_per_ticket_however_many_attempts_resume_it(self, monkeypatch, capsys):
         import webbrowser
-        from hermes_cli import auth_device_flow
+        from moor_cli import auth_device_flow
         opened = []
         monkeypatch.setattr(auth_device_flow, "_is_remote_session", lambda: False)
         monkeypatch.setattr(auth_device_flow, "_can_open_graphical_browser", lambda: True)

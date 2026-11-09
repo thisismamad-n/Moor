@@ -37,12 +37,12 @@ _SESSION_VARS = (
     _SESSION_USER_NAME, _SESSION_SCOPE_ID, _SESSION_KEY, _SESSION_ID,
     _SESSION_UI_SESSION_ID, _SESSION_MESSAGE_ID, _SESSION_PROFILE, _CRON_SESSION, _SESSION_PARENT_CHAT_ID,
 ) = tuple(ContextVar(name, default=_UNSET) for name in (
-    "HERMES_SESSION_PLATFORM", "HERMES_SESSION_SOURCE", "HERMES_SESSION_CHAT_ID",
-    "HERMES_SESSION_CHAT_TYPE", "HERMES_SESSION_CHAT_NAME", "HERMES_SESSION_THREAD_ID",
-    "HERMES_SESSION_USER_ID", "HERMES_SESSION_USER_ID_ALT", "HERMES_SESSION_USER_NAME",
-    "HERMES_SESSION_SCOPE_ID", "HERMES_SESSION_KEY", "HERMES_SESSION_ID",
-    "HERMES_UI_SESSION_ID", "HERMES_SESSION_MESSAGE_ID", "HERMES_SESSION_PROFILE",
-    "HERMES_CRON_SESSION", "HERMES_SESSION_PARENT_CHAT_ID",
+    "MOOR_SESSION_PLATFORM", "MOOR_SESSION_SOURCE", "MOOR_SESSION_CHAT_ID",
+    "MOOR_SESSION_CHAT_TYPE", "MOOR_SESSION_CHAT_NAME", "MOOR_SESSION_THREAD_ID",
+    "MOOR_SESSION_USER_ID", "MOOR_SESSION_USER_ID_ALT", "MOOR_SESSION_USER_NAME",
+    "MOOR_SESSION_SCOPE_ID", "MOOR_SESSION_KEY", "MOOR_SESSION_ID",
+    "MOOR_UI_SESSION_ID", "MOOR_SESSION_MESSAGE_ID", "MOOR_SESSION_PROFILE",
+    "MOOR_CRON_SESSION", "MOOR_SESSION_PARENT_CHAT_ID",
 ))
 
 # Whether this channel can route an ASYNC completion back AFTER the turn ends (see
@@ -225,11 +225,11 @@ def declare_stateless_channel() -> None:
 def async_delivery_supported() -> bool:
     """Whether the current session can deliver a background completion later.  False for
     stateless channels (:func:`declare_stateless_channel`), Kanban workers
-    (``HERMES_KANBAN_TASK``: one-shot subprocesses whose parent disappears after the turn) and
+    (``MOOR_KANBAN_TASK``: one-shot subprocesses whose parent disappears after the turn) and
     registered worker processes: a managed worker exits at its turn boundary, so detached work
     it scheduled would be lost (recovered ``unknown``) and its completion queue has no reader."""
     from agent.runtime_session_store import is_worker_process
-    if os.environ.get("HERMES_KANBAN_TASK") or is_worker_process():
+    if os.environ.get("MOOR_KANBAN_TASK") or is_worker_process():
         return False
     value = _SESSION_ASYNC_DELIVERY.get()
     return True if value is _UNSET else bool(value)

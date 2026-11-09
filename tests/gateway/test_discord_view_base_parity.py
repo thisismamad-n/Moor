@@ -96,7 +96,7 @@ async def test_answered_view_is_released(monkeypatch, tmp_path, name, call):
     test_discord_approval_lifecycle)."""
     from tools import slash_confirm
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(slash_confirm, "resolve", AsyncMock(return_value=None))
     view = _views()[name]
     monkeypatch.setattr(view, "_check_auth", lambda _interaction: True)

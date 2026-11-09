@@ -23,9 +23,9 @@ from tests.pm._range_server import dl_server, url as _srv_url
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli import web_server
-    from hermes_cli.local_runtime import catalog
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli import web_server
+    from moor_cli.local_runtime import catalog
 
     # The first catalog request after start is due a GitHub fetch; tests serve the packaged copy.
     monkeypatch.setattr(catalog, "refresh_catalog_soon", lambda: None)
@@ -90,7 +90,7 @@ def test_status_lists_staged_models_with_labels(client, tmp_path):
 def test_status_sizes_a_split_model_by_all_its_parts(client):
     """A split's first file can be a metadata stub of a few MB. The row reports the model the user
     has on disk, so a side-loaded split outside the catalog is every part, not part 1."""
-    from hermes_cli.local_runtime.bootstrap import models_dir
+    from moor_cli.local_runtime.bootstrap import models_dir
 
     _write_fake_gguf(models_dir() / "Side-Split-00001-of-00002.gguf", size=1024)
     _write_fake_gguf(models_dir() / "Side-Split-00002-of-00002.gguf", size=8192)
@@ -190,9 +190,9 @@ def test_catalog_prices_every_entry_for_this_machine(client):
     ("vulkan", "qwen3.6-35b-a3b"), ("cpu", "qwen3.6-35b-a3b"),
 ])
 def test_calibrated_catalog_and_quickstart_respect_backend(client, monkeypatch, backend, expected):
-    from hermes_cli.local_runtime import binaries, bootstrap, catalog, hardware
-    from hermes_cli.local_runtime.estimator import HardwareBudget
-    from hermes_cli.web_routers import local_models
+    from moor_cli.local_runtime import binaries, bootstrap, catalog, hardware
+    from moor_cli.local_runtime.estimator import HardwareBudget
+    from moor_cli.web_routers import local_models
 
     budget = HardwareBudget(int(48 * (1 << 30) * .8), 48 << 30, 0, uma=True,
                             gpu_name="NVIDIA RTX Spark N1X (5120-core Blackwell RTX GPU)", platform="win32")
@@ -222,9 +222,9 @@ def test_quickstart_falls_back_past_entries_that_are_never_recommended(monkeypat
     Nemotron 3.5 Bolt is an option only, so the fallback refuses rather than download it."""
     from fastapi import HTTPException
 
-    from hermes_cli.local_runtime import catalog
-    from hermes_cli.local_runtime.estimator import HardwareBudget
-    from hermes_cli.web_routers import local_models
+    from moor_cli.local_runtime import catalog
+    from moor_cli.local_runtime.estimator import HardwareBudget
+    from moor_cli.web_routers import local_models
 
     budget = HardwareBudget(44 << 30, 48 << 30, 64 << 30, uma=False)
     bolt = catalog.catalog_by_id()["nemotron-3.5-bolt-74b-a9b"]

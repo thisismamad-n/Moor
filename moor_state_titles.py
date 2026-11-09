@@ -8,7 +8,7 @@ import re
 from typing import Any, Dict, Optional
 
 from agent.message_sanitization import _sanitize_surrogates
-from hermes_state_common import _COMPRESSION_CHILD_SQL, _non_continuation_child_sql, escape_like as _escape_like
+from moor_state_common import _COMPRESSION_CHILD_SQL, _non_continuation_child_sql, escape_like as _escape_like
 
 # caplog tests pin the "moor_state" logger name.
 logger = logging.getLogger("moor_state")

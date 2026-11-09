@@ -132,7 +132,7 @@ def test_measured_n1x_profile_changes_speed_eligibility_not_fit_or_quality(monke
     import subprocess
     import urllib.request
 
-    from hermes_cli.local_runtime import catalog
+    from moor_cli.local_runtime import catalog
 
     def no_io(*args, **kwargs):
         raise AssertionError("calibration must use shipped data, not a runtime benchmark")

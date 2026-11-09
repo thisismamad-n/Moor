@@ -27,7 +27,7 @@ from gateway.session_envelope import prepare_native
 from gateway.session_ingress_context import (
     capture_provenance, native_callback, register_transport_home)
 
-from hermes_state_runtime import RuntimeStoreError
+from moor_state_runtime import RuntimeStoreError
 
 
 class _FakeAdapter:
@@ -39,13 +39,13 @@ class _FakeAdapter:
 
 
 def _reserve_homes(tmp_path, monkeypatch, names=('beta',)):
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.moor'
     root.mkdir(mode=0o700)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
-    import hermes_state
+    monkeypatch.setenv('MOOR_HOME', str(root))
+    import moor_state
     monkeypatch.setattr(
-        hermes_state, 'DEFAULT_DB_PATH', hermes_state._IMPORT_DEFAULT_DB_PATH)
+        moor_state, 'DEFAULT_DB_PATH', moor_state._IMPORT_DEFAULT_DB_PATH)
     homes = [('default', root)]
     for name in names:
         home = root / 'profiles' / name

@@ -109,10 +109,10 @@ describe('/usage slash command', () => {
   })
 
   it('keeps the non-window balance panel text verbatim (blank lines included)', async () => {
-    const lines = ['Nous balance: $50.00', '', 'Top up: https://portal.example/billing?topup=open']
+    const lines = ['Moor balance: $50.00', '', 'Top up: https://portal.example/billing?topup=open']
     const { panel, run } = buildCtx({ 'session.usage': baseUsage({ calls: 0, credits_lines: lines }) })
     await run('')
-    expect(panel).toHaveBeenCalledWith('Nous balance', [{ text: lines.join('\n') }])
+    expect(panel).toHaveBeenCalledWith('Moor balance', [{ text: lines.join('\n') }])
   })
 
   it('renders the dollar two-bar model (no "credits" wording) when available', async () => {

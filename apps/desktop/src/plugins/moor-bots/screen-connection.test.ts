@@ -44,7 +44,7 @@ vi.mock('./routing', async importOriginal => {
   }
 })
 
-import { host, resolveSiblingWsUrl } from '@hermes/plugin-sdk'
+import { host, resolveSiblingWsUrl } from '@moor/plugin-sdk'
 
 import { displayRequest, isEventForBotScreen, resolveScreenWsUrl } from './screen-connection'
 

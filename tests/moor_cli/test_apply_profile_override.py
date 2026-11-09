@@ -37,11 +37,11 @@ def _run_apply_profile_override(
     moor_root.mkdir(parents=True, exist_ok=True)
 
     if active_profile is not None:
-        (hermes_root / "active_profile").write_text(active_profile, encoding="utf-8")
+        (moor_root / "active_profile").write_text(active_profile, encoding="utf-8")
 
     if create_active_profile and active_profile and active_profile != "default":
-        (hermes_root / "profiles" / active_profile).mkdir(parents=True, exist_ok=True)
-        (hermes_root / "profiles" / active_profile / "config.yaml").write_text(
+        (moor_root / "profiles" / active_profile).mkdir(parents=True, exist_ok=True)
+        (moor_root / "profiles" / active_profile / "config.yaml").write_text(
             "{}\n", encoding="utf-8")  # identity marker
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -72,19 +72,19 @@ def _run_apply_profile_override(
 
 
 @pytest.mark.parametrize("argv", [
-    ["hermes", "profile", "list"],
-    ["hermes", "profile", "use", "default"],
-    ["hermes", "uninstall"],
-    ["hermes", "uninstall", "--dry-run"],
-    ["hermes", "uninstall", "--help"],
+    ["moor", "profile", "list"],
+    ["moor", "profile", "use", "default"],
+    ["moor", "uninstall"],
+    ["moor", "uninstall", "--dry-run"],
+    ["moor", "uninstall", "--help"],
 ])
 @pytest.mark.parametrize("exported_home", [False, True])
 def test_missing_sticky_profile_allows_recovery_commands(
     tmp_path, monkeypatch, capsys, argv, exported_home,
 ):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     result = _run_apply_profile_override(
-        tmp_path, monkeypatch, hermes_home=str(root) if exported_home else None,
+        tmp_path, monkeypatch, moor_home=str(root) if exported_home else None,
         active_profile="ray",
         create_active_profile=False, argv=argv,
     )
@@ -92,7 +92,7 @@ def test_missing_sticky_profile_allows_recovery_commands(
     assert result == str(root)
     assert "saved profile 'ray' no longer exists; running this recovery command" in capsys.readouterr().err
     if argv[1:3] == ["profile", "use"]:
-        from hermes_cli.profile_cmd import cmd_profile
+        from moor_cli.profile_cmd import cmd_profile
 
         cmd_profile(SimpleNamespace(profile_action="use", profile_name="default"))
         assert not (root / "active_profile").exists()
@@ -101,27 +101,27 @@ def test_missing_sticky_profile_allows_recovery_commands(
 
 
 @pytest.mark.parametrize("argv, expect_hint", [
-    (["hermes", "chat"], True),
-    (["hermes", "uninstall", "--data"], True),
-    (["hermes", "uninstall", "--dat", "--yes"], True),
-    (["hermes", "uninstall", "--full", "--yes"], True),
-    (["hermes", "uninstall", "--fu"], True),
-    (["hermes", "uninstall", "--full", "--data"], True),
-    (["hermes", "-p", "ray", "uninstall"], False),  # explicit -p keeps the create hint
+    (["moor", "chat"], True),
+    (["moor", "uninstall", "--data"], True),
+    (["moor", "uninstall", "--dat", "--yes"], True),
+    (["moor", "uninstall", "--full", "--yes"], True),
+    (["moor", "uninstall", "--fu"], True),
+    (["moor", "uninstall", "--full", "--data"], True),
+    (["moor", "-p", "ray", "uninstall"], False),  # explicit -p keeps the create hint
 ])
 def test_missing_profile_still_blocks_other_or_explicit_commands(
     tmp_path, monkeypatch, capsys, argv, expect_hint,
 ):
     with pytest.raises(SystemExit) as exc:
         _run_apply_profile_override(
-            tmp_path, monkeypatch, hermes_home=str(tmp_path / ".hermes"),
+            tmp_path, monkeypatch, moor_home=str(tmp_path / ".moor"),
             active_profile="ray", create_active_profile=False, argv=argv,
         )
     assert exc.value.code == 1
-    assert ("hermes profile use default" in capsys.readouterr().err) is expect_hint
+    assert ("moor profile use default" in capsys.readouterr().err) is expect_hint
 
 
-class TestApplyProfileOverrideHermesHomeGuard:
+class TestApplyProfileOverrideMoorHomeGuard:
     """Regression guard for issue #22502.
 
     Verifies that MOOR_HOME pointing to the moor root does NOT suppress
@@ -167,7 +167,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
         profile_dir.mkdir(parents=True, exist_ok=True)
         (profile_dir / "config.yaml").write_text(
             "{}\n", encoding="utf-8")  # identity marker: a bare dir does not resolve
-        (root_home / ".hermes").mkdir(parents=True, exist_ok=True)
+        (root_home / ".moor").mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: root_home)
         monkeypatch.setenv("SUDO_USER", "moor")
@@ -224,12 +224,12 @@ class TestSupervisedChildIgnoresStickyProfile:
         """A supervised named-profile slot passes ``-p <name>`` explicitly;
         that must still resolve (the sentinel guard only skips the sticky
         active_profile fallback, never an explicit flag)."""
-        hermes_root = tmp_path / ".hermes"
-        hermes_root.mkdir(parents=True, exist_ok=True)
-        (hermes_root / "active_profile").write_text("briefer", encoding="utf-8")
+        moor_root = tmp_path / ".moor"
+        moor_root.mkdir(parents=True, exist_ok=True)
+        (moor_root / "active_profile").write_text("briefer", encoding="utf-8")
         for name in ("briefer", "coder"):
-            (hermes_root / "profiles" / name).mkdir(parents=True, exist_ok=True)
-            (hermes_root / "profiles" / name / "config.yaml").write_text(
+            (moor_root / "profiles" / name).mkdir(parents=True, exist_ok=True)
+            (moor_root / "profiles" / name / "config.yaml").write_text(
                 "{}\n", encoding="utf-8")  # identity marker
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -399,19 +399,19 @@ class TestS6ContainerGatewayRun:
 
 
 def test_module_entry_keeps_an_explicit_default_profile_over_the_sticky_one(tmp_path):
-    """`python -m hermes_cli.main --profile default` (how Hermes spawns its own CLI) stays on the root
+    """`python -m moor_cli.main --profile default` (how Moor spawns its own CLI) stays on the root
     home while active_profile names another profile: a second import of the module must not re-read
     the stripped argv and fall to the sticky profile."""
     import subprocess
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     (root / "profiles" / "work").mkdir(parents=True)
     (root / "profiles" / "work" / "config.yaml").write_text("{}\n", encoding="utf-8")
     (root / "active_profile").write_text("work\n", encoding="utf-8")
-    env = {k: v for k, v in os.environ.items() if not k.startswith("HERMES_")}
-    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), HERMES_HOME=str(root),
+    env = {k: v for k, v in os.environ.items() if not k.startswith("MOOR_")}
+    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), MOOR_HOME=str(root),
                PYTHONPATH=str(Path(__file__).resolve().parents[2]))
 
-    out = subprocess.run([sys.executable, "-m", "hermes_cli.main", "--profile", "default", "config", "path"],
+    out = subprocess.run([sys.executable, "-m", "moor_cli.main", "--profile", "default", "config", "path"],
                          env=env, capture_output=True, text=True, timeout=120, check=True).stdout
 
     assert Path(out.strip().splitlines()[-1]).resolve() == (root / "config.yaml").resolve()

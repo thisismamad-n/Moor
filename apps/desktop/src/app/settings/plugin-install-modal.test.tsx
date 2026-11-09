@@ -97,7 +97,7 @@ beforeEach(() => {
   ])
   requestGateway.mockImplementation(async () => ({ plugins: [] }))
   probePluginRepo.mockResolvedValue({ ok: true, agent: true, agentName: 'blender', desktop: false, warnings: [] })
-  vi.stubGlobal('hermesDesktop', { probePluginRepo, installDesktopPlugin })
+  vi.stubGlobal('moorDesktop', { probePluginRepo, installDesktopPlugin })
 })
 afterEach(() => {
   cleanup()
@@ -113,7 +113,7 @@ describe('A reviewed catalog pick', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Blender' })
     expect(within(dialog).getByText('Verified')).toBeTruthy()
     expect(within(dialog).getByText(BLENDER.summary)).toBeTruthy()
-    expect(within(dialog).getByText('Reviewed by Nous. Installs for default and turns on right away.')).toBeTruthy()
+    expect(within(dialog).getByText('Reviewed by Moor. Installs for default and turns on right away.')).toBeTruthy()
     expect(within(dialog).queryByText(BLENDER.repo)).toBeNull()
     expect(within(dialog).queryByRole('combobox')).toBeNull()
     expect(within(dialog).queryByRole('checkbox')).toBeNull()
@@ -185,7 +185,7 @@ describe('A reviewed catalog pick', () => {
     fireEvent.click(screen.getByRole('combobox', { name: 'Install for profile' }))
     fireEvent.click(await screen.findByRole('option', { name: 'Research Bot' }))
 
-    expect(screen.getByText('Reviewed by Nous. Installs for Research Bot and turns on right away.')).toBeTruthy()
+    expect(screen.getByText('Reviewed by Moor. Installs for Research Bot and turns on right away.')).toBeTruthy()
     fireEvent.click(installButton())
 
     await waitFor(() => expect(installCalls()[0]?.[1]).toMatchObject({ catalog_name: 'blender', profile: 'research' }))
@@ -344,7 +344,7 @@ describe('Unified package desktop half on a local backend', () => {
       method === 'plugins.manage' && params?.action === 'install' ? { ok: true, plugin_name: 'pkg' } : { plugins: [] }
     )
     installDesktopPlugin.mockResolvedValue({ ok: true, pluginName: 'pkg' })
-    vi.stubGlobal('hermesDesktop', { installDesktopPlugin, probePluginRepo, reconcileDesktopPlugins })
+    vi.stubGlobal('moorDesktop', { installDesktopPlugin, probePluginRepo, reconcileDesktopPlugins })
     renderFlow()
     act(() => openPluginInstallRequest({ repo: 'https://github.com/example/pkg' }))
     expect(await screen.findByText('This package includes')).toBeTruthy()
@@ -381,7 +381,7 @@ describe('Unified package desktop half on a local backend', () => {
 
       return ['/app/desktop-plugins/pkg']
     })
-    vi.stubGlobal('hermesDesktop', { installDesktopPlugin, probePluginRepo, reconcileDesktopPlugins })
+    vi.stubGlobal('moorDesktop', { installDesktopPlugin, probePluginRepo, reconcileDesktopPlugins })
     renderFlow()
     act(() => openPluginInstallRequest({ repo: 'https://github.com/example/pkg' }))
     expect(await screen.findByText('This package includes')).toBeTruthy()
@@ -406,7 +406,7 @@ describe('Unified package desktop half on a local backend', () => {
     reconcileDesktopPlugins.mockImplementation(async () => ['/app/desktop-plugins/pkg'])
     const desktopPluginsRoot = vi.fn(async () => '/app/desktop-plugins')
     const readDir = vi.fn(async () => ({ entries: [] }))
-    vi.stubGlobal('hermesDesktop', { desktopPluginsRoot, installDesktopPlugin, probePluginRepo, readDir, reconcileDesktopPlugins })
+    vi.stubGlobal('moorDesktop', { desktopPluginsRoot, installDesktopPlugin, probePluginRepo, readDir, reconcileDesktopPlugins })
     renderFlow()
     act(() => openPluginInstallRequest({ repo: 'https://github.com/example/pkg' }))
     expect(await screen.findByText('This package includes')).toBeTruthy()
@@ -453,7 +453,7 @@ describe('Unified package desktop half on a local backend', () => {
         ? { ok: true, plugin_name: 'pkg', enabled: false }
         : { plugins: [] }
     )
-    vi.stubGlobal('hermesDesktop', {
+    vi.stubGlobal('moorDesktop', {
       installDesktopPlugin,
       probePluginRepo,
       reconcileDesktopPlugins,

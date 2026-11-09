@@ -23,9 +23,9 @@ if __name__ == "__main__":
 
 from pm.environments import owning_home_root, store_root
 
-# ``sys`` attribute a launcher sets before ``import hermes_bootstrap``: pin HERMES_HOME to the
-# install's default root once the launch-time repair ran (``hermes_bootstrap._pin_launcher_home``).
-PIN_DEFAULT_HOME_FLAG = "_hermes_pin_default_home"
+# ``sys`` attribute a launcher sets before ``import moor_bootstrap``: pin MOOR_HOME to the
+# install's default root once the launch-time repair ran (``moor_bootstrap._pin_launcher_home``).
+PIN_DEFAULT_HOME_FLAG = "_moor_pin_default_home"
 
 
 def _inline_string_literal(value: str) -> str:
@@ -49,23 +49,23 @@ def runtime_command(repo_root: Path, args=(), *, module: str = "moor_cli.main",
     python = python or resolve_store_python(root) or Path(sys.executable)
     entry = f"exec({_inline_string_literal(code)})" if code is not None else (
         f"runpy.run_module({_inline_string_literal(module)}, run_name='__main__', alter_sys=True)")
-    # A literal home is pinned up front; the default one needs ``hermes_constants`` from the
-    # checkout, so it is pinned only after ``hermes_bootstrap``'s launch-time repair (see
+    # A literal home is pinned up front; the default one needs ``moor_constants`` from the
+    # checkout, so it is pinned only after ``moor_bootstrap``'s launch-time repair (see
     # ``_launcher_script``), here again for a bootstrap that predates that hook.
     if home is not None:
-        pin, settle = (f"os.environ['HERMES_HOME'] = os.environ.get('HERMES_HOME') or "
+        pin, settle = (f"os.environ['MOOR_HOME'] = os.environ.get('MOOR_HOME') or "
                        f"{_inline_string_literal(str(home))}; "), ""
     else:
         pin = f"sys.{PIN_DEFAULT_HOME_FLAG} = True; "
-        settle = ("os.environ.get('HERMES_HOME') or os.environ.__setitem__('HERMES_HOME', "
-                  "str(__import__('hermes_constants').get_default_hermes_root())); ")
+        settle = ("os.environ.get('MOOR_HOME') or os.environ.__setitem__('MOOR_HOME', "
+                  "str(__import__('moor_constants').get_default_moor_root())); ")
     bootstrap = (
         "import os, sys, runpy; "
         "os.environ.pop('PYTHONHOME', None); os.environ.pop('PYTHONPATH', None); "
         "os.environ.pop('VIRTUAL_ENV', None); "
         f"sys.path.insert(0, {_inline_string_literal(str(root))}); "
         + pin
-        + "import hermes_bootstrap; "
+        + "import moor_bootstrap; "
         + settle
         + entry
     )
@@ -119,7 +119,7 @@ def resolve_store_python(repo_root: Path, *, publication: bool = False) -> Path 
 
     Callers that PERSIST the result in a launcher (``stage_launcher`` and the
     publication gates below) pass ``publication=True``: the tree's own store
-    wins over an inherited ``HERMES_RUNTIME_DIR``. The override names a store
+    wins over an inherited ``MOOR_RUNTIME_DIR``. The override names a store
     for the running process (an e2e fixture, a desktop toolchain) that a later
     scratch cleanup may delete, leaving the launcher to exit 127 forever
     (#131745). It still supplies the store when the tree records none.
@@ -172,9 +172,9 @@ def _store_script_maker(python_exe: Path):
 
     A launch activates only the dependency environment, which carries no
     distlib and drops the store's site-packages, so the update that repins
-    Python could only publish a .cmd and retire hermes.exe -- which Desktop's
+    Python could only publish a .cmd and retire moor.exe -- which Desktop's
     backend sweep, shortcuts and terminal profiles name. python-build-standalone
-    ships pip (the installer mints the first hermes.exe through it), and its
+    ships pip (the installer mints the first moor.exe through it), and its
     vendored distlib is self-contained. It loads under a private name so the
     store's pip never answers an ``import pip`` in this process."""
     package = Path(python_exe).parent / "Lib" / "site-packages" / "pip" / "_vendor" / "distlib"
@@ -185,7 +185,7 @@ def _store_script_maker(python_exe: Path):
     import importlib.util
 
     # One private package per store copy: a later repin's pip never reuses the first one's.
-    name = f"_hermes_store_distlib_{hashlib.sha256(str(package).encode()).hexdigest()[:12]}"
+    name = f"_moor_store_distlib_{hashlib.sha256(str(package).encode()).hexdigest()[:12]}"
     try:
         if name not in sys.modules:
             spec = importlib.util.spec_from_file_location(
@@ -339,7 +339,7 @@ def mint_launcher(
     return _write_atomic(out_dir / f"{name}.cmd", lambda p: p.write_text(body, encoding="utf-8"))
 
 
-# A killed move can tear the repair's own code (``hermes_bootstrap``, ``hermes_cli``). With the
+# A killed move can tear the repair's own code (``moor_bootstrap``, ``moor_cli``). With the
 # marker still there, a launcher whose checkout import failed runs the copy of the repair that the
 # updater published beside the marker (``update_cmd_commit.publish_recovery_closure``) once every
 # file hashes to the blob id its manifest names; a missing, torn or foreign closure (or none, from
@@ -348,7 +348,7 @@ def mint_launcher(
 # Stdlib plus that copy only, under the same claim and checkout lock (a live writer still refuses,
 # which exits 1 with the repair's own reason), then a relaunch from the restored tree.
 _CLOSURE_REPAIR = """\
-def _hermes_closure_repair():
+def _moor_closure_repair():
     import contextlib, hashlib, io, shutil, subprocess
     from pathlib import Path
     root = Path(__ROOT__)
@@ -417,7 +417,7 @@ def _hermes_closure_repair():
             shutil.rmtree(staging, ignore_errors=True)
         if not verified():
             return
-    for name in [n for n in sys.modules if n.split('.')[0] in ('hermes_cli', 'hermes_bootstrap', 'hermes_constants', 'pm')]:
+    for name in [n for n in sys.modules if n.split('.')[0] in ('moor_cli', 'moor_bootstrap', 'moor_constants', 'pm')]:
         del sys.modules[name]
     tree = os.path.normcase(os.path.realpath(root))
     sys.path[:] = [str(closure)] + [p for p in sys.path if p and os.path.normcase(os.path.realpath(p)) != tree
@@ -427,16 +427,16 @@ def _hermes_closure_repair():
     restored = False
     try:
         with contextlib.redirect_stderr(said):
-            from hermes_cli import _early_recovery
+            from moor_cli import _early_recovery
             restored = _early_recovery.restore_interrupted_pull(root)
     except Exception as exc:
-        said.write('hermes: the checkout cannot start after an interrupted `hermes update`, and it was not '
+        said.write('moor: the checkout cannot start after an interrupted `moor update`, and it was not '
                    'repaired: %s\\n' % (exc,))
     if restored:
-        sys.stderr.write('hermes: the checkout could not start after an interrupted `hermes update`; '
+        sys.stderr.write('moor: the checkout could not start after an interrupted `moor update`; '
                          'repaired it with the recovery code saved before the update.\\n' + said.getvalue())
         _early_recovery.relaunch_after_restore()
-    sys.stderr.write(said.getvalue() or 'hermes: the checkout cannot start after an interrupted `hermes update`; '
+    sys.stderr.write(said.getvalue() or 'moor: the checkout cannot start after an interrupted `moor update`; '
                      'launch again once the update that owns it finishes.\\n')
     raise SystemExit(1)
 """
@@ -447,14 +447,14 @@ def _launcher_script(name: str, repo_root: Path, dependencies: Path | None) -> s
     # Profile boot repairs shared launchers: their default must stay at the
     # install's dependency root, not whichever profile triggered publication.
     #
-    # The launch-time repair of a checkout a killed update left torn (``hermes_bootstrap`` ->
+    # The launch-time repair of a checkout a killed update left torn (``moor_bootstrap`` ->
     # ``_early_recovery.restore_interrupted_pull``) runs before ANY other checkout module is
-    # imported: a merge killed while writing ``hermes_constants.py`` must not stop every launch
-    # before the repair. The default-home pin (which needs ``hermes_constants``) happens inside
-    # ``hermes_bootstrap`` right after the repair (``_PIN_DEFAULT_HOME``), and here again for a
+    # imported: a merge killed while writing ``moor_constants.py`` must not stop every launch
+    # before the repair. The default-home pin (which needs ``moor_constants``) happens inside
+    # ``moor_bootstrap`` right after the repair (``_PIN_DEFAULT_HOME``), and here again for a
     # bootstrap that predates that hook.
     root = str(repo_root.resolve())
-    from hermes_cli._early_recovery import (
+    from moor_cli._early_recovery import (
         INTERRUPTED_PULL_MARKER,
         RECOVERY_CLOSURE,
         RECOVERY_CLOSURE_DIR,
@@ -482,27 +482,27 @@ def _launcher_script(name: str, repo_root: Path, dependencies: Path | None) -> s
         "    sys.dont_write_bytecode = True\n"
         "    from pathlib import Path\n"
         "    try:\n"
-        "        from hermes_cli import _early_recovery\n"
+        "        from moor_cli import _early_recovery\n"
         "    except Exception as exc:\n"
-        "        if _hermes_closure_repair() or not isinstance(exc, ImportError):\n"
+        "        if _moor_closure_repair() or not isinstance(exc, ImportError):\n"
         "            raise\n"
         "        _early_recovery = None  # a tree without the repair: the imports below report real damage\n"
         f"    if _early_recovery is not None and _early_recovery.restore_interrupted_pull(Path({root!r})):\n"
         "        _early_recovery.relaunch_after_restore()\n"
-        "    from hermes_constants import get_default_hermes_root\n"
-        "    os.environ['HERMES_HOME'] = os.environ.get('HERMES_HOME') or str(get_default_hermes_root())\n"
-        "    from hermes_cli._launchers import print_runtime_command\n"
+        "    from moor_constants import get_default_moor_root\n"
+        "    os.environ['MOOR_HOME'] = os.environ.get('MOOR_HOME') or str(get_default_moor_root())\n"
+        "    from moor_cli._launchers import print_runtime_command\n"
         f"    print_runtime_command(Path({root!r}), sys.argv[2:])\n"
         "    sys.exit(0)\n"
         f"sys.{PIN_DEFAULT_HOME_FLAG} = True\n"
         "try:\n"
-        "    import hermes_bootstrap\n"
+        "    import moor_bootstrap\n"
         "except Exception:\n"
-        "    _hermes_closure_repair()\n"
+        "    _moor_closure_repair()\n"
         "    raise\n"
-        "if not os.environ.get('HERMES_HOME'):\n"
-        "    from hermes_constants import get_default_hermes_root\n"
-        "    os.environ['HERMES_HOME'] = str(get_default_hermes_root())\n"
+        "if not os.environ.get('MOOR_HOME'):\n"
+        "    from moor_constants import get_default_moor_root\n"
+        "    os.environ['MOOR_HOME'] = str(get_default_moor_root())\n"
         "if sys.argv[1:2] == ['--run-module']:\n"
         "    import runpy\n"
         "    if len(sys.argv) < 3: sys.exit('moor: --run-module needs a module')\n"
@@ -545,9 +545,9 @@ def _owns_launcher(target: Path, root: Path) -> bool:
     except (OSError, UnicodeError, ValueError):
         return False
     paths = {str(root / p) for p in (
-        "hermes", "run_agent.py", "venv/bin/python", "venv/bin/python3",
-        "venv/bin/hermes",
-        ".hermes/bin/hermes", ".hermes/bin/hermes-acp",
+        "moor", "run_agent.py", "venv/bin/python", "venv/bin/python3",
+        "venv/bin/moor",
+        ".moor/bin/moor", ".moor/bin/moor-acp",
     )}
     # Current store launchers pass this Python bootstrap as one shell argument.
     bootstrap = f"sys.path.insert(0, {str(root)!r})"
@@ -617,7 +617,7 @@ def _retire_exe(exe: Path) -> bool:
 
     Windows refuses to delete a mapped image but allows renaming it, and the
     launcher a Python repin has to retire is usually the one running
-    ``hermes update`` (or the launch retrying its owed launcher step), so a
+    ``moor update`` (or the launch retrying its owed launcher step), so a
     plain unlink left every repinned update owing launchers -- and the install
     stamp -- forever. The aside copy goes on the next publication once its
     process has exited."""
@@ -773,10 +773,10 @@ def _is_home_checkout(root: Path, store: Path) -> bool:
 
     That checkout sits at ``<home>/<checkout>`` and runs ``<home>/tools``. The
     layout alone is not proof: a root that only borrows the checkout can match
-    it through HERMES_RUNTIME_DIR=<home>/tools, so the home must also own it.
+    it through MOOR_RUNTIME_DIR=<home>/tools, so the home must also own it.
     """
-    from hermes_constants import get_default_hermes_root
-    home = get_default_hermes_root().resolve()
+    from moor_constants import get_default_moor_root
+    home = get_default_moor_root().resolve()
     return (root.parent == home and store.resolve() == (home / "tools").resolve()
             and owning_home_root(root) is None)
 
@@ -784,9 +784,9 @@ def _is_home_checkout(root: Path, store: Path) -> bool:
 def _kept_shared_launcher(name: str, local: Path, store: Path, own: Path | None) -> Path | None:
     """Existing checkout launcher already bound outside this root's store.
 
-    Checkout launchers are shared by every HERMES_HOME; a launch under one
+    Checkout launchers are shared by every MOOR_HOME; a launch under one
     data root must never repoint them at another root's interpreter (#123238):
-    once that root is deleted, every hermes breaks. Keep the file when it
+    once that root is deleted, every moor breaks. Keep the file when it
     execs a live interpreter outside *store*. Missing launchers, dead
     interpreters and same-store repins still publish. A launcher whose
     interpreter is gone is never left in front of a kept one: PATHEXT resolves
@@ -933,7 +933,7 @@ def _new_console_environment() -> dict[str, str] | None:
 
     CreateEnvironmentBlock builds it from the user's stored variables
     (HKCU\\Environment, the profile folders, the system variables) and ignores
-    this process's environment. A sandbox that overrides HERMES_HOME or
+    this process's environment. A sandbox that overrides MOOR_HOME or
     LOCALAPPDATA for its own processes does not change the result. Names are
     upper-cased because Windows compares them case-insensitively.
     """
@@ -983,12 +983,12 @@ def _read_environment_block(address: int) -> dict[str, str]:
     return environ
 
 
-def new_console_hermes_root() -> Path | None:
-    """The Hermes root that a newly opened console resolves, or None when Windows cannot say."""
-    from hermes_constants import hermes_root_for_environment
+def new_console_moor_root() -> Path | None:
+    """The Moor root that a newly opened console resolves, or None when Windows cannot say."""
+    from moor_constants import moor_root_for_environment
 
     environ = _new_console_environment()
-    return None if environ is None else hermes_root_for_environment(environ)
+    return None if environ is None else moor_root_for_environment(environ)
 
 
 def owns_user_path(root: Path) -> bool:
@@ -996,12 +996,12 @@ def owns_user_path(root: Path) -> bool:
 
     Every console the user opens reads the User PATH, so only the root that
     new consoles resolve may register there. A custom root qualifies only when
-    HERMES_HOME is stored as a user variable. A process whose own HERMES_HOME,
+    MOOR_HOME is stored as a user variable. A process whose own MOOR_HOME,
     LOCALAPPDATA or USERPROFILE override selects a different root (a review
     sandbox, a test home, a suffixed data directory) gets False. So does any
     root when Windows cannot report the console environment.
     """
-    console_root = new_console_hermes_root()
+    console_root = new_console_moor_root()
     if console_root is not None and (
         os.path.normcase(os.path.realpath(root)) == os.path.normcase(os.path.realpath(console_root))
     ):
@@ -1010,7 +1010,7 @@ def owns_user_path(root: Path) -> bool:
 
     logging.getLogger(__name__).info(
         "User PATH left unchanged: new consoles use %s, not %s",
-        console_root or "an unknown Hermes home", root)
+        console_root or "an unknown Moor home", root)
     return False
 
 
@@ -1073,7 +1073,7 @@ def _expose_windows_user_bin(root: Path, *, create: bool) -> dict:
 
     Commands there that start another checkout which still exists stay in
     place unless *root* is the home's own checkout: a review tree or worktree
-    started against the home leaves the installed ``hermes`` alone.
+    started against the home leaves the installed ``moor`` alone.
     """
     from moor_constants import get_default_moor_root
 
@@ -1169,7 +1169,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     if resolve_store_python(repo_root, publication=True) is None:
-        parser.exit(1, "hermes: store interpreter is missing; finish pm install before publishing launchers\n")
+        parser.exit(1, "moor: store interpreter is missing; finish pm install before publishing launchers\n")
     args.out_dir.mkdir(parents=True, exist_ok=True)
     written = ensure_install_launchers(repo_root, args.out_dir)
     if len(written) != len(ENTRY_POINTS):

@@ -85,7 +85,7 @@ _CHAIN_CAP = 1000
 # model_config keys that belong to the whole conversation, not one compression segment: a rotation
 # carries them onto the child (per-segment keys such as usage anchors stay behind).
 # ``prompt_refresh_epoch`` too: without it a rotated child looks older than any past
-# ``hermes sessions refresh-prompts`` request and rebuilds its prompt once more after eviction.
+# ``moor sessions refresh-prompts`` request and rebuilds its prompt once more after eviction.
 _CONVERSATION_MODEL_CONFIG_KEYS = ("onboarding_run", "prompt_refresh_epoch")
 
 
@@ -328,7 +328,7 @@ class SessionCompressionMixin:
         """INSERT the compression child's ``sessions`` row copied from *parent*. Same contract as
         _insert_session_row's compression-fork backfill: the child stays on the parent's profile and keeps
         gateway routing/origin columns; no owner on either side -> this store's profile."""
-        from hermes_state_sessions import _parse_model_config
+        from moor_state_sessions import _parse_model_config
         # Pin/archive and the conversation keys are compression-lineage state; canonical branch/reset
         # verbs also publish through here, and their child is its own conversation.
         continuation = not any(k in (model_config or {}) for k in ("_branched_from", "_reset_from"))
@@ -408,7 +408,7 @@ class SessionCompressionMixin:
             watermark: Optional[int] = None, watermark_ceiling: Optional[int] = None) -> None:
         """:meth:`publish_compression_child` on the caller's write transaction (never commits). The
         owner and the worker/canonical-mutation verbs share this one body so they cannot drift."""
-        from hermes_state_errors import CompressionSessionBusyError
+        from moor_state_errors import CompressionSessionBusyError
         if require_lease_refresh and compression_lock_holder:
             conn.execute(
                 "UPDATE compression_locks SET expires_at = ? WHERE session_id = ? AND holder = ?",
@@ -476,7 +476,7 @@ class SessionCompressionMixin:
         # A child on a real surface stamps the chain's unset ancestors, so compressing a conversation
         # whose root predates write-time stamping lists it again under its surface.
         stamp_compression_ancestors(conn, child_session_id)
-        from hermes_state_local_lineage import advance_local_target
+        from moor_state_local_lineage import advance_local_target
         advance_local_target(conn, parent_session_id, child_session_id)
         if parent["archived"]:
             # A live continuation under an idle-sweep archive re-activates the chat; after the
@@ -753,7 +753,7 @@ class SessionCompressionMixin:
         retried at once with a longer write patience, and ``on_contended()`` is called instead,
         since the busy writer may be the holder's last flush. ``should_abort()`` True (e.g.
         ``/stop``) returns False at once."""
-        from hermes_state import classify_persistence_error
+        from moor_state import classify_persistence_error
         deadline = time.monotonic() + max(0.0, float(wait_seconds))
         patience = acquire_patience_s
         wait_started = None

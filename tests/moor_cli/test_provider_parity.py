@@ -63,10 +63,10 @@ def _accounts_tab_providers() -> set[str]:
     return {p["id"] for p in data["providers"]}
 
 
-def test_every_hermes_model_provider_is_configurable_in_desktop():
-    """PARITY CONTRACT: GUI (keys ∪ accounts) == the `hermes model` universe (listed providers):
+def test_every_moor_model_provider_is_configurable_in_desktop():
+    """PARITY CONTRACT: GUI (keys ∪ accounts) == the `moor model` universe (listed providers):
     every listed provider is configurable, and an unlisted pre-release one is on neither tab."""
-    from hermes_cli.models_catalog_static import listed_canonical_providers
+    from moor_cli.models_catalog_static import listed_canonical_providers
 
     gui = _keys_tab_providers() | _accounts_tab_providers()
     listed = {e.slug for e in listed_canonical_providers()}

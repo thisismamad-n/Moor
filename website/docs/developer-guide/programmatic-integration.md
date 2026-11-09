@@ -141,14 +141,14 @@ POST /v1/runs/{id}/steer         Inject mid-run guidance at the next tool bounda
 POST /v1/runs/{id}/resolve-unknown Acknowledge an exact restart-unknown admission
 POST /v1/runs/{id}/stop          Interrupt the run
 GET  /v1/capabilities            Machine-readable feature flags
-GET  /v1/models                  Lists hermes-agent
+GET  /v1/models                  Lists moor-agent
 GET  /api/model/options          Provider-aware picker inventory
 GET  /health, /health/detailed
 ```
 
 Setup, headers (`X-moor-session-Id`, `X-moor-session-Key`), and frontend wiring: [API Server](../user-guide/features/api-server).
 
-The browser-extension controller protocol has been removed; to let Hermes drive a browser you
+The browser-extension controller protocol has been removed; to let Moor drive a browser you
 already run, use `browser.cdp_url` or `/browser connect` — see [Browser-extension control (removed)](../user-guide/features/api-server#browser-extension-control-removed).
 
 ### Model catalog surfaces

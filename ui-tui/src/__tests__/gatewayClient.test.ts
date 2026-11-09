@@ -142,8 +142,8 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('publishes canonical readiness once after discovery and arms the negotiated heartbeat', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    delete process.env.HERMES_TUI_SIDECAR_URL
+    delete process.env.MOOR_TUI_GATEWAY_URL
+    delete process.env.MOOR_TUI_SIDECAR_URL
     const gw = new GatewayClient(async () => ({ url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }))
     const events: any[] = []
     gw.on('event', event => events.push(event))
@@ -180,10 +180,10 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('/logs carries the attach lifecycle like main\'s sidecar spawn line (row 24)', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    delete process.env.HERMES_TUI_SIDECAR_URL
+    delete process.env.MOOR_TUI_GATEWAY_URL
+    delete process.env.MOOR_TUI_SIDECAR_URL
     const gw = new GatewayClient(async () => ({
-      url: 'ws://127.0.0.1:9/api/ws?token=secret', protocols: [], instance_id: 'owner-1', profile_id: '/home/u/.hermes/profiles/work'
+      url: 'ws://127.0.0.1:9/api/ws?token=secret', protocols: [], instance_id: 'owner-1', profile_id: '/home/u/.moor/profiles/work'
     }))
 
     try {
@@ -191,7 +191,7 @@ describe('GatewayClient websocket attach mode', () => {
       await vi.advanceTimersByTimeAsync(0)
       const tail = gw.getLogTail(20)
       expect(tail).toMatch(/^\[lifecycle\] attached shared gateway /m)
-      expect(tail).toContain('profile=/home/u/.hermes/profiles/work')
+      expect(tail).toContain('profile=/home/u/.moor/profiles/work')
       expect(tail).toContain('instance=owner-1')
       expect(tail).not.toContain('secret')
     } finally {
@@ -202,8 +202,8 @@ describe('GatewayClient websocket attach mode', () => {
 
   it("boots the owner's profile skin: runtime.describe.skin rides the client-local ready (row 3)", async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    delete process.env.HERMES_TUI_SIDECAR_URL
+    delete process.env.MOOR_TUI_GATEWAY_URL
+    delete process.env.MOOR_TUI_SIDECAR_URL
     const gw = new GatewayClient(async () => ({ url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }))
     const events: any[] = []
     gw.on('event', event => events.push(event))
@@ -230,8 +230,8 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('remembers clarify-batch-v1 from runtime.describe and forgets it on reconnect to an owner without it', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    delete process.env.HERMES_TUI_SIDECAR_URL
+    delete process.env.MOOR_TUI_GATEWAY_URL
+    delete process.env.MOOR_TUI_SIDECAR_URL
     const gw = new GatewayClient(async () => ({ url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }))
 
     const open = async () => {
@@ -272,8 +272,8 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('treats a failed runtime.describe as a transport failure: redial, re-describe, then ready (B2-21)', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    delete process.env.HERMES_TUI_SIDECAR_URL
+    delete process.env.MOOR_TUI_GATEWAY_URL
+    delete process.env.MOOR_TUI_SIDECAR_URL
     const gw = new GatewayClient(async () => ({ url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }))
     const events: any[] = []
     gw.on('event', event => events.push(event))
@@ -315,7 +315,7 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('keeps discovery-only retries alive and delivers readiness to the mounted subscriber', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
+    delete process.env.MOOR_TUI_GATEWAY_URL
     const grant = { url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }
     const bootstrap = vi.fn().mockResolvedValueOnce(grant).mockRejectedValueOnce(new Error('owner stopped')).mockRejectedValueOnce(new Error('owner stopped')).mockResolvedValue(grant)
     const gw = new GatewayClient(bootstrap)
@@ -340,10 +340,10 @@ describe('GatewayClient websocket attach mode', () => {
     } finally { gw.kill(); vi.useRealTimers() }
   })
 
-  it('pins the launcher tool-progress mode (hermes --tui -v) on the created session before returning it', async () => {
+  it('pins the launcher tool-progress mode (moor --tui -v) on the created session before returning it', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    vi.stubEnv('HERMES_TUI_TOOL_PROGRESS', 'verbose')
+    delete process.env.MOOR_TUI_GATEWAY_URL
+    vi.stubEnv('MOOR_TUI_TOOL_PROGRESS', 'verbose')
     const gw = new GatewayClient(async () => ({ url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }))
     gw.on('event', () => undefined)
 
@@ -384,8 +384,8 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('retries a create whose launch pin failed after the ACK under the same request_id (one session, pin reapplied)', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
-    vi.stubEnv('HERMES_TUI_TOOL_PROGRESS', 'verbose')
+    delete process.env.MOOR_TUI_GATEWAY_URL
+    vi.stubEnv('MOOR_TUI_TOOL_PROGRESS', 'verbose')
     const gw = new GatewayClient(async () => ({ url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }))
     gw.on('event', () => undefined)
 
@@ -432,7 +432,7 @@ describe('GatewayClient websocket attach mode', () => {
 
   it('re-ensures a crashed owner on a bounded number of reconnects, then stays discovery-only', async () => {
     vi.useFakeTimers()
-    delete process.env.HERMES_TUI_GATEWAY_URL
+    delete process.env.MOOR_TUI_GATEWAY_URL
     const grant = { url: 'ws://gateway.test/api/ws', protocols: [], instance_id: 'owner', profile_id: 'fixture' }
     const bootstrap = vi.fn().mockResolvedValueOnce(grant).mockRejectedValue(new Error('gateway absent: not ready'))
     const gw = new GatewayClient(bootstrap)
@@ -451,7 +451,7 @@ describe('GatewayClient websocket attach mode', () => {
   })
 
   it('negotiates the canonical wire on an explicit attach whose listener advertises a session authority', async () => {
-    process.env.HERMES_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
+    process.env.MOOR_TUI_GATEWAY_URL = 'ws://gateway.test/api/ws?token=abc'
     const gw = new GatewayClient()
     const events: any[] = []
 

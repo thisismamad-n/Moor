@@ -6,7 +6,7 @@ import { isSessionRemote } from '@/store/session-states'
 
 import {
   extractDroppedFiles,
-  HERMES_PATHS_MIME,
+  MOOR_PATHS_MIME,
   type OsDropStagingContext,
   partitionDroppedFiles
 } from '../../hooks/use-composer-actions'

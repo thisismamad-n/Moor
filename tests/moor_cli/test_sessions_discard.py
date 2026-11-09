@@ -1,4 +1,4 @@
-"""`hermes sessions discard`: a script can clear a turn lost in a gateway crash without a REPL."""
+"""`moor sessions discard`: a script can clear a turn lost in a gateway crash without a REPL."""
 import argparse
 import asyncio
 import json
@@ -13,8 +13,8 @@ async def test_sessions_discard_yes_resolves_every_unknown_admission_with_its_fe
     non-TTY stdin it refuses, and nothing is resolved."""
     from websockets.asyncio.server import serve
 
-    from hermes_cli import sessions_cmd
-    from hermes_cli.subcommands.sessions import build_sessions_parser
+    from moor_cli import sessions_cmd
+    from moor_cli.subcommands.sessions import build_sessions_parser
 
     lost = ["admission-lost-a", "admission-lost-b"]
     snapshot = {"session_id": "local-abc", "stored_session_id": "local-abc", "pending": [
@@ -37,7 +37,7 @@ async def test_sessions_discard_yes_resolves_every_unknown_admission_with_its_fe
     build_sessions_parser(parser.add_subparsers(dest="command"), cmd_sessions=sessions_cmd.cmd_sessions)
     monkeypatch.setattr("sys.stdin.isatty", lambda: False)
     async with serve(peer, "127.0.0.1", 0) as server:
-        monkeypatch.setenv("HERMES_TUI_GATEWAY_URL", f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}")
+        monkeypatch.setenv("MOOR_TUI_GATEWAY_URL", f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}")
 
         def run(*argv):
             args = parser.parse_args(["sessions", "discard", "my script session", *argv])

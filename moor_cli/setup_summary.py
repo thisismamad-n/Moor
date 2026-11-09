@@ -27,8 +27,8 @@ _STT_SUMMARY_DEFAULT = ("Local Whisper", "faster_whisper", "run 'moor tools' →
 _BROWSER_MISSING_HINTS = {
     "Browserbase": "BROWSERBASE_API_KEY/BROWSERBASE_PROJECT_ID",
     "Browser Use": "BROWSER_USE_API_KEY",
-    "Local browser": "Chromium: run 'hermes pm install chromium'"}
-_BROWSER_MISSING_DEFAULT = "Chromium (run 'hermes pm install chromium'), or configure Browser Use or Browserbase"
+    "Local browser": "Chromium: run 'moor pm install chromium'"}
+_BROWSER_MISSING_DEFAULT = "Chromium (run 'moor pm install chromium'), or configure Browser Use or Browserbase"
 _WEB_MISSING = ("EXA_API_KEY, PARALLEL_API_KEY, FIRECRAWL_API_KEY/FIRECRAWL_API_URL, TAVILY_API_KEY, "
                 "PERPLEXITY_API_KEY, KEENABLE_API_KEY, or SEARXNG_URL")
 
@@ -254,4 +254,4 @@ def _print_setup_summary(config: dict, moor_home):
     print()
 
 
-import hermes_cli.setup as _setup
+import moor_cli.setup as _setup

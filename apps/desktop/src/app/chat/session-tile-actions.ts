@@ -9,7 +9,7 @@
  */
 
 import type { AppendMessage, ThreadMessage } from '@assistant-ui/react'
-import { isUndeliveredCorrectionRefusal } from '@hermes/shared'
+import { isUndeliveredCorrectionRefusal } from '@moor/shared'
 import { useCallback, useMemo, useRef } from 'react'
 
 import type { ClientSessionState } from '@/app/types'

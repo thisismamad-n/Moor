@@ -4,8 +4,8 @@ Which providers and models actually **read** the reasoning that a client replays
 earlier assistant turns? A `200 OK` only shows a field was accepted. The gateway may drop it,
 and so may the chat template (for example, Qwen3 templates discard reasoning from earlier turns).
 This harness measures consumption on the wire. It uses only the standard library's HTTP client
-and has no Hermes runtime dependency, so it tests what a provider does with a request, not what
-Hermes sends.
+and has no Moor runtime dependency, so it tests what a provider does with a request, not what
+Moor sends.
 
 ## Method
 
@@ -54,7 +54,7 @@ On OpenAI Responses, both turn-2 requests are also sent with `reasoning.context:
 which the API rejects with a 400 on models that do not support it. Gemini native adds a third
 turn-2 request carrying the documented `skip_thought_signature_validator` dummy signature.
 
-**Lanes (Nous Portal).** The response id identifies the lane. `gen-…` means the OpenRouter lane,
+**Lanes (Moor Portal).** The response id identifies the lane. `gen-…` means the OpenRouter lane,
 and anything else (`chatcmpl-`, a uuid, `msg_`) means a direct upstream. The same public id can
 switch lanes between calls. Pass `--want-direct id1,id2` to resample a cell up to
 `--lane-attempts` times until it lands on a direct lane. Results are keyed by
@@ -82,14 +82,14 @@ is at least `0.5·T`. For opaque carriers, any verbatim delta above 25 tokens co
 
 ```bash
 # what the Portal lists, minus aliases / :batch / non-text / non-reasoning ids
-python evals/reasoning_replay/harness.py models --route nous
+python evals/reasoning_replay/harness.py models --route moor
 
 # priority ids, resampled until a direct-lane result exists for each cell
-python evals/reasoning_replay/harness.py run --route nous \
+python evals/reasoning_replay/harness.py run --route moor \
     --models x-ai/grok-4.7,z-ai/glm-5.3 --want-direct x-ai/grok-4.7,z-ai/glm-5.3 --out $OUT
 
 # whole Portal catalog up to $4 per 1M output tokens; vendor routes
-python evals/reasoning_replay/harness.py run --route nous --models portal-max:4 --out $OUT
+python evals/reasoning_replay/harness.py run --route moor --models portal-max:4 --out $OUT
 python evals/reasoning_replay/harness.py run --route openai-responses --models gpt-6-luna --out $OUT
 python evals/reasoning_replay/harness.py run --route gemini-native --models gemini-3.5-flash --out $OUT
 
@@ -102,11 +102,11 @@ python evals/reasoning_replay/harness.py report --out $OUT   # writes matrix.md 
 ```
 
 **Credentials** are read at call time and never written to disk or printed.
-- The Nous Portal key comes from `~/.hermes/auth.json` (`providers.nous.agent_key`, falling
+- The Moor Portal key comes from `~/.moor/auth.json` (`providers.moor.agent_key`, falling
   back to `access_token`). On a 401 the file is re-read once, waiting 15 s if the key has not
   changed yet.
 - Every other route reads its key from the process environment first, then from
-  `~/.hermes/.env`.
+  `~/.moor/.env`.
 - Named routes are listed in `ROUTES`. For anything else, use `--route custom` with
   `--base-url` and `--key-env`.
 

@@ -144,7 +144,7 @@ function admitExecutionEvent(
 /** The gateway-event dispatcher, extracted from useMessageStream. */
 export function useGatewayEventHandler(deps: GatewayEventDeps) {
   const executionAuthorities = useRef(new Map())
-  const { activeSessionIdRef, compactedTurnRef, refreshHermesConfig, sessionStateByRuntimeIdRef } = deps
+  const { activeSessionIdRef, compactedTurnRef, refreshMoorConfig, sessionStateByRuntimeIdRef } = deps
 
   // One pin per concurrent unscoped stream, not a single shared slot: two chats
   // streaming at once used to clobber each other's pin (#46194 / #62823).

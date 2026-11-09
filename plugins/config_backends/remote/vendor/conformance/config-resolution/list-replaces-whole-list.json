@@ -47,7 +47,7 @@
       "values": {
         "fallback_providers": [
           {
-            "provider": "nous"
+            "provider": "moor"
           }
         ]
       },
@@ -63,7 +63,7 @@
       },
       "fallback_providers": [
         {
-          "provider": "nous"
+          "provider": "moor"
         }
       ]
     },
@@ -105,7 +105,7 @@
       },
       "fallback_providers": [
         {
-          "provider": "nous"
+          "provider": "moor"
         }
       ]
     }

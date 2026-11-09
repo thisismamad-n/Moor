@@ -109,7 +109,7 @@ def _surface(layer: str, code: str, retryable: bool, provider: str = "", model: 
 def _api_key_env(provider: str) -> str:
     """The env var holding ``provider``'s API key, so the client can open that row."""
     try:
-        from hermes_cli.provider_catalog import provider_catalog_by_slug
+        from moor_cli.provider_catalog import provider_catalog_by_slug
 
         descriptor = provider_catalog_by_slug().get(provider.strip().lower())
         return descriptor.api_key_env_vars[0] if descriptor and descriptor.api_key_env_vars else ""

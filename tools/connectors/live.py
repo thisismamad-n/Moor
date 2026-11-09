@@ -39,7 +39,7 @@ def _key(session_key: str, profile_home: Optional[str]) -> tuple[str, str]:
 
 
 def open(operation: ConnectionOperation) -> None:
-    operation.profile_key = hermes_home_key()
+    operation.profile_key = moor_home_key()
     key = (operation.profile_key, operation.session_key)
     with _lock:
         existing = _open.get(key)

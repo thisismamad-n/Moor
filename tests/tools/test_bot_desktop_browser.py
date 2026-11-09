@@ -19,7 +19,7 @@ from tools.bot_desktop import browser, placement, runtime
 def _browser_config(monkeypatch, home: Path, **browser_cfg) -> None:
     """This profile's real config.yaml with a ``browser:`` section."""
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     (home / "config.yaml").write_text(json.dumps({"browser": browser_cfg}), encoding="utf-8")
 
 
@@ -70,13 +70,13 @@ def test_user_pinned_profile_wins(tmp_path, monkeypatch):
     assert browser.profile_dir() == tmp_path / "mine"
 
 
-def test_pinned_profile_honours_tilde_and_resolves_relative_paths_against_hermes_home(tmp_path, monkeypatch):
+def test_pinned_profile_honours_tilde_and_resolves_relative_paths_against_moor_home(tmp_path, monkeypatch):
     """Regression for #110029: the docs say pinning a user-data-dir pins your own, but only an absolute value
     was honoured — `~/pin` and `pin` silently fell back to the default and the human's dock browser and the
     agent's browser could end up on different jars. A relative path is anchored where the rest of this
-    profile's screen state lives (its HERMES_HOME), so two profiles never share one 'pin'."""
-    home = tmp_path / "hermes-home"
-    monkeypatch.setattr(runtime, "get_hermes_home", lambda: home)
+    profile's screen state lives (its MOOR_HOME), so two profiles never share one 'pin'."""
+    home = tmp_path / "moor-home"
+    monkeypatch.setattr(runtime, "get_moor_home", lambda: home)
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "user")
     monkeypatch.setenv("HOME", str(tmp_path / "user"))
 
@@ -150,7 +150,7 @@ def test_running_instance_port_requires_live_pid_and_open_port(tmp_path):
 
 def test_agent_attaches_to_human_started_browser(tmp_path, monkeypatch):
     """With a live dock instance on the shared profile the agent's launch ATTACHES to it (never owned, so
-    never killed by Hermes); without one it launches its own Chromium on that profile."""
+    never killed by Moor); without one it launches its own Chromium on that profile."""
     from tools import browser_launcher as launcher
 
     monkeypatch.setattr(launcher, "_browsers", {})

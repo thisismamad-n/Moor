@@ -1,5 +1,5 @@
-import type { HermesGitBranch, HermesGitWorktree } from '@/global'
-import type { ProjectInfo, SessionInfo } from '@/hermes'
+import type { MoorGitBranch, MoorGitWorktree } from '@/global'
+import type { ProjectInfo, SessionInfo } from '@/moor'
 import { normalize } from '@/lib/text'
 
 import { rankSessions } from '../order'
@@ -144,7 +144,7 @@ export const DEFAULT_BRANCH_LABEL = 'main'
  */
 export function laneSwitchTarget(
   group: Pick<SidebarSessionGroup, 'isGit' | 'isMain' | 'label' | 'path'>,
-  branches: readonly Pick<HermesGitBranch, 'isRemote' | 'name'>[]
+  branches: readonly Pick<MoorGitBranch, 'isRemote' | 'name'>[]
 ): null | string {
   const label = group.label.trim()
 

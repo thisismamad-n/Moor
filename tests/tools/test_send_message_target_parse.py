@@ -590,10 +590,10 @@ def test_unknown_platform_that_left_core_names_its_install_command(tmp_path, mon
     from tools.send_message_targets import resolve_send_target
     from tools.send_message_tool import _resolve_platform_config
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     _, _, _, err = _resolve_platform_config("homeassistant", GatewayConfig())
-    assert "unregistered plugin platform: homeassistant" in err and "`hermes plugins install homeassistant`" in err
+    assert "unregistered plugin platform: homeassistant" in err and "`moor plugins install homeassistant`" in err
     _, _, err = resolve_send_target("homeassistant", "living room")
-    assert "`hermes plugins install homeassistant`" in err
+    assert "`moor plugins install homeassistant`" in err
     _, _, _, err = _resolve_platform_config("nosuchplatform", GatewayConfig())
     assert err == "Unknown or unregistered plugin platform: nosuchplatform"

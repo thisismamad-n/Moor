@@ -1,6 +1,6 @@
 """Native PTY clients against an ordinary daemon and loopback model only.
 
-`hermes --cli chat` (interactive and -q/-Q) is main's HermesCLI again, its agent and session store the
+`moor --cli chat` (interactive and -q/-Q) is main's MoorCLI again, its agent and session store the
 gateway's; `-z` stays on the gateway transport client. The CLI process may read state.db (maintainer
 ruling) but builds no AIAgent, no GatewayRunner and no SessionDB writer. The thin client's
 `/approve <id>` detach/reconnect leg is retired: main's classic approval is the modal the A/B harness
@@ -18,7 +18,7 @@ import uuid
 
 import pytest
 
-from hermes_cli.observability.shared_metrics_consent import OFFER_VERSION
+from moor_cli.observability.shared_metrics_consent import OFFER_VERSION
 
 from tests.gateway.test_normal_runtime_boot import control
 
@@ -39,12 +39,12 @@ def test_native_classic_fresh_resume_and_oneshot(tmp_path, model_peer, request):
         "approvals": {"mode": "manual", "timeout": 60},
         "model": {"provider": "custom", "default": "local-wire-stub", "base_url": model_url},
         "auxiliary": {"title_generation": {"enabled": False}},
-        # Answered at the current offer version, as tests/fakes/fake_llm_provider.write_hermes_home
+        # Answered at the current offer version, as tests/fakes/fake_llm_provider.write_moor_home
         # does: main's interactive chat asks it first on a home that never answered.
         "telemetry": {"shared_metrics": {"enabled": False, "send": False, "offer_version": OFFER_VERSION}},
     }))
     env = {k: os.environ[k] for k in ("PATH", "LANG", "TZ") if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), MOOR_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED="1",
                OPENAI_API_KEY="loopback-only", OPENAI_BASE_URL=model_url)
     # Instrument constructor calls without replacing runtime predicates or behavior.
@@ -61,7 +61,7 @@ def trace(frame, event, arg):
             owners.append(name)
 sys.setprofile(trace)
 try:
-    module = 'hermes_cli.main'
+    module = 'moor_cli.main'
     if sys.argv[1:2] == ['--fixture-direct']:
         sys.argv.pop(1)
         module = 'cli'
@@ -72,7 +72,7 @@ finally:
 ''')
     # argv[0] is replaced by runpy, so the witness path is explicitly bound.
     wrapper.write_text(wrapper.read_text().replace("Path(sys.argv[0]).with_name('client-owner.json')", repr(str(witness)) + " and Path(" + repr(str(witness)) + ")"))
-    tmux_name = "hermes-cli-test-" + uuid.uuid4().hex
+    tmux_name = "moor-cli-test-" + uuid.uuid4().hex
 
     def tmux(*args):
         return subprocess.run(["tmux", "-L", tmux_name, *args], env=env,
@@ -125,7 +125,7 @@ finally:
                 tmux("send-keys", "-t", "chat", "Enter")
 
             launch("--cli", "chat")
-            first = until("Welcome to Hermes Agent")
+            first = until("Welcome to Moor Agent")
             until("❯ ")  # the banner prints before the prompt accepts input
             type_line("WS_SHARED")
             fresh = until("LOCAL_ACK_WS_SHARED")

@@ -1,8 +1,8 @@
 import time
 from contextlib import closing
 import pytest
-from hermes_cli.sessions_cmd import _note_pinned_skipped
-from hermes_state import SessionDB
+from moor_cli.sessions_cmd import _note_pinned_skipped
+from moor_state import SessionDB
 
 
 def test_prune_sessions_respects_touch_session_activity(tmp_path):

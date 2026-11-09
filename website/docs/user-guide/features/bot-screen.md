@@ -28,7 +28,7 @@ running as that user — another bot on the same host, and the bot's own
 `terminal` tool included — can reach them directly, bypassing the pane and the
 lease. The lease is a tool-level fence on `computer_use` and the browser tools,
 not an OS one. One boundary is wider than the OS user: Chromium's DevTools
-port (the dock's Browser and every Chromium Hermes launches advertise one on
+port (the dock's Browser and every Chromium Moor launches advertise one on
 loopback so the agent can attach) is reachable by **any** local user on the
 host, and Chromium offers no per-user restriction for it. Running each bot as
 its own OS user is out of scope; if that isolation matters to you, or the host
@@ -184,9 +184,9 @@ controller drops back to watching.
 
 While the screen runs, the bot's browser tool and the dock's **Browser** icon are
 the same browser: the Chromium `browser_exec` drives, with one persistent
-user-data-dir per bot (`<HERMES_HOME>/bot-desktop/browser-profile`; set
+user-data-dir per bot (`<MOOR_HOME>/bot-desktop/browser-profile`; set
 `browser.user_data_dir` to pin your own — `~` expands, and a relative path such
-as `pin` resolves against that bot's `HERMES_HOME`, i.e. `<HERMES_HOME>/pin`).
+as `pin` resolves against that bot's `MOOR_HOME`, i.e. `<MOOR_HOME>/pin`).
 Click Browser during a takeover and you
 are in the bot's own windows and cookie jar; what you sign in to is what the bot
 uses afterwards and in every later session, until the site expires the login.
@@ -201,7 +201,7 @@ screen does not re-pin the Browser icon. Delete that file and the dock is
 rebuilt on the next `screen start` from whatever is installed then.
 
 Which Chromium the dock and the bot use: an explicit
-`browser.executable_path` wins; otherwise Hermes uses the PM-managed
+`browser.executable_path` wins; otherwise Moor uses the PM-managed
 Chromium and falls back to a system `chromium` / `google-chrome`. A non-root
 user on a host with `kernel.apparmor_restrict_unprivileged_userns=1` (Ubuntu
 23.10 and later) gets the reverse order, because there the managed build cannot
@@ -209,14 +209,14 @@ set up its sandbox and exits with `FATAL: No usable sandbox!`, while the
 distro's Chromium ships with an AppArmor profile that allows it. If the pick is
 wrong for your host, set `browser.executable_path: /usr/bin/chromium` (or
 your Chrome path) in the bot's `config.yaml`. The official Docker image
-records PM's pinned full Chromium in `/etc/hermes/chromium-executable-path`;
+records PM's pinned full Chromium in `/etc/moor/chromium-executable-path`;
 that build can draw a window, so the dock's Browser icon uses it. The
 `-desktop` tags also carry the distro `chromium` — set
 `browser.executable_path: /usr/bin/chromium` on hosts that refuse the pinned
 build's sandbox. A Playwright *headless shell* is never used for the
 icon: when it is the only browser, the pane / `screen status` report **no
 headed browser** until you install a headed one (`apt-get install chromium`).
-The dock icon starts the browser with the same sandbox settings Hermes's
+The dock icon starts the browser with the same sandbox settings Moor's
 Chromium launcher uses in that container, so the human's Browser and the bot's browser are one
 and the same.
 
@@ -302,14 +302,14 @@ kept, not replaced: when `docker_image` is unset and a persisted container runs
 another image (the old default, `nikolaik/python-nodejs:python3.11-nodejs20`),
 the terminal keeps using that container and you decide the switch. The
 interactive CLI asks once at startup; the Screen pane shows the same choice
-with **Switch image** / **Keep current image**; `hermes config set
+with **Switch image** / **Keep current image**; `moor config set
 terminal.docker_image nousresearch/hermes-sandbox:desktop` is the same answer
 from any shell. Either answer writes `terminal.docker_image`, and a written
 image is a decision: the container is recreated on the next terminal call only
 when you chose the new image, and only once the new image has been pulled (a
 private or misspelled tag, or a registry outage, keeps your current container
 running instead of leaving you with nothing). What a switch means: files under `/root` and
-`/workspace` stay (they are host directories under `~/.hermes/sandboxes/`),
+`/workspace` stay (they are host directories under `~/.moor/sandboxes/`),
 packages installed inside the container with `apt`/`pip`/`npm -g` are
 reinstalled on demand, and Python 3.11 virtualenvs need a rebuild on 3.13.
 Gateways and cron never decide; they keep the sandbox and log the notice.
@@ -322,9 +322,9 @@ denies the user namespaces its own sandbox needs; the container is the
 sandbox).
 
 Runtime state inside the sandbox (X socket, cookie, launcher log) lives under
-`<sandbox tmp>/hermes-bot-desktop/<profile>/`; the host keeps only a marker under
-`<HERMES_HOME>/bot-desktop/`. The browser profile (logins, cookies) lives in the
-desktop user's home inside the sandbox, `~/.hermes/bot-desktop/browser-profile`,
+`<sandbox tmp>/moor-bot-desktop/<profile>/`; the host keeps only a marker under
+`<MOOR_HOME>/bot-desktop/`. The browser profile (logins, cookies) lives in the
+desktop user's home inside the sandbox, `~/.moor/bot-desktop/browser-profile`,
 shared by the agent's browser and the dock's **Browser** icon. It follows the
 container's own persistence: kept across stops and restarts of a persisted
 container, gone with an ephemeral one or when you approve an image switch (the

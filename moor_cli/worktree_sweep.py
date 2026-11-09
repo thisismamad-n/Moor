@@ -3,15 +3,15 @@
 The classic pruner (``worktree_ops._prune_stale_worktree_trees``) never removes a dirty or
 unpushed tree at any age, so leftovers of finished lanes pile up forever. This sweep keeps its
 tiers and classifier, then removes an idle dirty/unpushed tree only after archiving its full
-working state to ``refs/hermes/archive/<tree>`` (``worktree_archive``); a failed archive keeps
-the tree. Never touched, at any age or budget: Kanban ``t_<hex>`` trees, trees whose ``hermes``
+working state to ``refs/moor/archive/<tree>`` (``worktree_archive``); a failed archive keeps
+the tree. Never touched, at any age or budget: Kanban ``t_<hex>`` trees, trees whose ``moor``
 lock owner still runs, trees any live process sits in (cwd or open file), and trees with file or
 ref activity younger than their tier, and trees holding anything an archive cannot carry
 (``worktree_retention.removal_blocker``: a submodule, an embedded repository, a per-worktree ref,
 an untracked file over the size cap). With
 ``archive_dirty: false`` and no size budget the classic pruner runs unchanged.
 
-``plan_sweep`` is read-only (``hermes worktree prune --dry-run`` prints it); ``execute_plan``
+``plan_sweep`` is read-only (``moor worktree prune --dry-run`` prints it); ``execute_plan``
 applies a frozen plan.
 """
 
@@ -57,7 +57,7 @@ def sweep_settings() -> dict:
     """``worktrees.*`` from the active profile's config (defaults on any read failure)."""
     settings = dict(_DEFAULTS)
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         section = load_config_readonly().get("worktrees") or {}
         if isinstance(section, dict):
             settings.update({k: section[k] for k in _DEFAULTS if section.get(k) is not None})
@@ -156,7 +156,7 @@ def _last_activity(path: str) -> float:
     nearest surviving parent directory was stamped by the unlink. The index is not a signal:
     the classifier's own ``git status`` may rewrite it. ``GIT_OPTIONAL_LOCKS=0`` keeps this probe from refreshing (and re-stamping) the index.
     """
-    from hermes_cli._subprocess_compat import noninteractive_repo_git_env
+    from moor_cli._subprocess_compat import noninteractive_repo_git_env
     newest = 0.0
     wt = Path(path)
     env = noninteractive_repo_git_env(path)
@@ -193,15 +193,15 @@ def _last_activity(path: str) -> float:
 
 
 def _tier_hours(name: str, max_age_hours: float) -> float:
-    from hermes_cli.worktree_ops import prune_tier_hours
+    from moor_cli.worktree_ops import prune_tier_hours
     return prune_tier_hours(name, max_age_hours)
 
 
 def _plan_survivor(repo_root: str, entry: Path, verdict: str, lock_state, settings: dict,
                    tier_hours: float, now: float) -> tuple[str, str, Optional[str], Optional[float]]:
     """(action, reason, lock_state, last_activity) for a dirty/unpushed tree past its tier."""
-    from hermes_cli import worktree_ops as ops
-    from hermes_cli.worktree_archive import archive_preflight
+    from moor_cli import worktree_ops as ops
+    from moor_cli.worktree_archive import archive_preflight
     what = _ARCHIVE_REASONS[verdict]
     lock_state = ops._worktree_lock_is_live(repo_root, str(entry), timeout=5)
     if lock_state == "live":
@@ -222,8 +222,8 @@ def _apply_budget(decisions: list[Decision], max_total_gb: float, max_file_mb: f
 
     Only idle past-tier trees count or move; live, young and kanban trees are invisible here.
     """
-    from hermes_cli.worktree_archive import archive_preflight
-    from hermes_cli.worktree_gc import _tree_size_mb
+    from moor_cli.worktree_archive import archive_preflight
+    from moor_cli.worktree_gc import _tree_size_mb
     eligible = [d for d in decisions if d.action in ("keep-dirty", "keep-unpushed")]
     for d in eligible:
         d.size_mb = _tree_size_mb(Path(d.path), timeout=120) or 0
@@ -247,12 +247,12 @@ def plan_sweep(repo_root: str, max_age_hours: int = 24, settings: Optional[dict]
                now: Optional[float] = None, older_than_days: Optional[float] = None) -> list[Decision]:
     """Read-only decision for every tree under ``<repo>/.worktrees`` (kanban/young included).
 
-    *older_than_days* (``hermes worktree prune --older-than``) only restricts: a tree idle for
+    *older_than_days* (``moor worktree prune --older-than``) only restricts: a tree idle for
     less than that is never archived or removed, whatever its tier.
     """
     import re
 
-    from hermes_cli import worktree_ops as ops
+    from moor_cli import worktree_ops as ops
     settings = settings or sweep_settings()
     now = now or time.time()
     worktrees_dir = Path(repo_root) / ".worktrees"
@@ -310,7 +310,7 @@ def plan_sweep(repo_root: str, max_age_hours: int = 24, settings: Optional[dict]
 def _branch_published(repo_root: str, branch: str, remote_heads: Optional[dict]) -> bool:
     """Whether *branch* exists on a remote. Unknown (``ls-remote`` failed) counts as published:
     deleting a branch is never needed for safety, so doubt keeps it."""
-    from hermes_cli.worktree_ops import _git_out
+    from moor_cli.worktree_ops import _git_out
     try:
         if _git_out(["remote"], repo_root) == "":
             return False  # no remote at all: nothing could have been published
@@ -338,7 +338,7 @@ def _index_moved(path: str, captured: str) -> Optional[str]:
     """Why the staged state of *path* no longer matches the archive (``git add``/``apply
     --cached`` after the capture: the index is not a file-mtime signal), or None. A stat-only
     refresh by ``git status`` does not count. Unreadable index = moved (keep the tree)."""
-    from hermes_cli.worktree_archive import ArchiveError, staged_state
+    from moor_cli.worktree_archive import ArchiveError, staged_state
     try:
         if staged_state(path) == captured:
             return None
@@ -361,10 +361,10 @@ def archive_then_remove(repo_root: str, path: str, *, reason: str, max_untracked
     survives when it is protected or published on a remote (an open PR may still need it);
     otherwise the archive ref anchors its commits and the local branch is deleted.
     """
-    from hermes_cli.worktree_archive import snapshot_worktree
-    from hermes_cli.worktree_ops import _git, _git_quiet, release_lsp_clients
-    from hermes_cli.worktree_retention import removal_blocker
-    from hermes_cli._subprocess_compat import noninteractive_git_env
+    from moor_cli.worktree_archive import snapshot_worktree
+    from moor_cli.worktree_ops import _git, _git_quiet, release_lsp_clients
+    from moor_cli.worktree_retention import removal_blocker
+    from moor_cli._subprocess_compat import noninteractive_git_env
     started = time.time()
     arc = snapshot_worktree(repo_root, path, reason=reason, max_untracked_mb=max_untracked_mb)
     blocked = removal_blocker(path, skipped=arc.meta.get("skipped_untracked"), gitlinks=True)
@@ -384,7 +384,7 @@ def archive_then_remove(repo_root: str, path: str, *, reason: str, max_untracked
     if not branch or keep_branch or branch in _PROTECTED_BRANCHES:
         return arc.ref, branch, True, None
     if remote_heads_fn is None:
-        from hermes_cli.worktree_ops import _fetch_remote_branch_heads
+        from moor_cli.worktree_ops import _fetch_remote_branch_heads
         heads = _fetch_remote_branch_heads(repo_root, timeout=10)
     else:
         heads = remote_heads_fn()
@@ -398,7 +398,7 @@ def _recheck(repo_root: str, d: Decision) -> tuple[Optional[str], Optional[str]]
     """Fresh gate for ONE planned tree, run immediately before it is touched -> (why_keep,
     lock_state). Earlier trees in the batch can take minutes to archive; a user may have entered
     this one meanwhile."""
-    from hermes_cli import worktree_ops as ops
+    from moor_cli import worktree_ops as ops
     if not os.path.isdir(d.path):
         return "gone", None
     lock_state = ops._worktree_lock_is_live(repo_root, d.path, timeout=5)
@@ -420,8 +420,8 @@ def execute_plan(repo_root: str, plan: list[Decision], settings: dict
     """Apply a frozen plan -> ``(preserved_stale, kept_branches, [(archive_ref, removed, why_kept)])``.
     Each tree is re-gated (lock, live process, fresh activity) right before it is archived or
     removed; ``removed`` is False when the archive was saved but the tree was kept (*why_kept*)."""
-    from hermes_cli import worktree_ops as ops
-    from hermes_cli.worktree_archive import ArchiveError
+    from moor_cli import worktree_ops as ops
+    from moor_cli.worktree_archive import ArchiveError
     memo: dict = {}
 
     def remote_heads():
@@ -460,16 +460,16 @@ def execute_plan(repo_root: str, plan: list[Decision], settings: dict
 
 def run_sweep(repo_root: str, max_age_hours: int, settings: dict) -> None:
     """Plan + execute + archive retention for one repo (the archive-mode pruner)."""
-    from hermes_cli import worktree_ops as ops
-    from hermes_cli.worktree_archive import prune_expired_archives
+    from moor_cli import worktree_ops as ops
+    from moor_cli.worktree_archive import prune_expired_archives
     plan = plan_sweep(repo_root, max_age_hours, settings)
     preserved, kept_branches, archived = execute_plan(repo_root, plan, settings)
     removed = [ref for ref, gone, _why in archived if gone]
     if removed:
         logger.warning("Archived and removed %d idle worktree(s) with unmerged work; restore any with "
-                       "`hermes worktree restore <name>` (`hermes worktree list` shows archives).", len(removed))
+                       "`moor worktree restore <name>` (`moor worktree list` shows archives).", len(removed))
     if preserved:
-        logger.warning("Preserving %d stale worktree(s) (run `hermes worktree prune --dry-run` for reasons): %s",
+        logger.warning("Preserving %d stale worktree(s) (run `moor worktree prune --dry-run` for reasons): %s",
                        len(preserved), ", ".join(sorted(preserved)[:20]))
     expired = prune_expired_archives(repo_root, settings["archive_retention_days"])
     if expired:

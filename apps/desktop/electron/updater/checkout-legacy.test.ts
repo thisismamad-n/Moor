@@ -75,13 +75,13 @@ it.skipIf(process.platform === 'win32')(
   async (): Promise<void> => {
     const root: string = fs.mkdtempSync(path.join(os.tmpdir(), 'pm-source-check-'))
     const home: string = path.join(root, 'profile')
-    const launcher: string = path.join(root, '.hermes', 'bin', 'hermes')
+    const launcher: string = path.join(root, '.moor', 'bin', 'moor')
     fs.mkdirSync(path.dirname(launcher), { recursive: true })
     fs.mkdirSync(path.join(root, 'pm'))
     fs.mkdirSync(home)
     fs.writeFileSync(
       launcher,
-      '#!/bin/sh\n[ "$1" = --run-module ] && [ "$2" = hermes_cli.source_check ] || exit 5\nprintf \'%s\\n\' \'{"supported":true,"channel":"stable","behind":-1}\'\n',
+      '#!/bin/sh\n[ "$1" = --run-module ] && [ "$2" = moor_cli.source_check ] || exit 5\nprintf \'%s\\n\' \'{"supported":true,"channel":"stable","behind":-1}\'\n',
       { mode: 0o755 }
     )
 
@@ -90,7 +90,7 @@ it.skipIf(process.platform === 'win32')(
         python: '/nonexistent/system-python',
         git: 'git',
         updateRoot: root,
-        hermesHome: home,
+        moorHome: home,
         channel: 'stable' as const
       }
 

@@ -3,21 +3,21 @@ import type { TranslationOverrides } from './define-locale'
 // The boot screen's copy (including the update-hold screen), composed by fr.ts.
 export const frBoot = {
   boot: {
-    ready: 'Hermes Desktop est prêt',
+    ready: 'Moor Desktop est prêt',
     desktopBootFailedWithMessage: message => `Échec du démarrage : ${message}`,
     steps: {
       connectingGateway: 'Connexion au gateway desktop',
-      loadingSettings: 'Chargement des paramètres Hermes',
+      loadingSettings: 'Chargement des paramètres Moor',
       loadingSessions: 'Chargement des sessions récentes',
-      retryingRemoteBackend: 'Reconnexion au backend Hermes distant…',
+      retryingRemoteBackend: 'Reconnexion au backend Moor distant…',
       startingDesktopConnection: 'Démarrage de la connexion desktop',
-      startingHermesDesktop: 'Démarrage de Hermes Desktop…'
+      startingMoorDesktop: 'Démarrage de Moor Desktop…'
     },
     errors: {
-      backgroundExited: "Le processus en arrière-plan de Hermes s'est arrêté.",
-      backgroundExitedDuringStartup: "Le processus en arrière-plan de Hermes s'est arrêté pendant le démarrage.",
+      backgroundExited: "Le processus en arrière-plan de Moor s'est arrêté.",
+      backgroundExitedDuringStartup: "Le processus en arrière-plan de Moor s'est arrêté pendant le démarrage.",
       backendStopped: 'Backend arrêté',
-      restartHermes: 'Redémarrer Hermes',
+      restartMoor: 'Redémarrer Moor',
       openLogs: 'Ouvrir les journaux',
       desktopBootFailed: 'Échec du démarrage',
       gatewayConnectionLost: 'Connexion au gateway perdue',
@@ -32,16 +32,16 @@ export const frBoot = {
       ipcBridgeUnavailable: 'Le pont IPC du desktop est indisponible.'
     },
     causes: {
-      exitedEarly: "Le service en arrière-plan de Hermes s'est arrêté juste après son démarrage.",
-      timedOut: "Le service en arrière-plan de Hermes n'a pas répondu à temps.",
-      permission: "Hermes n'a pas pu écrire dans son dossier de données (problème d'autorisation).",
-      diskFull: "Le disque est plein ; Hermes n'a donc pas pu démarrer.",
-      portInUse: 'Un autre programme utilise le port réseau nécessaire à Hermes.',
+      exitedEarly: "Le service en arrière-plan de Moor s'est arrêté juste après son démarrage.",
+      timedOut: "Le service en arrière-plan de Moor n'a pas répondu à temps.",
+      permission: "Moor n'a pas pu écrire dans son dossier de données (problème d'autorisation).",
+      diskFull: "Le disque est plein ; Moor n'a donc pas pu démarrer.",
+      portInUse: 'Un autre programme utilise le port réseau nécessaire à Moor.',
       installMissing:
-        "Une partie de l'installation de Hermes est manquante. Choisissez Réparer l'installation pour la restaurer."
+        "Une partie de l'installation de Moor est manquante. Choisissez Réparer l'installation pour la restaurer."
     },
     failure: {
-      title: "Hermes n'a pas pu démarrer",
+      title: "Moor n'a pas pu démarrer",
       description:
         "Le gateway en arrière-plan n'a pas pu se lancer. Essayez l'une des étapes de récupération ci-dessous. Rien ici ne supprime vos conversations ou paramètres.",
       details: 'Détails',
@@ -60,11 +60,11 @@ export const frBoot = {
       signOutAndSignIn: 'Se déconnecter et se reconnecter',
       remoteFailureHint:
         "Vérifiez l'URL du gateway et la connexion dans les paramètres du gateway, ou passez au gateway local.",
-      cloudDownTitle: "L'agent Nous Cloud est indisponible",
+      cloudDownTitle: "L'agent Moor Cloud est indisponible",
       cloudDownDescription:
-        "L'agent cloud géré par Nous auquel ce gateway se connecte renvoie une erreur serveur. Il ne peut pas être redémarré depuis ici — vérifiez son état, passez au gateway local ou contactez l'assistance.",
+        "L'agent cloud géré par Moor auquel ce gateway se connecte renvoie une erreur serveur. Il ne peut pas être redémarré depuis ici — vérifiez son état, passez au gateway local ou contactez l'assistance.",
       cloudDownHint:
-        "Les boutons ci-dessous ouvrent le portail Nous, pour consulter et contrôler l'instance, ainsi que notre Discord pour obtenir de l'aide.",
+        "Les boutons ci-dessous ouvrent le portail Moor, pour consulter et contrôler l'instance, ainsi que notre Discord pour obtenir de l'aide.",
       cloudDownCheckPortal: "Vérifier l'état sur le portail",
       cloudDownDiscord: "Obtenir de l'aide sur Discord",
       hideRecentLogs: 'Masquer les journaux récents',
@@ -79,31 +79,31 @@ export const frBoot = {
       identityProvider: "votre fournisseur d'identité"
     },
     updateHold: {
-      title: 'Une mise à jour précédente bloque encore Hermes',
-      titleUnverified: 'Hermes ne peut pas confirmer la fin de la dernière mise à jour',
+      title: 'Une mise à jour précédente bloque encore Moor',
+      titleUnverified: 'Moor ne peut pas confirmer la fin de la dernière mise à jour',
       description:
-        "Hermes attend avant de démarrer pour ne pas charger des fichiers qu'une mise à jour modifie peut-être encore. Il démarre tout seul dès que le blocage cesse.",
+        "Moor attend avant de démarrer pour ne pas charger des fichiers qu'une mise à jour modifie peut-être encore. Il démarre tout seul dès que le blocage cesse.",
       heldByProcess: pid =>
-        `La mise à jour (processus ${pid}) s'est terminée, mais un processus qu'elle a lancé bloque encore l'installation de Hermes.`,
+        `La mise à jour (processus ${pid}) s'est terminée, mais un processus qu'elle a lancé bloque encore l'installation de Moor.`,
       heldUnknown:
-        "Une mise à jour s'est terminée, mais un processus qu'elle a lancé bloque encore l'installation de Hermes.",
+        "Une mise à jour s'est terminée, mais un processus qu'elle a lancé bloque encore l'installation de Moor.",
       unverified:
-        "L'assistant de mise à jour n'a pas pu vérifier qui détient l'installation de Hermes. Hermes continue de vérifier.",
+        "L'assistant de mise à jour n'a pas pu vérifier qui détient l'installation de Moor. Moor continue de vérifier.",
       since: time => `En attente depuis ${time}`,
       lastChecked: time => `Dernière vérification ${time}`,
       recoveryHint:
-        "Cela se règle généralement en quelques minutes. Sinon : quittez Hermes, arrêtez les processus git ou hermes restants (ou redémarrez l'ordinateur), puis rouvrez Hermes.",
+        "Cela se règle généralement en quelques minutes. Sinon : quittez Moor, arrêtez les processus git ou moor restants (ou redémarrez l'ordinateur), puis rouvrez Moor.",
       checkAgain: 'Vérifier à nouveau',
-      quit: 'Quitter Hermes',
+      quit: 'Quitter Moor',
       openLogs: 'Ouvrir les journaux',
       startAnyway: 'Démarrer quand même…',
-      confirmTitle: 'Démarrer Hermes alors que la mise à jour le bloque encore ?',
+      confirmTitle: 'Démarrer Moor alors que la mise à jour le bloque encore ?',
       confirmBody:
-        'Le processus de mise à jour restant modifie peut-être encore les fichiers de Hermes. Démarrer maintenant peut charger une installation à moitié mise à jour, qui risque de ne pas fonctionner avant une nouvelle mise à jour. Hermes consigne ce choix dans son journal et laisse le marqueur de mise à jour en place.',
+        'Le processus de mise à jour restant modifie peut-être encore les fichiers de Moor. Démarrer maintenant peut charger une installation à moitié mise à jour, qui risque de ne pas fonctionner avant une nouvelle mise à jour. Moor consigne ce choix dans son journal et laisse le marqueur de mise à jour en place.',
       confirmKeepWaiting: 'Continuer à attendre',
       confirmStart: 'Démarrer quand même',
       startAnywayRefused:
-        "Ce qui bloque l'installation a changé avant que Hermes puisse démarrer. Vérifiez et réessayez."
+        "Ce qui bloque l'installation a changé avant que Moor puisse démarrer. Vérifiez et réessayez."
     }
   }
 } satisfies Pick<TranslationOverrides, 'boot'>

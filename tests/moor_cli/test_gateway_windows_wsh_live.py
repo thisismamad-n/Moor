@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-from hermes_cli import gateway_windows
+from moor_cli import gateway_windows
 from tests.waiting import wait_until
 
 

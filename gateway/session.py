@@ -21,8 +21,8 @@ from gateway.session_prompt_pin import SessionPromptPinMixin, sanitize_prompt_pi
 from gateway.session_recovery import SessionRecoveryMixin
 from gateway.session_lifecycle import SessionLifecycleMixin, _iso, _new_session_id, _now, _parse_iso
 from gateway.session_transcript import SessionTranscriptMixin
-# Inverse of _session_key_namespace, defined storage-side (hermes_state must not import gateway).
-from hermes_state_keys import profile_from_session_key_namespace
+# Inverse of _session_key_namespace, defined storage-side (moor_state must not import gateway).
+from moor_state_keys import profile_from_session_key_namespace
 
 logger = logging.getLogger(__name__)
 
@@ -847,7 +847,7 @@ class SessionStore(
         self._db_pinned = _DB_UNPINNED
         self._db_handles: dict[Path, Any] = {}
         self._db_handles_lock = threading.Lock()
-        self._profile_home_cache: dict[str, Optional[Path]] = {}  # profile -> HERMES_HOME (hits)
+        self._profile_home_cache: dict[str, Optional[Path]] = {}  # profile -> MOOR_HOME (hits)
         # session_id -> owning key for ids proven but not yet published in ``_entries`` (a
         # compression child row is written before its reroute is published).
         self._session_owner_hints: dict[str, str] = {}

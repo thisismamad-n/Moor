@@ -749,7 +749,7 @@ def collect_state_db_stats(db_path: Path) -> dict[str, Any]:
     Deliberately does NOT instantiate :class:`SessionDB` — its constructor runs DDL.
     ``wal_size_bytes`` is 0 when the sidecar is absent; ``fts_storage_version`` None means the
     legacy inline layout; ``fts_rebuild_deferral`` is the durable blocked-repair diagnostic."""
-    from hermes_state import _connect_tracked_db
+    from moor_state import _connect_tracked_db
     stats: dict[str, Any] = dict.fromkeys((
         "page_count", "page_size", "freelist_count", "logical_size_bytes", "wal_size_bytes", "journal_mode",
         "messages", "sessions", "fts_tables", "fts_storage_version", "fts_storage_upgrade_needed",
@@ -802,7 +802,7 @@ def collect_state_db_stats(db_path: Path) -> dict[str, Any]:
         # Raw state_meta reads — cheap, and independent of SessionDB.
         stats["fts_storage_version"] = _meta_int("fts_storage_version")
         with contextlib.suppress(Exception):
-            from hermes_state_fts import fts_layout_drift
+            from moor_state_fts import fts_layout_drift
             stats["fts_storage_upgrade_needed"] = bool(fts_layout_drift(conn.cursor()))
         with contextlib.suppress(Exception):
             # Demoted old-index tables still awaiting teardown: an optimize-storage run stopped after its backfill.

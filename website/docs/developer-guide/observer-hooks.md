@@ -338,9 +338,9 @@ nested agent work or security lifecycle events.
 The official [Langfuse catalog plugin](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse) demonstrates direct hook-based
 observability for turns, provider requests, and tool calls.
 
-The native NeMo Relay SDK integration maps Hermes session, turn, LLM, and tool
+The native NeMo Relay SDK integration maps Moor session, turn, LLM, and tool
 lifecycles to Relay. Relay's discovered user and system configuration, or an
-explicit file selected with `HERMES_NEMO_RELAY_PLUGINS_TOML`, can add
+explicit file selected with `MOOR_NEMO_RELAY_PLUGINS_TOML`, can add
 [ATOF, ATIF, or OTEL](https://docs.nvidia.com/nemo/relay/configure-plugins/observability/about)
 exporters and execution middleware; see
 [Relay shared metrics](relay-shared-metrics.md).

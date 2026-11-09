@@ -492,7 +492,7 @@ class GatewayBusySessionMixin:
 
     # Metadata that must match for two pending events to merge into one slot.
     _SECURITY_METADATA_KEYS = (
-        "hermes_plugin_id", "hermes_plugin_injection", "gateway_session_key",
+        "moor_plugin_id", "moor_plugin_injection", "gateway_session_key",
         "gateway_session_id", "gateway_session_strict", "gateway_proven_session_id",
         "notification_category",
     )
@@ -1086,7 +1086,7 @@ class GatewayBusySessionMixin:
         """Slash handlers dispatched only on the idle path (busy dispatch has its own allowlist)."""
         return self._command_handler_table(self._IDLE_COMMANDS)
 
-    # busy_handler key (hermes_cli/commands.py CommandDef) → mid-run variant ``_busy_<key>_command``.
+    # busy_handler key (moor_cli/commands.py CommandDef) → mid-run variant ``_busy_<key>_command``.
     _BUSY_SPECIAL_HANDLERS: dict[str, str] = {
         k: f"_busy_{k}_command" for k in ("start", "stop", "new", "queue", "steer", "egress", "goal", "loop")
     }
@@ -1162,7 +1162,7 @@ class GatewayBusySessionMixin:
         return ""
 
     async def _busy_egress_command(self, event: MessageEvent, quick_key: str, source):
-        from hermes_cli.proxy_cli import format_status_text
+        from moor_cli.proxy_cli import format_status_text
         await _busy_accepted()
         return format_status_text()
 
@@ -1334,7 +1334,7 @@ class GatewayBusySessionMixin:
         It keeps the /stop and /new epoch it arrived under across the (slow) rewrite."""
         from gateway.session_authorities import active_authority
         from gateway.session_ingress import executing_admission
-        from hermes_cli.commands import is_gateway_known_command
+        from moor_cli.commands import is_gateway_known_command
         command = event.get_command()
         if (not command or event.internal or active_authority(self) is None or executing_admission.get()
                 or command in self._hm_quick_commands() or is_gateway_known_command(command)):
@@ -1544,7 +1544,7 @@ class GatewayBusySessionMixin:
             )
         except Exception as e:
             logger.debug("blueprint command failed: %s", e)
-            from hermes_cli.blueprint_cmd import BlueprintCommandResult
+            from moor_cli.blueprint_cmd import BlueprintCommandResult
             return BlueprintCommandResult(t("gateway.blueprint.failed", error=e))
 
     async def _maybe_confirm_destructive_slash(

@@ -234,7 +234,7 @@ function parseDirectiveText(text: string): Unstable_DirectiveSegment[] {
       label: match[2] || match[3] || '',
       id: match[3] || match[2] || ''
     })),
-    ...Array.from(text.matchAll(HERMES_DIRECTIVE_RE)).map(match => {
+    ...Array.from(text.matchAll(MOOR_DIRECTIVE_RE)).map(match => {
       const id = unwrapReferenceValue(match[2] || '')
 
       return {

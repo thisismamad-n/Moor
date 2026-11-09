@@ -8,7 +8,7 @@ from contextlib import closing
 
 import pytest
 
-from hermes_cli import backup
+from moor_cli import backup
 
 # Unescaped in a file: URI, '#' truncates the path and '%23' decodes to a different one.
 HOME_NAMES = ["x#y", "x%23y", "x y"]
@@ -24,22 +24,22 @@ def _database(path, count):
 
 
 def _assert_no_decoy(tmp_path, home_name):
-    assert {p.name for p in tmp_path.iterdir()} <= {home_name, "native", "backup.zip", "hermes_test"}
+    assert {p.name for p in tmp_path.iterdir()} <= {home_name, "native", "backup.zip", "moor_test"}
 
 
 @pytest.fixture(params=HOME_NAMES)
 def home(tmp_path, monkeypatch, request):
-    from hermes_cli import gateway
+    from moor_cli import gateway
 
     home = tmp_path / request.param
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     # An existing default install keeps import from installing/starting a gateway.
     native = tmp_path / "native"
     native.mkdir()
     (native / "config.yaml").write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(backup, "_get_platform_default_hermes_home", lambda: native)
-    from hermes_cli import gateway_setup_service
+    monkeypatch.setattr(backup, "_get_platform_default_moor_home", lambda: native)
+    from moor_cli import gateway_setup_service
     monkeypatch.setattr(gateway_setup_service, "ensure_gateway_service", lambda *args, **kwargs: False)
     monkeypatch.setattr(gateway, "_is_service_running", lambda: False)
     return home
@@ -47,7 +47,7 @@ def home(tmp_path, monkeypatch, request):
 
 def _restore(entry, home, snapshot_id, source):
     if entry == "snapshot":
-        return backup.restore_quick_snapshot(snapshot_id, hermes_home=home)
+        return backup.restore_quick_snapshot(snapshot_id, moor_home=home)
     archive = home.parent / "backup.zip"
     with zipfile.ZipFile(archive, "w") as zf:
         zf.write(source, "state.db")
@@ -58,7 +58,7 @@ def _restore(entry, home, snapshot_id, source):
 def test_restore_uses_literal_paths_and_preserves_live_connection(
     tmp_path, capsys, home, entry
 ):
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from moor_cli.sqlite_safe_read import connect_tracked
 
     target = home / "state.db"
     _database(target, 3)
@@ -92,7 +92,7 @@ def test_corrupt_source_cannot_replace_a_healthy_database(
         db.execute("CREATE TABLE evidence(value TEXT)")
         db.execute("INSERT INTO evidence VALUES ('snapshot')")
         db.commit()
-    snapshot_id = backup.create_quick_snapshot(hermes_home=home)
+    snapshot_id = backup.create_quick_snapshot(moor_home=home)
     assert snapshot_id
     source = home / "state-snapshots" / snapshot_id / "state.db"
     with closing(sqlite3.connect(live)) as db:

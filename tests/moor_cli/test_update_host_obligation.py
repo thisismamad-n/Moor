@@ -61,7 +61,7 @@ def _arm(profile_runtime: str) -> None:
 def no_live_fleet(monkeypatch):
     """No fleet matrix rows: the obligation can never be discharged by evidence in these tests."""
     monkeypatch.setattr(fleet, "_current_checkout_sha", lambda: SHA)
-    monkeypatch.setattr("hermes_cli.update_receipt.collect_fleet_versions", list)
+    monkeypatch.setattr("moor_cli.update_receipt.collect_fleet_versions", list)
 
 
 def test_obligation_armed_by_one_profile_is_owed_by_every_other(two_profiles, no_live_fleet, monkeypatch):
@@ -227,26 +227,26 @@ def test_unwritable_host_state_dir_never_hides_the_debt_from_another_profile(two
 def test_one_installs_completed_restart_never_erases_another_installs_debt(tmp_path):
     """Two installations of one OS user share the host state dir. Install B arming its own pull and
     then completing its restart must leave install A's debt standing; each install arms, reads and
-    clears from its own process, the way two checkouts' ``hermes update`` runs do (review S3)."""
+    clears from its own process, the way two checkouts' ``moor update`` runs do (review S3)."""
     import shutil
     import subprocess
     import sys
     from pathlib import Path
 
     source = Path(__file__).resolve().parents[2]
-    files = ("hermes_constants.py", "hermes_dir_acl.py", "hermes_cli/__init__.py", "hermes_cli/update_host_obligation.py",
-             "hermes_cli/update_restart_recovery.py", "hermes_cli/update_lock.py")
+    files = ("moor_constants.py", "moor_dir_acl.py", "moor_cli/__init__.py", "moor_cli/update_host_obligation.py",
+             "moor_cli/update_restart_recovery.py", "moor_cli/update_lock.py")
     roots = {}
     for name in ("install-a", "install-b"):
         roots[name] = tmp_path / name
         for rel in files:
             (roots[name] / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source / rel, roots[name] / rel)
-    env = {**os.environ, "HERMES_GATEWAY_LOCK_DIR": str(tmp_path / "gateway-locks")}
+    env = {**os.environ, "MOOR_GATEWAY_LOCK_DIR": str(tmp_path / "gateway-locks")}
 
     def run(install: str, body: str) -> str:
         code = (f"import sys\nsys.path.insert(0, {str(roots[install])!r})\n"
-                "from hermes_cli.update_host_obligation import *\n" + body)
+                "from moor_cli.update_host_obligation import *\n" + body)
         child = subprocess.run([sys.executable, "-I", "-S", "-B", "-c", code], env=env, capture_output=True,
                                text=True, encoding="utf-8", stdin=subprocess.DEVNULL, timeout=60, check=False)
         assert child.returncode == 0, child.stdout + child.stderr
@@ -267,7 +267,7 @@ def test_a_completion_never_erases_the_unkeyed_debt_an_older_install_armed(tmp_p
     whether the SHAs differ or match. With no record of its own, B honours the unkeyed one and its
     discharge clears it: an upgrade's own interrupted debt never sticks (review S3 residual)."""
     lock_dir = tmp_path / "gateway-locks"
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(lock_dir))
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(lock_dir))
     legacy = lock_dir / host_obligation.HOST_OBLIGATION_NAME
 
     def a_arms() -> None:  # the older release's writer: unkeyed name, no owners, no mutex
@@ -292,7 +292,7 @@ def test_every_host_record_write_makes_its_rename_durable(tmp_path, monkeypatch)
     after the arm returned must not roll the directory back to "nothing owed"."""
     import stat
 
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
     events, real_fsync, real_replace = [], os.fsync, os.replace
     monkeypatch.setattr(os, "fsync", lambda fd: events.append(
         "dir" if stat.S_ISDIR(os.fstat(fd).st_mode) else "file") or real_fsync(fd))

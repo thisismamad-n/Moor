@@ -9,7 +9,7 @@
  * frame's contentWindow and the identifier is charset-checked.
  */
 
-import type * as HermesSdk from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -99,7 +99,7 @@ describe('hub pick messages', () => {
     const frame = openHubBrowser()
 
     await waitFor(() =>
-      expect(frame.getAttribute('src')).toBe(`${FALLBACK_HUB_ORIGIN}/hermes-agent/docs/skills?embed=picker`)
+      expect(frame.getAttribute('src')).toBe(`${FALLBACK_HUB_ORIGIN}/moor-agent/docs/skills?embed=picker`)
     )
   })
 
@@ -109,7 +109,7 @@ describe('hub pick messages', () => {
     const frame = openHubBrowser()
 
     await waitFor(() =>
-      expect(frame.getAttribute('src')).toBe(`${FALLBACK_HUB_ORIGIN}/hermes-agent/docs/skills?embed=picker`)
+      expect(frame.getAttribute('src')).toBe(`${FALLBACK_HUB_ORIGIN}/moor-agent/docs/skills?embed=picker`)
     )
   })
 
@@ -142,7 +142,7 @@ describe('hub pick messages', () => {
         await vi.advanceTimersByTimeAsync(8_000)
       })
 
-      expect(frame.getAttribute('src')).toBe(`${FALLBACK_HUB_ORIGIN}/hermes-agent/docs/skills?embed=picker`)
+      expect(frame.getAttribute('src')).toBe(`${FALLBACK_HUB_ORIGIN}/moor-agent/docs/skills?embed=picker`)
     } finally {
       vi.restoreAllMocks()
       vi.useRealTimers()
@@ -159,11 +159,11 @@ describe('hub pick messages', () => {
     const frame = openHubBrowser()
 
     postPick(
-      { identifier: 'nous/web-research', name: 'Web Research', type: 'hermes-skill-pick' },
+      { identifier: 'moor/web-research', name: 'Web Research', type: 'moor-skill-pick' },
       { origin: FALLBACK_HUB_ORIGIN, source: frame.contentWindow }
     )
 
-    expect(installCalls()).toEqual([['skills.manage', { action: 'install', query: 'nous/web-research' }]])
+    expect(installCalls()).toEqual([['skills.manage', { action: 'install', query: 'moor/web-research' }]])
   })
 
   it('pins the hub frame to the required sandbox and clipboard posture (#91612)', async () => {

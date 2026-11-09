@@ -38,7 +38,7 @@ const { hostMock } = vi.hoisted(() => ({
 
 vi.mock('@moor/plugin-sdk', async () => {
   const { useQuery } = await import('@tanstack/react-query')
-  const { catalogProviderMatches, useI18n } = await vi.importActual<typeof HermesSdk>('@hermes/plugin-sdk')
+  const { catalogProviderMatches, useI18n } = await vi.importActual<typeof MoorSdk>('@moor/plugin-sdk')
 
   return {
     Button: (props: React.ComponentProps<'button'>) => <button {...props} />,

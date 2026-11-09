@@ -18,7 +18,7 @@
  * re-derived. `moor-alt` is first-party — do not re-derive it from GitHub.
  */
 
-import { THEME_PRESET_PALETTES } from '@hermes/shared'
+import { THEME_PRESET_PALETTES } from '@moor/shared'
 
 import { skinToDesktopTheme } from './skin'
 import type { DesktopTheme, DesktopThemeTypography } from './types'
@@ -676,13 +676,13 @@ export const nousAltTheme: DesktopTheme = {
   }
 }
 
-// The converter's input: the keys it reads from `hermes_cli/skin_engine.py`'s
+// The converter's input: the keys it reads from `moor_cli/skin_engine.py`'s
 // `default` skin. Light is that skin's `light_colors` overlay (its goldenrod
 // ladder for white backgrounds; `banner_border` is not overridden there) with
 // one change: the ink. The CLI's `#5C4718` is a single-weight terminal color,
 // but Desktop sets secondary and tertiary text at 74% / 54% of it, which left
 // them at 4.2:1 / 2.7:1. A deeper ink of the same brown gives 6.5:1 / 3.5:1,
-// the levels Nous Light has.
+// the levels Moor Light has.
 const CLASSIC_DARK_SKIN_COLORS = {
   status_bar_bg: '#1a1a2e',
   banner_text: '#FFF8DC',
@@ -706,16 +706,16 @@ const CLASSIC_LIGHT_SKIN_COLORS = {
 const classicPalette = (colors: Record<string, string>) => skinToDesktopTheme({ name: 'classic', colors })!.colors
 
 /**
- * Classic Hermes — the CLI's stock `default` skin (gold on navy), offered as a
+ * Classic Moor — the CLI's stock `default` skin (gold on navy), offered as a
  * Desktop pick under its OWN id. Never `default`: stock config ships
- * `display.skin: default`, and Desktop reads that as "no pick" (→ nous), so a
+ * `display.skin: default`, and Desktop reads that as "no pick" (→ moor), so a
  * user only ever gets Classic by choosing it (#76579). Both palettes go through
  * the converter a backend skin takes, so each mode paints what the CLI paints
  * in a dark or light terminal.
  */
 export const classicTheme: DesktopTheme = {
   name: 'classic',
-  label: 'Classic Hermes',
+  label: 'Classic Moor',
   description: "Gold on navy, the CLI's original look",
   colors: classicPalette(CLASSIC_LIGHT_SKIN_COLORS),
   darkColors: classicPalette(CLASSIC_DARK_SKIN_COLORS)
@@ -909,7 +909,7 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   catppuccin: catppuccinTheme,
   everforest: everforestTheme,
   solarized: solarizedTheme,
-  'nous-alt': nousAltTheme,
+  'moor-alt': nousAltTheme,
   classic: classicTheme,
   midnight: midnightTheme,
   ember: emberTheme,
@@ -921,10 +921,10 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
 
 /** Skin used when nothing is persisted or the persisted name is retired. */
-export const DEFAULT_SKIN_NAME = 'nous'
+export const DEFAULT_SKIN_NAME = 'moor'
 
 /** Names that no longer resolve to a skin of their own. A stored pick of one
  *  falls back to DEFAULT_SKIN_NAME, and a cached backend theme under one is
  *  dropped (the reverted #130015 build cached the CLI `default` skin as a
- *  second "Classic Hermes"). */
-export const RETIRED_SKINS = new Set(['nous-light', 'default', 'gold'])
+ *  second "Classic Moor"). */
+export const RETIRED_SKINS = new Set(['moor-light', 'default', 'gold'])

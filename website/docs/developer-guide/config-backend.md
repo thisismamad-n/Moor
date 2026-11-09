@@ -7,8 +7,8 @@ description: "Where a profile's user config.yaml is read and written: the Config
 # Config Backend Seam
 
 Every read, stat, existence check and write of a profile's user `config.yaml` goes through
-`hermes_cli/config_backend.py`. The backend is chosen once per process from
-`HERMES_CONFIG_BACKEND`, never from a config value: `file` is the default, and `remote` is
+`moor_cli/config_backend.py`. The backend is chosen once per process from
+`MOOR_CONFIG_BACKEND`, never from a config value: `file` is the default, and `remote` is
 [Remote Config](../user-guide/remote-config.md) (`plugins/config_backends/remote/`).
 
 ## Helpers
@@ -40,9 +40,9 @@ mtime, because `cp -p` or `rsync --inplace -t` restore an older mtime after writ
 a frozen config snapshot never hashes a `config.yaml`: its key stays stat-only there, so the content
 check never makes such a worker open the profile file. Caches keyed on `config_cache_version` miss
 when a remote poll installs a new layer, exactly as they do after a local file edit. With the file
-backend, the managed scope (`/etc/hermes`) stays an overlay on top of the user layer. The remote
+backend, the managed scope (`/etc/moor`) stays an overlay on top of the user layer. The remote
 backend ignores the managed `config.yaml`: config and locks come only from Remote Config, and
-`hermes doctor` flags the file if it exists. The managed `.env` still applies in both modes.
+`moor doctor` flags the file if it exists. The managed `.env` still applies in both modes.
 
 Related keys that must change together (a model switch's `model.*` keys, the TUI `/focus`
 toggle) go through `write_config_keys(path, {key: value, ...})`. A remote backend sends them

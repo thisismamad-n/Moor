@@ -1,4 +1,4 @@
-# health: allow FILE_LINES -- usage-window plans: /model picker hooks only (a multi-row hint, Large/Free row labels); the logic lives in hermes_cli/model_picker_usage.py
+# health: allow FILE_LINES -- usage-window plans: /model picker hooks only (a multi-row hint, Large/Free row labels); the logic lives in moor_cli/model_picker_usage.py
 """prompt_toolkit TUI construction, key-binding handlers, and overlay display fragments for the
 interactive CLI. Mixin bound onto ``MoorCLI`` via the MRO; cli.py-internal symbols are imported
 LAZILY inside each method (``from cli import ...``) — never at module load (import cycle)."""
@@ -17,7 +17,7 @@ import time
 
 from agent.i18n import t
 from agent.interrupt_compat import request_hard_interrupt
-from hermes_cli.commands_completion import SlashCommandAutoSuggest, cli_slash_completer
+from moor_cli.commands_completion import SlashCommandAutoSuggest, cli_slash_completer
 from pathlib import Path
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.history import FileHistory
@@ -39,11 +39,11 @@ from prompt_toolkit.styles import Style as PTStyle
 from prompt_toolkit.widgets import TextArea
 from typing import Optional
 
-from hermes_cli import cli_enter_burst as _enter_burst
-from hermes_cli.cli_enter_burst import RAPID_INPUT_ENTER_WINDOW_S as _RAPID_INPUT_ENTER_WINDOW_S
-from hermes_cli.cli_footer_split import FooterSplit
-from hermes_cli.cli_panel import _Panel
-from hermes_cli.cli_tui_wrap import _prefix_wrapped_rows, _wrap_rows
+from moor_cli import cli_enter_burst as _enter_burst
+from moor_cli.cli_enter_burst import RAPID_INPUT_ENTER_WINDOW_S as _RAPID_INPUT_ENTER_WINDOW_S
+from moor_cli.cli_footer_split import FooterSplit
+from moor_cli.cli_panel import _Panel
+from moor_cli.cli_tui_wrap import _prefix_wrapped_rows, _wrap_rows
 
 # Rows below an overlay panel taken by spinner/tool-progress, status bar, input, separators and
 # prompt symbol (measured ~6 during live PTY approval prompts) — shared by every panel budget.
@@ -67,10 +67,10 @@ def _approval_choice_label(choice: str) -> str:
 
 def _agent_name() -> str:
     try:
-        from hermes_cli.skin_engine import get_active_skin
-        return get_active_skin().get_branding("agent_name", "Hermes")
+        from moor_cli.skin_engine import get_active_skin
+        return get_active_skin().get_branding("agent_name", "Moor")
     except Exception:
-        return "Hermes"
+        return "Moor"
 
 
 def _tn(key: str, count: int, **kwargs) -> str:
@@ -524,7 +524,7 @@ class CLITuiMixin:
         the terminal rows or the bottom border and trailing items get clipped on long lists
         (e.g. Ollama Cloud's 36+ models). ``state["_scroll_offset"]`` is updated in place.
         """
-        from cli import HermesCLI, _panel_box_width, _wrap_panel_text
+        from cli import MoorCLI, _panel_box_width, _wrap_panel_text
         # ``hint`` may be several rows (a window plan's limit line above the usual hint).
         hints = list(hint) if isinstance(hint, (list, tuple)) else [hint]
         box_width = _panel_box_width(title, hints + labels, min_width=min_width, max_width=max_width)
@@ -540,7 +540,7 @@ class CLITuiMixin:
             term_rows = get_app().output.get_size().rows
         except Exception:
             term_rows = _term_rows()
-        scroll_offset, visible = HermesCLI._compute_model_picker_viewport(
+        scroll_offset, visible = MoorCLI._compute_model_picker_viewport(
             selected, state.get("_scroll_offset", 0), len(labels), term_rows,
             panel_chrome=5 + len(hints))
         state["_scroll_offset"] = scroll_offset
@@ -605,7 +605,7 @@ class CLITuiMixin:
             filtered_pairs = self._filter_model_picker_entries(model_list, _query)
             state["_filtered_pairs"] = filtered_pairs
             model_labels = [e for (_i, e) in filtered_pairs]
-            from hermes_cli.model_picker_usage import annotate_window_plan_rows
+            from moor_cli.model_picker_usage import annotate_window_plan_rows
             row_labels, limit_line = annotate_window_plan_rows(provider_data, model_labels)
             choices = row_labels + [t("cli.shared.back"), t("cli.shared.cancel")]
             if _query:
@@ -1103,8 +1103,8 @@ class CLITuiMixin:
             return
         import signal as _sig
         from prompt_toolkit.application import run_in_terminal
-        from hermes_cli.skin_engine import get_active_skin
-        agent_name = get_active_skin().get_branding("agent_name", "Hermes Agent")
+        from moor_cli.skin_engine import get_active_skin
+        agent_name = get_active_skin().get_branding("agent_name", "Moor Agent")
         msg = "\n" + t("cli.tui.suspended", agent_name=agent_name)
 
         def _suspend():
@@ -1413,7 +1413,7 @@ class CLITuiMixin:
             event.app.invalidate()
             return
         # Enter mid-burst: a pasted newline (#10994), or the end of a scripted `text`+Enter write.
-        from hermes_cli.cli_enter_burst import handle_burst_enter
+        from moor_cli.cli_enter_burst import handle_burst_enter
         if not handle_burst_enter(self, event, buf):
             self._tui_submit_buffer(event, buf)
 
@@ -1478,7 +1478,7 @@ class CLITuiMixin:
         steer → agent.steer(text) mid-run (images can't ride along; a missing/rejecting steer() falls back
         to queue). interrupt → agent.redirect() when supported, else the legacy interrupt queue. queue →
         next turn: text-only on the gateway's session is a ``/queue`` FIFO admission (#134889 N5)."""
-        from cli import CLI_CONFIG, _ACCENT, _DIM, _RST, _cprint, _hermes_home
+        from cli import CLI_CONFIG, _ACCENT, _DIM, _RST, _cprint, _moor_home
         _effective_mode = mode or self.busy_input_mode
         redirected = False
         if _effective_mode == "steer":
@@ -1815,7 +1815,7 @@ class CLITuiMixin:
 
     def _tui_init_run_state(self):
         """Reset the per-run REPL state (queues, modal states, voice state, config watcher)."""
-        from hermes_cli.config_backend import config_version_or_none
+        from moor_cli.config_backend import config_version_or_none
         self._agent_running = False
         self._pending_input = queue.Queue()     # normal input (commands + new queries)
         self._interrupt_queue = queue.Queue()   # messages typed while the agent is running
@@ -1833,7 +1833,7 @@ class CLITuiMixin:
         # No PluginManager._cli_ref: plugins load in the gateway, not here (PLG-7).
 
         # Config file watcher — detect mcp_servers changes and auto-reload.
-        from hermes_cli.config import get_config_path as _get_config_path
+        from moor_cli.config import get_config_path as _get_config_path
         _cfg_path = _get_config_path()
         self._config_sig: tuple | None = config_version_or_none(_cfg_path)
         self._config_mcp_servers: dict = self.config.get("mcp_servers") or {}
@@ -2135,7 +2135,7 @@ class CLITuiMixin:
             char='─', height=lambda: cli_ref._tui_input_rule_height("bottom"), style='class:input-rule',
         )
         if getattr(self, "_modern_layout", False):
-            from hermes_cli.cli_modern_layout import modern_input_rules
+            from moor_cli.cli_modern_layout import modern_input_rules
             input_rule_top, input_rule_bot = modern_input_rules(self, kb)
         image_bar = Window(
             content=FormattedTextControl(self._tui_image_bar_fragments),

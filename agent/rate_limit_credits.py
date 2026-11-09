@@ -14,9 +14,9 @@ logger = logging.getLogger("run_agent")
 
 
 
-def _is_nous_agent(agent) -> bool:
-    """True for the Nous provider (or a route to a nousresearch.com host)."""
-    if (getattr(agent, "provider", "") or "").strip().lower() == "nous":
+def _is_moor_agent(agent) -> bool:
+    """True for the Moor provider (or a route to a nousresearch.com host)."""
+    if (getattr(agent, "provider", "") or "").strip().lower() == "moor":
         return True
     from utils import base_url_host_matches
     base_url = str(getattr(agent, "base_url", "") or "")
@@ -78,7 +78,7 @@ class RateLimitCreditsMixin:
         self._capture_credits(http_response)
 
     def _capture_credits(self, http_response: Any, *, refused: bool = False) -> None:
-        """Parse x-nous-credits-* headers, cache CreditsState, fire threshold notices.
+        """Parse x-moor-credits-* headers, cache CreditsState, fire threshold notices.
 
         The PARSE is swallowed (miss → keep last-known); notice EVALUATION WARNS on failure so a
         depletion-notice bug cannot vanish silently. MOOR_DEV_CREDITS_FIXTURE injects a chosen state instead.
@@ -118,9 +118,9 @@ class RateLimitCreditsMixin:
                             "(miss — producer off / non-Moor path / >TTL stale)")
             return
 
-        if state.is_usage_window and not _is_nous_agent(self):
+        if state.is_usage_window and not _is_moor_agent(self):
             return  # window headers from any other upstream are ignored (no window UI, no Keep going button)
-        if state.is_usage_window and not any(k.lower() == "x-nous-credits-purchased-micros" for k in headers):
+        if state.is_usage_window and not any(k.lower() == "x-moor-credits-purchased-micros" for k in headers):
             # A refused request's headers omit the top-up balance: keep the last known one, not "no credits".
             prior = getattr(self, "_credits_state", None)
             if prior is not None:

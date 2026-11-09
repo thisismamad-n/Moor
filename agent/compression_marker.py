@@ -16,7 +16,7 @@ import re
 # new calls and written to disk. Non-prose delimiters, an explicit "not original content"
 # disclaimer, and per-instance counts keep a copied marker visibly wrong; the counts also make a
 # verbatim copy stale, which is why the marker must never be re-applied.
-_COMPRESSION_MARKER_PREFIX = "⟪HERMES-CONTEXT-COMPRESSION:"
+_COMPRESSION_MARKER_PREFIX = "⟪MOOR-CONTEXT-COMPRESSION:"
 _COMPRESSION_MARKER_TEMPLATE = (
     _COMPRESSION_MARKER_PREFIX
     + " {omitted:,} of {total:,} chars omitted here by Moor's context compressor. "

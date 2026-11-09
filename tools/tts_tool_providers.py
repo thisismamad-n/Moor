@@ -470,7 +470,7 @@ def _generate_mistral_tts(text: str, output_path: str, tts_config: dict[str, Any
 
 # --- Google Gemini TTS ---
 def _read_gemini_persona_prompt(gemini_config: dict[str, Any]) -> str:
-    """Read ``tts.gemini.persona_prompt_file`` (relative -> under HERMES_HOME), failing soft."""
+    """Read ``tts.gemini.persona_prompt_file`` (relative -> under MOOR_HOME), failing soft."""
     raw = gemini_config.get("persona_prompt_file")
     if not isinstance(raw, str) or not raw.strip():
         return ""
@@ -599,7 +599,7 @@ def _generate_gemini_tts(text: str, output_path: str, tts_config: dict[str, Any]
             from moor_cli.version_info import get_version_info
             headers["X-Goog-Api-Client"] = f"moor-agent/{get_version_info().base_version}"
         except Exception:
-            headers["X-Goog-Api-Client"] = "hermes-agent/0.0.0"
+            headers["X-Goog-Api-Client"] = "moor-agent/0.0.0"
     response = _post_json(f"{base_url}/models/{model}:generateContent", payload, headers)
     if response.status_code != 200:
         raise RuntimeError(f"Gemini TTS API error (HTTP {response.status_code}): {_gemini_error_detail(response)}")

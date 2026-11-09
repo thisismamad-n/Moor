@@ -27,13 +27,13 @@ def _cli():
 def _load_prefill_messages(file_path: str, base_dir: Path | None = None) -> list[dict[str, Any]]:
     """Load prefill messages (JSON array) from *file_path*; missing/empty -> [].
 
-    Relative paths resolve against *base_dir*, defaulting to the CLI's hermes home.
+    Relative paths resolve against *base_dir*, defaulting to the CLI's moor home.
     """
     if not file_path:
         return []
     path = Path(file_path).expanduser()
     if not path.is_absolute():
-        path = (base_dir or _cli()._hermes_home) / path
+        path = (base_dir or _cli()._moor_home) / path
     if not path.exists():
         logger.warning("Prefill messages file not found: %s", path)
         return []
@@ -54,7 +54,7 @@ def _resolve_prefill_messages_file(config: dict[str, Any]) -> str:
     from agent.session_client_env import session_env
     agent_cfg = config.get("agent", {})
     return (
-        session_env("HERMES_PREFILL_MESSAGES_FILE").strip()
+        session_env("MOOR_PREFILL_MESSAGES_FILE").strip()
         or str(config.get("prefill_messages_file", "") or "").strip()
         or (str(agent_cfg.get("prefill_messages_file", "") or "").strip() if isinstance(agent_cfg, dict) else "")
     )
@@ -139,8 +139,8 @@ def _mirror_config_to_env(defaults, _file_has_terminal_config):
 
     # TERMINAL_CWD is force-exported (beats stale .env) except inside a gateway process,
     # whose config bridge already set it. Ask whether THIS process imported gateway.run:
-    # its _HERMES_GATEWAY env marker is inherited by every shell the gateway's terminal
-    # tool spawns, so a `hermes chat` launched there would keep the gateway's directory.
+    # its _MOOR_GATEWAY env marker is inherited by every shell the gateway's terminal
+    # tool spawns, so a `moor chat` launched there would keep the gateway's directory.
     _is_gateway = "gateway.run" in sys.modules
     for config_key, env_var in _TERMINAL_ENV_MAPPINGS.items():
         if config_key not in terminal_config:
@@ -184,7 +184,7 @@ def _mirror_config_to_env(defaults, _file_has_terminal_config):
 
 def _cli_config_defaults():
     """Built-in defaults for every config key the CLI reads (the file overlays these)."""
-    from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as img
+    from moor_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as img
     return {
         "model": {"default": "", "base_url": "", "provider": "auto"},
         "terminal": {
@@ -256,15 +256,15 @@ def _merge_file_config(defaults: dict[str, Any], file_config: dict[str, Any]) ->
 
 
 def load_cli_config() -> dict[str, Any]:
-    """~/.hermes/config.yaml (else ./cli-config.yaml) over built-in defaults; env vars win.
+    """~/.moor/config.yaml (else ./cli-config.yaml) over built-in defaults; env vars win.
 
     ``MOOR_IGNORE_USER_CONFIG=1`` skips the user config entirely (``.env`` still loads).
     """
-    from cli import _cli_config_defaults, _hermes_home, _merge_file_config, _mirror_config_to_env
-    from hermes_cli.config_backend import config_exists, read_config_doc
-    config_path = _hermes_home / 'config.yaml'
+    from cli import _cli_config_defaults, _moor_home, _merge_file_config, _mirror_config_to_env
+    from moor_cli.config_backend import config_exists, read_config_doc
+    config_path = _moor_home / 'config.yaml'
     # A backend whose user layer always exists never takes the repo-file fallback.
-    if not config_exists(config_path) or os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1":
+    if not config_exists(config_path) or os.environ.get("MOOR_IGNORE_USER_CONFIG") == "1":
         config_path = Path(__file__).parent / 'cli-config.yaml'
 
     defaults = _cli_config_defaults()
@@ -274,7 +274,7 @@ def load_cli_config() -> dict[str, Any]:
 
     if config_exists(config_path):
         try:
-            from hermes_cli.config import _normalize_root_model_keys
+            from moor_cli.config import _normalize_root_model_keys
 
             file_config = _normalize_root_model_keys(read_config_doc(config_path) or {})
 

@@ -13,20 +13,20 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _run(tmp_path: Path, body: str) -> dict:
     home = tmp_path / "account"
-    state = home / ".hermes"
+    state = home / ".moor"
     state.mkdir(parents=True)
     script = tmp_path / "receipt_probe.py"
     script.write_text(textwrap.dedent("""
         import json, os, subprocess, sys
         from pathlib import Path
         sys.path.insert(0, sys.argv[1])
-        from hermes_cli import update_receipt as receipts
-        from hermes_cli.process_identity import _process_create_time
+        from moor_cli import update_receipt as receipts
+        from moor_cli.process_identity import _process_create_time
     """) + textwrap.dedent(body), encoding="utf-8")
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTEST_"))}
-    env.update(HOME=str(home), USERPROFILE=str(home), HERMES_HOME=str(state),
-               HERMES_RUNTIME_DIR=str(tmp_path / "tools"),
+           if not key.startswith(("MOOR_", "PYTEST_"))}
+    env.update(HOME=str(home), USERPROFILE=str(home), MOOR_HOME=str(state),
+               MOOR_RUNTIME_DIR=str(tmp_path / "tools"),
                XDG_CONFIG_HOME=str(home / ".config"), XDG_CACHE_HOME=str(home / ".cache"),
                PYTHONPATH=os.pathsep.join([str(ROOT), *filter(None, sys.path)]),
                PYTHONDONTWRITEBYTECODE="1")
@@ -94,8 +94,8 @@ def test_parent_followup_does_not_replace_child_terminal_with_running(tmp_path):
         Path('request.json').write_text(json.dumps(frozen))
         child = subprocess.run([sys.executable, '-c',
             'import json,sys; from pathlib import Path; '
-            'from hermes_cli.update_completion import _resume_receipt; '
-            'from hermes_cli.update_receipt import finalize_pending_update_receipt; '
+            'from moor_cli.update_completion import _resume_receipt; '
+            'from moor_cli.update_receipt import finalize_pending_update_receipt; '
             '_resume_receipt(json.loads(Path("request.json").read_text())); '
             'finalize_pending_update_receipt(0)'], check=True)
         before = receipts.read_latest_receipt()

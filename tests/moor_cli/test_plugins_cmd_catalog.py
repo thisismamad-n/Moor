@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import plugin_catalog as pc_cat
-from hermes_cli import plugins_cmd as pc
-from hermes_cli import plugins_cmd_catalog as cat
+from moor_cli import plugin_catalog as pc_cat
+from moor_cli import plugins_cmd as pc
+from moor_cli import plugins_cmd_catalog as cat
 from tests.pm._fixtures import client, isolated_python
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
@@ -135,7 +135,7 @@ def test_kill_list_blocks_cli_dashboard_and_tui_paths(world, monkeypatch):
 
 
 def test_the_catalog_name_you_installed_with_works_for_every_later_verb(world, tmp_path):
-    """17 catalog entries install under a different manifest name (`hermes-memory-wiki` lands as
+    """17 catalog entries install under a different manifest name (`moor-memory-wiki` lands as
     `plugins/memory-wiki`). Every later verb must accept the name the user typed at install, resolved
     through the installer's own record; a URL install shipping a forged sidecar must not claim it."""
     repo = world["repo"]
@@ -163,7 +163,7 @@ def test_the_catalog_name_you_installed_with_works_for_every_later_verb(world, t
 
 
 def test_custom_install_records_an_anonymous_extension_install_and_reinstall_none(world, monkeypatch):
-    import hermes_cli.observability.shared_metrics_events as events
+    import moor_cli.observability.shared_metrics_events as events
 
     calls = []
     monkeypatch.setattr(events, "record_extension_install", lambda **kw: calls.append(kw))
@@ -209,7 +209,7 @@ def test_in_tree_sidecar_cannot_forge_catalog_provenance(world, tmp_path):
 
 
 def test_url_install_of_an_archived_handoff_repo_is_repinned_to_its_catalog_entry(world, tmp_path, monkeypatch):
-    """A provider that left core was first handed off through a Nous repo that is now archived; a URL install of
+    """A provider that left core was first handed off through a Moor repo that is now archived; a URL install of
     it has no catalog record, so `update` would keep pulling the archive. It is adopted as the catalog entry that
     superseded it, and `update` re-pins it to the maintained repo at the reviewed sha."""
     archived = tmp_path / "archived"
@@ -393,7 +393,7 @@ def test_memory_category_install_activates_via_memory_provider_not_plugins_enabl
                                                                                   init, enable):
     """A memory provider activates through memory.provider alone — the loader never consults
     plugins.enabled — so "Enable now?" must select the provider, and a decline must point at
-    `hermes memory setup`, never at the dead-end `plugins enable` hint. Catalog category "memory" also
+    `moor memory setup`, never at the dead-end `plugins enable` hint. Catalog category "memory" also
     holds hook plugins: those enable normally and leave the user's memory.provider alone, even when their
     docstring names MemoryProvider (the loader would return None for them)."""
     repo = world["repo"]
@@ -422,7 +422,7 @@ def test_memory_category_install_activates_via_memory_provider_not_plugins_enabl
     pc.cmd_install("cat-plugin", enable=enable)
     assert pc._get_current_memory_provider() == ("cat-plugin" if enable else "")
     assert pc._get_enabled_set() == set()
-    assert any("hermes memory setup" in line for line in printed)
+    assert any("moor memory setup" in line for line in printed)
     assert not any("plugins enable cat-plugin" in line for line in printed)
 
 
@@ -432,7 +432,7 @@ def test_url_install_of_a_memory_provider_dir_gets_the_provider_hint(world, tmp_
     provider activation path — the catalog category is a shortcut, not the only trigger. An explicit
     --enable must leave the provider loadable: a plugins.disabled entry would make the loader refuse it,
     and a reinstall must repair the old state that listed the provider in plugins.enabled instead."""
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     from plugins.memory import _explicitly_disabled, find_provider_dir
 
     repo = tmp_path / "mem-repo"
@@ -550,7 +550,7 @@ def test_brief_install_prints_the_pin_and_outcome_and_a_restart_hint_only_for_a_
     printed: list = []
     monkeypatch.setattr(pc, "_console", lambda: type("C", (), {"print": lambda self, *a, **k: printed.extend(a)})())
     monkeypatch.setattr("gateway.status.get_running_pid", lambda *a, **k: gateway_pid)  # no reload answered
-    monkeypatch.setattr("hermes_cli.gateway._installed_service_kind", lambda: None)
+    monkeypatch.setattr("moor_cli.gateway._installed_service_kind", lambda: None)
 
     pc.cmd_install("cat-plugin", enable=True, brief=True)
 

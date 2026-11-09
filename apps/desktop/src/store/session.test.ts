@@ -340,7 +340,7 @@ describe('fresh draft identity', () => {
     expect(first).not.toBe(previous)
     expect(second).not.toBe(first)
     expect($freshDraftKey.get()).toBe(second)
-    expect(window.localStorage.getItem('hermes.desktop.freshDraftKey')).toBe(second)
+    expect(window.localStorage.getItem('moor.desktop.freshDraftKey')).toBe(second)
   })
 })
 
@@ -1067,12 +1067,12 @@ describe('workspaceCwdForNewSession', () => {
     $connection.set(null)
     $currentCwd.set('')
     $activeSessionId.set(null)
-    window.localStorage.removeItem('hermes.desktop.workspace-cwd')
-    window.localStorage.removeItem('hermes.desktop.workspace-cwd.profile.profile-a')
-    window.localStorage.removeItem('hermes.desktop.workspace-cwd.profile.profile-b')
-    window.localStorage.removeItem('hermes.desktop.workspace-cwd.remote.http%3A%2F%2Fbackend-a.default')
-    window.localStorage.removeItem('hermes.desktop.workspace-cwd.remote.http%3A%2F%2Fbackend-b.default')
-    delete (window as { hermesDesktop?: unknown }).hermesDesktop
+    window.localStorage.removeItem('moor.desktop.workspace-cwd')
+    window.localStorage.removeItem('moor.desktop.workspace-cwd.profile.profile-a')
+    window.localStorage.removeItem('moor.desktop.workspace-cwd.profile.profile-b')
+    window.localStorage.removeItem('moor.desktop.workspace-cwd.remote.http%3A%2F%2Fbackend-a.default')
+    window.localStorage.removeItem('moor.desktop.workspace-cwd.remote.http%3A%2F%2Fbackend-b.default')
+    delete (window as { moorDesktop?: unknown }).moorDesktop
   })
 
   it('does not publish a delayed configured default after ownership is lost', async () => {
@@ -1220,12 +1220,12 @@ describe('workspaceCwdForNewSession', () => {
   it('scopes the local workspace memory per profile, keeping the bare key for default (#96834)', () => {
     $connection.set({ baseUrl: '', mode: 'local', profile: 'default' } as never)
     setCurrentCwd('/home/user/default-project')
-    expect(window.localStorage.getItem('hermes.desktop.workspace-cwd')).toBe('/home/user/default-project')
+    expect(window.localStorage.getItem('moor.desktop.workspace-cwd')).toBe('/home/user/default-project')
 
     $connection.set({ baseUrl: '', mode: 'local', profile: 'profile-a' } as never)
     expect(getRememberedWorkspaceCwd()).toBe('')
     setCurrentCwd('/home/user/project-a')
-    expect(window.localStorage.getItem('hermes.desktop.workspace-cwd.profile.profile-a')).toBe('/home/user/project-a')
+    expect(window.localStorage.getItem('moor.desktop.workspace-cwd.profile.profile-a')).toBe('/home/user/project-a')
 
     $connection.set({ baseUrl: '', mode: 'local', profile: 'profile-b' } as never)
     expect(getRememberedWorkspaceCwd()).toBe('')
@@ -1235,7 +1235,7 @@ describe('workspaceCwdForNewSession', () => {
   })
 
   it('switching to a local profile with no memory clears the outgoing profile folder (#96834)', async () => {
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = {
+    ;(window as { moorDesktop?: unknown }).moorDesktop = {
       sanitizeWorkspaceCwd: vi.fn(async (cwd: string) => ({ cwd })),
       settings: { getDefaultProjectDir: vi.fn(async () => ({ defaultLabel: '', dir: '', resolvedCwd: '' })) }
     }

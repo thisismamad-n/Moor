@@ -119,7 +119,7 @@ async function gitignoreFor(dir: string) {
  * any directory, ignored or not: a nested repo resolves to itself, an ordinary ignored
  * directory resolves to the parent's root.
  */
-async function isNestedRepoRoot(entry: HermesReadDirEntry): Promise<boolean> {
+async function isNestedRepoRoot(entry: MoorReadDirEntry): Promise<boolean> {
   if (!entry.isDirectory) {
     return false
   }
@@ -143,7 +143,7 @@ async function isNestedRepoRoot(entry: HermesReadDirEntry): Promise<boolean> {
   return cached
 }
 
-function ignoredBy(rules: GitignoreRule[], entry: HermesReadDirEntry) {
+function ignoredBy(rules: GitignoreRule[], entry: MoorReadDirEntry) {
   return rules.some(rule => {
     const rel = relativeTo(rule.base, entry.path)
 
@@ -195,7 +195,7 @@ async function filterIgnored(entries: MoorReadDirEntry[], rootPath: string, dirP
     })
   )
 
-  return visible.filter((entry): entry is HermesReadDirEntry => entry !== null)
+  return visible.filter((entry): entry is MoorReadDirEntry => entry !== null)
 }
 
 export async function readProjectDir(dirPath: string, rootPath = dirPath): Promise<MoorReadDirResult> {

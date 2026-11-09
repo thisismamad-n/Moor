@@ -6,7 +6,7 @@ import path from 'node:path'
 import { z } from 'zod'
 
 import { parseSpawnLedger, SPAWN_LEDGER_FILENAME } from '../../apps/desktop/electron/backend-discovery.ts'
-import { resolveDesktopHermesHome } from '../../apps/desktop/electron/data-paths.mjs'
+import { resolveDesktopMoorHome } from '../../apps/desktop/electron/data-paths.mjs'
 import { within } from '../../tests/install/e2e-assets/smoke-env.mjs'
 
 export interface NativeProcess {
@@ -53,7 +53,7 @@ export function readInstallationCommit(root: string, origin: 'source' | 'bundled
   // The install drivers export their real git: a fresh-machine leg takes every
   // git off PATH so the product must provision its own, which this observer
   // must not depend on.
-  const git: string = process.env.HERMES_E2E_REAL_GIT || 'git'
+  const git: string = process.env.MOOR_E2E_REAL_GIT || 'git'
 
   const commit = origin === 'source' ? nativeText(git, ['-C', root, 'rev-parse', 'HEAD'])
     : z.object({ payload: z.literal('bundled'), commit: z.string() }).parse(
@@ -185,7 +185,7 @@ function processStartTime(pid: number): number | null {
 }
 
 const gatewayStateSchema = z.object({
-  pid: z.number().int().positive(), kind: z.literal('hermes-gateway'),
+  pid: z.number().int().positive(), kind: z.literal('moor-gateway'),
   gateway_state: z.string(), start_time: z.number().nullable().optional(),
   code_sha: z.string().nullable().optional(),
 }).passthrough()
@@ -211,8 +211,8 @@ function gatewayIncarnationMatches(pid: number, recorded: number | null | undefi
   return started !== null && Math.abs(started - recorded / 100) < 2
 }
 
-/** The running canonical gateway (`hermes gateway run`) recorded for `homes`. Desktop reaches a
- * local backend through `hermes gateway ensure`, which attaches to that daemon or starts it
+/** The running canonical gateway (`moor gateway run`) recorded for `homes`. Desktop reaches a
+ * local backend through `moor gateway ensure`, which attaches to that daemon or starts it
  * detached, so it is neither an Electron descendant nor a `serve` spawn-ledger record. */
 function canonicalGateways(homes: string[], processes: NativeProcess[]): Map<number, string | undefined> {
   return new Map([...new Set(homes)].flatMap((home: string): Array<[number, string | undefined]> => {
@@ -229,7 +229,7 @@ function canonicalGateways(homes: string[], processes: NativeProcess[]): Map<num
 }
 
 /** Identify the actual listener, not a healthy helper or a command recorded before spawn. */
-export function localBackendProcess(port: number, electronPid: number, hermesHome?: string): BackendProcess {
+export function localBackendProcess(port: number, electronPid: number, moorHome?: string): BackendProcess {
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
     throw new Error('Invalid backend port')
   }
@@ -243,13 +243,13 @@ export function localBackendProcess(port: number, electronPid: number, hermesHom
   let registered: number[] = []
   let gateways = new Map<number, string | undefined>()
 
-  if (hermesHome) {
+  if (moorHome) {
     // The product writes one machine-root ledger for every profile, and the app
-    // reads it at its own resolved root (`main.ts` -> `spawnLedgerPath(HERMES_HOME)`,
+    // reads it at its own resolved root (`main.ts` -> `spawnLedgerPath(MOOR_HOME)`,
     // where a `<root>/profiles/<name>` home resolves to `<root>`).
-    const ledgerRoot = resolveDesktopHermesHome({ home: os.homedir(), env: { HERMES_HOME: hermesHome } })
+    const ledgerRoot = resolveDesktopMoorHome({ home: os.homedir(), env: { MOOR_HOME: moorHome } })
     // A named profile is served by the root's multiplexer; a standalone one by its own gateway.
-    gateways = canonicalGateways([hermesHome, ledgerRoot], processes)
+    gateways = canonicalGateways([moorHome, ledgerRoot], processes)
 
     try {
       registered = parseSpawnLedger(fs.readFileSync(path.join(ledgerRoot, SPAWN_LEDGER_FILENAME), 'utf8'))

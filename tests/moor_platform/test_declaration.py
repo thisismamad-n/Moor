@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_platform.declaration import DeclarationError, parse_declaration
-from hermes_platform.resolver.app import AppDef, AppLocation, AppResolver
-from hermes_platform.resolver.availability import Availability, availability, version_at_least
+from moor_platform.declaration import DeclarationError, parse_declaration
+from moor_platform.resolver.app import AppDef, AppLocation, AppResolver
+from moor_platform.resolver.availability import Availability, availability, version_at_least
 
 WHERE = "test-plugin/plugin.yaml"
 
@@ -99,7 +99,7 @@ def test_availability_no_requirements_does_no_io():
 ])
 def test_requires_gpu_gates_on_the_host_gpu_class(monkeypatch, gpu_class, state):
     """No `app:` block is needed; an unreadable GPU passes; the OS gate runs first and reads no GPU."""
-    from hermes_platform.host import facts
+    from moor_platform.host import facts
 
     monkeypatch.setattr(facts, "gpu_class", lambda: gpu_class)
     decl = parse_declaration("thing-mcp", None, {"gpu": "nvidia"}, where=WHERE)

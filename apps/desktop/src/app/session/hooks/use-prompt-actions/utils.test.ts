@@ -1,5 +1,5 @@
 import type { AppendMessage } from '@assistant-ui/react'
-import { JsonRpcGatewayError } from '@hermes/shared'
+import { JsonRpcGatewayError } from '@moor/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChatMessage } from '@/lib/chat-messages'
@@ -491,12 +491,12 @@ describe('renderRpcResult', () => {
           input: 10,
           output: 20,
           total: 30,
-          credits_lines: ['Nous credits: 8,420 remaining', 'Resets: 2026-08-01']
+          credits_lines: ['Moor credits: 8,420 remaining', 'Resets: 2026-08-01']
         },
         'usage'
       )
 
-      expect(body.split('\n').slice(1)).toEqual(['Nous credits: 8,420 remaining', 'Resets: 2026-08-01'])
+      expect(body.split('\n').slice(1)).toEqual(['Moor credits: 8,420 remaining', 'Resets: 2026-08-01'])
     })
   })
 

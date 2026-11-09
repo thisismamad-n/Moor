@@ -102,7 +102,7 @@ function fakeSsh(rules: any[] = []) {
       // use explicit SSH doubles to exercise live/uncertain transitions.
       const mutexWrapped = /setsid|nohup/.test(cmd) // spawn payloads run under the relaunch probe's marker gate
 
-      if (cmd.includes('.hermes-update-in-progress') && !mutexWrapped) {
+      if (cmd.includes('.moor-update-in-progress') && !mutexWrapped) {
         return 'CLEAR'
       }
 
@@ -186,8 +186,8 @@ test('POSIX relaunch gate permits absent/dead markers and normalizes named-profi
     }
   }
 
-  await assertRemoteInstallUpdateClear(ssh, '/home/alice/.hermes/profiles/research')
-  assert.ok(commands[0].endsWith(" '/home/alice/.hermes/.hermes-update-in-progress'"), commands[0].slice(-80))
+  await assertRemoteInstallUpdateClear(ssh, '/home/alice/.moor/profiles/research')
+  assert.ok(commands[0].endsWith(" '/home/alice/.moor/.moor-update-in-progress'"), commands[0].slice(-80))
 })
 
 test('POSIX relaunch gate rechecks after token upload immediately before process creation', async () => {
@@ -769,7 +769,7 @@ test.skipIf(process.platform === 'win32')(
           serveNamedProfile.pid,
           SPAWN_NONCE,
           launcher,
-          '/unrelated/hermes-home',
+          '/unrelated/moor-home',
           OWNERSHIP_ID,
           'serve'
         ),
@@ -782,7 +782,7 @@ test.skipIf(process.platform === 'win32')(
           serveNamedProfile.pid,
           SPAWN_NONCE,
           launcher,
-          '/unrelated/hermes-home',
+          '/unrelated/moor-home',
           OWNERSHIP_ID,
           'ops'
         ),
@@ -802,12 +802,12 @@ test.skipIf(process.platform === 'win32')(
 test.skipIf(process.platform !== 'linux')(
   'terminateOwnedDashboardForUpdate SIGTERMs a serve pinned to a "serve"-named profile',
   async () => {
-    const temp = await mkdtemp(path.join(os.tmpdir(), 'hermes wrapper ownership '))
+    const temp = await mkdtemp(path.join(os.tmpdir(), 'moor wrapper ownership '))
     const installDir = path.join(temp, 'install dir')
     const venvBin = path.join(installDir, 'venv', 'bin')
     const pythonLink = path.join(venvBin, 'python')
-    const entrypoint = path.join(installDir, 'hermes')
-    const launcher = path.join(temp, 'hermes launcher')
+    const entrypoint = path.join(installDir, 'moor')
+    const launcher = path.join(temp, 'moor launcher')
     const python = (await exec('command -v python3')).stdout.trim()
     const tokenPath = path.join(os.homedir(), spawnTokenPath(OWNERSHIP_ID, SPAWN_NONCE).replace(/^~\//, ''))
 
@@ -865,8 +865,8 @@ test.skipIf(process.platform !== 'linux')(
       const lock = ownedLock({
         pid: child.pid,
         profile: 'serve',
-        hermesPath: launcher,
-        hermesHome: '/unrelated/hermes-home',
+        moorPath: launcher,
+        moorHome: '/unrelated/moor-home',
         creationTime
       })
 
@@ -963,19 +963,19 @@ test('buildSpawnCommand never pins a non-slug profile into the remote argv', () 
   // The roster/SSH bridge hands the profile verbatim; a numeric id or display
   // label must never cross into the remote serve argv, where the CLI used to
   // str()-coerce it into a phantom profiles/0/ directory (#88842).
-  const bad = buildSpawnCommand('/x/hermes', 0 as unknown as string, {
+  const bad = buildSpawnCommand('/x/moor', 0 as unknown as string, {
     logPath: spawnLogPath(OWNERSHIP_ID, SPAWN_NONCE)
   })
 
   assert.ok(!bad.includes('--profile'), 'a non-string profile must not be pinned')
 
-  const empty = buildSpawnCommand('/x/hermes', '', { logPath: spawnLogPath(OWNERSHIP_ID, SPAWN_NONCE) })
+  const empty = buildSpawnCommand('/x/moor', '', { logPath: spawnLogPath(OWNERSHIP_ID, SPAWN_NONCE) })
   assert.ok(!empty.includes('--profile'), 'an empty profile must not be pinned')
 
-  const label = buildSpawnCommand('/x/hermes', 'My Profile!', { logPath: spawnLogPath(OWNERSHIP_ID, SPAWN_NONCE) })
+  const label = buildSpawnCommand('/x/moor', 'My Profile!', { logPath: spawnLogPath(OWNERSHIP_ID, SPAWN_NONCE) })
   assert.ok(!label.includes('--profile'), 'a non-slug label must not be pinned')
 
-  const good = buildSpawnCommand('/x/hermes', 'Work', { logPath: spawnLogPath(OWNERSHIP_ID, SPAWN_NONCE) })
+  const good = buildSpawnCommand('/x/moor', 'Work', { logPath: spawnLogPath(OWNERSHIP_ID, SPAWN_NONCE) })
   assert.ok(good.includes('--profile'), 'a valid profile stays pinned')
   assert.ok(good.includes("'work'"), 'the profile is normalized like the CLI would')
 })
@@ -998,7 +998,7 @@ report=${expandRemotePath(reportPath)}
 for fd in /proc/$$/fd/*; do
   target=$(readlink "$fd" 2>/dev/null || true)
   case "$target" in
-    *hermes-update-in-progress.lock) printf '%s\\n' "$target" >> "$report.tmp" ;;
+    *moor-update-in-progress.lock) printf '%s\\n' "$target" >> "$report.tmp" ;;
   esac
 done
 mv "$report.tmp" "$report"
@@ -1142,7 +1142,7 @@ test('connect() spawns fresh when there is no lockfile, adopts the served token'
     [/setsid/, '777\n'],
     // The wrapper may exit before the detached daemon writes READY; startup
     // must rely on the bounded log wait rather than kill -0 on this pid.
-    [/cat .*\.log/, 'HERMES_DASHBOARD_READY port=51999\n'],
+    [/cat .*\.log/, 'MOOR_DASHBOARD_READY port=51999\n'],
     // The post-readiness served-token adoption still verifies the daemon.
     [/kill -0 777/, 'ALIVE']
   ])
@@ -2093,7 +2093,7 @@ test.skipIf(process.platform === 'win32')(
       // argv: ['-c', <marker gate>, <marker path>, <payload>]
       assert.equal(
         argv[2],
-        `${fakeHome}/.hermes/.hermes-update-in-progress`,
+        `${fakeHome}/.moor/.moor-update-in-progress`,
         'marker path must reach python fully expanded, with no quote characters'
       )
 
@@ -2222,21 +2222,21 @@ test('connect() post-spawn cleanup that cannot prove ownership keeps the origina
 // ---------------------------------------------------------------------------
 // resolveReadyTimeoutMs (issue #94642): cold-start-tolerant remote budgets
 // ---------------------------------------------------------------------------
-test('honors a valid HERMES_DESKTOP_REMOTE_READY_TIMEOUT_MS override', () => {
-  const env = { HERMES_DESKTOP_REMOTE_READY_TIMEOUT_MS: '180000' }
+test('honors a valid MOOR_DESKTOP_REMOTE_READY_TIMEOUT_MS override', () => {
+  const env = { MOOR_DESKTOP_REMOTE_READY_TIMEOUT_MS: '180000' }
   assert.equal(resolveReadyTimeoutMs(env), 180_000)
 })
 test('clamps an override below the floor up to the 45s minimum', () => {
-  const env = { HERMES_DESKTOP_REMOTE_READY_TIMEOUT_MS: '1000' }
+  const env = { MOOR_DESKTOP_REMOTE_READY_TIMEOUT_MS: '1000' }
   assert.equal(resolveReadyTimeoutMs(env), MIN_READY_TIMEOUT_MS)
 })
 test('rounds a fractional override', () => {
-  const env = { HERMES_DESKTOP_REMOTE_READY_TIMEOUT_MS: '60000.7' }
+  const env = { MOOR_DESKTOP_REMOTE_READY_TIMEOUT_MS: '60000.7' }
   assert.equal(resolveReadyTimeoutMs(env), 60_001)
 })
 test('falls back to the default for malformed / non-positive overrides', () => {
   for (const bad of ['', 'abc', '0', '-5', 'NaN', undefined]) {
-    const env = bad === undefined ? {} : { HERMES_DESKTOP_REMOTE_READY_TIMEOUT_MS: bad }
+    const env = bad === undefined ? {} : { MOOR_DESKTOP_REMOTE_READY_TIMEOUT_MS: bad }
     assert.equal(
       resolveReadyTimeoutMs(env),
       DEFAULT_READY_TIMEOUT_MS,

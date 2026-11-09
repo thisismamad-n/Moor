@@ -18,7 +18,7 @@ from moor_cli.local_runtime.gguf import SPLIT_PART_RE, model_id_from_stem
 
 logger = logging.getLogger(__name__)
 
-_SUPERVISOR = None  # process-wide singleton; one router per Hermes process
+_SUPERVISOR = None  # process-wide singleton; one router per Moor process
 # The engine that singleton runs (or is booting). Budgets price ITS devices: the server is shared by
 # every profile this process hosts, so another profile's ``local_runtime.backend`` must not resize it.
 _SERVING_ENGINE = None
@@ -44,8 +44,8 @@ def _detect_gpu_vendor() -> str | None:
     Preserve NVIDIA's detailed name when nvidia-smi is available, then use the
     platform host facts so Intel and AMD do not silently demote ``auto`` to CPU.
     """
-    from hermes_cli.local_runtime.hardware import _cached_nvidia_gpu_query
-    from hermes_platform.host.facts import gpu_class
+    from moor_cli.local_runtime.hardware import _cached_nvidia_gpu_query
+    from moor_platform.host.facts import gpu_class
 
     query = _cached_nvidia_gpu_query()
     if query is not None and query.get("gpu_name"):
@@ -100,9 +100,9 @@ def adopt_legacy_models() -> list[Path]:
     adopting two profiles' same-named file at once, and a same name is the same catalog variant).
     Two processes racing on one file are harmless: the loser's rename finds the source gone and
     skips it. Returns the new paths of the moved files."""
-    from hermes_constants import get_default_hermes_root, named_profile_has_identity
+    from moor_constants import get_default_moor_root, named_profile_has_identity
 
-    profiles_root = get_default_hermes_root() / "profiles"
+    profiles_root = get_default_moor_root() / "profiles"
     if not profiles_root.is_dir():
         return []
     moved: list[Path] = []
@@ -159,19 +159,19 @@ def _stop_state_server() -> None:
     an orphan (recorded owner gone): a live owner's watchdog would respawn its router, so that one
     is left running and the replacement boots beside it, as it always has. The process comes from
     the identity-guarded reader, never a bare PID — the endpoint dict callers hold has none."""
-    from hermes_cli.local_runtime.recovery import (
+    from moor_cli.local_runtime.recovery import (
         _owner_is_dead,
         is_modern,
         legacy_recorded_process,
         read_state,
         recorded_process,
     )
-    from hermes_cli.local_runtime.supervisor import LlamaServerSupervisor
+    from moor_cli.local_runtime.supervisor import LlamaServerSupervisor
 
     state = read_state()
     if is_modern(state):
         if not _owner_is_dead(state):
-            logger.info("llama-server pid=%s belongs to a live Hermes process; leaving it", state.get("pid"))
+            logger.info("llama-server pid=%s belongs to a live Moor process; leaving it", state.get("pid"))
             return
         proc = recorded_process(state)
     else:
@@ -273,7 +273,7 @@ def _generate_presets(mdir: Path, preset_path: Path, residents: int = 1, *,
 
 def _launch_budget(capacity, own_bytes: int = 0):
     """``hardware.launch_budget``, or None when the probe fails: a boot never waits on it."""
-    from hermes_cli.local_runtime.hardware import launch_budget
+    from moor_cli.local_runtime.hardware import launch_budget
 
     try:
         return launch_budget(capacity, own_bytes=own_bytes)
@@ -296,8 +296,8 @@ def refit_idle_presets(sup) -> bool:
     unloaded by the router and fails once; that gap is a few milliseconds, and only when a window
     changes.
     """
-    from hermes_cli.local_runtime.hardware import probe_budget
-    from hermes_cli.local_runtime.presets import plan_presets, render_presets
+    from moor_cli.local_runtime.hardware import probe_budget
+    from moor_cli.local_runtime.presets import plan_presets, render_presets
 
     path = sup.preset_path
     if path is None or not path.exists() or _any_holds_memory(sup):

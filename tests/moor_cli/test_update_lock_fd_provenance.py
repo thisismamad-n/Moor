@@ -10,7 +10,7 @@ import threading
 
 import pytest
 
-from hermes_cli import update_lock
+from moor_cli import update_lock
 
 
 @pytest.mark.platforms("posix")
@@ -47,7 +47,7 @@ def test_checkout_custody_never_borrows_a_local_readers_descriptor(tmp_path, des
     contender = tmp_path / "contender.py"
     contender.write_text(
         "import json, sys\nfrom pathlib import Path\n"
-        "sys.path.insert(0, sys.argv[1])\nfrom hermes_cli.update_lock import UpdateLock\n"
+        "sys.path.insert(0, sys.argv[1])\nfrom moor_cli.update_lock import UpdateLock\n"
         "lock = UpdateLock(path=Path(sys.argv[2]), install_root=Path(sys.argv[3]))\n"
         "print(json.dumps({'acquired': lock.acquire()}), flush=True)\nlock.release()\n",
         encoding="utf-8",
@@ -88,7 +88,7 @@ def test_exec_child_reenters_the_lock_it_explicitly_inherited(tmp_path):
     child_script = tmp_path / "child.py"
     child_script.write_text(
         "import sys\nfrom pathlib import Path\nsys.path.insert(0,sys.argv[1])\n"
-        "from hermes_cli.update_lock import UpdateLock\n"
+        "from moor_cli.update_lock import UpdateLock\n"
         "lock=UpdateLock(path=Path(sys.argv[2])/'child-marker',install_root=Path(sys.argv[2]))\n"
         "assert lock.acquire(), lock.holder\nlock.release()\n"
         "print('JOINED',flush=True)\nsys.stdin.readline()\n", encoding="utf-8")

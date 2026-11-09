@@ -35,7 +35,7 @@ _DESCENDANTS_SQL = f"""
 # Desktop 0.22.2's ``readableError`` keeps the HTTP ``detail`` and shows its "app and backend are
 # on different versions" toast (with an Update action) for "out of sync (different versions)".
 CLIENT_UPGRADE_REQUIRED = ('client_upgrade_required: this app is out of sync (different versions) '
-                           'with the Hermes backend; update the app to edit sessions')
+                           'with the Moor backend; update the app to edit sessions')
 
 
 def _session_latest_descendant(session_id: str, db):
@@ -86,9 +86,9 @@ def _session_mutation_context(request, profile):
     """Use the same principal and profile boundary for prepare and apply."""
     from fastapi import HTTPException
     from gateway.session_contract import Principal
-    from hermes_cli.web_server import _has_valid_session_token
-    from hermes_cli.web_server_cron import _cron_profile_home
-    from hermes_state import _default_db_path
+    from moor_cli.web_server import _has_valid_session_token
+    from moor_cli.web_server_cron import _cron_profile_home
+    from moor_state import _default_db_path
 
     native = getattr(request.state, 'native_http_principal', None)
     session = getattr(request.state, 'session', None)
@@ -158,7 +158,7 @@ def _mutate_offline_store(profile, actor, params):
     second writer beside it); revision/generation/idle guards are the gateway's own.
     """
     from fastapi import HTTPException
-    from hermes_state_runtime import begin_runtime_epoch, mutate_runtime_session
+    from moor_state_runtime import begin_runtime_epoch, mutate_runtime_session
 
     def run():
         db = _open_session_db_for_profile(profile, read_only=False)
@@ -169,7 +169,7 @@ def _mutate_offline_store(profile, actor, params):
                 if errors:
                     raise HTTPException(status_code=400, detail={'errors': errors})
                 from functools import partial
-                from hermes_state_mutation_binding import import_history_control
+                from moor_state_mutation_binding import import_history_control
                 write_guard = partial(import_history_control, actor=actor,
                                       session_ids=tuple(item['session']['id'] for item in normalized))
             with db._read_ctx() as conn:
@@ -188,7 +188,7 @@ def _mutate_offline_store(profile, actor, params):
 async def _mutate_via_gateway_owner(profile, actor, params):
     """Forward a standalone dashboard mutation to the live gateway owner.
 
-    While a gateway serves the same home, a separately launched ``hermes
+    While a gateway serves the same home, a separately launched ``moor
     dashboard`` is not the store owner, so the offline path's
     exclusive-maintenance reservation can never win and every write action
     dies on a bare 409 (#138915). The owner exposes the same revision-fenced
@@ -213,11 +213,11 @@ async def _mutate_via_gateway_owner(profile, actor, params):
     """
     from fastapi import HTTPException
     from gateway.runtime_ownership import OwnershipConflict
-    from hermes_cli.gateway_client import GatewayClientError, GatewayRPCError, connect_gateway
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
-    from hermes_cli.gateway_runtime_discovery import DiscoveryError
-    from hermes_cli.web_server_cron import _cron_profile_home
-    from hermes_state import _default_db_path
+    from moor_cli.gateway_client import GatewayClientError, GatewayRPCError, connect_gateway
+    from moor_cli.gateway_runtime import discover_gateway_endpoint
+    from moor_cli.gateway_runtime_discovery import DiscoveryError
+    from moor_cli.web_server_cron import _cron_profile_home
+    from moor_state import _default_db_path
 
     home = Path(_cron_profile_home(profile)[1]) if profile else Path(_default_db_path()).parent
     # Discovery is read-only and never starts a gateway.
@@ -275,9 +275,9 @@ async def _mutate_session_request(request, profile, session_id, *, request_id,
     from fastapi import HTTPException
     from gateway.session_contract import SessionRef
     from gateway.session_mutations import mutate_session
-    from hermes_cli.gateway_client import GatewayClientError
-    from hermes_state_mutation_guards import MUTATION_GUARD_REFUSALS
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_cli.gateway_client import GatewayClientError
+    from moor_state_mutation_guards import MUTATION_GUARD_REFUSALS
+    from moor_state_runtime import RuntimeStoreError
 
     authority, actor = _session_mutation_context(request, profile)
     if operation == 'import' and authority is not None:
@@ -322,8 +322,8 @@ def _with_session_maintenance(profile, operation, *args):
     """Offline bulk actions reserve the exact owner lock through final DB close."""
     from fastapi import HTTPException
     from gateway.runtime_ownership import OwnershipConflict, exclusive_maintenance
-    from hermes_cli.web_server_cron import _cron_profile_home
-    from hermes_state import _default_db_path
+    from moor_cli.web_server_cron import _cron_profile_home
+    from moor_state import _default_db_path
 
     home = Path(_cron_profile_home(profile)[1]) if profile else Path(_default_db_path()).parent
     try:
@@ -338,7 +338,7 @@ def _with_session_maintenance(profile, operation, *args):
 
 def _session_db_read_probe_statements() -> tuple:
     """Probe the declared schema without reconciling it on a browsing request."""
-    from hermes_state_schema import schema_read_probe_statements
+    from moor_state_schema import schema_read_probe_statements
 
     return schema_read_probe_statements()
 
@@ -355,9 +355,9 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
     import sqlite3
 
     from fastapi import HTTPException
-    from hermes_state import SessionDB
-    from hermes_state_errors import is_transient_sqlite_error
-    from hermes_state_registry import acquire
+    from moor_state import SessionDB
+    from moor_state_errors import is_transient_sqlite_error
+    from moor_state_registry import acquire
 
     if not read_only:
         return acquire(db_path)
@@ -371,7 +371,7 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
             status_code=503,
             detail="Session store is not initialized. Start this profile's gateway to initialize it.")
 
-    from hermes_state_reconcile import (
+    from moor_state_reconcile import (
         DeclarativeDriftError, is_declarative_drift_error, reconcile_drift_for_browse,
     )
 
@@ -403,18 +403,18 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
                 raise HTTPException(status_code=503, detail=str(drift)) from exc
             return _open_probed()
     except (sqlite3.DatabaseError, UnicodeDecodeError) as exc:
-        from hermes_state_errors import is_malformed_db_error
+        from moor_state_errors import is_malformed_db_error
         if isinstance(exc, sqlite3.DatabaseError) and is_malformed_db_error(exc):
             # Same structured 503 the analytics routers publish (``corrupt_store_as_status``): a
-            # corrupt image names the repair (`hermes doctor`), never a generic "schema unavailable".
-            from hermes_cli.web_routers._common import corrupt_store_status
+            # corrupt image names the repair (`moor doctor`), never a generic "schema unavailable".
+            from moor_cli.web_routers._common import corrupt_store_status
             raise corrupt_store_status(db_path, exc) from exc
         if isinstance(exc, sqlite3.OperationalError) and is_transient_sqlite_error(exc):
             detail = "Session store is busy (disk I/O or lock). Retry; the list was not cleared."
         else:
             detail = (
                 "Session store schema is unavailable or corrupt. Start or restart this profile's "
-                "gateway to reconcile it; if it persists, run `hermes doctor` for diagnosis. "
+                "gateway to reconcile it; if it persists, run `moor doctor` for diagnosis. "
                 "Browsing does not repair the store.")
         raise HTTPException(status_code=503, detail=detail) from exc
 

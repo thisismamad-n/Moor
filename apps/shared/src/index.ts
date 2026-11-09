@@ -199,7 +199,7 @@ export { type UpdateDebt, updateDebt, type UpdateDebtReceipt, type UpdateDebtSte
 export { mergeUsage, usageFromTick, type UsageTickPayload } from './usage-tick'
 export {
   BROWSER_NATIVE_DIAL,
-  buildHermesWebSocketUrl,
+  buildMoorWebSocketUrl,
   type GatewayAuthMode,
   GatewayReauthRequiredError,
   type GatewayWsConnection,

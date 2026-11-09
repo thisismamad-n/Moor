@@ -12,7 +12,7 @@ from agent.relay_runtime import (
     RUNTIME_SCHEMA_KEY,
     RUNTIME_SCHEMA_VERSION,
 )
-from hermes_cli.platforms import PLATFORMS
+from moor_cli.platforms import PLATFORMS
 from tools.connectors.gateway.names import CONNECTOR_NAME_PREFIX
 from toolsets import BUILTIN_TOOL_NAMES, BUILTIN_TOOLSET_NAMES
 
@@ -22,80 +22,80 @@ from .shared_metrics_prepared_compaction import (
 )
 from .shared_metrics_busy import BUSY_ARRIVAL_DISPOSITIONS, BUSY_ARRIVAL_METRIC, BUSY_PEAK_FIELD, BUSY_WAIT_BUCKETS
 
-SCHEMA_KEY = "hermes.metrics.schema_version"
+SCHEMA_KEY = "moor.metrics.schema_version"
 # A random per-emit token (no payload) on rows whose producer waits to learn they were SAVED: facts
 # recovered from a file that is deleted only then. Events persist on the Relay thread.
-COMMIT_TICKET_KEY = "hermes.shared_metrics.commit_ticket"
-SCHEMA_VERSION = "hermes.metrics.event.v4"
-MODEL_CALL_SCOPE = "hermes.model_call"
+COMMIT_TICKET_KEY = "moor.shared_metrics.commit_ticket"
+SCHEMA_VERSION = "moor.metrics.event.v4"
+MODEL_CALL_SCOPE = "moor.model_call"
 MODEL_CALL_PROFILE_MODEL = "unknown"
-TASK_SCOPE = "hermes.task_run"
-TOOL_CALL_SCOPE = "hermes.tool_call"
-CLIENT_ACTIVE_MARK = "hermes.client.active"
-TOOL_APPROVAL_MARK = "hermes.tool_approval"
-SKILL_LIFECYCLE_MARK = "hermes.skill.lifecycle"
-SKILL_LOAD_MARK = "hermes.skill.load"
-INSTALL_SNAPSHOT_MARK = "hermes.install.snapshot"
-SESSION_MARK = "hermes.session"
-SETUP_COMPLETED_MARK = "hermes.setup.completed"
-MODEL_TOKENS_MARK = "hermes.model_tokens"
-COMPRESSION_MARK = "hermes.compression"
-MODEL_SWITCH_MARK = "hermes.model_switch"
-FALLBACK_MARK = "hermes.fallback"
-SLASH_COMMAND_MARK = "hermes.slash_command"
-EXTENSION_INSTALL_MARK = "hermes.extension.install"
+TASK_SCOPE = "moor.task_run"
+TOOL_CALL_SCOPE = "moor.tool_call"
+CLIENT_ACTIVE_MARK = "moor.client.active"
+TOOL_APPROVAL_MARK = "moor.tool_approval"
+SKILL_LIFECYCLE_MARK = "moor.skill.lifecycle"
+SKILL_LOAD_MARK = "moor.skill.load"
+INSTALL_SNAPSHOT_MARK = "moor.install.snapshot"
+SESSION_MARK = "moor.session"
+SETUP_COMPLETED_MARK = "moor.setup.completed"
+MODEL_TOKENS_MARK = "moor.model_tokens"
+COMPRESSION_MARK = "moor.compression"
+MODEL_SWITCH_MARK = "moor.model_switch"
+FALLBACK_MARK = "moor.fallback"
+SLASH_COMMAND_MARK = "moor.slash_command"
+EXTENSION_INSTALL_MARK = "moor.extension.install"
 # ---- v4 install ----
-STARTUP_LATENCY_MARK = "hermes.startup.latency"
-SUBSCRIBER_NAME = "hermes.nemo_relay.shared_metrics"
-CLIENT_ACTIVE_METRIC = "hermes.client.active"
-LEGACY_MODEL_CALL_METRIC = "hermes.model_call.count"
-MODEL_ROUTE_METRIC = "hermes.model_route.count"
-TASK_STARTED_METRIC = "hermes.task_run.started"
-TASK_FINISHED_METRIC = "hermes.task_run.finished"
-TASK_DURATION_METRIC = "hermes.task_run.duration"
-TOOL_CALL_METRIC = "hermes.tool_call.count"
-TOOL_LATENCY_METRIC = "hermes.tool_call.latency"
-TOOL_APPROVAL_METRIC = "hermes.tool_approval.count"
-SKILL_LIFECYCLE_METRIC = "hermes.skill.lifecycle.count"
-SKILL_LOAD_METRIC = "hermes.skill.load.count"
-TOOL_USAGE_METRIC = "hermes.tool.usage.count"
-INSTALL_SNAPSHOT_METRIC = "hermes.install.snapshot"
-SESSION_METRIC = "hermes.session.count"
-MILESTONE_METRIC = "hermes.install.milestone"
-SETUP_COMPLETED_METRIC = "hermes.setup.completed"
-MODEL_TOKENS_METRIC = "hermes.model_tokens.sum"
-COMPRESSION_METRIC = "hermes.compression.count"
-MODEL_SWITCH_METRIC = "hermes.model_switch.count"
-FALLBACK_METRIC = "hermes.fallback.count"
-SLASH_COMMAND_METRIC = "hermes.slash_command.count"
-EXTENSION_INSTALL_METRIC = "hermes.extension.install.count"
+STARTUP_LATENCY_MARK = "moor.startup.latency"
+SUBSCRIBER_NAME = "moor.nemo_relay.shared_metrics"
+CLIENT_ACTIVE_METRIC = "moor.client.active"
+LEGACY_MODEL_CALL_METRIC = "moor.model_call.count"
+MODEL_ROUTE_METRIC = "moor.model_route.count"
+TASK_STARTED_METRIC = "moor.task_run.started"
+TASK_FINISHED_METRIC = "moor.task_run.finished"
+TASK_DURATION_METRIC = "moor.task_run.duration"
+TOOL_CALL_METRIC = "moor.tool_call.count"
+TOOL_LATENCY_METRIC = "moor.tool_call.latency"
+TOOL_APPROVAL_METRIC = "moor.tool_approval.count"
+SKILL_LIFECYCLE_METRIC = "moor.skill.lifecycle.count"
+SKILL_LOAD_METRIC = "moor.skill.load.count"
+TOOL_USAGE_METRIC = "moor.tool.usage.count"
+INSTALL_SNAPSHOT_METRIC = "moor.install.snapshot"
+SESSION_METRIC = "moor.session.count"
+MILESTONE_METRIC = "moor.install.milestone"
+SETUP_COMPLETED_METRIC = "moor.setup.completed"
+MODEL_TOKENS_METRIC = "moor.model_tokens.sum"
+COMPRESSION_METRIC = "moor.compression.count"
+MODEL_SWITCH_METRIC = "moor.model_switch.count"
+FALLBACK_METRIC = "moor.fallback.count"
+SLASH_COMMAND_METRIC = "moor.slash_command.count"
+EXTENSION_INSTALL_METRIC = "moor.extension.install.count"
 # ---- v4 loop ----
-MEMORY_OP_MARK = "hermes.memory.op"
-CURATOR_RUN_MARK = "hermes.curator.run"
-DELEGATION_RUN_MARK = "hermes.delegation.run"
-EXECUTION_BACKEND_MARK = "hermes.execution_backend"
-MEMORY_OP_METRIC = "hermes.memory.op.count"
-CURATOR_RUN_METRIC = "hermes.curator.run.count"
-DELEGATION_RUN_METRIC = "hermes.delegation.run.count"
-EXECUTION_BACKEND_METRIC = "hermes.execution_backend.count"
+MEMORY_OP_MARK = "moor.memory.op"
+CURATOR_RUN_MARK = "moor.curator.run"
+DELEGATION_RUN_MARK = "moor.delegation.run"
+EXECUTION_BACKEND_MARK = "moor.execution_backend"
+MEMORY_OP_METRIC = "moor.memory.op.count"
+CURATOR_RUN_METRIC = "moor.curator.run.count"
+DELEGATION_RUN_METRIC = "moor.delegation.run.count"
+EXECUTION_BACKEND_METRIC = "moor.execution_backend.count"
 # ---- end v4 loop ----
 # ---- v4 model ----
-MODEL_TOOL_QUALITY_MARK = "hermes.model_tool_quality"
-MODEL_FRICTION_MARK = "hermes.model_friction"
-CONTEXT_PEAK_MARK = "hermes.context_peak"
-MODEL_TOOL_QUALITY_METRIC = "hermes.model_tool_quality.count"
-MODEL_FRICTION_METRIC = "hermes.model_friction.count"
-CONTEXT_PEAK_METRIC = "hermes.context_peak.count"
+MODEL_TOOL_QUALITY_MARK = "moor.model_tool_quality"
+MODEL_FRICTION_MARK = "moor.model_friction"
+CONTEXT_PEAK_MARK = "moor.context_peak"
+MODEL_TOOL_QUALITY_METRIC = "moor.model_tool_quality.count"
+MODEL_FRICTION_METRIC = "moor.model_friction.count"
+CONTEXT_PEAK_METRIC = "moor.context_peak.count"
 # ---- end v4 model ----
 # ---- v4 install ----
-STARTUP_LATENCY_METRIC = "hermes.startup.latency"
+STARTUP_LATENCY_METRIC = "moor.startup.latency"
 # ---- v5 engagement ----
 # Not a counter: one attended turn's serving model, folded into the local daily engagement rollup.
-ENGAGEMENT_TURN_MARK = "hermes.engagement.turn"
-ENGAGEMENT_DAY_METRIC = "hermes.engagement.day.count"
-ENGAGEMENT_SURFACE_METRIC = "hermes.engagement.surface_day.count"
-MODEL_SWITCH_AFTER_MARK = "hermes.model_switch_after"
-MODEL_SWITCH_AFTER_METRIC = "hermes.model_switch_after.count"
+ENGAGEMENT_TURN_MARK = "moor.engagement.turn"
+ENGAGEMENT_DAY_METRIC = "moor.engagement.day.count"
+ENGAGEMENT_SURFACE_METRIC = "moor.engagement.surface_day.count"
+MODEL_SWITCH_AFTER_MARK = "moor.model_switch_after"
+MODEL_SWITCH_AFTER_METRIC = "moor.model_switch_after.count"
 # ---- end v5 engagement ----
 MODEL_IDENTIFIER_MAX_LENGTH = 256
 PROVIDER_IDENTIFIER_MAX_LENGTH = 64
@@ -112,7 +112,7 @@ TASK_END_REASONS = frozenset({
     "system_aborted", "timed_out", "unknown", "user_cancelled",
 })
 TASK_TERMINATIONS = frozenset({"none", "system_aborted", "timed_out", "unknown", "user_cancelled"})
-# ``one_shot``: a finite CLI run (``hermes -z``, ``hermes chat -q`` off a TTY, ``-Q``, ``--oneshot``) that
+# ``one_shot``: a finite CLI run (``moor -z``, ``moor chat -q`` off a TTY, ``-Q``, ``--oneshot``) that
 # answers one prompt and exits — a person's shell line or their script, never the REPL.
 TASK_ENTRYPOINTS = frozenset({
     "api", "background", "batch", "delegated", "gateway_message", "interactive", "one_shot", "other",
@@ -310,11 +310,11 @@ EXECUTION_BACKENDS = BROWSER_BACKENDS | CODE_BACKENDS | TERMINAL_BACKENDS
 EXECUTION_OUTCOMES = frozenset({"failed", "success"})
 # ---- end v4 loop ----
 # ---- v4 gateway ----
-PLATFORM_HEALTH_MARK = PLATFORM_HEALTH_METRIC = "hermes.platform.health"
-PLATFORM_DELIVERY_MARK = PLATFORM_DELIVERY_METRIC = "hermes.platform.delivery"
-REPLY_LATENCY_MARK = REPLY_LATENCY_METRIC = "hermes.gateway.reply_latency"
-CRON_RUN_MARK = CRON_RUN_METRIC = "hermes.cron.run"
-# Plugin platforms are named only when Nous ships them (plugins/platforms/) or the installer proved a
+PLATFORM_HEALTH_MARK = PLATFORM_HEALTH_METRIC = "moor.platform.health"
+PLATFORM_DELIVERY_MARK = PLATFORM_DELIVERY_METRIC = "moor.platform.delivery"
+REPLY_LATENCY_MARK = REPLY_LATENCY_METRIC = "moor.gateway.reply_latency"
+CRON_RUN_MARK = CRON_RUN_METRIC = "moor.cron.run"
+# Plugin platforms are named only when Moor ships them (plugins/platforms/) or the installer proved a
 # plugin-catalog install (shared_metrics_catalog.platform_metric_name); every other one is ``plugin``.
 _PLATFORM_CATALOGS = ("bundled_platform_names", "catalog_platform_names")
 GATEWAY_PLATFORMS = _CatalogValues(*_PLATFORM_CATALOGS, extra=_CORE_GATEWAY_PLATFORMS)
@@ -379,15 +379,15 @@ def long_size_bucket(count: int) -> str:
 # ---- end v5 engagement ----
 
 # ---- v4 reliability ----
-UPDATE_RUN_MARK = UPDATE_RUN_METRIC = "hermes.update.run"
-UPDATE_STAGE_MARK = UPDATE_STAGE_METRIC = "hermes.update.stage"
-PROCESS_EXIT_MARK = PROCESS_EXIT_METRIC = "hermes.process.exit"
+UPDATE_RUN_MARK = UPDATE_RUN_METRIC = "moor.update.run"
+UPDATE_STAGE_MARK = UPDATE_STAGE_METRIC = "moor.update.stage"
+PROCESS_EXIT_MARK = PROCESS_EXIT_METRIC = "moor.process.exit"
 UPDATE_KINDS = frozenset({"cli", "desktop"})
 UPDATE_OUTCOMES = frozenset({"failed", "noop", "refused", "success"})
 # ``partial``: committed, but interrupted after the commit point or the user's changes stay parked
-# (only `hermes update` receipts; the Desktop RPC keeps UPDATE_OUTCOMES).
+# (only `moor update` receipts; the Desktop RPC keeps UPDATE_OUTCOMES).
 UPDATE_RUN_OUTCOMES = UPDATE_OUTCOMES | {"partial"}
-# `hermes update` pipeline stages, in pipeline order (the receipt's stage marks use these names).
+# `moor update` pipeline stages, in pipeline order (the receipt's stage marks use these names).
 UPDATE_STAGE_ORDER = ("plan", "snapshot", "apply", "deps", "build", "restart", "verify")
 UPDATE_STAGES = frozenset(UPDATE_STAGE_ORDER)
 # Desktop's packaged updaters (electron-updater, App Installer, Store) fail at their own steps.
@@ -408,11 +408,11 @@ _VERSION_AGE_THRESHOLDS = ((7 * _DAY_MS, "lt_7d"), (30 * _DAY_MS, "7d_to_30d"), 
 
 
 # ---- v5 signals ----
-TOOL_UNAVAILABLE_MARK = TOOL_UNAVAILABLE_METRIC = "hermes.tool_unavailable.count"
-PROVIDER_SETUP_MARK = PROVIDER_SETUP_METRIC = "hermes.provider_setup.count"
-FEATURE_ADOPTION_METRIC = "hermes.feature_adoption.count"
+TOOL_UNAVAILABLE_MARK = TOOL_UNAVAILABLE_METRIC = "moor.tool_unavailable.count"
+PROVIDER_SETUP_MARK = PROVIDER_SETUP_METRIC = "moor.provider_setup.count"
+FEATURE_ADOPTION_METRIC = "moor.feature_adoption.count"
 # Not a counter: a first-use fact the subscriber turns into at most one adoption row per feature.
-FEATURE_USED_MARK = "hermes.feature.used"
+FEATURE_USED_MARK = "moor.feature.used"
 PROVIDER_SETUP_SURFACES = frozenset({"cli_model", "cli_setup", "dashboard", "desktop", "tui"})
 PROVIDER_SETUP_EVENTS = frozenset({"abandoned", "completed", "failed", "started"})
 PROVIDER_SETUP_FAILURE_CLASSES = frozenset({"auth", "cancelled", "network", "no_models", "none", "other"})
@@ -421,7 +421,7 @@ FEATURES = frozenset({
     "memory", "plugins", "projects", "skills_created", "tui", "voice",
 })
 DAYS_SINCE_INSTALL_BUCKETS = frozenset({"same_day", "1d_to_7d", "7d_to_30d", "30d_to_90d", "gte_90d", "unknown"})
-FEATURE_DISABLED_MARK = FEATURE_DISABLED_METRIC = "hermes.feature_disabled.count"
+FEATURE_DISABLED_MARK = FEATURE_DISABLED_METRIC = "moor.feature_disabled.count"
 FEATURE_DISABLED_KINDS = frozenset({
     "compression", "curator", "memory", "platform", "plugin", "setting", "skill", "toolset",
 })
@@ -432,8 +432,8 @@ FEATURE_DISABLED_NAME_MAX_LENGTH = 64
 
 # ---- iuf c1 ----
 # Why an extension install failed, named at each failure exit of the three emitters
-# (hermes_cli/skills_hub.py::_install_skill, hermes_cli/plugins_cmd_install.py::recorded_install,
-# hermes_cli/mcp_catalog.py::recorded_catalog_install / record_mcp_install); ``none`` on success.
+# (moor_cli/skills_hub.py::_install_skill, moor_cli/plugins_cmd_install.py::recorded_install,
+# moor_cli/mcp_catalog.py::recorded_catalog_install / record_mcp_install); ``none`` on success.
 # A raised exception with no class of its own is classified by its TYPE: network / permission /
 # filesystem_error, anything else ``exception:<Type>``, which keeps only the ``exception`` prefix
 # (as on compression rows). Never the error message.
@@ -469,7 +469,7 @@ EXTENSION_MCP_FAILURE_CLASSES = EXTENSION_COMMON_FAILURE_CLASSES | frozenset({
     "bootstrap_failed",   # a catalog entry's bootstrap command exited non-zero
     "clone_failed",       # git clone / checkout of a catalog entry's repository failed
     "config_invalid",     # no such catalog entry, undeclared env var, or a manifest that cannot be built
-    "config_rejected",    # Hermes refused a suspicious command/args configuration
+    "config_rejected",    # Moor refused a suspicious command/args configuration
     "connect_failed",     # the probe could not reach or initialize the server
     "git_missing",        # git is not installed
     "missing_credentials",  # a required credential was not provided
@@ -487,10 +487,10 @@ EXTENSION_FAILURE_CLASSES = (
 # (bundled restores, plugin and MCP rows), ``unresolved`` = a hub lookup no adapter answered,
 # ``other`` = an adapter id this list does not name.
 EXTENSION_REGISTRY_IDS = frozenset({
-    "browse-sh", "clawhub", "github", "hermes-index", "lobehub", "official", "skills-sh", "url", "well-known",
+    "browse-sh", "clawhub", "github", "moor-index", "lobehub", "official", "skills-sh", "url", "well-known",
 })
 EXTENSION_REGISTRIES = EXTENSION_REGISTRY_IDS | frozenset({"none", "other", "unresolved"})
-# Why a `hermes update` run failed or was refused, derived from the FINAL receipt only
+# Why a `moor update` run failed or was refused, derived from the FINAL receipt only
 # (shared_metrics_update.update_failure_class); ``none`` unless outcome is failed/refused/partial.
 UPDATE_FAILURE_CLASSES = frozenset({
     "aborted_before_apply",  # fallback: exited before the checkout moved with no reason recorded
@@ -532,13 +532,13 @@ UPDATE_STOP_CLASSES = frozenset({
     "head_moved",             # a ref moved during the update; HEAD is not the selected commit
     "local_changes_blocked",  # local changes git could not stash, or a dirty tree the ZIP will not overwrite
     "lock_held",              # (see above)
-    "managed_install",        # (see above): HERMES_MANAGED installs refuse before any receipt
+    "managed_install",        # (see above): MOOR_MANAGED installs refuse before any receipt
     "merge_conflict",         # local commits on a custom branch conflict with upstream
     "not_git_checkout",       # the install is not a git checkout (non-Windows)
     "old_version_handoff",    # an older updater's hand-off to this version could not finish
     "parked_branch_blocked",  # the checkout is parked on another branch that is unsafe to switch
     "permission_denied",      # (see above): git could not write a file it needs (e.g. index.lock's directory)
-    "stash_restore_rejected",  # re-applied local changes broke Hermes; the update stopped
+    "stash_restore_rejected",  # re-applied local changes broke Moor; the update stopped
     "syntax_rollback",        # the pulled code failed the syntax check and was rolled back
     "target_syntax_error",    # the target failed the syntax check before anything moved
     "target_unresolved",      # the fetched target ref did not resolve to a commit
@@ -550,8 +550,8 @@ UPDATE_FAILURE_CLASSES |= UPDATE_STOP_CLASSES
 # ---- end iuf c1 ----
 # ---- iuf c2 ----
 # One fresh-install run of scripts/install.sh / install.ps1, from the local receipt the installer
-# leaves (the installer itself never sends); counted by a later Hermes start while collection is on.
-INSTALL_RUN_MARK = INSTALL_RUN_METRIC = "hermes.install.run"
+# leaves (the installer itself never sends); counted by a later Moor start while collection is on.
+INSTALL_RUN_MARK = INSTALL_RUN_METRIC = "moor.install.run"
 INSTALL_RUN_INSTALLERS = frozenset({"install_ps1", "install_sh", "other"})
 INSTALL_RUN_OUTCOMES = frozenset({"failed", "success"})
 # The installers' stage_names / $Stages ladder (hyphens as underscores).
@@ -583,16 +583,16 @@ def version_age_bucket(age_ms: Any) -> str:
 # ---- end v4 reliability ----
 
 # ---- v5 harness ----
-FILE_EDIT_MARK = "hermes.file_edit"
-LOOP_GUARD_MARK = "hermes.loop_guard"
-TOOL_RECOVERY_MARK = "hermes.tool_recovery"
-TERMINAL_OUTCOME_MARK = "hermes.terminal.outcome"
-MODEL_REPLY_ISSUE_MARK = "hermes.model_reply_issue"
-FILE_EDIT_METRIC = "hermes.file_edit.count"
-LOOP_GUARD_METRIC = "hermes.loop_guard.count"
-TOOL_RECOVERY_METRIC = "hermes.tool_recovery.count"
-TERMINAL_OUTCOME_METRIC = "hermes.terminal.outcome.count"
-MODEL_REPLY_ISSUE_METRIC = "hermes.model_reply_issue.count"
+FILE_EDIT_MARK = "moor.file_edit"
+LOOP_GUARD_MARK = "moor.loop_guard"
+TOOL_RECOVERY_MARK = "moor.tool_recovery"
+TERMINAL_OUTCOME_MARK = "moor.terminal.outcome"
+MODEL_REPLY_ISSUE_MARK = "moor.model_reply_issue"
+FILE_EDIT_METRIC = "moor.file_edit.count"
+LOOP_GUARD_METRIC = "moor.loop_guard.count"
+TOOL_RECOVERY_METRIC = "moor.tool_recovery.count"
+TERMINAL_OUTCOME_METRIC = "moor.terminal.outcome.count"
+MODEL_REPLY_ISSUE_METRIC = "moor.model_reply_issue.count"
 FILE_EDIT_TOOLS = frozenset({"patch", "write_file"})
 FILE_EDIT_MODES = frozenset({"replace", "v4a", "whole_file"})
 FILE_EDIT_OUTCOMES = frozenset({"already_applied", "ambiguous", "applied", "failed", "no_match"})
@@ -614,9 +614,9 @@ LOOP_GUARD_DETECTORS = frozenset({
 TOOL_RECOVERY_OUTCOMES = frozenset({"error", "gave_up", "no_tool_call", "success"})
 TOOL_RECOVERY_NEXT_TOOLS = frozenset({"different", "none", "same"})
 # ---- v4 connectors ----
-TOOL_SEARCH_MARK = TOOL_SEARCH_METRIC = "hermes.tool_search.count"
-TOOL_BATCH_MARK = TOOL_BATCH_METRIC = "hermes.tool_batch.count"
-CONNECTOR_CHAIN_MARK = CONNECTOR_CHAIN_METRIC = "hermes.connector_chain.count"
+TOOL_SEARCH_MARK = TOOL_SEARCH_METRIC = "moor.tool_search.count"
+TOOL_BATCH_MARK = TOOL_BATCH_METRIC = "moor.tool_batch.count"
+CONNECTOR_CHAIN_MARK = CONNECTOR_CHAIN_METRIC = "moor.connector_chain.count"
 TOOL_SEARCH_SCOPES = frozenset({"both", "connector", "local"})
 TOOL_SEARCH_OUTCOMES = frozenset({"connector_unavailable", "error", "hits", "no_hits"})
 CONNECTOR_SHARES = frozenset({"all", "none", "some"})
@@ -629,12 +629,12 @@ TERMINAL_OUTCOMES = frozenset({"killed", "nonzero", "ok", "timeout"})
 MODEL_REPLY_ISSUES = frozenset({"empty", "none", "reasoning_only", "refusal", "truncated_length"})
 # ---- end v5 harness ----
 # ---- v5 efficiency ----
-TASK_COST_MARK = TASK_COST_METRIC = "hermes.task_cost.count"
-WASTED_TOKENS_MARK = WASTED_TOKENS_METRIC = "hermes.wasted_tokens.count"
-TOOL_OUTPUT_TRUNCATION_MARK = TOOL_OUTPUT_TRUNCATION_METRIC = "hermes.tool_output_truncation.count"
-TOOL_OVERHEAD_MARK = TOOL_OVERHEAD_METRIC = "hermes.tool_overhead.count"
-TOOL_ENABLED_UNUSED_MARK = TOOL_ENABLED_UNUSED_METRIC = "hermes.tool_enabled_unused.count"
-CACHE_BREAK_MARK = CACHE_BREAK_METRIC = "hermes.cache_break.count"
+TASK_COST_MARK = TASK_COST_METRIC = "moor.task_cost.count"
+WASTED_TOKENS_MARK = WASTED_TOKENS_METRIC = "moor.wasted_tokens.count"
+TOOL_OUTPUT_TRUNCATION_MARK = TOOL_OUTPUT_TRUNCATION_METRIC = "moor.tool_output_truncation.count"
+TOOL_OVERHEAD_MARK = TOOL_OVERHEAD_METRIC = "moor.tool_overhead.count"
+TOOL_ENABLED_UNUSED_MARK = TOOL_ENABLED_UNUSED_METRIC = "moor.tool_enabled_unused.count"
+CACHE_BREAK_MARK = CACHE_BREAK_METRIC = "moor.cache_break.count"
 # Prompt + completion tokens of one user turn, summed over its primary calls.
 TURN_TOKEN_BUCKETS = frozenset({
     "lt_2k", "2k_to_10k", "10k_to_50k", "50k_to_200k", "200k_to_1m", "gte_1m", "unknown",
@@ -645,17 +645,17 @@ TURN_ACTIVITY_BUCKETS = frozenset({
     "0", "1", "2", "3_to_5", "6_to_10", "11_to_25", "26_to_50", "51_to_100", "gte_101",
 })
 WASTE_REASONS = frozenset({"interrupt", "retry", "undo"})
-# Characters of one raw tool result, before Hermes spills or truncates it.
+# Characters of one raw tool result, before Moor spills or truncates it.
 TOOL_OUTPUT_SIZE_BUCKETS = frozenset({
     "lt_1k", "1k_to_10k", "10k_to_50k", "50k_to_100k", "100k_to_500k", "gte_500k", "unknown",
 })
 TOOL_SCHEMA_TOKEN_BUCKETS = frozenset({
     "0", "lt_2k", "2k_to_5k", "5k_to_10k", "10k_to_20k", "20k_to_40k", "gte_40k",
 })
-# Toolsets Hermes ships; MCP servers and plugin toolsets collapse to custom.
+# Toolsets Moor ships; MCP servers and plugin toolsets collapse to custom.
 TOOLSET_NAMES = BUILTIN_TOOLSET_NAMES | RETIRED_TOOLSET_NAMES | {"custom"}
-# compression is the expected cause; the rest are Hermes invalidating a warm prefix (bugs or
-# user-driven), or the provider reporting a cold read Hermes did not cause.
+# compression is the expected cause; the rest are Moor invalidating a warm prefix (bugs or
+# user-driven), or the provider reporting a cold read Moor did not cause.
 CACHE_BREAK_CAUSES = frozenset({
     "cache_expired", "compression", "model_switch", "provider_reported_miss", "system_prompt_rebuild",
     "toolset_change",
@@ -665,9 +665,9 @@ CACHE_BREAK_CAUSES = frozenset({
 # Desktop love/hate: which areas get used, what gets in the way, where first run stops. Every value
 # is a code-defined Desktop surface id (apps/desktop/src/store/desktop-metrics.ts mirrors these
 # sets); anything the client names outside them collapses to `other` before it is recorded.
-DESKTOP_FEATURE_USE_MARK = DESKTOP_FEATURE_USE_METRIC = "hermes.desktop.feature_use"
-DESKTOP_FRICTION_MARK = DESKTOP_FRICTION_METRIC = "hermes.desktop.friction"
-DESKTOP_ONBOARDING_MARK = DESKTOP_ONBOARDING_METRIC = "hermes.desktop.onboarding"
+DESKTOP_FEATURE_USE_MARK = DESKTOP_FEATURE_USE_METRIC = "moor.desktop.feature_use"
+DESKTOP_FRICTION_MARK = DESKTOP_FRICTION_METRIC = "moor.desktop.friction"
+DESKTOP_ONBOARDING_MARK = DESKTOP_ONBOARDING_METRIC = "moor.desktop.onboarding"
 # Settings views are `SETTINGS_VIEWS` in apps/desktop/src/app/settings/index.tsx (the legacy
 # `connections` tab redirects to `gateway`).
 DESKTOP_SETTINGS_AREAS = frozenset({
@@ -722,7 +722,7 @@ DESKTOP_ONBOARDING_STEPS = frozenset({
 })
 DESKTOP_ONBOARDING_EVENTS = frozenset({"abandoned", "completed", "reached"})
 # Bot Mode (a bot's canonical chat or a bot side-chat in front) vs regular Sessions mode, per day.
-DESKTOP_MODE_USE_MARK = DESKTOP_MODE_USE_METRIC = "hermes.desktop.mode_use"
+DESKTOP_MODE_USE_MARK = DESKTOP_MODE_USE_METRIC = "moor.desktop.mode_use"
 DESKTOP_MODES = frozenset({"bots", "sessions"})
 DESKTOP_ACTIVE_MINUTES_BUCKETS = frozenset({"0", "lt_5m", "5m_to_30m", "30m_to_2h", "2h_to_6h", "gte_6h"})
 _DESKTOP_ACTIVE_THRESHOLDS = ((300_000, "lt_5m"), (1_800_000, "5m_to_30m"), (7_200_000, "30m_to_2h"),
@@ -739,7 +739,7 @@ def desktop_active_minutes_bucket(active_ms: Any) -> str:
 # Button presses per day. Action ids are the Desktop keybinding registry (KEYBIND_ACTIONS in
 # apps/desktop/src/lib/keybinds/actions.ts) plus the typed button table DESKTOP_BUTTON_ACTIONS in
 # apps/desktop/src/store/desktop-metrics.ts; contributed/plugin actions collapse to `other`.
-DESKTOP_ACTION_USE_MARK = DESKTOP_ACTION_USE_METRIC = "hermes.desktop.action_use"
+DESKTOP_ACTION_USE_MARK = DESKTOP_ACTION_USE_METRIC = "moor.desktop.action_use"
 DESKTOP_KEYBIND_ACTION_IDS = frozenset({
     "appearance.toggleMode", "composer.cancel", "composer.dictate", "composer.focus", "composer.help",
     "composer.history", "composer.mention", "composer.modelPicker", "composer.newline", "composer.queue",
@@ -762,7 +762,7 @@ DESKTOP_ACTION_IDS = DESKTOP_KEYBIND_ACTION_IDS | DESKTOP_BUTTON_ACTION_IDS | {"
 DESKTOP_ACTION_VIAS = frozenset({"click", "menu", "palette", "shortcut"})
 # Dislike signals, each naming its target from a closed set (setting keys are DEFAULT_CONFIG leaf
 # paths, checked against the live schema by shared_metrics_desktop and shape-checked here).
-DESKTOP_DISLIKE_MARK = DESKTOP_DISLIKE_METRIC = "hermes.desktop.dislike"
+DESKTOP_DISLIKE_MARK = DESKTOP_DISLIKE_METRIC = "moor.desktop.dislike"
 DESKTOP_FLOW_IDS = frozenset({
     "command_palette", "free_tier_sign_in", "keybind_capture", "model_picker", "project_create", "provider_oauth",
     "session_picker", "session_switcher", "other",
@@ -1127,7 +1127,7 @@ _METRIC_FIELDS: dict[str, frozenset[str]] = {
 }
 # Fields v2 carried on the per-task and per-tool-call rows. Together they made nearly every task and
 # tool call its own row; v3 moves duration/retries/latency to the small split counters above (call
-# counts per task are already on hermes.task_cost.count). Their values stay in the contract so rows
+# counts per task are already on moor.task_cost.count). Their values stay in the contract so rows
 # recorded before an upgrade still validate and package.
 _TASK_FINISHED_V2_ONLY = frozenset(
     {"duration_bucket", "model_call_count_bucket", "retry_count_bucket", "tool_call_count_bucket"}
@@ -1421,7 +1421,7 @@ def task_duration_counter(event: Any) -> tuple[str, dict[str, str]] | None:
 
 
 # The task end payload (task_terminal_fields) also carries per-task call counts for other Relay
-# subscribers; hermes.task_cost.count already buckets them, so no counter projects them here.
+# subscribers; moor.task_cost.count already buckets them, so no counter projects them here.
 _TASK_END_FIELDS = (
     _METRIC_FIELDS[TASK_FINISHED_METRIC] | _METRIC_FIELDS[TASK_DURATION_METRIC]
     | {"model_call_count_bucket", "tool_call_count_bucket"}
@@ -1742,12 +1742,12 @@ _TOOL_CATEGORY_PREFIXES = (
     ("browser", "browser"),
     (("image", "tts", "video", "vision"), "media"),
     ("homeassistant", "home_automation"),  # the homeassistant catalog plugin's toolset
-    (("discord", "email", "feishu", "hermes-yuanbao", "slack", "sms"), "communication"),
+    (("discord", "email", "feishu", "moor-yuanbao", "slack", "sms"), "communication"),
 )
 
 
 def tool_category(kwargs: dict[str, Any]) -> str:
-    """Map Hermes registry toolset metadata to a low-cardinality category."""
+    """Map Moor registry toolset metadata to a low-cardinality category."""
     if _norm(kwargs.get("tool_name")).startswith(CONNECTOR_NAME_PREFIX):
         return "connector"
     toolset = _norm(kwargs.get("toolset"))
@@ -1831,7 +1831,7 @@ _TOOL_ERROR_TYPES = {
 
 
 def tool_error_class(kwargs: dict[str, Any], outcome: str | None = None) -> str:
-    """Closed failure class from Hermes's own error_type; exception class names become
+    """Closed failure class from Moor's own error_type; exception class names become
     ``exception`` so plugin-defined identifiers never leave the machine. A connector entry's
     gateway error code names its class instead of ``tool_error``."""
     outcome = outcome or tool_outcome(kwargs)
@@ -1915,7 +1915,7 @@ def _non_negative_number(value: Any) -> float | None:
 
 
 def model_call_fields(kwargs: dict[str, Any]) -> dict[str, str]:
-    """Return the terminal model identity and provider route known to Hermes."""
+    """Return the terminal model identity and provider route known to Moor."""
     from .shared_metrics_catalog import model_metric_name, provider_metric_name
 
     provider = provider_metric_name(kwargs.get("provider"))

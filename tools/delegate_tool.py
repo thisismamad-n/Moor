@@ -81,13 +81,13 @@ def _parent_live_home(parent_agent: Any) -> Optional[Path]:
         logger.debug(
             "delegate_task: parent _session_db.db_path is %r (not a str/Path); "
             "live-transcript home pinning skipped, falling back to ambient "
-            "HERMES_HOME resolve (transcripts may land in a different profile, #91996)",
+            "MOOR_HOME resolve (transcripts may land in a different profile, #91996)",
             parent_db,
         )
         return None
     logger.warning(
         "delegate_task: parent agent exposes no _session_db; live-transcript "
-        "home pinning skipped, falling back to ambient HERMES_HOME resolve "
+        "home pinning skipped, falling back to ambient MOOR_HOME resolve "
         "(transcripts may land in a different profile, #91996)"
     )
     return None
@@ -311,7 +311,7 @@ def _build_child_agent(
                 # No child close() will ever run: release the dedicated handle here.
                 if child_session_db is not None:
                     with _quiet(None):
-                        from hermes_state_registry import release_or_close
+                        from moor_state_registry import release_or_close
                         release_or_close(child_session_db)
                 raise
         # Shared pool lets children rotate credentials on rate limits. A profile child loads ITS profile's pool
@@ -631,9 +631,9 @@ def delegate_task(
     #
     # The transcripts' profile home is resolved from stable parent-owned
     # state (the parent's per-profile SessionDB path), NOT ambient
-    # get_hermes_dir(): this thread may have crossed a raw threading.Thread
-    # boundary that dropped the session's _HERMES_HOME_OVERRIDE ContextVar,
-    # and process-wide HERMES_HOME is unstable under concurrent
+    # get_moor_dir(): this thread may have crossed a raw threading.Thread
+    # boundary that dropped the session's _MOOR_HOME_OVERRIDE ContextVar,
+    # and process-wide MOOR_HOME is unstable under concurrent
     # multi-profile workers — either way transcripts could land in the
     # wrong profile (#91996). state.db sits directly under the home, so
     # its parent IS the home; None falls back to today's ambient resolve

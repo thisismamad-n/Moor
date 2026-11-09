@@ -57,7 +57,7 @@ export const ruPluginSettings = {
       desktopSuccess: name => `Плагин приложения ${name} установлен`,
       agentFailed: 'Не удалось установить плагин агента',
       installUncertain:
-        'Hermes перестал ждать результат установки, но плагин может всё ещё устанавливаться. Закройте это окно и обновите список плагинов перед повторной установкой.',
+        'Moor перестал ждать результат установки, но плагин может всё ещё устанавливаться. Закройте это окно и обновите список плагинов перед повторной установкой.',
       desktopFailed: 'Не удалось установить плагин приложения',
       missingEnv: (_name, vars) => `Не хватает переменных окружения: ${vars}. Добавьте их в Настройки → Ключи.`,
       toolsConnected: n => `Подключено инструментов: ${n}`,
@@ -66,7 +66,7 @@ export const ruPluginSettings = {
       serverNotConnected: (server, reason) => `MCP-сервер ${server} не подключён${reason ? `: ${reason}` : '.'}`,
       verified: 'Проверен',
       unverified: 'Не проверен',
-      reviewedByNous: 'Проверен Nous.',
+      reviewedByMoor: 'Проверен Moor.',
       installsAndEnables: profile => `Устанавливается для ${profile} и сразу включается.`,
       installsOnly: profile => `Устанавливается для ${profile}.`,
       advanced: 'Дополнительно',
@@ -103,7 +103,7 @@ export const ruPluginsTab = {
     pickerTitle: (name: string) => `Выберите папку для ${name}`,
     pickerButton: 'Разрешить доступ',
     refusedProtected: (name: string) =>
-      `${name} не может использовать эту папку: в ней хранятся настройки, ключи или данные плагинов Hermes. Выберите папку, в которой их нет.`,
+      `${name} не может использовать эту папку: в ней хранятся настройки, ключи или данные плагинов Moor. Выберите папку, в которой их нет.`,
     loadFailed: (name: string) => `Не удалось загрузить папки, открытые для ${name}.`
   }
 } satisfies NonNullable<NonNullable<TranslationOverrides['skills']>['plugins']>

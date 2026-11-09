@@ -13,8 +13,8 @@ PREVIEW_LOADS = [
 
 
 def _page(monkeypatch, tmp_path):
-    from hermes_cli import web_server as server
-    from hermes_cli.web_server_dashboard import mount_spa
+    from moor_cli import web_server as server
+    from moor_cli.web_server_dashboard import mount_spa
 
     (tmp_path / "assets").mkdir()
     (tmp_path / "index.html").write_text("<html><head></head><body></body></html>")
@@ -23,7 +23,7 @@ def _page(monkeypatch, tmp_path):
     application.state.auth_required = False
     monkeypatch.setattr(server, "app", application)
     monkeypatch.setattr(server, "WEB_DIST", tmp_path)
-    monkeypatch.delenv("HERMES_SERVE_HEADLESS", raising=False)
+    monkeypatch.delenv("MOOR_SERVE_HEADLESS", raising=False)
     mount_spa(application)
     return TestClient(application)
 

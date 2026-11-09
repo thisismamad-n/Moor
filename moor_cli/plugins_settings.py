@@ -37,8 +37,8 @@ _ENV_NAME_CLEAN_RE = re.compile(r"[^A-Z0-9]+")
 
 def _manifest_config_schema(plugin_dir: Optional[Path]) -> Mapping[str, Mapping[str, Any]]:
     """``config_schema`` from ``<plugin_dir>/plugin.yaml``, or for a portable package from
-    ``plugin.json`` ``extensions.com.nousresearch.hermes.config_schema`` (Agent Plugins v1 forbids
-    unknown top-level fields, so Hermes-specific keys live in the vendor namespace); ``{}`` when
+    ``plugin.json`` ``extensions.com.moorinc.moor.config_schema`` (Agent Plugins v1 forbids
+    unknown top-level fields, so moor-specific keys live in the vendor namespace); ``{}`` when
     absent or malformed (the loader already warned about malformed entries at load time)."""
     if plugin_dir is None:
         return {}
@@ -62,7 +62,7 @@ def _portable_config_schema(plugin_dir: Path) -> Any:
     if not portable.is_file():
         return None
     import json
-    from hermes_cli.agent_plugins import manifest_config_schema
+    from moor_cli.agent_plugins import manifest_config_schema
     return manifest_config_schema(json.loads(portable.read_text(encoding="utf-8-sig")))
 
 

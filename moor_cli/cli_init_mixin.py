@@ -73,16 +73,16 @@ def _explicit_launch_skills(cli):
 def _record_shell_hook_consent():
     """Main's first-use shell-hook prompt, on this terminal. The gateway that registers the hooks
     has no TTY; it reads the allowlist this writes when the session opens (create or resume).
-    ``--accept-hooks`` / ``HERMES_ACCEPT_HOOKS`` / ``hooks_auto_accept`` approve without asking.
+    ``--accept-hooks`` / ``MOOR_ACCEPT_HOOKS`` / ``hooks_auto_accept`` approve without asking.
     A remote gateway has its own home and allowlist, and a bypass launch reads no profile hooks,
     so nothing is asked for either."""
-    from hermes_cli.gateway_chat import env_launch_flags
+    from moor_cli.gateway_chat import env_launch_flags
     flags = env_launch_flags()
-    if os.environ.get("HERMES_TUI_GATEWAY_URL", "").strip() or flags.get("safe_mode") or flags.get("ignore_user_config"):
+    if os.environ.get("MOOR_TUI_GATEWAY_URL", "").strip() or flags.get("safe_mode") or flags.get("ignore_user_config"):
         return
     try:
         from agent.shell_hooks import record_consent_from_config
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         record_consent_from_config(load_config())
     except Exception:  # health: allow BLE001 -- consent is best effort; the gateway skips unapproved hooks
         logger.warning("shell-hook consent check failed", exc_info=True)
@@ -144,7 +144,7 @@ class CLIInitMixin:
             enabled=display.get("persistent_output", True),
             max_lines=display.get("persistent_output_max_lines", 200),
         )
-        from hermes_cli.cli_modern_layout import busy_input_mode_from_config, layout_from_config, set_active
+        from moor_cli.cli_modern_layout import busy_input_mode_from_config, layout_from_config, set_active
         self._modern_layout = layout_from_config(display)  # display.cli_layout: modern | classic
         set_active(self._modern_layout)
         # busy_input_mode: "interrupt" (redirect the run) | "queue" (next turn) | "steer" (inject mid-run).
@@ -290,7 +290,7 @@ class CLIInitMixin:
         if not (self.base_url and base_url_host_matches(self.base_url, "openrouter.ai")):
             _keys = _keys[::-1]
         else:
-            from hermes_cli.auth import looks_like_openrouter_key
+            from moor_cli.auth import looks_like_openrouter_key
             _keys[1] = _keys[1] if looks_like_openrouter_key(_keys[1]) else None
         self.api_key = api_key or _keys[0] or _keys[1]
 
@@ -335,7 +335,7 @@ class CLIInitMixin:
         self.checkpoint_max_file_size_mb = cp_cfg.get("max_file_size_mb", 10)
         self.pass_session_id = pass_session_id
         # --ignore-rules: AIAgent skips context files (AGENTS.md/SOUL.md/...) and memory.
-        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("HERMES_IGNORE_RULES"))
+        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("MOOR_IGNORE_RULES"))
         # The env opt-in is creation policy only: a resume checks just a typed --ignore-rules (the thin client's rule).
         self._explicit_ignore_rules = bool(ignore_rules)
 
@@ -391,8 +391,8 @@ class CLIInitMixin:
 
     def _init_runtime_state(self, resume):
         """Session store + all per-run mutable state (queues, overlays, pet/voice/status-bar fields)."""
-        from cli import _hermes_home
-        from hermes_cli.left_core_migration import serve_notices_on_stderr
+        from cli import _moor_home
+        from moor_cli.left_core_migration import serve_notices_on_stderr
         serve_notices_on_stderr()
         # A signature change across turns (/model, credential rotation) rebuilds the agent.
         self._active_agent_route_signature = None
@@ -425,7 +425,7 @@ class CLIInitMixin:
             # path a moment later from the REPL thread, and a second writer repeats the full
             # open (the /proc-wide deleted-WAL scan, ~4k readlinks) while the render thread
             # holds the GIL — that repeat was the post-banner freeze before the first prompt.
-            from hermes_cli.gateway_session_store import session_store
+            from moor_cli.gateway_session_store import session_store
             self._session_db = session_store()  # the gateway is the single writer
         except Exception as e:
             # Without a store the transcript is NOT persisted while the chat looks healthy,
@@ -436,7 +436,7 @@ class CLIInitMixin:
             # the store before relying on resume.
             self._session_db_unavailable = True
             logger.warning("Failed to initialize SessionDB — session will NOT be indexed for search: %s", e)
-            from hermes_state_user_copy import describe_storage_failure, storage_failure_details
+            from moor_state_user_copy import describe_storage_failure, storage_failure_details
             from agent.i18n import t
             failure = describe_storage_failure(e)
             def _present_store_warning():
@@ -454,7 +454,7 @@ class CLIInitMixin:
     def _ensure_gateway_session(self):
         """Create (or resume) this CLI's gateway session and adopt the id it returns, before the banner
         and the first turn. Idempotent; a store without the gateway facade (tests) is left alone."""
-        from hermes_cli.gateway_session_store import GatewaySessionStore
+        from moor_cli.gateway_session_store import GatewaySessionStore
         store = getattr(self, "_session_db", None)
         if getattr(self, "_gateway_session_open", False) or not isinstance(store, GatewaySessionStore):
             return
@@ -464,10 +464,10 @@ class CLIInitMixin:
         with lease_handed_over(self, held):
             sid = store.open_session(self, launch)
             self._gateway_session_open = True
-            from hermes_cli import gateway_plugin_commands, tools_config
+            from moor_cli import gateway_plugin_commands, tools_config
             tools_config._gateway_plugin_toolsets = lambda: gateway_plugin_commands.toolsets(self)
             _adopt_gateway_toolsets(self, store)
-            from hermes_cli.gateway_tools import bind_session
+            from moor_cli.gateway_tools import bind_session
             bind_session(self, store.connection)  # the session's processes, before _init_agent's chat proxy
             if sid and sid != self.session_id:
                 self.session_id = sid
@@ -480,10 +480,10 @@ class CLIInitMixin:
         flags, /branch the child of
         ``session.mutate branch``. Before this CLI opened its gateway session (or off the gateway) it is
         main's local mint, which ``_ensure_gateway_session`` replaces on first use, as at startup."""
-        from hermes_cli.gateway_session_store import GatewaySessionStore
+        from moor_cli.gateway_session_store import GatewaySessionStore
         store = getattr(self, "_session_db", None)
         if not isinstance(store, GatewaySessionStore) or not getattr(self, "_gateway_session_open", False):
-            from hermes_state_ids import new_session_id
+            from moor_state_ids import new_session_id
             return new_session_id(now)
         if branch_of:
             child = store.branch(branch_of, title)

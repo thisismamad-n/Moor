@@ -69,10 +69,10 @@ def _from_host_record() -> Optional[HostGatewayTopology]:
     if record.create_time is None or not hr.record_names_live_owner(record):
         return None
     from gateway.host_attach import launched_by_other_tenant, record_home
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     # Another tenant root's gateway is a name collision, not this tenant's host process (#121352).
-    if launched_by_other_tenant(record.home, get_hermes_home()):
+    if launched_by_other_tenant(record.home, get_moor_home()):
         return None
     return HostGatewayTopology(pid=int(record.pid), profiles=tuple(record.profiles), source="host_record",
                                home=record_home(record))

@@ -1,4 +1,4 @@
-"""One-shot sessions (``hermes chat -q``) trim the self-improvement prompt footprint.
+"""One-shot sessions (``moor chat -q``) trim the self-improvement prompt footprint.
 
 Across 21 one-shot benchmark trajectories the agent created 7 skills and patched a bundled one
 mid-task, spent 37 of ~215 tool calls on skill_view/skill_manage, and spawned review subagents of
@@ -62,14 +62,14 @@ def test_oneshot_delegation_budget_charges_total_children_then_refuses(oneshot, 
 
 
 def test_gateway_owned_oneshot_session_keeps_skill_manage_and_takes_its_prompt_from_the_frozen_policy(tmp_path, monkeypatch):
-    """The gateway daemon never has the client's HERMES_SINGLE_QUERY_SESSION: a `chat -q` session it owns is
+    """The gateway daemon never has the client's MOOR_SINGLE_QUERY_SESSION: a `chat -q` session it owns is
     one-shot by its frozen ``oneshot`` source, so it gets the one-shot skills prompt; its tool list still offers
     skill_manage (one-shots may author skills). An interactive session's policy wins over a stray daemon env
     marker, keeping its system prompt (the prompt-cache prefix) unchanged."""
     from gateway.session_local_inventory import _policy_tools
     from gateway.session_policy import build_policy, policy_scope
 
-    monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
+    monkeypatch.delenv("MOOR_SINGLE_QUERY_SESSION", raising=False)
     skills = _skills_dir(tmp_path)
 
     def shape(source):
@@ -86,5 +86,5 @@ def test_gateway_owned_oneshot_session_keeps_skill_manage_and_takes_its_prompt_f
 
     interactive = build_skills_system_prompt(available_tools={"skill_view", "skills_list", "skill_manage"},
                                              skills_dir_override=skills)
-    monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")  # inherited by a daemon a -q client auto-started
+    monkeypatch.setenv("MOOR_SINGLE_QUERY_SESSION", "1")  # inherited by a daemon a -q client auto-started
     assert shape("cli")[1] == interactive

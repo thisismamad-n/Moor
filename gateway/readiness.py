@@ -8,7 +8,7 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 
 _DISK_DEGRADED_PERCENT = 90.0
@@ -49,7 +49,7 @@ def _probe_state_db(home: Path) -> dict[str, Any]:
 
 
 def _probe_config(home: Path) -> dict[str, Any]:
-    from hermes_cli.config_backend import ConfigBackendUnavailable, config_exists, read_config_doc_readonly
+    from moor_cli.config_backend import ConfigBackendUnavailable, config_exists, read_config_doc_readonly
     path = home / "config.yaml"
     try:
         if not config_exists(path):

@@ -601,10 +601,10 @@ class GatewayStatusCommandsMixin:
         # Moor credits + monthly-grant gauge (shared with CLI/TUI). Gates on "a Moor account is
         # logged in" — NOT the inference provider — so a Moor user inferring elsewhere still sees
         # a balance. Fail-open: never break /usage.
-        from agent.account_usage import nous_credits_lines
+        from agent.account_usage import moor_credits_lines
         credits_state = getattr(agent, "_credits_state", None) if agent else None
         credits_lines = await _quiet(
-            lambda: asyncio.to_thread(nous_credits_lines, markdown=True, credits_state=credits_state),
+            lambda: asyncio.to_thread(moor_credits_lines, markdown=True, credits_state=credits_state),
             [],
         )
         # Window plans: a chat's /topup has no Keep going control, so point the setting at the Portal.

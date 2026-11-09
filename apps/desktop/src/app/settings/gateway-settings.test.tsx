@@ -66,7 +66,7 @@ beforeEach(() => {
   saveConnectionConfig.mockResolvedValue(localConnection)
   cloudStatus.mockResolvedValue({ portalBaseUrl: 'https://portal.nousresearch.com', signedIn: true })
   cloudDiscover.mockResolvedValue({ agents: [], org: null })
-  Object.defineProperty(window, 'hermesDesktop', {
+  Object.defineProperty(window, 'moorDesktop', {
     configurable: true,
     value: {
       cloud: {
@@ -81,9 +81,9 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
-  Reflect.deleteProperty(window, '__HERMES_AUTH_REQUIRED__')
-  Reflect.deleteProperty(window, 'hermesDesktop')
-  window.document.documentElement.removeAttribute('data-hermes-desktop-host')
+  Reflect.deleteProperty(window, '__MOOR_AUTH_REQUIRED__')
+  Reflect.deleteProperty(window, 'moorDesktop')
+  window.document.documentElement.removeAttribute('data-moor-desktop-host')
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
   vi.clearAllMocks()
@@ -423,16 +423,16 @@ describe('GatewaySettings', () => {
     })
   })
 
-  // The Webapp is served by one Hermes host and can only reach that host, so no
+  // The Webapp is served by one Moor host and can only reach that host, so no
   // mode switch, Cloud sign-in or saved connection can act there. What applies
   // is which host this is and, behind the sign-in gate, signing out of it.
   describe('in the Webapp', () => {
     // A gated host signs its browser in with a cookie; an unauthenticated one through its private launch link.
     const installWebapp = (credential: 'gated' | 'launch-link') => {
-      Reflect.deleteProperty(window, 'hermesDesktop')
+      Reflect.deleteProperty(window, 'moorDesktop')
 
       if (credential === 'gated') {
-        Object.assign(window, { __HERMES_AUTH_REQUIRED__: true })
+        Object.assign(window, { __MOOR_AUTH_REQUIRED__: true })
       } else {
         seedWebappSession('served-token')
       }
@@ -445,14 +445,14 @@ describe('GatewaySettings', () => {
     }
 
     afterEach(() => {
-      Reflect.deleteProperty(window, '__HERMES_AUTH_REQUIRED__')
+      Reflect.deleteProperty(window, '__MOOR_AUTH_REQUIRED__')
       clearWebappSession()
     })
 
     it.each([false, true])('offers the serving host and its sign-out only (embedded: %s)', async embedded => {
       const fetchMock = installWebapp('gated')
       const toLogin = vi.fn((event: Event) => event.preventDefault())
-      window.addEventListener('hermes:browser-reauth-required', toLogin, { once: true })
+      window.addEventListener('moor:browser-reauth-required', toLogin, { once: true })
 
       render(<GatewaySettings embedded={embedded} />)
 
@@ -500,7 +500,7 @@ describe('GatewaySettings', () => {
 
   it('keeps native keychain encryption writable at its settings deep-link target', async () => {
     const setSecretStorageEncryption = vi.fn().mockResolvedValue({ on: true })
-    Object.assign(window.hermesDesktop, {
+    Object.assign(window.moorDesktop, {
       getSecretStorageEncryption: vi.fn().mockResolvedValue({ on: false }),
       setSecretStorageEncryption
     })
@@ -643,12 +643,12 @@ describe('GatewaySettings', () => {
       sshUser: '',
       sshPort: 22,
       sshKeyPath: '',
-      sshRemoteHermesPath: '',
+      sshRemoteMoorPath: '',
       sshRemoteProfile: ''
     })
     const cause = 'The Windows remote probe failed. (probe: Path was not found: C:\\h\\bin\\python.exe)'
     const testConnectionConfig = vi.fn().mockResolvedValue({ reachable: false, sshError: 'unknown', error: cause })
-    Object.assign(window.hermesDesktop, { testConnectionConfig })
+    Object.assign(window.moorDesktop, { testConnectionConfig })
 
     render(<GatewaySettings />)
     fireEvent.click(await screen.findByRole('button', { name: 'Test SSH' }))
@@ -675,11 +675,11 @@ describe('GatewaySettings', () => {
       sshUser: '',
       sshPort: 22,
       sshKeyPath: '',
-      sshRemoteHermesPath: '',
+      sshRemoteMoorPath: '',
       sshRemoteProfile: ''
     })
     const testConnectionConfig = vi.fn().mockResolvedValue({ reachable: false, sshError: 'interactive-auth' })
-    Object.assign(window.hermesDesktop, { testConnectionConfig })
+    Object.assign(window.moorDesktop, { testConnectionConfig })
 
     render(<GatewaySettings />)
     fireEvent.click(await screen.findByRole('button', { name: 'Test SSH' }))
@@ -709,11 +709,11 @@ describe('GatewaySettings', () => {
       sshUser: '',
       sshPort: 22,
       sshKeyPath: '',
-      sshRemoteHermesPath: '',
+      sshRemoteMoorPath: '',
       sshRemoteProfile: ''
     })
     const sshConfigHosts = vi.fn().mockResolvedValue({ hosts: ['github.com'] })
-    Object.assign(window.hermesDesktop, { sshConfigHosts })
+    Object.assign(window.moorDesktop, { sshConfigHosts })
 
     render(<GatewaySettings />)
 

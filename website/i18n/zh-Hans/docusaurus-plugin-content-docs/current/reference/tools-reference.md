@@ -16,7 +16,7 @@ description: "Moor 内置工具权威参考，按工具集分组"
 
 ## `browser` 工具集
 
-`browser_exec` 和 `browser_vault` 驱动浏览器会话——Hermes 启动的 Chromium、云端浏览器，或通过 `/browser connect` 连接的浏览器。`browser_cdp` 和 `browser_dialog` 仅在配置了 CDP 端点（`/browser connect`、`BROWSER_CDP_URL` 或 `browser.cdp_url`）时提供，并作用于该浏览器；Hermes 启动的会话和云端会话中没有这两个工具。参见[浏览器自动化](../user-guide/features/browser.md)。
+`browser_exec` 和 `browser_vault` 驱动浏览器会话——Moor 启动的 Chromium、云端浏览器，或通过 `/browser connect` 连接的浏览器。`browser_cdp` 和 `browser_dialog` 仅在配置了 CDP 端点（`/browser connect`、`BROWSER_CDP_URL` 或 `browser.cdp_url`）时提供，并作用于该浏览器；Moor 启动的会话和云端会话中没有这两个工具。参见[浏览器自动化](../user-guide/features/browser.md)。
 
 | 工具 | 描述 | 所需环境 |
 |------|------|----------|
@@ -84,11 +84,11 @@ description: "Moor 内置工具权威参考，按工具集分组"
 | `computer_use` | 通过 cua-driver 在后台控制 macOS 桌面——截图（SOM / vision / AX）、点击 / 拖拽 / 滚动 / 输入 / 按键 / 等待、`list_apps`、`focus_app`。**不会**抢占用户的光标或键盘焦点。适用于任何支持工具的模型。仅限 macOS。 | `cua-driver` 在 `$PATH` 中（通过 `moor tools` 安装）。 |
 
 :::note
-**Honcho 工具**（`honcho_profile`、`honcho_search`、`honcho_context`、`honcho_reasoning`、`honcho_conclude`）不再是内置工具。它们由插件目录中的 Honcho 记忆提供者插件提供（`hermes plugins install honcho`）。安装和使用方法见 [Memory Providers](../user-guide/features/memory-providers.md)。
+**Honcho 工具**（`honcho_profile`、`honcho_search`、`honcho_context`、`honcho_reasoning`、`honcho_conclude`）不再是内置工具。它们由插件目录中的 Honcho 记忆提供者插件提供（`moor plugins install honcho`）。安装和使用方法见 [Memory Providers](../user-guide/features/memory-providers.md)。
 
-**Home Assistant 工具**（`ha_list_entities`、`ha_get_state`、`ha_list_services`、`ha_call_service`，工具集 `homeassistant`）不再是内置工具。它们由插件目录中的 `homeassistant` 插件提供（`hermes plugins install homeassistant`）。详见 [Home Assistant](../user-guide/messaging/homeassistant.md)。
+**Home Assistant 工具**（`ha_list_entities`、`ha_get_state`、`ha_list_services`、`ha_call_service`，工具集 `homeassistant`）不再是内置工具。它们由插件目录中的 `homeassistant` 插件提供（`moor plugins install homeassistant`）。详见 [Home Assistant](../user-guide/messaging/homeassistant.md)。
 
-**Spotify 工具**（`spotify_playback`、`spotify_devices`、`spotify_queue`、`spotify_search`、`spotify_playlists`、`spotify_albums`、`spotify_library`，工具集 `spotify`）不再是内置工具。它们由插件目录中的 `spotify` 插件提供（`hermes plugins install spotify`，然后运行 `hermes spotify login`）。详见 [Spotify](../user-guide/features/spotify.md)。
+**Spotify 工具**（`spotify_playback`、`spotify_devices`、`spotify_queue`、`spotify_search`、`spotify_playlists`、`spotify_albums`、`spotify_library`，工具集 `spotify`）不再是内置工具。它们由插件目录中的 `spotify` 插件提供（`moor plugins install spotify`，然后运行 `moor spotify login`）。详见 [Spotify](../user-guide/features/spotify.md)。
 :::
 
 ## `image_gen` 工具集
@@ -216,7 +216,7 @@ description: "Moor 内置工具权威参考，按工具集分组"
 |------|------|----------|
 | `discord_admin` | 通过 REST API 管理 Discord 服务器：列出 guild/频道/角色，创建/编辑/删除频道，管理角色授予、禁言、踢出和封禁。 | `DISCORD_BOT_TOKEN` + bot 权限 |
 
-## `hermes-yuanbao` 工具集
+## `moor-yuanbao` 工具集
 
 仅在 `moor-yuanbao` 平台工具集上注册。元宝是腾讯的聊天应用；这些工具驱动其私信/群组/表情包 API。
 

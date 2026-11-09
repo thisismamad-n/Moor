@@ -14,16 +14,16 @@ from tests.waiting import wait_until
 # (SWEEP_daemon-launch-env.md): consent, Kanban worker pins, the launching turn's session identity,
 # human-presence and one-shot markers, a bot-to-bot turn author, a terminal's systemd markers, and the
 # launchd/external-supervisor markers every process below a service-managed gateway inherits.
-SUPERVISOR_LEAKS = {'XPC_SERVICE_NAME': 'ai.hermes.gateway', 'LAUNCHD_SOCKET': '/tmp/launchd-x/Listeners',
-                    'HERMES_LAUNCHD_LABEL': 'ai.hermes.gateway', 'HERMES_GATEWAY_EXTERNAL_SUPERVISOR': '1',
-                    'HERMES_SUPERVISED_CHILD': '1'}
-PIN = 'HERMES_GATEWAY_PROFILE_PIN'
-LEAKS = {**SUPERVISOR_LEAKS, 'HERMES_ACCEPT_HOOKS': '1', 'HERMES_KANBAN_TASK': 't_1', 'HERMES_KANBAN_BOARD': 'other',
-         'HERMES_KANBAN_DB': '/x/kanban.db', 'HERMES_SESSION_SOURCE': 'kanban', 'TERMINAL_CWD': '/x',
-         'HERMES_TENANT': 'acme', 'HERMES_SESSION_SOURCE_EXPLICIT': '1', 'HERMES_TURN_AUTHOR': '{"handle":"x"}',
-         'HERMES_INTERACTIVE': '1', 'HERMES_GATEWAY_SESSION': '1', 'HERMES_SINGLE_QUERY_SESSION': '1',
-         'HERMES_SESSION_ID': 'launching-turn', 'HERMES_SESSION_KEY': 'agent:main:tui:x',
-         'HERMES_SESSION_PLATFORM': 'tui', 'HERMES_SESSION_CHAT_ID': 'c1', 'HERMES_CRON_SESSION': '1',
+SUPERVISOR_LEAKS = {'XPC_SERVICE_NAME': 'ai.moor.gateway', 'LAUNCHD_SOCKET': '/tmp/launchd-x/Listeners',
+                    'MOOR_LAUNCHD_LABEL': 'ai.moor.gateway', 'MOOR_GATEWAY_EXTERNAL_SUPERVISOR': '1',
+                    'MOOR_SUPERVISED_CHILD': '1'}
+PIN = 'MOOR_GATEWAY_PROFILE_PIN'
+LEAKS = {**SUPERVISOR_LEAKS, 'MOOR_ACCEPT_HOOKS': '1', 'MOOR_KANBAN_TASK': 't_1', 'MOOR_KANBAN_BOARD': 'other',
+         'MOOR_KANBAN_DB': '/x/kanban.db', 'MOOR_SESSION_SOURCE': 'kanban', 'TERMINAL_CWD': '/x',
+         'MOOR_TENANT': 'acme', 'MOOR_SESSION_SOURCE_EXPLICIT': '1', 'MOOR_TURN_AUTHOR': '{"handle":"x"}',
+         'MOOR_INTERACTIVE': '1', 'MOOR_GATEWAY_SESSION': '1', 'MOOR_SINGLE_QUERY_SESSION': '1',
+         'MOOR_SESSION_ID': 'launching-turn', 'MOOR_SESSION_KEY': 'agent:main:tui:x',
+         'MOOR_SESSION_PLATFORM': 'tui', 'MOOR_SESSION_CHAT_ID': 'c1', 'MOOR_CRON_SESSION': '1',
          # A terminal running under a systemd service: not the daemon's own supervisor.
          'INVOCATION_ID': 'terminal-scope', 'JOURNAL_STREAM': '8:1',
          # A process below a Type=notify gateway: the unit's notify socket and watchdog are its main PID's.
@@ -33,7 +33,7 @@ LEAKS = {**SUPERVISOR_LEAKS, 'HERMES_ACCEPT_HOOKS': '1', 'HERMES_KANBAN_TASK': '
 @pytest.mark.platforms("linux")
 @pytest.mark.spawns_gateway_lookalike  # stub interpreter records env then exits; reaped below
 def test_daemon_does_not_inherit_hook_consent_or_worker_pins(tmp_path, monkeypatch):
-    from hermes_cli import gateway_runtime_start as start
+    from moor_cli import gateway_runtime_start as start
     home = tmp_path / 'home'
     home.mkdir(mode=0o700)
     witness = home / 'env.json'
@@ -41,11 +41,11 @@ def test_daemon_does_not_inherit_hook_consent_or_worker_pins(tmp_path, monkeypat
     executable.write_text(
         '#!' + sys.executable + '\nimport json, os\n'
         + f'open({str(witness)!r}, "w").write(json.dumps('
-        + '{k: os.environ.get(k) for k in ' + repr([*LEAKS, 'HERMES_INFERENCE_MODEL', PIN]) + '}))\n',
+        + '{k: os.environ.get(k) for k in ' + repr([*LEAKS, 'MOOR_INFERENCE_MODEL', PIN]) + '}))\n',
         encoding='utf-8')
     executable.chmod(0o700)
     monkeypatch.setattr(sys, 'executable', str(executable))
-    for key, value in {**LEAKS, 'HERMES_INFERENCE_MODEL': 'fallback'}.items():
+    for key, value in {**LEAKS, 'MOOR_INFERENCE_MODEL': 'fallback'}.items():
         monkeypatch.setenv(key, value)
     child = start.spawn_unmanaged_gateway(home, deadline=time.monotonic() + 5)
     try:
@@ -57,8 +57,8 @@ def test_daemon_does_not_inherit_hook_consent_or_worker_pins(tmp_path, monkeypat
     seen = json.loads(Path(witness).read_text())
     # The supervisor markers go, but the daemon's own tool children stay on its profile (#74872).
     assert seen.pop(PIN) == '1'
-    assert seen == {**dict.fromkeys(LEAKS), 'HERMES_INFERENCE_MODEL': 'fallback'}
-    assert os.environ['HERMES_ACCEPT_HOOKS'] == '1'  # the launching process keeps its own policy
+    assert seen == {**dict.fromkeys(LEAKS), 'MOOR_INFERENCE_MODEL': 'fallback'}
+    assert os.environ['MOOR_ACCEPT_HOOKS'] == '1'  # the launching process keeps its own policy
 
 
 @pytest.mark.platforms("macos")
@@ -66,7 +66,7 @@ def test_daemon_does_not_inherit_hook_consent_or_worker_pins(tmp_path, monkeypat
 def test_daemon_started_below_a_launchd_gateway_is_unsupervised(tmp_path, monkeypatch):
     # An agent of a launchd gateway auto-starts a daemon for another home: that daemon has no supervisor,
     # so it must declare "manual" (which arms --idle-exit) instead of claiming its launcher's launchd job.
-    from hermes_cli import gateway_runtime_start as start
+    from moor_cli import gateway_runtime_start as start
     home = tmp_path / 'home'
     home.mkdir(mode=0o700)
     witness = home / 'supervisor.json'
@@ -84,7 +84,7 @@ def test_daemon_started_below_a_launchd_gateway_is_unsupervised(tmp_path, monkey
     monkeypatch.setattr(sys, 'executable', str(executable))
     for key, value in SUPERVISOR_LEAKS.items():
         monkeypatch.setenv(key, value)
-    for key in ('INVOCATION_ID', 'HERMES_DESKTOP_MANAGED', 'HERMES_S6_SUPERVISED_CHILD'):
+    for key in ('INVOCATION_ID', 'MOOR_DESKTOP_MANAGED', 'MOOR_S6_SUPERVISED_CHILD'):
         monkeypatch.delenv(key, raising=False)
     child = start.spawn_unmanaged_gateway(home, deadline=time.monotonic() + 5, idle_exit=True)
     try:

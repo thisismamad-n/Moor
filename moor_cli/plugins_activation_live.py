@@ -88,8 +88,8 @@ def catalog_plugin_skill(written: str) -> Optional[str]:
     """The registered name of a plugin skill written ``<catalog-name>:<skill>`` (``blender:blender``), or
     None when that catalog plugin is not installed in this profile or registered no such skill. Skills
     register under the plugin's manifest name, which need not match its catalog entry name."""
-    from hermes_cli.plugins import get_plugin_manager
-    from hermes_cli.plugins_cmd import _catalog_installed_dir
+    from moor_cli.plugins import get_plugin_manager
+    from moor_cli.plugins_cmd import _catalog_installed_dir
     catalog_name, _, bare = written.partition(":")
     target = _catalog_installed_dir(catalog_name)
     if target is None:
@@ -111,7 +111,7 @@ def live_notice(activation: dict[str, Any]) -> str:
     if not servers and not skills:
         return ""
     name = activation.get("name") or activation.get("key")
-    lines = [f"[System note: plugin {name} was installed and is live in this chat now (a Hermes note, "
+    lines = [f"[System note: plugin {name} was installed and is live in this chat now (a Moor note, "
              "not tool output)."]
     lines.extend(f"- Skill {skill['name']}: load it with skill_view." for skill in skills)
     for server in servers:

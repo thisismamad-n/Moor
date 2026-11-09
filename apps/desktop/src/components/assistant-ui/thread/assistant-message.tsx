@@ -917,21 +917,21 @@ const withHaptic = (fn: () => void) => () => {
   fn()
 }
 
-// The profile whose Hermes home this chat runs in (a Bot chat owns its own).
+// The profile whose Moor home this chat runs in (a Bot chat owns its own).
 function useOwnerProfile(): string | null | undefined {
   const gatewayProfile = useStore($activeGatewayProfile)
 
   return useComposerScope().profile || gatewayProfile
 }
 
-// Open a folder under the profile's Hermes home in the OS file manager (via its logs root).
+// Open a folder under the profile's Moor home in the OS file manager (via its logs root).
 async function openProfileDir(
   profile: string | null | undefined,
   resolve: (logsRoot: string) => string,
   failedMessage: string
 ): Promise<void> {
   try {
-    const root = await window.hermesDesktop?.logsRoot?.(normalizeProfileKey(profile))
+    const root = await window.moorDesktop?.logsRoot?.(normalizeProfileKey(profile))
 
     if (!root) {
       notifyError(new Error('logs root unavailable'), failedMessage)
@@ -939,7 +939,7 @@ async function openProfileDir(
       return
     }
 
-    const result = await window.hermesDesktop?.openDir?.(resolve(root))
+    const result = await window.moorDesktop?.openDir?.(resolve(root))
 
     if (result && !result.ok) {
       notifyError(new Error(result.error || 'open failed'), failedMessage)
@@ -1019,7 +1019,7 @@ const ErrorDetailsBlock: FC<{ errorText: string; hidden: boolean; id: string; su
 
   return (
     <div className="aui-error-details" data-slot="aui_error-details" hidden={hidden} id={id}>
-      {/* Nous DS Copy (portal /ds/components/copy, CommandBlock): the raw error on
+      {/* Moor DS Copy (portal /ds/components/copy, CommandBlock): the raw error on
           the dark code slab with the copy glyph at its end. */}
       {errorText && (
         <div className="aui-error-details-slab">
@@ -1037,7 +1037,7 @@ const ErrorDetailsBlock: FC<{ errorText: string; hidden: boolean; id: string; su
           label={copy.errorDetailsCopy}
           text={diagnosticsText}
         />
-        {window.hermesDesktop?.logsRoot && (
+        {window.moorDesktop?.logsRoot && (
           <button
             className="aui-error-details-link"
             onClick={() => void openProfileDir(ownerProfile, root => root, copy.errorOpenLogsFailed)}
@@ -1096,8 +1096,8 @@ const textButton = (className: string, onClick: () => void, label: ReactNode) =>
 )
 
 // Out of credits runs the same recovery as the banner and toast: the failing provider's own
-// billing page (Nous → Settings → Billing). A plan limit is Nous billing. Without this chat's
-// billing descriptor Hermes doesn't know where a third-party provider bills, so no button.
+// billing page (Moor → Settings → Billing). A plan limit is Moor billing. Without this chat's
+// billing descriptor Moor doesn't know where a third-party provider bills, so no button.
 const sameProvider = (a?: string | null, b?: string | null) =>
   Boolean(a && b && a.trim().toLowerCase() === b.trim().toLowerCase())
 
@@ -1118,7 +1118,7 @@ const OpenBillingAction: FC<{ className: string; label: string; surface?: ErrorS
       ? wall.block
       : null
 
-  const nousBilling = surface?.code === 'usage_window' || (surface?.provider || 'nous').toLowerCase() === 'nous'
+  const nousBilling = surface?.code === 'usage_window' || (surface?.provider || 'moor').toLowerCase() === 'moor'
 
   if (!block && !nousBilling) {
     return null
@@ -1184,17 +1184,17 @@ const ERROR_ACTION_RENDERERS: Record<ErrorActionId, (ctx: ErrorActionContext) =>
   start_new_session: ({ className, copy, link }) =>
     textButton(className, requestFreshSession, link ? copy.errorStartNewChatLink : copy.errorStartNewSession),
   edit_message: ({ className, copy }) => <EditPreviousMessageAction className={className} label={copy.editMessage} />,
-  open_hermes_folder: ({ className, copy, ownerProfile }) =>
-    window.hermesDesktop?.logsRoot
+  open_moor_folder: ({ className, copy, ownerProfile }) =>
+    window.moorDesktop?.logsRoot
       ? textButton(
           className,
           () =>
             void openProfileDir(
               ownerProfile,
               root => root.replace(/[\\/]+logs[\\/]*$/, ''),
-              copy.errorOpenHermesFolderFailed
+              copy.errorOpenMoorFolderFailed
             ),
-          copy.errorOpenHermesFolder
+          copy.errorOpenMoorFolder
         )
       : null,
   continue: ({ className, copy, target }) =>
@@ -1237,7 +1237,7 @@ const ErrorActionControl: FC<{
   const link = variant === 'link'
 
   return ERROR_ACTION_RENDERERS[action]({
-    // Nous DS Button (portal /ds/components/button): the one action is `secondary`,
+    // Moor DS Button (portal /ds/components/button): the one action is `secondary`,
     // the optional second one is `ghost`.
     className: link ? 'aui-error-btn aui-error-btn-ghost' : 'aui-error-btn aui-error-btn-secondary',
     copy: t.assistant.thread,

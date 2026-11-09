@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 from typing import Optional
 
-from hermes_cli.update_cmd_common import _record_stop
+from moor_cli.update_cmd_common import _record_stop
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("moor_cli.update_cmd")
@@ -38,7 +38,7 @@ _pending_autostash: Optional[tuple[str, int]] = None
 
 def _git_quiet(git_cmd: list[str], args: list[str], cwd: Path, **kwargs):
     """``subprocess.run`` of a git command with captured output; None when git cannot run."""
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     try:
         return run_git(git_cmd, args, cwd=cwd, capture_output=True, **kwargs)
@@ -71,7 +71,7 @@ def _git_paths_z(git_cmd: list[str], args: list[str], cwd: Path):
 
 
 def _reset_hard(git_cmd: list[str], cwd: Path) -> None:
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     run_git(git_cmd, ["reset", "--hard", "HEAD"], cwd=cwd, capture_output=True)
 
@@ -149,7 +149,7 @@ def _scan_local_changes(git_cmd: list[str], cwd: Path, untracked_targets=()) -> 
     """Local changes, or None when the tree is clean. An untracked file the update cannot write over
     blocks no pull or checkout, so with *untracked_targets* (every ref the update may land on) only the
     colliding ones are moved; without targets, or when a target tree is unreadable, all of them are."""
-    from hermes_cli.update_cmd_git import _git_run
+    from moor_cli.update_cmd_git import _git_run
     # Explicit mode: status.showUntrackedFiles=no would hide every untracked entry, and an empty
     # leave-set means the stash takes them all.
     status = _git_run(git_cmd, ["status", "--porcelain", "-z", "--untracked-files=normal"], cwd, check=True)
@@ -197,8 +197,8 @@ def _ask_keep_local_changes(changes: _LocalChanges) -> bool:
 def _discard_local_changes_before_update(
         git_cmd: list[str], cwd: Path, changes: _LocalChanges, *, checkout_move=None) -> None:
     """Delete exactly what would have been stashed: tracked edits and the colliding untracked entries."""
-    from hermes_cli.update_cmd_git import _git_run, _no_move
-    from hermes_cli.update_receipt import record_step
+    from moor_cli.update_cmd_git import _git_run, _no_move
+    from moor_cli.update_receipt import record_step
     with (checkout_move or _no_move)(revert=True):  # every tracked change goes back to HEAD
         if changes.tracked:
             _git_run(git_cmd, ["reset", "--hard", "HEAD"], cwd, check=True)
@@ -217,7 +217,7 @@ def _stash_local_changes_if_needed(
     gateways' tree gate; ``untracked_targets`` scopes untracked files (``_scan_local_changes``).
     ``ask_first`` asks whether to keep them; a "no" discards them instead of stashing (None)."""
     global _pending_autostash
-    from hermes_cli.update_cmd_git import _git_run, _no_move
+    from moor_cli.update_cmd_git import _git_run, _no_move
     _pending_autostash = None
     changes = _scan_local_changes(git_cmd, cwd, untracked_targets)
     if changes is None:
@@ -262,7 +262,7 @@ def _push_stash(git_cmd: list[str], cwd: Path, stash_name: str, prev_stash: str,
     """``git stash push``; the stash commit. Raises when nothing was saved; resets tracked leftovers
     when a push saved everything but could not clean up. Untracked entries in *leave* stay on disk
     (an exclude pathspec: git never hashes them, which is what made a 55 GB stray dir take minutes)."""
-    from hermes_cli.update_cmd_git import _git_run
+    from moor_cli.update_cmd_git import _git_run
     scope = ["--", ".", *(_literal(p, "exclude") for p in leave)] if leave else []
     push = _git_run(git_cmd, ["stash", "push", "--include-untracked", "-m", stash_name, *scope], cwd)
     _print_nonempty(push.stdout)
@@ -319,7 +319,7 @@ def _unrestored_autostash_notice() -> Optional[str]:
     if _pending_autostash is None:
         return None
     stash_ref, file_count = _pending_autostash
-    return (f"⚠ hermes update stashed {file_count} local modification(s) and did NOT restore them.\n"
+    return (f"⚠ moor update stashed {file_count} local modification(s) and did NOT restore them.\n"
             f"  Stash ref: {stash_ref}\n"
             f"  Review with: git stash show --stat {stash_ref}\n"
             f"  Re-apply with: git stash show -p {stash_ref} | git apply --3way")
@@ -382,7 +382,7 @@ def _record_stash_disposition(outcome: str, stash_ref: str, detail: str = "", *,
     global _pending_autostash
     if outcome != "parked" or chosen:
         _pending_autostash = None
-    from hermes_cli.update_receipt import record_step
+    from moor_cli.update_receipt import record_step
     record_step(
         "local_changes_stash",
         outcome != "parked",
@@ -420,7 +420,7 @@ def _untracked_files_replaced_by_update(git_cmd: list[str], cwd: Path, stash_ref
     now tracks its own file there (``HEAD:<path>``) and the tree does not hold the stash's untracked
     copy (``<stash>^3``). An untracked occupant HEAD does not track is the #70127 file that could
     not be deleted at stash time, whatever its content now; it is never the update's."""
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     replaced = []
     suffix = " already exists, no checkout"
@@ -526,8 +526,8 @@ def _reject_unsafe_stash_restore(
     detail: str | None, *, checkout_move=None,
 ) -> None:
     """Restore the clean updated tree, preserve the stash, and abort the update."""
-    from hermes_cli.update_cmd import _git_untracked_paths
-    from hermes_cli.update_cmd_git import _no_move
+    from moor_cli.update_cmd import _git_untracked_paths
+    from moor_cli.update_cmd_git import _no_move
     print()
     print("✗ Restored local changes made the Moor agent unexecutable.")
     print(f"  Health check failed: {failing_target}")
@@ -588,7 +588,7 @@ def _apply_stash(git_cmd: list[str], cwd: Path, stash_ref: str, checkout_move=No
     """``git stash apply``; the untracked paths the update replaced (empty on a full restore), or
     None (tree reset, stash kept) on conflicts or any failure other than the already-exists class.
     ``checkout_move`` binds the apply (and a conflict's reset) to the paused gateways' tree gate."""
-    from hermes_cli.update_cmd_git import _no_move
+    from moor_cli.update_cmd_git import _no_move
     print("→ Restoring local changes...")
     with (checkout_move or _no_move)(stash_ref) as step:
         restore, conflicted_files = _apply_stash_step(git_cmd, cwd, stash_ref)
@@ -623,9 +623,9 @@ def _apply_stash(git_cmd: list[str], cwd: Path, stash_ref: str, checkout_move=No
 
 def _apply_stash_step(git_cmd: list[str], cwd: Path, stash_ref: str):
     """``git stash apply`` and its conflicted paths. Any failure but the already-exists class is
-    reset to the clean tree here, inside the bound step: conflict markers make hermes unrunnable,
+    reset to the clean tree here, inside the bound step: conflict markers make moor unrunnable,
     and the changes stay in the stash."""
-    from hermes_cli.update_cmd_git import _git_run
+    from moor_cli.update_cmd_git import _git_run
     restore = _git_run(git_cmd, ["stash", "apply", stash_ref], cwd)
     unmerged = _git_run(git_cmd, ["diff", "--name-only", "--diff-filter=U"], cwd)  # conflicts can exist even on rc 0
     conflicted_files = unmerged.stdout.strip()

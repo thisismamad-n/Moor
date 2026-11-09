@@ -26,7 +26,7 @@ from tools.file_operations import (
     ShellFileOperations, normalize_read_pagination, normalize_search_pagination)
 from tools.file_operations_common import DEFAULT_READ_LIMIT, count_conflict_blocks
 from tools import file_state
-from hermes_platform.host import facts
+from moor_platform.host import facts
 from agent.redact import _is_secret_file_arg, redact_sensitive_text
 from tools.file_tools_paths import (
     _expand_tilde, _path_resolution_warning, _resolve_base_dir, _resolve_entry_for_task,
@@ -1338,7 +1338,7 @@ def _handle_write_file(args, **kw):
             f"write_file: 'content' must be a string, got "
             f"{type(args['content']).__name__}."
         )
-    from hermes_cli.observability.shared_metrics_harness import record_file_edit
+    from moor_cli.observability.shared_metrics_harness import record_file_edit
 
     return record_file_edit("write_file", "whole_file", lambda: _owned(kw.get("session_id") or tid, write_file_tool,
         path=args["path"], content=args["content"], task_id=tid,
@@ -1356,7 +1356,7 @@ def _owned(owner: str, fn, **call_kwargs):
 
 
 def _handle_patch(args, **kw):
-    from hermes_cli.observability.shared_metrics_harness import record_file_edit
+    from moor_cli.observability.shared_metrics_harness import record_file_edit
 
     tid = kw.get("task_id") or "default"
     mode = args.get("mode", "replace")

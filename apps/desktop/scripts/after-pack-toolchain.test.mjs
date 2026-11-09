@@ -28,7 +28,7 @@ test.runIf(process.platform === 'linux')('afterPack uses the provisioned Python 
     mkdirSync(path.join(`${asarPath}.unpacked`, 'dist'), { recursive: true })
     writeFileSync(
       path.join(`${asarPath}.unpacked`, 'dist', 'electron-main.mjs'),
-      'const re = /HERMES_(?:BACKEND|DASHBOARD)_READY[^\\n]*port=(\\d+)/m\n'
+      'const re = /MOOR_(?:BACKEND|DASHBOARD)_READY[^\\n]*port=(\\d+)/m\n'
     )
     // Record the interpreter that actually executes the relocation script.
     writeFileSync(path.join(directory, 'sitecustomize.py'), `import json,os,sys\nfrom pathlib import Path\nPath(${JSON.stringify(observed)}).write_text(json.dumps(os.path.realpath(sys.executable)), encoding="utf-8")\n`)

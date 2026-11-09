@@ -24,9 +24,9 @@ def rehome_inbound_media(event: MessageEvent) -> None:
     """
     if not event.media_urls:
         return
-    from hermes_constants import get_hermes_home, get_routing_process_hermes_home, hermes_home_key
-    active, launch = Path(get_hermes_home()), Path(get_routing_process_hermes_home())
-    if hermes_home_key(active) == hermes_home_key(launch):
+    from moor_constants import get_moor_home, get_routing_process_moor_home, moor_home_key
+    active, launch = Path(get_moor_home()), Path(get_routing_process_moor_home())
+    if moor_home_key(active) == moor_home_key(launch):
         return
     from tools.credential_files import to_agent_visible_cache_path
     rewritten = list(event.media_urls)

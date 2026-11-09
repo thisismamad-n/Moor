@@ -95,7 +95,7 @@ def start_background_mcp_discovery(*, logger, thread_name: str) -> None:
 
     If the first run exits without connecting any server (e.g. startup cancellation / OOM restart),
     later calls may retry instead of pinning the profile in "already started" with zero MCP tools.
-    Likewise a server added to ``mcp_servers`` after that run (``hermes mcp add`` against a running
+    Likewise a server added to ``mcp_servers`` after that run (``moor mcp add`` against a running
     Desktop backend) is connected by the next call, which every agent build makes, so a new session
     gets its tools without a reload (#76954). Discovery is additive: live servers are untouched.
     """

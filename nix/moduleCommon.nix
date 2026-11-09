@@ -478,7 +478,7 @@ let
           replace them. For a smaller venv pick a smaller `package`
           (`minimal`, `messaging`) or override its defaultDependencyGroups.
 
-          Use this for optional extras already declared in hermes-agent's
+          Use this for optional extras already declared in moor-agent's
           pyproject.toml (e.g. "google-meet").
           Use extraPythonPackages for external packages not in pyproject.toml.
         '';
@@ -703,7 +703,7 @@ let
   # replace the default value.
   #
   # The file also carries the `_config_version` of the package. In managed
-  # mode Hermes refuses to write config.yaml, so it cannot stamp the version
+  # mode Moor refuses to write config.yaml, so it cannot stamp the version
   # itself, and an unstamped file reads as version 0 at every boot. The build
   # reads the version from DEFAULT_CONFIG so it always matches the package.
   mkConfigFiles =
@@ -714,15 +714,15 @@ let
     }:
     let
       generated =
-        pkgs.runCommand "hermes-config.yaml"
+        pkgs.runCommand "moor-config.yaml"
           {
             settings = builtins.toJSON (lib.recursiveUpdate { terminal.cwd = workingDirectory; } cfg.settings);
             passAsFile = [ "settings" ];
           }
           ''
-            HOME=$TMPDIR ${(effectivePackage cfg).hermesVenv}/bin/python3 - "$settingsPath" > $out <<'PY'
+            HOME=$TMPDIR ${(effectivePackage cfg).moorVenv}/bin/python3 - "$settingsPath" > $out <<'PY'
             import json, sys
-            from hermes_cli.config_defaults import DEFAULT_CONFIG
+            from moor_cli.config_defaults import DEFAULT_CONFIG
             with open(sys.argv[1]) as f:
                 settings = json.load(f)
             settings.setdefault("_config_version", DEFAULT_CONFIG["_config_version"])
@@ -951,8 +951,8 @@ let
   #
   # The token never rides through this script: it travels as a file path in
   # the unit environment (backendSessionEnvironment), which is not a secret,
-  # and hermes reads the file itself at startup
-  # as HERMES_DASHBOARD_SESSION_TOKEN=file:<path>, which hermes expands). A
+  # and moor reads the file itself at startup
+  # as MOOR_DASHBOARD_SESSION_TOKEN=file:<path>, which moor expands). A
   # shell wrapper that read the file
   # had to escapeShellArg the path, which froze any "${XDG_RUNTIME_DIR}"
   # placeholder into a literal and crash-looped the unit (agenix's Home
@@ -1041,8 +1041,8 @@ let
   # The session token travels as a file path, never as the token itself. A
   # path is not a secret, so it can sit in a systemd Environment= or a
   # launchd EnvironmentVariables value without putting anything readable
-  # into the store. hermes expands the file: prefix of
-  # HERMES_DASHBOARD_SESSION_TOKEN and reads that file at startup, failing
+  # into the store. moor expands the file: prefix of
+  # MOOR_DASHBOARD_SESSION_TOKEN and reads that file at startup, failing
   # loudly when it is missing or empty.
   #
   # The path must be absolute. A "$XDG_RUNTIME_DIR"-style placeholder that a
@@ -1053,7 +1053,7 @@ let
   backendSessionEnvironment =
     { cfg }:
     lib.optionalAttrs (cfg.backend.sessionTokenFile != null) {
-      HERMES_DASHBOARD_SESSION_TOKEN = "file:" + cfg.backend.sessionTokenFile;
+      MOOR_DASHBOARD_SESSION_TOKEN = "file:" + cfg.backend.sessionTokenFile;
     };
 
   backendArgv =
@@ -1061,7 +1061,7 @@ let
     # A plain argv is enough only when nothing must run before the backend.
     # A wait needs the address at start time, so it needs the launcher. The
     # token does not: it travels as a file path in the unit environment and
-    # hermes reads the file itself.
+    # moor reads the file itself.
     if cfg.backend.waitFor == null then
       backendCommand cfg cfg.backend.host
     else

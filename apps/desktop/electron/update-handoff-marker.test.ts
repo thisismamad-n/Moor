@@ -66,7 +66,7 @@ function assertScriptHandoff(run: (installRoot: string, startedAt?: string) => R
   const refreshed = sandbox('refreshed')
 
   try {
-    fs.writeFileSync(path.join(refreshed.home, '.hermes-update-in-progress'), '999999\n1\n')
+    fs.writeFileSync(path.join(refreshed.home, '.moor-update-in-progress'), '999999\n1\n')
     const before = Math.floor(Date.now() / 1000)
     const refreshedResult = run(refreshed.installRoot, 'malformed')
     const after = Math.floor(Date.now() / 1000)

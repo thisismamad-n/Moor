@@ -18,7 +18,7 @@ from typing import Optional
 
 # The runtime ledger DDL: a target whose state-store modules lack it predates the cutover.
 _RUNTIME_SCHEMA_MARKER = "CREATE TABLE IF NOT EXISTS session_admissions"
-STATE_MODULES = "hermes_state*.py"  # git pathspec and fnmatch pattern alike (``*`` crosses ``/`` in both)
+STATE_MODULES = "moor_state*.py"  # git pathspec and fnmatch pattern alike (``*`` crosses ``/`` in both)
 _LEDGER_PROBE = ("SELECT EXISTS(SELECT 1 FROM session_admissions) "
                  "OR EXISTS(SELECT 1 FROM worker_executions)")
 _DOCS = "https://hermes-agent.nousresearch.com/docs/getting-started/updating#rolling-back-to-an-older-release"
@@ -27,7 +27,7 @@ _DOCS = "https://hermes-agent.nousresearch.com/docs/getting-started/updating#rol
 def _updater_git(git_cmd, root: Path) -> Callable[..., int]:
     import subprocess
 
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     def git(*args: str) -> int:
         try:
@@ -46,7 +46,7 @@ def defines_runtime(sources: Iterable[str]) -> bool:
 def target_predates_runtime(git_cmd, root: Path, target_ref: str, *,
                             git: Optional[Callable[..., int]] = None,
                             remote: Optional[Callable[[str], Optional[bool]]] = None) -> bool:
-    """True when ``target_ref`` does not descend from HEAD and none of its ``hermes_state*.py`` files
+    """True when ``target_ref`` does not descend from HEAD and none of its ``moor_state*.py`` files
     defines the runtime ledger. The pathspec keeps a blobless partial clone from fetching the whole
     tree. Any git failure proves nothing (False). ``git`` runs one git command and returns its exit
     code; the update check passes its own read-only probe.
@@ -68,7 +68,7 @@ def target_predates_runtime(git_cmd, root: Path, target_ref: str, *,
 def _has_ledger_rows(db_path: Path) -> bool:
     if not db_path.is_file():
         return False
-    from hermes_state_holders import read_only_db_uri
+    from moor_state_holders import read_only_db_uri
     try:
         with closing(sqlite3.connect(read_only_db_uri(db_path), uri=True, timeout=5.0)) as conn:
             return bool(conn.execute(_LEDGER_PROBE).fetchone()[0])
@@ -78,8 +78,8 @@ def _has_ledger_rows(db_path: Path) -> bool:
 
 def _pre_runtime_snapshot(home: Path) -> str | None:
     """Newest quick snapshot of ``home`` holding a state.db from before the runtime ledger."""
-    from hermes_cli.backup import _quick_snapshot_root
-    from hermes_state_holders import read_only_db_uri
+    from moor_cli.backup import _quick_snapshot_root
+    from moor_state_holders import read_only_db_uri
     root = _quick_snapshot_root(home)
     for snap in sorted(root.iterdir(), reverse=True) if root.is_dir() else ():
         db = snap / "state.db"
@@ -95,9 +95,9 @@ def _pre_runtime_snapshot(home: Path) -> str | None:
 
 
 def _named_profile(home: Path) -> str:
-    """The ``-p`` name that opens ``home`` (``hermes -p acme update`` passes ``profiles/acme``);
-    ``""`` for the default root or a custom HERMES_HOME, which bare ``hermes`` opens."""
-    from hermes_cli.profiles import _PROFILE_ID_RE, _get_profiles_root
+    """The ``-p`` name that opens ``home`` (``moor -p acme update`` passes ``profiles/acme``);
+    ``""`` for the default root or a custom MOOR_HOME, which bare ``moor`` opens."""
+    from moor_cli.profiles import _PROFILE_ID_RE, _get_profiles_root
     parent = _get_profiles_root().resolve()
     resolved = home.resolve()
     named = resolved.parent == parent and _PROFILE_ID_RE.match(resolved.name) and resolved.name != "default"
@@ -105,17 +105,17 @@ def _named_profile(home: Path) -> str:
 
 
 def _ledgered_profiles(home: Path | None) -> list[tuple[str, Path]]:
-    from hermes_cli.backup import _sibling_profile_homes
-    from hermes_constants import get_hermes_home
+    from moor_cli.backup import _sibling_profile_homes
+    from moor_constants import get_moor_home
 
-    home = Path(home or get_hermes_home())
+    home = Path(home or get_moor_home())
     profiles = [(_named_profile(home), home), *_sibling_profile_homes(home)]
     return [(name, h) for name, h in profiles if _has_ledger_rows(h / "state.db")]
 
 
 def would_refuse(root: Path, target_ref: str, home: Path | None = None, *, git: Callable[..., int],
                  remote: Optional[Callable[[str], Optional[bool]]] = None) -> bool:
-    """Whether ``hermes update`` would refuse ``target_ref`` here: the update check's read-only twin of
+    """Whether ``moor update`` would refuse ``target_ref`` here: the update check's read-only twin of
     :func:`downgrade_refusal`, so a release the updater refuses is never offered as an update.
     The store scan runs first, so ``remote`` is only consulted when some store has runtime history."""
     return bool(_ledgered_profiles(home)) and target_predates_runtime(
@@ -132,13 +132,13 @@ def downgrade_refusal(git_cmd, root: Path, target_ref: str, home: Path | None = 
              "these session stores now use. Downgrading is unsupported.",
              *(f"  {h / 'state.db'} has gateway runtime history." for _name, h in ledgered),
              "  The older release could not delete or prune those sessions.",
-             "  To go back anyway: run `hermes gateway stop`, check out the older release with git, then put back "
+             "  To go back anyway: run `moor gateway stop`, check out the older release with git, then put back "
              "each store's copy from before the upgrade:"]
     for name, h in ledgered:
         snapshot = _pre_runtime_snapshot(h)
-        hermes = f"hermes -p {name}" if name else "hermes"
-        lines.append(f"    {h}: run `{hermes}` and enter `/snapshot restore {snapshot}`." if snapshot else
+        moor = f"moor -p {name}" if name else "moor"
+        lines.append(f"    {h}: run `{moor}` and enter `/snapshot restore {snapshot}`." if snapshot else
                      f"    {h}: no pre-update snapshot predates the upgrade; restore a full backup taken before "
-                     f"it with `{hermes} import <backup.zip>`.")
+                     f"it with `{moor} import <backup.zip>`.")
     lines += ["  Sessions created since the upgrade are not in that copy.", f"  Guide: {_DOCS}"]
     return "\n".join(lines)

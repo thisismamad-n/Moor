@@ -16,10 +16,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterator, Optional
 
-from hermes_cli.timefmt import EPOCH_MAX, EPOCH_MIN
-from hermes_state import SessionDB
-from hermes_state_common import FTS_STORAGE_VERSION, SCHEMA_VERSION
-from hermes_state_repair import _db_opens_cleanly
+from moor_cli.timefmt import EPOCH_MAX, EPOCH_MIN
+from moor_state import SessionDB
+from moor_state_common import FTS_STORAGE_VERSION, SCHEMA_VERSION
+from moor_state_repair import _db_opens_cleanly
 
 
 ProgressCallback = Callable[[dict[str, Any]], None]

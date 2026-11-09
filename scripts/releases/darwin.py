@@ -88,7 +88,7 @@ def merge_mac_feeds(legs: dict[str, str], tag: str, light: bool = False,
     if "arm64" not in arches or not set(arches) <= set(ARCHES) or len(set(arches)) != len(arches):
         raise ValueError("macOS feeds need the arm64 leg and only known architectures")
     arches = tuple(arch for arch in ARCHES if arch in arches)
-    import hermes_yaml as yaml  # lazy
+    import moor_yaml as yaml  # lazy
 
     version = tag[1:] if isinstance(tag, str) and tag.startswith("v") else ""
     if not is_release_version(version):
@@ -104,7 +104,7 @@ def merge_mac_feeds(legs: dict[str, str], tag: str, light: bool = False,
         leg = parse_mac_feed(legs[name])
         if str(leg.get("version")) != version:
             raise ValueError(f"Feed version does not match {tag}")
-        prefix = f"{'HermesLight' if light else 'HermesBundled'}-{version}-mac-{arches[index]}"
+        prefix = f"{'MoorLight' if light else 'MoorBundled'}-{version}-mac-{arches[index]}"
         if not any(f.get("url") == f"{prefix}.zip" for f in leg["files"]):
             raise ValueError(f"Missing native ZIP for {arches[index]}")
         for file_entry in leg["files"]:

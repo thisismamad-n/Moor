@@ -14,9 +14,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 from gateway.owner_identity import host_owner_subject as _owner
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-from hermes_cli.active_sessions import active_session_registry_snapshot
-from hermes_cli.browser_connect import ChromeDebugLaunch
+from moor_constants import reset_moor_home_override, set_moor_home_override
+from moor_cli.active_sessions import active_session_registry_snapshot
+from moor_cli.browser_connect import ChromeDebugLaunch
 from tools import async_delegation as ad
 from tui_gateway import server
 from tui_gateway.transport import bind_transport, reset_transport
@@ -2269,7 +2269,7 @@ def test_voice_record_start_cuts_inflight_tts(monkeypatch):
 
     monkeypatch.setitem(
         sys.modules,
-        "hermes_cli.voice",
+        "moor_cli.voice",
         types.SimpleNamespace(
             start_continuous=fake_start_continuous, stop_continuous=lambda **_kwargs: None
         ),
@@ -2278,7 +2278,7 @@ def test_voice_record_start_cuts_inflight_tts(monkeypatch):
     monkeypatch.setattr(
         server, "_tts_stream_stop", lambda user_barge=True: tts_calls.append(user_barge)
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("MOOR_VOICE", "1")
 
     resp = _dispatch_sync(
         {
@@ -2457,7 +2457,7 @@ def test_load_enabled_toolsets_folds_project_into_focus_posture(monkeypatch):
 
 def test_load_enabled_toolsets_honors_disabled_project_on_focus_path(monkeypatch):
     """#54433: focus/coding posture must not re-add `project` when disabled."""
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("MOOR_TUI_TOOLSETS", raising=False)
 
     import agent.coding_context as cc
 
@@ -2473,10 +2473,10 @@ def test_load_enabled_toolsets_honors_disabled_project_on_configured_fallback(
     monkeypatch,
 ):
     """#54433: configured/fallback path must not re-add disabled `project`."""
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("MOOR_TUI_TOOLSETS", raising=False)
 
     import agent.coding_context as cc
-    import hermes_cli.tools_config as tools_config_mod
+    import moor_cli.tools_config as tools_config_mod
 
     monkeypatch.setattr(cc, "coding_selection", lambda **_: None)
     monkeypatch.setattr(
@@ -2598,7 +2598,7 @@ def test_load_enabled_toolsets_all_env_means_all(monkeypatch):
 
 
 def test_load_disabled_toolsets_reads_agent_config(monkeypatch):
-    import hermes_cli.config as config_mod
+    import moor_cli.config as config_mod
 
     monkeypatch.setattr(
         config_mod,
@@ -2610,7 +2610,7 @@ def test_load_disabled_toolsets_reads_agent_config(monkeypatch):
 
 
 def test_load_disabled_toolsets_none_when_unset_or_config_fails(monkeypatch):
-    import hermes_cli.config as config_mod
+    import moor_cli.config as config_mod
 
     monkeypatch.setattr(config_mod, "load_config", lambda: {"agent": {"disabled_toolsets": []}})
     assert server._load_disabled_toolsets() is None
@@ -3138,7 +3138,7 @@ def test_command_dispatch_reviews_staged_skill_writes(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text("skills:\n  write_approval: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     rec = wa.stage_write(
         wa.SKILLS,
         {"action": "create", "name": "demo-review",
@@ -3176,7 +3176,7 @@ def test_command_dispatch_skills_gate_off_answers_instead_of_refusing(tmp_path, 
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text("skills:\n  write_approval: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     server._sessions["sid-wa"] = _session(profile_home=str(home))
     try:
         res = server._methods["command.dispatch"](
@@ -3195,7 +3195,7 @@ def test_command_dispatch_memory_pending_reviews_staged_writes(tmp_path, monkeyp
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text("memory:\n  write_approval: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     wa.stage_write(wa.MEMORY, {"action": "add", "target": "memory", "content": "dispatched fact"},
                    summary="add dispatched fact", origin="foreground")
     server._sessions["sid-wa"] = _session(profile_home=str(home))
@@ -3436,7 +3436,7 @@ def test_reconcile_display_with_live_trusts_db_when_tail_absent():
 def test_live_visible_history_keeps_an_unflushed_repeat_of_the_last_turn_real_db(tmp_path):
     """The live tail is anchored on the last DB row's durable id, not its text: sending the same words again
     ("ok" -> "done") before the flush must not fold the new turn into the persisted one."""
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("s1", source="tui")
@@ -4631,7 +4631,7 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
 
 def test_make_agent_forwards_agent_disabled_toolsets(monkeypatch):
     """``agent.disabled_toolsets`` must reach AIAgent in gateway sessions too: only the AIAgent
-    filter strips a toolset out of composite defaults (``hermes-cli``), which the gateway's
+    filter strips a toolset out of composite defaults (``moor-cli``), which the gateway's
     enabled-list resolver can't reach into (#44499)."""
     captured = _capture_make_agent_kwargs(monkeypatch)
     monkeypatch.setattr(server, "_load_enabled_toolsets", lambda *_a, **_kw: ["file"])
@@ -8772,7 +8772,7 @@ def test_config_set_yolo_global_scope_writes_approvals_mode(tmp_path, monkeypatc
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}), encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_moor_home", tmp_path)
 
     resp_on = server.handle_request(
         {
@@ -8973,7 +8973,7 @@ def test_config_set_yolo_global_scope_honors_explicit_value(tmp_path, monkeypatc
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}), encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_moor_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -9215,7 +9215,7 @@ def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"display": "broken"}), encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_moor_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -9417,7 +9417,7 @@ def test_enable_gateway_prompts_sets_gateway_env(monkeypatch):
 
 
 def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypatch):
-    """Under ``hermes serve`` the boot bootstrap records who carries inference; ``setup.status``
+    """Under ``moor serve`` the boot bootstrap records who carries inference; ``setup.status``
     reports its record (blocking for it while it is in flight) instead of re-probing, so a client's
     first poll sees the boot's answer rather than racing it."""
     import threading
@@ -9430,7 +9430,7 @@ def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypat
     def slow_bootstrap():
         release.wait(5)
         with fb._lock:
-            fb._record = fb.SetupRecord(provider_configured=True, inference_provider="nous", free_tier_account=True,
+            fb._record = fb.SetupRecord(provider_configured=True, inference_provider="moor", free_tier_account=True,
                                         has_identity=True, other_providers=False)
             fb._done.set()
     with fb._lock:
@@ -9441,7 +9441,7 @@ def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypat
         resp = server.handle_request({"id": "1", "method": "setup.status", "params": {}})
         assert resp["result"]["provider_configured"] is True
         assert resp["result"]["ready"] is True and resp["result"]["free_tier_account"] is True
-        assert resp["result"]["inference_provider"] == "nous"
+        assert resp["result"]["inference_provider"] == "moor"
     finally:
         fb.reset_for_tests()
 
@@ -9501,11 +9501,11 @@ def test_setup_runtime_check_failure_names_the_configured_pin_not_the_chain_tail
     fallback chain. When the chain only resolves at its tail (BWS secrets not yet hydrated at
     boot), the runtime stops on the tail provider and the failure used to blame it — pointing
     the user at a provider they never pinned. The failure must name the pin."""
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: True)
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("glm-5.3", None))
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "zai"}})
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **_kw: {
             "provider": "openrouter",  # the chain tail that "resolved"
             "api_key": "",
@@ -9523,12 +9523,12 @@ def test_setup_runtime_check_failure_names_the_configured_pin_not_the_chain_tail
 
 
 def test_setup_runtime_check_failure_names_startup_env_pin(monkeypatch):
-    """The startup env pin (HERMES_TUI_PROVIDER) outranks the config model pin."""
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: True)
+    """The startup env pin (MOOR_TUI_PROVIDER) outranks the config model pin."""
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("glm-5.3", "zai"))
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "openai-api"}})
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **_kw: {
             "provider": "openrouter",
             "api_key": "",
@@ -9561,7 +9561,7 @@ def test_setup_runtime_check_allows_no_key_custom_runtime(monkeypatch):
 
 
 def test_setup_runtime_check_rejects_implicit_bedrock_when_unconfigured(monkeypatch):
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: False)
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: False)
     monkeypatch.setattr(server, "_load_cfg", dict)
     monkeypatch.setattr(
         "moor_cli.runtime_provider.resolve_runtime_provider",
@@ -9580,7 +9580,7 @@ def test_setup_runtime_check_rejects_implicit_bedrock_when_unconfigured(monkeypa
 
 def test_setup_runtime_check_honors_requested_provider(monkeypatch):
     """Onboarding must be able to validate the provider the user just connected."""
-    monkeypatch.setattr("hermes_cli.main._has_any_provider_configured", lambda **_kw: True)
+    monkeypatch.setattr("moor_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_load_cfg", dict)
 
     def fake_resolve(requested=None, **kwargs):
@@ -10151,7 +10151,7 @@ def test_config_set_model_requires_confirmation_for_expensive_model(monkeypatch)
 
 
 def test_config_set_model_global_persists(monkeypatch):
-    from hermes_cli.config import get_config_path, read_user_config_raw
+    from moor_cli.config import get_config_path, read_user_config_raw
 
     class _Agent:
         provider = "openrouter"
@@ -10175,7 +10175,7 @@ def test_config_set_model_global_persists(monkeypatch):
     config_path = get_config_path()
 
     server._sessions["sid"] = _session(agent=_Agent())
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", switch)
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", switch)
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
     config_path.write_text("model:\n  model_slots:\n    fast: keep\n", encoding="utf-8")
@@ -11892,7 +11892,7 @@ def test_file_attach_quotes_ref_with_spaces(monkeypatch, tmp_path):
 def test_file_attach_workspace_storage_follows_the_owning_profiles_config(monkeypatch, tmp_path):
     """``attachments.storage: workspace`` is read from the SESSION's profile config.
 
-    Opt-in profiles stage under ``<workspace>/.hermes/attachments`` (inside the
+    Opt-in profiles stage under ``<workspace>/.moor/attachments`` (inside the
     allowed ref root, #110662); a profile without the opt-in keeps the
     bind-mounted ``<profile home>/attachments`` — one serve process, two homes,
     each session follows its own profile's config.
@@ -11928,17 +11928,17 @@ def test_file_attach_workspace_storage_follows_the_owning_profiles_config(monkey
             },
         )
 
-        staged_a = workspace_a / ".hermes" / "attachments" / "report.txt"
+        staged_a = workspace_a / ".moor" / "attachments" / "report.txt"
         assert resp["result"]["attached"] is True
         assert resp["result"]["path"] == str(staged_a)
         assert staged_a.read_text(encoding="utf-8") == "hello"
         # Workspace staging lands inside the allowed ref root: the ref is
         # workspace-relative, not an absolute out-of-workspace path.
-        assert resp["result"]["ref_text"] == "@file:.hermes/attachments/report.txt"
+        assert resp["result"]["ref_text"] == "@file:.moor/attachments/report.txt"
         assert not (home_a / "attachments").exists()
 
         # Same serve process, second profile WITHOUT the opt-in: staging stays
-        # on that profile's hermes-home attachments dir.
+        # on that profile's moor-home attachments dir.
         workspace_b = tmp_path / "work-b"
         workspace_b.mkdir()
         home_b = tmp_path / "home-b"
@@ -11956,7 +11956,7 @@ def test_file_attach_workspace_storage_follows_the_owning_profiles_config(monkey
         staged_b = home_b / "attachments" / "report.txt"
         assert resp["result"]["path"] == str(staged_b)
         assert staged_b.read_text(encoding="utf-8") == "hello"
-        assert not (workspace_b / ".hermes").exists()
+        assert not (workspace_b / ".moor").exists()
     finally:
         server._sessions.pop("sid-a", None)
         server._sessions.pop("sid-b", None)
@@ -17115,9 +17115,9 @@ def test_model_options_preserves_canonical_custom_row_after_agent_init(monkeypat
         lambda _slug: False,
     )
     # A host signed in to Claude Code / Anthropic OAuth would otherwise keep the anthropic row.
-    monkeypatch.setattr("hermes_cli.inventory._anthropic_oauth_credentials_present", lambda: False)
-    monkeypatch.setattr("hermes_cli.inventory._apply_pricing", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("hermes_cli.inventory._apply_capabilities", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("moor_cli.inventory._anthropic_oauth_credentials_present", lambda: False)
+    monkeypatch.setattr("moor_cli.inventory._apply_pricing", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("moor_cli.inventory._apply_capabilities", lambda *_args, **_kwargs: None)
 
     resp = server._methods["model.options"](
         102,
@@ -18402,28 +18402,28 @@ def test_session_save_writes_under_moor_home_with_system_prompt(monkeypatch, tmp
     assert saved_file.exists()
 
     payload = json.loads(saved_file.read_text(encoding="utf-8-sig"))
-    assert payload["model"] == "hermes-test"
+    assert payload["model"] == "moor-test"
     assert payload["id"] == "20260101_120000_abc123"  # importable: import_sessions keys on raw["id"]
     assert payload["started_at"] == datetime(2026, 1, 1, 12, 0, 0).timestamp()
-    assert payload["system_prompt"] == "You are Hermes."
+    assert payload["system_prompt"] == "You are Moor."
     assert payload["messages"] == history
 
 
 def test_session_save_lands_in_the_sessions_own_profile_a_b_a(monkeypatch, tmp_path):
     """/save writes under the SESSION's profile home, launch -> secondary -> launch under multiplexing:
-    the RPC runs unscoped, so get_hermes_home() alone names the launch profile (#125241)."""
+    the RPC runs unscoped, so get_moor_home() alone names the launch profile (#125241)."""
     from agent.secret_scope import set_multiplex_active
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".moor"
     work_home = launch_home / "profiles" / "s6probe-work"
     work_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     set_multiplex_active(True)
     parents = []
     try:
         for i, home in enumerate((None, work_home, None)):
             sid = f"save-profile-sid-{i}"
             server._sessions[sid] = {
-                "agent": types.SimpleNamespace(model="hermes-test", session_id="s1", session_start=None,
+                "agent": types.SimpleNamespace(model="moor-test", session_id="s1", session_start=None,
                                                _cached_system_prompt=""),
                 "session_key": sid, "profile_home": str(home) if home else None,
                 "history": [{"role": "user", "content": "hi"}], "history_lock": threading.Lock(),
@@ -18439,7 +18439,7 @@ def test_session_save_lands_in_the_sessions_own_profile_a_b_a(monkeypatch, tmp_p
 
     saved = launch_home / "sessions" / "saved"
     assert parents == [saved, work_home / "sessions" / "saved", saved]
-    assert len(list((work_home / "sessions" / "saved").glob("hermes_conversation_*.json"))) == 1
+    assert len(list((work_home / "sessions" / "saved").glob("moor_conversation_*.json"))) == 1
 
 
 def test_session_save_proxies_to_compute_host_history(monkeypatch):
@@ -19161,7 +19161,7 @@ def test_reap_idle_sessions_closes_only_evictable(monkeypatch):
 
 def _periodic_trim_calls(monkeypatch):
     """Stub the reaper's side effects and capture trim_memory calls (delayed import → patch the module attr)."""
-    from hermes_cli import mem_trim
+    from moor_cli import mem_trim
 
     calls = []
     monkeypatch.setattr(server, "_session_pending_kind", lambda sid: "")
@@ -19226,7 +19226,7 @@ def test_turn_completion_trim_skips_while_another_session_is_running(monkeypatch
 
 
 def test_reap_idle_sessions_logs_trim_failure(monkeypatch, caplog):
-    from hermes_cli import mem_trim
+    from moor_cli import mem_trim
 
     _periodic_trim_calls(monkeypatch)
     monkeypatch.setattr(mem_trim, "trim_memory", lambda **_kw: (_ for _ in ()).throw(RuntimeError("boom")))
@@ -22309,7 +22309,7 @@ def test_ssh_named_profile_cwd_beats_launch_terminal_cwd(monkeypatch, tmp_path, 
     it even when that path does not exist on this host and the process
     TERMINAL_CWD still names the launch profile."""
     remote = "/home/kali"
-    launch = "/home/ubuntu/hermes_sync"
+    launch = "/home/ubuntu/moor_sync"
     assert not os.path.isdir(remote)
     home = tmp_path / "hunter"
     home.mkdir()

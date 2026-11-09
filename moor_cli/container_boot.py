@@ -98,7 +98,7 @@ def reconcile_profile_gateways(
     review).
     """
     actions: list[ReconcileAction] = []
-    # ONE multiplexing gateway per container: named slots are registered (so `hermes -p X gateway
+    # ONE multiplexing gateway per container: named slots are registered (so `moor -p X gateway
     # start` has a target and `s6-svstat` can report them) but are never booted from their persisted
     # run intent, except a `gateway.standalone` profile's (below).
     # This is the s6 leg of the multiplex-only convergence: an image upgraded from a release that
@@ -107,11 +107,11 @@ def reconcile_profile_gateways(
     #
     # It used to be gated on `gateway.multiplex_profiles`, which made the UNSET default (on) boot
     # the slots anyway — the container shipped the opt-out topology by accident. The key is retired
-    # as a topology switch (hermes_cli/gateway_multiplex_mode.py), so there is nothing to read.
-    named = [(name, entry, _read_desired_state(entry)) for name, entry in _named_profile_dirs(hermes_home)]
+    # as a topology switch (moor_cli/gateway_multiplex_mode.py), so there is nothing to read.
+    named = [(name, entry, _read_desired_state(entry)) for name, entry in _named_profile_dirs(moor_home)]
     # The exception is a `gateway.standalone` profile: the root multiplexer never serves it
     # (profiles_to_serve excludes it), so it boots its own slot from its own intent, beside the root.
-    from hermes_cli.profiles import profile_is_standalone
+    from moor_cli.profiles import profile_is_standalone
     standalone = {name for name, entry, _prior in named if profile_is_standalone(entry)}
 
     # A legacy `gateway run` container with no state yet seeds `running` (pre-s6 behavior).

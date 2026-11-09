@@ -15,9 +15,9 @@ from contextlib import closing
 import pytest
 from fastapi import HTTPException
 
-from hermes_cli.web_server_sessions import _open_session_db_at_path
-from hermes_state import SessionDB
-from hermes_state_common import SCHEMA_VERSION
+from moor_cli.web_server_sessions import _open_session_db_at_path
+from moor_state import SessionDB
+from moor_state_common import SCHEMA_VERSION
 
 _ADDED_TABLES = ("runtime_epoch", "session_admissions", "worker_executions", "worker_receipts")
 _ADDED_COLUMNS = (("sessions", "runtime_revision"), ("sessions", "runtime_generation"),
@@ -155,8 +155,8 @@ def test_messages_route_for_lagging_profile(monkeypatch, tmp_path):
         from starlette.testclient import TestClient
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
-    from hermes_cli import profiles as profiles_mod
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli import profiles as profiles_mod
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
 
     home = _profile_home(tmp_path)
     _pre_merge_store(home / "state.db")
@@ -174,20 +174,20 @@ def test_messages_route_for_lagging_profile(monkeypatch, tmp_path):
 
 
 @pytest.fixture
-def own_store_client(monkeypatch, _isolate_hermes_home):
+def own_store_client(monkeypatch, _isolate_moor_home):
     try:
         from starlette.testclient import TestClient
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
-    import hermes_state
-    from hermes_cli.web_routers import profiles as profiles_routes
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
-    from hermes_constants import get_hermes_home
+    import moor_state
+    from moor_cli.web_routers import profiles as profiles_routes
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_constants import get_moor_home
 
     monkeypatch.setattr(profiles_routes, "_SIDEBAR_CACHE_TTL_SECONDS", 0.0)
-    path = get_hermes_home() / "state.db"
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", path)
-    (get_hermes_home() / "config.yaml").write_text("{}\n", encoding="utf-8")
+    path = get_moor_home() / "state.db"
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", path)
+    (get_moor_home() / "config.yaml").write_text("{}\n", encoding="utf-8")
     with SessionDB(db_path=path) as db:
         db.create_session("stale-schema", source="cli")
         db.append_message("stale-schema", role="user", content="hi")
@@ -231,7 +231,7 @@ def test_session_list_reconciles_once_only_when_unowned(own_store_client, missin
     assert response.status_code == 503
     assert "gateway owns it" in response.json()["detail"]
     # A failed read is a retryable failed load naming the drift, never an empty list.
-    assert "behind this Hermes version" in sidebar["errors"][0]["error"]
+    assert "behind this Moor version" in sidebar["errors"][0]["error"]
     assert "sessions" not in sidebar["recents"] and sidebar["recents"]["failed"] is True
     assert path.read_bytes() == before
     assert missing_column not in _session_columns(path)
@@ -243,9 +243,9 @@ def test_session_list_reconciles_once_only_when_unowned(own_store_client, missin
 
 
 def test_startup_eager_reconcile_heals_only_an_unowned_stale_store(own_store_client):
-    """After `hermes update` an old-schema store must not fail every poll (#79531/#80037); the
+    """After `moor update` an old-schema store must not fail every poll (#79531/#80037); the
     dashboard is never a second writer while a gateway owns it (#107688)."""
-    from hermes_cli import web_server_lifecycle
+    from moor_cli import web_server_lifecycle
 
     _client, path = own_store_client
     _drop_session_column(path, "last_read_at")
@@ -339,7 +339,7 @@ _PROC_BROWSE = r'''
 import sys, time
 from pathlib import Path
 from fastapi import HTTPException
-from hermes_cli.web_server_sessions import _open_session_db_at_path
+from moor_cli.web_server_sessions import _open_session_db_at_path
 go = float(sys.argv[2])
 while time.time() < go:
     time.sleep(0.0005)
@@ -393,7 +393,7 @@ def _hold(home, seconds, purpose=""):
 def test_stuck_maintenance_holder_gets_busy_retry_not_a_gateway_remedy(tmp_path):
     """P2-1: when the holder is not a gateway and the store is still behind after the busy budget,
     the refusal says busy/retry and never tells the user to restart a gateway that is not running."""
-    from hermes_state_reconcile import BROWSE_RECONCILE_PURPOSE
+    from moor_state_reconcile import BROWSE_RECONCILE_PURPOSE
 
     home = _profile_home(tmp_path)
     path = _lagging_store_with_history(home, rows=10)
@@ -420,7 +420,7 @@ def test_gateway_boot_reserve_waits_out_a_browse_reconcile(tmp_path):
 
     from gateway.run_bootstrap import _reserve_waiting_out_browse_reconcile
     from gateway.runtime_ownership import OwnershipConflict, ProfileOwnership
-    from hermes_state_reconcile import BROWSE_RECONCILE_PURPOSE
+    from moor_state_reconcile import BROWSE_RECONCILE_PURPOSE
 
     home = _profile_home(tmp_path)
     holder = _hold(home, 1.0, BROWSE_RECONCILE_PURPOSE)
@@ -510,9 +510,9 @@ def test_gateway_boot_waits_while_the_holder_has_not_published_its_record(tmp_pa
 _SLOW_BROWSE = r'''
 import json, os, sqlite3, sys, time
 from pathlib import Path
-import hermes_cli.sqlite_safe_read as ssr
+import moor_cli.sqlite_safe_read as ssr
 from fastapi import HTTPException
-from hermes_cli.web_server_sessions import _open_session_db_at_path
+from moor_cli.web_server_sessions import _open_session_db_at_path
 
 phase = sys.argv[2]
 original = ssr.connect_tracked
@@ -574,7 +574,7 @@ def test_slow_browse_reconcile_gives_up_inside_its_budget_and_boot_waits_it_out(
     import time
 
     import gateway.run_bootstrap as bootstrap
-    import hermes_state_reconcile as reconcile
+    import moor_state_reconcile as reconcile
     from gateway.runtime_ownership import ProfileOwnership
 
     budget_s = getattr(reconcile, "BROWSE_RECONCILE_BUDGET_S", 2.0)
@@ -600,7 +600,7 @@ def test_slow_browse_reconcile_gives_up_inside_its_budget_and_boot_waits_it_out(
     assert float(elapsed) < budget_s + 2, out
     detail = " ".join(detail)
     assert "nothing was changed" in detail
-    assert "`hermes -p scribe sessions repair`" in detail and "gateway" not in detail.lower()
+    assert "`moor -p scribe sessions repair`" in detail and "gateway" not in detail.lower()
     assert _file_state(path) == before
     assert "last_read_at" not in _session_columns(path)
 
@@ -662,7 +662,7 @@ def test_failed_column_reconcile_rolls_back_every_addition(tmp_path):
 def test_integrity_scan_runs_before_the_lock_is_taken(tmp_path, monkeypatch):
     """alt-glitch C1 / pastels m3: the full integrity scan is read-only and scales with file size.
     It must run BEFORE gateway.lock is reserved, so a booting gateway never waits on it."""
-    import hermes_state_reconcile as reconcile
+    import moor_state_reconcile as reconcile
     from gateway.runtime_ownership import OwnershipConflict, ProfileOwnership
 
     home = _profile_home(tmp_path)
@@ -690,9 +690,9 @@ def test_integrity_scan_runs_before_the_lock_is_taken(tmp_path, monkeypatch):
 _SLOW_SCAN_BROWSE = r'''
 import sys, time
 from pathlib import Path
-import hermes_cli.sqlite_safe_read as ssr
+import moor_cli.sqlite_safe_read as ssr
 from fastapi import HTTPException
-from hermes_cli.web_server_sessions import _open_session_db_at_path
+from moor_cli.web_server_sessions import _open_session_db_at_path
 
 original = ssr.connect_tracked
 
@@ -781,8 +781,8 @@ class _SlowProgress:
 def test_slow_integrity_scan_is_bounded_and_not_repeated_on_every_poll(tmp_path, monkeypatch):
     """alt-glitch C1: the pre-lock scan still has a deadline (retryable 503, nothing written), and a
     sidebar polling the same unchanged store does not rescan the whole file on every request."""
-    import hermes_cli.sqlite_safe_read as ssr
-    import hermes_state_reconcile as reconcile
+    import moor_cli.sqlite_safe_read as ssr
+    import moor_state_reconcile as reconcile
 
     path = _lagging_store_with_history(_profile_home(tmp_path), rows=400)
     before = _file_state(path)
@@ -838,7 +838,7 @@ def test_boot_refuses_at_once_when_another_home_has_a_real_owner(tmp_path):
 
     from gateway.run_bootstrap import _reserve_waiting_out_browse_reconcile
     from gateway.runtime_ownership import OwnershipConflict, ProfileOwnership
-    from hermes_state_reconcile import BROWSE_RECONCILE_PURPOSE
+    from moor_state_reconcile import BROWSE_RECONCILE_PURPOSE
 
     owned_home = _profile_home(tmp_path, "alpha")
     browsed_home = _profile_home(tmp_path, "beta")
@@ -861,10 +861,10 @@ def test_boot_refuses_at_once_when_another_home_has_a_real_owner(tmp_path):
 
 def test_budget_refusal_on_unowned_store_names_repair_not_a_gateway(tmp_path, monkeypatch):
     """Round-2 decision: the 3 s browse budget stays. When it runs out on a store no gateway owns,
-    the 503 must be actionable: name `hermes -p NAME sessions repair` (no time limit), say the
+    the 503 must be actionable: name `moor -p NAME sessions repair` (no time limit), say the
     history is untouched, and never tell a user with no gateway to restart one."""
-    import hermes_cli.sqlite_safe_read as ssr
-    import hermes_state_reconcile as reconcile
+    import moor_cli.sqlite_safe_read as ssr
+    import moor_state_reconcile as reconcile
 
     assert reconcile.BROWSE_INTEGRITY_BUDGET_S == reconcile.BROWSE_RECONCILE_BUDGET_S == 3.0
     path = _lagging_store_with_history(_profile_home(tmp_path), rows=400)
@@ -877,7 +877,7 @@ def test_budget_refusal_on_unowned_store_names_repair_not_a_gateway(tmp_path, mo
         _open_session_db_at_path(path, read_only=True)
     assert caught.value.status_code == 503
     detail = caught.value.detail
-    assert "Run `hermes -p scribe sessions repair` to bring it up to date (it has no time limit)" in detail
+    assert "Run `moor -p scribe sessions repair` to bring it up to date (it has no time limit)" in detail
     assert "Your history is untouched" in detail
     assert "gateway" not in detail.lower()
     assert _file_state(path) == before
@@ -885,9 +885,9 @@ def test_budget_refusal_on_unowned_store_names_repair_not_a_gateway(tmp_path, mo
 
     # The named command really closes it: repair has no budget and catches the store up.
     monkeypatch.setattr(ssr, "connect_tracked", original)
-    from hermes_state_reconcile import repair_declarative_schema
-    import hermes_state_repair
-    monkeypatch.setattr(hermes_state_repair, "_live_writer_holds_db", lambda _p: False)
+    from moor_state_reconcile import repair_declarative_schema
+    import moor_state_repair
+    monkeypatch.setattr(moor_state_repair, "_live_writer_holds_db", lambda _p: False)
     report = repair_declarative_schema(path, backup=False)
     assert report["repaired"], report
     reconcile._scan_too_slow.clear()
@@ -909,7 +909,7 @@ def test_legacy_gateway_holding_the_store_without_a_lock_is_not_written(tmp_path
     """alt-glitch W1: a v0.22.0 multiplex gateway keeps a named profile's state.db open without writing
     that profile's gateway.lock/gateway.pid. Browse must still treat it as the owner: no DDL, a named
     503. Plain readers (sibling browses, Desktop) are not owners, so only a holder identified as a
-    Hermes gateway process refuses."""
+    Moor gateway process refuses."""
     import os
     import subprocess
     import sys
@@ -917,7 +917,7 @@ def test_legacy_gateway_holding_the_store_without_a_lock_is_not_written(tmp_path
     home = _profile_home(tmp_path)
     path = _lagging_store_with_history(home, rows=10)
     before = _file_state(path)
-    legacy = subprocess.Popen(["hermes", "-c", _LEGACY_GATEWAY, str(path), "gateway", "run"],
+    legacy = subprocess.Popen(["moor", "-c", _LEGACY_GATEWAY, str(path), "gateway", "run"],
                               executable=sys.executable, env=os.environ, stdout=subprocess.PIPE, text=True)
     try:
         assert legacy.stdout.readline().strip() == "holding"
@@ -939,7 +939,7 @@ import fcntl, json, os, sys, time
 fh = open(sys.argv[1], "a+")
 fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 fh.seek(0); fh.truncate()
-json.dump({"pid": os.getpid(), "kind": "hermes-gateway", "hermes_home": sys.argv[2]}, fh); fh.flush()
+json.dump({"pid": os.getpid(), "kind": "moor-gateway", "moor_home": sys.argv[2]}, fh); fh.flush()
 print("held", flush=True)
 time.sleep(60)
 '''
@@ -948,9 +948,9 @@ time.sleep(60)
 @pytest.mark.platforms("linux", "macos")
 @pytest.mark.spawns_gateway_lookalike
 def test_owned_refusal_names_the_owning_multiplexers_restart(tmp_path):
-    """alt-glitch W2: when the default multiplexer owns a named profile's lock, `hermes -p NAME gateway
+    """alt-glitch W2: when the default multiplexer owns a named profile's lock, `moor -p NAME gateway
     restart` is refused ("Manage the host gateway instead"). Name the owner's own restart command,
-    from the lock record's hermes_home."""
+    from the lock record's moor_home."""
     import os
     import subprocess
     import sys
@@ -968,7 +968,7 @@ def test_owned_refusal_names_the_owning_multiplexers_restart(tmp_path):
         host.wait()
     detail = caught.value.detail
     assert caught.value.status_code == 503 and "running gateway owns it" in detail
-    assert "`hermes gateway restart`" in detail
+    assert "`moor gateway restart`" in detail
     assert "-p scribe gateway restart" not in detail
 
 
@@ -1000,12 +1000,12 @@ def test_every_raw_schema_catch_up_handles_an_old_indexed_column(tmp_path):
     """alt-glitch S1: three hand-ordered catch-ups (reconcile_state_schema, the repair snapshot and the
     browse DDL) each encoded the columns -> SCHEMA_SQL -> columns order. One apply_declared_schema
     now owns it; every raw caller catches an old store (indexed column missing) up the same way."""
-    import hermes_state_schema
-    from hermes_state_schema import reconcile_state_schema
+    import moor_state_schema
+    from moor_state_schema import reconcile_state_schema
 
     path = _lagging_store_with_history(_profile_home(tmp_path), rows=5)
     with closing(sqlite3.connect(path)) as conn:
         reconcile_state_schema(conn)
         assert not conn.in_transaction
     assert "last_read_at" in _session_columns(path)
-    assert hasattr(hermes_state_schema, "apply_declared_schema")
+    assert hasattr(moor_state_schema, "apply_declared_schema")

@@ -92,14 +92,14 @@ def _is_explicit_firecrawl_selection() -> bool:
 
 
 def _use_keyless_ring(capability: Optional[str] = None) -> bool:
-    """Route via the keyless ring only with no direct credentials, when the managed Nous
+    """Route via the keyless ring only with no direct credentials, when the managed Moor
     gateway isn't the selected path for *capability*, and the keyless tier isn't disabled or pinned paid."""
     if _env("FIRECRAWL_API_KEY") or _env("FIRECRAWL_API_URL"):
         return False
-    from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_web_capability_selection
+    from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_web_capability_selection
     from plugins.web.keyless_mcp import use_keyless
     # Both probes are optional layers: a failing probe never blocks the ring.
-    for probe in (lambda: read_web_capability_selection(capability) == NOUS_MANAGED_PROVIDER,
+    for probe in (lambda: read_web_capability_selection(capability) == MOOR_MANAGED_PROVIDER,
                   lambda: _is_tool_gateway_ready() and not _is_explicit_firecrawl_selection()):
         try:
             if probe():
@@ -146,10 +146,10 @@ def _is_tool_gateway_ready() -> bool:
 def check_firecrawl_api_key() -> bool:
     """True when the route selected via ``moor tools`` (or, on a never-configured
     install, either route) is usable."""
-    from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_web_capability_selection
+    from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_web_capability_selection
 
     def _usable(selected) -> bool:
-        if selected == NOUS_MANAGED_PROVIDER:
+        if selected == MOOR_MANAGED_PROVIDER:
             return _is_tool_gateway_ready()
         return _get_direct_firecrawl_config() is not None or (selected is None and _is_tool_gateway_ready())
 
@@ -158,12 +158,12 @@ def check_firecrawl_api_key() -> bool:
 
 
 def is_managed_route(capability: Optional[str] = None) -> bool:
-    """True when Firecrawl calls for *capability* go through the Nous Tool Gateway rather than the user's
+    """True when Firecrawl calls for *capability* go through the Moor Tool Gateway rather than the user's
     own key / instance — the same decision :func:`_get_firecrawl_client` makes, without building a client."""
-    from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_web_capability_selection
+    from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_web_capability_selection
     selected = read_web_capability_selection(capability)
     if selected is not None or _is_explicit_firecrawl_selection():
-        return selected == NOUS_MANAGED_PROVIDER
+        return selected == MOOR_MANAGED_PROVIDER
     return _get_direct_firecrawl_config() is None and _is_tool_gateway_ready()
 
 
@@ -173,12 +173,12 @@ def _firecrawl_backend_help_suffix() -> str:
 
 def _get_firecrawl_client(capability: Optional[str] = None) -> Any:
     """Get or create the cached Firecrawl client. Strict selection semantics on the stored selection for
-    *capability* (``web.<capability>_backend``, else the shared ``web`` selection): ``"nous"`` → managed Tool
+    *capability* (``web.<capability>_backend``, else the shared ``web`` selection): ``"moor"`` → managed Tool
     Gateway ONLY; any other stored backend → direct Firecrawl ONLY (never a silent managed fallback billed to
-    Nous); never-configured → direct when present, else managed. Raises ValueError when the resolved path is
+    Moor); never-configured → direct when present, else managed. Raises ValueError when the resolved path is
     unusable."""
     wt = _wt()
-    from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_web_capability_selection, selection_error
+    from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_web_capability_selection, selection_error
     selected = read_web_capability_selection(capability)
     direct_config = _get_direct_firecrawl_config()
 

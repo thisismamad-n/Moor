@@ -95,10 +95,10 @@ class TestModuleSurface:
 
 
     def test_every_exposed_tool_is_a_core_registered_tool(self):
-        """Each exposed name must dispatch through handle_function_call in a plain Hermes process:
+        """Each exposed name must dispatch through handle_function_call in a plain Moor process:
         a name only a plugin registers (the camofox plugin's browser_navigate & co.) is not core."""
         import model_tools
-        from agent.transports.hermes_tools_mcp_server import EXPOSED_TOOLS
+        from agent.transports.moor_tools_mcp_server import EXPOSED_TOOLS
         missing = set(EXPOSED_TOOLS) - set(model_tools.get_all_tool_names())
         assert not missing, f"EXPOSED_TOOLS names no core tool registers: {sorted(missing)}"
 

@@ -19,8 +19,8 @@ import pytest
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.document import Document
 
-from hermes_cli import cli_enter_burst
-from hermes_cli.cli_enter_burst import BURST_END_QUIET_S, RAPID_INPUT_ENTER_WINDOW_S
+from moor_cli import cli_enter_burst
+from moor_cli.cli_enter_burst import BURST_END_QUIET_S, RAPID_INPUT_ENTER_WINDOW_S
 
 
 class _Clock:
@@ -61,8 +61,8 @@ def clock(monkeypatch):
 
 
 def _shell():
-    from cli import HermesCLI
-    shell = object.__new__(HermesCLI)
+    from cli import MoorCLI
+    shell = object.__new__(MoorCLI)
     shell._tui_enter_overlay = lambda event: False
     shell._tui_multiline_shortcuts = False
     shell._attached_images = []

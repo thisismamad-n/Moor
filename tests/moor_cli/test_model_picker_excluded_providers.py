@@ -61,7 +61,7 @@ def _capture_provider_labels(config_home):
 
 def test_cli_picker_hides_excluded_provider(config_home):
     """``excluded_providers: [openrouter]`` must remove the OpenRouter row
-    from the ``hermes model`` provider menu."""
+    from the ``moor model`` provider menu."""
     _write_config(config_home, model_catalog={"excluded_providers": ["openrouter"]})
 
     labels = _capture_provider_labels(config_home)
@@ -131,11 +131,11 @@ def test_cli_picker_empty_excluded_is_noop(config_home):
 # The TUI picker calls ``build_models_payload(include_unconfigured=True)``, which
 # appends ``CANONICAL_PROVIDERS`` skeleton rows via ``_append_unconfigured_rows``.
 # That loop must honor ``excluded_providers`` too, or excluded providers reappear
-# in the TUI ``/model`` picker even though ``hermes model`` hides them (#68816).
+# in the TUI ``/model`` picker even though ``moor model`` hides them (#68816).
 
 
 def _picker_ctx(excluded=None, *, current_provider="", current_model=""):
-    from hermes_cli.inventory import ConfigContext
+    from moor_cli.inventory import ConfigContext
 
     return ConfigContext(
         current_provider=current_provider,
@@ -148,7 +148,7 @@ def _picker_ctx(excluded=None, *, current_provider="", current_model=""):
 
 
 def test_unconfigured_rows_hide_excluded_provider():
-    from hermes_cli.inventory import _append_unconfigured_rows
+    from moor_cli.inventory import _append_unconfigured_rows
 
     baseline = {r["slug"].lower() for r in _append_unconfigured_rows([], _picker_ctx())}
     assert "openrouter" in baseline, "sanity: openrouter should be a canonical skeleton row"
@@ -162,7 +162,7 @@ def test_unconfigured_rows_hide_excluded_provider():
 
 
 def test_unconfigured_rows_exclusion_is_case_insensitive():
-    from hermes_cli.inventory import _append_unconfigured_rows
+    from moor_cli.inventory import _append_unconfigured_rows
 
     slugs = {
         r["slug"].lower()
@@ -173,11 +173,11 @@ def test_unconfigured_rows_exclusion_is_case_insensitive():
 
 def test_unconfigured_rows_hide_excluded_provider_by_alias():
     """Excluding by an *alias* (not the canonical slug) must also drop the
-    canonical skeleton row, matching ``hermes model`` and
+    canonical skeleton row, matching ``moor model`` and
     ``list_authenticated_providers``. Comparing the raw exclusion strings
     against ``entry.slug`` alone would leak the canonical row back in."""
-    from hermes_cli.inventory import _append_unconfigured_rows
-    from hermes_cli.models import CANONICAL_PROVIDERS, _PROVIDER_ALIASES
+    from moor_cli.inventory import _append_unconfigured_rows
+    from moor_cli.models import CANONICAL_PROVIDERS, _PROVIDER_ALIASES
 
     # Pick an alias whose canonical target is an actual skeleton row.
     baseline = {r["slug"].lower() for r in _append_unconfigured_rows([], _picker_ctx())}
@@ -204,7 +204,7 @@ def test_unconfigured_rows_exclude_current_provider_matches_cli():
     """``list_authenticated_providers`` drops an excluded provider even when it is
     the current one; the skeleton loop must not re-surface it as the
     ``configured-current`` warning row."""
-    from hermes_cli.inventory import _append_unconfigured_rows
+    from moor_cli.inventory import _append_unconfigured_rows
 
     rows = _append_unconfigured_rows(
         [], _picker_ctx(excluded=["openrouter"], current_provider="openrouter", current_model="some-model")
@@ -213,7 +213,7 @@ def test_unconfigured_rows_exclude_current_provider_matches_cli():
 
 
 def test_unconfigured_rows_empty_excluded_is_noop():
-    from hermes_cli.inventory import _append_unconfigured_rows
+    from moor_cli.inventory import _append_unconfigured_rows
 
     base = {r["slug"].lower() for r in _append_unconfigured_rows([], _picker_ctx())}
     empty = {r["slug"].lower() for r in _append_unconfigured_rows([], _picker_ctx(excluded=[]))}

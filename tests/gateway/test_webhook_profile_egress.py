@@ -134,8 +134,8 @@ async def test_retained_destination_keeps_profile_and_freezes_its_home(profile_h
     delivery = snapshot_destination(adapter, {"deliver": "slack", "deliver_extra": {}, "profile": "sec"})
     assert delivery == {"deliver": "slack", "deliver_extra": {"chat_id": "SEC-HOME"}, "profile": "sec"}
     adapter._delivery_info["retained"] = delivery
-    from hermes_constants import get_hermes_home
-    (get_hermes_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
+    from moor_constants import get_moor_home
+    (get_moor_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
     result = await adapter.send("retained", "answer")
     assert result.success
     assert secondary.send.await_args.args[0] == "SEC-HOME"
@@ -146,11 +146,11 @@ async def test_retained_destination_keeps_profile_and_freezes_its_home(profile_h
 
 
 def test_destination_missing_profile_home_does_not_borrow_default(profile_homes):
-    from hermes_constants import get_hermes_home
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_constants import get_moor_home
+    from moor_state_runtime import RuntimeStoreError
     from gateway.platforms.webhook_delivery import snapshot_destination, validate_destination
 
-    (get_hermes_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
+    (get_moor_home() / "profiles" / "sec" / "config.yaml").write_text("platforms: {}\n")
     adapter = _webhook(_Runner({}, {}, profile_homes))
     with pytest.raises(RuntimeStoreError):
         snapshot_destination(adapter, {"deliver": "slack", "deliver_extra": {}, "profile": "sec"})

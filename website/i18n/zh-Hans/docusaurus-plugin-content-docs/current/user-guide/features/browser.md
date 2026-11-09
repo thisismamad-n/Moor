@@ -1,6 +1,6 @@
 ---
 title: 浏览器自动化
-description: 使用 browser_exec 驱动真实浏览器——Hermes 启动的 Chromium、云端浏览器、Lightpanda，或通过 CDP 连接您自己的 Chrome——用于网页交互、表单填写、数据抓取等场景。
+description: 使用 browser_exec 驱动真实浏览器——Moor 启动的 Chromium、云端浏览器、Lightpanda，或通过 CDP 连接您自己的 Chrome——用于网页交互、表单填写、数据抓取等场景。
 sidebar_label: Browser
 sidebar_position: 5
 ---
@@ -18,8 +18,8 @@ sidebar_position: 5
 
 浏览器来源是另一项独立选择：
 
-- **本地 Chromium（默认）**——Hermes 启动自己打包的 Chromium，无头模式，每个会话一个浏览器。无需 API 密钥，无需配置。
-- **云端浏览器**——[Nous 订阅](tool-gateway.md)、[Browserbase](https://browserbase.com)、[Browser Use](https://browser-use.com) 云端、[Firecrawl](https://firecrawl.dev)，或浏览器提供商插件。
+- **本地 Chromium（默认）**——Moor 启动自己打包的 Chromium，无头模式，每个会话一个浏览器。无需 API 密钥，无需配置。
+- **云端浏览器**——[Moor 订阅](tool-gateway.md)、[Browserbase](https://browserbase.com)、[Browser Use](https://browser-use.com) 云端、[Firecrawl](https://firecrawl.dev)，或浏览器提供商插件。
 - **[Lightpanda](https://lightpanda.io)**——轻量级无头引擎，适合在小型机器上以文本为主的浏览。
 - **您自己的浏览器**——用 `/browser connect` 连接正在运行的 Chrome、Brave、Chromium 或 Edge。
 - **您的真实 profile**——您日常浏览器 profile 的托管副本，包含登录状态（需主动开启）。
@@ -64,32 +64,32 @@ print(js("[...document.querySelectorAll('article h2 a')].slice(0, 10).map(a => a
 `browser_exec` 会在您的机器上执行模型编写的 Python，因此只提供给同时拥有 `terminal` 工具集的会话。未配置终端访问的平台（例如受限的消息平台）不会获得浏览器。
 :::
 
-驱动程序是 [browser-harness](https://github.com/browser-use/browser-use)，即 Browser Use CLI 的引擎。它是 Hermes 的常规 Python 依赖，因此每个安装（包括桌面应用）都自带它，无需单独下载。
+驱动程序是 [browser-harness](https://github.com/browser-use/browser-use)，即 Browser Use CLI 的引擎。它是 Moor 的常规 Python 依赖，因此每个安装（包括桌面应用）都自带它，无需单独下载。
 
 ## 本地 Chromium（默认） {#local-chromium-default}
 
-在未配置云端提供商、`/browser connect` 端点或真实 profile 开关时，Hermes 会自己为会话启动一个 Chromium，并让 `browser_exec` 指向它。您安装的 Chrome 永远不会被触碰——无需开启 `chrome://inspect` 开关，也不会弹出"允许远程调试？"对话框——在完全没有桌面浏览器的无头服务器上也能工作。
+在未配置云端提供商、`/browser connect` 端点或真实 profile 开关时，Moor 会自己为会话启动一个 Chromium，并让 `browser_exec` 指向它。您安装的 Chrome 永远不会被触碰——无需开启 `chrome://inspect` 开关，也不会弹出"允许远程调试？"对话框——在完全没有桌面浏览器的无头服务器上也能工作。
 
 - **每个会话一个浏览器**，默认使用全新的一次性 profile：Agent 起始时未登录任何网站，会话结束后不留下任何内容。
 - **默认无头。** 设置 `browser.headed: true` 可显示窗口（见[下文](#headed-mode-visible-browser-window)）。
-- **自动清理。** 浏览器空闲 `browser.inactivity_timeout` 秒（默认 120）后、Hermes 退出时，以及进程崩溃后的孤儿清理中都会被关闭。
+- **自动清理。** 浏览器空闲 `browser.inactivity_timeout` 秒（默认 120）后、Moor 退出时，以及进程崩溃后的孤儿清理中都会被关闭。
 
-**使用哪个 Chromium。** Hermes 按顺序选择第一个存在的：
+**使用哪个 Chromium。** Moor 按顺序选择第一个存在的：
 
 1. `browser.executable_path`（如已设置）。
-2. Hermes 包管理器安装的 Chromium（Chrome for Testing）——安装脚本和 `hermes update` 默认会安装它。
-3. 官方 Docker 镜像中的 `/etc/hermes/chromium-executable-path`。
+2. Moor 包管理器安装的 Chromium（Chrome for Testing）——安装脚本和 `moor update` 默认会安装它。
+3. 官方 Docker 镜像中的 `/etc/moor/chromium-executable-path`。
 4. `PATH` 上的系统 `chromium` / `chromium-browser`（Android/Termux，以及包管理器没有 Chromium 构建的平台）。
 
 如果都找不到，浏览器工具会给出明确提示，而不是静默失败。如果您安装时使用了 `--skip-browser` / `-SkipBrowser`，或下载失败，可以这样安装：
 
 ```bash
-hermes pm install chromium
+moor pm install chromium
 ```
 
 这也会撤销之前的 `--skip-browser` 选择，使后续更新继续保持浏览器为最新。在 Linux 上，Chromium 可能还需要发行版的系统库（在 Debian/Ubuntu 上可用 `npx playwright install-deps chromium` 安装）。在 Android/Termux 上，如果您的软件源提供，请运行 `pkg install chromium`；没有系统 Chromium 时，该设备上无法使用浏览器。
 
-**本地选项**（`~/.hermes/config.yaml`）：
+**本地选项**（`~/.moor/config.yaml`）：
 
 ```yaml
 browser:
@@ -119,16 +119,16 @@ browser:
 
 ## 云端浏览器
 
-:::tip Nous 订阅用户
-如果您拥有付费 [Nous Portal](https://portal.nousresearch.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用云端浏览器，无需单独的 API 密钥。新安装可运行 `hermes setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过 `hermes model` 或 `hermes tools` 选择 **Nous Subscription** 作为浏览器提供商。
+:::tip Moor 订阅用户
+如果您拥有付费 [Moor Portal](https://portal.nousresearch.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用云端浏览器，无需单独的 API 密钥。新安装可运行 `moor setup --portal` 登录并一次性开启所有 gateway 工具；已有安装可通过 `moor model` 或 `moor tools` 选择 **Moor Subscription** 作为浏览器提供商。
 :::
 
-在 `hermes tools` → Browser Automation 中选择提供商。之后 `browser_exec` 驱动该提供商的浏览器，方式与驱动本地 Chromium 完全相同。
+在 `moor tools` → Browser Automation 中选择提供商。之后 `browser_exec` 驱动该提供商的浏览器，方式与驱动本地 Chromium 完全相同。
 
 ### Browser Use 云端
 
 ```bash
-# Add to ~/.hermes/.env
+# Add to ~/.moor/.env
 BROWSER_USE_API_KEY=***
 ```
 
@@ -167,7 +167,7 @@ Browserbase 隐身功能：
 | 高级隐身 | 关闭 | 自定义 Chromium 构建，需要 Scale 计划 |
 | Keep Alive | 开启 | 网络中断后的会话重连 |
 
-若付费功能在您的计划中不可用，Hermes 会自动降级——先禁用 `keepAlive`，再禁用代理——确保免费计划也能正常浏览。
+若付费功能在您的计划中不可用，Moor 会自动降级——先禁用 `keepAlive`，再禁用代理——确保免费计划也能正常浏览。
 
 ### Firecrawl
 
@@ -182,13 +182,13 @@ FIRECRAWL_API_URL=http://localhost:3002
 FIRECRAWL_BROWSER_TTL=600
 ```
 
-在 [firecrawl.dev](https://firecrawl.dev) 获取 API 密钥，然后在 `hermes tools` → Browser Automation 中选择 **Firecrawl**。
+在 [firecrawl.dev](https://firecrawl.dev) 获取 API 密钥，然后在 `moor tools` → Browser Automation 中选择 **Firecrawl**。
 
 :::note 选择提供商
-上述 `.env` 键只提供**凭据**。当前使用的浏览器由 `hermes tools` → Browser Automation 写入的 `browser.cloud_provider` 决定（`local`、`browserbase`、`browser-use`、`firecrawl`，或代表 Nous 订阅的 `nous`；提供商插件会添加自己的名称）。一旦存在选择，增删密钥不会切换提供商——已选择但缺少密钥的提供商会报错并提示运行 `hermes tools`，而不是静默改道。从未配置过的环境仍会根据可用凭据自动检测。
+上述 `.env` 键只提供**凭据**。当前使用的浏览器由 `moor tools` → Browser Automation 写入的 `browser.cloud_provider` 决定（`local`、`browserbase`、`browser-use`、`firecrawl`，或代表 Moor 订阅的 `moor`；提供商插件会添加自己的名称）。一旦存在选择，增删密钥不会切换提供商——已选择但缺少密钥的提供商会报错并提示运行 `moor tools`，而不是静默改道。从未配置过的环境仍会根据可用凭据自动检测。
 :::
 
-云端会话消耗提供商额度。Hermes 会在对话结束、`browser.inactivity_timeout` 到期以及进程退出时释放它们。
+云端会话消耗提供商额度。Moor 会在对话结束、`browser.inactivity_timeout` 到期以及进程退出时释放它们。
 
 ### 混合路由：公网 URL 使用云端，LAN/localhost 使用本地
 
@@ -214,16 +214,16 @@ browser:
 默认情况下，本地浏览在干净的一次性 profile 中运行——Agent 未登录任何网站。开启**真实 profile 浏览**后，Agent 可以以*您*的身份浏览，使用您现有的登录状态和 Cookie：
 
 ```yaml
-# ~/.hermes/config.yaml
+# ~/.moor/config.yaml
 browser:
   use_real_profile: true
 ```
 
-开启后，Hermes 会把您默认浏览器的**当前活跃** profile（`Local State → profile.last_used`，包括 Cookie、已保存登录和偏好设置）复制到 `~/.hermes/browser-profile/<browser>/` 下的托管快照中，然后用您**真实的浏览器程序**在该快照上启动并连接。您正在使用的 profile **从不被直接打开**：快照是独立目录，因此不会与运行中的浏览器争抢 profile 锁，也绕开了 Chrome 136+ 对默认 profile 目录远程调试的封锁。每次启动新会话时，认证文件都会从真实 profile 重新同步。只复制活跃 profile。
+开启后，Moor 会把您默认浏览器的**当前活跃** profile（`Local State → profile.last_used`，包括 Cookie、已保存登录和偏好设置）复制到 `~/.moor/browser-profile/<browser>/` 下的托管快照中，然后用您**真实的浏览器程序**在该快照上启动并连接。您正在使用的 profile **从不被直接打开**：快照是独立目录，因此不会与运行中的浏览器争抢 profile 锁，也绕开了 Chrome 136+ 对默认 profile 目录远程调试的封锁。每次启动新会话时，认证文件都会从真实 profile 重新同步。只复制活跃 profile。
 
-快照浏览器以**无头**方式在后台运行，不抢占焦点；设置 `browser.headed: true` 可显示窗口。在无显示器的主机上始终为无头模式。如需固定快照来源，可设置 `browser.real_profile_pin: "Profile 2"`（浏览器 user-data 目录下的 profile 目录名）；指向不存在目录的固定值不会回退到其他 profile。关闭开关后，Hermes 会在下一次使用浏览器时删除快照存储（`~/.hermes/browser-profile/`）。
+快照浏览器以**无头**方式在后台运行，不抢占焦点；设置 `browser.headed: true` 可显示窗口。在无显示器的主机上始终为无头模式。如需固定快照来源，可设置 `browser.real_profile_pin: "Profile 2"`（浏览器 user-data 目录下的 profile 目录名）；指向不存在目录的固定值不会回退到其他 profile。关闭开关后，Moor 会在下一次使用浏览器时删除快照存储（`~/.moor/browser-profile/`）。
 
-如果无法复制您的 profile（例如 Windows 上运行中的浏览器以独占锁持有 Cookie 数据库、默认浏览器不是受支持的 Chromium，或 Cookie 数据库损坏），Agent 会获得一个**不带登录状态**的全新浏览器，且第一个浏览器结果会说明原因（`real_profile_unavailable`）。设置 `browser.real_profile_autoclose: true` 后，Hermes 会在需要时**询问**是否替您关闭浏览器，获得批准后才运行 `hermes browser close-profile`。
+如果无法复制您的 profile（例如 Windows 上运行中的浏览器以独占锁持有 Cookie 数据库、默认浏览器不是受支持的 Chromium，或 Cookie 数据库损坏），Agent 会获得一个**不带登录状态**的全新浏览器，且第一个浏览器结果会说明原因（`real_profile_unavailable`）。设置 `browser.real_profile_autoclose: true` 后，Moor 会在需要时**询问**是否替您关闭浏览器，获得批准后才运行 `moor browser close-profile`。
 
 - **支持的浏览器：** Chrome、Edge、Brave、Brave Origin、Chromium（以系统默认为准）。
 - **适用于任何浏览器来源。** 本地浏览时开启即生效。使用**云端**提供商时，Agent 仍可通过 `browser_exec` 工具的 `local` 参数按需打开真实 profile 的本地会话（仅在开启此开关时提供该参数）。
@@ -238,24 +238,24 @@ browser:
 
 [Lightpanda](https://lightpanda.io) 是一个从零编写的开源无头浏览器。它瞬间启动，速度比 Chrome 快 9 倍，内存占用低 16 倍，这对长时间运行在小型 VM 上的 Agent 很重要。
 
-Lightpanda 是**本地引擎**（与本地 Chromium 一样是浏览器来源），而非云端提供商。安装该程序并将其放到 `PATH` 上（参见 [Lightpanda 安装指南](https://lightpanda.io/docs/run-locally/installation/one-liner)），然后在 `hermes tools` → Browser Automation 中选择 **Lightpanda**，或设置：
+Lightpanda 是**本地引擎**（与本地 Chromium 一样是浏览器来源），而非云端提供商。安装该程序并将其放到 `PATH` 上（参见 [Lightpanda 安装指南](https://lightpanda.io/docs/run-locally/installation/one-liner)），然后在 `moor tools` → Browser Automation 中选择 **Lightpanda**，或设置：
 
 ```yaml
-# Add to ~/.hermes/config.yaml
+# Add to ~/.moor/config.yaml
 browser:
   cloud_provider: local
   engine: lightpanda   # auto (default, Chromium) | lightpanda
 ```
 
-Hermes 会自己启动 `lightpanda serve --host 127.0.0.1 --port <free>`——每个 `browser_exec` 会话名（或每个任务）一个进程——并让 `browser_exec` 指向它。无需 Chromium 或 Node.js。进程会在 `browser.inactivity_timeout` 后、退出时以及 Hermes 崩溃后的孤儿清理中被回收。所有这些进程共享位于 `$HERMES_HOME/cache/browser-use/lightpanda/http-cache` 的磁盘 HTTP 缓存。
+Moor 会自己启动 `lightpanda serve --host 127.0.0.1 --port <free>`——每个 `browser_exec` 会话名（或每个任务）一个进程——并让 `browser_exec` 指向它。无需 Chromium 或 Node.js。进程会在 `browser.inactivity_timeout` 后、退出时以及 Moor 崩溃后的孤儿清理中被回收。所有这些进程共享位于 `$MOOR_HOME/cache/browser-use/lightpanda/http-cache` 的磁盘 HTTP 缓存。
 
 Lightpanda 没有图形渲染器，因此 `capture_screenshot()` 不可用，工具描述会让模型以文本为主；它每个会话只保持一个页面，因此模型会被告知只调用一次 `new_tab()`，之后使用 `goto_url()`（上游跟踪：[lightpanda-io/browser#1962](https://github.com/lightpanda-io/browser/issues/1962)）。
 
-**引擎何时被忽略。** `browser.engine` 是优先级最低的浏览器设置：云端提供商（包括 Nous 订阅浏览器）、`browser.cdp_url` / `/browser connect` 覆盖，或 `browser.use_real_profile` 都优先于它。`/browser status` 和 `hermes doctor` 会报告引擎已配置但被覆盖的情况，以及被什么覆盖。
+**引擎何时被忽略。** `browser.engine` 是优先级最低的浏览器设置：云端提供商（包括 Moor 订阅浏览器）、`browser.cdp_url` / `/browser connect` 覆盖，或 `browser.use_real_profile` 都优先于它。`/browser status` 和 `moor doctor` 会报告引擎已配置但被覆盖的情况，以及被什么覆盖。
 
 ## 通过 CDP 连接你自己的浏览器（`/browser connect`）
 
-除了 Hermes 自己启动的 Chromium 或云端提供商，您还可以通过 Chrome DevTools Protocol（CDP）将浏览器工具连接到本地运行的 Chrome、Brave、Chromium 或 Edge 实例。当您希望实时查看 Agent 操作、与需要自身 Cookie/会话的页面交互，或避免云端浏览器费用时，此方式非常有用。
+除了 Moor 自己启动的 Chromium 或云端提供商，您还可以通过 Chrome DevTools Protocol（CDP）将浏览器工具连接到本地运行的 Chrome、Brave、Chromium 或 Edge 实例。当您希望实时查看 Agent 操作、与需要自身 Cookie/会话的页面交互，或避免云端浏览器费用时，此方式非常有用。
 
 :::note
 `/browser connect` 是**交互式 CLI 斜杠命令** — 不由 gateway 分发。若在 WebUI、Telegram、Discord 或其他 gateway 聊天中尝试运行，消息将作为纯文本发送给 Agent，命令不会执行。请从终端启动 Moor（`moor` 或 `moor chat`）并在那里执行 `/browser connect`。
@@ -334,7 +334,7 @@ google-chrome \
 
 ## 配套工具
 
-`browser_vault` 作用于 `browser_exec` 正在驱动的同一个浏览器会话——本地 Chromium、云端浏览器，或通过 `/browser connect` 连接的浏览器。`browser_cdp` 和 `browser_dialog` 仅在配置了 CDP 端点（`/browser connect`、`BROWSER_CDP_URL` 或 `browser.cdp_url`）时提供，并作用于该浏览器；Hermes 启动的本地会话或云端会话不会带来这两个工具。
+`browser_vault` 作用于 `browser_exec` 正在驱动的同一个浏览器会话——本地 Chromium、云端浏览器，或通过 `/browser connect` 连接的浏览器。`browser_cdp` 和 `browser_dialog` 仅在配置了 CDP 端点（`/browser connect`、`BROWSER_CDP_URL` 或 `browser.cdp_url`）时提供，并作用于该浏览器；Moor 启动的本地会话或云端会话不会带来这两个工具。
 
 ### `browser_cdp`
 
@@ -388,18 +388,18 @@ browser_cdp(method="Network.getAllCookies")
 
 ## 关闭浏览功能
 
-浏览器没有配置开关——请改为禁用 `browser` 工具集。运行 `hermes tools`，为不应浏览的平台取消勾选 **Browser Automation**，或在脚本中：
+浏览器没有配置开关——请改为禁用 `browser` 工具集。运行 `moor tools`，为不应浏览的平台取消勾选 **Browser Automation**，或在脚本中：
 
 ```bash
-hermes tools disable browser                      # CLI
-hermes tools disable browser --platform telegram  # one gateway platform
+moor tools disable browser                      # CLI
+moor tools disable browser --platform telegram  # one gateway platform
 ```
 
 没有 `terminal` 工具集的会话也不会出现 `browser_exec`。
 
 ## Camofox
 
-Camofox 已移至插件：`hermes plugins install camofox`。现有的 Camofox 配置会在更新时自动迁移。
+Camofox 已移至插件：`moor plugins install camofox`。现有的 Camofox 配置会在更新时自动迁移。
 
 ## 实际示例
 

@@ -5,9 +5,9 @@ newline-delimited JSON-RPC 2.0 itself (no SDK client) so the driver controls
 every byte and the shutdown path: ``initialize`` -> ``session/new`` (ACP's
 documented cwd channel) -> ``session/prompt``, collecting
 ``agent_message_chunk`` text from ``session/update`` notifications, then stdin
-EOF — the way an editor host closes the server. ``hermes acp`` runs the turn in
+EOF — the way an editor host closes the server. ``moor acp`` runs the turn in
 the profile's gateway daemon (``acp_adapter/gateway_server.py``), so the surface's
-shutdown ends with ``hermes gateway stop``.
+shutdown ends with ``moor gateway stop``.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from tests.e2e.core.parity._helpers import (
     TURN_TIMEOUT,
     DriveResult,
     ParityHome,
-    hermes_argv,
+    moor_argv,
     stop_profile_gateway,
     terminate,
 )

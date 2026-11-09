@@ -63,8 +63,8 @@ def clone_memory_provider_config(source_dir: Path, profile_dir: Path, provider: 
 
 def _load_config_dict(profile_dir: Path) -> Optional[dict]:
     """A profile's config.yaml mapping read through the config backend; None when absent or unreadable."""
-    from hermes_yaml import YAMLError
-    from hermes_cli.config_backend import read_config_doc
+    from moor_yaml import YAMLError
+    from moor_cli.config_backend import read_config_doc
     try:
         data = read_config_doc(profile_dir / "config.yaml") or {}
     # FileNotFoundError included (no config). ValueError: the YAML constructors raise it bare for

@@ -217,7 +217,7 @@ class OptionalSkillSource(SkillSource):
         return self._remote_dirs
 
     def _upstream_pointer_from_content(self, content: str | bytes) -> Optional[dict[str, str]]:
-        """Parse ``metadata.hermes.upstream: {repo: owner/name, path: ...}`` out of SKILL.md content
+        """Parse ``metadata.moor.upstream: {repo: owner/name, path: ...}`` out of SKILL.md content
         (a catalog stub); None for vendored skills."""
         if isinstance(content, bytes):
             try:
@@ -373,7 +373,7 @@ class MoorIndexSource(SkillSource):
                 return None
         if skills_sh and bundle.name == "skills":  # same name resolved or not, never a shared "skills/"
             bundle.name = slug
-        bundle.source = entry.get("source", "hermes-index")
+        bundle.source = entry.get("source", "moor-index")
         bundle.identifier = identifier
         return bundle
 

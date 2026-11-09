@@ -2,17 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as MoorApi from '@/moor'
 import type { FreeTierRequester } from '@/store/free-tier'
-import type { AppHandoffStatus } from '@/types/hermes'
+import type { AppHandoffStatus } from '@/types/moor'
 
 const startOAuthLogin = vi.fn()
 const pollOAuthSession = vi.fn()
 const cancelOAuthSession = vi.fn(async (_id: string) => ({ ok: true }))
-const getNousHandoffStatus = vi.fn()
+const getMoorHandoffStatus = vi.fn()
 
 vi.mock('@/moor', async importOriginal => ({
   ...(await importOriginal<typeof MoorApi>()),
   cancelOAuthSession: (id: string) => cancelOAuthSession(id),
-  getNousHandoffStatus: (since: null | string) => getNousHandoffStatus(since),
+  getMoorHandoffStatus: (since: null | string) => getMoorHandoffStatus(since),
   listOAuthProviders: async () => ({ providers: [] }),
   pollOAuthSession: (providerId: string, sessionId: string, _profile?: unknown, wait?: number) =>
     pollOAuthSession(providerId, sessionId, wait),
@@ -121,7 +121,7 @@ describe('free-tier sign-in long-polls', () => {
     await vi.advanceTimersByTimeAsync(10)
 
     expect(pollOAuthSession).toHaveBeenCalledTimes(1)
-    expect(pollOAuthSession).toHaveBeenCalledWith('nous', 'session-poll', 25)
+    expect(pollOAuthSession).toHaveBeenCalledWith('moor', 'session-poll', 25)
 
     await vi.advanceTimersByTimeAsync(2000)
     expect(pollOAuthSession).toHaveBeenCalledTimes(2)
@@ -153,31 +153,31 @@ describe('free-tier sign-in long-polls', () => {
 
     startOAuthLogin.mockResolvedValueOnce(start('session-moved'))
     pollOAuthSession.mockResolvedValue(approvedWith(retrying))
-    getNousHandoffStatus.mockResolvedValueOnce(claimed)
+    getMoorHandoffStatus.mockResolvedValueOnce(claimed)
 
     await beginFreeTierSignIn(requestGateway)
     await vi.advanceTimersByTimeAsync(10)
 
-    expect(getNousHandoffStatus).toHaveBeenCalledWith('t1')
+    expect(getMoorHandoffStatus).toHaveBeenCalledWith('t1')
     expect($freeTierSignIn.get()).toMatchObject({ email: 'someone@example.com', handoff: claimed, status: 'completed' })
 
     await vi.advanceTimersByTimeAsync(10_000)
-    expect(getNousHandoffStatus).toHaveBeenCalledTimes(1)
+    expect(getMoorHandoffStatus).toHaveBeenCalledTimes(1)
   })
 
   it('stops following the move once the dialog closes', async () => {
     const { beginFreeTierSignIn, closeFreeTierSignIn } = await import('./free-tier-sign-in')
     startOAuthLogin.mockResolvedValueOnce(start('session-moved'))
     pollOAuthSession.mockResolvedValue(approvedWith(retrying))
-    getNousHandoffStatus.mockResolvedValue(retrying)
+    getMoorHandoffStatus.mockResolvedValue(retrying)
 
     await beginFreeTierSignIn(requestGateway)
     await vi.advanceTimersByTimeAsync(10)
     closeFreeTierSignIn()
-    const asked = getNousHandoffStatus.mock.calls.length
+    const asked = getMoorHandoffStatus.mock.calls.length
 
     await vi.advanceTimersByTimeAsync(10_000)
-    expect(getNousHandoffStatus.mock.calls.length).toBe(asked)
+    expect(getMoorHandoffStatus.mock.calls.length).toBe(asked)
   })
 
   it('keeps following the move through a failed read', async () => {
@@ -185,7 +185,7 @@ describe('free-tier sign-in long-polls', () => {
     const claimed: AppHandoffStatus = { lines: ['Your apps moved.'], state: 'claimed', updated_at: 't2' }
     startOAuthLogin.mockResolvedValueOnce(start('session-moved'))
     pollOAuthSession.mockResolvedValue(approvedWith(retrying))
-    getNousHandoffStatus.mockRejectedValueOnce(new Error('connection reset')).mockResolvedValueOnce(claimed)
+    getMoorHandoffStatus.mockRejectedValueOnce(new Error('connection reset')).mockResolvedValueOnce(claimed)
 
     await beginFreeTierSignIn(requestGateway)
     await vi.advanceTimersByTimeAsync(10_000)
@@ -197,14 +197,14 @@ describe('free-tier sign-in long-polls', () => {
     const { $freeTierSignIn, beginFreeTierSignIn } = await import('./free-tier-sign-in')
     startOAuthLogin.mockResolvedValueOnce(start('session-moved'))
     pollOAuthSession.mockResolvedValue(approvedWith(retrying))
-    getNousHandoffStatus.mockRejectedValue(new Error('backend gone'))
+    getMoorHandoffStatus.mockRejectedValue(new Error('backend gone'))
 
     await beginFreeTierSignIn(requestGateway)
     await vi.advanceTimersByTimeAsync(600_000)
-    const asked = getNousHandoffStatus.mock.calls.length
+    const asked = getMoorHandoffStatus.mock.calls.length
 
     await vi.advanceTimersByTimeAsync(600_000)
-    expect(getNousHandoffStatus.mock.calls.length).toBe(asked)
+    expect(getMoorHandoffStatus.mock.calls.length).toBe(asked)
     expect(asked).toBeGreaterThan(1)
     expect($freeTierSignIn.get()).toMatchObject({ handoff: retrying, status: 'completed' })
   })
@@ -218,7 +218,7 @@ describe('free-tier sign-in long-polls', () => {
     queryClient.setQueryData(list, [{ slug: 'linear', status: 'connected' }])
     startOAuthLogin.mockResolvedValueOnce(start('session-moved'))
     pollOAuthSession.mockResolvedValue(approvedWith(retrying))
-    getNousHandoffStatus.mockReturnValueOnce(new Promise(resolve => (settle = resolve)))
+    getMoorHandoffStatus.mockReturnValueOnce(new Promise(resolve => (settle = resolve)))
 
     await beginFreeTierSignIn(requestGateway)
     await vi.advanceTimersByTimeAsync(10)

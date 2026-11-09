@@ -49,7 +49,7 @@ def _may_have_access_acl(path: Path) -> bool:
 
 def home_mode_unsafe(node: os.stat_result, path: Path) -> bool:
     """The profile home keeps the operator's mode (main's home policy: symlinked homes,
-    HERMES_HOME_MODE 0701/0750). Only write by another user lets them swap the socket; read/search
+    MOOR_HOME_MODE 0701/0750). Only write by another user lets them swap the socket; read/search
     bits grant nothing against our 0600 socket, and group-write is harmless when the group is the
     owner's private group (the umask-002 user-private-group default). What we create stays 0700."""
     mode = stat.S_IMODE(node.st_mode)
@@ -164,7 +164,7 @@ def _socket_path(home: Path) -> Path:
     # The owner may have a different TMPDIR (notably launchd/native apps).
     # Authenticate its private pointer and profile-specific directory, not our
     # process-local temporary-root preference.
-    if target.name != "control.sock" or target.parent.name != f"hermes-gw-{_home_hash(home)}":
+    if target.name != "control.sock" or target.parent.name != f"moor-gw-{_home_hash(home)}":
         raise DiscoveryError("invalid_control_pointer")
     _private_node(target.parent, kind="directory")
     _private_node(target, kind="socket")

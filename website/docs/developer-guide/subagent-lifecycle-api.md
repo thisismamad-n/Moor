@@ -9,7 +9,7 @@ Plugins can launch and supervise fresh Moor child sessions without importing
 `tools.delegate_tool`, gateway internals, TUI state, or `AIAgent` fields.
 The service resolves its parent from the current agent turn, so it works in
 CLI, gateway, non-interactive, and kanban-worker sessions. Launching outside an
-active agent turn fails closed with `No active Hermes parent session`.
+active agent turn fails closed with `No active Moor parent session`.
 The facade also works when a plugin runs under `plugins.isolation: host`.
 
 Requests accept `goal`, `context`, `role`, `model`, `provider`, `allowed_toolsets`,
@@ -68,9 +68,9 @@ exit; callers must treat those handles as interrupted by process exit.
 Requests are fail-closed: goal/context/metadata sizes are capped, unknown or
 parent-broadening toolsets are rejected (plugin-registered toolsets count as
 known), and per-tool blocks, working-directory overrides, and per-launch
-timeouts are explicitly rejected until Hermes can
+timeouts are explicitly rejected until Moor can
 support them without weakening isolation. Use `allowed_toolsets` to narrow a
-child; Hermes's existing unsafe-tool block remains enforced.
+child; Moor's existing unsafe-tool block remains enforced.
 
 ## Routing
 

@@ -24,8 +24,8 @@ import threading
 
 import pytest
 
-import hermes_cli.mcp_startup as startup
-from hermes_constants import hermes_home_key
+import moor_cli.mcp_startup as startup
+from moor_constants import moor_home_key
 from tui_gateway import entry
 
 

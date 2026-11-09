@@ -100,7 +100,7 @@ group_sessions_per_user: false
 
 ## 第四步：查找你的 Mattermost 用户 ID
 
-Hermes Agent 使用你的 Mattermost 用户 ID 来控制谁可以与机器人交互。个人资料对话框（头像 → 个人资料）里没有这个 ID。
+Moor Agent 使用你的 Mattermost 用户 ID 来控制谁可以与机器人交互。个人资料对话框（头像 → 个人资料）里没有这个 ID。
 
 可以用以下任一方式查找（见 Mattermost 文档 [Identify a user's ID](https://docs.mattermost.com/administration-guide/configure/user-management-configuration-settings#identify-a-users-id)）：
 

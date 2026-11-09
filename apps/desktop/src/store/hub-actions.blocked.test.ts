@@ -56,7 +56,7 @@ test('the current CLI "Not installed:" tail parses into findings + trust', () =>
   // hard-block clause between "never" and "installs" (seen on a live arxiv install).
   const wrappedHardBlock = [
     'Not installed: the security scan found 9 high-risk pattern(s) in ',
-    "'NousResearch/hermes-agent/skills/research/arxiv' (listed above). Hermes never ",
+    "'NousResearch/hermes-agent/skills/research/arxiv' (listed above). Moor never ",
     'installs unverified skills with high-risk findings, even with --force. Review '
   ]
 

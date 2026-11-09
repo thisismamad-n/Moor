@@ -1,4 +1,4 @@
-import { hermesApi } from '@/api/client'
+import { moorApi } from '@/api/client'
 import type { ComposerAttachment } from '@/store/composer'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $connection } from '@/store/session'
@@ -25,13 +25,13 @@ export async function uploadServerOwnedImage(
 
   const dataUrl = attachment.previewUrl?.includes(';base64,')
     ? attachment.previewUrl
-    : await window.hermesDesktop?.readFileDataUrl(path)
+    : await window.moorDesktop?.readFileDataUrl(path)
 
   if (!dataUrl) {
     throw new Error(`Could not read ${label}`)
   }
 
-  const result = await hermesApi<{ path: string; mime_type: string }>({
+  const result = await moorApi<{ path: string; mime_type: string }>({
     method: 'POST',
     path: '/api/chat/image-upload',
     connectionId: connectionId ?? 'local',

@@ -48,7 +48,7 @@ describe('public catalog data', () => {
         name: 'Apple Design',
         identifier: 'apple-design',
         source: 'ClawHub',
-        installCmd: 'hermes skills install clawhub/apple-design'
+        installCmd: 'moor skills install clawhub/apple-design'
       }
     ])
 
@@ -66,7 +66,7 @@ describe('public catalog data', () => {
       maintainer: `${tier} maintainer`,
       overview: `Overview for ${tier}`,
       version: '1.2.3',
-      requiresHermes: '>=0.17',
+      requiresMoor: '>=0.17',
       platforms: ['macos', 'linux'],
       docsUrl: `https://example.com/${tier}/docs`,
       capabilities: {
@@ -90,7 +90,7 @@ describe('public catalog data', () => {
         author: row.maintainer,
         overview: row.overview,
         version: row.version,
-        requiresHermes: row.requiresHermes,
+        requiresMoor: row.requiresMoor,
         platforms: row.platforms,
         docsUrl: row.docsUrl,
         sourceUrl: row.repo,

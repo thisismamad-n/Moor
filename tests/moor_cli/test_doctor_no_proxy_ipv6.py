@@ -1,4 +1,4 @@
-"""``hermes doctor`` probes survive a bracketed-IPv6 NO_PROXY environment (#118159).
+"""``moor doctor`` probes survive a bracketed-IPv6 NO_PROXY environment (#118159).
 
 Clash Verge / mihomo write ``[::1]`` into NO_PROXY; httpx 0.28.1 turns that into an
 unparseable ``all://*[::1]`` mount, so every probe's bare ``httpx.get()``/``httpx.Client()``
@@ -13,7 +13,7 @@ import pytest
 
 pytest.importorskip("httpx")
 
-from hermes_cli import doctor_connectivity as dc
+from moor_cli import doctor_connectivity as dc
 
 # The exact environment Clash Verge / mihomo exports (issue #118159).
 _CLASH_NO_PROXY = "127.0.0.1,localhost,::1,[::1]"

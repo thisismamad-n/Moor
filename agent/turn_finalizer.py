@@ -554,7 +554,7 @@ def _run_held_transforms(callbacks, payload: dict, logger) -> Optional[str]:
     """A held turn runs the transforms captured at its start (``held_stream_transforms``), not the live
     registry a mid-turn reload empties. When none rewrote and one raised or timed out, the user gets a
     fixed notice, never the text the plugin had to see first."""
-    from hermes_cli.plugins import get_plugin_manager
+    from moor_cli.plugins import get_plugin_manager
 
     try:
         rewrite, failed = get_plugin_manager().run_held_transforms(callbacks, **payload)
@@ -691,7 +691,7 @@ def finalize_turn(
 
     _rollback_interrupted_preflight_display(agent, interrupted)
 
-    from hermes_cli.observability.shared_metrics_harness import finish_turn
+    from moor_cli.observability.shared_metrics_harness import finish_turn
     finish_turn(agent, _turn_exit_reason, final_response, interrupted=interrupted, failed=failed)
 
     _cleanup_errors: list[str] = []

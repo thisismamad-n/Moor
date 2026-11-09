@@ -80,7 +80,7 @@ class _ModelPickerRows:
             usage = usage.with_pricing(pricing)
         self.usage = usage
         if self.window_mode:
-            from hermes_cli.model_picker_usage import usage_tag_levels
+            from moor_cli.model_picker_usage import usage_tag_levels
             # Tags only: dimming reads ``usage.blocks`` (free_ids), so subscription-billed rows still never dim.
             self.levels = usage_tag_levels(all_models, pricing)
             self.has_pricing = False
@@ -138,7 +138,7 @@ class _ModelPickerRows:
     def _cost_segments(self, mid: str) -> list[tuple[str, str | None]]:
         """Window row: padded name (dim when a full allowance stops it) + Large / Free."""
         segs: list[tuple[str, str | None]] = [(f"{mid:<{self.name_col}}", "dim" if self.usage.blocks(mid) else None)]
-        from hermes_cli.model_picker_usage import usage_level_label
+        from moor_cli.model_picker_usage import usage_level_label
         level = self.levels.get(mid)
         word = usage_level_label(level, "en")
         segs.extend(((_GAUGE_GAP, None), (f"{word:<{_COST_COL}}", _LEVEL_STYLE.get(level or ""))))
@@ -181,7 +181,7 @@ class _ModelPickerRows:
         pad = " " * 5
         lines: list[str] = []
         if self.window_mode:
-            from hermes_cli.model_picker_usage import plan_gauge_lines
+            from moor_cli.model_picker_usage import plan_gauge_lines
             for i, line in enumerate(plan_gauge_lines(self.usage)):
                 suffix = f" — {self.usage.included_summary}" if i == 0 else ""
                 lines.append(f"{pad}{line}{suffix}")
@@ -206,7 +206,7 @@ class _ModelPickerRows:
         """Window plan with a Large row listed: the one line that says what Large means."""
         if not self.has_top_tier:
             return ""
-        from hermes_cli.model_picker_usage import TOP_TIER_FOOTNOTE
+        from moor_cli.model_picker_usage import TOP_TIER_FOOTNOTE
         return TOP_TIER_FOOTNOTE
 
 
@@ -218,7 +218,7 @@ def _picker_order(model_ids: list[str], current_model: str, window_usage) -> tup
     """
     sections: dict[int, str] = {}
     if window_usage is not None:
-        from hermes_cli.model_picker_usage import SECTION_OTHER, SECTION_RECOMMENDED, split_recommended
+        from moor_cli.model_picker_usage import SECTION_OTHER, SECTION_RECOMMENDED, split_recommended
         head, rest = split_recommended(list(dict.fromkeys(model_ids)), window_usage.featured_model_ids)
         ordered = head + rest
         if head:
@@ -235,8 +235,8 @@ def _picker_order(model_ids: list[str], current_model: str, window_usage) -> tup
 
 def _print_numbered_rows(rows: _ModelPickerRows, menu_title: str, ordered: list[str], sections: dict[int, str]) -> int:
     """The no-curses fallback's title, numbered rows (+ custom / skip) and footnote; returns the number width."""
-    from hermes_cli.curses_ui import colorize_gauge_bars_ansi, format_radio_item_ansi
-    from hermes_cli.colors import Colors, color
+    from moor_cli.curses_ui import colorize_gauge_bars_ansi, format_radio_item_ansi
+    from moor_cli.colors import Colors, color
     n, _DIM, _RESET = len(ordered), "\033[2m", "\033[0m"
     for line in menu_title.splitlines():
         if rows.window_mode:
@@ -267,7 +267,7 @@ def _prompt_model_selection(
 
     With *pricing* (``{model_id: {prompt, completion}}``) a compact price column is shown; models in
     *unavailable_models* render grayed out and unselectable with an upgrade link to *portal_url*.
-    *usage* (``model_picker_usage.PickerUsage``, Nous only) swaps ``$/Mtok`` for plan gauges and the
+    *usage* (``model_picker_usage.PickerUsage``, Moor only) swaps ``$/Mtok`` for plan gauges and the
     gateway's per-model usage word on a usage-window plan.
     """
     from moor_cli.cli_output import line_input
@@ -292,7 +292,7 @@ def _prompt_model_selection(
             return None
         return _confirmed_selection(custom) if custom else None
 
-    # All models for column-width computation (selectable + unavailable). Plan usage is Nous-only chrome.
+    # All models for column-width computation (selectable + unavailable). Plan usage is Moor-only chrome.
     window_usage = usage if sale_chrome else None
     ordered, sections, start = _picker_order(model_ids, current_model, window_usage)
 
@@ -303,7 +303,7 @@ def _prompt_model_selection(
     _RESET = "\033[0m"
 
     menu_title = rows.menu_title(title)
-    _upgrade_url = (portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
+    _upgrade_url = (portal_url or DEFAULT_MOOR_PORTAL_URL).rstrip("/")
     n = len(ordered)
 
     # Try arrow-key menu first, fall back to number input.
@@ -385,7 +385,7 @@ def _prompt_model_selection(
             return None
 
 
-_model_choice_saves = 0  # bumped per saved pick; `hermes model` reads it to know a pick landed
+_model_choice_saves = 0  # bumped per saved pick; `moor model` reads it to know a pick landed
 
 
 def model_choice_save_count() -> int:
@@ -395,7 +395,7 @@ def model_choice_save_count() -> int:
 def _save_model_choice(model_id: str) -> None:
     """Save the selected model to config.yaml only — NOT .env, which would stomp in multi-agent setups."""
     global _model_choice_saves
-    from hermes_cli.config import save_config, load_config
+    from moor_cli.config import save_config, load_config
     _model_choice_saves += 1
     config = load_config()
     # Always use dict format so provider/base_url can be stored alongside
@@ -404,7 +404,7 @@ def _save_model_choice(model_id: str) -> None:
     else:
         config["model"] = {"default": model_id}
     save_config(config)
-    from hermes_cli.observability.shared_metrics_setup import note_provider_setup_saved
+    from moor_cli.observability.shared_metrics_setup import note_provider_setup_saved
 
     note_provider_setup_saved()
 

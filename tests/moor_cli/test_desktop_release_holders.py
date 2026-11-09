@@ -15,8 +15,8 @@ import time
 import psutil
 import pytest
 
-from hermes_cli import desktop_release_holders, main_desktop
-from hermes_cli.desktop_release_holders import CONSENT_FILE_NAME, release_after_refused_rename, take_consent
+from moor_cli import desktop_release_holders, main_desktop
+from moor_cli.desktop_release_holders import CONSENT_FILE_NAME, release_after_refused_rename, take_consent
 
 _HELPER = "import time\nprint('ready', flush=True)\ntime.sleep(300)\n"
 
@@ -58,14 +58,14 @@ def test_a_retry_that_fails_before_the_swap_leaves_no_consent_for_a_later_update
     _desktop_consent(release, proc, run_id="desktop-retry-1")
 
     # The consented retry runs, but its swap fails before the rename (no launchable staged app).
-    monkeypatch.setenv("HERMES_UPDATE_CORRELATION_ID", "desktop-retry-1")
+    monkeypatch.setenv("MOOR_UPDATE_CORRELATION_ID", "desktop-retry-1")
     staging = tmp_path / "apps" / "desktop" / ".staging-failed"
     staging.mkdir()
     assert main_desktop._swap_staged_desktop_app(tmp_path / "apps" / "desktop", staging) is None
     assert not (release / CONSENT_FILE_NAME).exists(), "the swap attempt consumes the consent, failed or not"
 
     # Later, a non-interactive gateway /update hits the refused rename.
-    monkeypatch.delenv("HERMES_UPDATE_CORRELATION_ID")
+    monkeypatch.delenv("MOOR_UPDATE_CORRELATION_ID")
     holders, closed = release_after_refused_rename(release, input_fn=_never_asked)
 
     assert proc.pid in [h.pid for h in holders]

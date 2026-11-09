@@ -126,7 +126,7 @@ def test_confirm_runs_off_main_thread_when_tui_present(monkeypatch):
     monkeypatch.setattr(stub, "_confirm_expensive_model_switch", _confirm.__get__(stub))
 
     before = set(threading.enumerate())
-    cli_mod.HermesCLI._handle_model_switch(
+    cli_mod.MoorCLI._handle_model_switch(
         stub, "/model claude-sonnet-4.6 --provider anthropic"
     )
 

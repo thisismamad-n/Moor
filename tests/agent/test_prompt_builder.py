@@ -169,8 +169,8 @@ class TestDynamicContextFileCap:
     @pytest.fixture(autouse=True)
     def _no_explicit_config(self, monkeypatch):
         # No explicit context_file_max_chars → dynamic path is eligible.
-        monkeypatch.setattr("hermes_cli.config.load_config", dict)
-        monkeypatch.setattr("hermes_cli.config.load_config_readonly", dict)
+        monkeypatch.setattr("moor_cli.config.load_config", dict)
+        monkeypatch.setattr("moor_cli.config.load_config_readonly", dict)
 
 
 

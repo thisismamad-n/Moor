@@ -104,7 +104,7 @@ def publisher(url, **kwargs):
 
 
 def test_unknown_channel_created_over_http_retains_identity_and_immutable_requests():
-    from hermes_cli.release_channels import ChannelReader, ChannelNotFound
+    from moor_cli.release_channels import ChannelReader, ChannelNotFound
     with object_server() as (url, _objects, headers, _requests, _faults):
         pub = publisher(url)
         reader = ChannelReader(url + "/bucket", repository="example/moor-agent")
@@ -112,8 +112,8 @@ def test_unknown_channel_created_over_http_retains_identity_and_immutable_reques
             reader.resolve("not-registered-in-code")
         record = pub.create("not-registered-in-code")
         assert reader.resolve(record["name"]).manifest is None
-        one = pub.allocate(record["name"], "a" * 40, "1.2.3", {"HERMES_DATA_DIR_SUFFIX": "-a"})
-        two = pub.allocate(record["name"], "a" * 40, "1.2.3", {"HERMES_DATA_DIR_SUFFIX": "-b"})
+        one = pub.allocate(record["name"], "a" * 40, "1.2.3", {"MOOR_DATA_DIR_SUFFIX": "-a"})
+        two = pub.allocate(record["name"], "a" * 40, "1.2.3", {"MOOR_DATA_DIR_SUFFIX": "-b"})
         assert one["identity"] == two["identity"] == record["identity"]
         assert one["buildId"] != two["buildId"]
         assert one["sequence"] < two["sequence"]
@@ -127,12 +127,12 @@ def test_stable_branded_channel_reuses_the_published_stable_identity(monkeypatch
     """--branding stable is fixed at creation; it copies a published stable record, and
     before stable has any channel record it uses the identity the first stable release
     is held to."""
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelError, canonical_json
     from scripts.releases import channel_releases
-    product = {"token": "f204dc6857361e33", "displayName": "Hermes Agent",
-               "appId": "com.nousresearch.hermes-bundled", "appNamePascal": "HermesBundled",
-               "artifactNamePascal": "HermesBundled", "cliName": "hermes",
-               "windowsExecutableName": "Hermes Agent", "msixAppIdWithOrg": "NousResearch.HermesBundled"}
+    product = {"token": "f204dc6857361e33", "displayName": "Moor Agent",
+               "appId": "com.moorinc.moor-bundled", "appNamePascal": "MoorBundled",
+               "artifactNamePascal": "MoorBundled", "cliName": "moor",
+               "windowsExecutableName": "Moor Agent", "msixAppIdWithOrg": "Moor inc..MoorBundled"}
     monkeypatch.setattr(channel_releases, "product_identity", lambda tag: dict(product))
     with object_server() as (url, objects, _headers, _requests, _faults):
         pub = publisher(url)
@@ -227,7 +227,7 @@ def test_concurrent_allocations_reverse_completion_retirement_and_readback():
 
 
 def test_list_bootstrap_protected_roles_and_qualification_gate():
-    from hermes_cli.release_channels import ChannelError
+    from moor_cli.release_channels import ChannelError
     with object_server() as (url, objects, _headers, requests, faults):
         pub = publisher(url)
         main = {"schema": 1, "name": "main", "repository": "example/moor-agent", "policy": "source-branch", "state": "active", "revision": 1, "nextSequence": 1, "identity": None, "head": None, "delivery": {"kind": "source-branch", "branch": "main"}}
@@ -286,7 +286,7 @@ def test_retirement_race_requires_a_new_explicit_attempt():
 
 def test_retire_derives_receiver_kind_from_channel_identity_match():
     """The pinned kind is derived from identity comparison, never caller-asserted."""
-    from hermes_cli.release_channels import canonical_json
+    from moor_cli.release_channels import canonical_json
     with object_server() as (url, objects, _headers, _requests, _faults):
         pub = publisher(url, verify_build=lambda request, manifest: True)
         for name in ("mainline-preview", "suffixed-preview", "stable"):
@@ -317,7 +317,7 @@ def test_retire_derives_receiver_kind_from_channel_identity_match():
 
 def test_retire_refuses_a_stable_head_without_the_previews_targets():
     """An Intel preview cannot be pinned to an arm64-only stable head it has no package in."""
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelError, canonical_json
 
     def with_arches(manifest, arches):
         row = manifest["packages"][0]
@@ -356,7 +356,7 @@ def test_retire_refuses_a_stable_head_without_the_previews_targets():
 
 def test_mutable_read_loss_recovery_never_clones_another_allocation():
     from scripts.releases.channels import ChannelConflict
-    from hermes_cli.release_channels import canonical_json
+    from moor_cli.release_channels import canonical_json
     with object_server() as (url, _objects, _headers, _requests, faults):
         pub = publisher(url)
         pub.create("nonce-check")
@@ -569,7 +569,7 @@ def test_protected_transaction_refuses_custom_workflow_and_unpublished_release(m
            "GITHUB_REPOSITORY": "example/moor-agent", "RELEASE_TAG": attempt,
            "RELEASE_COMMIT": commit, "RELEASE_CLAIM_TAG": attempt,
            "RELEASE_CLAIM_OBJECT": "b" * 40,
-           "GITHUB_WORKFLOW_REF": "example/hermes-agent/.github/workflows/stable-release.yml@refs/heads/main"}
+           "GITHUB_WORKFLOW_REF": "example/moor-agent/.github/workflows/stable-release.yml@refs/heads/main"}
     published = [True]
 
     def final_context(_env, run):
@@ -604,7 +604,7 @@ def test_stable_admission_requires_an_attempt_ref_release_tag(monkeypatch):
            "GITHUB_REPOSITORY": "example/moor-agent", "RELEASE_TAG": attempt,
            "RELEASE_COMMIT": commit, "RELEASE_CLAIM_TAG": attempt,
            "RELEASE_CLAIM_OBJECT": "b" * 40,
-           "GITHUB_WORKFLOW_REF": "example/hermes-agent/.github/workflows/stable-release.yml@refs/heads/main"}
+           "GITHUB_WORKFLOW_REF": "example/moor-agent/.github/workflows/stable-release.yml@refs/heads/main"}
     monkeypatch.setattr(channel_releases.stable, "final_context",
                         lambda _env, run: ("v1.2.3", commit, {}))
 
@@ -665,7 +665,7 @@ def test_accepted_stable_reads_the_release_archive_by_tag(monkeypatch):
 
 
 def test_request_inputs_are_rejected_before_allocating():
-    from hermes_cli.release_channels import ChannelError
+    from moor_cli.release_channels import ChannelError
     with object_server() as (url, objects, _headers, _requests, _faults):
         pub = publisher(url)
         pub.create("validation")
@@ -712,7 +712,7 @@ def test_stable_receipts_bind_the_attempt_ref_while_metadata_binds_the_payload_t
     """Stable stages handoffs under rc.N-vX.Y.Z but record() stamps vX.Y.Z."""
     from scripts.releases import channel_releases
     from scripts.releases.handoff import receipt_name
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from moor_cli.release_channels import ChannelError, canonical_json
     attempt, payload, commit = "rc.15-v2.0.0", "v2.0.0", "e" * 40
     legs = ("darwin-arm64", "win32-arm64", "win32-x64")
 

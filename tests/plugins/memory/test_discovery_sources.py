@@ -109,7 +109,7 @@ def test_bundled_still_wins_over_project(tmp_path, monkeypatch):
     PluginManager's later-wins order. A provider is activated by name, so a
     directory dropped into the working tree must not be able to shadow a
     shipped one and silently redirect the agent's memory."""
-    _write_provider_dir(tmp_path / ".hermes" / "plugins", "byterover")
+    _write_provider_dir(tmp_path / ".moor" / "plugins", "byterover")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("MOOR_ENABLE_PROJECT_PLUGINS", "1")
 
@@ -227,7 +227,7 @@ def test_provider_registered_past_the_first_8kb_is_discovered(tmp_path, monkeypa
     provider.mkdir(parents=True)
     docstring = '"""' + "Plain prose about storage.\n" * 400 + '"""\n'  # ~10.8 KB, no contract tokens
     (provider / "__init__.py").write_text(docstring + PROVIDER_SOURCE.format(name="longdoc"), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
 
     assert "longdoc" in memory_plugins.list_memory_provider_names()
     assert memory_plugins.find_provider_dir("longdoc") == provider

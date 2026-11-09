@@ -17,11 +17,11 @@ import type { UiPreferencesBridge } from './sync'
 // config) is not the user's choice and must never reach the machine's store
 // ahead of the client that holds the real one (#145536 review), against the
 // real native writer on a real file.
-const TRANSLUCENCY = 'hermes.desktop.translucency.v2'
-const AUTO_SPEAK = 'hermes.desktop.autoSpeakReplies'
-const THEME = 'hermes-desktop-theme-v2'
-const KEYBINDS = 'hermes.desktop.keybinds'
-const HAPTICS_MUTED = 'hermes.desktop.hapticsMuted'
+const TRANSLUCENCY = 'moor.desktop.translucency.v2'
+const AUTO_SPEAK = 'moor.desktop.autoSpeakReplies'
+const THEME = 'moor-desktop-theme-v2'
+const KEYBINDS = 'moor.desktop.keybinds'
+const HAPTICS_MUTED = 'moor.desktop.hapticsMuted'
 
 // Every store that writes its value the moment its module evaluates.
 const LOAD_WRITERS = [
@@ -40,7 +40,7 @@ const dirs: string[] = []
 const tick = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms))
 
 function storeFile(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-ui-defaults-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-ui-defaults-'))
   dirs.push(dir)
 
   return path.join(dir, 'ui-preferences.json')
@@ -145,7 +145,7 @@ it('a fresh browser’s auto-speak migration never replaces native’s choice, a
 
 it('a migrated auto-speak value stays put here while the store lacks it, and a real choice is shared', async () => {
   const file = storeFile()
-  becomeNative({ [THEME]: 'nous' })
+  becomeNative({ [THEME]: 'moor' })
   const choose: { autoSpeak?: (enabled: boolean) => Promise<void> } = {}
 
   const native = await load(file, async () => {

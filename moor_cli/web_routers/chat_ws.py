@@ -16,23 +16,23 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 
 from agent.interrupt_scope import InterruptScope, bind_interrupt_scope
-from hermes_cli.active_sessions import ActiveSessionRegistryError, active_session_registry_snapshot
-from hermes_cli.pty_session import RegistryFull
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_chat import (
+from moor_cli.active_sessions import ActiveSessionRegistryError, active_session_registry_snapshot
+from moor_cli.pty_session import RegistryFull
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_chat import (
     _build_sidecar_url, _close_stalled_pty_input, _get_console_executor, _legacy_pump, _pty_fail, _ws_auth_ok,
     _ws_close_reason, _ws_gate, _ws_request_is_allowed,
 )
-from hermes_cli.web_session_sockets import GATEWAY_SOCKET
+from moor_cli.web_session_sockets import GATEWAY_SOCKET
 
 _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_active_session_file_for_channel = late("_active_session_file_for_channel", "hermes_cli.web_server_chat")
-_profile_scope = late("_profile_scope", "hermes_cli.web_server_profiles")
-_resolve_chat_argv_async = late("_resolve_chat_argv_async", "hermes_cli.web_server_chat")
-_resolve_profile_dir = late("_resolve_profile_dir", "hermes_cli.web_server_profiles")
+_active_session_file_for_channel = late("_active_session_file_for_channel", "moor_cli.web_server_chat")
+_profile_scope = late("_profile_scope", "moor_cli.web_server_profiles")
+_resolve_chat_argv_async = late("_resolve_chat_argv_async", "moor_cli.web_server_chat")
+_resolve_profile_dir = late("_resolve_profile_dir", "moor_cli.web_server_profiles")
 _DASHBOARD_EMBEDDED_CHAT_ENABLED = LateState("_DASHBOARD_EMBEDDED_CHAT_ENABLED")
 
 
@@ -64,7 +64,7 @@ def _discard_active_session_file(app: FastAPI, channel: Optional[str], path: Opt
     if not channel or path is None:
         return
     try:
-        from hermes_cli.web_server import _get_pty_active_session_files
+        from moor_cli.web_server import _get_pty_active_session_files
         files = _get_pty_active_session_files(app)
         if files.get(channel) == path:
             files.pop(channel, None)
@@ -417,7 +417,7 @@ async def _pump_keepalive_input(ws: WebSocket, session: Any) -> None:
     """Writer loop for a keep-alive /api/pty socket: forward client input to the
     session's bridge, consuming resize escapes locally. On child EOF the drain
     task closes the attached socket with 4410, which unparks ws.receive()."""
-    from hermes_cli.web_server_chat import _RESIZE_RE
+    from moor_cli.web_server_chat import _RESIZE_RE
     while True:
         try:
             msg = await ws.receive()
@@ -455,7 +455,7 @@ async def _pty_channel_marker_state(
     channel = _channel_or_close_code(ws)
     if not channel:
         return None, False, resume
-    from hermes_cli.web_server import _get_pty_active_session_files
+    from moor_cli.web_server import _get_pty_active_session_files
     marker_files = _get_pty_active_session_files(ws.app)
     marker_preexisting = channel in marker_files
 
@@ -580,7 +580,7 @@ async def pty_ws(ws: WebSocket) -> None:
     # Keep-alive path: the PTY outlives this socket; reattach by token.
     try:
         await PTY_REGISTRY.close_other_sessions(raw_attach_token, keep_key=attach_token)
-        holder_pid = _lease_holder_pid(registry_resume, registry_home=(env or {}).get("HERMES_HOME"))
+        holder_pid = _lease_holder_pid(registry_resume, registry_home=(env or {}).get("MOOR_HOME"))
         await PTY_REGISTRY.close_orphaned_sessions(registry_resume, keep_key=attach_token, holder_pid=holder_pid)
         session, _created = await PTY_REGISTRY.attach_or_spawn(
             attach_token,
@@ -661,7 +661,7 @@ async def gateway_ws(ws: WebSocket) -> None:
     # The authenticated identity (ticket / internal credential) stamped by
     # _ws_auth_reason becomes the identity authority for session ownership and
     # relay authorship. None on the legacy token path.
-    identity = getattr(ws, "_hermes_auth_identity", None)
+    identity = getattr(ws, "_moor_auth_identity", None)
     authority = getattr(ws.app.state, "session_authority", None)
     if authority is not None and identity is None:
         # The upgrade gate above has already verified the legacy token. Do not
@@ -674,7 +674,7 @@ async def gateway_ws(ws: WebSocket) -> None:
         # The dashboard gate authorizes the whole host (its REST routes take ``?profile=`` for
         # every profile), so its socket may select any served sibling too.
         identity = {**identity, 'profile_scope': 'host'}
-    ticket_home = getattr(ws, "_hermes_ticket_profile_home", None)
+    ticket_home = getattr(ws, "_moor_ticket_profile_home", None)
     served = authority
     if ticket_home and authority is None:
         # Only the gateway mints a profile-bound ticket, and it unbinds its authority while the
@@ -689,7 +689,7 @@ async def gateway_ws(ws: WebSocket) -> None:
         if served is None:
             await ws.close(code=4403)
             return
-        ws.scope['hermes.session_authority'] = served
+        ws.scope['moor.session_authority'] = served
         identity = {**identity, 'profile_id': served.profile_id, 'instance_id': served.instance_id}
     # The socket runs in the served profile's scope, as a native ticket's does (``gateway/run_api.py``):
     # legacy handlers (billing, usage, subscription) read that profile's secrets with no scope of
@@ -703,7 +703,7 @@ async def gateway_ws(ws: WebSocket) -> None:
             ws,
             auth_identity=identity,
             operator=True,  # The dashboard upgrade gate above has verified this operator.
-            subprotocol=getattr(ws, "_hermes_ws_subprotocol", None),
+            subprotocol=getattr(ws, "_moor_ws_subprotocol", None),
         )
 
 

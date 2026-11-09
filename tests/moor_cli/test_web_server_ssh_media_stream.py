@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import ssh_workspace_fs, web_server
-from hermes_cli.web_routers import files as file_routes
+from moor_cli import ssh_workspace_fs, web_server
+from moor_cli.web_routers import files as file_routes
 
 pytest.importorskip("starlette.testclient")
 from starlette.testclient import TestClient
@@ -22,7 +22,7 @@ class FakeSshWorkspace:
 
     def __init__(self):
         self.files = {CLIP: BYTES, "/srv/media/notes.txt": b"notes"}
-        self.links = {"/srv/media/linked.mp4": "/home/dev/.hermes/mcp-tokens/token.mp4"}
+        self.links = {"/srv/media/linked.mp4": "/home/dev/.moor/mcp-tokens/token.mp4"}
         self.reads = []
         self.writes = []
 
@@ -68,13 +68,13 @@ def client():
 def ssh(monkeypatch, tmp_path):
     """A default profile on this host and a ``remote-dev`` profile whose workspace is the fake
     SSH machine; the browser's ticket routes are on (the Webapp)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     profile = home / "profiles" / "remote-dev"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("{}", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_DASHBOARD_FILES_ROOT", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.delenv("MOOR_DASHBOARD_FILES_ROOT", raising=False)
     monkeypatch.setattr(web_server.app.state, "ui_surface", "webapp", raising=False)
     workspace = FakeSshWorkspace()
     monkeypatch.setattr(
@@ -198,7 +198,7 @@ def test_ssh_stream_refuses_a_file_download_or_media_rules_refuse(client, ssh, p
 
 
 def test_an_ssh_stream_ticket_plays_ranges_and_only_its_own_profile_and_path(client, ssh):
-    from hermes_constants import mark_named_profile_deleted
+    from moor_constants import mark_named_profile_deleted
 
     profile, workspace = ssh
     query = {"path": CLIP, "profile": "remote-dev"}
@@ -356,7 +356,7 @@ def sessions(monkeypatch):
             raise HTTPException(status_code=404, detail="Session not found")
         return {"cwd": "/srv", "id": session_id}
 
-    monkeypatch.setattr("hermes_cli.web_routers.sessions.get_session_detail", detail)
+    monkeypatch.setattr("moor_cli.web_routers.sessions.get_session_detail", detail)
     return rows
 
 

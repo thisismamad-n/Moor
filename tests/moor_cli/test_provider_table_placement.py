@@ -1,7 +1,7 @@
 """Plugin profiles place themselves in the core provider tables through generic fields.
 
 ``picker_after`` / ``picker_group`` / ``catalog_aliases`` / ``aggregator`` feed the picker catalog
-(``sync_plugin_provider_catalog``); ``provider_overlay`` feeds ``hermes_cli.providers``;
+(``sync_plugin_provider_catalog``); ``provider_overlay`` feeds ``moor_cli.providers``;
 ``models_dev_id`` feeds the models.dev lookups at lookup time. Exercised with fake profiles only.
 """
 
@@ -13,7 +13,7 @@ from providers.base import ProviderProfile
 @pytest.fixture
 def catalog(monkeypatch):
     """The picker tables as private copies, so admissions stay inside the test."""
-    import hermes_cli.models_catalog_static as cat
+    import moor_cli.models_catalog_static as cat
 
     monkeypatch.setattr(cat, "CANONICAL_PROVIDERS", list(cat.CANONICAL_PROVIDERS))
     monkeypatch.setattr(cat, "_canonical_slugs", set(cat._canonical_slugs))
@@ -68,7 +68,7 @@ def test_unplaced_profile_keeps_generic_admission(catalog, monkeypatch):
 
 
 def test_provider_overlay_defines_the_models_dev_keyed_provider(monkeypatch):
-    from hermes_cli import providers as prov
+    from moor_cli import providers as prov
 
     overlaid = ProviderProfile(
         name="zz-acp", aliases=("zz-acp-agent", "zz-acp-cli"), display_name="ZZ ACP", base_url="acp://zz",
@@ -84,9 +84,9 @@ def test_provider_overlay_defines_the_models_dev_keyed_provider(monkeypatch):
     assert prov.normalize_provider("zz-acp-cli") == "zz-acp-cli"  # only overlay_aliases name the overlay
     pdef = prov.get_provider("zz-acp-agent")
     assert (pdef.id, pdef.name, pdef.transport, pdef.base_url, pdef.base_url_env_var, pdef.source) == (
-        "zz-acp", "ZZ ACP", "codex_responses", "acp://zz", "ZZ_ACP_BASE_URL", "hermes")
+        "zz-acp", "ZZ ACP", "codex_responses", "acp://zz", "ZZ_ACP_BASE_URL", "moor")
     assert prov.determine_api_mode("zz-acp") == "codex_responses"
-    assert "zz-acp" in prov.hermes_overlays() and "zz-plain" not in prov.hermes_overlays()
+    assert "zz-acp" in prov.moor_overlays() and "zz-plain" not in prov.moor_overlays()
 
 
 def test_mirrored_alias_keys_keep_the_overlay_route(monkeypatch):
@@ -94,8 +94,8 @@ def test_mirrored_alias_keys_keep_the_overlay_route(monkeypatch):
     an alias goes through the overlay (transport, base-URL env var), not the lossy-collapse registry rung."""
     from types import SimpleNamespace
 
-    from hermes_cli import auth
-    from hermes_cli import providers as prov
+    from moor_cli import auth
+    from moor_cli import providers as prov
 
     overlaid = ProviderProfile(
         name="zz-acp", aliases=("zz-acp-agent",), display_name="ZZ ACP", base_url="acp://zz",
@@ -108,7 +108,7 @@ def test_mirrored_alias_keys_keep_the_overlay_route(monkeypatch):
 
     pdef = prov.resolve_provider_full("zz-acp-agent")
 
-    assert (pdef.id, pdef.transport, pdef.source) == ("zz-acp", "codex_responses", "hermes")
+    assert (pdef.id, pdef.transport, pdef.source) == ("zz-acp", "codex_responses", "moor")
 
 
 def test_profile_models_dev_id_resolves_at_lookup_time(monkeypatch):
@@ -119,8 +119,8 @@ def test_profile_models_dev_id_resolves_at_lookup_time(monkeypatch):
     monkeypatch.setattr(md, "_MODELS_DEV_TO_PROVIDER", None)
 
     assert md.models_dev_id_for("zz-hosted") == "zz-catalog"
-    assert md.models_dev_id_for("zzh") is None  # exact Hermes ids only, like the static map
-    assert md._models_dev_to_hermes_ids("zz-catalog") == ["zz-hosted"]
+    assert md.models_dev_id_for("zzh") is None  # exact Moor ids only, like the static map
+    assert md._models_dev_to_moor_ids("zz-catalog") == ["zz-hosted"]
     assert md.models_dev_provider_map() == {"zz-hosted": "zz-catalog"}
     assert md.PROVIDER_TO_MODELS_DEV == {}  # never merged into the static dict
 
@@ -129,8 +129,8 @@ def test_models_dev_keyed_overlay_row_keeps_the_profile_slug_and_label_offline(m
     """A profile whose overlay is keyed by its models.dev id lists under its own name and display_name
     when no models.dev catalog is at hand (offline, blocked): not under the catalog id."""
     import agent.models_dev as md
-    from hermes_cli import providers as prov
-    from hermes_cli.model_switch import list_authenticated_providers
+    from moor_cli import providers as prov
+    from moor_cli.model_switch import list_authenticated_providers
 
     hosted = ProviderProfile(
         name="zz-hosted", aliases=("zz-hosted-alias",), display_name="ZZ Hosted", models_dev_id="zz-catalog",

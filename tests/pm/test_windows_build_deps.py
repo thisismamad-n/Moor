@@ -197,7 +197,7 @@ $inheritedPath = $env:PATH
 $cargoBin = Join-Path $cargoHome 'bin'
 $expectedPath = $devDir + '\;' + $inheritedPath
 if ($cargoBin -notin ($expectedPath -split ';')) { $expectedPath = $cargoBin + ';' + $expectedPath }
-Initialize-HermesArm64BuildTools -StateRoot $Root -OpenSSLRoot $openssl
+Initialize-MoorArm64BuildTools -StateRoot $Root -OpenSSLRoot $openssl
 # The discovered instance is the one VsDevCmd used; vcpkg must not pick another.
 if ($env:VCPKG_VISUAL_STUDIO_PATH -ne $vs) { throw 'vcpkg was not pinned to the discovered Visual Studio' }
 if ($env:CARGO_HOME -ne $cargoHome -or $env:RUSTUP_HOME -ne $rustupHome) { throw 'Rust homes lost' }
@@ -230,7 +230,7 @@ foreach ($invalid in @('INCLUDE', 'LIB', 'VSCMD_ARG_HOST_ARCH', 'VSCMD_ARG_TGT_A
 }
 # A caller's explicit pin wins: the guard must not clobber it.
 $env:VCPKG_VISUAL_STUDIO_PATH = 'caller-pinned VS'
-Initialize-HermesArm64BuildTools -StateRoot $Root -OpenSSLRoot $openssl
+Initialize-MoorArm64BuildTools -StateRoot $Root -OpenSSLRoot $openssl
 if ($env:VCPKG_VISUAL_STUDIO_PATH -ne 'caller-pinned VS') { throw 'Caller Visual Studio pin was overwritten' }
 $env:VSCMD_ARG_TGT_ARCH = 'x64'
 [IO.File]::WriteAllText((Join-Path $devDir 'VsDevCmd.bat'), "@exit /b 19`r`n")

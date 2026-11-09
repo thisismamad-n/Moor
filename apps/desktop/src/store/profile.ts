@@ -1,8 +1,8 @@
 import { LOCAL_CONNECTION_ID, registryBackendScopeKey } from '@moor/shared'
 import { atom, batch, computed } from 'nanostores'
 
-import type { HermesConnection } from '@/global'
-import { getProfiles, hermesApi, setApiRequestProfile, STARTUP_REQUEST_TIMEOUT_MS } from '@/hermes'
+import type { MoorConnection } from '@/global'
+import { getProfiles, moorApi, setApiRequestProfile, STARTUP_REQUEST_TIMEOUT_MS } from '@/moor'
 import { hostHas } from '@/lib/host-capabilities'
 import { persistStore } from '@/lib/persist-store'
 import { initialGatewayProfile } from '@/lib/platform'
@@ -26,7 +26,7 @@ import { exitProjectScope } from '@/store/project-scope'
 import { $connection, clearComposerSelectionOwner, setComposerSelectionOwner, setConnection } from '@/store/session'
 import type { SessionOwnerRoute } from '@/store/session-request-router'
 import { reloadOpenStarmapGraph, resetStarmapGraph } from '@/store/starmap'
-import type { ProfileInfo } from '@/types/hermes'
+import type { ProfileInfo } from '@/types/moor'
 
 // Canonical key for a profile: trimmed, empty → "default". Used everywhere we
 // compare a session's owning profile against the live gateway's profile.
@@ -492,7 +492,7 @@ export const $hydrationSyncProfile = atom<string | null>(null)
 
 // ── Hover-intent backend pre-warm ───────────────────────────────────────────
 // A cold switch to a profile whose gateway descriptor isn't cached pays the
-// `hermes gateway ensure` round-trip plus the socket connect before the sidebar
+// `moor gateway ensure` round-trip plus the socket connect before the sidebar
 // can repopulate. The pointer entering a profile square in the rail signals the
 // switch a few hundred ms before the click lands, so we run the same dial +
 // connect chain then (openGatewayForProfile — without activating).
@@ -677,7 +677,7 @@ export async function ensureGatewayProfile(
     // created a moment ago: bring it up to date before either lookup below, so
     // the descriptor and the shared-primary route both see the new profile on
     // the tab's socket. No-op elsewhere, and for a profile the set already has.
-    await window.hermesDesktop?.refreshServedProfile?.(target).catch(() => undefined)
+    await window.moorDesktop?.refreshServedProfile?.(target).catch(() => undefined)
 
     // ensureGatewayForProfile opens (or reuses) the target's socket and points
     // the active gateway at it — without closing the profile you came from.

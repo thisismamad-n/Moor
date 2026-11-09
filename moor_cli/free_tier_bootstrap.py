@@ -1,8 +1,8 @@
 """Record of who carries inference, for ``setup.status`` and ``setup.ready``.
 
-It runs once per process on a daemon thread: at ``hermes serve`` boot, and on the gateway when the
+It runs once per process on a daemon thread: at ``moor serve`` boot, and on the gateway when the
 local Desktop first connects (``tui_gateway.methods_onboarding.begin_local_desktop_boot``). It never
-creates an identity: the desktop's welcome-trial claim (``hermes_cli.welcome_trial``) and the first
+creates an identity: the desktop's welcome-trial claim (``moor_cli.welcome_trial``) and the first
 hosted connector action are the only creators. For the desktop's local backend it first records a
 fresh install's onboarding decision (``onboarding_run.latch_first_install``) and settles a claim cut
 off before its marker write (``welcome_trial.settle_interrupted_claim``). Then it inventories
@@ -34,7 +34,7 @@ class SetupRecord:
     provider_configured: bool      # some provider can carry inference (free tier included)
     inference_provider: str        # ``resolve_provider("auto")``'s answer, "" when nothing resolves
     free_tier_account: bool        # the identity that exists is a guest that carries inference here
-    has_identity: bool             # a Nous identity (free tier or account) is on disk
+    has_identity: bool             # a Moor identity (free tier or account) is on disk
     other_providers: bool          # the inventory found something usable BESIDES the free tier
     error: str = ""                # why the last trial claim failed, when it did; "" otherwise
     # The mint memo's verdict, verbatim (``anon_auth.MintFailure.as_payload``):
@@ -45,7 +45,7 @@ class SetupRecord:
 
     @property
     def free_tier_route(self) -> bool:
-        return self.free_tier_account and self.inference_provider == "nous"
+        return self.free_tier_account and self.inference_provider == "moor"
 
     def as_payload(self) -> dict[str, Any]:
         # The broadcast carries the failure block flat, the same shape ``setup.status`` spreads,
@@ -129,9 +129,9 @@ def reset_for_tests() -> None:
 
 
 def _config_stamp() -> tuple:
-    from hermes_cli.config import get_hermes_home
+    from moor_cli.config import get_moor_home
     from utils import file_cache_version
-    home = get_hermes_home()
+    home = get_moor_home()
     stamp = []
     for name in _INVENTORY_FILES:
         try:
@@ -172,9 +172,9 @@ def _resolve_inference() -> str:
 
 def _build_record(*, other: bool) -> SetupRecord:
     """One inventory pass into a record. Reads only: no identity is created here."""
-    from hermes_cli import anon_auth
+    from moor_cli import anon_auth
 
-    state: Optional[dict[str, Any]] = anon_auth.current_nous_state()
+    state: Optional[dict[str, Any]] = anon_auth.current_moor_state()
     failure: dict[str, Any] = {} if state else (anon_auth.last_mint_failure() or {})
     free_tier_account = anon_auth.free_inference_active(state) if state else False
     return SetupRecord(
@@ -217,15 +217,15 @@ def _settle_install() -> bool:
     logged: onboarding.state still answers live, and the record still says who carries inference."""
     settled = True
     try:
-        from hermes_cli import anon_auth
-        from hermes_cli.onboarding_run import latch_first_install
+        from moor_cli import anon_auth
+        from moor_cli.onboarding_run import latch_first_install
         if anon_auth.on_local_desktop_backend():
             latch_first_install()
     except Exception:
         settled = False
         logger.warning("onboarding: could not record the first-install decision", exc_info=True)
     try:
-        from hermes_cli.welcome_trial import settle_interrupted_claim
+        from moor_cli.welcome_trial import settle_interrupted_claim
         settle_interrupted_claim()
     except Exception:
         settled = False
@@ -267,7 +267,7 @@ def refresh_record(*, announce: bool = True) -> Optional[SetupRecord]:
 
 
 def _due_changed() -> None:
-    from hermes_cli import onboarding_due
+    from moor_cli import onboarding_due
 
     onboarding_due.invalidate()
 

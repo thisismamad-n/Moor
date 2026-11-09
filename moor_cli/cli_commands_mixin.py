@@ -26,21 +26,21 @@ from rich import box as rich_box
 from rich.markup import escape as _escape
 from rich.panel import Panel
 
-from hermes_constants import display_hermes_home
-from hermes_state_ids import new_session_id as mint_session_id
+from moor_constants import display_moor_home
+from moor_state_ids import new_session_id as mint_session_id
 from agent.i18n import t
 from agent.message_metadata import message_identity
 from agent.turn_context import extract_api_content_sidecar
-from hermes_cli.cli_agent_setup_mixin import _gateway_open, _retire_agent
-from hermes_cli.cli_commands_session_tools import (
+from moor_cli.cli_agent_setup_mixin import _gateway_open, _retire_agent
+from moor_cli.cli_commands_session_tools import (
     CLICommandsSessionToolsMixin, _TTYBuf, _accent, _accent_line, _command_arg, _cp, _dim,
     _dim_line, _gt, _lines, _pr, _probe, _rollback_kept, _save, _say_block, _shlex_args, _t, _tn)
-from hermes_cli.cli_session_switch import (
+from moor_cli.cli_session_switch import (
     _end_current_session, _sync_agent_to_session)
-from hermes_cli.browser_connect import (
+from moor_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL, discover_local_cdp_url, find_free_debug_port, is_browser_debug_ready,
     launch_chrome_debug, local_port_in_use, manual_chrome_debug_command)
-from hermes_cli.cli_browser_gateway import _normalize_cdp_url
+from moor_cli.cli_browser_gateway import _normalize_cdp_url
 
 
 # Output helpers. Slash-command text is user-visible: every literal below is load-bearing.
@@ -85,7 +85,7 @@ def _ellipsize(text: str, limit: int) -> str:
 _ON_WORDS = {"on", "enable", "true", "1"}
 _OFF_WORDS = {"off", "disable", "false", "0"}
 
-# /busy modes; what Enter does while Hermes is working lives in the catalog as
+# /busy modes; what Enter does while Moor is working lives in the catalog as
 # ``cli.commands.busy.short_<mode>`` (status line) / ``long_<mode>`` (post-set explanation).
 _BUSY_MODES = ("queue", "steer", "interrupt")
 
@@ -177,7 +177,7 @@ def _cron_api(**kwargs) -> dict:
     return json.loads(cronjob_tool(**kwargs))
 
 
-# Session-switch plumbing (end, repoint) lives in ``hermes_cli/cli_session_switch.py``.
+# Session-switch plumbing (end, repoint) lives in ``moor_cli/cli_session_switch.py``.
 
 
 def _without_session_meta(messages) -> list:
@@ -407,10 +407,10 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         """Handle /rollback [diff] <N> [<file>|--all] — list, diff, or restore checkpoints.
         A restore also undoes the last chat turn; ``--all`` overwrites user hand-edits too."""
         from tools.checkpoint_manager import format_checkpoint_list
-        from hermes_cli.gateway_side import connection_for
+        from moor_cli.gateway_side import connection_for
         if (connection := connection_for(self)) is not None:
             # Checkpoints are taken by the gateway's tools: list/diff/restore are the owner's.
-            from hermes_cli.gateway_rollback import rollback
+            from moor_cli.gateway_rollback import rollback
             return rollback(self, connection, command)
         mgr = self._checkpoint_manager(_lines(_t("rollback.not_enabled")))
         if mgr is None:
@@ -541,7 +541,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
             return
         if reason := mgr.unsupported_backend_reason():  # host baseline is not this session's tree
             return print(f"  {reason}")
-        from hermes_cli.cli_commands_session_tools import print_session_diff
+        from moor_cli.cli_commands_session_tools import print_session_diff
         print_session_diff(self, mgr.session_diff(cwd), stat_only)
 
     def _print_diff_text(self, text: str) -> None:
@@ -576,7 +576,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         snaps = list_quick_snapshots()
         if not snaps:
             return _pr(f"  {_t('snapshot.none_yet')}", f"  {_t('snapshot.create_hint')}")
-        print(f"  {_t('snapshot.list_header', dir=display_hermes_home())}\n")
+        print(f"  {_t('snapshot.list_header', dir=display_moor_home())}\n")
         # Column labels are translated values re-padded here (never padded in the catalog).
         _pr(f"  {_t('snapshot.col_num'):>3}  {_t('snapshot.col_id'):<35} {_t('snapshot.col_files'):>5} "
             f"{_t('snapshot.col_size'):>10} {_t('snapshot.col_label')}",
@@ -595,7 +595,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
               else f"  {_t('snapshot.nothing_to_snapshot')}")
 
     def _snapshot_restore(self, parts) -> None:
-        from hermes_cli.cli_snapshot import restore_snapshot_command
+        from moor_cli.cli_snapshot import restore_snapshot_command
         restore_snapshot_command(self, parts)
 
     def _snapshot_prune(self, parts) -> None:
@@ -830,7 +830,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         # (#68779): the resumed conversation would be a writer the Kanban board cannot
         # observe, and unblocking the card could dispatch a competing worker. Keep the
         # CURRENT session instead of switching.
-        from hermes_cli.kanban_resume_guard import kanban_resume_refusal
+        from moor_cli.kanban_resume_guard import kanban_resume_refusal
         if (kanban_refusal := kanban_resume_refusal(self._session_db, target_id)):
             return _cp(f"  {kanban_refusal}")
         # One session.resume, before anything changes: it subscribes the target and names its receipt
@@ -1052,10 +1052,10 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         wt_info = _cli._setup_worktree(repo_root=repo_root, sync_base=sync_base, name=rest or None)
         if not wt_info:
             return  # _setup_worktree already printed the failure
-        # Same keep-if-unpushed cleanup as `hermes -w`. Only one tree is "active" per process;
+        # Same keep-if-unpushed cleanup as `moor -w`. Only one tree is "active" per process;
         # an earlier one keeps its own atexit registration (explicit info arg).
         atexit.register(_cli._cleanup_worktree, wt_info)
-        from hermes_cli.cli_commands_worktree import enter_new_worktree
+        from moor_cli.cli_commands_worktree import enter_new_worktree
         if not enter_new_worktree(self, wt_info):
             return
         _cli._active_worktree = wt_info
@@ -1195,8 +1195,8 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
     # ---- /cron ----------------------------------------------------------------------------
     def _handle_cron_command(self, cmd: str):
         """Handle the /cron command to manage scheduled tasks. Only without a gateway session: on the shared
-        gateway every /cron form runs there (hermes_cli/gateway_setting_commands.py)."""
-        from hermes_cli.cli_cron_lines import cron_command_lines
+        gateway every /cron form runs there (moor_cli/gateway_setting_commands.py)."""
+        from moor_cli.cli_cron_lines import cron_command_lines
         _pr(*cron_command_lines(_command_arg(cmd)))
 
     # ---- delegating handlers: /suggestions, /blueprint, /curator, /kanban, /skills, /memory --
@@ -1268,7 +1268,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
             )
             if out is not None:
                 return print(out)
-        from hermes_cli.gateway_tools import handle_skills_slash  # + the gateway's rescan
+        from moor_cli.gateway_tools import handle_skills_slash  # + the gateway's rescan
         handle_skills_slash(cmd, ChatConsole(), cli=self)
 
     def _handle_memory_command(self, cmd: str):
@@ -1325,7 +1325,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
     def _handle_init_command(self, cmd: str):
         """Handle /init — generate or update AGENTS.md from a project scan performed by the
         live agent with its own read-only tools."""
-        from hermes_cli.init_command import build_init_prompt_for_cwd
+        from moor_cli.init_command import build_init_prompt_for_cwd
         # session_key="" targets the single-session CLI's "default" cwd record, which tracks
         # `cd` and workspace switches, so /init follows the directory the user works in.
         msg = build_init_prompt_for_cwd(extra=_command_arg(cmd), session_key="")  # optional user emphasis
@@ -1341,7 +1341,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         self._background_task_counter += 1
         task_num = self._background_task_counter
         preview = _ellipsize(prompt, 60)
-        from hermes_cli import gateway_side
+        from moor_cli import gateway_side
         connection = gateway_side.connection_for(self)
         if connection is not None:
             # The gateway runs the side agent on this session's route (prompt.background); this
@@ -1513,7 +1513,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         question = _command_arg(cmd)
         if not question:
             return _cp(*_lines(_t("btw.usage")))
-        from hermes_cli import gateway_side
+        from moor_cli import gateway_side
         connection = gateway_side.connection_for(self)
         if connection is not None:
             # The gateway answers from its own copy of the conversation (prompt.btw): the live
@@ -1590,9 +1590,9 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
                 _t("browser.usage"), "",
                 *(f"   {_t(f'browser.usage_{sub}')}" for sub in ("connect", "disconnect", "status")))
             return
-        from hermes_cli.gateway_side import connection_for
+        from moor_cli.gateway_side import connection_for
         if (connection := connection_for(self)) is not None:
-            from hermes_cli.cli_browser_gateway import gateway_browser
+            from moor_cli.cli_browser_gateway import gateway_browser
             return gateway_browser(self, connection, word, rest.strip())
         handler(self, rest.strip())
 
@@ -1648,7 +1648,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         if interval is None:
             return _cp(f"  {_t('heartbeat.usage')}", _dim_line(_t("heartbeat.usage_also")))
         if interval < 0:
-            from hermes_cli.heartbeat import MIN_INTERVAL_SECONDS
+            from moor_cli.heartbeat import MIN_INTERVAL_SECONDS
             return _cp(f"  {_t('heartbeat.interval_too_small', min_seconds=MIN_INTERVAL_SECONDS)}")
         if not prompt.strip():
             return _cp(f"  {_t('heartbeat.prompt_required')}")
@@ -1700,8 +1700,8 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
 
     # ---- /goal, /loop, /subgoal -----------------------------------------------------------
     def _handle_goal_command(self, cmd: str) -> None:
-        from hermes_cli.gateway_automation import dispatch_goal_command  # /goal draft drafts on the gateway
-        from hermes_cli.goals import last_user_message_content
+        from moor_cli.gateway_automation import dispatch_goal_command  # /goal draft drafts on the gateway
+        from moor_cli.goals import last_user_message_content
 
         mgr = self._session_manager(self._get_goal_manager, _t("goal.label"))
         if mgr is None:
@@ -1739,7 +1739,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
             _cp(f"  {line}")
         if result.get("created"):
             with suppress(Exception):
-                from hermes_cli.cli_loops_mixin import _goal_blocks_loop_tick
+                from moor_cli.cli_loops_mixin import _goal_blocks_loop_tick
                 if _goal_blocks_loop_tick(mgr):
                     _cp(_dim_line(_t("loop.goal_defers_note")))
 
@@ -1796,7 +1796,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
                 source = f" ({s['source']})" if s["source"] == "user" else ""
                 print(f"   {marker} {s['name']}{source} — {s['description']}")
             return _pr(f"\n  {_t('skin.usage')}",
-                       f"  {_t('skin.custom_hint', dir=display_hermes_home())}\n")
+                       f"  {_t('skin.custom_hint', dir=display_moor_home())}\n")
         available = {s["name"] for s in list_skins()}
         if new_skin not in available:
             return _pr(f"  {_t('skin.unknown', name=new_skin)}",
@@ -1992,7 +1992,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
         from cli import CLI_CONFIG, _parse_reasoning_config
         from agent.reasoning_effort import effort_display_label
         raw = _command_arg(cmd)
-        from hermes_cli.codex_runtime_switch import get_current_runtime
+        from moor_cli.codex_runtime_switch import get_current_runtime
         # The live agent's api_mode, else the configured runtime: ``ultra`` is verbatim on the Codex app-server.
         _route = (getattr(self, "provider", None), getattr(self, "model", None),
                   getattr(getattr(self, "agent", None), "api_mode", None) or get_current_runtime(CLI_CONFIG))
@@ -2072,7 +2072,7 @@ class CLICommandsMixin(CLICommandsSessionToolsMixin):
             return _cp(f"  {_t('fast.not_supported')}")
         # Determine the branding for the current model
         model = getattr(getattr(self, "agent", None), "model", None) or getattr(self, "model", None)
-        anthropic = _probe("hermes_cli.models", "_is_anthropic_fast_model", None, model)
+        anthropic = _probe("moor_cli.models", "_is_anthropic_fast_model", None, model)
         feature_name = _t("fast.feature_generic" if anthropic is None
                           else "fast.feature_anthropic" if anthropic else "fast.feature_openai")
         raw = _command_arg(cmd)

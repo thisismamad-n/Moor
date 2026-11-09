@@ -78,7 +78,7 @@ def _exec_profile(ctx: CommandContext) -> CommandReply:
 
 def _exec_autoprune(ctx: CommandContext) -> CommandReply:
     """Core /autoprune text — record the auto-prune decision or show its state."""
-    from hermes_cli.prune_advisor import run_command
+    from moor_cli.prune_advisor import run_command
     return CommandReply(run_command(ctx.args))
 
 
@@ -113,7 +113,7 @@ def _skill_commands() -> dict:
 
 def _exec_help(ctx: CommandContext) -> CommandReply:
     """Core gateway /help body (pre platform mention decoration)."""
-    from hermes_cli.commands import gateway_help_lines
+    from moor_cli.commands import gateway_help_lines
     # ``allowed_commands`` (gateway, non-admin caller): only the commands the slash-access
     # policy lets this user run; skill commands are hidden too since the gate refuses them.
     allowed = ctx.options.get("allowed_commands")
@@ -137,7 +137,7 @@ def _exec_commands(ctx: CommandContext) -> CommandReply:
 
     ``ctx.options["page_size"]`` is a surface parameter (Telegram uses 15, everything else 20).
     """
-    from hermes_cli.commands import gateway_help_lines
+    from moor_cli.commands import gateway_help_lines
     try:
         requested_page = int((ctx.args or "").strip() or 1)
     except ValueError:

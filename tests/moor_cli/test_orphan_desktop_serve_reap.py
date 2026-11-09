@@ -205,7 +205,7 @@ def test_valid_lockfile_payload_rejects_wrong_owner_and_shape():
     assert _valid_lockfile_payload(bad_nonce, oid) is False
     # logPath not ending in <oid>/<nonce>.log.
     bad_log = _valid_lock_payload(1, oid, nonce)
-    bad_log["logPath"] = f"~/.hermes/desktop-ssh/{oid}/other.log"
+    bad_log["logPath"] = f"~/.moor/desktop-ssh/{oid}/other.log"
     assert _valid_lockfile_payload(bad_log, oid) is False
 
 

@@ -1,8 +1,8 @@
-"""A gateway of another Hermes home is announced once per update run, not once per discovery pass.
+"""A gateway of another Moor home is announced once per update run, not once per discovery pass.
 
 The pre-swap pause and the post-swap restart phase both scope the host-wide gateway list, and the
 restart phase runs in a fresh completion process, so every foreign gateway used to be listed twice
-("↷ PID N: gateway process of another Hermes home (...) — left alone"). The run's receipt is the
+("↷ PID N: gateway process of another Moor home (...) — left alone"). The run's receipt is the
 only state both processes share (the completion request carries it as JSON).
 """
 
@@ -13,10 +13,10 @@ import json
 
 
 def test_left_alone_notice_prints_once_across_the_completion_handoff(monkeypatch, capsys):
-    from hermes_cli import update_cmd_fleet as fleet, update_fleet_scope, update_receipt
-    from hermes_cli.update_completion import _resume_receipt
+    from moor_cli import update_cmd_fleet as fleet, update_fleet_scope, update_receipt
+    from moor_cli.update_completion import _resume_receipt
 
-    homes = {101: "/srv/other-a/.hermes", 102: "/srv/other-b/.hermes", 103: "/srv/other-c/.hermes"}
+    homes = {101: "/srv/other-a/.moor", 102: "/srv/other-b/.moor", 103: "/srv/other-c/.moor"}
     monkeypatch.setattr(update_fleet_scope, "partition_gateway_pids_by_scope",
                         lambda pids, scope=None: ([], [(pid, homes[pid]) for pid in pids]))
 
@@ -34,4 +34,4 @@ def test_left_alone_notice_prints_once_across_the_completion_handoff(monkeypatch
     assert contextvars.Context().run(completion_process) == []
     out = capsys.readouterr().out
     for pid, home in homes.items():
-        assert out.count(f"↷ PID {pid}: gateway process of another Hermes home ({home})") == 1, out
+        assert out.count(f"↷ PID {pid}: gateway process of another Moor home ({home})") == 1, out

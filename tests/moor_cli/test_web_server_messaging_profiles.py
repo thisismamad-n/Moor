@@ -81,7 +81,7 @@ def no_platform_env(monkeypatch):
 
 
 @pytest.mark.parametrize("platform_id, config, env, enabled, configured", [
-    # Dashboard QR onboarding writes both; ``hermes whatsapp`` writes only the env flag.
+    # Dashboard QR onboarding writes both; ``moor whatsapp`` writes only the env flag.
     pytest.param("whatsapp", _on("whatsapp"), "WHATSAPP_ENABLED=true\n", True, True, id="whatsapp-paired"),
     pytest.param("whatsapp", {}, "WHATSAPP_ENABLED=true\n", True, True, id="whatsapp-env-flag-only"),
     # Declared but never paired: the gateway would not start the bridge.
@@ -225,7 +225,7 @@ class TestProfileScopedMessagingReads:
     def test_scoped_read_returns_profile_path_command_and_startup_failure(
         self, client, isolated_profiles, monkeypatch
     ):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         worker_home = isolated_profiles["worker_alpha"]
         (worker_home / ".env").write_text(

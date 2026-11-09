@@ -5,9 +5,9 @@ headless browsers whose cwd was inside the tree (they survived for days with a `
 cwd), and a repo whose linked worktree lived in the tree keeps a dangling registration until
 someone runs ``git worktree prune``. Both are reaped here, right before ``rmtree``.
 
-A process Hermes itself started is never an orphan, though: an idle entry a registered live
+A process Moor itself started is never an orphan, though: an idle entry a registered live
 process still works inside is kept, not reaped (#132401). Ownership comes from the two
-registries Hermes writes, not from a marker file a lane must remember to drop.
+registries Moor writes, not from a marker file a lane must remember to drop.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-import hermes_constants_scratch_stuck as stuck
+import moor_constants_scratch_stuck as stuck
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ def _under(path: str, root: str) -> bool:
     return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
 
 
-# The ancestry of the Hermes command that launched a detached pass (hermes_constants_scratch_detach),
+# The ancestry of the Moor command that launched a detached pass (moor_constants_scratch_detach),
 # as ``(pid, create_time)`` pairs the launcher computed before it spawned the pass: the pass is
 # reparented once that command exits, so its own ancestry no longer reaches the user's shell.
 # ``None``: the launcher could not compute it, so the pass signals nothing and keeps every entry
@@ -173,7 +173,7 @@ def _birth_stamp(proc) -> float:
     """A start stamp for *proc* that a clock step cannot move. Linux: ``starttime`` from
     ``/proc/<pid>/stat`` (clock ticks since boot; psutil's ``create_time()`` adds a wall-clock
     boot time, so an NTP/VM/resume step shifts it by whole seconds). Elsewhere:
-    :func:`hermes_cli.process_identity.process_birth` (the unadjusted kernel start on macOS).
+    :func:`moor_cli.process_identity.process_birth` (the unadjusted kernel start on macOS).
     On a ``/proc`` host a failed read raises: falling back to a wall-clock value would compare
     an epoch against recorded ticks and disown a live process."""
     if _HAS_PROC:
@@ -181,7 +181,7 @@ def _birth_stamp(proc) -> float:
         # last ")" (comm may hold spaces or ")") fields start at #3, so #22 is index 19.
         stat = Path(f"/proc/{proc.pid}/stat").read_bytes()
         return float(int(stat.rsplit(b")", 1)[1].split()[19]))
-    from hermes_cli.process_identity import process_birth
+    from moor_cli.process_identity import process_birth
 
     return process_birth(proc)
 
@@ -239,16 +239,16 @@ def _own_lineage() -> set[int] | None:
 
 
 def _registered_live_pids(home: Path) -> set[int]:
-    """Live pids Hermes registered for *home*: the machine spawn ledger (every long-lived entry
-    point and MCP helper, ``hermes_cli.process_identity``) and the background-process checkpoint
+    """Live pids Moor registered for *home*: the machine spawn ledger (every long-lived entry
+    point and MCP helper, ``moor_cli.process_identity``) and the background-process checkpoint
     (``tools.process_registry``, ``processes.json``). A recorded start time that no longer
     matches is a reused pid, not ownership."""
     import psutil
 
-    from hermes_cli.process_identity import entry_still_running, spawner_is_dead
-    from hermes_constants import get_default_hermes_root
+    from moor_cli.process_identity import entry_still_running, spawner_is_dead
+    from moor_constants import get_default_moor_root
 
-    root = get_default_hermes_root(home=home)
+    root = get_default_moor_root(home=home)
     sources = [(root / "spawn-ledger.json", "create_time")]
     sources += [(base / "processes.json", "host_start_time") for base in {home, root}]
     pids: set[int] = set()
@@ -282,14 +282,14 @@ def _registered_live_pids(home: Path) -> set[int]:
     return pids
 
 
-def _owned_by_hermes(proc, registered: set[int]) -> bool:
+def _owned_by_moor(proc, registered: set[int]) -> bool:
     """Registered itself, or a descendant of a live registered process (a background shell's
     child). An orphan whose spawning shell is gone was reparented away from that lineage, so
     it is not owned and is still reaped."""
     import psutil
 
     try:
-        # pid 1 is excluded as an ancestor: a Hermes running as a container init adopts every orphan.
+        # pid 1 is excluded as an ancestor: a Moor running as a container init adopts every orphan.
         return proc.pid in registered or any(p.pid in registered and p.pid != 1 for p in proc.parents())
     except (psutil.Error, OSError):
         return False
@@ -303,7 +303,7 @@ def reap_processes_rooted_in(scratch_root: Path, doomed: list[Path], audit: logg
     editor, a log tail) is not ours to kill, but one *living* in a directory we are
     about to delete, or in one already gone, has nothing left to run for.
 
-    A process Hermes owns (:func:`_owned_by_hermes`) is never signalled; each doomed entry it
+    A process Moor owns (:func:`_owned_by_moor`) is never signalled; each doomed entry it
     works inside is dropped from *doomed* in place and recorded as kept.
     """
     import psutil
@@ -314,7 +314,7 @@ def reap_processes_rooted_in(scratch_root: Path, doomed: list[Path], audit: logg
     uid = os.getuid() if hasattr(os, "getuid") else None
     victims: list[tuple[psutil.Process, str]] = []
     # The pruner's own lineage is never signalled, but its cwd still keeps an entry: a live
-    # session that launched this Hermes command may be working inside it.
+    # session that launched this Moor command may be working inside it.
     lineage: list[tuple[psutil.Process, str]] = []
     for proc in psutil.process_iter(["pid"]):
         try:
@@ -334,7 +334,7 @@ def reap_processes_rooted_in(scratch_root: Path, doomed: list[Path], audit: logg
     # The owning home comes from the scratch path as configured, not its resolved target:
     # a cache/scratch symlinked onto another disk still belongs to <home>.
     registered = _registered_live_pids(Path(scratch_root).absolute().parent.parent) if victims else set()
-    owned = lineage + [(proc, cwd_path) for proc, cwd_path in victims if _owned_by_hermes(proc, registered)]
+    owned = lineage + [(proc, cwd_path) for proc, cwd_path in victims if _owned_by_moor(proc, registered)]
     for proc, cwd_path in owned:
         for entry in [e for e in doomed if _under(cwd_path, os.path.realpath(str(e)))]:
             doomed.remove(entry)
@@ -342,7 +342,7 @@ def reap_processes_rooted_in(scratch_root: Path, doomed: list[Path], audit: logg
                 name = proc.name()
             except (psutil.Error, OSError):
                 name = "?"
-            audit.info("scratch prune: kept %r — live Hermes process pid=%d (%r) works inside",
+            audit.info("scratch prune: kept %r — live Moor process pid=%d (%r) works inside",
                        os.fspath(entry), proc.pid, name)
     # Re-filter against the shrunk *doomed*: an orphan in a kept entry is spared with it (the
     # reap only exists to clear the way for rmtree); one whose cwd is already gone still goes.
@@ -435,7 +435,7 @@ def _prune_idle_entries(
 ) -> int:
     cutoff = time.time() - max_idle_hours * 3600
     # Entries already known to hold files this user cannot read or delete are skipped before
-    # any walk, until that is fixed (hermes_constants_scratch_stuck).
+    # any walk, until that is fixed (moor_constants_scratch_stuck).
     skip_names = skip_names | stuck.load_skips(root) | {stuck.STUCK_STATE_NAME, stuck.STUCK_LOCK_NAME}
     try:
         entries = [e for e in root.iterdir() if e.name not in skip_names]

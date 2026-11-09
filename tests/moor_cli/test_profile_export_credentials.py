@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from agent.file_safety import HOME_CREDENTIAL_DIRS
-from hermes_cli.profiles import export_profile
+from moor_cli.profiles import export_profile
 from plugins.teams_pipeline.store import DEFAULT_TEAMS_PIPELINE_STORE_FILENAME
 
 # Long enough to match agent.redact prefix patterns (sk- + 10+ chars).
@@ -50,7 +50,7 @@ _DOT_DIRS = set(HOME_CREDENTIAL_DIRS)
 
 def _seed_stores(root):
     """Lay every credential store into a profile-shaped tree at *root*; returns their paths."""
-    from hermes_cli.profiles import PROFILE_CREDENTIAL_PATHS
+    from moor_cli.profiles import PROFILE_CREDENTIAL_PATHS
 
     stores = _EXTRA_STORES | PROFILE_CREDENTIAL_PATHS
     (root / "platforms").mkdir(parents=True)
@@ -95,16 +95,16 @@ class TestCredentialExclusion:
         assert not any(".env" in n for n in names), ".env must NOT be in export"
 
     def test_named_export_ships_no_credential_store_or_copy_of_one(self, tmp_path, monkeypatch):
-        """No credential store (any case spelling) and no copy Hermes' own writers leave of one
+        """No credential store (any case spelling) and no copy Moor' own writers leave of one
         (pre-update zip, update snapshot, config backup, migration .bak, corrupt auth.json) reaches a
         named-profile export. .op.env, npmrc, home/ CLI stores and the .bak copies have no suffix the
         scrub edits, so exclusion is their only guard; a hand-named config copy is the user's and
         ships scrubbed."""
-        from hermes_cli.auth import _load_auth_store
-        from hermes_cli.backup import create_pre_update_backup, create_quick_snapshot
-        from hermes_cli.config_backups import backup_config
-        from hermes_cli.post_update import _backup_existing
-        from hermes_cli.profiles import PROFILE_CREDENTIAL_PATHS
+        from moor_cli.auth import _load_auth_store
+        from moor_cli.backup import create_pre_update_backup, create_quick_snapshot
+        from moor_cli.config_backups import backup_config
+        from moor_cli.post_update import _backup_existing
+        from moor_cli.profiles import PROFILE_CREDENTIAL_PATHS
 
         profiles_root = tmp_path / "profiles"
         profile_dir = profiles_root / "testprofile"
@@ -119,10 +119,10 @@ class TestCredentialExclusion:
         for rel in [*nested, "skills/s/.config/other/settings.json"]:
             (profile_dir / rel).parent.mkdir(parents=True, exist_ok=True)
             (profile_dir / rel).write_text("fake-credential")
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+        monkeypatch.setenv("MOOR_HOME", str(profile_dir))
         copies = [
-            create_pre_update_backup(hermes_home=profile_dir),
-            profile_dir / "state-snapshots" / create_quick_snapshot(hermes_home=profile_dir),
+            create_pre_update_backup(moor_home=profile_dir),
+            profile_dir / "state-snapshots" / create_quick_snapshot(moor_home=profile_dir),
             backup_config(profile_dir / "config.yaml", "setup"),
             *_backup_existing((profile_dir / ".env", profile_dir / "config.yaml")).values(),
         ]
@@ -158,13 +158,13 @@ class TestCredentialExclusion:
         where the profile has a directory holding stores is refused before anything is written."""
         from pathlib import Path
 
-        from hermes_cli.profile_distribution import (
+        from moor_cli.profile_distribution import (
             DistributionError, DistributionManifest, install_distribution, write_manifest,
         )
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        (tmp_path / ".hermes").mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        (tmp_path / ".moor").mkdir()
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         stores = _seed_stores(tmp_path / "v1") | {"auth.json.corrupt", ".env.bak-20260928T084018Z",
                                                   "config.yaml.bak-20260928T084018Z"}
         for copy in ("auth.json.corrupt", ".env.bak-20260928T084018Z", "config.yaml.bak-20260928T084018Z"):
@@ -292,11 +292,11 @@ class TestExportSecretScrub:
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Point the home folder and HERMES_HOME into tmp_path, as test_profiles.py does."""
+    """Point the home folder and MOOR_HOME into tmp_path, as test_profiles.py does."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".moor"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("MOOR_HOME", str(default_home))
     return tmp_path
 
 
@@ -304,9 +304,9 @@ def test_clone_all_does_not_share_the_source_webapp_browser_credential(profile_e
     """The Webapp's browser credential belongs to one gateway: a clone mints its own on first
     use, so signing one profile's browsers out never leaves them signed in to the other."""
     from gateway.webapp_listener import TOKEN_PATH, browser_session_token
-    from hermes_cli.profiles import create_profile
+    from moor_cli.profiles import create_profile
 
-    default_home = profile_env / ".hermes"
+    default_home = profile_env / ".moor"
     (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
     source_token = browser_session_token(default_home)
 
@@ -323,10 +323,10 @@ def test_clone_all_leaves_the_source_gateways_webapp_sign_in_state_behind(profil
     own) and the Portal callback its Web Access registered for its own address. A ``--clone-all`` clone
     gets none of it, so the clone's gated Webapp honours no native sign-in made on the source, and the
     clone's Web Access registers its own callback."""
-    from hermes_cli.profiles import create_profile
-    from hermes_cli.webapp_sign_in import RECORD_PATH
+    from moor_cli.profiles import create_profile
+    from moor_cli.webapp_sign_in import RECORD_PATH
 
-    default_home = profile_env / ".hermes"
+    default_home = profile_env / ".moor"
     (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
     (default_home / RECORD_PATH).parent.mkdir(parents=True)
     (default_home / RECORD_PATH).write_text('{"' + "d" * 64 + '": 4102444800}\n', encoding="utf-8")

@@ -12,7 +12,7 @@ import threading
 
 import pytest
 
-import hermes_cli.web_routers.ops as _rt_ops
+import moor_cli.web_routers.ops as _rt_ops
 
 # ---------------------------------------------------------------------------
 # web_server credential-pool handlers off the loop

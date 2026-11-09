@@ -86,7 +86,7 @@ def test_reload_rediscovers_the_launch_profile_under_its_own_secret_scope(reload
     srv._methods["reload.mcp"](1, {"session_id": "A", "confirm": True})
 
     assert sorted(set(reload_env.scoped_homes)) == sorted(set(reload_env.discovered_homes))
-    assert hermes_constants.hermes_home_key() in reload_env.scoped_homes
+    assert moor_constants.moor_home_key() in reload_env.scoped_homes
 
 
 def test_reload_forwards_disabled_toolsets_to_the_refresh(reload_env, monkeypatch):

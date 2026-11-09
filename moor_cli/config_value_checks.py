@@ -1,9 +1,9 @@
 """Value checks for single config sections (voice, timezone, web backends), run by
-``hermes_cli.config.validate_config_structure`` for doctor and the startup warnings."""
+``moor_cli.config.validate_config_structure`` for doctor and the startup warnings."""
 
 from typing import Any
 
-from hermes_cli.config_issues import ConfigIssue, _issue
+from moor_cli.config_issues import ConfigIssue, _issue
 
 
 def _validate_voice(config: dict[str, Any], issues: list[ConfigIssue]) -> None:
@@ -20,7 +20,7 @@ def _validate_voice(config: dict[str, Any], issues: list[ConfigIssue]) -> None:
 def _validate_timezone(config: dict[str, Any], issues: list[ConfigIssue]) -> None:
     """``timezone`` must be an IANA name the runtime can load.
 
-    ``hermes_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
+    ``moor_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
     gateway log, then runs the agent clock AND every cron schedule on server-local time.
     Surface it here, where doctor and the startup check both look. Silent when the
     interpreter has no tz database at all (bare Windows without ``tzdata``) — nothing can be
@@ -31,7 +31,7 @@ def _validate_timezone(config: dict[str, Any], issues: list[ConfigIssue]) -> Non
     tz = config.get("timezone")
     hint = ("Use an IANA zone name such as America/New_York or Asia/Tokyo (see "
             "`timedatectl list-timezones`). With an invalid value the agent clock and cron "
-            "schedules silently fall back to server-local time. HERMES_TIMEZONE overrides "
+            "schedules silently fall back to server-local time. MOOR_TIMEZONE overrides "
             "this key when set.")
     if tz is not None and not isinstance(tz, str):
         _issue(issues, "error", f"timezone must be an IANA zone name string, got {tz!r}", hint)
@@ -72,13 +72,13 @@ def _validate_web_backends(config: dict[str, Any], issues: list[ConfigIssue]) ->
             _issue(issues, "warning",
                    f"web.{_key} is set to '{_val}', but {note} — "
                    "web_search/web_extract will fail until it is changed",
-                   "Run 'hermes tools' and pick a different Web Search & Extract provider")
+                   "Run 'moor tools' and pick a different Web Search & Extract provider")
 
 
 def _container_slots() -> dict[str, str]:
     """Dotted key -> ``"list"``/``"mapping"`` for every slot the schema fixes to a container:
     ``DEFAULT_CONFIG`` (sections included) plus the known-container table for roots it omits."""
-    from hermes_cli.config import _KNOWN_CONTAINER_TYPES, DEFAULT_CONFIG  # late: the facade imports this module
+    from moor_cli.config import _KNOWN_CONTAINER_TYPES, DEFAULT_CONFIG  # late: the facade imports this module
     slots: dict[str, str] = {}
 
     def walk(node: dict[str, Any], prefix: str) -> None:
@@ -101,8 +101,8 @@ def _validate_quoted_containers(config: dict[str, Any], issues: list[ConfigIssue
     exclusions silently lapse (#83308, #105706). Finding only — the file is never rewritten."""
     import shlex
 
-    import hermes_yaml as yaml
-    from hermes_cli.config import _SCALAR_AS_ONE_ITEM_LIST_KEYS, _looks_structured_value, cfg_get
+    import moor_yaml as yaml
+    from moor_cli.config import _SCALAR_AS_ONE_ITEM_LIST_KEYS, _looks_structured_value, cfg_get
     for key, kind in _container_slots().items():
         # ``parse_config_string_list`` readers accept the quoted form; nothing is ignored there.
         if key in _SCALAR_AS_ONE_ITEM_LIST_KEYS:
@@ -116,7 +116,7 @@ def _validate_quoted_containers(config: dict[str, Any], issues: list[ConfigIssue
             continue
         if isinstance(parsed, (list, dict)):
             _issue(issues, "warning",
-                   f"{key} is the quoted string {value!r} — Hermes expects a YAML {kind} here "
+                   f"{key} is the quoted string {value!r} — Moor expects a YAML {kind} here "
                    "and every reader ignores the string",
-                   f"Run: hermes config set {key} {shlex.quote(value)}  (stores a real {kind}), "
+                   f"Run: moor config set {key} {shlex.quote(value)}  (stores a real {kind}), "
                    "or remove the quotes in config.yaml")

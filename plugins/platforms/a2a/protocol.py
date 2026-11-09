@@ -488,4 +488,4 @@ def load_conversation(context_id: str, limit: int = 50) -> list[dict]:
 
 def list_conversations() -> list[str]:
     """Context-ids that have persisted conversations."""
-    return sorted(p.stem for p in (get_hermes_home() / "a2a_conversations").glob("*.jsonl"))
+    return sorted(p.stem for p in (get_moor_home() / "a2a_conversations").glob("*.jsonl"))

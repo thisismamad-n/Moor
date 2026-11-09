@@ -11,7 +11,7 @@ import subprocess
 
 import pytest
 
-from hermes_cli import gateway_windows
+from moor_cli import gateway_windows
 
 
 @pytest.mark.platforms("windows")
@@ -56,10 +56,10 @@ def test_status_warns_and_uninstall_removes_pre_suffix_launchers(tmp_path, monke
         assert "Removed legacy pre-suffix Scheduled Task 'Moor_Gateway'" in out
         assert not legacy_vbs.exists()
         assert not legacy_pair.exists()
-        query = subprocess.run([schtasks, "/Query", "/TN", "Hermes_Gateway"], capture_output=True, text=True, timeout=60, check=False)
+        query = subprocess.run([schtasks, "/Query", "/TN", "Moor_Gateway"], capture_output=True, text=True, timeout=60, check=False)
         assert query.returncode != 0, "the pre-suffix task must be gone after uninstall"
 
         gateway_windows.status()
         assert "legacy pre-suffix" not in capsys.readouterr().out
     finally:
-        subprocess.run([schtasks, "/Delete", "/F", "/TN", "Hermes_Gateway"], capture_output=True, text=True, timeout=60, check=False)
+        subprocess.run([schtasks, "/Delete", "/F", "/TN", "Moor_Gateway"], capture_output=True, text=True, timeout=60, check=False)

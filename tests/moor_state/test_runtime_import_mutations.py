@@ -1,8 +1,8 @@
 """Import rows and retry receipt either commit together or not at all."""
 import sqlite3
 import pytest
-from hermes_state import SessionDB
-import hermes_state_runtime as rt
+from moor_state import SessionDB
+import moor_state_runtime as rt
 
 
 def test_import_rolls_back_rows_with_receipt_failure(tmp_path):

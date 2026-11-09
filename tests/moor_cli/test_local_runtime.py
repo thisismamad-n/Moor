@@ -210,8 +210,8 @@ def test_backend_selection(vendor, os_name, expected):
     ("unknown", None),
 ])
 def test_auto_vendor_detection_uses_host_gpu_class(monkeypatch, gpu_class, expected):
-    from hermes_cli.local_runtime import bootstrap, hardware
-    from hermes_platform.host import facts
+    from moor_cli.local_runtime import bootstrap, hardware
+    from moor_platform.host import facts
 
     monkeypatch.setattr(hardware, "_cached_nvidia_gpu_query", lambda: None)
     monkeypatch.setattr(facts, "gpu_class", lambda: gpu_class)
@@ -310,10 +310,10 @@ def test_llamacpp_aliases_route_to_custom_profile():
 def test_llamacpp_endpoint_resolution_prefers_managed(tmp_path, monkeypatch, stub_server):
     """provider: llamacpp with a live managed server resolves to it,
     api-key included."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     port, _handler = stub_server
-    from hermes_cli.local_runtime import endpoint as ep
-    from hermes_cli.local_runtime.supervisor import state_path
+    from moor_cli.local_runtime import endpoint as ep
+    from moor_cli.local_runtime.supervisor import state_path
 
     _write_current_process_state(
         state_path(), base_url=f"http://127.0.0.1:{port}/v1", api_key="sk-managed")
@@ -402,7 +402,7 @@ def test_llamacpp_endpoint_starting_server_resolves(tmp_path, monkeypatch):
         "api_key": "sk-starting", "pid": 4242,
     }), encoding="utf-8")
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.recovery.legacy_recorded_process", lambda state: object())
+        "moor_cli.local_runtime.recovery.legacy_recorded_process", lambda state: object())
     resolved = ep.resolve_llamacpp_endpoint()
     assert resolved is not None
     assert resolved["api_key"] == "sk-starting"
@@ -424,7 +424,7 @@ def test_llamacpp_endpoint_waits_for_boot_in_flight(tmp_path, monkeypatch):
     # Boot is in flight: runtime enabled + binary installed.
     monkeypatch.setattr(ep, "_boot_in_flight", lambda config: True)
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.recovery.legacy_recorded_process", lambda state: object())
+        "moor_cli.local_runtime.recovery.legacy_recorded_process", lambda state: object())
     # Nothing detected externally.
     monkeypatch.setattr("moor_cli.local_runtime.detect.DEFAULT_PROBE_PORTS", ())
 
@@ -463,8 +463,8 @@ def test_resolution_kicks_boot_when_no_thread_is_booting(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ep, "_boot_in_flight", lambda config: True)
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.recovery.legacy_recorded_process", lambda state: object())
-    monkeypatch.setattr("hermes_cli.local_runtime.detect.DEFAULT_PROBE_PORTS", ())
+        "moor_cli.local_runtime.recovery.legacy_recorded_process", lambda state: object())
+    monkeypatch.setattr("moor_cli.local_runtime.detect.DEFAULT_PROBE_PORTS", ())
 
     def _fake_ensure(config, force=False):
         _time.sleep(0.3)  # a real spawn takes a moment
@@ -486,10 +486,10 @@ def test_boot_in_flight_real_gate(tmp_path, monkeypatch):
     monkeypatched it — and the real one threw TypeError on every call,
     silently disabling the boot wait). Enabled + an installed PM engine for
     the CONFIGURED backend -> True; either missing -> False."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli.local_runtime import endpoint as ep
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli.local_runtime import endpoint as ep
     installed: set[str] = set()
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine",
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine",
                         lambda backend="auto", **_: object() if backend in installed else None)
 
     enabled = {"local_runtime": {"enabled": True}}
@@ -716,9 +716,9 @@ def test_switch_model_explicit_llamacpp_provider(tmp_path, monkeypatch, stub_ser
 def test_runtime_provider_seam_llamacpp_alias(tmp_path, monkeypatch, stub_server):
     """End to end through the REAL resolver: provider='llamacpp' with no
     base_url lands on the managed endpoint with source='local-runtime'."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     port, _handler = stub_server
-    from hermes_cli.local_runtime.supervisor import state_path
+    from moor_cli.local_runtime.supervisor import state_path
 
     _write_current_process_state(
         state_path(), base_url=f"http://127.0.0.1:{port}/v1", api_key="sk-managed")
@@ -859,10 +859,10 @@ def test_bootstrap_disabled_is_noop(tmp_path, monkeypatch):
 def test_bootstrap_reuses_running_server(tmp_path, monkeypatch, stub_server):
     """A live state file (another process supervising) short-circuits the
     install/spawn path entirely."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     port, _handler = stub_server
-    from hermes_cli.local_runtime import bootstrap
-    from hermes_cli.local_runtime.supervisor import state_path
+    from moor_cli.local_runtime import bootstrap
+    from moor_cli.local_runtime.supervisor import state_path
 
     monkeypatch.setattr(bootstrap, "_SUPERVISOR", None)
     state_path().parent.mkdir(parents=True, exist_ok=True)
@@ -990,8 +990,8 @@ def test_boot_prices_the_engine_it_serves(tmp_path, monkeypatch):
     engine being booted, never re-read from whichever profile's config the thread happens to see."""
     from types import SimpleNamespace
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    from hermes_cli.local_runtime import bootstrap, hardware
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    from moor_cli.local_runtime import bootstrap, hardware
 
     monkeypatch.setattr(bootstrap, "_SUPERVISOR", None)
     monkeypatch.setattr(bootstrap, "_SERVING_ENGINE", None)
@@ -999,9 +999,9 @@ def test_boot_prices_the_engine_it_serves(tmp_path, monkeypatch):
     models.mkdir(parents=True, exist_ok=True)
     (models / "test.gguf").touch()
     vulkan = SimpleNamespace(backend="vulkan", tag="b1", binary=tmp_path / "llama-server")
-    monkeypatch.setattr("hermes_cli.local_runtime.binaries.installed_engine",
+    monkeypatch.setattr("moor_cli.local_runtime.binaries.installed_engine",
                         lambda backend="auto": vulkan if backend == "vulkan" else None)
-    monkeypatch.setattr("hermes_cli.config.load_config_readonly",
+    monkeypatch.setattr("moor_cli.config.load_config_readonly",
                         lambda: {"local_runtime": {"backend": "cpu"}})  # another profile's config
     priced: list = []
 
@@ -1024,7 +1024,7 @@ def test_boot_prices_the_engine_it_serves(tmp_path, monkeypatch):
         def stop(self):
             pass
 
-    monkeypatch.setattr("hermes_cli.local_runtime.supervisor.LlamaServerSupervisor", _NoStart)
+    monkeypatch.setattr("moor_cli.local_runtime.supervisor.LlamaServerSupervisor", _NoStart)
 
     assert bootstrap.ensure_local_runtime({"local_runtime": {"enabled": True, "backend": "vulkan"}}) is None
     # The release reaches the presets too: drafts gate on the engine that will load them.

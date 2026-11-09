@@ -23,7 +23,7 @@ from pathlib import Path
 import psutil
 import pytest
 
-from hermes_cli import update_pause_record as pause_record
+from moor_cli import update_pause_record as pause_record
 
 REPO = Path(__file__).resolve().parents[2]
 pytestmark = [pytest.mark.platforms("windows"), pytest.mark.live_system_guard_bypass]
@@ -55,7 +55,7 @@ def _orphan(profiles: dict) -> dict:
 
 _UPDATER = """
 import sys
-from hermes_cli import update_pause_record as r
+from moor_cli import update_pause_record as r
 token = {"pause_id": sys.argv[1], "resume_needed": True, "profiles": {"default": 4242}}
 r.write(token, owner=r.identity())
 print("written", flush=True)
@@ -67,7 +67,7 @@ print("discharged", flush=True)
 
 @pytest.mark.parametrize("carrier", ["claim", "record"])
 def test_a_completed_obligation_never_runs_again_from_a_copy_windows_kept(tmp_path, monkeypatch, carrier):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     src = pause_record.record_path()
     if carrier == "claim":  # a recovering launch claims an orphan and finishes its resume
         _orphan({"default": 4242, "work": 4343})
@@ -83,7 +83,7 @@ def test_a_completed_obligation_never_runs_again_from_a_copy_windows_kept(tmp_pa
     else:  # the update that paused them resumes them all and discharges its record, then exits
         updater = subprocess.Popen([sys.executable, "-c", textwrap.dedent(_UPDATER), uuid.uuid4().hex],
                                    cwd=REPO, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, encoding="utf-8",
-                                   env={**os.environ, "HERMES_HOME": str(tmp_path), "PYTHONPATH": str(REPO)})
+                                   env={**os.environ, "MOOR_HOME": str(tmp_path), "PYTHONPATH": str(REPO)})
         assert updater.stdout.readline().strip() == "written"
         holder = _hold(src)
         try:
@@ -99,7 +99,7 @@ def test_a_completed_obligation_never_runs_again_from_a_copy_windows_kept(tmp_pa
 
 
 def test_a_partly_resumed_claim_is_what_the_next_launch_resumes_not_the_copy_windows_kept(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     src = pause_record.record_path()
     _orphan({"default": 4242, "work": 4343})
     holder = _hold(src)
@@ -162,20 +162,20 @@ def _sc(*args: str) -> subprocess.CompletedProcess:
 
 @pytest.mark.parametrize("gateway", ["absent", "ready"])
 def test_a_running_service_owes_its_gateway_until_that_gateway_is_ready(tmp_path, monkeypatch, service_wrapper, gateway):
-    from hermes_cli import update_cmd_windows as w
+    from moor_cli import update_cmd_windows as w
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     bin_dir = tmp_path / "svc"
     bin_dir.mkdir()
     exe = bin_dir / "wrapper.exe"
     exe.write_bytes(service_wrapper.read_bytes())
     child = ([sys.executable, "-c \"import time; time.sleep(900)\""] if gateway == "absent"
-             else [sys.executable, "-m hermes_cli.main gateway run"])
-    (bin_dir / "child.txt").write_text("\n".join([*child, str(REPO), f"HERMES_HOME={home}", f"PYTHONPATH={REPO}",
+             else [sys.executable, "-m moor_cli.main gateway run"])
+    (bin_dir / "child.txt").write_text("\n".join([*child, str(REPO), f"MOOR_HOME={home}", f"PYTHONPATH={REPO}",
                                                   "PYTHONIOENCODING=utf-8"]) + "\n", encoding="utf-8")
-    name = f"hermes-r8-debt-{gateway}-{os.getpid()}"
+    name = f"moor-r8-debt-{gateway}-{os.getpid()}"
     created = _sc("create", name, "binPath=", f'"{exe}"', "start=", "demand")
     assert created.returncode == 0, created.stdout + created.stderr
     if gateway == "absent":  # the budget only bounds how long the miss takes to report
@@ -203,7 +203,7 @@ def test_a_running_service_owes_its_gateway_until_that_gateway_is_ready(tmp_path
 
 _RECOVERING_LAUNCH = """
 import json, time
-from hermes_cli import update_pause_record as r
+from moor_cli import update_pause_record as r
 started = time.monotonic()
 r.recover(["status"])
 print(json.dumps({"seconds": time.monotonic() - started,
@@ -216,14 +216,14 @@ def test_a_launch_recovering_an_unready_service_keeps_the_debt_without_stalling(
     never comes up: the debt stays owed, and neither launch waits out the update's full readiness budget."""
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     bin_dir = tmp_path / "svc"
     bin_dir.mkdir()
     exe = bin_dir / "wrapper.exe"
     exe.write_bytes(service_wrapper.read_bytes())
     (bin_dir / "child.txt").write_text("\n".join([sys.executable, "-c \"import time; time.sleep(900)\"", str(REPO)]) + "\n",
                                        encoding="utf-8")
-    name = f"hermes-r9-recover-{os.getpid()}"
+    name = f"moor-r9-recover-{os.getpid()}"
     created = _sc("create", name, "binPath=", f'"{exe}"', "start=", "demand")
     assert created.returncode == 0, created.stdout + created.stderr
     # The record a killed update left; the tree gate passes (HEAD and tracked changes as stamped).
@@ -235,7 +235,7 @@ def test_a_launch_recovering_an_unready_service_keeps_the_debt_without_stalling(
         for _ in range(2):
             done = subprocess.run([sys.executable, "-c", _RECOVERING_LAUNCH], cwd=REPO, capture_output=True,
                                   text=True, encoding="utf-8", errors="replace", timeout=300,
-                                  env={**os.environ, "HERMES_HOME": str(home), "PYTHONPATH": str(REPO)}, check=False)
+                                  env={**os.environ, "MOOR_HOME": str(home), "PYTHONPATH": str(REPO)}, check=False)
             assert done.returncode == 0, done.stdout + done.stderr
             launches.append(json.loads(done.stdout.strip().splitlines()[-1]))
     finally:
@@ -260,13 +260,13 @@ def _logs(home: Path) -> str:
 
 @pytest.mark.parametrize("discovered", ["this process", "an earlier process at this pid"])
 def test_a_pause_force_kills_only_the_process_it_discovered(tmp_path, monkeypatch, discovered):
-    from hermes_cli import update_cmd_windows as w
-    from hermes_cli.gateway import ProfileGatewayProcess
+    from moor_cli import update_cmd_windows as w
+    from moor_cli.gateway import ProfileGatewayProcess
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RESTART_DRAIN_TIMEOUT", "1")
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_RESTART_DRAIN_TIMEOUT", "1")
     # Never answers its pause, so it survives the drain and reaches the force-kill.
     victim = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(600)"], stdin=subprocess.DEVNULL)
     try:

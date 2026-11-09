@@ -159,7 +159,7 @@ def test_mint_rejects_a_non_launcher_dir_shebang(tmp_path):
     )
     wrapper = tmp_path / "w.py"
     wrapper.write_text("x = 1\n", encoding="utf-8")
-    env["HERMES_MINT_WRAPPER"] = str(wrapper)
+    env["MOOR_MINT_WRAPPER"] = str(wrapper)
     proc = subprocess.run([sys.executable, str(_MINT)], capture_output=True, text=True, env=env, check=False)
     assert proc.returncode != 0
     assert "launcher_dir" in proc.stderr

@@ -99,7 +99,7 @@ def _render_api_keys(ctx):
 
 def _render_auth_providers(ctx):
     _status._section("Auth Providers")
-    from hermes_cli import auth
+    from moor_cli import auth
     try:
         # Read-only display: the refresh-free snapshot, so `moor status` never performs an OAuth
         # refresh or burns a single-use refresh token.
@@ -202,4 +202,4 @@ def _render_apikey_providers(ctx):
         _status._row("LM Studio", ok, msg, 16, " ")
 
 
-import hermes_cli.status as _status
+import moor_cli.status as _status

@@ -28,7 +28,7 @@ def test_bash_cold_sync_changed_input_and_warm_noop(tmp_path, canary):
     root, env = sync_checkout(tmp_path)
     assert not (root / ".venv").exists()
     if canary is not None:
-        env["HERMES_PM_ACTIVATE_CANARY"] = canary
+        env["MOOR_PM_ACTIVATE_CANARY"] = canary
     from tests.pm.test_activate_scripts import fake_store
     fake_store(tmp_path)
     script = f'''
@@ -37,7 +37,7 @@ def test_bash_cold_sync_changed_input_and_warm_noop(tmp_path, canary):
         original_path="$PATH"
         source "{posix(root / 'activate')}"
         printf '%s\\n' "$PYTHONPATH"
-        test "$HERMES_PM_ACTIVATE_CANARY" = env-ok
+        test "$MOOR_PM_ACTIVATE_CANARY" = env-ok
         printf second > "{posix(root / 'input')}"
         source "{posix(root / 'activate')}"
         printf '%s\\n' "$PYTHONPATH"

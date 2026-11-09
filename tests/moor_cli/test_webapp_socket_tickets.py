@@ -18,25 +18,25 @@ from fastapi import FastAPI
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from tests.hermes_cli.test_web_host_terminal_persistence import IdleBridge, metadata
+from tests.moor_cli.test_web_host_terminal_persistence import IdleBridge, metadata
 
 _TOKEN = "a" * 43
-_SESSION = {"X-Hermes-Session-Token": _TOKEN}
+_SESSION = {"X-moor-session-Token": _TOKEN}
 
 
 def serve_webapp(tmp_path, monkeypatch):
     """The loopback Webapp: ``web_server.app`` mints tickets, a small app serves the host terminal,
     and ``shells`` lists the idle stand-ins it spawns for host shells."""
-    from hermes_cli import web_host_terminal, web_server, web_server_chat
-    from hermes_cli.web_host_terminal_sessions import host_terminal_lifespan
-    from hermes_cli.web_routers.webapp import router
+    from moor_cli import web_host_terminal, web_server, web_server_chat
+    from moor_cli.web_host_terminal_sessions import host_terminal_lifespan
+    from moor_cli.web_routers.webapp import router
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     (home / "config.yaml").write_text("{}", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(web_server.app.state, "ui_surface", "webapp", raising=False)
     monkeypatch.setattr(web_server.app.state, "bound_host", "localhost", raising=False)
     monkeypatch.setattr(web_server.app.state, "auth_required", False, raising=False)
@@ -89,7 +89,7 @@ def test_a_terminal_ticket_opens_one_host_shell_once(webapp):
 
 
 def test_the_host_terminal_refuses_the_session_token_and_every_other_ticket(webapp):
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from moor_cli.dashboard_auth.ws_tickets import mint_ticket
 
     client, host = webapp.client, webapp.host
     others = [_mint(client, "gateway"), mint_ticket(user_id="legacy-token-owner", provider="session-token")]
@@ -97,14 +97,14 @@ def test_the_host_terminal_refuses_the_session_token_and_every_other_ticket(weba
         _refused(shells, f"ws://localhost/api/host-terminal?token={_TOKEN}")
         for ticket in others:
             _refused(shells, f"ws://localhost/api/host-terminal?ticket={ticket}")
-        protocols = ["hermes-gateway-v1", f"hermes-gateway-ticket.{_mint(client, 'gateway')}"]
+        protocols = ["moor-gateway-v1", f"moor-gateway-ticket.{_mint(client, 'gateway')}"]
         _refused(shells, "ws://localhost/api/host-terminal", subprotocols=protocols)
     assert webapp.shells == []
 
 
 def test_a_terminal_ticket_does_not_open_the_chat_socket(webapp):
     client = webapp.client
-    protocols = ["hermes-gateway-v1", f"hermes-gateway-ticket.{_mint(client, 'host-terminal')}"]
+    protocols = ["moor-gateway-v1", f"moor-gateway-ticket.{_mint(client, 'host-terminal')}"]
     _refused(client, "ws://localhost/api/ws?native_dial=browser", subprotocols=protocols)
     _refused(client, f"ws://localhost/api/ws?ticket={_mint(client, 'host-terminal')}")
 
@@ -129,10 +129,10 @@ def test_other_surfaces_do_not_mint_terminal_tickets(webapp, monkeypatch, surfac
 
 def test_a_signed_in_browser_opens_its_host_shell_with_a_terminal_ticket(webapp, monkeypatch):
     """Wildcard host: the dashboard's cookie sign-in mints the ticket, and the shell is that login's."""
-    from hermes_cli.dashboard_auth import clear_providers, register_provider
-    from hermes_cli.dashboard_auth.ws_tickets import _reset_for_tests
-    from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
-    from tests.hermes_cli.test_dashboard_auth_ws_auth import _logged_in
+    from moor_cli.dashboard_auth import clear_providers, register_provider
+    from moor_cli.dashboard_auth.ws_tickets import _reset_for_tests
+    from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
+    from tests.moor_cli.test_dashboard_auth_ws_auth import _logged_in
 
     server, host = webapp.server, webapp.host
     _reset_for_tests()
@@ -214,7 +214,7 @@ def test_a_voice_stream_refuses_a_ticket_minted_for_another_socket(webapp, voice
         for ticket in (_mint(client, "gateway"), _mint(client, "host-terminal"), _mint(client, other)):
             _refused(client, f"ws://localhost{url}?ticket={ticket}")
     _refused(client, f"ws://localhost/api/ws?ticket={_mint(client, 'speak-stream')}")
-    protocols = ["hermes-gateway-v1", f"hermes-gateway-ticket.{_mint(client, 'transcribe-stream')}"]
+    protocols = ["moor-gateway-v1", f"moor-gateway-ticket.{_mint(client, 'transcribe-stream')}"]
     _refused(client, "ws://localhost/api/ws?native_dial=browser", subprotocols=protocols)
     with TestClient(host) as shells:
         _refused(shells, f"ws://localhost/api/host-terminal?ticket={_mint(client, 'speak-stream')}")
@@ -231,7 +231,7 @@ def test_voice_tickets_minted_before_the_session_token_changed_open_nothing(weba
 
 def test_socket_tickets_are_minted_only_for_the_webapps_sockets_on_the_webapp(webapp, monkeypatch):
     """One route mints every socket ticket; it knows only the Webapp's four sockets, and the
-    standalone dashboard and ``hermes serve`` mint none."""
+    standalone dashboard and ``moor serve`` mint none."""
     server, client = webapp.server, webapp.client
     for socket in ("display", "events", "speak", ""):
         response = client.post("/api/webapp/socket-ticket", params={"socket": socket}, headers=_SESSION)
@@ -246,7 +246,7 @@ def test_socket_tickets_are_minted_only_for_the_webapps_sockets_on_the_webapp(we
 def test_a_native_clients_unnamed_ticket_still_opens_a_voice_stream(webapp, voice):
     """A ticket named for no socket, as ``/api/auth/ws-ticket`` mints for native Desktop, opens a
     voice stream as it did before the streams had names."""
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
+    from moor_cli.dashboard_auth.ws_tickets import mint_ticket
 
     client = webapp.client
     _speaks(client, f"ws://localhost{_SPEAK}?ticket={mint_ticket(user_id='native', provider='stub')}")
@@ -256,10 +256,10 @@ def test_a_native_clients_unnamed_ticket_still_opens_a_voice_stream(webapp, voic
 def test_a_signed_in_browser_opens_its_voice_streams_with_their_own_tickets(webapp, voice, monkeypatch):
     """Wildcard host: the sign-in cookie mints each voice stream's ticket; the chat socket's does not
     open one."""
-    from hermes_cli.dashboard_auth import clear_providers, register_provider
-    from hermes_cli.dashboard_auth.ws_tickets import _reset_for_tests
-    from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
-    from tests.hermes_cli.test_dashboard_auth_ws_auth import _logged_in
+    from moor_cli.dashboard_auth import clear_providers, register_provider
+    from moor_cli.dashboard_auth.ws_tickets import _reset_for_tests
+    from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
+    from tests.moor_cli.test_dashboard_auth_ws_auth import _logged_in
 
     server = webapp.server
     _reset_for_tests()

@@ -69,14 +69,14 @@ class TestContainerSkip:
 
 class TestCliPrompt:
     def test_safe_command_runs_without_prompt(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["MOOR_INTERACTIVE"] = "1"
         cb = MagicMock()
         result = check_all_command_guards("echo hello", "local", approval_callback=cb)
         assert result["approved"] is True
         cb.assert_not_called()
 
     def test_dangerous_command_deny(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["MOOR_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="deny")
         result = check_all_command_guards("rm -rf /tmp", "local", approval_callback=cb)
         assert result["approved"] is False
@@ -84,7 +84,7 @@ class TestCliPrompt:
         assert cb.call_args[1]["allow_permanent"] is True
 
     def test_session_approval_skips_the_next_prompt(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["MOOR_INTERACTIVE"] = "1"
         cb = MagicMock(return_value="session")
         session_key = "guard-session"
         token = set_current_session_key(session_key)
@@ -96,7 +96,7 @@ class TestCliPrompt:
         cb.assert_called_once()
 
     def test_pre_approved_session_key_skips_prompt(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["MOOR_INTERACTIVE"] = "1"
         session_key = "guard-preapproved"
         token = set_current_session_key(session_key)
         try:
@@ -118,7 +118,7 @@ class TestCliPrompt:
 
 class TestCommandAllowlistGlobs:
     def test_glob_allowlist_bypasses_combined_guard(self):
-        os.environ["HERMES_INTERACTIVE"] = "1"
+        os.environ["MOOR_INTERACTIVE"] = "1"
         approval_module._permanent_approved.add("podman *")
 
         result = check_all_command_guards(

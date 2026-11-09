@@ -56,9 +56,9 @@ def _pool_entry(provider: str, **fields):
 def test_moor_model_routes_registered_plugin_profiles_to_the_generic_flow(plugin, monkeypatch, tmp_path):
     """Selecting an admitted external-process or OAuth plugin in `moor model` persists config.model;
     an api_key profile still takes the api-key flow and an unknown slug stays a no-op."""
-    from hermes_cli import main
-    from hermes_cli import auth
-    from hermes_cli.config import load_config
+    from moor_cli import main
+    from moor_cli import auth
+    from moor_cli.config import load_config
 
     plugin(ProviderProfile(name="example-acp", auth_type="external_process", base_url="acp://example",
                            process_command="example-acp-bin", fallback_models=("acp-a", "acp-b")))
@@ -122,8 +122,8 @@ def test_any_external_process_plugin_counts_as_signed_in_when_its_binary_resolve
     ``tui_gateway/methods_complete.py::model.options``) keeps an out-of-tree ACP row exactly like the
     bundled one: binary resolves → auth evidence; missing binary → hidden."""
     import providers
-    from hermes_cli import auth
-    from hermes_cli.inventory import _external_process_signed_in, _filter_explicit_provider_rows
+    from moor_cli import auth
+    from moor_cli.inventory import _external_process_signed_in, _filter_explicit_provider_rows
 
     plugin(ProviderProfile(name="example-acp", auth_type="external_process", base_url="acp://example",
                            process_command="example-acp-bin", fallback_models=("acp-a",)))

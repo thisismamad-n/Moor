@@ -121,14 +121,14 @@ describe('cron run rows carry their owning connection', () => {
   const api = vi.fn(async () => ({ runs: [{ ...run }] }))
 
   beforeEach(() => {
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = { api }
+    ;(window as { moorDesktop?: unknown }).moorDesktop = { api }
     api.mockClear()
   })
 
   afterEach(() => {
     setApiRequestProfile(null)
     setApiRequestConnection(null)
-    delete (window as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as { moorDesktop?: unknown }).moorDesktop
   })
 
   it('stamps the active registry connection onto every run row', async () => {

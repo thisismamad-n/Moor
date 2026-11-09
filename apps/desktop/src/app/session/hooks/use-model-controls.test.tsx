@@ -450,7 +450,7 @@ describe('useModelControls', () => {
   it('still rolls back and reports a real switch failure', async () => {
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('moor')
     setCurrentReasoningEffortWire('max')
 
     const requestGateway = vi.fn(async () => {
@@ -464,7 +464,7 @@ describe('useModelControls', () => {
     await expect(controls.selectModel({ model: 'bogus', provider: 'xai' })).resolves.toBe(false)
 
     expect($currentModel.get()).toBe('fable-5')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('moor')
     // The old route's clamp is true again once the switch is undone.
     expect($currentReasoningEffortWire.get()).toBe('max')
     expect(notifyError).toHaveBeenCalled()

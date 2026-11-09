@@ -14,11 +14,11 @@ description: "如何将 Moor Agent 更新至最新版本或将其卸载"
 moor update
 ```
 
-官方仓库的源码安装默认跟踪 **stable** 渠道：最新正式发布的 `vX.Y.Z` GitHub 版本（不含草稿、预发布或 canary 标签），并检出其确切提交。`hermes update` 和桌面应用的更新按钮只会在正式版本之间升级，不再逐个提交跟进。Fork 和镜像仍跟踪各自的 `main` 分支。此命令还会更新依赖项，并提示你配置自上次更新以来新增的选项。
+官方仓库的源码安装默认跟踪 **stable** 渠道：最新正式发布的 `vX.Y.Z` GitHub 版本（不含草稿、预发布或 canary 标签），并检出其确切提交。`moor update` 和桌面应用的更新按钮只会在正式版本之间升级，不再逐个提交跟进。Fork 和镜像仍跟踪各自的 `main` 分支。此命令还会更新依赖项，并提示你配置自上次更新以来新增的选项。
 
 ```bash
-hermes update --set-channel main     # 改为跟踪 main 上的每个提交
-hermes update --set-channel stable   # 恢复为仅正式版本
+moor update --set-channel main     # 改为跟踪 main 上的每个提交
+moor update --set-channel stable   # 恢复为仅正式版本
 ```
 
 从未选择渠道的安装只会向前更新：已经比最新正式版本更新的检出（例如此前跟踪 `main` 的安装）会保持不动，直到发布更新的版本。显式运行 `--set-channel stable` 会把检出固定到该版本的确切提交，即使它更旧。Windows 应用商店、MSIX 和捆绑桌面安装不受影响。
@@ -31,7 +31,7 @@ hermes update --set-channel stable   # 恢复为仅正式版本
 
 运行 `moor update` 时，将依次执行以下步骤：
 
-1. **更新前快照** — Hermes 在每个 profile 的 `state-snapshots/` 目录中保存指定的状态文件，包括配对数据、cron 任务、`config.yaml`、`.env` 和 `auth.json`。自动快速快照会跳过单个大于 1 GiB 的文件。`updates.pre_update_backup` 可选择 `quick`、`full` 或 `off`。完整归档遵循[备份排除规则](../reference/faq.md#hermes-backup-vs-hermes-profile-export)。恢复方法见[快照与回滚](../user-guide/checkpoints-and-rollback.md)。快速快照恢复的是状态文件，不是应用程序代码。
+1. **更新前快照** — Moor 在每个 profile 的 `state-snapshots/` 目录中保存指定的状态文件，包括配对数据、cron 任务、`config.yaml`、`.env` 和 `auth.json`。自动快速快照会跳过单个大于 1 GiB 的文件。`updates.pre_update_backup` 可选择 `quick`、`full` 或 `off`。完整归档遵循[备份排除规则](../reference/faq.md#moor-backup-vs-moor-profile-export)。恢复方法见[快照与回滚](../user-guide/checkpoints-and-rollback.md)。快速快照恢复的是状态文件，不是应用程序代码。
 2. **代码更新** — 检出所选渠道的目标（默认最新 stable 版本）并更新子模块
 3. **依赖安装** — 运行 `python -m pm.cli install` 以获取新增或变更的依赖项
 4. **配置迁移** — 检测自当前版本以来新增的配置选项并提示设置
@@ -39,7 +39,7 @@ hermes update --set-channel stable   # 恢复为仅正式版本
 
 ### 仅预览：`moor update --check`
 
-想在拉取前确认是否有更新？运行 `hermes update --check` — 它会与所选渠道的目标（默认最新 stable 版本，main 渠道为 `origin/main`）比较。不修改任何文件，不重启 gateway。适合在以"是否有更新"为条件的脚本和 cron 任务中使用。
+想在拉取前确认是否有更新？运行 `moor update --check` — 它会与所选渠道的目标（默认最新 stable 版本，main 渠道为 `origin/main`）比较。不修改任何文件，不重启 gateway。适合在以"是否有更新"为条件的脚本和 cron 任务中使用。
 
 ### 完整更新前备份：`--backup`
 

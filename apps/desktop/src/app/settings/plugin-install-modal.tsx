@@ -152,7 +152,7 @@ function RepositoryEntry({ request }: { request: PluginInstallRequest }) {
 }
 
 /**
- * THE plugin install dialog, for every door: a reviewed catalog pick (Plugins tab, `hermes://` link,
+ * THE plugin install dialog, for every door: a reviewed catalog pick (Plugins tab, `moor://` link,
  * the setup chat's plugins card) and a raw git URL. A catalog entry shows its name, one line, "Verified"
  * and Install; its particulars wait behind Advanced. A git URL is marked Unverified with the same
  * particulars open, because there they are the security check. Install always turns the plugin on
@@ -486,7 +486,7 @@ function InstallView({ request, installing, onInstallingChange }: InstallViewPro
 
   // Retrying reruns an install or a read that failed; it cannot add a capability this environment lacks.
   const retryable = Boolean(installError) || !(probe?.unavailable || nothing)
-  const line = `${verified ? m.reviewedByNous : m.securityIntro} ${(enable ? m.installsAndEnables : m.installsOnly)(targetLabel)}`
+  const line = `${verified ? m.reviewedByMoor : m.securityIntro} ${(enable ? m.installsAndEnables : m.installsOnly)(targetLabel)}`
 
   const install = async (withoutReviewedCommit = false) => {
     onInstallingChange(true)

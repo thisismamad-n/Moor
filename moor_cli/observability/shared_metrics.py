@@ -33,7 +33,7 @@ from .shared_metrics_contract import (
 from .shared_metrics_drift import conform_counter_dimensions, counter_dimensions_shape_is_known
 
 
-_PACKAGE_SCHEMA_VERSION = "hermes.shared_metrics.v4"
+_PACKAGE_SCHEMA_VERSION = "moor.shared_metrics.v4"
 _STORE_SCHEMA_VERSION = "2"
 _BUSY_TIMEOUT_MS = 250
 _SCHEMA_BUSY_TIMEOUT_MS = 5_000
@@ -250,7 +250,7 @@ class SharedMetricsStore:
         self, state_key: str, metric_name: str, dimensions: dict[str, str],
         resource: dict[str, str],
     ) -> bool:
-        """Transactional compare-and-set latch shared by concurrent Hermes processes."""
+        """Transactional compare-and-set latch shared by concurrent Moor processes."""
         self._validate_counter(metric_name, dimensions, resource)
         now = _utc_now()
         with self._write() as connection:

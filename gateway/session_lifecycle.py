@@ -112,8 +112,8 @@ class SessionLifecycleMixin:
             return None
         import sqlite3
 
-        from hermes_state_local import local_receipt
-        from hermes_state_runtime import RuntimeStoreError
+        from moor_state_local import local_receipt
+        from moor_state_runtime import RuntimeStoreError
         try:
             receipt = local_receipt(db, str(origin.chat_id))
             if receipt.get("route") != entry.session_key:
@@ -136,7 +136,7 @@ class SessionLifecycleMixin:
         import json
         import sqlite3
 
-        from hermes_state_local import API_BINDING_PREFIX
+        from moor_state_local import API_BINDING_PREFIX
         try:
             with db._read_ctx() as conn:
                 saved = conn.execute("SELECT value FROM state_meta WHERE key=?",

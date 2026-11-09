@@ -23,9 +23,9 @@ _PENDING_DELETE_DIR = "plugin-pending-delete"
 
 
 def _pending_delete_root() -> Path:
-    """``<HERMES_HOME>/cache/plugin-pending-delete``: trees a running process still held at removal."""
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "cache" / _PENDING_DELETE_DIR
+    """``<MOOR_HOME>/cache/plugin-pending-delete``: trees a running process still held at removal."""
+    from moor_constants import get_moor_home
+    return get_moor_home() / "cache" / _PENDING_DELETE_DIR
 
 
 def sweep_pending_plugin_deletes() -> None:
@@ -59,7 +59,7 @@ def _discard_tree(tree: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
     parked = Path(tempfile.mkdtemp(prefix=f"{tree.name}-", dir=root)) / "plugin"
     try:
-        os.replace(tree, parked)  # same volume (both under HERMES_HOME): a rename, allowed on mapped DLLs
+        os.replace(tree, parked)  # same volume (both under MOOR_HOME): a rename, allowed on mapped DLLs
     except OSError:
         # A held directory itself (a process's cwd, an open handle on it) cannot even be renamed. Strip
         # its manifests so the remnant no longer loads, and leave the files to the next start.
@@ -133,7 +133,7 @@ def _remove_user_plugin(plugins_dir: Path, name: str, target: Path) -> dict[str,
     entry = next((e for e in _pc()._discover_all_plugins() if Path(str(e[4])) == target), None)
     key = entry[5] if entry else target.name
     aliases = _pc()._plugin_aliases(key) | {target.name}
-    from hermes_cli.plugin_oauth import forget_plugin_grants, plugin_key
+    from moor_cli.plugin_oauth import forget_plugin_grants, plugin_key
     grant_key = plugin_key(target)  # grants are stored by directory key, which the manifest name may not match
     _pc()._toggle_plugin_toolset(key, enable=False)
     _remove_plugin_core(target)

@@ -11,16 +11,16 @@ import json
 import pytest
 
 from agent.runtime_session_store import RuntimeSessionStore
-from hermes_state import SessionDB
+from moor_state import SessionDB
 from tools.session_search_tool import session_search
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    """The worker's profile home: ``get_hermes_home()`` resolves to it, so its state.db is the DB."""
-    import hermes_constants
+    """The worker's profile home: ``get_moor_home()`` resolves to it, so its state.db is the DB."""
+    import moor_constants
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(moor_constants, "get_moor_home", lambda: tmp_path)
     return tmp_path
 
 

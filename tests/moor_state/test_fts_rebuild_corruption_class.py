@@ -12,7 +12,7 @@ import sqlite3
 
 import pytest
 
-from hermes_state import SessionDB
+from moor_state import SessionDB
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ def test_corruption_class_error_is_caught_and_reported(
     )
     with caplog.at_level("WARNING"):
         assert db.rebuild_fts() == 0
-    assert any("hermes sessions repair" in rec.message for rec in caplog.records) is repair_hint
+    assert any("moor sessions repair" in rec.message for rec in caplog.records) is repair_hint
 
 
 @pytest.mark.parametrize("method,command", [("rebuild_fts", "rebuild"), ("optimize_fts", "optimize")])

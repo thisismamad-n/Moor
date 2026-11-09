@@ -137,7 +137,7 @@ def handle_meet_join(args: dict[str, Any], **_kw) -> str:
     if mode not in {"transcribe", "realtime"}:
         return _err(f"mode must be 'transcribe' or 'realtime' (got {mode!r})")
     common: dict[str, Any] = dict(
-        url=url, guest_name=str(args.get("guest_name") or "Hermes Agent"),
+        url=url, guest_name=str(args.get("guest_name") or "Moor Agent"),
         duration=str(args.get("duration")) if args.get("duration") else None,
         headed=bool(args.get("headed", False)), mode=mode)
 

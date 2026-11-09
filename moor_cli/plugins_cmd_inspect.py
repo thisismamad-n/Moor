@@ -19,7 +19,7 @@ from concurrent.futures import Future
 from pathlib import Path
 from typing import Any, Optional
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 #: A manifest is a few hundred bytes; never read a hostile multi-megabyte one into memory.
 _MANIFEST_MAX_BYTES = 256 * 1024
@@ -32,7 +32,7 @@ _inspections_lock = threading.Lock()
 
 def _pc():
     """The facade, read at call time: tests patch ``plugins_cmd.<name>`` and sibling calls must see it."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     return plugins_cmd
 
 
@@ -66,7 +66,7 @@ def _yaml_ships_agent_payload(root: Path, manifest: dict[str, Any]) -> bool:
     if any((root / rel).is_file() for rel in _AGENT_PAYLOAD_FILES):
         return True
     # The loader's manifest-only language pack (``_is_manifest_only_language_pack``), judged the way
-    # ``hermes plugins validate`` does: declared locales plus the folder that holds them.
+    # ``moor plugins validate`` does: declared locales plus the folder that holds them.
     return bool(manifest.get("provides_locales")) and (root / "locales").is_dir()
 
 
@@ -110,8 +110,8 @@ def inspect_plugin_source(identifier: str, *, catalog_name: Optional[str] = None
     stops waiting before a slow clone can finish (``plugins.clone_timeout_seconds`` reaches an hour per
     Git step); its Retry must collect that clone's answer, not start another under the same deadline.
     A failed read is never kept, so a Retry after one inspects afresh."""
-    from hermes_constants import get_hermes_home
-    key = (str(get_hermes_home()), catalog_name or "", identifier)
+    from moor_constants import get_moor_home
+    key = (str(get_moor_home()), catalog_name or "", identifier)
     now = time.monotonic()
     with _inspections_lock:
         for stale in [k for k, (_, done) in _inspections.items()
@@ -149,8 +149,8 @@ def forget_inspection(identifier: str, *, catalog_name: Optional[str] = None) ->
     """Drop the kept answer for this source in the current profile home once an install consumed it: a
     source that moved since must be read afresh when the dialog re-opens, not served for the rest of
     :data:`_RESULT_TTL_SECONDS`. A read still running is left for the requests joined to it."""
-    from hermes_constants import get_hermes_home
-    key = (str(get_hermes_home()), catalog_name or "", identifier)
+    from moor_constants import get_moor_home
+    key = (str(get_moor_home()), catalog_name or "", identifier)
     with _inspections_lock:
         if _inspections.get(key, [None, None])[1] is not None:
             del _inspections[key]
@@ -161,10 +161,10 @@ def _inspect(identifier: str, catalog_name: Optional[str]) -> dict[str, Any]:
     revision = None
     names: tuple[str, ...] = ()
     if catalog_name:
-        from hermes_cli import plugins_cmd_catalog as catalog
+        from moor_cli import plugins_cmd_catalog as catalog
         entry = catalog.get_live_catalog_entry(catalog_name)
         if entry is None:
-            return _failure(f"'{catalog_name}' is not in the Hermes plugin catalog.", [], False)
+            return _failure(f"'{catalog_name}' is not in the Moor plugin catalog.", [], False)
         identifier, revision, names = entry.install_identifier, entry.sha or None, (entry.name,)
     try:
         git_url, subdir = pc._resolve_git_url(identifier)
@@ -174,9 +174,9 @@ def _inspect(identifier: str, catalog_name: Optional[str]) -> dict[str, Any]:
     warnings = ["This URL uses an insecure or local scheme. Prefer https:// or git@ for production installs."] \
         if insecure else []
     try:
-        from hermes_cli.plugins_cmd_catalog import raise_if_removed
+        from moor_cli.plugins_cmd_catalog import raise_if_removed
         raise_if_removed(identifier, git_url, *names)
-        with tempfile.TemporaryDirectory(prefix="hermes-plugin-inspect-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="moor-plugin-inspect-") as tmp:
             clone = Path(tmp) / "plugin"
             sha = pc._clone_plugin_repo(clone, git_url, revision, subdir)
             root = pc._resolve_subdir_within(clone, subdir) if subdir else clone

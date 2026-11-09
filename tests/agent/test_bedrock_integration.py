@@ -175,7 +175,7 @@ class TestRuntimeProvider:
         them ("Geo/Global inference ID: Not supported" on every OpenAI card). They ride the
         Converse wire on bedrock-runtime, never the Mantle Responses base URL."""
         from agent.bedrock_adapter import BEDROCK_OPENAI_RESPONSES_MODEL_IDS
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
 
         monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
         monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
@@ -183,8 +183,8 @@ class TestRuntimeProvider:
 
         for model_id in BEDROCK_OPENAI_RESPONSES_MODEL_IDS:
             for profile_id in (f"us.{model_id}", f"global.{model_id}"):
-                with patch("hermes_cli.runtime_provider.resolve_provider", return_value="bedrock"), \
-                     patch("hermes_cli.runtime_provider._get_model_config", return_value={
+                with patch("moor_cli.runtime_provider.resolve_provider", return_value="bedrock"), \
+                     patch("moor_cli.runtime_provider._get_model_config", return_value={
                          "provider": "bedrock", "default": profile_id,
                      }):
                     result = resolve_runtime_provider(requested="bedrock")

@@ -184,7 +184,7 @@ def test_parked_profile_remains_in_migration_inventory(fleet):
 def test_preflight_never_imports_a_parked_profiles_plugins(fleet):
     """A parked profile stays in the inventory and the duplicate-credential guard (above), but
     loading its gateway config must not run its plugins' ``register()`` in the host process (#123386)."""
-    from hermes_cli.plugins import _reset_plugin_managers_for_tests
+    from moor_cli.plugins import _reset_plugin_managers_for_tests
 
     home = fleet.root / "profiles/coder"
     (home / "gateway.parked").touch()
@@ -436,9 +436,9 @@ def test_update_hook_never_touches_single_profile_or_already_multiplexed(fleet, 
 
 
 def test_update_hook_reads_a_masked_default_unit_as_an_opt_out(fleet, capsys, monkeypatch, tmp_path):
-    """`systemctl mask hermes-gateway` is the operator's "never start this": no refusal, no change (#139324)."""
-    from hermes_cli import gateway as gw
-    unit = tmp_path / "systemd/user/hermes-gateway.service"
+    """`systemctl mask moor-gateway` is the operator's "never start this": no refusal, no change (#139324)."""
+    from moor_cli import gateway as gw
+    unit = tmp_path / "systemd/user/moor-gateway.service"
     unit.parent.mkdir(parents=True)
     unit.symlink_to(os.devnull)  # exactly what `systemctl --user mask` leaves on disk
     monkeypatch.setattr(gw, "get_systemd_unit_path", lambda system=False: unit if not system else tmp_path / "none")
@@ -928,7 +928,7 @@ def test_migrate_enables_the_survivor_before_it_removes_anything(fleet, capsys):
 def test_migrate_refuses_when_the_survivor_cannot_be_enabled(fleet, monkeypatch, capsys):
     """A failed `systemctl enable` is a preflight refusal, not a ⚠ line: continuing removed every
     boot-startable secondary and reported ✓ Migrated over a host that comes back with no gateway."""
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     fleet.services["default"] = ("systemd", False)
     fake_op = gm._service_op
     monkeypatch.setattr(gw, "_run_systemctl", lambda args, **kw: SimpleNamespace(returncode=1))

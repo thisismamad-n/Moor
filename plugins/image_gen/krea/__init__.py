@@ -142,7 +142,7 @@ def _resolve_managed_krea_gateway():
     no ``KREA_API_KEY``; an explicit vendor selection pins direct. Never raises (discovery scans)."""
     try:
         from tools.managed_tool_gateway import resolve_managed_tool_gateway
-        from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_selection
+        from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_selection
     except Exception as exc:
         logger.debug("Managed Krea gateway resolution unavailable: %s", exc)
         return None
@@ -427,9 +427,9 @@ def _submit_job(
                     "Krea's shared-key concurrency cap was hit — retry shortly." if status == 429 else
                     f"Model '{model_id}' may not be enabled/priced on the Moor Portal's Krea gateway. "
                     "Set KREA_API_KEY to use Krea directly, or pick a different model via "
-                    "`hermes tools` → Image Generation.")
+                    "`moor tools` → Image Generation.")
                 return None, submit_fail(
-                    f"Nous Subscription Krea gateway rejected '{model_id}' "
+                    f"Moor Subscription Krea gateway rejected '{model_id}' "
                     f"(HTTP {status}): {err_msg}. {hint}",
                     "api_error")
             return None, submit_fail(failure.error, "api_error")
@@ -482,7 +482,7 @@ def _krea2_payload(
         for what, arg in _MANAGED_UNSUPPORTED:
             if arg in payload:
                 return payload, fail(
-                    f"Managed Krea (Nous Subscription) does not support {what}. "
+                    f"Managed Krea (Moor Subscription) does not support {what}. "
                     f"Set KREA_API_KEY to use Krea directly, or omit `{arg}`.",
                     "unsupported_argument")
     # After the fail-fast above, so a request about to be refused never reads local files.
@@ -527,7 +527,7 @@ class KreaImageGenProvider(StaticImageGenProvider):
     default_model_id = DEFAULT_MODEL
     setup = dict(
         name="Krea", badge="paid",
-        tag="Krea 3 — generates and edits images ($0.03 at 1K, $0.06 at 2K) — and Krea 2 Medium ($0.03), Large ($0.06), Medium Turbo ($0.015) with style transfer and moodboards. Direct key or managed Nous Subscription gateway.",
+        tag="Krea 3 — generates and edits images ($0.03 at 1K, $0.06 at 2K) — and Krea 2 Medium ($0.03), Large ($0.06), Medium Turbo ($0.015) with style transfer and moodboards. Direct key or managed Moor Subscription gateway.",
         key="KREA_API_KEY", prompt="Krea API key", url="https://www.krea.ai/settings/api-tokens")
 
     def is_available(self) -> bool:
@@ -595,7 +595,7 @@ class KreaImageGenProvider(StaticImageGenProvider):
         if err is not None:
             return err
 
-        # 2. Poll — same principal as submit, so the managed path polls the gateway with the Nous token.
+        # 2. Poll — same principal as submit, so the managed path polls the gateway with the Moor token.
         poll_errors: list[dict[str, Any]] = []
 
         def poll_error(kind: str, detail: Any) -> dict[str, Any]:

@@ -13,7 +13,7 @@ def _ns(**kwargs):
 
 
 def test_archive_refuses_pinned(monkeypatch, capsys):
-    import hermes_cli.curator as curator_cli
+    import moor_cli.curator as curator_cli
     from tools import skill_usage
 
     monkeypatch.setattr(skill_usage, "get_record", lambda name: {"pinned": True})
@@ -40,10 +40,10 @@ def test_purge_ages_an_archive_from_when_it_was_archived(tmp_path, monkeypatch):
     import os
     import time
 
-    import hermes_cli.curator as curator_cli
+    import moor_cli.curator as curator_cli
     from tools import skill_usage
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     skill_dir = tmp_path / "skills" / "old-helper"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(
@@ -69,10 +69,10 @@ def test_purge_prefers_recorded_archived_at_over_a_stale_dir_mtime(tmp_path, mon
     import os
     import time
 
-    import hermes_cli.curator as curator_cli
+    import moor_cli.curator as curator_cli
     from tools import skill_usage
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     skill_dir = tmp_path / "skills" / "legacy"
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(

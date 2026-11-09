@@ -39,13 +39,13 @@ def server():
     # server's ``current_transport()`` never reads (first-in-process test sees ``_stdio_transport`` as caller).
     import tui_gateway.server_requests
     import tui_gateway.transport
-    import hermes_constants  # real get_process_hermes_home: a mocked one put state.db under the cwd (repo)
+    import moor_constants  # real get_process_moor_home: a mocked one put state.db under the cwd (repo)
     with patch.dict("sys.modules", {
-        "hermes_constants": MagicMock(get_hermes_home=MagicMock(return_value="/tmp/hermes_test"),
-                                      get_process_hermes_home=hermes_constants.get_process_hermes_home),
-        "hermes_cli.env_loader": MagicMock(),
-        "hermes_cli.banner": MagicMock(),
-        "hermes_state": MagicMock(),
+        "moor_constants": MagicMock(get_moor_home=MagicMock(return_value="/tmp/moor_test"),
+                                      get_process_moor_home=moor_constants.get_process_moor_home),
+        "moor_cli.env_loader": MagicMock(),
+        "moor_cli.banner": MagicMock(),
+        "moor_state": MagicMock(),
     }):
         import importlib
         mod = importlib.import_module("tui_gateway.server")
@@ -1363,7 +1363,7 @@ def test_command_dispatch_expands_stacked_skills_from_temp_home(server, tmp_path
     from agent import skill_commands
     from tools import skills_tool
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     skills_dir = home / "skills"
     for name, instructions in (
         ("nature-figure", "Render figures with natural colors."),
@@ -1376,7 +1376,7 @@ def test_command_dispatch_expands_stacked_skills_from_temp_home(server, tmp_path
             encoding="utf-8",
         )
 
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(skills_tool, "SKILLS_DIR", skills_dir)
     monkeypatch.setattr(skill_commands, "_skill_commands_by_key", {})
 
@@ -1413,7 +1413,7 @@ def test_command_dispatch_stacked_split_keeps_unknown_tokens_as_instruction(serv
     from agent import skill_commands
     from tools import skills_tool
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     skills_dir = home / "skills"
     skill_dir = skills_dir / "nature-figure"
     skill_dir.mkdir(parents=True)
@@ -1422,7 +1422,7 @@ def test_command_dispatch_stacked_split_keeps_unknown_tokens_as_instruction(serv
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(skills_tool, "SKILLS_DIR", skills_dir)
     monkeypatch.setattr(skill_commands, "_skill_commands_by_key", {})
 
@@ -1454,7 +1454,7 @@ def test_sessionless_slash_palette_follows_profile_param(server, tmp_path, monke
     import agent.skill_commands as sc_mod
     from agent.secret_scope import is_multiplex_active, set_multiplex_active
 
-    root = tmp_path / "hermes_home"
+    root = tmp_path / "moor_home"
     for name in ("s6probe-a", "s6probe-b"):
         skill_dir = tmp_path / f"external_{name}" / f"{name}-only"
         skill_dir.mkdir(parents=True)
@@ -1463,8 +1463,8 @@ def test_sessionless_slash_palette_follows_profile_param(server, tmp_path, monke
         (root / "profiles" / name / "config.yaml").write_text(
             f"skills:\n  external_dirs:\n    - {skill_dir.parent}\n"
             f"quick_commands:\n  {name}-qc:\n    type: exec\n    command: echo {name}\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr(server, "_hermes_home", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    monkeypatch.setattr(server, "_moor_home", str(root))
 
     def palette(profile):
         catalog = server.handle_request({"id": "r1", "method": "commands.catalog", "params": {"profile": profile}})
@@ -1832,7 +1832,7 @@ def test_skin_live_switch_end_to_end(server, tmp_path, monkeypatch):
     """Real config + skin files: activating a skin (as `moor config set` does)
     makes the per-tool reconcile broadcast skin.changed with the resolved palette.
     Exercises _load_cfg → _skin_sig → resolve_skin → _emit with no mocks in between."""
-    from hermes_cli import skin_engine
+    from moor_cli import skin_engine
 
     (tmp_path / "skins").mkdir()
     (tmp_path / "skins" / "midnight.yaml").write_text(

@@ -14,9 +14,9 @@ from time import monotonic_ns
 from typing import Any, Callable, Iterator
 
 from agent import relay_runtime
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_constants import reset_moor_home_override, set_moor_home_override
 from agent.portal_tags import get_conversation_context
-from hermes_cli.version_info import get_version_info
+from moor_cli.version_info import get_version_info
 
 from .shared_metrics import SharedMetricsStore
 from . import shared_metrics_contract as contract
@@ -74,14 +74,14 @@ def _task_parent_handle(session: _MetricsSession, task_id: str) -> Any:
     return session.relay_session.handle
 
 
-# Session sources a Hermes dispatcher stamps on the finite CLI child it spawns: a kanban worker
+# Session sources a Moor dispatcher stamps on the finite CLI child it spawns: a kanban worker
 # (``kanban_db_dispatch``) and an A2A forward (``--source a2a``). Nobody is at either keyboard.
 _DISPATCHED_SOURCES = frozenset({"a2a", "kanban"})
 
 
 def _with_launch_entrypoint(event: dict[str, Any]) -> dict[str, Any]:
-    """Declare the entrypoint of a finite CLI run (``hermes -z``, ``chat -q`` off a TTY, ``-Q``): the
-    ``HERMES_SINGLE_QUERY_SESSION`` marker those paths set (the same one ``cache_ttl: auto`` and the session
+    """Declare the entrypoint of a finite CLI run (``moor -z``, ``chat -q`` off a TTY, ``-Q``): the
+    ``MOOR_SINGLE_QUERY_SESSION`` marker those paths set (the same one ``cache_ttl: auto`` and the session
     source read). ``background`` for a dispatcher-spawned child, else ``one_shot``; the REPL, other surfaces,
     delegated children and an already-declared entrypoint are untouched."""
     if (event.get("entrypoint") or event.get("parent_task_id") or event.get("parent_session_id")
@@ -93,7 +93,7 @@ def _with_launch_entrypoint(event: dict[str, Any]) -> dict[str, Any]:
         return event
     from gateway.session_context import get_session_env
 
-    source = str(get_session_env("HERMES_SESSION_SOURCE", "") or "").strip().lower()
+    source = str(get_session_env("MOOR_SESSION_SOURCE", "") or "").strip().lower()
     return {**event, "entrypoint": "background" if source in _DISPATCHED_SOURCES else "one_shot"}
 
 
@@ -180,7 +180,7 @@ class _MetricsSession:
     tasks: dict[str, _TaskRun] = field(default_factory=dict)
     tool_calls: dict[tuple[str, str, str, str], _ToolCall] = field(default_factory=dict)
     retired_turn_ids: deque[str] = field(default_factory=lambda: deque(maxlen=256))
-    # Session-level aggregation, emitted once as hermes.session.count when the session closes.
+    # Session-level aggregation, emitted once as moor.session.count when the session closes.
     start_fields: dict[str, str] | None = None
     turns: int = 0
     failed_turns: int = 0
@@ -247,7 +247,7 @@ class _Runtime:
         self._lineages: dict[str, _PeakLineage] = {}
         self._lineage_of: dict[str, str] = {}
         self._lineage_lock = threading.Lock()
-        # Leaf lock: conversations whose next cold cache read Hermes already announced.
+        # Leaf lock: conversations whose next cold cache read Moor already announced.
         self._cold_expected: OrderedDict[str, None] = OrderedDict()
         self._cold_lock = threading.Lock()
         self._task_creation_lock = threading.RLock()
@@ -373,7 +373,7 @@ class _Runtime:
                 return task
 
     def start_user_turn(self, event: dict[str, Any]) -> None:
-        """pre_llm_call: a user message started this task (Hermes-owned forks never fire it)."""
+        """pre_llm_call: a user message started this task (moor-owned forks never fire it)."""
         task = self.start_task(event)
         if task is not None:
             task.cost.user_turn = True
@@ -458,7 +458,7 @@ class _Runtime:
                 )
                 if tokens is not None:
                     self._guarded(
-                        "Hermes shared-metrics token mark failed", self._mark,
+                        "Moor shared-metrics token mark failed", self._mark,
                         session, session.tasks.get(model_call.task_id), contract.MODEL_TOKENS_MARK, tokens,
                     )
             else:
@@ -611,7 +611,7 @@ class _Runtime:
         if retired:
             self.close_session({"session_id": session.session_id})
         elif finished:
-            self._schedule_flush_and_export("Hermes shared-metrics task flush failed")
+            self._schedule_flush_and_export("Moor shared-metrics task flush failed")
 
     def close_session(self, event: dict[str, Any]) -> None:
         session = self._session(event)
@@ -624,7 +624,7 @@ class _Runtime:
             return
         self._emit_session_summary(session)
         self._schedule_flush_and_export(
-            f"Hermes shared-metrics session {session.session_id} flush failed"
+            f"Moor shared-metrics session {session.session_id} flush failed"
         )
         with self._sessions_lock:
             _forget(self._sessions, session.session_id, session)
@@ -658,11 +658,11 @@ class _Runtime:
     @contextlib.contextmanager
     def _owner_scope(self) -> Iterator[None]:
         """Bind this runtime's profile home for work that can run outside its own turns."""
-        token = set_hermes_home_override(self.host.profile_key)
+        token = set_moor_home_override(self.host.profile_key)
         try:
             yield
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     def _deregister(self) -> None:
         self._safe(self.relay.subscribers.deregister, self._subscriber_name)
@@ -754,7 +754,7 @@ class _Runtime:
                 return
             # Context copy: the export reads the profile's send/consent config via contextvars.
             thread = spawn_context_thread(
-                self._run_flush_worker, name="hermes-shared-metrics-flush", args=(failure_message,)
+                self._run_flush_worker, name="moor-shared-metrics-flush", args=(failure_message,)
             )
             # The worker's first act is taking this lock, so it cannot clear the slot before it is set.
             thread.start()
@@ -1015,12 +1015,12 @@ class _Runtime:
             self._with_route_run(session.session_id, session.route_run, lambda run: run.observe(task.selected_route))
         if task.model_route is not None and engagement_.engaged_turn(task.start_fields, task.cost.user_turn):
             self._guarded(
-                "Hermes shared-metrics engagement mark failed", self._mark,
+                "Moor shared-metrics engagement mark failed", self._mark,
                 session, None, contract.ENGAGEMENT_TURN_MARK, dict(task.model_route),
             )
         if fields["end_reason"] == "user_cancelled" and route is not None and model_.attended(task.start_fields):
             self._guarded(
-                "Hermes shared-metrics friction mark failed", self._mark,
+                "Moor shared-metrics friction mark failed", self._mark,
                 session, None, contract.MODEL_FRICTION_MARK, model_.friction_fields("interrupt", route),
             )
         if task.cost.user_turn and model_.attended(task.start_fields):
@@ -1033,9 +1033,9 @@ class _Runtime:
     def _emit_rows(self, session: _MetricsSession | None, rows: list[tuple[str, dict[str, str]]]) -> None:
         for mark, data in rows:
             if session is None:
-                self._guarded("Hermes shared-metrics efficiency mark failed", self.record_process_mark, mark, data)
+                self._guarded("Moor shared-metrics efficiency mark failed", self.record_process_mark, mark, data)
             else:
-                self._guarded("Hermes shared-metrics efficiency mark failed", self._mark, session, None, mark, data)
+                self._guarded("Moor shared-metrics efficiency mark failed", self._mark, session, None, mark, data)
 
     def _observe_turn_call(
         self, session: _MetricsSession, task: _TaskRun | None, model_call: _ModelCall, event: dict[str, Any]
@@ -1070,7 +1070,7 @@ class _Runtime:
             return self._cold_expected.pop(key, False) is None
 
     def record_known_cache_break(self, cause: str, route: dict[str, str], session_id: str) -> None:
-        """Hermes invalidated the prefix itself: count it, and don't recount the cold read it causes.
+        """Moor invalidated the prefix itself: count it, and don't recount the cold read it causes.
         Several causes before one cold read are one break (the first cause names it)."""
         if self._announce_cold(self._cold_key(session_id)):
             self._emit_rows(None, [eff.cache_break_row(cause, route)])
@@ -1195,7 +1195,7 @@ class _Runtime:
         self._emit_rows(session, [(mark, data) for mark, data in marks if data is not None])
 
     def _emit_session_summary(self, session: _MetricsSession) -> None:
-        """One hermes.session.count and context-peak row per closed top-level conversation (delegated
+        """One moor.session.count and context-peak row per closed top-level conversation (delegated
         children excluded; compression-rotated segments merged), its tool usage, plus a quick-abandon friction."""
         start = session.start_fields
         counted = bool(session.turns) and start is not None and start.get("entrypoint") != "delegated"
@@ -1299,7 +1299,7 @@ class _Runtime:
 
                 # Context copy: the pass re-checks consent (still_consented) in THIS profile's scope.
                 self._send_thread = spawn_context_thread(
-                    self._run_send_pass, name="hermes-shared-metrics-send", args=(resolved.endpoint,)
+                    self._run_send_pass, name="moor-shared-metrics-send", args=(resolved.endpoint,)
                 )
                 self._send_thread.start()
 
@@ -1510,7 +1510,7 @@ def start_task_run(
 
 def shutdown_runtimes() -> None:
     """Run each live runtime's exit flush now, for a process that leaves through ``os._exit`` (the
-    ``hermes -z`` exit) and so never reaches the atexit hook that closes sessions and writes
+    ``moor -z`` exit) and so never reaches the atexit hook that closes sessions and writes
     ``task_run.finished`` / ``session.count``. Each runtime binds its own profile while it does."""
     with _RUNTIME_LOCK:
         runtimes = [runtime for runtime in _RUNTIMES.values() if isinstance(runtime, _Runtime)]
@@ -1585,7 +1585,7 @@ def record_session_tools(session_id: str, agent: Any, tools_for_api: list) -> No
 
 
 def record_known_cache_break(cause: str, route: dict[str, str], session_id: str) -> None:
-    """A prompt-cache break Hermes caused (caller checked enabled())."""
+    """A prompt-cache break Moor caused (caller checked enabled())."""
     if not relay_runtime.relay_instrumentation_enabled():
         return
     runtime = _get_runtime(retry_failed=True)

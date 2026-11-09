@@ -175,7 +175,7 @@ describe('preview action request routing', () => {
   it('refuses window.read in a browser tab with an error the tool relays', async () => {
     // A browser tab cannot enumerate OS windows: answer {error, platform} at
     // once rather than an empty value the tool reports as "did not answer".
-    document.documentElement.dataset.hermesDesktopHost = 'browser'
+    document.documentElement.dataset.moorDesktopHost = 'browser'
 
     try {
       const { respond } = deliver('window.read', {}, null)
@@ -187,7 +187,7 @@ describe('preview action request routing', () => {
         platform: 'browser'
       })
     } finally {
-      delete document.documentElement.dataset.hermesDesktopHost
+      delete document.documentElement.dataset.moorDesktopHost
     }
   })
 
@@ -418,7 +418,7 @@ describe('preview pop-out forwarding', () => {
   })
 
   it('reads locally in a browser tab, which has no pop-out to wait on', async () => {
-    document.documentElement.dataset.hermesDesktopHost = 'browser'
+    document.documentElement.dataset.moorDesktopHost = 'browser'
 
     try {
       const { respond } = deliver('preview.read', { session_id: 'session-a' }, 'session-a')
@@ -426,7 +426,7 @@ describe('preview pop-out forwarding', () => {
       await vi.waitFor(() => expect(respond).toHaveBeenCalledTimes(1))
       expect(requestPopoutPreviewRead).not.toHaveBeenCalled()
     } finally {
-      delete document.documentElement.dataset.hermesDesktopHost
+      delete document.documentElement.dataset.moorDesktopHost
     }
   })
 })

@@ -17,9 +17,9 @@ from gateway.config import Platform
 from gateway.session import SessionSource, build_session_context_prompt
 from gateway.session_prompt_pin import PROMPT_PIN_VERSION, sanitize_prompt_pin
 from gateway.run_shutdown import _log_suppressed
-from hermes_cli.config import DEFAULT_CONFIG, cfg_get
-from hermes_cli.local_runtime.endpoint import LLAMACPP_ALIASES
-from hermes_cli.observability.shared_metrics_busy import observe_running_chats
+from moor_cli.config import DEFAULT_CONFIG, cfg_get
+from moor_cli.local_runtime.endpoint import LLAMACPP_ALIASES
+from moor_cli.observability.shared_metrics_busy import observe_running_chats
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
     from gateway.run import GatewayRunner
@@ -285,12 +285,12 @@ class GatewayAgentCacheMixin:
         # Vendor prefix stripped on native providers, else the cached agent is evicted every turn,
         # destroying prompt caching.
         with suppress(Exception):
-            from hermes_cli.model_normalize import _AGGREGATOR_PROVIDERS, normalize_model_for_provider
+            from moor_cli.model_normalize import _AGGREGATOR_PROVIDERS, normalize_model_for_provider
             if provider and provider not in _AGGREGATOR_PROVIDERS:
                 model = normalize_model_for_provider(model, provider)
-        # The Nous welcome host runs its one model whatever the chat configured (pin_model_for_route).
+        # The Moor welcome host runs its one model whatever the chat configured (pin_model_for_route).
         with suppress(Exception):
-            from hermes_cli.anon_auth import pin_model_for_route
+            from moor_cli.anon_auth import pin_model_for_route
             model = pin_model_for_route(provider, primary.get("base_url", getattr(agent, "base_url", None)), model)
         return model
 

@@ -122,7 +122,7 @@ class TestRegister:
         assert not token_auth.is_token_route(drain.DRAIN_ROUTE_PATH)
 
     def test_skips_and_fails_closed_on_weak_secret(self, drain, monkeypatch):
-        monkeypatch.setenv("HERMES_DASHBOARD_DRAIN_SECRET", "tooweak")
+        monkeypatch.setenv("MOOR_DASHBOARD_DRAIN_SECRET", "tooweak")
         monkeypatch.setattr(drain, "_load_config_drain_auth_section", dict)
         ctx = MagicMock()
         drain.register(ctx)
@@ -133,7 +133,7 @@ class TestRegister:
 
     def test_registers_with_strong_env_secret(self, drain, monkeypatch):
         s = _strong_secret()
-        monkeypatch.setenv("HERMES_DASHBOARD_DRAIN_SECRET", s)
+        monkeypatch.setenv("MOOR_DASHBOARD_DRAIN_SECRET", s)
         monkeypatch.setattr(drain, "_load_config_drain_auth_section", dict)
         ctx = MagicMock()
         drain.register(ctx)

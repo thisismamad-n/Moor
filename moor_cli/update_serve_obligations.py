@@ -26,7 +26,7 @@ def defer_manual_serve(runtime: dict, *, require_alive: bool = False) -> bool:
 def _defer_identified(runtime: dict, *, extra: dict | None = None, require_alive: bool = False) -> bool:
     """Shared tail of the manual and unit deferrals: True when the incarnation is gone or its reminder
     (plus *extra* fields) was filed; False while it is still owed and nothing durable was written."""
-    from hermes_cli.process_identity import _pid_alive_matches
+    from moor_cli.process_identity import _pid_alive_matches
 
     pid, created = runtime.get("pid"), runtime["detail"].get("create_time")
     if type(pid) is not int or pid <= 0:
@@ -53,7 +53,7 @@ def _defer_identified(runtime: dict, *, extra: dict | None = None, require_alive
 def _write_reminder(row: dict) -> None:
     """Persist one reminder row, one immutable file per incarnation (no read/merge/write races
     between CLI startups). Raises OSError/ValueError/TypeError to the caller."""
-    directory = get_hermes_home() / "serve_restart_pending"
+    directory = get_moor_home() / "serve_restart_pending"
     directory.mkdir(parents=True, exist_ok=True)
     target = directory / f"{row['pid']}-{float(row['create_time']).hex()}.json"
     temporary = None
@@ -88,7 +88,7 @@ def defer_unit_serve(runtime: dict) -> bool:
     only gateways, so without this a unit the update could not restart (no root, an aborted run,
     ``--no-gateway-restart``) is never mentioned again. True when the row is discharged (process gone)
     or the reminder was filed; False when it is still owed and nothing durable could be written."""
-    from hermes_cli.main_dashboard import _systemd_restart_commands
+    from moor_cli.main_dashboard import _systemd_restart_commands
 
     if not is_unit_serve_row(runtime):
         return False
@@ -120,9 +120,9 @@ def retain_receipt_manual_serves(receipt: dict) -> list[dict]:
 
 def warn_pending_manual_serves(*, startup: bool = False, pending_manual: list[dict] | None = None) -> None:
     """Warn about manual debt independently of gateway evidence; optionally reuse a snapshot's failed transfers."""
-    from hermes_cli.main_dashboard import _format_restart_commands, _systemd_restart_commands
-    from hermes_cli.process_identity import _pid_alive_matches
-    from hermes_cli.update_receipt import read_latest_receipt
+    from moor_cli.main_dashboard import _format_restart_commands, _systemd_restart_commands
+    from moor_cli.process_identity import _pid_alive_matches
+    from moor_cli.update_receipt import read_latest_receipt
 
     stream = sys.stderr if startup else sys.stdout
     if pending_manual is None:
@@ -135,7 +135,7 @@ def warn_pending_manual_serves(*, startup: bool = False, pending_manual: list[di
             commands = _systemd_restart_commands(str(detail["systemd_unit"]), detail.get("systemd_scope"))
             print(f"    Restart its unit: {_format_restart_commands(commands)}", file=stream)
         elif type(detail.get("create_time")) in (int, float):
-            print("    Ask its owner to relaunch `hermes serve` / `hermes dashboard`; check reminder storage permissions and free space.", file=stream)
+            print("    Ask its owner to relaunch `moor serve` / `moor dashboard`; check reminder storage permissions and free space.", file=stream)
         else:
             # No usable creation time means identity, not storage, blocked the durable reminder.
             print("    This host could not read the process creation time, so no durable reminder could be filed; ask its owner to relaunch `moor serve` / `moor dashboard`, and the warning clears once the pid is confirmed gone.", file=stream)

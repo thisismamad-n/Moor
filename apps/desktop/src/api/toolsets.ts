@@ -110,7 +110,7 @@ export function runToolsetPostSetup(
 }
 
 export function getTerminalBackends(profile?: ProfileScope): Promise<TerminalBackendsResponse> {
-  return window.hermesDesktop.api<TerminalBackendsResponse>({
+  return window.moorDesktop.api<TerminalBackendsResponse>({
     ...capabilityScoped(profile),
     path: '/api/tools/terminal/backends'
   })
@@ -120,7 +120,7 @@ export function selectTerminalBackend(
   backend: string,
   profile?: ProfileScope
 ): Promise<{ ok: boolean; backend: string }> {
-  return window.hermesDesktop.api<{ ok: boolean; backend: string }>({
+  return window.moorDesktop.api<{ ok: boolean; backend: string }>({
     ...capabilityScoped(profile),
     path: '/api/tools/terminal/backend',
     method: 'PUT',

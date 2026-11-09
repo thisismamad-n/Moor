@@ -197,7 +197,7 @@ def _find_toolset_provider_row(
 def _require_known_toolset(name: str) -> None:
     """400 for toolset keys outside the effective configurable set. Call it inside the target
     profile's scope, like ``GET /api/tools/toolsets``: plugin toolsets are registered per profile."""
-    from hermes_cli.tools_config import _get_effective_configurable_toolsets
+    from moor_cli.tools_config import _get_effective_configurable_toolsets
 
     if name not in {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}:
         raise _bad_request(f"Unknown toolset: {name}")
@@ -373,10 +373,10 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
                         "tag": prov.get("tag", ""),
                         "env_vars": env_vars,
                         "post_setup": prov.get("post_setup"),
-                        "requires_nous_auth": bool(prov.get("requires_nous_auth")),
-                        # Set on the "Nous Subscription" rows: the GUI tells the gateway row apart
+                        "requires_moor_auth": bool(prov.get("requires_moor_auth")),
+                        # Set on the "Moor Subscription" rows: the GUI tells the gateway row apart
                         # from a BYOK row of the same vendor (both carry web_backend "firecrawl").
-                        "managed_nous_feature": prov.get("managed_nous_feature"),
+                        "managed_moor_feature": prov.get("managed_moor_feature"),
                         "is_active": is_active,
                         # Server-side readiness: zero-env-var rows are NOT
                         # automatically ready (logged-out Moor rows, never-run
@@ -398,7 +398,7 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
                 "active_provider": active_provider}
             if name == "web":
                 # Resolve active backends exactly as the web_search/web_extract dispatchers do, so badges
-                # reflect what a call would hit now — plus whether that call rides the Nous Tool Gateway
+                # reflect what a call would hit now — plus whether that call rides the Moor Tool Gateway
                 # or the user's own key (the managed and BYOK Firecrawl rows share one backend name).
                 try:
                     from plugins.web.firecrawl.provider import is_managed_route
@@ -414,8 +414,8 @@ async def get_toolset_config(name: str, profile: Optional[str] = None):
                     search_managed = extract_managed = False
                 payload["active_search_backend"] = search_backend
                 payload["active_extract_backend"] = extract_backend
-                payload["search_via_nous"] = bool(search_managed)
-                payload["extract_via_nous"] = bool(extract_managed)
+                payload["search_via_moor"] = bool(search_managed)
+                payload["extract_via_moor"] = bool(extract_managed)
         return payload
 
     return await asyncio.to_thread(_read)
@@ -539,11 +539,11 @@ async def select_toolset_provider(
                     if body.capability not in web_provider_capabilities(backend):
                         raise _bad_request(f"{body.provider} does not support {body.capability}")
                     # The managed row's web_backend names the vendor serving it ("firecrawl"); writing that
-                    # would read as the user's OWN Firecrawl key. Its pin is "nous" (gateway route).
-                    from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER
+                    # would read as the user's OWN Firecrawl key. Its pin is "moor" (gateway route).
+                    from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER
 
                     _dict_section(config, "web")[f"{body.capability}_backend"] = (
-                        NOUS_MANAGED_PROVIDER if prov.get("managed_nous_feature") else backend)
+                        MOOR_MANAGED_PROVIDER if prov.get("managed_moor_feature") else backend)
                 else:
                     try:
                         apply_provider_selection(name, body.provider, config)

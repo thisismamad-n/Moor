@@ -2,7 +2,7 @@
 
 Under ``gateway.multiplex_profiles`` ``os.environ`` is the DEFAULT profile's ``.env``. When a secondary
 profile's scope does not define RETAINDB_PROJECT /
-HERMES_HONCHO_HOST, the provider must fall back to its own default
+MOOR_HONCHO_HOST, the provider must fall back to its own default
 (per-profile partition), NOT write the secondary's memories into the default profile's account.
 """
 from __future__ import annotations
@@ -13,7 +13,7 @@ from agent import secret_scope
 
 _DEFAULT_ENV = {
     "RETAINDB_PROJECT": "proj-default", "RETAINDB_BASE_URL": "https://rdb.default",
-    "HERMES_HONCHO_HOST": "host-default", "HONCHO_BASE_URL": "https://honcho.default",
+    "MOOR_HONCHO_HOST": "host-default", "HONCHO_BASE_URL": "https://honcho.default",
 }
 
 

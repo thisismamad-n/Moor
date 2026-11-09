@@ -10,10 +10,10 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerPluginFilesIpc } from './plugin-files-ipc'
 
-const scratch = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-plugin-files-ipc-')))
-const hermesHome = path.join(scratch, '.hermes')
+const scratch = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'moor-plugin-files-ipc-')))
+const moorHome = path.join(scratch, '.moor')
 const vault = path.join(scratch, 'Vault')
-fs.mkdirSync(hermesHome)
+fs.mkdirSync(moorHome)
 fs.mkdirSync(vault)
 fs.writeFileSync(path.join(vault, 'note.md'), 'hello')
 
@@ -28,7 +28,7 @@ registerPluginFilesIpc({
   windowFor: () => window as never,
   broadcastChange,
   userDataDir: () => path.join(scratch, 'userData'),
-  hermesHomes: () => [hermesHome],
+  moorHomes: () => [moorHome],
   trashItem: async () => undefined
 })
 
@@ -38,11 +38,11 @@ afterAll(() => fs.rmSync(scratch, { recursive: true, force: true }))
 
 beforeEach(() => broadcastChange.mockClear())
 
-describe('hermes:pluginFiles:request', () => {
+describe('moor:pluginFiles:request', () => {
   it('a cancelled picker grants nothing', async () => {
     showOpenDialog.mockResolvedValueOnce({ canceled: true, filePaths: [] })
 
-    expect(await call('hermes:pluginFiles:request', 'plexus', { title: 'Choose a folder for Plexus' })).toEqual({
+    expect(await call('moor:pluginFiles:request', 'plexus', { title: 'Choose a folder for Plexus' })).toEqual({
       ok: true,
       folder: null
     })
@@ -50,38 +50,38 @@ describe('hermes:pluginFiles:request', () => {
       window,
       expect.objectContaining({ properties: ['openDirectory', 'createDirectory'], title: 'Choose a folder for Plexus' })
     )
-    expect(await call('hermes:pluginFiles:grants', 'plexus')).toEqual([])
+    expect(await call('moor:pluginFiles:grants', 'plexus')).toEqual([])
   })
 
-  it('the Hermes home is refused even when the user picks it', async () => {
-    showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [hermesHome] })
+  it('the Moor home is refused even when the user picks it', async () => {
+    showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [moorHome] })
 
-    expect(await call('hermes:pluginFiles:request', 'plexus')).toMatchObject({ ok: false, error: 'protected' })
-    expect(await call('hermes:pluginFiles:grants', 'plexus')).toEqual([])
+    expect(await call('moor:pluginFiles:request', 'plexus')).toMatchObject({ ok: false, error: 'protected' })
+    expect(await call('moor:pluginFiles:grants', 'plexus')).toEqual([])
   })
 
   it('the picked folder becomes a grant the plugin can read through, until revoked', async () => {
     showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [vault] })
 
-    const granted = (await call('hermes:pluginFiles:request', 'plexus')) as { folder: { id: string; path: string } }
+    const granted = (await call('moor:pluginFiles:request', 'plexus')) as { folder: { id: string; path: string } }
 
     expect(granted.folder.path).toBe(vault)
     expect(
-      await call('hermes:pluginFiles:op', 'plexus', { op: 'readText', folder: granted.folder.id, path: 'note.md' })
+      await call('moor:pluginFiles:op', 'plexus', { op: 'readText', folder: granted.folder.id, path: 'note.md' })
     ).toMatchObject({ ok: true, text: 'hello' })
 
-    await call('hermes:pluginFiles:revoke', 'plexus', granted.folder.id)
+    await call('moor:pluginFiles:revoke', 'plexus', granted.folder.id)
 
     expect(
-      await call('hermes:pluginFiles:op', 'plexus', { op: 'readText', folder: granted.folder.id, path: 'note.md' })
+      await call('moor:pluginFiles:op', 'plexus', { op: 'readText', folder: granted.folder.id, path: 'note.md' })
     ).toMatchObject({ ok: false, error: 'not-granted' })
   })
 
   it('a refused or cancelled pick tells no window anything', async () => {
     showOpenDialog.mockResolvedValueOnce({ canceled: true, filePaths: [] })
-    await call('hermes:pluginFiles:request', 'plexus')
-    showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [hermesHome] })
-    await call('hermes:pluginFiles:request', 'plexus')
+    await call('moor:pluginFiles:request', 'plexus')
+    showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [moorHome] })
+    await call('moor:pluginFiles:request', 'plexus')
 
     expect(broadcastChange).not.toHaveBeenCalled()
   })
@@ -90,16 +90,16 @@ describe('hermes:pluginFiles:request', () => {
 describe('every window hears about grant changes', () => {
   it('a grant and a revoke each broadcast the plugin id; a revoke of nothing does not', async () => {
     showOpenDialog.mockResolvedValueOnce({ canceled: false, filePaths: [vault] })
-    const granted = (await call('hermes:pluginFiles:request', 'plexus')) as { folder: { id: string } }
+    const granted = (await call('moor:pluginFiles:request', 'plexus')) as { folder: { id: string } }
 
     expect(broadcastChange).toHaveBeenCalledTimes(1)
     expect(broadcastChange).toHaveBeenLastCalledWith({ pluginId: 'plexus' })
 
-    await call('hermes:pluginFiles:revoke', 'plexus', granted.folder.id)
+    await call('moor:pluginFiles:revoke', 'plexus', granted.folder.id)
 
     expect(broadcastChange).toHaveBeenCalledTimes(2)
 
-    await call('hermes:pluginFiles:revoke', 'plexus', granted.folder.id)
+    await call('moor:pluginFiles:revoke', 'plexus', granted.folder.id)
 
     expect(broadcastChange).toHaveBeenCalledTimes(2)
   })

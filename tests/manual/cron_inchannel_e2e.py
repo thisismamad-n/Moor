@@ -44,7 +44,7 @@ def _fresh_home():
 
 HOME = _fresh_home()
 
-# Import AFTER HERMES_HOME is set.
+# Import AFTER MOOR_HOME is set.
 import cron.scheduler as sched
 from cron import scheduler_delivery as sched_delivery
 from gateway import mirror

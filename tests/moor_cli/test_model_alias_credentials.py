@@ -746,8 +746,8 @@ class TestOneshotPassesAliasCredential:
         monkeypatch.setattr(
             "moor_cli.runtime_provider.resolve_runtime_provider", _fake_resolve
         )
-        monkeypatch.setattr("hermes_cli.config.load_config", lambda *a, **k: {})
-        from hermes_cli import oneshot
+        monkeypatch.setattr("moor_cli.config.load_config", lambda *a, **k: {})
+        from moor_cli import oneshot
 
         # _run_agent holds the alias wiring; run_oneshot() wraps it in a
         # catch-all that would swallow the sentinel.

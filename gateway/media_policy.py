@@ -6,7 +6,7 @@
 entrypoint (gateway startup, ``moor cron run``, ``moor send``) calls
 :func:`apply_media_policy_env` first so standalone paths filter under the gateway's
 policy instead of silently dropping attachments in strict/allowlisted deployments.
-An explicitly-set env var WINS over config.yaml, so shell overrides survive. Under a HERMES_HOME
+An explicitly-set env var WINS over config.yaml, so shell overrides survive. Under a MOOR_HOME
 override (a served profile's turn or cron fire) nothing is bridged: readers load that profile's config.
 """
 
@@ -25,7 +25,7 @@ _TRUTHY = frozenset({"1", "true", "yes", "on"})
 
 
 def _routed_gateway_cfg() -> Optional[dict[str, Any]]:
-    """``gateway`` section of the ROUTED profile's config when a HERMES_HOME override is active
+    """``gateway`` section of the ROUTED profile's config when a MOOR_HOME override is active
     (multiplexed turn), else None. The env bridge is one process-wide copy of the launch profile's
     policy, so a secondary's deliveries must read their own config instead of ``os.environ``."""
     from moor_constants import get_moor_home_override
@@ -99,12 +99,12 @@ def apply_media_policy_env(config: Optional[dict[str, Any]] = None) -> None:
     """Bridge gateway media-policy settings from config.yaml into the env.  Idempotent,
     env-wins, never raises — a bridge failure must not break delivery (validator defaults apply).
 
-    No-op under a HERMES_HOME override, the same gate the readers use: there they take the
+    No-op under a MOOR_HOME override, the same gate the readers use: there they take the
     profile's own config (``_routed_gateway_cfg``), and ``os.environ`` is shared — a routed cron
     fire would hand its allowlist and strictness to the launch profile and its children."""
     try:
-        from hermes_constants import get_hermes_home_override
-        if get_hermes_home_override():
+        from moor_constants import get_moor_home_override
+        if get_moor_home_override():
             return
         gateway_cfg = _load_gateway_cfg(config)
         if not gateway_cfg:

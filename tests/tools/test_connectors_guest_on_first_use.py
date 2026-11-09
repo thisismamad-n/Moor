@@ -1,20 +1,20 @@
 """A guest identity for connectors is created on the first hosted connector action.
 
-Contracts, for a user with no Nous identity on a surface without the free-tier launch gate (plain
+Contracts, for a user with no Moor identity on a surface without the free-tier launch gate (plain
 CLI, TUI, messaging gateway):
 - ``manage_connections`` is offered, and its first hosted action creates exactly one guest whose
   token is connectors-only; later actions create none, and the free model is never selected
 - tool_search sends nothing to the portal or gateway and points the model at ``manage_connections``
-- ``nous.guest: false`` keeps the old answer: no tool, no account
-Driven through the fake NAS (``anon_portal``) with Hermes' real client code.
+- ``moor.guest: false`` keeps the old answer: no tool, no account
+Driven through the fake NAS (``anon_portal``) with Moor' real client code.
 """
 
 import json
 
 import pytest
 
-from hermes_cli import anon_auth
-from tests.hermes_cli.anon_portal import install_portal
+from moor_cli import anon_auth
+from tests.moor_cli.anon_portal import install_portal
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def test_first_hosted_action_creates_one_connectors_only_guest(nas, monkeypatch)
     from tools.connectors.gateway import client
     from tools.connectors.gateway.config import connectors_available
     from tools.connectors.tool import manage_connections
-    from tools.managed_tool_gateway import read_nous_access_token
+    from tools.managed_tool_gateway import read_moor_access_token
 
     bearers = []
 
@@ -37,7 +37,7 @@ def test_first_hosted_action_creates_one_connectors_only_guest(nas, monkeypatch)
             pass
 
         def list_connectors(self, *, timeout=None):
-            bearers.append(read_nous_access_token())
+            bearers.append(read_moor_access_token())
             return [{"connector": "gmail", "enabled": True, "connected": False}]
 
     monkeypatch.setattr(client, "ConnectorClient", Gateway)
@@ -53,13 +53,13 @@ def test_first_hosted_action_creates_one_connectors_only_guest(nas, monkeypatch)
     assert bearers and all(anon_auth.is_connectors_only(b) for b in bearers)
 
     # The free model and its surfaces stay off; the identity survives for connectors.
-    from hermes_cli.auth_constants import AuthError
-    from hermes_cli.auth_nous import get_nous_auth_status_local, resolve_nous_runtime_credentials
+    from moor_cli.auth_constants import AuthError
+    from moor_cli.auth_moor import get_moor_auth_status_local, resolve_moor_runtime_credentials
 
     with pytest.raises(AuthError) as refused:
-        resolve_nous_runtime_credentials()
-    assert refused.value.code == "nous_auth_missing" and not refused.value.relogin_required
-    assert not get_nous_auth_status_local().get("logged_in")
+        resolve_moor_runtime_credentials()
+    assert refused.value.code == "moor_auth_missing" and not refused.value.relogin_required
+    assert not get_moor_auth_status_local().get("logged_in")
     assert not anon_auth.guest_notice_pending() and not anon_auth.has_free_tier_account()
     assert anon_auth.has_guest()
     assert [r["body"].get("purpose") for r in nas.token_requests] == ["connectors"]
@@ -83,10 +83,10 @@ def test_tool_search_without_an_identity_sends_nothing(nas, monkeypatch):
 
 
 def test_guest_opt_out_keeps_connectors_closed(nas):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from tools.connectors.gateway.config import connectors_available, ensure_guest_identity
 
-    (get_hermes_home() / "config.yaml").write_text("nous:\n  guest: false\n", encoding="utf-8")
+    (get_moor_home() / "config.yaml").write_text("moor:\n  guest: false\n", encoding="utf-8")
 
     assert not connectors_available()
     assert ensure_guest_identity() is None

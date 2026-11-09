@@ -93,9 +93,9 @@ def acp(tmp_path, monkeypatch):
     provider = _LoopbackProvider()
 
     import acp_adapter.session as acp_session
-    import hermes_cli.config as cli_config
-    from hermes_cli import mcp_startup
-    from hermes_cli import runtime_provider
+    import moor_cli.config as cli_config
+    from moor_cli import mcp_startup
+    from moor_cli import runtime_provider
 
     monkeypatch.setattr(cli_config, "load_config", lambda *a, **k: {
         "model": {"provider": "openai-compat", "default": _MODEL, "context_length": 131072},
@@ -269,9 +269,9 @@ def test_failed_turn_boundary_keeps_the_error_card_for_rehydration(tmp_path, mon
     from types import SimpleNamespace
 
     from agent.conversation_loop import _close_durable_failed_turn
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db = SessionDB(tmp_path / "state.db")
     sid = "s1"
     db.create_session(session_id=sid, source="acp", model="m")
@@ -304,9 +304,9 @@ def test_failed_turn_after_a_tool_row_is_closed_with_its_error_card(tmp_path, mo
 
     from agent.conversation_loop import _close_durable_failed_turn
     from agent.turn_failure_copy import FAILED_TURN_DISPLAY_KIND, PARTIAL_FAILED_TURN_NOTICE
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     db = SessionDB(tmp_path / "state.db")
     sid = "s1"
     db.create_session(session_id=sid, source="tui", model="m")
@@ -327,7 +327,7 @@ def test_failed_turn_after_a_tool_row_is_closed_with_its_error_card(tmp_path, mo
                           display_metadata=last.get("display_metadata"))
 
     agent = SimpleNamespace(_session_db=db, session_id=sid, _flush_messages_to_session_db=flush,
-                            provider="nous", model="m")
+                            provider="moor", model="m")
     failed = {"completed": False, "failed": True, "failure_reason": "rate_limit",
               "error": "429 Too Many Requests", "messages": messages, "current_turn_user_idx": 0}
     _close_durable_failed_turn(agent, failed)

@@ -179,12 +179,12 @@ export function canOpenNewWindow(): boolean {
   return typeof window !== 'undefined' && typeof window.moorDesktop?.openWindow === 'function'
 }
 
-type DesktopBridge = Window['hermesDesktop']
+type DesktopBridge = Window['moorDesktop']
 
 // The shell's call that pops the in-app Browser into its own OS window, or
 // undefined where there is none (outside Electron, the Webapp's bridge).
 function browserWindowOpener(): DesktopBridge['openBrowserWindow'] {
-  const open = typeof window === 'undefined' ? undefined : window.hermesDesktop?.openBrowserWindow
+  const open = typeof window === 'undefined' ? undefined : window.moorDesktop?.openBrowserWindow
 
   return typeof open === 'function' ? open : undefined
 }
@@ -192,7 +192,7 @@ function browserWindowOpener(): DesktopBridge['openBrowserWindow'] {
 // The shell's call that hands a session to the user's own terminal emulator,
 // or undefined where there is none (outside Electron, the Webapp's bridge).
 function sessionTerminalOpener(): DesktopBridge['openSessionInTerminal'] {
-  const open = typeof window === 'undefined' ? undefined : window.hermesDesktop?.openSessionInTerminal
+  const open = typeof window === 'undefined' ? undefined : window.moorDesktop?.openSessionInTerminal
 
   return typeof open === 'function' ? open : undefined
 }
@@ -271,7 +271,7 @@ export async function openSessionInNewWindow(
 
     const connectionId = isSessionOwnerRoute(owner) ? owner.connectionId : null
 
-    return window.hermesDesktop.openSessionWindow(sessionId, { watch: opts?.watch, profile, connectionId })
+    return window.moorDesktop.openSessionWindow(sessionId, { watch: opts?.watch, profile, connectionId })
   }, 'Could not open chat in a new window')
 }
 

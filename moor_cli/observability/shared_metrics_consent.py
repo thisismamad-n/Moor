@@ -2,15 +2,15 @@
 
 Every surface reads and writes the same two keys in the profile's config.yaml:
 ``telemetry.shared_metrics.enabled`` (collect) and ``.send`` (upload daily). The offer has two
-answers, and each sets both keys: "Share with Nous" turns both on, "No thanks" turns both off. The
+answers, and each sets both keys: "Share with Moor" turns both on, "No thanks" turns both off. The
 question counts as answered once either key is written explicitly; the shipped defaults are not an
 answer. Every answer also writes ``offer_version``. A "No thanks" without it predates the type-ahead
 fix (an Enter pressed during startup could save it unseen), so that profile is asked once more, with
 the reason, and any response (Esc or dismiss included) settles it for good. A collect-only answer
 from before the offer dropped that choice stays decided: nothing is sent, and it is not asked again.
 Desktop paints the offer as a composer strip (``consent-strip.tsx`` over the ``shared_metrics.*``
-RPCs). The terminal asks at the end of every ``hermes setup`` flow and, for a profile that never
-answered, once before an interactive ``hermes`` / ``hermes --tui`` chat (which also covers the
+RPCs). The terminal asks at the end of every ``moor setup`` flow and, for a profile that never
+answered, once before an interactive ``moor`` / ``moor --tui`` chat (which also covers the
 dashboard's Chat tab, a PTY-hosted TUI). The messaging gateway never asks: a chat participant is
 not the install owner.
 """
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # (label, enabled, send): the offer's two answers, in the order every surface shows them.
 OFFER_CHOICES = (
-    ("Share with Nous", True, True),
+    ("Share with Moor", True, True),
     ("No thanks", False, False),
 )
 _NO_THANKS = len(OFFER_CHOICES) - 1
@@ -35,11 +35,11 @@ _OFFER_DESCRIPTION = "\n".join((
     "Shared metrics are bounded counters: activity, outcomes, error classes (with a",
     "fixed-list reason when a memory write, compression, update or install fails),",
     "model routes, token totals, feature use and coarse machine facts. Never prompts,",
-    "files, paths, setting values or error text. Sharing sends them to Nous once a",
+    "files, paths, setting values or error text. Sharing sends them to Moor once a",
     "day. Apart from a one-time install note, data from before you opt in is never",
     "sent.",
     f"Details: {DOCS_URL}",
-    "Change it any time: hermes setup telemetry",
+    "Change it any time: moor setup telemetry",
 ))
 _REASK_NOTE = "Asking once more: an earlier version could save \"No thanks\" before you saw this question."
 
@@ -72,7 +72,7 @@ def consent_state(raw_cfg: Any) -> dict:
 
 
 def _current_state() -> dict:
-    from hermes_cli.config import read_raw_config
+    from moor_cli.config import read_raw_config
 
     return consent_state(read_raw_config())
 
@@ -94,10 +94,10 @@ def save_consent(enabled: bool, send: bool, config: dict | None = None) -> None:
     to the shipped defaults, so a "No thanks" (both false) saved through it vanished and the
     profile was asked again on every surface. ``config`` (a caller's in-memory copy, e.g. the
     wizard's) gets the same answer so its later save agrees. Sending cannot outlive collection."""
-    from hermes_cli.config import (
+    from moor_cli.config import (
         _write_user_config, get_config_path, is_managed, managed_error, require_readable_config_before_write,
     )
-    from hermes_cli.setup import _record_send_consent_change
+    from moor_cli.setup import _record_send_consent_change
 
     if is_managed():
         managed_error("save configuration")
@@ -112,46 +112,46 @@ def save_consent(enabled: bool, send: bool, config: dict | None = None) -> None:
     # Unconditional: a send key already false may still have an open consent window.
     _record_send_consent_change(enabled=send)
     if not enabled:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         from .shared_metrics_process import purge_pending_receipts
 
-        purge_pending_receipts(get_hermes_home())
+        purge_pending_receipts(get_moor_home())
 
 
 def offer_consent(config: dict | None = None, *, reask: bool = False) -> bool:
     """Ask once, with the offer's two answers; "No thanks" is the default so Enter never
     opts anyone in. Esc leaves a first question open (asked again next time); on a re-ask it keeps
     the recorded "No thanks", so nobody is asked a third time. True when answered."""
-    from hermes_cli.cli_output import print_info, print_success
-    from hermes_cli.curses_ui import curses_radiolist, flush_stdin
+    from moor_cli.cli_output import print_info, print_success
+    from moor_cli.curses_ui import curses_radiolist, flush_stdin
 
-    # The offer appears seconds into startup; an Enter typed while Hermes booted would otherwise
+    # The offer appears seconds into startup; an Enter typed while Moor booted would otherwise
     # answer it ("No thanks") before it was ever on screen, so the user was never really asked.
     flush_stdin()
     idx = curses_radiolist(
-        "Help improve Hermes?", [label for label, _, _ in OFFER_CHOICES], selected=_NO_THANKS, cancel_returns=-1,
+        "Help improve Moor?", [label for label, _, _ in OFFER_CHOICES], selected=_NO_THANKS, cancel_returns=-1,
         description=f"{_REASK_NOTE}\n{_OFFER_DESCRIPTION}" if reask else _OFFER_DESCRIPTION,
     )
     if idx < 0 and reask:
         save_consent(False, False, config)
-        print_info("Kept \"No thanks\". Change it any time with `hermes setup telemetry`.")
+        print_info("Kept \"No thanks\". Change it any time with `moor setup telemetry`.")
         return True
     if idx < 0:
-        print_info("Not answered; Hermes will ask again. Decide any time with `hermes setup telemetry`.")
+        print_info("Not answered; Moor will ask again. Decide any time with `moor setup telemetry`.")
         return False
     _, enabled, send = OFFER_CHOICES[idx]
     save_consent(enabled, send, config)
-    outcome = "sent to Nous once a day" if send else "off"
-    print_success(f"Shared metrics {outcome}. Change it any time with `hermes setup telemetry`.")
+    outcome = "sent to Moor once a day" if send else "off"
+    print_success(f"Shared metrics {outcome}. Change it any time with `moor setup telemetry`.")
     return True
 
 
 def offer_consent_if_undecided(config: dict | None = None) -> None:
-    """The end-of-setup offer: every ``hermes setup`` flow funnels through the setup-completed
+    """The end-of-setup offer: every ``moor setup`` flow funnels through the setup-completed
     record, so this one call covers Quick, Full, Blank Slate, Portal and ``--quick``."""
-    from hermes_cli.config import is_managed
-    from hermes_cli.setup import is_noninteractive
+    from moor_cli.config import is_managed
+    from moor_cli.setup import is_noninteractive
 
     if is_managed() or is_noninteractive() or not sys.stdin.isatty():
         return
@@ -168,14 +168,14 @@ def offer_consent_before_chat(args: Any) -> None:
     """One-time offer before an interactive chat on a profile that never answered. Skipped for
     anything without a person at a terminal (``-q``, piped or JSON output, spawned actions) and for
     a Desktop-spawned pane (the app shows its own strip)."""
-    from hermes_cli.config import is_managed
-    from hermes_cli.setup import is_noninteractive
+    from moor_cli.config import is_managed
+    from moor_cli.setup import is_noninteractive
 
     if any(getattr(args, name, None) for name in ("query", "query_file", "oneshot", "oneshot_exit")):
         return
     if getattr(args, "safe_mode", False) or getattr(args, "ignore_user_config", False):
         return
-    if os.environ.get("HERMES_DESKTOP") or is_noninteractive():
+    if os.environ.get("MOOR_DESKTOP") or is_noninteractive():
         return
     if not (sys.stdin.isatty() and sys.stdout.isatty()) or is_managed():
         return

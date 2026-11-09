@@ -291,7 +291,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     argumentMode: 'text'
   },
   // /bg (alias /background) must be an action (prompt.background RPC — the
-  // TUI's path), not exec: the slash worker's HermesCLI prints the completion
+  // TUI's path), not exec: the slash worker's MoorCLI prints the completion
   // from a fire-and-forget thread after process_command already returned,
   // past the worker's stdout capture window, so the result never reached the
   // desktop conversation that started the task (#97635, #57444).

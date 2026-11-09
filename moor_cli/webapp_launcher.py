@@ -1,4 +1,4 @@
-"""``hermes webapp``: open the browser-hosted Desktop that the gateway serves.
+"""``moor webapp``: open the browser-hosted Desktop that the gateway serves.
 
 The gateway serves the Webapp on its own listener when its home's config sets ``webapp.enabled``
 (``gateway.webapp_listener``). This command builds the bundle when it is stale, starts the gateway that
@@ -24,14 +24,14 @@ import time
 from pathlib import Path
 from urllib.parse import urlsplit
 
-RESTART_COMMAND = "hermes gateway restart"
+RESTART_COMMAND = "moor gateway restart"
 # The gateway reads the Webapp's settings and sign-in providers only when it starts.
 RETRY_AFTER_FIX = f"The gateway reads these settings when it starts: after fixing them, run {RESTART_COMMAND}."
 STARTED_BEFORE_ON = f"The gateway started before the Webapp was turned on. Restart it to serve the Webapp: {RESTART_COMMAND}"
 # A gateway answers a verb it does not know this way; the Webapp's are registered before its control
 # socket answers, so the gateway running predates them (an upgrade it has not restarted onto).
 OLDER_GATEWAY = ("The running gateway is older than the Webapp and does not know its commands. Restart it "
-                 f"onto this version of Hermes: {RESTART_COMMAND}")
+                 f"onto this version of Moor: {RESTART_COMMAND}")
 # Browsers keep secure-context APIs (crypto.subtle, mediaDevices, navigator.clipboard, Notification) from a
 # plain-HTTP origin that is not loopback.
 PLAIN_HTTP_NOTE = ("This address is plain HTTP, so the browser turns off what needs a secure connection: the bot "
@@ -49,16 +49,16 @@ class GatewayUnreachable(Exception):
 def _gateway_home(home: Path) -> Path:
     """The home whose gateway serves *home*: the default gateway for a named profile it serves (the
     route native Desktop takes), else the profile's own."""
-    from hermes_cli.gateway_runtime_multiplex import implied_host_root
+    from moor_cli.gateway_runtime_multiplex import implied_host_root
     return implied_host_root(home) or home
 
 
 def _deleted_profile_refusal(home: Path) -> str | None:
     """What ``-p <name>`` says when *home* is a named profile that was deleted or never created, else
-    None. ``HERMES_HOME`` set to such a home skips that check, and its gateway would be the default
+    None. ``MOOR_HOME`` set to such a home skips that check, and its gateway would be the default
     one, so the command refuses it the same way rather than act on the default profile."""
-    from hermes_cli.profiles import _missing_profile_error
-    from hermes_constants import named_profile_home, named_profile_is_live
+    from moor_cli.profiles import _missing_profile_error
+    from moor_constants import named_profile_home, named_profile_is_live
     profile = named_profile_home(home)
     if profile is None or named_profile_is_live(profile):
         return None
@@ -66,15 +66,15 @@ def _deleted_profile_refusal(home: Path) -> str | None:
 
 
 def _build(args):
-    from hermes_cli.config import get_project_root
-    from hermes_cli.webapp import prepare_webapp_renderer
+    from moor_cli.config import get_project_root
+    from moor_cli.webapp import prepare_webapp_renderer
     return prepare_webapp_renderer(
         get_project_root(), force=args.force_build, skip_build=args.skip_build,
         explicit=args.force_build or args.build_only)
 
 
 def _ensure(home) -> None:
-    from hermes_cli.gateway_runtime import attachable, ensure_gateway_runtime
+    from moor_cli.gateway_runtime import attachable, ensure_gateway_runtime
     result = ensure_gateway_runtime(home, idle_exit=False)
     if not attachable(result):
         cause = ": ".join(part for part in (result.state, result.detail or result.reason_code) if part)
@@ -82,7 +82,7 @@ def _ensure(home) -> None:
 
 
 def _control(home, verb: str, params: dict | None = None) -> dict:
-    from hermes_cli.gateway_client import private_control_query
+    from moor_cli.gateway_client import private_control_query
     request = json.dumps({"protocol": 1, "id": 1, "verb": verb, "params": params or {}}).encode() + b"\n"
     try:
         data = private_control_query(Path(home), request)
@@ -93,7 +93,7 @@ def _control(home, verb: str, params: dict | None = None) -> dict:
 
 def _open(url: str) -> bool:
     import webbrowser
-    from hermes_cli.auth_device_flow import _can_open_graphical_browser
+    from moor_cli.auth_device_flow import _can_open_graphical_browser
     if not _can_open_graphical_browser():
         return False
     try:
@@ -106,8 +106,8 @@ def _open(url: str) -> bool:
 # else, so the referrer and any script stay out of it.
 _LAUNCH_PAGE = ('<!doctype html><meta charset="utf-8"><meta name="referrer" content="no-referrer">'
                 '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'">'
-                '<meta http-equiv="refresh" content="0;url={url}"><title>Opening Hermes</title>'
-                '<p><a href="{url}">Open Hermes Webapp</a></p>\n')
+                '<meta http-equiv="refresh" content="0;url={url}"><title>Opening Moor</title>'
+                '<p><a href="{url}">Open Moor Webapp</a></p>\n')
 
 
 def _open_privately(target: Path, url: str) -> bool:
@@ -120,10 +120,10 @@ def _open_privately(target: Path, url: str) -> bool:
     URL to ``osascript`` on stdin, never in argv, so the page mainly protects the BSDs and illumos, where
     ``xdg-open`` or ``firefox`` gets the URL in argv."""
     from gateway.webapp_listener import TOKEN_PATH, _close_to_other_users, _readable_by_other_users
-    from hermes_constants import is_wsl
+    from moor_constants import is_wsl
     if os.name == "nt" or is_wsl():
         return False
-    folder = Path(target).absolute() / TOKEN_PATH.parent  # HERMES_HOME may be relative; a file: URI is not
+    folder = Path(target).absolute() / TOKEN_PATH.parent  # MOOR_HOME may be relative; a file: URI is not
     try:
         folder.mkdir(mode=0o700, parents=True, exist_ok=True)
         _close_to_other_users(folder)
@@ -146,7 +146,7 @@ def _open_privately(target: Path, url: str) -> bool:
 def _profile_choice(home: Path, target: Path) -> dict:
     """``{"profile": name}`` when the gateway serves *home* as one of its named profiles, so the
     Webapp opens on the profile this command ran for."""
-    from hermes_constants import profile_name_for_home
+    from moor_constants import profile_name_for_home
     if Path(home).resolve() == Path(target).resolve():
         return {}
     name = profile_name_for_home(home)
@@ -154,14 +154,14 @@ def _profile_choice(home: Path, target: Path) -> dict:
 
 
 def _rerun_command(*flags: str) -> str:
-    """``hermes webapp *flags*`` for the profile this run used: ``-p`` re-homed only this process, so a
+    """``moor webapp *flags*`` for the profile this run used: ``-p`` re-homed only this process, so a
     bare rerun gets the sticky profile, and the command keeps ``-p <name>`` when that names another one."""
     import shlex
-    from hermes_cli.main import explicit_cli_profile
-    from hermes_cli.profiles import get_active_profile
+    from moor_cli.main import explicit_cli_profile
+    from moor_cli.profiles import get_active_profile
     name = explicit_cli_profile()
     profile = ["-p", shlex.quote(name)] if name and name != get_active_profile() else []
-    return " ".join(["hermes", *profile, "webapp", *flags])
+    return " ".join(["moor", *profile, "webapp", *flags])
 
 
 def older_gateway(response: dict) -> bool:
@@ -207,10 +207,10 @@ def _plain_http_note(url: str) -> str | None:
 def _browser_address(target: Path, settings, served_url: str) -> str:
     """Where a browser opens the Webapp the gateway serves at *served_url* (its loopback dial origin), as
     ``webapp-launch`` works it out: ``webapp.public_url`` when set, else behind sign-in the LAN address
-    Web Access registered Nous sign-in for, else *served_url* (a private Webapp's launch link). Read from
+    Web Access registered Moor sign-in for, else *served_url* (a private Webapp's launch link). Read from
     *target*'s config now, not from when the gateway started."""
-    from hermes_cli.web_server_boundary import public_hosts_engage_gate, public_url_hosts, should_require_auth
-    from hermes_cli.webapp_access import registered_lan_origin
+    from moor_cli.web_server_boundary import public_hosts_engage_gate, public_url_hosts, should_require_auth
+    from moor_cli.webapp_access import registered_lan_origin
     # The sign-in gate gateway.run_api.start_gateway_api engages on the Webapp's listener; without it
     # webapp-launch hands out the loopback launch link and never reads the registration, which outlives
     # a move back to a loopback bind.
@@ -225,9 +225,9 @@ def _status(target: Path) -> int:
     except GatewayUnreachable:
         from gateway.webapp_listener import webapp_settings
         if webapp_settings(target).enabled:
-            print("The gateway is not running. Run hermes webapp to start it.")
+            print("The gateway is not running. Run moor webapp to start it.")
         else:
-            print(_off_message(target, "run hermes webapp"))
+            print(_off_message(target, "run moor webapp"))
         return 1
     if not response.get("ok"):
         print(_refusal(response))
@@ -243,7 +243,7 @@ def _status(target: Path) -> int:
             print(f"{target / 'config.yaml'} no longer turns the Webapp on: it stops at the next gateway restart "
                   f"({RESTART_COMMAND}).")
     elif status["state"] == "starting":
-        print("The gateway is still starting the Webapp. Run hermes webapp --status again in a moment.")
+        print("The gateway is still starting the Webapp. Run moor webapp --status again in a moment.")
     elif status["state"] == "off":
         print(_off_message(target, f"run {RESTART_COMMAND}"))
     else:
@@ -281,7 +281,7 @@ def _signed_out_summary(result: dict) -> str:
         return ("The gateway is not serving the Webapp, so no browser is connected to it. Replaced its stored "
                 "browser credential: every browser must sign in again once it serves the Webapp.")
     if "connections_closed" not in result:
-        # A gateway started before this Hermes: it replaced the credential and closed the sockets that
+        # A gateway started before this Moor: it replaced the credential and closed the sockets that
         # credential opened, but logins behind the sign-in gate outlive it.
         return (f"Replaced the Webapp's browser credential. Restart the gateway ({RESTART_COMMAND}) to sign "
                 "out browsers that signed in with a password or an account too.")
@@ -291,7 +291,7 @@ def _signed_out_summary(result: dict) -> str:
         return (f"Signed out every browser: {connections}. Every browser login behind sign-in has ended, "
                 "and the account tokens it held no longer work here: browsers must sign in again. Native apps "
                 "signed in to this gateway with their own sign-in stay signed in.")
-    return f"Signed out of every Webapp tab: {connections}. Run hermes webapp to open it again."
+    return f"Signed out of every Webapp tab: {connections}. Run moor webapp to open it again."
 
 
 def _sign_out(target: Path) -> int:
@@ -324,7 +324,7 @@ def _sign_out(target: Path) -> int:
         # never reaches it: wait until it answers the sign-out itself.
         if attempt < _START_WAIT_ATTEMPTS:
             time.sleep(_START_WAIT_INTERVAL)
-    print(f"The gateway is still starting, so nobody was signed out. Run hermes webapp --sign-out again once "
+    print(f"The gateway is still starting, so nobody was signed out. Run moor webapp --sign-out again once "
           f"it is up ({RESTART_COMMAND} if it never comes up).")
     return 1
 
@@ -332,7 +332,7 @@ def _sign_out(target: Path) -> int:
 def _gateway_state(home: Path) -> str:
     """What *home*'s gateway lock and control socket say: ``absent`` (none running), ``starting``,
     ``ready``, or why it cannot be reached."""
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
+    from moor_cli.gateway_runtime import discover_gateway_endpoint
     return discover_gateway_endpoint(home).state
 
 
@@ -352,10 +352,10 @@ def _explain_refused_launch(target: Path, response: dict) -> int:
 
 def cmd_webapp(args) -> int:
     from gateway.webapp_listener import webapp_settings
-    from hermes_cli.webapp import WebappBuildError, packaged_webapp_dist
-    from hermes_constants import get_hermes_home
+    from moor_cli.webapp import WebappBuildError, packaged_webapp_dist
+    from moor_constants import get_moor_home
 
-    home = get_hermes_home()
+    home = get_moor_home()
     if (refusal := _deleted_profile_refusal(home)) is not None:
         print(f"Error: {refusal}", file=sys.stderr)
         return 1
@@ -365,16 +365,16 @@ def cmd_webapp(args) -> int:
     if args.sign_out:
         return _sign_out(target)
     if not args.build_only and not webapp_settings(target).enabled:
-        print(_still_served(target) or _off_message(target, "run hermes webapp again"))
+        print(_still_served(target) or _off_message(target, "run moor webapp again"))
         return 1
     try:
         _build(args)
     except WebappBuildError as exc:
         print(f"✗ {exc}")
-        # A packaged bundle (HERMES_WEBAPP_DIST) is never built here, so no build can fix it.
+        # A packaged bundle (MOOR_WEBAPP_DIST) is never built here, so no build can fix it.
         if packaged_webapp_dist() is None:
             print("  Build it explicitly:")
-            print("    hermes webapp --build-only")
+            print("    moor webapp --build-only")
         return 1
     if args.build_only:
         print("Webapp bundle ready.")

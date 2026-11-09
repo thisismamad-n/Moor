@@ -24,7 +24,7 @@ class DebugSession:
         self.tool_name = tool_name
         self.enabled = os.getenv(env_var, "false").lower() == "true"
         self.session_id = str(uuid.uuid4()) if self.enabled else ""
-        self.log_dir = get_hermes_home() / "logs"
+        self.log_dir = get_moor_home() / "logs"
         self._calls: list[dict[str, Any]] = []
         self._start_time = _now() if self.enabled else ""
         if self.enabled:

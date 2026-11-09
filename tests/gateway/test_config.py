@@ -1593,7 +1593,7 @@ class TestOnAllAdaptersDown:
     """gateway.on_all_adapters_down: what the runner does when the last messaging
     adapter goes down (#118080). Default 'exit' preserves the service-restart
     contract; 'stay_alive' is for launchers with no supervising service manager
-    (the desktop app's direct `hermes serve` child)."""
+    (the desktop app's direct `moor serve` child)."""
 
     def test_default_is_exit(self):
         config = GatewayConfig.from_dict({})
@@ -1652,7 +1652,7 @@ class TestTopLevelBlockVsAuthoredExtra:
         if global_value is not None:
             cfg["require_mention"] = global_value
         (home / "config.yaml").write_text(json.dumps(cfg), encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("MOOR_HOME", str(home))
         for key in list(os.environ):
             if key.startswith(platform.upper() + "_"):
                 monkeypatch.delenv(key)
@@ -1727,8 +1727,8 @@ class TestTopLevelBlockVsAuthoredExtra:
             managed_cfg = {"gateway": {"platforms": {platform: {"extra": pin}}}}
         (home / "config.yaml").write_text(json.dumps(user), encoding="utf-8")
         (managed / "config.yaml").write_text(json.dumps(managed_cfg), encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+        monkeypatch.setenv("MOOR_HOME", str(home))
+        monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
         for key in list(os.environ):
             if key.startswith(platform.upper() + "_"):
                 monkeypatch.delenv(key)

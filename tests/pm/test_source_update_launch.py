@@ -123,7 +123,7 @@ def test_source_python_pin_update_survives_real_gc(source_launch, tmp_path, monk
     _launchers.ensure_install_launchers(root, root / ".moor" / "bin")
     command = _launchers.installation_command(root, module="source_probe")
     (site_packages(selected_venv(root)) / "selected_probe.py").write_text("VALUE = 'A'\n")
-    child_env = {**os.environ, "HERMES_DISABLE_LAZY_INSTALLS": "1"}
+    child_env = {**os.environ, "MOOR_DISABLE_LAZY_INSTALLS": "1"}
     before = subprocess.run(command, env=child_env, capture_output=True, text=True, timeout=30, check=False)
     assert before.returncode == 0, before.stderr
     assert json.loads(before.stdout)["executable"] == str(old_python)
@@ -507,7 +507,7 @@ def test_failed_launch_completion_degrades_to_a_warning(source_launch, tmp_path,
 def test_completion_retry_backoff_and_cap(tmp_path, monkeypatch):
     """Consecutive completion-tail failures back off and finally stop self-starting (#122206:
     an environment where every launch re-runs a doomed ~4-minute tail)."""
-    from hermes_cli import venv_sync
+    from moor_cli import venv_sync
 
     monkeypatch.setattr(venv_sync, "completion_pending_path",
                         lambda root: tmp_path / "source-completion-pending")
@@ -545,9 +545,9 @@ def test_completion_retry_backoff_and_cap(tmp_path, monkeypatch):
 @pytest.mark.platforms("posix")
 def test_capped_completion_attempts_leave_marker_for_explicit_update(source_launch, tmp_path, capsys):
     """Past the retry cap a launch must NOT re-run the tail; it keeps the pending marker
-    and points the operator at `hermes update` instead of burning another doomed attempt."""
+    and points the operator at `moor update` instead of burning another doomed attempt."""
     root, store_python, _ = source_launch
-    from hermes_cli.venv_sync import (
+    from moor_cli.venv_sync import (
         _completion_attempts_path,
         arm_completion,
         completion_pending_path,
@@ -565,7 +565,7 @@ def test_capped_completion_attempts_leave_marker_for_explicit_update(source_laun
     assert venv_sync.prepare_launch(root, []) == store_python
     out = capsys.readouterr().err
     assert "could not be finished automatically" in out
-    assert "hermes update" in out
+    assert "moor update" in out
     assert completion_pending_path(root).is_file(), "the owed completion is still recorded"
     assert not (tmp_path / "completion-calls").exists(), "a capped launch re-ran the tail"
 
@@ -574,12 +574,12 @@ def test_capped_completion_attempts_leave_marker_for_explicit_update(source_laun
 def test_failed_tail_attempt_is_counted_and_success_clears_it(source_launch, tmp_path, monkeypatch, capsys):
     """A failing completion tail records the attempt; the successful retry clears the record."""
     root, store_python, _ = source_launch
-    from hermes_cli.venv_sync import _completion_attempts_path, arm_completion, completion_pending_path
+    from moor_cli.venv_sync import _completion_attempts_path, arm_completion, completion_pending_path
 
     pm.sync_venv(["all"], explicit=True, project_root=root)
     arm_completion(root)
     # The tail script the fixture records calls with — make it fail, then succeed.
-    calls = (root / "hermes_cli" / "source_completion.py")
+    calls = (root / "moor_cli" / "source_completion.py")
     original = calls.read_text(encoding="utf-8")
     calls.write_text("import sys\nsys.exit(3)\n", encoding="utf-8")
     with pytest.raises(RuntimeError, match="source update completion failed"):

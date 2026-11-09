@@ -159,14 +159,14 @@ def _minimax_poll_token(
 
 
 def _minimax_save_auth_state(auth_state: dict[str, Any], *, set_active: bool = True) -> None:
-    """Persist MiniMax OAuth state to Hermes auth store (~/.hermes/auth.json).
+    """Persist MiniMax OAuth state to Moor auth store (~/.moor/auth.json).
 
     ``set_active=False`` rewrites credentials without making minimax-oauth the
     active provider (``_save_provider_state_to_source``'s rule: a token refresh
     rewrites credentials, not the user's choice of provider); only
     ``_minimax_oauth_login`` — the user just chose the provider — sets active.
     """
-    from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store, _store_provider_state
+    from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store, _store_provider_state
     with _auth_store_lock():
         auth_store = _load_auth_store()
         _store_provider_state(auth_store, "minimax-oauth", auth_state, set_active=set_active)
@@ -301,7 +301,7 @@ def _minimax_fresh_state() -> dict[str, Any]:
     new expiry and skip its own refresh. The lock timeout outlives the refresh POST so
     a waiter adopts the rotated pair instead of timing out (codex pattern).
     """
-    from hermes_cli.auth import (
+    from moor_cli.auth import (
         AUTH_LOCK_TIMEOUT_SECONDS, _auth_store_lock, _refresh_minimax_oauth_state,
         get_provider_auth_state,
     )
@@ -309,7 +309,7 @@ def _minimax_fresh_state() -> dict[str, Any]:
         state = get_provider_auth_state("minimax-oauth")
         if not state or not state.get("access_token"):
             raise _minimax_err(
-                "Not logged into MiniMax OAuth. Run `hermes model` and select MiniMax (OAuth).",
+                "Not logged into MiniMax OAuth. Run `moor model` and select MiniMax (OAuth).",
                 "not_logged_in", relogin=True,
             )
         try:
@@ -339,7 +339,7 @@ def resolve_minimax_oauth_runtime_credentials(
     *, min_token_ttl_seconds: int = MINIMAX_OAUTH_REFRESH_SKEW_SECONDS,
     as_token_provider: bool = False,
 ) -> dict[str, Any]:
-    """Return {provider, api_key, base_url, source}; string ``api_key`` by default (``hermes status`` contract)."""
+    """Return {provider, api_key, base_url, source}; string ``api_key`` by default (``moor status`` contract)."""
     state = _minimax_fresh_state()
     return {
         "provider": "minimax-oauth",

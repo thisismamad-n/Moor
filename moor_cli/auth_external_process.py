@@ -14,8 +14,8 @@ def resolve_external_process_command(command: str) -> Optional[str]:
     """Absolute path of the provider CLI ``command``, or ``None`` when nothing executable matches."""
     if not command:
         return None
-    from hermes_platform.resolver import locate_command
-    from hermes_platform.resolver.known_dirs import user_local_bin
+    from moor_platform.resolver import locate_command
+    from moor_platform.resolver.known_dirs import user_local_bin
 
     lookup = command
     if os.sep in command or (os.altsep and os.altsep in command):
@@ -45,6 +45,6 @@ def external_process_launch_env_names() -> frozenset[str]:
 def env_writer_launch_denylist() -> frozenset[str]:
     """:func:`external_process_launch_env_names` plus every left-core row's ``launch_env``: a plugin that is
     not loaded (absent, disabled, failed, quarantined) registers no profile to declare them."""
-    from hermes_cli.left_core_migration import launch_env_names
+    from moor_cli.left_core_migration import launch_env_names
 
     return external_process_launch_env_names() | launch_env_names()

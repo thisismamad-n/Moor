@@ -25,11 +25,11 @@ def served_host(tmp_path, monkeypatch):
     home.mkdir(parents=True)
     locks = tmp_path / "locks"
     locks.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_PROFILE", "served")
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(locks))
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
-    monkeypatch.setattr("hermes_cli.gateway.find_gateway_pids", list)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_PROFILE", "served")
+    monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(locks))
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
+    monkeypatch.setattr("moor_cli.gateway.find_gateway_pids", list)
     monkeypatch.setattr("gateway.status.is_gateway_runtime_lock_active", lambda lock_path=None: False)
     # A live owner holds the host lock for its lifetime (run.py claims before it publishes).
     assert hr.claim_host_lock(hr.ROLE_GATEWAY)[0] is hr.HostLockOutcome.ACQUIRED

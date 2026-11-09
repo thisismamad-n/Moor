@@ -24,8 +24,8 @@ import subprocess
 
 import pytest
 
-import hermes_cli.gateway as gateway_cli
-from hermes_cli import update_cmd
+import moor_cli.gateway as gateway_cli
+from moor_cli import update_cmd
 
 LABEL = "ai.moor.gateway"
 

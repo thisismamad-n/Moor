@@ -71,7 +71,7 @@ def _xai_oauth_state_has_usable_tokens(state: Optional[dict[str, Any]]) -> bool:
 
 
 def _read_xai_oauth_tokens(*, _lock: bool = True) -> dict[str, Any]:
-    from hermes_cli.auth import _load_global_auth_store
+    from moor_cli.auth import _load_global_auth_store
     state = _xai_oauth_state_from_store(_load_auth_store_maybe_locked(_lock))
     if not _xai_oauth_state_has_usable_tokens(state):
         global_state = _xai_oauth_state_from_store(_load_global_auth_store())
@@ -301,7 +301,7 @@ def refresh_xai_oauth_pure(
     access_token: str, refresh_token: str, *, token_endpoint: str = "",
     timeout_seconds: float = 20.0,
 ) -> dict[str, Any]:
-    from hermes_cli.auth import _nonempty_str, _utc_now_z, _xai_oauth_discovery
+    from moor_cli.auth import _nonempty_str, _utc_now_z, _xai_oauth_discovery
     del access_token
     if not _nonempty_str(refresh_token):
         raise _xai_err(
@@ -418,7 +418,7 @@ def resolve_xai_oauth_runtime_credentials(
     *, force_refresh: bool = False, refresh_if_expiring: bool = True,
     refresh_skew_seconds: Optional[int] = None,
 ) -> dict[str, Any]:
-    from hermes_cli.auth import _auth_store_lock, _is_terminal_xai_oauth_refresh_error, _refresh_xai_oauth_tokens, _xai_oauth_discovery
+    from moor_cli.auth import _auth_store_lock, _is_terminal_xai_oauth_refresh_error, _refresh_xai_oauth_tokens, _xai_oauth_discovery
 
     def _should_refresh(data: dict[str, Any]) -> bool:
         access_token = _clean(data["tokens"].get("access_token"))
@@ -523,7 +523,7 @@ def _xai_oauth_poll_device_token(
     client: httpx.Client, *, token_endpoint: str, device_code: str, expires_in: int,
     poll_interval: int,
 ) -> dict[str, Any]:
-    from hermes_cli.auth import _poll_device_token_generic
+    from moor_cli.auth import _poll_device_token_generic
     def _validate(payload: dict[str, Any]) -> None:
         for field_name, article in (("access_token", "an"), ("refresh_token", "a")):
             if not payload.get(field_name):
@@ -555,7 +555,7 @@ def _xai_oauth_poll_device_token(
 
 
 def _xai_oauth_device_code_login(*, timeout_seconds: float = 20.0, open_browser: bool = True) -> dict[str, Any]:
-    from hermes_cli.auth import _can_open_graphical_browser, _is_remote_session, _print_device_code_instructions, _utc_now_z, _xai_oauth_discovery, _xai_oauth_poll_device_token
+    from moor_cli.auth import _can_open_graphical_browser, _is_remote_session, _print_device_code_instructions, _utc_now_z, _xai_oauth_discovery, _xai_oauth_poll_device_token
     discovery = _xai_oauth_discovery(timeout_seconds)
     timeout = httpx.Timeout(max(20.0, timeout_seconds))
     with httpx.Client(timeout=timeout, headers={"Accept": "application/json"}) as client:

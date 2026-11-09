@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 _ZERO = Decimal(0)
 _ONE_MILLION = Decimal(1000000)
-_NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
+_MOOR_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 # Pay-per-token first-party APIs whose models.dev rate card is the vendor's own
 # list price, keyed by billing-route provider -> API domain. A model missing from
 # the snapshot below is priced from models.dev only on HTTPS:443 to that domain

@@ -15,8 +15,8 @@ async def test_repeated_alias_resumes_from_a_client_with_a_different_alias_map(t
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session, local_session_info
-    from hermes_cli import gateway_chat, model_switch
-    import hermes_yaml as yaml
+    from moor_cli import gateway_chat, model_switch
+    import moor_yaml as yaml
 
     owner, client = tmp_path / 'owner', tmp_path / 'client'
     owner.mkdir(), client.mkdir()
@@ -25,7 +25,7 @@ async def test_repeated_alias_resumes_from_a_client_with_a_different_alias_map(t
         'model_aliases': {'fast': {'model': model, 'provider': 'custom', 'base_url': 'http://127.0.0.1:3/v1'}}}
     (client / 'config.yaml').write_text(yaml.safe_dump(alias_cfg('client-model')))
     (owner / 'config.yaml').write_text(yaml.safe_dump(alias_cfg('owner-model')))
-    monkeypatch.setenv('HERMES_HOME', str(owner))
+    monkeypatch.setenv('MOOR_HOME', str(owner))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: alias_cfg('owner-model'))
     model_switch.DIRECT_ALIASES.clear()
     store = SessionStore(owner / 'sessions', GatewayConfig())
@@ -39,7 +39,7 @@ async def test_repeated_alias_resumes_from_a_client_with_a_different_alias_map(t
                                                       'model': 'fast', 'toolsets': []})
         snapshot = {'info': local_session_info(authority, ref)}
         assert snapshot['info']['launch_request']['model'] == 'owner-model'
-        monkeypatch.setenv('HERMES_HOME', str(client))  # the remote client's own home
+        monkeypatch.setenv('MOOR_HOME', str(client))  # the remote client's own home
         model_switch.DIRECT_ALIASES.clear()
         gateway_chat.check_resume_policy(argparse.Namespace(resume=ref.session_id, model='fast'), snapshot)
         gateway_chat.check_resume_policy(argparse.Namespace(resume=ref.session_id, model='owner-model'), snapshot)

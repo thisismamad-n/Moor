@@ -1,4 +1,4 @@
-"""Regression test for #125112: `hermes update --check` on a narrow clone."""
+"""Regression test for #125112: `moor update --check` on a narrow clone."""
 
 import subprocess
 from pathlib import Path
@@ -56,7 +56,7 @@ def _mk_narrow_clone(tmp_path: Path) -> tuple[Path, Path]:
 def test_check_fetch_materialises_tracking_ref_on_narrow_clone(
     tmp_path, monkeypatch, capsys
 ):
-    from hermes_cli import update_cmd
+    from moor_cli import update_cmd
 
     clone, origin = _mk_narrow_clone(tmp_path)
     assert "refs/heads/*" not in _git(
@@ -74,10 +74,10 @@ def test_check_fetch_materialises_tracking_ref_on_narrow_clone(
 
     monkeypatch.setattr(update_cmd._m(), "PROJECT_ROOT", clone)
     monkeypatch.setattr(
-        "hermes_cli.update_contract.evaluate_update_admission", lambda root: None
+        "moor_cli.update_contract.evaluate_update_admission", lambda root: None
     )
     monkeypatch.setattr(
-        "hermes_cli.source_check._github_compare_behind", lambda *a, **k: None
+        "moor_cli.source_check._github_compare_behind", lambda *a, **k: None
     )
 
     update_cmd._cmd_update_check("main")

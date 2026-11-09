@@ -1,11 +1,11 @@
-"""``hermes plugins update`` with no name: update every installed plugin that has an update.
+"""``moor plugins update`` with no name: update every installed plugin that has an update.
 
-The list comes from the read-only ``check-updates`` probe (:func:`hermes_cli.plugins_updates.run_checks`);
+The list comes from the read-only ``check-updates`` probe (:func:`moor_cli.plugins_updates.run_checks`);
 each plugin is then updated through the single-plugin
-path (:func:`~hermes_cli.plugins_cmd_update.update_one`), so catalog consent, the security scan and
+path (:func:`~moor_cli.plugins_cmd_update.update_one`), so catalog consent, the security scan and
 capability re-consent still apply per plugin.
 
-Sibling of :mod:`hermes_cli.plugins_cmd` (the facade is imported late, never at module level).
+Sibling of :mod:`moor_cli.plugins_cmd` (the facade is imported late, never at module level).
 """
 
 from __future__ import annotations
@@ -15,15 +15,15 @@ import sys
 from dataclasses import dataclass, field
 from typing import Any
 
-# Only these classes have an update path `hermes plugins update <name>` can drive: a catalog install
+# Only these classes have an update path `moor plugins update <name>` can drive: a catalog install
 # re-pins to the reviewed sha, a tracked git install pulls. A pip row is a PyPI distribution that
-# Hermes never upgrades (#132494), so offering it would promise an update nothing applies.
+# Moor never upgrades (#132494), so offering it would promise an update nothing applies.
 _UPDATE_KIND = {"catalog": "catalog re-pin", "git": "git pull"}
 logger = logging.getLogger(__name__)
 
 
 def _pc():
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     return plugins_cmd
 
 
@@ -39,17 +39,17 @@ class UpdatePlan:
 
 def plan_update_all(results: list[Any]) -> UpdatePlan:
     """Split ``run_checks`` rows into the plugins ``update`` can move and the ones it cannot (with why)."""
-    from hermes_cli.plugins_updates import held_for_newer_hermes
+    from moor_cli.plugins_updates import held_for_newer_moor
     plan = UpdatePlan()
     for row in results:
         if row.needs_fixing:
             plan.skipped.append((row, f"needs fixing: {row.needs_fixing}"))
-        elif row.update_available is True and (held := held_for_newer_hermes(row)):
-            plan.skipped.append((row, f"update available after updating Hermes ({held})"))
+        elif row.update_available is True and (held := held_for_newer_moor(row)):
+            plan.skipped.append((row, f"update available after updating Moor ({held})"))
         elif row.update_available is True and row.klass in _UPDATE_KIND:
             plan.movable.append(row)
         elif row.update_available is True:
-            plan.skipped.append((row, f"{row.klass} distribution; Hermes does not upgrade it"))
+            plan.skipped.append((row, f"{row.klass} distribution; Moor does not upgrade it"))
         elif row.update_available is None:
             plan.skipped.append((row, row.reason or "update status unknown"))
         elif row.reason:  # up to date by construction but worth naming (pinned)
@@ -68,8 +68,8 @@ def _update_one(row, console, *, interactive: bool) -> tuple[str, str]:
     """Run the single-plugin update for one plan row; return ``(status, detail)``, status being
     updated/current/failed. A refusal is printed like ``update <name>`` prints it, then recorded."""
     from rich.markup import escape
-    from hermes_cli.plugins_cmd_catalog import RepinConsentRequired
-    from hermes_cli.plugins_cmd_update import update_one
+    from moor_cli.plugins_cmd_catalog import RepinConsentRequired
+    from moor_cli.plugins_cmd_update import update_one
     target = _pc()._user_installed_plugin_dir(row.name)
     if target is None:
         return "failed", "no longer installed"
@@ -103,7 +103,7 @@ def _print_plan(console, plan: UpdatePlan) -> None:
 
 
 def cmd_update_all(*, yes: bool = False) -> None:
-    """``hermes plugins update [--yes]``: list the plugins with an update and update them all.
+    """``moor plugins update [--yes]``: list the plugins with an update and update them all.
 
     A terminal asks once (``Update all N? [Y/n]``); without one nothing moves unless ``--yes`` is
     given. Each plugin then goes through ``update_one``, interactive only when a terminal is present,
@@ -111,7 +111,7 @@ def cmd_update_all(*, yes: bool = False) -> None:
     in scripts. One failure does not stop the rest; exit 1 when any update failed.
     """
     from rich.markup import escape
-    from hermes_cli.plugins_updates import run_checks
+    from moor_cli.plugins_updates import run_checks
 
     console = _pc()._console()
     console.print("[dim]Checking installed plugins for updates...[/dim]")

@@ -38,17 +38,17 @@ describe('mergePluginPackages', () => {
 
   it('pairs a desktop half with an agent row whose folder differs from its manifest name', () => {
     // Electron names the half after the package FOLDER (plugins/<folder>/desktop);
-    // the agent row is named from its manifest. `hermes plugins install` lands a
+    // the agent row is named from its manifest. `moor plugins install` lands a
     // package at plugins/<manifest name>, but a self-cloned one (the README's
-    // `git clone … ~/.hermes/plugins/hermes-subscription-meter`) keeps the repo
+    // `git clone … ~/.moor/plugins/moor-subscription-meter`) keeps the repo
     // name. The join key has to be the folder or it splits into two rows.
     const rows = mergePluginPackages(
-      [desktop({ id: 'meter-ui', name: 'Meter', packageName: 'hermes-subscription-meter' })],
+      [desktop({ id: 'meter-ui', name: 'Meter', packageName: 'moor-subscription-meter' })],
       [
         agent({
           name: 'subscription-meter',
           has_desktop_half: true,
-          install_dir: '/home/u/.hermes/plugins/hermes-subscription-meter'
+          install_dir: '/home/u/.moor/plugins/moor-subscription-meter'
         })
       ]
     )

@@ -263,8 +263,8 @@ def _(rid, params: dict) -> dict:
 _SIMPLE_RPCS = {
     # Session-scoped view of the background process registry (desktop status stack).
     "process.stop": (5010, lambda params: {"killed": _tools_mod("tools.process_registry").process_registry.kill_all(source="process.stop")}),
-    # Re-read ``~/.hermes/.env`` (CLI ``/reload`` parity); built agents keep their pool, ``/new`` resolves fresh.
-    "reload.env": (5015, lambda params: {"updated": int(_tools_mod("hermes_cli.config").reload_env())}),
+    # Re-read ``~/.moor/.env`` (CLI ``/reload`` parity); built agents keep their pool, ``/new`` resolves fresh.
+    "reload.env": (5015, lambda params: {"updated": int(_tools_mod("moor_cli.config").reload_env())}),
     "plugins.list": (5032, lambda params: {"plugins": [
         {"name": n, "version": getattr(i, "version", "?"), "enabled": getattr(i, "enabled", True)}
         for n, i in _tools_mod("moor_cli.plugins").get_plugin_manager()._plugins.items()]}),
@@ -319,8 +319,8 @@ def _refresh_live_sessions(home=None, *, preserve_prefix: bool = False,
     ``(plugin_key, text)`` queued once per session for its next tool result or turn
     (``agent/plugin_live_notes.py``)."""
     from agent.onboarding_session import carry_onboarding_toolset
-    from hermes_constants import hermes_home_key
-    want = hermes_home_key(home) if home is not None else None
+    from moor_constants import moor_home_key
+    want = moor_home_key(home) if home is not None else None
     with _sessions_lock:
         live = [(sid, sess) for sid, sess in _sessions.items() if sess.get("agent") is not None and (
             want is None or moor_home_key(sess.get("profile_home") or get_process_moor_home()) == want)]
@@ -344,7 +344,7 @@ def refresh_plugin_sessions(home, plugin_key: str, note: str) -> None:
     """A plugin just went live in ``home``: append its MCP tools to that profile's open chats (deferred
     behind tool_search, so the model-facing tool array is unchanged) and queue ``note``, replacing an
     older one for ``plugin_key``, for their next tool result or turn. Called by
-    ``hermes_cli.plugins_activation.load_and_go_live``."""
+    ``moor_cli.plugins_activation.load_and_go_live``."""
     _refresh_live_sessions(home, preserve_prefix=True, plugin_note=(plugin_key, note) if note else None)
 
 
@@ -455,7 +455,7 @@ def _(rid, params: dict) -> dict:
     # moor-owned strip (no-boot-through-venv).
     _compat = _tools_mod("moor_cli._subprocess_compat")
     return _captured_exec(
-        rid, [sys.executable, "-P", "-m", "hermes_cli.main", *argv], min(int(params.get("timeout", 240)), 600),
+        rid, [sys.executable, "-P", "-m", "moor_cli.main", *argv], min(int(params.get("timeout", 240)), 600),
         on_result=lambda r: _ok(rid, {
             "blocked": False, "code": r.returncode, "output": (_joined_output(r) or "(no output)")[:48_000]}),
         timeout_err=(5016, "cli.exec: timeout"), fail_code=5017,
@@ -498,20 +498,20 @@ def _plugin_command_handler(name: str):
 
 
 def _run_plugin_command(handler, arg: str, session=None, sid: str = "") -> str:
-    """Run a plugin slash-command handler under the session's ``HERMES_SESSION_*`` binding.
+    """Run a plugin slash-command handler under the session's ``MOOR_SESSION_*`` binding.
 
     Plugin handlers read ``get_session_env()`` for the chat/session they serve; these RPCs run on
     the socket/worker thread where nothing upstream binds it (only the turn path does), so a handler
     saw ``""`` or the launch process's inherited values. Same class as the messaging gateway's
     #108698; ``_set_session_context`` is the turn path's own seam."""
-    plugins = _tools_mod("hermes_cli.plugins")
-    invoke = _tools_mod("hermes_cli.plugin_command_dispatch").invoke_plugin_command
+    plugins = _tools_mod("moor_cli.plugins")
+    invoke = _tools_mod("moor_cli.plugin_command_dispatch").invoke_plugin_command
     key = str(session.get("session_key") or "") if session else ""
     tokens = _set_session_context(key, cwd=str(session.get("cwd") or "")) if session else []
     context = {"source": None, "session_key": key, "platform": _session_source(session),
                "session_id": getattr(session.get("agent"), "session_id", None) or key if session else ""}
     # ctx.ask_choice: the ``clarify`` server request this backend's clarify tool sends.
-    choices = _tools_mod("hermes_cli.plugin_choices")
+    choices = _tools_mod("moor_cli.plugin_choices")
     try:
         with choices.bind_asker(choices.clarify_asker(lambda questions: _clarify_block(sid, questions))):
             return str(plugins.resolve_plugin_command_result(invoke(handler, arg, **context)) or "")
@@ -521,7 +521,7 @@ def _run_plugin_command(handler, arg: str, session=None, sid: str = "") -> str:
 
 @contextlib.contextmanager
 def _session_home_scope(session, cwd: str | None = None, profile: str | None = None):
-    """Bind HERMES_HOME and the logical cwd to the session for the block.
+    """Bind MOOR_HOME and the logical cwd to the session for the block.
 
     Skill/bundle/quick-command resolution is home-keyed (``skills.external_dirs``, ``skill-bundles/``,
     ``quick_commands`` all live in the profile's config/home); nothing upstream of these RPC handlers
@@ -531,7 +531,7 @@ def _session_home_scope(session, cwd: str | None = None, profile: str | None = N
     ``$HOME`` and no project skill ever registers or dispatches (#114359). ``cwd`` overrides the session
     record (a session-less catalog request binds the workspace a new session would be seeded with).
     ``profile`` scopes a session-less call (a Desktop draft names its rail-selected profile) (#124651)."""
-    hc = _tools_mod("hermes_constants")
+    hc = _tools_mod("moor_constants")
     rc = _tools_mod("agent.runtime_cwd")
     profile_home = session.get("profile_home") if session else None
     if not session and profile:
@@ -584,7 +584,7 @@ def _is_registry_command(base: str) -> bool:
     built-in cannot be the skill whose prompt the worker would drop.
     """
     try:
-        return _tools_mod("hermes_cli.commands").resolve_command(base) is not None
+        return _tools_mod("moor_cli.commands").resolve_command(base) is not None
     except Exception:
         return False
 
@@ -685,7 +685,7 @@ def _cmd_init(rid, params, session, name, arg):
     as a normal turn (the live agent does the scan and the write). The desktop app launches the
     backend from the home directory, so a process-cwd fallback scans and updates the HOME's
     AGENTS.md instead of the workspace attached to the session."""
-    from hermes_cli.init_command import build_init_prompt_for_cwd
+    from moor_cli.init_command import build_init_prompt_for_cwd
     from tools.terminal_tool import get_session_cwd
 
     skey = session.get("session_key") if session else None
@@ -921,9 +921,9 @@ def _cmd_compress(rid, params, session, name, arg):
 
 # ─── /memory + /skills write-approval review ─────────────────────────────────
 # The review surface (pending / approve / reject / diff / approval) is owned by the shared handler
-# hermes_cli/write_approval_commands.handle_pending_subcommand, which the classic CLI and the
+# moor_cli/write_approval_commands.handle_pending_subcommand, which the classic CLI and the
 # messaging gateway already reach. Desktop/TUI clients normally get it through slash.exec ->
-# _SlashWorker (a private HermesCLI), but command.dispatch is their FALLBACK stage — with no
+# _SlashWorker (a private MoorCLI), but command.dispatch is their FALLBACK stage — with no
 # route here, a failed worker turned every /memory into the routing refusal "not a quick/
 # plugin/bundle/skill command: memory", so staged writes had no review path at all.
 #
@@ -960,7 +960,7 @@ def _write_approval_mode_setter(subsystem: str):
 
 
 def _run_pending_review(rid, subsystem: str, arg: str, session, *, unknown: str):
-    from hermes_cli.write_approval_commands import handle_pending_subcommand
+    from moor_cli.write_approval_commands import handle_pending_subcommand
     from tools import write_approval as wa
     out = handle_pending_subcommand(
         subsystem, (arg or "").split(),
@@ -980,9 +980,9 @@ def _cmd_skills(rid, params, session, name, arg):
     Returns None (falls through to the routing refusal, unchanged behaviour) for anything outside
     the review surface — ``search``/``install``/``browse``/``inspect`` are the CLI skills hub's,
     never a staged-write review. The allowlist mirrors the registry-declared review slice
-    (``CommandDef("skills", desktop_subcommands=...)`` in hermes_cli/commands.py)."""
+    (``CommandDef("skills", desktop_subcommands=...)`` in moor_cli/commands.py)."""
     sub = (arg or "").split()
-    commands = _tools_mod("hermes_cli.commands")
+    commands = _tools_mod("moor_cli.commands")
     allowed = getattr(commands.resolve_command("skills"), "desktop_subcommands", None) or ()
     if not sub or sub[0].lower() not in allowed:
         return None
@@ -1381,7 +1381,7 @@ def _skills_install(rid, params, query):
             self.lines.append(" ".join(str(a) for a in args))
 
     captured = _Capture()
-    verdict = _tools_mod("hermes_cli.skills_hub").do_install(query, skip_confirm=True, console=captured)
+    verdict = _tools_mod("moor_cli.skills_hub").do_install(query, skip_confirm=True, console=captured)
     bundled = _tools_mod("tools.skills_sync_bundled_ops").bundled_skill_for_install
     installed = verdict is True or (verdict is None and bool(bundled(query)))  # an active built-in is no failure
     if not installed:
@@ -1505,7 +1505,7 @@ def _(rid, params: dict) -> dict:
     # Explicit url/command wins. Otherwise a desktop catalog id is resolved
     # before the CLI preset registry — that registry raises, and the wrapper
     # turns the raise into 5024 before the 4063 check below can run.
-    catalog = _tools_mod("hermes_cli.mcp_catalog")
+    catalog = _tools_mod("moor_cli.mcp_catalog")
     entry = None
     if preset and not (server_config.get("url") or server_config.get("command")):
         entry = catalog.get_entry(preset)
@@ -1666,7 +1666,7 @@ def _plugin_rows() -> list[dict]:
     ref_pins = pc._read_install_metadata()  # ``--ref`` installs: pinned_sha so the desktop can show the pin
     # git installs the last update check found behind (the gateway's daily check or `check-updates`); no
     # network here — the listing must stay fast.
-    git_updates = _tools_mod("hermes_cli.plugins_cadence").cached_git_updates(ref_pins)
+    git_updates = _tools_mod("moor_cli.plugins_cadence").cached_git_updates(ref_pins)
     out = []
     active = pc._category_active_names()
     owned_tools = _plugin_tool_ownership()
@@ -1683,9 +1683,9 @@ def _plugin_rows() -> list[dict]:
             "name": name, "key": key, "version": str(version or ""), "description": desc or "",
             "source": source, "status": status, "portable": portable,
             "install_dir": str(_dir_path) if _dir_path else "",
-            "has_desktop_half": bool(_dir_path and _tools_mod("hermes_cli.desktop_plugin_halves").desktop_source(_dir_path)),
+            "has_desktop_half": bool(_dir_path and _tools_mod("moor_cli.desktop_plugin_halves").desktop_source(_dir_path)),
             # Manifest ``config_schema`` + current values: the Plugins hub renders these as a form.
-            "settings_schema": _tools_mod("hermes_cli.plugins_settings").plugin_settings_fields(key, _dir_path),
+            "settings_schema": _tools_mod("moor_cli.plugins_settings").plugin_settings_fields(key, _dir_path),
             "servers": _plugin_server_rows(_dir_path, key, portable=portable, catalog_titles=titles),
             # Tools this package's own code registered: Desktop's tool-media renderer ownership check.
             "tools": owned_tools.get(key, []),
@@ -1784,7 +1784,7 @@ def _plugins_inspect(rid, params):
     catalog_name = str(params.get("catalog_name") or "").strip()
     if not ident and not catalog_name:
         return _err(rid, 4019, "plugins.inspect requires 'identifier', 'repo', or 'catalog_name'")
-    inspect = _tools_mod("hermes_cli.plugins_cmd_inspect").inspect_plugin_source
+    inspect = _tools_mod("moor_cli.plugins_cmd_inspect").inspect_plugin_source
     return _ok(rid, inspect(ident, catalog_name=catalog_name or None))
 
 
@@ -1796,7 +1796,7 @@ def _plugins_install_desktop(rid, params):
     catalog_name = str(params.get("catalog_name") or "").strip()
     if not ident and not catalog_name:
         return _err(rid, 4019, "plugins.manage install_desktop requires 'identifier', 'repo', or 'catalog_name'")
-    result = _tools_mod("hermes_cli.desktop_plugin_install").install_desktop_plugin(
+    result = _tools_mod("moor_cli.desktop_plugin_install").install_desktop_plugin(
         ident, ref=params.get("ref"), catalog_name=catalog_name or None, force=bool(params.get("force")))
     if not result.get("ok"):
         return _err(rid, 5026, result.get("error") or "desktop install failed", data=_source_moved_data(result))
@@ -1809,13 +1809,13 @@ def _plugins_remove_desktop(rid, params):
     name = (params.get("name") or params.get("key") or "").strip()
     if not name:
         return _err(rid, 4019, "plugins.manage remove_desktop requires a 'name'")
-    result = _tools_mod("hermes_cli.desktop_plugin_install").remove_desktop_plugin(
+    result = _tools_mod("moor_cli.desktop_plugin_install").remove_desktop_plugin(
         name, force=bool(params.get("force")))
     return _ok(rid, result) if result.get("ok") else _err(rid, 5026, result.get("error") or "desktop remove failed")
 
 
 def _plugins_update(rid, params):
-    """The same update as the dashboard and ``hermes plugins update``: a catalog install re-pins to the
+    """The same update as the dashboard and ``moor plugins update``: a catalog install re-pins to the
     current catalog SHA, a git install pulls. Every update is scanned. A refusal changes nothing and
     answers ``ok: false`` with what the client must show before retrying: ``consent_required`` +
     ``delta``/``delta_lines`` for a re-pin that widens the plugin (retry with ``accept_capabilities``), or
@@ -1825,7 +1825,7 @@ def _plugins_update(rid, params):
     if not name:
         return _err(rid, 4019, "plugins.update requires a 'name'")
     _ensure_plugin_activation_listener()
-    result = _tools_mod("hermes_cli.plugins_cmd").dashboard_update_user_plugin(
+    result = _tools_mod("moor_cli.plugins_cmd").dashboard_update_user_plugin(
         name, accept_capabilities=bool(params.get("accept_capabilities")), force=bool(params.get("force")))
     if result.get("consent_required") or result.get("scan_blocked"):
         keys = ("ok", "name", "sha", "error", "consent_required", "delta", "delta_lines",
@@ -1858,7 +1858,7 @@ def _plugins_settings(rid, params):
     values = params.get("values")
     if not key or not isinstance(values, dict):
         return _err(rid, 4019, "plugins.settings requires a 'key' and a 'values' mapping")
-    pc = _tools_mod("hermes_cli.plugins_cmd")
+    pc = _tools_mod("moor_cli.plugins_cmd")
     found = pc._find_plugin_entry(key)
     if found is None:
         return _err(rid, 4020, f"plugin '{key}' not found")
@@ -1870,7 +1870,7 @@ def _plugins_settings(rid, params):
         return _err(rid, 4021, str(e))
     row = next((r for r in _plugin_rows() if r["key"] == canonical), None)
     # A Desktop half applies its own preferences (a status-bar chip on/off) without polling.
-    events = _tools_mod("hermes_cli.plugin_events")
+    events = _tools_mod("moor_cli.plugin_events")
     if events._PLUGIN_ID_RE.match(canonical):  # category keys (``image_gen/fal``) form no event name
         events.broadcast_plugin_event(canonical, "settings.changed", {"written": written})
     # A secret the form just stored may feed the plugin's MCP server env (``${MESHY_API_KEY}``): bounce
@@ -1886,8 +1886,8 @@ def _plugins_settings(rid, params):
 
 
 def _portable_server_names(plugin_dir: Path, key: str) -> set[str]:
-    package = _tools_mod("hermes_cli.agent_plugins").load_agent_plugin(plugin_dir, plugin_dir)
-    name_for = _tools_mod("hermes_cli.plugins_manifest").portable_mcp_server_name
+    package = _tools_mod("moor_cli.agent_plugins").load_agent_plugin(plugin_dir, plugin_dir)
+    name_for = _tools_mod("moor_cli.plugins_manifest").portable_mcp_server_name
     return {name_for(key, server) for server in package.mcp_servers}
 
 
@@ -1898,7 +1898,7 @@ def _plugins_onboarding(rid, params):
 
 def _plugins_presence(rid, params):
     """Named catalog plugins this OS runs, in the order asked, each with its app state and disclosure."""
-    return _ok(rid, {"presence": _tools_mod("hermes_cli.plugin_catalog_presence").presence_for(params.get("names") or [])})
+    return _ok(rid, {"presence": _tools_mod("moor_cli.plugin_catalog_presence").presence_for(params.get("names") or [])})
 
 
 _PLUGINS_ACTIONS = {"list": _plugins_list, "onboarding": _plugins_onboarding, "presence": _plugins_presence,

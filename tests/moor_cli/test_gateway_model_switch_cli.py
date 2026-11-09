@@ -10,10 +10,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_cli.gateway_agent import GatewayAgent
-from hermes_cli.gateway_connection import GatewayConnection
-from hermes_cli.model_switch import ModelSwitchResult
-from tests.hermes_cli.test_gateway_agent import SID, FakeClient, connect_with
+from moor_cli.gateway_agent import GatewayAgent
+from moor_cli.gateway_connection import GatewayConnection
+from moor_cli.model_switch import ModelSwitchResult
+from tests.moor_cli.test_gateway_agent import SID, FakeClient, connect_with
 
 REFUSAL = {"status": "confirmation_required", "confirm": "tok-1",
            "confirm_message": "This session holds ~150,000 tokens of context.",
@@ -43,15 +43,15 @@ def _cli(**fields):
 
 def _answering(cli, *answers):
     """Bind main's guard prompt onto ``cli`` with scripted answers; returns what each prompt showed."""
-    from cli import HermesCLI
+    from cli import MoorCLI
     shown, pending = [], list(answers)
 
     def modal(*, title, detail, choices, timeout):
         shown.append((title, detail, [choice[0] for choice in choices]))
         return pending.pop(0)
     cli._prompt_text_input_modal = modal
-    cli._normalize_slash_confirm_choice = lambda raw, choices: HermesCLI._normalize_slash_confirm_choice(cli, raw, choices)
-    cli._confirm_owner_model_switch = lambda refusal: HermesCLI._confirm_owner_model_switch(cli, refusal)
+    cli._normalize_slash_confirm_choice = lambda raw, choices: MoorCLI._normalize_slash_confirm_choice(cli, raw, choices)
+    cli._confirm_owner_model_switch = lambda refusal: MoorCLI._confirm_owner_model_switch(cli, refusal)
     return shown
 
 
@@ -59,9 +59,9 @@ def test_new_after_a_model_switch_leaves_the_ended_session_alone(gateway):
     """Review item 1: /new reset the model to the config default through the stand-in before it was
     rebound, so ``session.mutate model`` rewrote the session just ended (a later /resume of it came back
     on the default). The new session is created on the profile's default and runs it."""
-    from cli import CLI_CONFIG, HermesCLI
-    from hermes_cli.cli_init_mixin import CLIInitMixin
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from cli import CLI_CONFIG, MoorCLI
+    from moor_cli.cli_init_mixin import CLIInitMixin
+    from moor_cli.gateway_session_store import GatewaySessionStore
     conn, client = gateway
     rpc = client.rpc
 
@@ -82,8 +82,8 @@ def test_new_after_a_model_switch_leaves_the_ended_session_alone(gateway):
     default = ModelSwitchResult(success=True, new_model="config-default-model", target_provider="openrouter",
                                 api_key="k", base_url="", api_mode="chat_completions")
     with patch.dict(CLI_CONFIG, {"model": {"default": "config-default-model", "provider": "openrouter"}}), \
-            patch("hermes_cli.model_switch.switch_model", return_value=default):
-        HermesCLI.new_session(cli, silent=True)
+            patch("moor_cli.model_switch.switch_model", return_value=default):
+        MoorCLI.new_session(cli, silent=True)
     assert _mutations(client) == []
     assert "model" not in dict(client.calls)["session.create"]  # the profile's default
     assert cli.session_id == agent.session_id == "local-new"
@@ -94,7 +94,7 @@ def test_model_before_the_first_turn_commits_on_the_session_that_turn_runs(gatew
     """Review item 3: before the first turn there is no stand-in, and the one built for that turn read
     the session's (old) model: "Model switched" was printed and the turn ran the old model. The switch
     now commits on the gateway session."""
-    from cli import HermesCLI
+    from cli import MoorCLI
     conn, client = gateway
     conn.state(SID).info.update(model="old-model", provider="openrouter")
     cli = _cli()
@@ -106,7 +106,7 @@ def test_model_before_the_first_turn_commits_on_the_session_that_turn_runs(gatew
     monkeypatch.setattr("cli._cprint", lambda *_a, **_k: None)
     picked = ModelSwitchResult(success=True, new_model="new-model", target_provider="openrouter", api_key="k",
                                base_url="", api_mode="chat_completions")
-    assert HermesCLI._stage_and_swap_model(cli, picked, "old-model") is True
+    assert MoorCLI._stage_and_swap_model(cli, picked, "old-model") is True
     [mutation] = _mutations(client)
     assert (mutation["session_id"], mutation["payload"]["model"]) == (SID, "new-model")
     first_turn = GatewayAgent(connection=conn, session_id=SID, model="old-model", provider="openrouter")
@@ -115,16 +115,16 @@ def test_model_before_the_first_turn_commits_on_the_session_that_turn_runs(gatew
 
 def test_the_owners_refusal_is_asked_in_the_clis_model_guard_prompt():
     """Review item 2: the owner's warning is the prompt's title and body, as Ink/Desktop/ACP show it."""
-    from cli import HermesCLI
+    from cli import MoorCLI
     cli = SimpleNamespace()
     shown = _answering(cli, "once", "cancel")
-    assert HermesCLI._confirm_owner_model_switch(cli, REFUSAL) is True
-    assert HermesCLI._confirm_owner_model_switch(cli, REFUSAL) is False
+    assert MoorCLI._confirm_owner_model_switch(cli, REFUSAL) is True
+    assert MoorCLI._confirm_owner_model_switch(cli, REFUSAL) is False
     assert shown == [("!!! Large Context Switch Warning !!!", REFUSAL["confirm_message"], ["once", "cancel"])] * 2
 
 
 def test_a_declined_owner_warning_switches_nothing(gateway, monkeypatch):
-    from cli import HermesCLI
+    from cli import MoorCLI
     conn, client = gateway
     printed = []
     monkeypatch.setattr("cli._cprint", lambda text, *_a, **_k: printed.append(str(text)))
@@ -135,7 +135,7 @@ def test_a_declined_owner_warning_switches_nothing(gateway, monkeypatch):
     client.mutate_replies = [REFUSAL]
     picked = ModelSwitchResult(success=True, new_model="big-model", target_provider="openrouter", api_key="k",
                                base_url="", api_mode="chat_completions")
-    assert HermesCLI._stage_and_swap_model(cli, picked, "old-model") is False
+    assert MoorCLI._stage_and_swap_model(cli, picked, "old-model") is False
     assert [title for title, _detail, _choices in shown] == ["!!! Large Context Switch Warning !!!"]
     assert [m["payload"] for m in _mutations(client)] == [{"model": "big-model", "provider": "openrouter"}]
     assert (cli.model, cli.agent.model) == ("old-model", "old-model")
@@ -145,7 +145,7 @@ def test_a_declined_owner_warning_switches_nothing(gateway, monkeypatch):
 def test_one_turn_restore_does_not_rewrite_the_session(gateway, monkeypatch):
     """``/model --once`` never commits, so restoring the previous route is local. An owner guard
     cannot pin the shared session to the one-turn model, and the next turn is not an override."""
-    from cli import HermesCLI
+    from cli import MoorCLI
     conn, client = gateway
     monkeypatch.setattr("cli._cprint", lambda *_a, **_k: None)
     conn.state(SID).info.update(model="small-model", provider="openrouter")
@@ -154,7 +154,7 @@ def test_one_turn_restore_does_not_rewrite_the_session(gateway, monkeypatch):
     assert cli.agent.switch_model(new_model="big-model", new_provider="openrouter", once=True) is True
     client.calls.clear()
     client.mutate_replies = [REFUSAL]
-    HermesCLI._restore_model_runtime_snapshot(cli, {
+    MoorCLI._restore_model_runtime_snapshot(cli, {
         "model": "small-model", "provider": "openrouter", "api_key": "k", "base_url": "", "api_mode": ""})
     assert _mutations(client) == []
     assert (cli.model, cli.agent.model) == ("small-model", "small-model")

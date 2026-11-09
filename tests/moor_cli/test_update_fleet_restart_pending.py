@@ -21,14 +21,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import main as hermes_main
-from hermes_cli import main_web_build
-from hermes_cli import main_install_repair
-from hermes_cli import update_cmd
-from hermes_cli import update_cmd_fleet
-from hermes_cli.update_receipt import COMMAND_BOUNDARY_STOP_REASON
-from hermes_constants import get_hermes_home
-import hermes_cli.update_host_obligation as host_obligation
+from moor_cli import main as moor_main
+from moor_cli import main_web_build
+from moor_cli import main_install_repair
+from moor_cli import update_cmd
+from moor_cli import update_cmd_fleet
+from moor_cli.update_receipt import COMMAND_BOUNDARY_STOP_REASON
+from moor_constants import get_moor_home
+import moor_cli.update_host_obligation as host_obligation
 from gateway import host_rendezvous
 
 pytestmark = pytest.mark.usefixtures("isolated_source_completion")
@@ -101,15 +101,15 @@ def _make_head_moved_side_effect(pre_sha=PRE_SHA, post_sha=POST_SHA):
 
 def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
     """Isolate machine maintenance while exercising interrupted fleet updates."""
-    monkeypatch.setattr(hermes_main.subprocess, "run", run_side_effect)
+    monkeypatch.setattr(moor_main.subprocess, "run", run_side_effect)
     # The update's git (the commit point's target resolve, the move itself) goes through the custody
     # runner; off Windows it calls subprocess.run, on Windows a job-bound Popen the fake above
     # would miss. Fake the runner itself so the seam holds on every OS.
-    from hermes_cli import update_custody
+    from moor_cli import update_custody
 
     monkeypatch.setattr(update_custody, "run",
                         lambda argv, *, inherit_lock=False, **kw: run_side_effect(list(argv), **kw))
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(moor_main, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(update_cmd, "_prepare_updated_checkout", lambda *a, **k: None)
     (tmp_path / ".git").mkdir()
     monkeypatch.setattr(moor_main, "_resolve_update_branch", lambda args: "main")
@@ -192,7 +192,7 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
         lambda **k: [],
     )
     monkeypatch.setattr(
-        "hermes_cli.update_inventory.collect_runtime_inventory",
+        "moor_cli.update_inventory.collect_runtime_inventory",
         lambda: SimpleNamespace(runtimes=[], to_dict=dict),
     )
     # The restart phase imports discovery fns fresh after
@@ -440,7 +440,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     borrowing the gateway's restart, and (3) under contract C3 (the code is
     committed) end ``success`` with an owed ``gateway_restart`` follow-up and
     the restart obligation still armed — never a silent clean success."""
-    from hermes_cli.update_inventory import (
+    from moor_cli.update_inventory import (
         RuntimeRecord, UpdatePlan, _restart_mechanism,
     )
     import moor_cli.update_inventory as ui
@@ -473,7 +473,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     # The gateway leg answers the fleet probe on the new code (otherwise the
     # verifier polls its full no-rows window, ~2 min of wall clock).
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **_k: [{"profile": "default", "pid": 4444, "code_sha": POST_SHA,
                        "code_version": "0.21.0", "state": "current"}],
     )
@@ -487,7 +487,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     )
 
     # Was SystemExit(1): the committed update no longer fails (contract C3).
-    hermes_main.cmd_update(args)
+    moor_main.cmd_update(args)
 
     out = capsys.readouterr().out
     # (1) still warned, unchanged.
@@ -501,7 +501,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     # (3) was "partial": a success that names the owed restart.
     assert receipt["outcome"] == "success"
     assert [f["step"] for f in receipt["followups"]] == ["gateway_restart"]
-    from hermes_cli import update_cmd_fleet
+    from moor_cli import update_cmd_fleet
     assert update_cmd_fleet._fleet_restart_obligation_armed()
     # (2) the reconciliation verdict is unchanged.
     by_pid = {o["pid"]: o["outcome"] for o in receipt["runtime_outcomes"]}
@@ -548,7 +548,7 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
     monkeypatch.setattr(ui, "match_runtime_outcomes", _match)
     # The gateway leg is healthy on the new code; only the Desktop serve is left.
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **_k: [{"profile": "default", "pid": 4444, "code_sha": POST_SHA,
                        "code_version": "0.21.0", "state": "current"}],
     )
@@ -586,7 +586,7 @@ def test_interrupt_between_pull_and_restart_leaves_marker(
 
     # Was KeyboardInterrupt: Ctrl-C after the commit point exits 130 as an interrupt, not a failure.
     with pytest.raises(SystemExit) as exc:
-        hermes_main.cmd_update(args)
+        moor_main.cmd_update(args)
 
     assert exc.value.code == 130
     assert update_cmd_fleet._fleet_restart_obligation_armed()
@@ -1120,7 +1120,7 @@ def test_startup_warn_discharged_when_sha_less_marker_fleet_current(monkeypatch,
     }), encoding="utf-8")
     _patch_marker_sha(monkeypatch, checkout)
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "default", "pid": 42, "code_sha": checkout, "code_version": "0.21.5", "state": "current"}
         ],
@@ -1143,10 +1143,10 @@ def test_startup_warn_kept_when_sha_less_marker_fleet_is_all_external(monkeypatc
     }), encoding="utf-8")
     _patch_marker_sha(monkeypatch, checkout)
     monkeypatch.setattr(
-        "hermes_cli.update_receipt.collect_fleet_versions",
+        "moor_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "other", "pid": 43, "code_sha": "f" * 40, "code_version": "0.21.5", "state": "external",
-             "code_root": "/elsewhere/hermes-agent"}
+             "code_root": "/elsewhere/moor-agent"}
         ],
     )
 

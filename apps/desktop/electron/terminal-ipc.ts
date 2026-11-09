@@ -364,7 +364,7 @@ export function registerTerminalIpc({
     return sshTarget ? getSshConnectionState(sshTarget.scope)?.registryConnectionId || null : 'local'
   }
 
-  ipcMain.handle('hermes:terminal:start', async (event, payload = {}) => {
+  ipcMain.handle('moor:terminal:start', async (event, payload = {}) => {
     ensureNodePtySpawnHelper()
 
     const id = crypto.randomUUID()

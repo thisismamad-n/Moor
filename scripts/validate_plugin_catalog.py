@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-moor-env" python3 "$0" "$@"'
 """Standalone structural validator for plugin-catalog entry files.
 
 Validates ``plugin-catalog/*.yaml`` catalog entries and
@@ -90,7 +90,7 @@ MAX_SCREENSHOTS = 6
 README_REPO_HOSTS = ("github.com", "gitlab.com")
 REQUIRED_KEYS = ("name", "repo", "sha", "description", "maintainer")
 
-# One comparator clause of a requires_hermes spec, e.g. ">=0.19" or "!=1.2.3".
+# One comparator clause of a requires_moor spec, e.g. ">=0.19" or "!=1.2.3".
 _COMPARATOR_RE = re.compile(r"^(>=|<=|==|!=|>|<)\s*\d+(\.\d+)*\Z")
 
 

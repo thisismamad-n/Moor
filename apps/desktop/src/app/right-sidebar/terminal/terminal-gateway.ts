@@ -1,4 +1,4 @@
-import { LOCAL_CONNECTION_ID } from '@hermes/shared'
+import { LOCAL_CONNECTION_ID } from '@moor/shared'
 import { computed } from 'nanostores'
 
 import type { DesktopConnectionsRegistry, DesktopRegistryConnection } from '@/global'

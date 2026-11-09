@@ -21,7 +21,7 @@ arm_source_redirect() {
   export GIT_CONFIG_GLOBAL="$cfg"
   # serve.git publishes commits on main, not releases: HEAD's installer would otherwise
   # install the latest stable release its tags name. Older installers ignore the variable.
-  export HERMES_INSTALL_CHANNEL=main
+  export MOOR_INSTALL_CHANNEL=main
   [ "$(git -C "$repo" remote get-url origin)" = "file://$serve" ] \
     || fail 'git URL redirect did not reach the staged repository'
 

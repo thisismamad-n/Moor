@@ -34,7 +34,7 @@ def _cli_env_map() -> dict[str, str]:
 def _gateway_env_map() -> dict[str, str]:
     """terminal config key -> env var actually written by the gateway bridge."""
     from gateway.run import _bridge_terminal_config_to_env
-    from hermes_cli import config as hc_config
+    from moor_cli import config as hc_config
 
     class _KeyRecorder(dict):
         """Empty config that records every key the bridge looks up."""
@@ -59,7 +59,7 @@ def _gateway_env_map() -> dict[str, str]:
     _bridge_terminal_config_to_env(recorder)  # empty: writes nothing
     # A bridge that stopped consulting its config would make the probe below vacuous.
     assert len(recorder.seen) > 1, "gateway bridge looked up no terminal keys"
-    probe = "/hermes-bridge-probe"  # absolute, so the cwd placeholder skip never fires
+    probe = "/moor-bridge-probe"  # absolute, so the cwd placeholder skip never fires
     candidates = set(_cli_env_map()) | set(hc_config.TERMINAL_CONFIG_ENV_MAP) | recorder.seen
     bridged: dict[str, str] = {}
     with patch.dict(os.environ):  # restores the process env on exit

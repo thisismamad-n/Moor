@@ -8,19 +8,19 @@ import os
 import pytest
 from starlette.testclient import TestClient
 
-from hermes_cli import web_server
+from moor_cli import web_server
 
 
 @pytest.fixture
-def hermes_root(monkeypatch, tmp_path):
-    root = tmp_path / "hermes"
+def moor_root(monkeypatch, tmp_path):
+    root = tmp_path / "moor"
     (root / "profiles" / "work").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root / "profiles" / "work"))
+    monkeypatch.setenv("MOOR_HOME", str(root / "profiles" / "work"))
     return root
 
 
 @pytest.fixture
-def webapp(monkeypatch, hermes_root):
+def webapp(monkeypatch, moor_root):
     for key, value in (("auth_required", False), ("bound_host", None), ("ui_surface", "webapp")):
         monkeypatch.setattr(web_server.app.state, key, value, raising=False)
     client = TestClient(web_server.app)
@@ -43,16 +43,16 @@ def _loaded(webapp):
     for folder in webapp.get("/api/desktop-plugins/list", params={"path": root}).json()["entries"]:
         files = {e["name"]: e["path"] for e in webapp.get("/api/desktop-plugins/list", params={"path": folder["path"]}).json()["entries"]}
         read = lambda name: webapp.get("/api/desktop-plugins/read", params={"path": files[name]}).json()["text"]
-        marker = json.loads(read(".hermes-package.json")) if ".hermes-package.json" in files else None
+        marker = json.loads(read(".moor-package.json")) if ".moor-package.json" in files else None
         seen[folder["name"]] = (read("plugin.js"), marker)
     return seen
 
 
-def test_an_installed_package_brings_its_desktop_half_until_it_is_uninstalled(webapp, hermes_root):
-    mine = hermes_root / "desktop-plugins" / "notes"
+def test_an_installed_package_brings_its_desktop_half_until_it_is_uninstalled(webapp, moor_root):
+    mine = moor_root / "desktop-plugins" / "notes"
     mine.mkdir(parents=True)
     (mine / "plugin.js").write_text("mine", encoding="utf-8")
-    source = _package(hermes_root / "profiles" / "work", "radar", "export default { v: 1 }")
+    source = _package(moor_root / "profiles" / "work", "radar", "export default { v: 1 }")
 
     text, marker = _loaded(webapp)["radar"]
     assert text == "export default { v: 1 }"
@@ -60,7 +60,7 @@ def test_an_installed_package_brings_its_desktop_half_until_it_is_uninstalled(we
     assert (marker["package"], marker["source"]) == ("radar", str(source))
 
     # A corrupt timestamp in one marker is stale metadata, never an error that hides every plugin.
-    marker_path = hermes_root / "desktop-plugins" / "radar" / ".hermes-package.json"
+    marker_path = moor_root / "desktop-plugins" / "radar" / ".moor-package.json"
     marker_path.write_text(json.dumps({**marker, "sourceMtimeMs": None}), encoding="utf-8")
     loaded = _loaded(webapp)
     assert loaded["notes"] == ("mine", None)
@@ -70,7 +70,7 @@ def test_an_installed_package_brings_its_desktop_half_until_it_is_uninstalled(we
     later = os.stat(source / "plugin.js").st_mtime + 5
     os.utime(source / "plugin.js", (later, later))
     touched = webapp.post("/api/desktop-plugins/reconcile").json()["touched"]
-    assert touched == [str((hermes_root / "desktop-plugins" / "radar").resolve())]
+    assert touched == [str((moor_root / "desktop-plugins" / "radar").resolve())]
     assert _loaded(webapp)["radar"][0] == "export default { v: 2 }"
 
     (source / "plugin.js").unlink()
@@ -79,16 +79,16 @@ def test_an_installed_package_brings_its_desktop_half_until_it_is_uninstalled(we
     assert _loaded(webapp) == {"notes": ("mine", None)}
 
 
-def test_a_users_own_plugin_is_never_overwritten_and_the_default_home_wins(webapp, hermes_root):
-    mine = hermes_root / "desktop-plugins" / "notes"
+def test_a_users_own_plugin_is_never_overwritten_and_the_default_home_wins(webapp, moor_root):
+    mine = moor_root / "desktop-plugins" / "notes"
     mine.mkdir(parents=True)
     (mine / "plugin.js").write_text("mine", encoding="utf-8")
-    _package(hermes_root, "notes", "a package that happens to share the name")
-    _package(hermes_root, "radar", "from the default home")
-    _package(hermes_root / "profiles" / "work", "radar", "from a profile")
+    _package(moor_root, "notes", "a package that happens to share the name")
+    _package(moor_root, "radar", "from the default home")
+    _package(moor_root / "profiles" / "work", "radar", "from a profile")
     # A hand-made link to a package's own half (the manual workaround) still loads exactly once.
-    meshy = _package(hermes_root, "meshy", "meshy half")
-    (hermes_root / "desktop-plugins" / "meshy").symlink_to(meshy, target_is_directory=True)
+    meshy = _package(moor_root, "meshy", "meshy half")
+    (moor_root / "desktop-plugins" / "meshy").symlink_to(meshy, target_is_directory=True)
 
     loaded = _loaded(webapp)
 
@@ -96,15 +96,15 @@ def test_a_users_own_plugin_is_never_overwritten_and_the_default_home_wins(webap
     assert loaded["meshy"][0] == "meshy half"
     assert loaded["notes"] == ("mine", None)
     assert loaded["radar"][0] == "from the default home"
-    (hermes_root / "plugins" / "notes" / "desktop" / "plugin.js").unlink()
+    (moor_root / "plugins" / "notes" / "desktop" / "plugin.js").unlink()
     webapp.post("/api/desktop-plugins/reconcile")
     assert (mine / "plugin.js").read_text(encoding="utf-8") == "mine"
 
 
-def test_a_root_layout_package_brings_its_desktop_half_as_the_installers_publish_it(webapp, hermes_root, tmp_path):
+def test_a_root_layout_package_brings_its_desktop_half_as_the_installers_publish_it(webapp, moor_root, tmp_path):
     # plugin.yaml + __init__.py + a ROOT plugin.js: the install probe reports both halves, so the
     # tab installs the agent half alone and counts on this pass for the desktop one.
-    package = hermes_root / "plugins" / "radar"
+    package = moor_root / "plugins" / "radar"
     (package / ".git").mkdir(parents=True)
     (package / ".git" / "config").write_text('[remote "origin"]\n\turl = https://github.com/example/radar\n')
     (package / "plugin.yaml").write_text("name: radar\n", encoding="utf-8")
@@ -114,7 +114,7 @@ def test_a_root_layout_package_brings_its_desktop_half_as_the_installers_publish
     (package / "__pycache__").mkdir()
     (package / "__pycache__" / "x.pyc").write_bytes(b"pyc")
     # A root plugin.js the user could reach through a link would publish anything on the host.
-    linked = hermes_root / "plugins" / "leaky"
+    linked = moor_root / "plugins" / "leaky"
     linked.mkdir()
     (linked / "plugin.js").write_text("export default {}", encoding="utf-8")
     (tmp_path / "secret").write_text("x", encoding="utf-8")
@@ -125,7 +125,7 @@ def test_a_root_layout_package_brings_its_desktop_half_as_the_installers_publish
     text, marker = loaded["radar"]
     assert text == "export default { id: 'radar' }"
     assert (marker["package"], marker["source"], marker["repo"]) == ("radar", str(package), "https://github.com/example/radar")
-    copy = hermes_root / "desktop-plugins" / "radar"
+    copy = moor_root / "desktop-plugins" / "radar"
     # The repository root is the plugin folder, its assets with it; the clone's .git and the agent half's bytecode are not.
     assert (copy / "panel.js").read_text(encoding="utf-8") == "export const panel = 1"
     assert not (copy / ".git").exists() and not (copy / "__pycache__").exists()
@@ -145,8 +145,8 @@ def _refusing_package(home, name, source, outside):
     return package
 
 
-def test_a_refused_update_is_reported_and_the_working_copy_stays(webapp, hermes_root, tmp_path):
-    package = hermes_root / "plugins" / "radar"
+def test_a_refused_update_is_reported_and_the_working_copy_stays(webapp, moor_root, tmp_path):
+    package = moor_root / "plugins" / "radar"
     package.mkdir(parents=True)
     (package / "plugin.js").write_text("v1", encoding="utf-8")
     assert _loaded(webapp)["radar"][0] == "v1"
@@ -163,10 +163,10 @@ def test_a_refused_update_is_reported_and_the_working_copy_stays(webapp, hermes_
     assert _loaded(webapp)["radar"][0] == "v1"
 
 
-def test_a_refused_package_leaves_its_name_to_a_profiles_half(webapp, hermes_root, tmp_path):
+def test_a_refused_package_leaves_its_name_to_a_profiles_half(webapp, moor_root, tmp_path):
     (tmp_path / "secret").write_text("x", encoding="utf-8")
-    _refusing_package(hermes_root, "radar", "default", tmp_path / "secret")
-    profile = hermes_root / "profiles" / "work" / "plugins" / "radar"
+    _refusing_package(moor_root, "radar", "default", tmp_path / "secret")
+    profile = moor_root / "profiles" / "work" / "plugins" / "radar"
     profile.mkdir(parents=True)
     (profile / "plugin.js").write_text("work", encoding="utf-8")
 

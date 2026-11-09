@@ -13,10 +13,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import main as hermes_main
-from hermes_cli import main_web_build
-from hermes_cli import main_install_repair
-from hermes_cli import update_cmd
+from moor_cli import main as moor_main
+from moor_cli import main_web_build
+from moor_cli import main_install_repair
+from moor_cli import update_cmd
 
 def _make_head_pinned_side_effect(sha="abc123"):
     """Simulate a detached checkout pinned to ``sha``: HEAD never moves."""

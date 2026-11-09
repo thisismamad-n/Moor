@@ -1,4 +1,4 @@
-"""Free managed Perplexity fast search for any Nous identity: anonymous guest, or signed in with no
+"""Free managed Perplexity fast search for any Moor identity: anonymous guest, or signed in with no
 usable credits and no tool pool. The gateway serves ``POST /search`` + ``search_type: "fast"`` without
 funding checks, so the local paid-tool gate must not block this one route while every other managed
 vendor keeps it. Real config, real auth store, real selection-to-provider dispatch over local HTTP."""
@@ -11,7 +11,7 @@ from threading import Thread
 
 import pytest
 
-from tests.hermes_cli.anon_portal import as_local_desktop_backend
+from tests.moor_cli.anon_portal import as_local_desktop_backend
 
 # Anonymous guest: NAS tier claim says "anonymous" — no Portal account behind the identity. It claimed
 # the desktop's welcome trial (``_write_home`` reads it on the local desktop backend).
@@ -20,7 +20,7 @@ ANON = {"sub": "anon-1", "account_tier": "anonymous", "paid_access": False}
 EXHAUSTED = {"sub": "user-1", "paid_access": False, "tool_access": {"enabled": False, "coverage": {}}}
 
 
-def _nous_state(claims: dict, auth_method: str) -> dict:
+def _moor_state(claims: dict, auth_method: str) -> dict:
     def seg(obj):
         return base64.urlsafe_b64encode(json.dumps(obj).encode()).rstrip(b"=").decode()
     token = f"{seg({'alg': 'none'})}.{seg({**claims, 'exp': int(time.time()) + 3600})}.sig"
@@ -29,7 +29,7 @@ def _nous_state(claims: dict, auth_method: str) -> dict:
     if claims.get("account_tier"):
         state["account_tier"] = claims["account_tier"]
     if auth_method == "anonymous":
-        from hermes_cli.anon_auth import WELCOME_CLAIM_FLAG
+        from moor_cli.anon_auth import WELCOME_CLAIM_FLAG
         state[WELCOME_CLAIM_FLAG] = True
     return state
 
@@ -73,19 +73,19 @@ def gateway_server(monkeypatch):
         thread.join(timeout=2)
 
 
-def _write_home(home, monkeypatch, *, nous_state=None, config=None):
-    from hermes_cli.config import atomic_config_write
-    from hermes_cli.nous_account import reset_nous_portal_account_info_cache
+def _write_home(home, monkeypatch, *, moor_state=None, config=None):
+    from moor_cli.config import atomic_config_write
+    from moor_cli.moor_account import reset_moor_portal_account_info_cache
 
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     as_local_desktop_backend(monkeypatch)
     monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
     atomic_config_write(home / "config.yaml", {"web": {"keyless_rescue": False}, **(config or {})})
-    if nous_state is not None:
-        (home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"nous": nous_state}}))
-    reset_nous_portal_account_info_cache()
+    if moor_state is not None:
+        (home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"moor": moor_state}}))
+    reset_moor_portal_account_info_cache()
 
 
 def _search():
@@ -100,19 +100,19 @@ def _calls(log):
     return [(path, headers["Authorization"], body.get("search_type")) for path, headers, body in log]
 
 
-@pytest.mark.parametrize("state", [_nous_state(ANON, "anonymous"), _nous_state(EXHAUSTED, "oauth")])
-def test_unentitled_nous_identity_autodetects_free_fast_search(monkeypatch, tmp_path, gateway_server, state):
+@pytest.mark.parametrize("state", [_moor_state(ANON, "anonymous"), _moor_state(EXHAUSTED, "oauth")])
+def test_unentitled_moor_identity_autodetects_free_fast_search(monkeypatch, tmp_path, gateway_server, state):
     """Guests are the users this route exists for: an anonymous identity and a zero-credit account
     both reach the gateway, while the paid gate stays closed for extract and every other vendor."""
-    from hermes_cli.nous_account import get_nous_portal_account_info
+    from moor_cli.moor_account import get_moor_portal_account_info
     from tools import web_tools
-    from tools.tool_backend_helpers import managed_nous_tools_enabled
+    from tools.tool_backend_helpers import managed_moor_tools_enabled
 
-    _write_home(tmp_path / "home", monkeypatch, nous_state=state)
+    _write_home(tmp_path / "home", monkeypatch, moor_state=state)
     # Premise: the guest case really reads as the anonymous tier, and the paid-tool gate is closed
     # for this identity and stays closed for extract.
-    assert get_nous_portal_account_info().is_anonymous_tier is (state["auth_method"] == "anonymous")
-    assert managed_nous_tools_enabled() is False
+    assert get_moor_portal_account_info().is_anonymous_tier is (state["auth_method"] == "anonymous")
+    assert managed_moor_tools_enabled() is False
     assert web_tools.check_firecrawl_api_key() is False
     assert web_tools._get_extract_backend() != "perplexity"
 
@@ -125,8 +125,8 @@ def test_unentitled_nous_identity_autodetects_free_fast_search(monkeypatch, tmp_
 def test_free_fast_search_failure_skips_paid_firecrawl_but_keeps_keyless_rescue(monkeypatch, tmp_path, gateway_server):
     from plugins.web import keyless_mcp
 
-    state = _nous_state(ANON, "anonymous")
-    _write_home(tmp_path / "home", monkeypatch, nous_state=state, config={"web": {"keyless_rescue": True}})
+    state = _moor_state(ANON, "anonymous")
+    _write_home(tmp_path / "home", monkeypatch, moor_state=state, config={"web": {"keyless_rescue": True}})
     monkeypatch.setenv("PERPLEXITY_GATEWAY_URL", gateway_server.base + "/down")
     rescued = {"success": True, "data": {"web": [{"title": "ring", "url": "https://ring.test", "description": "", "position": 1}]}}
     monkeypatch.setattr(keyless_mcp, "search_with_failover", lambda *a, **kw: dict(rescued, data=dict(rescued["data"])))
@@ -138,21 +138,21 @@ def test_free_fast_search_failure_skips_paid_firecrawl_but_keeps_keyless_rescue(
 
 
 @pytest.mark.parametrize("state,config", [
-    (_nous_state(ANON, "anonymous"), {"nous": {"guest": False}}),
+    (_moor_state(ANON, "anonymous"), {"moor": {"guest": False}}),
     (None, {}),
-    (_nous_state(EXHAUSTED, "oauth"), {"web": {"search_backend": "exa"}}),
+    (_moor_state(EXHAUSTED, "oauth"), {"web": {"search_backend": "exa"}}),
 ])
 def test_free_fast_search_needs_a_usable_identity_and_no_explicit_selection(monkeypatch, tmp_path, gateway_server, state, config):
     from tools import web_tools
 
-    _write_home(tmp_path / "home", monkeypatch, nous_state=state, config=config)
+    _write_home(tmp_path / "home", monkeypatch, moor_state=state, config=config)
 
     assert web_tools._managed_web_search() is False
     assert web_tools._get_search_backend() != "perplexity"
 
 
 def test_direct_perplexity_key_beats_free_fast_search(monkeypatch, tmp_path, gateway_server):
-    _write_home(tmp_path / "home", monkeypatch, nous_state=_nous_state(EXHAUSTED, "oauth"))
+    _write_home(tmp_path / "home", monkeypatch, moor_state=_moor_state(EXHAUSTED, "oauth"))
     monkeypatch.setenv("PERPLEXITY_API_KEY", "direct-key")
 
     assert _search()["success"] is True
@@ -161,22 +161,22 @@ def test_direct_perplexity_key_beats_free_fast_search(monkeypatch, tmp_path, gat
 
 def test_free_fast_search_eligibility_follows_the_served_profile(monkeypatch, tmp_path, gateway_server):
     """Multiplex A→B→A: profile A holds a zero-credit Portal identity, B none; each answers from its own store."""
-    from hermes_cli.nous_account import reset_nous_portal_account_info_cache
+    from moor_cli.moor_account import reset_moor_portal_account_info_cache
     from agent.secret_scope import set_multiplex_active
     from gateway.run import _profile_runtime_scope
     from tools import web_tools
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     profile_a, profile_b = root / "profiles" / "a", root / "profiles" / "b"
-    _write_home(profile_a, monkeypatch, nous_state=_nous_state(EXHAUSTED, "oauth"), config={"web": {"keyless_fallback": False}})
+    _write_home(profile_a, monkeypatch, moor_state=_moor_state(EXHAUSTED, "oauth"), config={"web": {"keyless_fallback": False}})
     _write_home(profile_b, monkeypatch, config={"web": {"keyless_fallback": False}})
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     (root / "config.yaml").write_text("")
     set_multiplex_active(True)
     try:
         seen = []
         for home in (profile_a, profile_b, profile_a):
-            reset_nous_portal_account_info_cache()
+            reset_moor_portal_account_info_cache()
             with _profile_runtime_scope(home):
                 seen.append(web_tools._get_search_backend())
     finally:

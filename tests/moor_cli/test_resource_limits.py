@@ -204,10 +204,10 @@ async def test_gateway_startup_applies_limit_before_gateway_initialization(monke
 
 
 def test_serve_startup_applies_limit_before_web_server(monkeypatch):
-    from hermes_cli import main as cli_main
-    from hermes_cli import main_web_build
-    import hermes_cli.plugins
-    import hermes_cli.web_server
+    from moor_cli import main as cli_main
+    from moor_cli import main_web_build
+    import moor_cli.plugins
+    import moor_cli.web_server
 
     # cmd_dashboard(headless_backend=True) exports MOOR_SERVE_HEADLESS=1 into
     # this process's environment (main.py serve path). Touch the key through
@@ -226,7 +226,7 @@ def test_serve_startup_applies_limit_before_web_server(monkeypatch):
     monkeypatch.setattr(cli_main, "_build_web_ui", lambda *args, **kwargs: True)
     monkeypatch.setattr(main_web_build, "_build_web_ui", lambda *args, **kwargs: True)
     monkeypatch.setattr(cli_main, "_maybe_setup_dashboard_auth_interactively", lambda args: None)
-    monkeypatch.setattr(hermes_cli.plugins, "discover_plugins", lambda: None)
+    monkeypatch.setattr(moor_cli.plugins, "discover_plugins", lambda: None)
     served: dict = {}
     monkeypatch.setattr(
         moor_cli.web_server,
@@ -234,7 +234,7 @@ def test_serve_startup_applies_limit_before_web_server(monkeypatch):
         lambda **kwargs: (calls.append("server"), served.update(kwargs)),
     )
     # Desktop SSH serve: the owner watchdog's lock sits next to the validated token (#132034).
-    token_dir = Path("/home/u/.hermes/desktop-ssh") / ("f" * 32)
+    token_dir = Path("/home/u/.moor/desktop-ssh") / ("f" * 32)
     monkeypatch.setattr(cli_main, "_read_ssh_session_token_file", lambda path: "s" * 64)
 
     args = SimpleNamespace(

@@ -133,8 +133,8 @@ This is the standalone command. The terminal-auth flow (`moor acp --setup`) also
 
 What it does:
 
-- Installs Hermes' pinned Chromium (the `chromium` package) through the package manager; no Node.js or npm involved
-- Hermes launches that Chromium itself when `browser_exec` first needs a browser
+- Installs Moor' pinned Chromium (the `chromium` package) through the package manager; no Node.js or npm involved
+- Moor launches that Chromium itself when `browser_exec` first needs a browser
 
 The bootstrap is idempotent — re-running it is fast and skips work that's already done.
 
@@ -335,18 +335,18 @@ Provider resolution uses Moor' normal runtime resolver, so ACP inherits the curr
 
 ## Host integration
 
-Older ACP hosts may still set this variable on the Hermes subprocess they
+Older ACP hosts may still set this variable on the Moor subprocess they
 spawn. It is not user configuration — do not set it by hand in `.env` or
 `config.yaml`.
 
 | Variable | Value | Effect |
 |----------|-------|--------|
-| `HERMES_ACP_SKIP_CONFIGURED_MCP` | `1` | **No effect.** Hermes no longer reads it. `hermes acp` / `hermes-acp` runs as a viewer of the gateway daemon and never starts the `config.yaml` MCP servers itself, so there is no ACP-side startup to skip. |
+| `MOOR_ACP_SKIP_CONFIGURED_MCP` | `1` | **No effect.** Moor no longer reads it. `moor acp` / `moor-acp` runs as a viewer of the gateway daemon and never starts the `config.yaml` MCP servers itself, so there is no ACP-side startup to skip. |
 
 The ACP process does no MCP discovery. The gateway daemon starts the
 `mcp_servers` from its own profile's `config.yaml` once at gateway boot, and ACP
 sessions get those servers through the `platform_toolsets.acp` rules
-[above](#what-hermes-exposes-in-acp-mode). Setting the variable on the ACP
+[above](#what-moor-exposes-in-acp-mode). Setting the variable on the ACP
 subprocess or on the gateway does not change that. Use `platform_toolsets.acp`
 or `no_mcp` to keep configured servers out of ACP sessions.
 

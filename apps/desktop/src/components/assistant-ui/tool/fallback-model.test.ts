@@ -462,7 +462,7 @@ describe('buildToolView title actions', () => {
     // prepends ("Running grep …") otherwise renders as "Running Running grep …".
     const view = buildToolView(
       part({
-        args: { context: 'Running grep -rn -i "bedrock" ~/.hermes/' },
+        args: { context: 'Running grep -rn -i "bedrock" ~/.moor/' },
         result: undefined,
         toolName: 'terminal'
       }),
@@ -470,11 +470,11 @@ describe('buildToolView title actions', () => {
     )
 
     expect(view.title.startsWith('Running Running')).toBe(false)
-    expect(view.title).toBe('Running grep -rn -i "bedrock" ~/.hermes/')
+    expect(view.title).toBe('Running grep -rn -i "bedrock" ~/.moor/')
     expect(view.titleAction).toEqual({
       prefix: '',
       text: 'Running',
-      suffix: ' grep -rn -i "bedrock" ~/.hermes/'
+      suffix: ' grep -rn -i "bedrock" ~/.moor/'
     })
   })
 

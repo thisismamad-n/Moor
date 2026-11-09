@@ -25,7 +25,7 @@
  * all, preserving the CVE-2026-70608 posture for every other guest.
  */
 
-import { isHermesHubExternalUrl, isHermesHubOrigin } from './hub-iframe-policy'
+import { isMoorHubExternalUrl, isMoorHubOrigin } from './hub-iframe-policy'
 
 export interface WindowOpenRequestLike {
   url: string
@@ -74,7 +74,7 @@ export function createWindowOpenHandler(
   return details => {
     const openerOrigin = trusted ? safeOpenerOrigin(trusted, details) : null
 
-    if (trusted && isHermesHubOrigin(openerOrigin) && isHermesHubExternalUrl(details.url)) {
+    if (trusted && isMoorHubOrigin(openerOrigin) && isMoorHubExternalUrl(details.url)) {
       try {
         trusted.openExternalUrl(details.url)
       } catch {

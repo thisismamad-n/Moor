@@ -9,7 +9,7 @@ import contextvars
 import logging
 import os
 from agent.i18n import t
-from hermes_cli.config import cfg_get
+from moor_cli.config import cfg_get
 from utils import env_var_enabled, is_truthy_value
 
 logger = logging.getLogger("tools.approval")
@@ -76,7 +76,7 @@ def _fire_approval_hook(hook_name: str, **kwargs) -> None:
 def gateway_approval_surface() -> str:
     """Surface a gateway-rendered approval reports: ``cli`` for a classic CLI session's turn (main
     prompted those in the CLI process), else ``gateway``."""
-    from hermes_cli.plugin_session import session_surface
+    from moor_cli.plugin_session import session_surface
     return "cli" if session_surface() == "cli" else "gateway"
 
 
@@ -201,7 +201,7 @@ def _is_single_query_approval_context() -> bool:
     to answer approvals; without this marker the gate would wait the full timeout,
     fail closed and push the agent toward workarounds (e.g. execute_code).
     ``approvals.single_query_mode`` makes the path deterministic. A gateway-admitted turn
-    carries the same fact as the submission's ``finite`` flag (``hermes -z`` / ``chat -q``
+    carries the same fact as the submission's ``finite`` flag (``moor -z`` / ``chat -q``
     over the daemon): the viewer detaches on the first prompt, so nobody answers there either."""
     try:
         from gateway.session_finite import finite_turn_required
@@ -210,11 +210,11 @@ def _is_single_query_approval_context() -> bool:
     else:
         if finite_turn_required() is True:
             return True
-    return is_truthy_value(_session_env("HERMES_SINGLE_QUERY_SESSION"))
+    return is_truthy_value(_session_env("MOOR_SINGLE_QUERY_SESSION"))
 
 
 def _no_user_can_answer() -> bool:
-    """True in single-query (-q), cron and unattended-platform sessions. `hermes chat -q` still registers the
+    """True in single-query (-q), cron and unattended-platform sessions. `moor chat -q` still registers the
     CLI panel callback, so a prompt that only checks for a callback would wait the full timeout for nobody."""
     return (_is_single_query_approval_context() or _is_cron_approval_context()
             or _is_unattended_platform_approval_context())

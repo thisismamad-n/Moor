@@ -1,7 +1,7 @@
-"""Honcho host-block migration for ``hermes profile rename``.
+"""Honcho host-block migration for ``moor profile rename``.
 
-Split out of ``hermes_cli.profiles``; the profiles root is late-imported from there so its
-``_get_default_hermes_home`` seam holds.
+Split out of ``moor_cli.profiles``; the profiles root is late-imported from there so its
+``_get_default_moor_home`` seam holds.
 """
 
 import json
@@ -20,13 +20,13 @@ def _atomic_write_json(path: Path, data: dict) -> bool:
 
 def migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) -> None:
     """Rename Honcho host blocks for a renamed profile without changing peers."""
-    from hermes_cli.profiles import _get_default_hermes_home
+    from moor_cli.profiles import _get_default_moor_home
 
-    old_host = f"hermes_{old_name}"
-    legacy_old_host = f"hermes.{old_name}"
-    new_host = f"hermes_{new_name}"
+    old_host = f"moor_{old_name}"
+    legacy_old_host = f"moor.{old_name}"
+    new_host = f"moor_{new_name}"
     candidates = [
-        new_dir / "honcho.json", _get_default_hermes_home() / "honcho.json", Path.home() / ".honcho" / "config.json"
+        new_dir / "honcho.json", _get_default_moor_home() / "honcho.json", Path.home() / ".honcho" / "config.json"
     ]
     seen: set[Path] = set()
     for path in candidates:
@@ -52,7 +52,7 @@ def migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) -> 
             continue
         block = hosts[source_host]
         if isinstance(block, dict) and "aiPeer" not in block:
-            block["aiPeer"] = old_name  # source_host is ``hermes_<old>`` or legacy ``hermes.<old>``
+            block["aiPeer"] = old_name  # source_host is ``moor_<old>`` or legacy ``moor.<old>``
         hosts[new_host] = hosts.pop(source_host)
         if _atomic_write_json(path, raw):
             print(f"✓ Honcho host updated: {source_host} → {new_host}")

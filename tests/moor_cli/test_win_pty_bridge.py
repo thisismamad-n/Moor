@@ -27,8 +27,8 @@ import pytest
 # WinPtyBridge can be imported on every platform — ``is_available`` just
 # returns False when pywinpty isn't usable.  Importing the module itself
 # must never raise, otherwise the web_server import branch becomes a trap.
-from hermes_cli import win_pty_bridge
-from hermes_cli.win_pty_bridge import PtyUnavailableError, WinPtyBridge
+from moor_cli import win_pty_bridge
+from moor_cli.win_pty_bridge import PtyUnavailableError, WinPtyBridge
 from tests.waiting import async_wait_until
 
 # ``pytest.mark.platforms("windows")`` rather than a local ``skipif`` alias: the
@@ -313,7 +313,7 @@ class TestWinPtyBridgeUnavailable:
         from concurrent.futures import ThreadPoolExecutor
         import socket
 
-        from hermes_cli.pty_session import PtySession
+        from moor_cli.pty_session import PtySession
 
         class _IdleShell:
             """pywinpty 3.0.5's PtyProcess: a reader thread copies ConPTY output to a

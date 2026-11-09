@@ -2,7 +2,7 @@
 
 A ticket captures the resolved file and the named profile homes it belongs to (the target's and the
 session/profile owner's); once one of them is deleted (main's tombstone rule,
-``hermes_constants.assert_named_profile_home_live``) the ticket is refused, and a new one cannot be
+``moor_constants.assert_named_profile_home_live``) the ticket is refused, and a new one cannot be
 minted.
 """
 import asyncio
@@ -19,18 +19,18 @@ import pytest
 import uvicorn
 from starlette.responses import FileResponse
 
-from hermes_cli import web_server, web_server_file_tickets
-from hermes_cli.web_routers import files
-from hermes_constants import mark_named_profile_deleted
+from moor_cli import web_server, web_server_file_tickets
+from moor_cli.web_routers import files
+from moor_constants import mark_named_profile_deleted
 
 
 @pytest.fixture
 def file_server(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_DASHBOARD_FILES_ROOT", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_DASHBOARD_FILES_ROOT", str(home))
     monkeypatch.setattr(web_server, "_SESSION_TOKEN", secrets.token_urlsafe(32))
     monkeypatch.setattr(web_server.app.state, "auth_required", False, raising=False)
     monkeypatch.setattr(web_server.app.state, "bound_host", "127.0.0.1", raising=False)
@@ -84,7 +84,7 @@ def _ticket(client, route, query):
 def _session_owned_file(home, profile, content):
     """Write the file outside the session owner's home: binding only the file's path
     would miss the owner's deletion."""
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     (home / "clip.mp4").write_bytes(content)
     db = SessionDB(db_path=profile / "state.db")

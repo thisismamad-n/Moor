@@ -1,7 +1,7 @@
 """RT-32 (#140156): Desktop's Bot Chat lookup adopts a legacy local row stamped with the caller's own subject.
 
 Older builds stamped ``user_id`` on local rows. The legacy migration refused every stamp except main's Desktop
-Nous-account label, so ``session.list {profile, title: "Bot Chat"}`` answered ``not_found`` for a row the
+Moor-account label, so ``session.list {profile, title: "Bot Chat"}`` answered ``not_found`` for a row the
 caller already owns by ``authorize_history``'s rule (``user_id == actor.subject``). A stamp naming another
 principal stays refused. Driven through a multiplexed runner with a named primary and a host-scoped
 connection, the way Desktop opens a Bot Chat.
@@ -23,8 +23,8 @@ class _Transport:
 
 _OWN = 'uid:desk'
 # A stamp naming any other principal: another local user, a dashboard login as v0.22 stamped it, an
-# authenticated gateway subject, and a Nous label on a non-Desktop row.
-_FOREIGN = ('uid:4242', 'basic:alice', 'auth:v1:["dashboard","","alice"]', 'nous:acct-1')
+# authenticated gateway subject, and a Moor label on a non-Desktop row.
+_FOREIGN = ('uid:4242', 'basic:alice', 'auth:v1:["dashboard","","alice"]', 'moor:acct-1')
 
 
 async def _bot_chat_lookup(tmp_path, monkeypatch, source, user_id):
@@ -88,9 +88,9 @@ async def test_bot_chat_stamped_with_another_principal_stays_refused(tmp_path, m
 
 
 def test_legacy_validation_names_the_subject_it_adopts_for(tmp_path):
-    from hermes_state import SessionDB
-    from hermes_state_local_migration import validate_legacy_row
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_state import SessionDB
+    from moor_state_local_migration import validate_legacy_row
+    from moor_state_runtime import RuntimeStoreError
     db = SessionDB(db_path=tmp_path / 'state.db')
     try:
         db.create_session('own', source='cli', user_id=_OWN)

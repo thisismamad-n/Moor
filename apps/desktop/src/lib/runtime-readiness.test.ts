@@ -50,7 +50,7 @@ describe('interpretRuntimeReadiness', () => {
     })
   })
 
-  const NOT_CONNECTED = 'Hermes is not connected to any AI provider yet. Run `hermes model` to pick one.'
+  const NOT_CONNECTED = 'Moor is not connected to any AI provider yet. Run `moor model` to pick one.'
 
   it.each([
     ['runtime_check', { runtime: { error: NOT_CONNECTED, ok: false }, runtimeError: null }],
@@ -69,13 +69,13 @@ describe('interpretRuntimeReadiness', () => {
       {
         setup: { provider_configured: false },
         setupError: null,
-        runtime: { error: 'No usable credentials found for nous.', ok: false },
+        runtime: { error: 'No usable credentials found for moor.', ok: false },
         runtimeError: null
       },
-      { requestedProvider: 'nous' }
+      { requestedProvider: 'moor' }
     )
 
-    expect(result.reason).toBe('No usable credentials found for nous.')
+    expect(result.reason).toBe('No usable credentials found for moor.')
   })
 
   it('uses explicit fallback when both checks are missing', () => {

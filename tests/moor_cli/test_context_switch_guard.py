@@ -210,7 +210,7 @@ def test_custom_provider_context_avoids_false_shrink_warning(monkeypatch):
 
 def test_lifetime_prompt_counter_is_not_a_size_estimate():
     """``session_prompt_tokens`` sums every call; without a measured size the guard stays silent (#126343)."""
-    from hermes_cli.context_switch_guard import _estimate_tokens
+    from moor_cli.context_switch_guard import _estimate_tokens
 
     agent = SimpleNamespace(context_compressor=SimpleNamespace(last_prompt_tokens=0),
                             session_prompt_tokens=16_282_033)

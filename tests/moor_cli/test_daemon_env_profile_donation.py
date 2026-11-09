@@ -11,24 +11,24 @@ import pytest
 @pytest.mark.platforms("linux")
 @pytest.mark.spawns_gateway_lookalike  # stub interpreter records env then exits; reaped below
 def test_host_daemon_does_not_inherit_named_profile_dotenv(tmp_path, monkeypatch):
-    from hermes_cli import gateway_runtime_start as start
-    from hermes_cli.env_loader import load_hermes_dotenv
+    from moor_cli import gateway_runtime_start as start
+    from moor_cli.env_loader import load_moor_dotenv
     root = tmp_path / 'root'
     work = root / 'profiles' / 'work'
     work.mkdir(parents=True, mode=0o700)
     (root / '.env').write_text('OPENROUTER_API_KEY=root-key\n', encoding='utf-8')
     (work / '.env').write_text('TELEGRAM_BOT_TOKEN=work-bot-token\nOPENROUTER_API_KEY=work-key\n'
-                               'HERMES_LANGUAGE=fr\n', encoding='utf-8')
-    for key in ('TELEGRAM_BOT_TOKEN', 'OPENROUTER_API_KEY', 'HERMES_LANGUAGE'):
+                               'MOOR_LANGUAGE=fr\n', encoding='utf-8')
+    for key in ('TELEGRAM_BOT_TOKEN', 'OPENROUTER_API_KEY', 'MOOR_LANGUAGE'):
         monkeypatch.delenv(key, raising=False)
-    # The `hermes -p work` client: its process home is the profile and its .env is in os.environ.
-    monkeypatch.setenv('HERMES_HOME', str(work))
-    load_hermes_dotenv(hermes_home=work)
+    # The `moor -p work` client: its process home is the profile and its .env is in os.environ.
+    monkeypatch.setenv('MOOR_HOME', str(work))
+    load_moor_dotenv(moor_home=work)
     assert os.environ['TELEGRAM_BOT_TOKEN'] == 'work-bot-token'
     monkeypatch.setenv('SHELL_INJECTED_SETTING', 'kept')
     witness = tmp_path / 'env.json'
     executable = tmp_path / 'owned-interpreter'
-    names = ['TELEGRAM_BOT_TOKEN', 'OPENROUTER_API_KEY', 'HERMES_LANGUAGE', 'HERMES_HOME', 'SHELL_INJECTED_SETTING']
+    names = ['TELEGRAM_BOT_TOKEN', 'OPENROUTER_API_KEY', 'MOOR_LANGUAGE', 'MOOR_HOME', 'SHELL_INJECTED_SETTING']
     executable.write_text(
         '#!' + sys.executable + '\nimport json, os\n'
         + f'open({str(witness)!r}, "w").write(json.dumps('
@@ -43,5 +43,5 @@ def test_host_daemon_does_not_inherit_named_profile_dotenv(tmp_path, monkeypatch
             child.kill()
             child.wait(timeout=5)
     seen = json.loads(Path(witness).read_text())
-    assert seen == {'TELEGRAM_BOT_TOKEN': None, 'OPENROUTER_API_KEY': 'root-key', 'HERMES_LANGUAGE': None,
-                    'HERMES_HOME': str(root.resolve()), 'SHELL_INJECTED_SETTING': 'kept'}
+    assert seen == {'TELEGRAM_BOT_TOKEN': None, 'OPENROUTER_API_KEY': 'root-key', 'MOOR_LANGUAGE': None,
+                    'MOOR_HOME': str(root.resolve()), 'SHELL_INJECTED_SETTING': 'kept'}

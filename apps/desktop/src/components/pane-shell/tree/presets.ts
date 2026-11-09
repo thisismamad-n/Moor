@@ -154,7 +154,7 @@ export function saveLayoutPresetTree(name: string, tree: LayoutNode, resting: re
   }
 
   // Presets are GEOMETRY. Strip the live tiles before the tree is ever written
-  // to `hermes.desktop.layoutPresets.v2`; `applyTree` adopts the tiles that are
+  // to `moor.desktop.layoutPresets.v2`; `applyTree` adopts the tiles that are
   // actually open into this geometry, so no open tab is lost.
   const geometry = stripPresetLivePanes(tree)
 

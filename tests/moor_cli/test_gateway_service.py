@@ -17,8 +17,8 @@ import moor_constants
 pwd = pytest.importorskip("pwd")
 grp = pytest.importorskip("grp")
 
-import hermes_cli.gateway as gateway_cli
-from hermes_cli.gateway_launchd import launchd_program_arguments
+import moor_cli.gateway as gateway_cli
+from moor_cli.gateway_launchd import launchd_program_arguments
 from gateway import status
 from gateway.restart import (
     DEFAULT_GATEWAY_CRON_DRAIN_TIMEOUT,
@@ -187,9 +187,9 @@ class TestServiceIdentityForForeignHome:
         home = tmp_path / "home"
         home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: home)
-        monkeypatch.setattr(hermes_constants, "_account_home", lambda: home)  # names services
+        monkeypatch.setattr(moor_constants, "_account_home", lambda: home)  # names services
         monkeypatch.setenv("HOME", str(home))  # the user unit dir follows it (#98699)
-        monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
+        monkeypatch.delenv("MOOR_REAL_HOME", raising=False)
         monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
         return home
 
@@ -251,7 +251,7 @@ class TestUninstallRefusesForeignUnit:
 
 class TestGetCronDrainTimeout:
     def test_missing_config_falls_back_to_default(self, monkeypatch):
-        monkeypatch.delenv("HERMES_CRON_DRAIN_TIMEOUT", raising=False)
+        monkeypatch.delenv("MOOR_CRON_DRAIN_TIMEOUT", raising=False)
         monkeypatch.setattr(gateway_cli, "read_raw_config", dict)
         assert (
             gateway_cli._get_cron_drain_timeout() == DEFAULT_GATEWAY_CRON_DRAIN_TIMEOUT
@@ -350,7 +350,7 @@ class TestGeneratedSystemdUnits:
         """The generated plist must carry SoftResourceLimits/NumberOfFiles so a
         plist rewrite by `moor gateway start` cannot strip the FD floor and
         reintroduce EMFILE crashes (launchd default soft limit is 256)."""
-        from hermes_cli import resource_limits
+        from moor_cli import resource_limits
 
         monkeypatch.setattr(
             resource_limits, "configured_nofile_soft_limit", lambda config=None: 65536
@@ -365,7 +365,7 @@ class TestGeneratedSystemdUnits:
     def test_launchd_plist_omits_nofile_block_when_disabled(self, monkeypatch):
         """runtime.nofile_soft_limit: 0/false/null disables the adjustment; the
         plist must then not contain a SoftResourceLimits block at all."""
-        from hermes_cli import resource_limits
+        from moor_cli import resource_limits
 
         monkeypatch.setattr(
             resource_limits, "configured_nofile_soft_limit", lambda config=None: None
@@ -1377,8 +1377,8 @@ class TestSystemUnitMoorHome:
     def test_no_pm_node_never_bakes_the_invokers_path_node(
         self, monkeypatch, tmp_path
     ):
-        """Hermes runs only its PM-managed Node: a PATH node is never written into a unit."""
-        (tmp_path / ".hermes" / "tools").mkdir(parents=True)
+        """Moor runs only its PM-managed Node: a PATH node is never written into a unit."""
+        (tmp_path / ".moor" / "tools").mkdir(parents=True)
         monkeypatch.setattr(
             gateway_cli.shutil, "which", lambda name: "/opt/external-node/bin/node"
         )
@@ -1424,7 +1424,7 @@ class TestSystemUnitMoorHome:
             "_system_service_identity",
             lambda run_as_user=None: ("alice", "alice", str(target_home), 1001),
         )
-        monkeypatch.setattr(gateway_cli, "get_hermes_home", lambda: root_hermes)
+        monkeypatch.setattr(gateway_cli, "get_moor_home", lambda: root_moor)
         monkeypatch.setattr(gateway_cli, "_build_service_path_dirs", list)
 
         monkeypatch.setattr(gateway_cli.shutil, "which", lambda name: "/root/bin/node")
@@ -1763,7 +1763,7 @@ class TestProfileArg:
 
     def test_launchd_osascript_wrapper_round_trips_shell_hostile_paths(self, tmp_path, monkeypatch):
         """A home with spaces, quotes and a backslash survives shlex + JXA + plist quoting."""
-        profile_dir = tmp_path / 'my "odd" dir \\ here' / ".hermes"
+        profile_dir = tmp_path / 'my "odd" dir \\ here' / ".moor"
         profile_dir.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("MOOR_HOME", str(profile_dir))
@@ -1813,7 +1813,7 @@ class TestProfileArg:
         stdout_log = tmp_path / "gateway.log"
         stderr_log = tmp_path / "gateway.error.log"
         command = [
-            sys.executable, "-m", "hermes_cli.stderr_timestamp", "--error-log", str(stderr_log), "--",
+            sys.executable, "-m", "moor_cli.stderr_timestamp", "--error-log", str(stderr_log), "--",
             sys.executable, "-c", "print('[whatsapp] Bridge started on port 3000')",
         ]
 
@@ -1852,15 +1852,15 @@ class TestProfileArg:
 
     def test_launchd_plist_path_falls_back_to_home_when_uid_lookup_fails(self, tmp_path, monkeypatch):
         """Sandboxed macOS shells can expose a UID that pwd cannot resolve (#57292)."""
-        profile_dir = tmp_path / ".hermes" / "profiles" / "mybot"
+        profile_dir = tmp_path / ".moor" / "profiles" / "mybot"
         profile_dir.mkdir(parents=True)
         machine_home = tmp_path / "Users" / "example"
         machine_home.mkdir(parents=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
-        monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
+        monkeypatch.setenv("MOOR_HOME", str(profile_dir))
+        monkeypatch.delenv("MOOR_REAL_HOME", raising=False)
         monkeypatch.setenv("HOME", str(machine_home))
-        monkeypatch.setattr(gateway_cli, "get_hermes_home", lambda: profile_dir)
+        monkeypatch.setattr(gateway_cli, "get_moor_home", lambda: profile_dir)
 
         def raise_key_error(uid):
             raise KeyError(f"getpwuid(): uid not found: {uid}")
@@ -1869,21 +1869,21 @@ class TestProfileArg:
 
         plist_path = gateway_cli.get_launchd_plist_path()
 
-        assert plist_path == machine_home / "Library" / "LaunchAgents" / "ai.hermes.gateway-mybot.plist"
+        assert plist_path == machine_home / "Library" / "LaunchAgents" / "ai.moor.gateway-mybot.plist"
 
-    def test_launchd_plist_path_prefers_hermes_real_home_when_uid_lookup_fails(self, tmp_path, monkeypatch):
-        """HERMES_REAL_HOME is the explicit operator override for unresolvable UIDs (#57292)."""
-        profile_dir = tmp_path / ".hermes" / "profiles" / "mybot"
+    def test_launchd_plist_path_prefers_moor_real_home_when_uid_lookup_fails(self, tmp_path, monkeypatch):
+        """MOOR_REAL_HOME is the explicit operator override for unresolvable UIDs (#57292)."""
+        profile_dir = tmp_path / ".moor" / "profiles" / "mybot"
         profile_dir.mkdir(parents=True)
         real_home = tmp_path / "real-home"
         other_home = tmp_path / "other-home"
         real_home.mkdir(parents=True)
         other_home.mkdir(parents=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
-        monkeypatch.setenv("HERMES_REAL_HOME", str(real_home))
+        monkeypatch.setenv("MOOR_HOME", str(profile_dir))
+        monkeypatch.setenv("MOOR_REAL_HOME", str(real_home))
         monkeypatch.setenv("HOME", str(other_home))
-        monkeypatch.setattr(gateway_cli, "get_hermes_home", lambda: profile_dir)
+        monkeypatch.setattr(gateway_cli, "get_moor_home", lambda: profile_dir)
 
         def raise_key_error(uid):
             raise KeyError(f"getpwuid(): uid not found: {uid}")
@@ -1892,19 +1892,19 @@ class TestProfileArg:
 
         plist_path = gateway_cli.get_launchd_plist_path()
 
-        assert plist_path == real_home / "Library" / "LaunchAgents" / "ai.hermes.gateway-mybot.plist"
+        assert plist_path == real_home / "Library" / "LaunchAgents" / "ai.moor.gateway-mybot.plist"
 
     def test_launchd_plist_path_fallback_never_returns_profile_home(self, tmp_path, monkeypatch):
         """When pwd fails and HOME IS the profile home, the fallback must skip it (#57292)."""
-        profile_dir = tmp_path / ".hermes" / "profiles" / "mybot"
+        profile_dir = tmp_path / ".moor" / "profiles" / "mybot"
         profile_dir.mkdir(parents=True)
         profile_home = profile_dir / "home"
         profile_home.mkdir(parents=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
-        monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
+        monkeypatch.setenv("MOOR_HOME", str(profile_dir))
+        monkeypatch.delenv("MOOR_REAL_HOME", raising=False)
         monkeypatch.setenv("HOME", str(profile_home))
-        monkeypatch.setattr(gateway_cli, "get_hermes_home", lambda: profile_dir)
+        monkeypatch.setattr(gateway_cli, "get_moor_home", lambda: profile_dir)
 
         def raise_key_error(uid):
             raise KeyError(f"getpwuid(): uid not found: {uid}")
@@ -1921,8 +1921,8 @@ class TestProfileArg:
         machine_home = tmp_path / "Users" / "example"
         machine_home.mkdir(parents=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+        monkeypatch.delenv("MOOR_REAL_HOME", raising=False)
         monkeypatch.setenv("HOME", str(machine_home))
 
         def raise_key_error(uid):
@@ -2141,8 +2141,8 @@ class TestLegacyMoorUnitDetection:
         ]
         for i, execstart in enumerate(variants):
             # Test each variant fresh (every variant ships the same unit name)
-            (user_dir / "hermes.service").write_text(
-                f"[Unit]\nDescription=Old Hermes\n[Service]\n{execstart}\n",
+            (user_dir / "moor.service").write_text(
+                f"[Unit]\nDescription=Old Moor\n[Service]\n{execstart}\n",
                 encoding="utf-8",
             )
             results = gateway_cli._find_legacy_moor_units()

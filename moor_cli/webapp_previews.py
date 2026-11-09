@@ -3,7 +3,7 @@
 from fastapi import Depends, FastAPI
 from fastapi.responses import HTMLResponse, Response
 
-from hermes_cli.web_server_surface import route_on
+from moor_cli.web_server_surface import route_on
 
 # Previews keep the freedom they have under no policy at all (any http(s) library, image,
 # fetch, worker or embed); their isolation is the opaque sandbox, not a source list.
@@ -83,11 +83,11 @@ function relay(target, event) {
 addEventListener('message', event => {
   if (event.source === parent && parent !== window &&
       event.origin === new URL(location.href).origin &&
-      event.data?.type === 'hermes-preview-document' && typeof event.data.html === 'string') {
+      event.data?.type === 'moor-preview-document' && typeof event.data.html === 'string') {
     const guest = typeof event.data.sandbox === 'string';
     frame.setAttribute('sandbox', guest ? event.data.sandbox : event.data.scripts === true ? 'allow-scripts' : '');
     // A plugin's onLoad means its guest document loaded, not this shell.
-    frame.onload = guest ? () => parent.postMessage({type: 'hermes-guest-loaded'}, '*') : null;
+    frame.onload = guest ? () => parent.postMessage({type: 'moor-guest-loaded'}, '*') : null;
     frame.srcdoc = event.data.html;
     document.body.append(frame);
   } else if (event.source === parent && event.origin === new URL(location.href).origin) {
@@ -101,7 +101,7 @@ addEventListener('message', event => {
 # An external same-origin loader can run under the blob wrapper's inherited app CSP.
 PREVIEW_LOADER = """const frame = document.querySelector('iframe[data-preview-html]');
 function send() {
-  frame.contentWindow.postMessage({type: 'hermes-preview-document',
+  frame.contentWindow.postMessage({type: 'moor-preview-document',
     html: frame.dataset.previewHtml, scripts: true}, '*');
 }
 frame.addEventListener('load', send);

@@ -79,7 +79,7 @@ def _serialize_auto_reload(ar, format_money) -> dict | None:
 
 def _serialize_billing_state(state, *, free_tier_account: bool = False) -> dict:
     """Serialize a BillingState for the wire (Decimals → strings, money-safe). ``free_tier_account`` marks the
-    Nous free tier: no account, no balance, nothing to pay; the renderer branches on it before
+    Moor free tier: no account, no balance, nothing to pay; the renderer branches on it before
     ``logged_in``."""
     from agent.billing_view import format_money
     from moor_cli.anon_auth import GUEST_MODEL
@@ -128,12 +128,12 @@ def _plan_usage_payload(state) -> Optional[dict]:
         return None
     try:
         from agent.credits_tracker import _window_seed_fields
-        from hermes_cli.nous_account import cached_nous_portal_account_info
-        snapshot = cached_nous_portal_account_info(any_age=True)
+        from moor_cli.moor_account import cached_moor_portal_account_info
+        snapshot = cached_moor_portal_account_info(any_age=True)
         if snapshot is None or _window_seed_fields(getattr(snapshot, "usage_window", None)) is None:
             return None
-        from hermes_cli.model_picker_usage import nous_picker_usage
-        usage = nous_picker_usage(warm=True)
+        from moor_cli.model_picker_usage import moor_picker_usage
+        usage = moor_picker_usage(warm=True)
         return usage.to_payload() if usage is not None else None
     except Exception:
         logging.getLogger(__name__).debug("Plan usage payload unavailable", exc_info=True)

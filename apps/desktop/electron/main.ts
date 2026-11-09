@@ -6,7 +6,7 @@ import { closeGatewayTicketBridges, createGatewayTicketResolver } from './local-
 import { createPluginWsUrlHandler } from './plugin-ws-url'
 const localGatewayDials = createLocalGatewayDials()
 configurePythonGatewayTicketClient(createGatewayTicketResolver(
-  async () => ensureRuntime(await resolveHermesBackend([]), () => undefined), resolveHermesCwd))
+  async () => ensureRuntime(await resolveMoorBackend([]), () => undefined), resolveMoorCwd))
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
@@ -43,7 +43,7 @@ import {
 import type { Session } from 'electron'
 
 import { type ActiveRuntimeState, classifyActiveRuntime } from './active-runtime-state'
-import { HERMES_API_EXPECTED_404 } from './api-expected-404'
+import { MOOR_API_EXPECTED_404 } from './api-expected-404'
 import {
   destroyKeepaliveAgents,
   htmlResponseError,
@@ -76,13 +76,13 @@ import { createBackendConnectionState } from './backend-connection-state'
 import { assertDescriptorStillOwned, forgetFailedDescriptor } from './backend-descriptor-cache'
 import { BackendDialClaims } from './backend-dial-claim'
 import { buildDesktopBackendEnv, profileBackendParentEnv } from './backend-env'
-import { isReauthRequiredError, waitForHermesReady } from './backend-health'
+import { isReauthRequiredError, waitForMoorReady } from './backend-health'
 import {
   backendCommandMatches,
   createBackendOwnership,
   createBackendShutdownCoordinator
 } from './backend-ownership'
-import { canImportHermesCli, PROBE_TIMEOUT_MS, shouldTrustHermesOverride, verifyHermesCli } from './backend-probes'
+import { canImportMoorCli, PROBE_TIMEOUT_MS, shouldTrustMoorOverride, verifyMoorCli } from './backend-probes'
 import { recycleOwnedBackend } from './backend-recycle'
 import { isPidAliveWindows, waitForBackendRelease } from './backend-release-gate'
 import { createInstalledRuntimeGate } from './backend-resolution'
@@ -215,7 +215,7 @@ import type { RosterProfileMetadata } from './connection-registry'
 import { liveWindowState, overlayWindowState } from './connection-window-state'
 import { describeCrashReason, installCrashForensics } from './crash-forensics'
 import { adoptServedDashboardToken } from './dashboard-token'
-import { resolveDesktopHermesHome, resolveDesktopUserData } from './data-paths'
+import { resolveDesktopMoorHome, resolveDesktopUserData } from './data-paths'
 import { registerDeepLinkProtocol as registerDeepLinkProtocolWith } from './deep-link-protocol'
 import { loadOrCreateInstallationId, sshOwnershipId } from './desktop-installation'
 import { formatDesktopLogLine, formatLogStamp } from './desktop-log-line'
@@ -309,7 +309,7 @@ import {
   writeSecretFileAtomic
 } from './hardening'
 import { assertNotPassiveSpawn } from './host-backend-singleton'
-import { HERMES_HUB_FALLBACK_ORIGIN, HERMES_HUB_ORIGIN, isHermesHubClipboardWrite } from './hub-iframe-policy'
+import { MOOR_HUB_FALLBACK_ORIGIN, MOOR_HUB_ORIGIN, isMoorHubClipboardWrite } from './hub-iframe-policy'
 import { requestHudClose } from './hud-close'
 import { cursorPointInWindow } from './hud-cursor'
 import { startHudGameOverlayWatch } from './hud-game-overlay'
@@ -653,7 +653,7 @@ import { startUpdateRelaunchWaiter } from './updater/relaunch-waiter'
 import { preflightStateDb } from './updater/state-db-preflight'
 import { createStoreStrategy } from './updater/store-client'
 import { filenameFromUrl } from './url-filename'
-import { isExternalVenvHolder, isHermesOwnedVenvDaemon } from './venv-holder-select'
+import { isExternalVenvHolder, isMoorOwnedVenvDaemon } from './venv-holder-select'
 import { fetchMarketplaceThemes, searchMarketplaceThemes } from './vscode-marketplace'
 import { createWakeIndicatorWindowController } from './wake-indicator-window'
 import { guardedWatch } from './watch-storm-breaker'
@@ -741,7 +741,7 @@ function acquireSingleInstanceLock(): boolean {
   const stalePid = removeStaleSingletonLock(app.getPath('userData'))
 
   if (stalePid !== null) {
-    console.error(`[hermes] removed stale SingletonLock (owner ${stalePid} dead); retrying launch`)
+    console.error(`[moor] removed stale SingletonLock (owner ${stalePid} dead); retrying launch`)
 
     return app.requestSingleInstanceLock()
   }
@@ -753,19 +753,19 @@ const isPrimaryInstance: boolean = acquireSingleInstanceLock()
 const relauncher = createAppRelauncher(app)
 
 if (!isPrimaryInstance) {
-  console.error('[hermes] another Hermes Desktop instance holds the single-instance lock; exiting')
+  console.error('[moor] another Moor Desktop instance holds the single-instance lock; exiting')
   app.exit(0)
 }
 
-// `hermes desktop` shortens TMPDIR only so the lock above can bind its socket (#124688). The
+// `moor desktop` shortens TMPDIR only so the lock above can bind its socket (#124688). The
 // backend and every other child get the real one (the profile scratch dir) back.
-if (process.env.HERMES_DESKTOP_TMPDIR) {
-  process.env.TMPDIR = process.env.HERMES_DESKTOP_TMPDIR
-  delete process.env.HERMES_DESKTOP_TMPDIR
+if (process.env.MOOR_DESKTOP_TMPDIR) {
+  process.env.TMPDIR = process.env.MOOR_DESKTOP_TMPDIR
+  delete process.env.MOOR_DESKTOP_TMPDIR
 }
 
-const DEV_SERVER = process.env.HERMES_DESKTOP_DEV_SERVER
-const IS_PACKAGED = app.isPackaged || Boolean(process.env.HERMES_DESKTOP_IS_PACKAGED)
+const DEV_SERVER = process.env.MOOR_DESKTOP_DEV_SERVER
+const IS_PACKAGED = app.isPackaged || Boolean(process.env.MOOR_DESKTOP_IS_PACKAGED)
 const IS_MAC = process.platform === 'darwin'
 const IS_WINDOWS = process.platform === 'win32'
 const IS_WSL = isWslEnvironment()
@@ -808,7 +808,7 @@ if (REMOTE_DISPLAY_REASON) {
 
   // #97616: disableHardwareAcceleration() alone does NOT stop a GPU child
   // from spawning (it then dies error_code=1002 on AMD/Mesa). For the explicit
-  // HERMES_DESKTOP_DISABLE_GPU override, fully spawn-block it. Remote-display
+  // MOOR_DESKTOP_DISABLE_GPU override, fully spawn-block it. Remote-display
   // detections keep their long-standing compositing-only behavior.
   if (disableGpuSwitchNeededForReason(REMOTE_DISPLAY_REASON)) {
     app.commandLine.appendSwitch('disable-gpu')
@@ -927,7 +927,7 @@ const nvidiaEglRecovery = createNvidiaEglRecovery({
   remoteDisplayReason: REMOTE_DISPLAY_REASON,
   primary: isPrimaryInstance,
   log: message => {
-    console.warn(`[hermes] ${message}`)
+    console.warn(`[moor] ${message}`)
     void app.whenReady().then(() => {
       rememberLog(message)
       flushDesktopLogBufferSync()
@@ -944,7 +944,7 @@ const NVIDIA_EGL_FALLBACK = nvidiaEglRecovery.decision
 
 if (NVIDIA_EGL_FALLBACK.enable) {
   app.commandLine.appendSwitch('use-angle', 'swiftshader')
-  console.log(`[hermes] NVIDIA EGL fallback enabled (${NVIDIA_EGL_FALLBACK.reason}); routing ANGLE through SwiftShader`)
+  console.log(`[moor] NVIDIA EGL fallback enabled (${NVIDIA_EGL_FALLBACK.reason}); routing ANGLE through SwiftShader`)
 }
 
 // #124843: on Mesa/Wayland the Chromium GPU child can fail init
@@ -952,7 +952,7 @@ if (NVIDIA_EGL_FALLBACK.enable) {
 // gpu-process, no crash. Bound it: one relaunch into software rendering,
 // then a sticky per-version marker so the next boot goes straight there.
 // Reactive only — healthy Mesa/Wayland stacks keep full acceleration. Must
-// run before app `ready`. Override with HERMES_DESKTOP_DISABLE_GPU
+// run before app `ready`. Override with MOOR_DESKTOP_DISABLE_GPU
 // (1/true → always software, 0/false → keep GPU on).
 let linuxGpuFallbackActive = false
 let linuxGpuFallbackSticky = false
@@ -988,8 +988,8 @@ if (process.platform === 'linux') {
     app.disableHardwareAcceleration()
     app.commandLine.appendSwitch('disable-gpu-compositing')
     console.log(
-      `[hermes] Linux GPU software fallback enabled (${linuxGpuDecision.reason}); disabling GPU ` +
-        'hardware acceleration after a GPU-child init failure (#124843). HERMES_DESKTOP_DISABLE_GPU=0 to opt out.'
+      `[moor] Linux GPU software fallback enabled (${linuxGpuDecision.reason}); disabling GPU ` +
+        'hardware acceleration after a GPU-child init failure (#124843). MOOR_DESKTOP_DISABLE_GPU=0 to opt out.'
     )
   }
 }
@@ -1076,7 +1076,7 @@ if (IS_WINDOWS || process.platform === 'linux') {
     app.commandLine.appendSwitch('no-sandbox')
     process.env.ELECTRON_DISABLE_SANDBOX = '1'
     console.log(
-      `[hermes] sandbox fallback enabled (${sandboxDecision.reason}); launching with --no-sandbox (#38216, #121954)`
+      `[moor] sandbox fallback enabled (${sandboxDecision.reason}); launching with --no-sandbox (#38216, #121954)`
     )
   }
 
@@ -1112,7 +1112,7 @@ if (IS_WINDOWS || process.platform === 'linux') {
     }
 
     console.warn(
-      `[hermes] GPU child died with the sandbox signature (exit=${details?.exitCode}); relaunching once with --no-sandbox (#38216)`
+      `[moor] GPU child died with the sandbox signature (exit=${details?.exitCode}); relaunching once with --no-sandbox (#38216)`
     )
 
     try {
@@ -1164,14 +1164,14 @@ if (IS_WINDOWS || process.platform === 'linux') {
       }
 
       console.warn(
-        `[hermes] Linux GPU child died with the sandbox signature (exit=${details?.exitCode}); relaunching once with --no-sandbox (#121954)`
+        `[moor] Linux GPU child died with the sandbox signature (exit=${details?.exitCode}); relaunching once with --no-sandbox (#121954)`
       )
 
       try {
         relaunchApp(relauncher, { args: buildNoSandboxRelaunchArgs(process.argv.slice(1)) })
         void exitAfterBackendShutdown(0)
       } catch (error) {
-        console.error(`[hermes] --no-sandbox relaunch failed: ${error?.message || error}`)
+        console.error(`[moor] --no-sandbox relaunch failed: ${error?.message || error}`)
       }
 
       return
@@ -1191,21 +1191,21 @@ if (IS_WINDOWS || process.platform === 'linux') {
       }
 
       console.warn(
-        `[hermes] Linux GPU child gone (reason=${details?.reason}); relaunching once with --disable-gpu (#124843)`
+        `[moor] Linux GPU child gone (reason=${details?.reason}); relaunching once with --disable-gpu (#124843)`
       )
 
       try {
         relaunchApp(relauncher, { args: buildDisableGpuRelaunchArgs(process.argv.slice(1)) })
         void exitAfterBackendShutdown(0)
       } catch (error) {
-        console.error(`[hermes] --disable-gpu relaunch failed: ${error?.message || error}`)
+        console.error(`[moor] --disable-gpu relaunch failed: ${error?.message || error}`)
       }
     }
   })
 }
 
-ipcMain.handle('hermes:get-remote-display-reason', () => REMOTE_DISPLAY_REASON)
-ipcMain.handle('hermes:embed-host:origin', () => embedHostOrigin())
+ipcMain.handle('moor:get-remote-display-reason', () => REMOTE_DISPLAY_REASON)
+ipcMain.handle('moor:embed-host:origin', () => embedHostOrigin())
 
 // Keep the renderer's PROCESS priority normal while its windows are hidden â€”
 // a deprioritized renderer streams a live answer visibly slower once the
@@ -1272,12 +1272,12 @@ let desktopSshPathOverride = ''
   desktopSshPathOverride = desktopLaunchConfig.sshPath || ''
 
   // `desktop.renderer_accessibility: false` must reach packaged launches too,
-  // not only the `hermes desktop` launcher's env bridge (#118271).
+  // not only the `moor desktop` launcher's env bridge (#118271).
   if (
     desktopLaunchConfig.rendererAccessibility === false &&
-    process.env.HERMES_DESKTOP_RENDERER_ACCESSIBILITY === undefined
+    process.env.MOOR_DESKTOP_RENDERER_ACCESSIBILITY === undefined
   ) {
-    process.env.HERMES_DESKTOP_RENDERER_ACCESSIBILITY = '0'
+    process.env.MOOR_DESKTOP_RENDERER_ACCESSIBILITY = '0'
   }
 
   applyLaunchSwitches(app.commandLine, desktopLaunchConfig, process.argv.slice(1))
@@ -1375,7 +1375,7 @@ const BOOT_FAKE_ERROR = process.env.MOOR_DESKTOP_BOOT_FAKE_ERROR || ''
 // Automated teardown (Playwright's app.close(), harness scripts) quits with
 // nobody to answer a modal, so the active-work confirmation would hang the
 // caller instead of letting the process exit. Force quits set this.
-const SKIP_QUIT_CONFIRM = process.env.HERMES_DESKTOP_SKIP_QUIT_CONFIRM === '1'
+const SKIP_QUIT_CONFIRM = process.env.MOOR_DESKTOP_SKIP_QUIT_CONFIRM === '1'
 
 const BOOT_FAKE_STEP_MS = (() => {
   const raw = Number.parseInt(String(process.env.MOOR_DESKTOP_BOOT_FAKE_STEP_MS || ''), 10)
@@ -1628,7 +1628,7 @@ const TITLEBAR_OVERLAY_COLOR = 'rgba(1, 0, 0, 0)'
 // WSLg returns false: the RDP host paints nothing for a frameless window and
 // Electron's own overlay drifts its hit-region under RAIL, so the renderer
 // paints its own min/max/close (wslg-window-controls.tsx) over the
-// hermes:window-control IPC channel. See titleBarOverlayOptions.
+// moor:window-control IPC channel. See titleBarOverlayOptions.
 function getTitleBarOverlayOptions(win?) {
   return titleBarOverlayOptions({
     platform: IS_MAC ? 'mac' : IS_WINDOWS ? 'windows' : IS_WSL ? 'wslg' : 'linux',
@@ -1797,16 +1797,16 @@ if (IS_WINDOWS) {
   app.setAppUserModelId(IDENTITY_APP_NAME ? PRODUCT_IDENTITY.appId : 'com.moorinc.moor')
 }
 
-// Seed the native About panel with the best-known Hermes version. This is
+// Seed the native About panel with the best-known Moor version. This is
 // refreshed on every open via showAboutPanelFresh, so an in-place
-// `hermes update` mid-session is reflected without an app restart; the seed
+// `moor update` mid-session is reflected without an app restart; the seed
 // covers the first open and any non-menu invocation path. Never seed empty:
 // an empty applicationVersion falls back to the bundle version, which is the
 // 0.0.0 placeholder on local builds (#124581).
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: nativeAboutVersion(appVersionInfo(INSTALL_STAMP, '', app.getVersion())),
-  copyright: 'Copyright © 2026 Nous Research'
+  copyright: 'Copyright © 2026 Moor inc.'
 })
 
 // Custom scheme for streaming audio/video into the renderer. Local paths read
@@ -1913,19 +1913,19 @@ const backendDialClaims = new BackendDialClaims()
 let softRehomeInProgress = false
 // Cached connection DESCRIPTORS for every non-primary (connectionId, profile)
 // scope the app has dialed: canonical local gateways reached through
-// `hermes gateway ensure`, registry remotes, per-profile remote overrides.
+// `moor gateway ensure`, registry remotes, per-profile remote overrides.
 // Never a process — the gateway owns its own lifetime; forgetting an entry only
 // forces the next ensure*() to re-dial. A user with no named profiles never
 // populates this map.
 const backendPool = new Map() // scope key -> { connectionPromise, remoteBaseUrl }
 // Escape hatch: a dedicated, private backend for this app instead of the host's.
-const ISOLATED_BACKEND = process.env.HERMES_DESKTOP_ISOLATED_BACKEND === '1'
+const ISOLATED_BACKEND = process.env.MOOR_DESKTOP_ISOLATED_BACKEND === '1'
 const profileDeletionGate = new ProfileDeletionGate()
 
 // rememberLog() state. Declared before any top-level caller that logs during
 // module evaluation; declaring these later crashed launch with `undefined.push`
 // in the packaged build (esbuild lowers the TDZ to undefined instead of throwing).
-const hermesLog = []
+const moorLog = []
 let desktopLogBuffer = ''
 let desktopLogFlushTimer = null
 let desktopLogFlushPromise = Promise.resolve()
@@ -1933,7 +1933,7 @@ let desktopLogFlushPromise = Promise.resolve()
 // Land a spawn failure in desktop.log.
 function logPoolSpawnFailure(label: string, error: unknown): void {
   rememberLog(
-    `Hermes backend for profile ${label} failed to start: ${error instanceof Error ? error.message : String(error)}`
+    `Moor backend for profile ${label} failed to start: ${error instanceof Error ? error.message : String(error)}`
   )
 }
 
@@ -2284,10 +2284,10 @@ async function openExternalFile(rawUrl: string) {
   }
 }
 
-// The `hermes:openExternal` route for a BARE local filesystem path — a chat
+// The `moor:openExternal` route for a BARE local filesystem path — a chat
 // media link, a markdown href, or an artifacts-panel value carrying
 // `C:\…`, `~/…`, `/…` or a UNC path instead of a `file://` URL. `new URL()`
-// cannot express those (hermes-agent 80946): resolve through the same audited
+// cannot express those (moor-agent 80946): resolve through the same audited
 // `resolveRequestedPathForIpc` the file route uses, then OPEN with the OS
 // handler and fall back to reveal-in-folder, mirroring openExternalFile's
 // missing-file guard so a dead path reports "File not found" instead of a
@@ -2318,7 +2318,7 @@ async function openLocalFilesystemPath(rawPath: string): Promise<boolean> {
       return true
     }
 
-    // Include the path so "Failed to open path" is diagnosable (hermes-agent
+    // Include the path so "Failed to open path" is diagnosable (moor-agent
     // 84361), then reveal: on Windows archive artifacts have no usable
     // association, and the reveal never re-opens so it can't loop (#53170).
     rememberLog(`[file] openPath failed: ${errorMessage}; path=${localPath}; revealing in folder instead`)
@@ -2350,7 +2350,7 @@ function broadcastOpenFailed(url: string, message: string, code?: 'missing-file'
   rememberLog(`[open-failed] ${url}: ${message}`)
 
   for (const win of BrowserWindow.getAllWindows()) {
-    win.webContents.send('hermes:external-open-failed', { url, message, ...(code ? { code } : {}) })
+    win.webContents.send('moor:external-open-failed', { url, message, ...(code ? { code } : {}) })
   }
 }
 
@@ -2726,7 +2726,7 @@ async function advanceBootProgress(phase, message, progress) {
 function updateGateDeps(callbacks: MarkerGateCallbacks = {}) {
   return {
     hasLiveMarker: markerGateProbe(
-      { hermesHome: HERMES_HOME, isWindows: IS_WINDOWS, log: rememberLog, updateRoot: resolveUpdateRoot },
+      { moorHome: MOOR_HOME, isWindows: IS_WINDOWS, log: rememberLog, updateRoot: resolveUpdateRoot },
       callbacks
     ),
     isUpdateInFlight: () => updateInFlight,
@@ -2736,7 +2736,7 @@ function updateGateDeps(callbacks: MarkerGateCallbacks = {}) {
 
 // The blocked boot screen (R8 D3) every update wait publishes its hold on.
 const updateHoldScreen = createUpdateHoldScreen({
-  hermesHome: HERMES_HOME,
+  moorHome: MOOR_HOME,
   log: rememberLog,
   bootHold: () => bootProgressState.updateHold,
   updateBootProgress
@@ -2804,7 +2804,7 @@ async function waitForUpdateToFinish() {
 
         await advanceBootProgress(
           'backend.update-wait',
-          'An update is still running — Hermes will start automatically when it finishes. Its progress is in logs/update.log.',
+          'An update is still running — Moor will start automatically when it finishes. Its progress is in logs/update.log.',
           12
         )
 
@@ -2826,7 +2826,7 @@ async function waitForUpdateToFinish() {
   // A detached update's result file is the only way the user learns it
   // failed: consumed once, here, where boot passes the update gate.
   parkedRun.report({
-    hermesHome: HERMES_HOME,
+    moorHome: MOOR_HOME,
     log: rememberLog,
     dialog,
     shell,
@@ -2858,7 +2858,7 @@ async function waitForUpdateToFinish() {
       log: rememberLog
     })
   ) {
-    await advanceBootProgress('backend.update-restart', 'Restarting Hermes to load the updated app…', 14)
+    await advanceBootProgress('backend.update-restart', 'Restarting Moor to load the updated app…', 14)
     // Park while the scheduled exit lands so this stale build never starts a
     // backend; the failsafe below only runs if the exit somehow does not.
     await new Promise(resolve => setTimeout(resolve, BUNDLE_SWAP_RELAUNCH_FAILSAFE_MS))
@@ -3534,7 +3534,7 @@ function createNativePackagedStrategy(
     const deps: ConstructorParameters<typeof AppInstallerStrategy>[0] = {
       python: payload.storePython,
       // The checker is bundled core code, run with the payload python.
-      module: 'hermes_cli.windows_appinstaller_update',
+      module: 'moor_cli.windows_appinstaller_update',
       run: (python, module) =>
         runAppInstallerChecker(python, module, {
           env: { ...process.env, PYTHONPATH: payloadPythonPath(payload) },
@@ -3577,7 +3577,7 @@ function createNativePackagedStrategy(
 
     return createStoreStrategy({
       python: payload.storePython,
-      module: 'hermes_cli.windows_store_update',
+      module: 'moor_cli.windows_store_update',
       pythonPath: payloadPythonPath(payload),
       env: process.env,
       windowHandle: () => (BrowserWindow.getFocusedWindow() ?? mainWindow)?.getNativeWindowHandle() ?? null,
@@ -3660,7 +3660,7 @@ function resolveCheckoutUpdateStrategy(): CheckoutStrategy {
       // contract as readSourceUpdate and the hand-off script.
       const managed: boolean = directoryExists(path.join(root, 'pm'))
 
-      const launcher: string | null = managed ? resolveInstallationLauncher(root, IS_WINDOWS, HERMES_HOME) : null
+      const launcher: string | null = managed ? resolveInstallationLauncher(root, IS_WINDOWS, MOOR_HOME) : null
 
       if (managed && !launcher) {
         const message =
@@ -3674,7 +3674,7 @@ function resolveCheckoutUpdateStrategy(): CheckoutStrategy {
       await preflightStateDb({
         python: managed ? null : await findPythonForRoot(root),
         launcher,
-        script: path.join(root, 'hermes_cli', 'backup_sqlite.py'),
+        script: path.join(root, 'moor_cli', 'backup_sqlite.py'),
         home,
         log
       })
@@ -3763,7 +3763,7 @@ function resolveUpdaterBinary() {
   return resolveStagedUpdaterBinary(MOOR_HOME, { fileExists, isWindows: IS_WINDOWS })
 }
 
-// Path to the venv shim whose lock decides whether `hermes update` can write
+// Path to the venv shim whose lock decides whether `moor update` can write
 // fresh entry points. On Windows this is the file the running backend
 // `moor.exe` holds open; on POSIX it's never mandatory-locked.
 function venvMoorShimPath(updateRoot) {
@@ -3826,7 +3826,7 @@ function scanWindowsProcesses(): Array<{ ProcessId?: unknown; ExecutablePath?: s
   return Array.isArray(parsed) ? parsed : [parsed]
 }
 
-function killHermesOwnedVenvDaemons(updateRoot) {
+function killMoorOwnedVenvDaemons(updateRoot) {
   if (!IS_WINDOWS) {
     return
   }
@@ -3836,7 +3836,7 @@ function killHermesOwnedVenvDaemons(updateRoot) {
   let holders = []
 
   try {
-    holders = scanWindowsProcesses().filter(p => isHermesOwnedVenvDaemon(p?.ExecutablePath, p?.CommandLine, scriptsDir))
+    holders = scanWindowsProcesses().filter(p => isMoorOwnedVenvDaemon(p?.ExecutablePath, p?.CommandLine, scriptsDir))
   } catch {
     // Best-effort: the uninstall lock probe remains the backstop.
     return
@@ -3859,12 +3859,12 @@ function killHermesOwnedVenvDaemons(updateRoot) {
   }
 }
 
-// Kill EXTERNAL Hermes processes that hold this install's venv shim (#62311):
+// Kill EXTERNAL Moor processes that hold this install's venv shim (#62311):
 // the gateway Startup item and dashboard Scheduled Task are launched outside
 // this app (Task Scheduler / autostart), so the backend teardown above never
 // sees them — yet they map venv files and made every update hand-off abort
 // with "venv shim still locked". Selection is deliberately narrow
-// (isExternalVenvHolder: exe under venv\Scripts AND unambiguously a Hermes
+// (isExternalVenvHolder: exe under venv\Scripts AND unambiguously a Moor
 // program) — unrelated processes that merely mention the install root or use
 // the venv interpreter for their own scripts are never killed; the shim-lock
 // probe still aborts the hand-off for those. Called before the release gate
@@ -3891,7 +3891,7 @@ function killExternalVenvHolders(updateRoot) {
 
     if (Number.isInteger(pid) && pid > 0) {
       rememberLog(
-        `[updates] stopping external Hermes venv holder (autostart gateway/dashboard) PID ${pid} before hand-off`
+        `[updates] stopping external Moor venv holder (autostart gateway/dashboard) PID ${pid} before hand-off`
       )
 
       try {
@@ -4263,8 +4263,8 @@ async function releaseBackendLock(updateRoot: string, tag: string): Promise<{ un
   // Seed the release gate with every PID we are about to signal (the
   // supervised primary backend, when one exists). The gate waits for these to
   // actually LEAVE the process table, not just for the shim to unlock — the
-  // shim probe only covers venv\Scripts\hermes.exe, but the backend is
-  // `python.exe -m hermes_cli.main serve`, which need not hold the shim at all
+  // shim probe only covers venv\Scripts\moor.exe, but the backend is
+  // `python.exe -m moor_cli.main serve`, which need not hold the shim at all
   // (#74805 first-attempt race).
   const initialPids = []
 
@@ -4286,13 +4286,13 @@ async function releaseBackendLock(updateRoot: string, tag: string): Promise<{ un
   // (venv-holder-select) â€” external holders are never killed here.
   killMoorOwnedVenvDaemons(updateRoot)
 
-  // External autostart Hermes processes (gateway Startup item, dashboard
+  // External autostart Moor processes (gateway Startup item, dashboard
   // Scheduled Task) also hold the venv shim and are invisible to the backend
   // teardown (#62311). Kill them before the gate AND re-scan inside each gate
   // pass, so a respawning holder loses the race instead of the update.
   killExternalVenvHolders(updateRoot)
 
-  const shim = venvHermesShimPath(updateRoot)
+  const shim = venvMoorShimPath(updateRoot)
 
   const gate = await waitForBackendRelease(
     initialPids,
@@ -4411,7 +4411,7 @@ async function handOffWindowsBootstrapRecovery(reason) {
     return false
   }
 
-  const handoffConflict = await updateHandoffConflict(HERMES_HOME)
+  const handoffConflict = await updateHandoffConflict(MOOR_HOME)
 
   if (handoffConflict) {
     // Same hazard as applyUpdates (#75778): a live foreign updater already
@@ -4459,7 +4459,7 @@ async function handOffWindowsBootstrapRecovery(reason) {
   // Exclusive create only (A7 rule 3): over any existing marker the pre-write
   // is skipped — the staged updater claims (and reclaims) for itself.
   if (Number.isInteger(child.pid) && stagedUpdaterSupportsPrewrittenMarker(updater)) {
-    const prewrite = await writeUpdateMarker(HERMES_HOME, child.pid)
+    const prewrite = await writeUpdateMarker(MOOR_HOME, child.pid)
 
     if (!prewrite.ok) {
       rememberLog(`[bootstrap] skipping marker pre-write: ${describeSkippedPrewrite(prewrite)}`)
@@ -4882,7 +4882,7 @@ function writeDefaultProjectDir(dir) {
 
 const installedRuntimeGate = createInstalledRuntimeGate(process.env, rememberLog)
 
-async function resolveHermesBackend(backendArgs: string[]): Promise<ResolvedHermesBackend> {
+async function resolveMoorBackend(backendArgs: string[]): Promise<ResolvedMoorBackend> {
   const payload = bundledPayload(process.resourcesPath)
 
   if (payload) {
@@ -4895,7 +4895,7 @@ async function resolveHermesBackend(backendArgs: string[]): Promise<ResolvedHerm
       label: `bundled payload at ${payload.root}`,
       command: payload.shim,
       args: [...backendArgs],
-      env: { ...buildDesktopBackendEnv(), HERMES_RUNTIME_DIR: payload.toolsDir },
+      env: { ...buildDesktopBackendEnv(), MOOR_RUNTIME_DIR: payload.toolsDir },
       ...payloadTicketRuntime(payload),
       root: payload.repoDir,
       bootstrap: false,
@@ -4937,11 +4937,11 @@ async function resolveHermesBackend(backendArgs: string[]): Promise<ResolvedHerm
     }
   }
 
-  // 3. HERMES_DESKTOP_HERMES — an explicit deployment override (the Nix wrapper), not a PATH
+  // 3. MOOR_DESKTOP_MOOR — an explicit deployment override (the Nix wrapper), not a PATH
   //    candidate; the pinned backend is the only valid runtime there. Resolve it before any
   //    mutable install (older release, other Python env). It carries the root its launcher reports.
-  const hermesOverride: string | undefined = process.env.HERMES_DESKTOP_HERMES
-  let hermesCommand: string | null = null
+  const moorOverride: string | undefined = process.env.MOOR_DESKTOP_MOOR
+  let moorCommand: string | null = null
 
   if (moorOverride) {
     const resolvedOverride: string | null = findOnPath(moorOverride)
@@ -4980,7 +4980,7 @@ async function resolveHermesBackend(backendArgs: string[]): Promise<ResolvedHerm
             env: {},
             kind: 'command',
             shell: shellForProbe,
-            local: 'installed', root: await launcherInstallRoot(hermesCommand) // ticket minting needs it (#138774)
+            local: 'installed', root: await launcherInstallRoot(moorCommand) // ticket minting needs it (#138774)
           }
         }
 
@@ -4999,9 +4999,9 @@ async function resolveHermesBackend(backendArgs: string[]): Promise<ResolvedHerm
   //    builds could leave a healthy install behind without the marker. If the
   //    active runtime is usable, launch it directly; only fall through to
   //    bootstrap when the runtime itself is unusable.
-  //    HERMES_DESKTOP_IGNORE_EXISTING=1 skips this rung (see backend-resolution).
-  const activeBackend: SourceBackend | null = await installedRuntimeGate.resolve(ACTIVE_HERMES_ROOT, () =>
-    resolveSourceInstallationBackend(ACTIVE_HERMES_ROOT, backendArgs, { hermesHome: HERMES_HOME })
+  //    MOOR_DESKTOP_IGNORE_EXISTING=1 skips this rung (see backend-resolution).
+  const activeBackend: SourceBackend | null = await installedRuntimeGate.resolve(ACTIVE_MOOR_ROOT, () =>
+    resolveSourceInstallationBackend(ACTIVE_MOOR_ROOT, backendArgs, { moorHome: MOOR_HOME })
   )
 
   if (!activeBackend && isMoorSourceRoot(ACTIVE_MOOR_ROOT)) {
@@ -5031,27 +5031,27 @@ async function resolveHermesBackend(backendArgs: string[]): Promise<ResolvedHerm
   if (bootstrapRepairRequested) {
     rememberLog('[bootstrap] repair requested; bypassing the usable active runtime to re-run the installer')
   } else {
-    // 5. A source install outside ACTIVE_HERMES_ROOT (install.sh --dir, a
-    //    setup-hermes.sh clone), found through the launcher it published at a
+    // 5. A source install outside ACTIVE_MOOR_ROOT (install.sh --dir, a
+    //    setup-moor.sh clone), found through the launcher it published at a
     //    fixed user-bin location: a Finder/Dock launch inherits a PATH without
     //    ~/.local/bin. The reported root is then resolved and probed like any
-    //    installed runtime; HERMES_DESKTOP_IGNORE_EXISTING=1 skips it too.
-    const userInstall: ReturnType<typeof userLauncherInstallRoot> = userLauncherInstallRoot(IS_WINDOWS, HERMES_HOME)
+    //    installed runtime; MOOR_DESKTOP_IGNORE_EXISTING=1 skips it too.
+    const userInstall: ReturnType<typeof userLauncherInstallRoot> = userLauncherInstallRoot(IS_WINDOWS, MOOR_HOME)
 
     if (userInstall) {
       const userBackend: SourceBackend | null = await installedRuntimeGate.resolve(userInstall.root, () =>
-        resolveSourceInstallationBackend(userInstall.root, backendArgs, { hermesHome: HERMES_HOME })
+        resolveSourceInstallationBackend(userInstall.root, backendArgs, { moorHome: MOOR_HOME })
       )
 
       if (userBackend) {
-        rememberLog(`[boot] Using Hermes install at ${userInstall.root} (published launcher ${userInstall.launcher})`)
+        rememberLog(`[boot] Using Moor install at ${userInstall.root} (published launcher ${userInstall.launcher})`)
 
         return userBackend
       }
 
-      rememberLog(`[bootstrap] Hermes install at ${userInstall.root} (from ${userInstall.launcher}) is not usable`)
+      rememberLog(`[bootstrap] Moor install at ${userInstall.root} (from ${userInstall.launcher}) is not usable`)
     } else {
-      rememberLog(`[bootstrap] no usable Hermes install at ${ACTIVE_HERMES_ROOT} and no published user-bin launcher`)
+      rememberLog(`[bootstrap] no usable Moor install at ${ACTIVE_MOOR_ROOT} and no published user-bin launcher`)
     }
   }
 
@@ -5247,7 +5247,7 @@ async function ensureRuntime(
 
     // Resolve the newly published launcher after the installer completes.
     return ensureRuntime(
-      await installedRuntimeGate.afterInstall(() => resolveHermesBackend(backend.args)),
+      await installedRuntimeGate.afterInstall(() => resolveMoorBackend(backend.args)),
       assertStillOwned
     )
   }
@@ -5283,7 +5283,7 @@ function fetchJson(url, token, options: any = {}) {
     async (requestState: any) => {
       // Mint inside each retry: a grant authorizes exactly one HTTP request.
       const nativeHeaders = options.gatewayDescriptor
-        ? await nativeGatewayHttpHeaders(options.gatewayDescriptor, url, HERMES_HOME, options.method || 'GET', options.upload ? undefined : options.body)
+        ? await nativeGatewayHttpHeaders(options.gatewayDescriptor, url, MOOR_HOME, options.method || 'GET', options.upload ? undefined : options.body)
         : null
 
       return new Promise((resolve, reject) => {
@@ -5314,7 +5314,7 @@ function fetchJson(url, token, options: any = {}) {
               ...headersForRemoteRequest(url),
               ...(options.headers || {}),
               'Content-Type': contentType,
-              ...(nativeHeaders || { 'X-Hermes-Session-Token': token }),
+              ...(nativeHeaders || { 'X-moor-session-Token': token }),
               // RFC 8252 native flow authenticates the gated gateway with a bearer
               // token instead of the loopback session-token header. When
               // ``options.bearer`` is set we send Authorization: Bearer <token>;
@@ -5869,7 +5869,7 @@ async function watchPreviewFile(owner, rawUrl) {
     },
     onPollChange: emit,
     onTrip: ({ events, windowMs }) =>
-      console.warn(`[hermes] fs.watch storm on ${watchDir} (${events} events within ${windowMs}ms); polling instead`)
+      console.warn(`[moor] fs.watch storm on ${watchDir} (${events} events within ${windowMs}ms); polling instead`)
   })
 
   previewWatchers.set(id, {
@@ -5960,7 +5960,7 @@ function watchDirectory(owner, rawDir) {
     snapshot: () => fs.readdirSync(watchDir).sort().join('\0'),
     onPollChange: emit,
     onTrip: ({ events, windowMs }) =>
-      console.warn(`[hermes] fs.watch storm on ${watchDir} (${events} events within ${windowMs}ms); polling instead`)
+      console.warn(`[moor] fs.watch storm on ${watchDir} (${events} events within ${windowMs}ms); polling instead`)
   })
 
   previewWatchers.set(id, {
@@ -6799,7 +6799,7 @@ function installContextMenuBridge(window: BrowserWindow) {
 // Chromium-initiated downloads (renderer anchor/blob downloads, drag-outs, a
 // media player's ⋮ Download) land here. Without a handler the OS save dialog
 // opens in the process cwd (win-unpacked in packaged installs) with whatever name
-// the URL carried. Route every download to Downloads, name hermes-media:// saves
+// the URL carried. Route every download to Downloads, name moor-media:// saves
 // after the file, and guarantee a MIME-derived extension.
 function installDownloadHandling() {
   session.defaultSession.on('will-download', (_event, item) => {
@@ -6833,7 +6833,7 @@ function installMediaPermissions() {
   // and every other frame — artifact previews included — stays denied.
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
     if ((permission as string) === 'clipboard-sanitized-write') {
-      callback(isHermesHubClipboardWrite(focusedFrameOrigin(webContents)))
+      callback(isMoorHubClipboardWrite(focusedFrameOrigin(webContents)))
 
       return
     }
@@ -6850,7 +6850,7 @@ function installMediaPermissions() {
   // the metadata refinement (absent metadata is allowed there too).
   session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
     if ((permission as string) === 'clipboard-sanitized-write') {
-      return isHermesHubClipboardWrite(focusedFrameOrigin(webContents))
+      return isMoorHubClipboardWrite(focusedFrameOrigin(webContents))
     }
 
     return isMediaCapturePermission(permission, undefined)
@@ -6884,11 +6884,11 @@ function focusedFrameOrigin(
 }
 
 /** The picker embed URL the hub iframe starts on (both deployments). */
-function isHermesHubPickerUrl(url: string): boolean {
+function isMoorHubPickerUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    const isHubOrigin = parsed.origin === HERMES_HUB_ORIGIN || parsed.origin === HERMES_HUB_FALLBACK_ORIGIN
-    const isPickerPath = parsed.pathname === '/hermes-agent/docs/skills' || parsed.pathname === '/docs/skills'
+    const isHubOrigin = parsed.origin === MOOR_HUB_ORIGIN || parsed.origin === MOOR_HUB_FALLBACK_ORIGIN
+    const isPickerPath = parsed.pathname === '/moor-agent/docs/skills' || parsed.pathname === '/docs/skills'
 
     return isHubOrigin && isPickerPath
   } catch {
@@ -7260,7 +7260,7 @@ function openOauthLoginWindow(
 // authed REST against a gated gateway, including minting WS tickets.
 //
 // #61457: the partition's Chromium jar is not a reliable cookie source — it can
-// drop the `hermes_session*` cookies (Windows %3A profile folders, lazy
+// drop the `moor_session*` cookies (Windows %3A profile folders, lazy
 // hydration, flush races) and `useSessionCookies: true` then intermittently
 // omits the cookie → 401 `no_cookie` right after a successful sign-in. Two
 // mitigations, both keyed by the request's resolved OAuth partition + origin
@@ -7299,7 +7299,7 @@ function fetchJsonViaOauthSession(url, options: any = {}) {
       }
 
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        reject(new Error(`Unsupported Hermes backend URL protocol: ${parsed.protocol}`))
+        reject(new Error(`Unsupported Moor backend URL protocol: ${parsed.protocol}`))
 
         return
       }
@@ -7342,7 +7342,7 @@ function fetchJsonViaOauthSession(url, options: any = {}) {
           // already finished
         }
 
-        reject(new Error(`Timed out connecting to Hermes backend after ${timeoutMs}ms`))
+        reject(new Error(`Timed out connecting to Moor backend after ${timeoutMs}ms`))
       }, timeoutMs)
 
       request.on('response', (res: Electron.IncomingMessage): void => {
@@ -7681,7 +7681,7 @@ async function freshGatewayWsUrl(profile, webContentsId) {
   const connection = await ensureBackend(profile)
 
   if (connection.gatewayEndpoint) {
-    return localGatewayDial({ ensure: () => ensureBackend(profile), forget: () => forgetLocalGatewayDescriptor(profile), launchHome: HERMES_HOME,
+    return localGatewayDial({ ensure: () => ensureBackend(profile), forget: () => forgetLocalGatewayDescriptor(profile), launchHome: MOOR_HOME,
       prepare: (baseUrl, ticket) => localGatewayDials.prepare(baseUrl, ticket, webContentsId), profile: String(profile ?? '') })
   }
 
@@ -10290,9 +10290,9 @@ async function testDesktopConnectionConfig(input: any = {}) {
 
           if (platform.os === 'Windows') {
             const runtime = platform
-            hermesPath = runtime.hermesPath
+            moorPath = runtime.moorPath
             const inspection = await inspectWindowsSupport(ssh, runtime)
-            hermesVersion = inspection.version
+            moorVersion = inspection.version
             supported = inspection.supported
           } else {
             moorPath = await remoteLifecycle.locateMoor(ssh, sshConfig.remoteMoorPath || '')
@@ -10604,7 +10604,7 @@ async function ensureBackend(
   const route = resolveProfileBackendRoute(key, routeOpts)
 
   if (route.backend === 'primary') {
-    const connection = await startHermes(key)
+    const connection = await startMoor(key)
     setWslBridgeProfileState(key, connection.mode !== 'remote')
 
     // A shared backend still owes the caller its profile scope, so renderer-side
@@ -11480,8 +11480,8 @@ function assertPoolEntryStillOwned(poolKey: string, entry: any) {
 
 // Resolve the connection descriptor for a named profile that is not the
 // primary: attach to (or start) its canonical local gateway via
-// `hermes gateway ensure`, or verify and describe its remote. Mirrors the local
-// portion of startHermes() without the boot-progress UI, bootstrap, or
+// `moor gateway ensure`, or verify and describe its remote. Mirrors the local
+// portion of startMoor() without the boot-progress UI, bootstrap, or
 // first-run handling (those belong to the primary only). `opts.forceLocal`
 // skips remote resolution entirely (the registry 'local' entry means THIS
 // machine regardless of the v1 routing table); `opts.poolKey` is the
@@ -11521,7 +11521,7 @@ async function dialPoolBackend(profile, entry, opts: { forceLocal?: boolean; poo
 
   const connection = await ensureLocalGateway(async () => {
     const backend = await ensureRuntime(
-      await resolveHermesBackend(['--profile', profile, 'gateway', 'ensure', '--json']),
+      await resolveMoorBackend(['--profile', profile, 'gateway', 'ensure', '--json']),
       () => assertPoolEntryStillOwned(poolKey, entry)
     )
 
@@ -11531,9 +11531,9 @@ async function dialPoolBackend(profile, entry, opts: { forceLocal?: boolean; poo
     // Never another profile's dotenv credentials from the Desktop env (#68367).
     return runGatewayEnsure(
       { ...backend, env: desktopBackendSpawnEnv(backend.env || {}) },
-      resolveHermesCwd(),
-      HERMES_HOME,
-      profileBackendParentEnv({ hermesHome: HERMES_HOME, profile })
+      resolveMoorCwd(),
+      MOOR_HOME,
+      profileBackendParentEnv({ moorHome: MOOR_HOME, profile })
     )
   }, async () => {
     // Same update mutual exclusion as the primary's waitForLocalStart (#73822);
@@ -11552,15 +11552,15 @@ async function dialPoolBackend(profile, entry, opts: { forceLocal?: boolean; poo
     })
     // Update waits yield: retirement or profile deletion may win in that gap.
     assertPoolEntryStillOwned(poolKey, entry)
-    assertLocalProfileCanStart(profile, profileDeletionGate, key => directoryExists(path.join(HERMES_HOME, 'profiles', key)))
+    assertLocalProfileCanStart(profile, profileDeletionGate, key => directoryExists(path.join(MOOR_HOME, 'profiles', key)))
   }, restartStaleLocalGateway)
 
   assertPoolEntryStillOwned(poolKey, entry)
 
-  return { ...connection, profile, logs: hermesLog.slice(-80), ...getWindowState() }
+  return { ...connection, profile, logs: moorLog.slice(-80), ...getWindowState() }
 }
 
-// `hermes gateway restart` drains in-flight turns before the owner exits; the CLI client is
+// `moor gateway restart` drains in-flight turns before the owner exits; the CLI client is
 // bounded so a wedged drain cannot hang Restart. The gateway's own drain is unaffected by the kill.
 const GATEWAY_RESTART_CLIENT_TIMEOUT_MS = 120_000
 
@@ -11570,26 +11570,26 @@ const GATEWAY_RESTART_CLIENT_TIMEOUT_MS = 120_000
 // what answers.
 async function restartLocalGatewayOwner(ownerProfile: string): Promise<void> {
   const result = await runGatewayOwnerRestart(async args => {
-    const backend = await ensureRuntime(await resolveHermesBackend(args), () => undefined)
+    const backend = await ensureRuntime(await resolveMoorBackend(args), () => undefined)
 
     return runGatewayEnsure(
       { ...backend, env: desktopBackendSpawnEnv(backend.env || {}) },
-      resolveHermesCwd(),
-      HERMES_HOME,
-      profileBackendParentEnv({ hermesHome: HERMES_HOME, profile: ownerProfile }),
-      { timeoutMs: GATEWAY_RESTART_CLIENT_TIMEOUT_MS, label: 'hermes gateway restart' }
+      resolveMoorCwd(),
+      MOOR_HOME,
+      profileBackendParentEnv({ moorHome: MOOR_HOME, profile: ownerProfile }),
+      { timeoutMs: GATEWAY_RESTART_CLIENT_TIMEOUT_MS, label: 'moor gateway restart' }
     )
   }, ownerProfile)
 
   const reason = `${result.stdout}\n${result.stderr}`.trim().split(/\r?\n/).filter(Boolean).pop()
-  rememberLog(`[gateway] hermes --profile ${ownerProfile} gateway restart exited ${result.code}${reason ? `: ${reason}` : ''}`)
+  rememberLog(`[gateway] moor --profile ${ownerProfile} gateway restart exited ${result.code}${reason ? `: ${reason}` : ''}`)
 }
 
-// A ready gateway whose boot commit differs from this Hermes (it outlived `hermes update`) is
+// A ready gateway whose boot commit differs from this Moor (it outlived `moor update`) is
 // restarted once before attaching instead of being re-attached on every dial.
 const restartStaleLocalGateway = createStaleGatewayRestarter(restartLocalGatewayOwner, rememberLog)
 
-// Models-page "Restart Hermes": restart the local gateway behind `profile`'s cached descriptor.
+// Models-page "Restart Moor": restart the local gateway behind `profile`'s cached descriptor.
 // A remote/SSH descriptor has no gatewayEndpoint, so nothing local is touched for it.
 async function restartAttachedLocalGateway(profile: string): Promise<void> {
   const pending = profile === primaryProfileKey()
@@ -11605,7 +11605,7 @@ async function restartAttachedLocalGateway(profile: string): Promise<void> {
 }
 
 // Forget a cached descriptor. Nothing is killed: the gateway behind it owns its
-// own lifetime (`hermes gateway ensure` attach semantics), so the next
+// own lifetime (`moor gateway ensure` attach semantics), so the next
 // ensure*() for this key simply re-dials. Every retire path — dispatch probe
 // failure, resume revalidation, registry removal, profile delete/rename, quit —
 // funnels through here so the verb stays in one place.
@@ -11675,7 +11675,7 @@ function reapInstallRootedStragglers(excludePids: number[]): void {
 }
 
 // Closing Desktop never stops the detached gateway: only processes this app
-// still owns are torn down, and the straggler reap protects every live Hermes
+// still owns are torn down, and the straggler reap protects every live Moor
 // runtime tree (package-process-reap.ts).
 const backendShutdown = createBackendShutdownCoordinator(async (): Promise<void> => {
   const ownedChildren = IS_WINDOWS ? collectOwnedBackendChildren() : []
@@ -11802,7 +11802,7 @@ function latchedBootFailure(): Error | null {
   return bootstrapFailure ?? backendStartFailure ?? remoteReauthFailure ?? null
 }
 
-async function startHermes(requestedProfile?: string) {
+async function startMoor(requestedProfile?: string) {
   // Only the single-instance lock holder may reap/spawn/claim the desktop
   // backend. A lock-losing instance must stay inert even if some path reaches
   // here (e.g. the deferred-quit window before `ready`): its reapOrphans()
@@ -11865,7 +11865,7 @@ async function startHermes(requestedProfile?: string) {
 
   // ONE launch-profile decision for this attempt (#108417): routing identity,
   // the --profile argv and the child env all derive from the same read, so a
-  // hermes:profile:remember landing mid-startup becomes the NEXT boot's
+  // moor:profile:remember landing mid-startup becomes the NEXT boot's
   // preference instead of splitting routing identity from the launch
   // argument. An explicit profile-scoped caller names both.
   const { argvProfile: activeProfile, routingProfile: primaryProfile } = requestedProfile
@@ -11932,10 +11932,10 @@ async function startHermes(requestedProfile?: string) {
     const backendArgs = ['gateway', 'ensure', '--json']
 
     // Pin the desktop's chosen profile via the global --profile flag. This is
-    // deterministic (it wins over the sticky ~/.hermes/active_profile file) and
-    // resolves HERMES_HOME the same way `hermes -p <name>` does on the CLI. A
-    // launch override is persisted into active-profile.json before startHermes,
-    // so Hermes.exe --profile <name> and hermes -p <name> desktop both land
+    // deterministic (it wins over the sticky ~/.moor/active_profile file) and
+    // resolves MOOR_HOME the same way `moor -p <name>` does on the CLI. A
+    // launch override is persisted into active-profile.json before startMoor,
+    // so Moor.exe --profile <name> and moor -p <name> desktop both land
     // here. `activeProfile` is the SAME decision that named routing above —
     // never re-read here (#108417). An unset preference keeps the legacy
     // launch so existing installs are unaffected.
@@ -11989,7 +11989,7 @@ async function startHermes(requestedProfile?: string) {
       return setup.connection
     }
 
-    // No `attachHostBackend` is wired: `hermes gateway ensure` below IS the
+    // No `attachHostBackend` is wired: `moor gateway ensure` below IS the
     // attach-or-start step for the canonical local gateway.
     if (setup.kind === 'attached') {
       throw new Error('Unexpected attached backend outcome without a host attach step.')
@@ -12000,22 +12000,22 @@ async function startHermes(requestedProfile?: string) {
 
     const connection = await ensureLocalGateway(() => runGatewayEnsure(
       { ...setup.backend, env: desktopBackendSpawnEnv(setup.backend.env || {}) },
-      resolveHermesCwd(),
-      HERMES_HOME,
-      profileBackendParentEnv({ hermesHome: HERMES_HOME, profile: primaryProfile })
+      resolveMoorCwd(),
+      MOOR_HOME,
+      profileBackendParentEnv({ moorHome: MOOR_HOME, profile: primaryProfile })
     ), undefined, restartStaleLocalGateway)
 
     backendConnectionState.assertCurrentAttempt(connectionAttempt)
 
     backendStartFailure = null
-    rememberLog('[backend] Hermes gateway is ready')
-    updateBootProgress({ phase: 'backend.ready', message: 'Hermes gateway is ready', progress: 94, running: true, error: null })
+    rememberLog('[backend] Moor gateway is ready')
+    updateBootProgress({ phase: 'backend.ready', message: 'Moor gateway is ready', progress: 94, running: true, error: null })
     bootstrapRepairAttempt = 0
 
     // The primary descriptor names its own profile: a profile-less descriptor
     // reads as "default" downstream and breaks per-source profile memory when
     // the primary actually booted as another profile (#825324fd).
-    return { ...connection, profile: primaryProfile, logs: hermesLog.slice(-80), ...getWindowState() }
+    return { ...connection, profile: primaryProfile, logs: moorLog.slice(-80), ...getWindowState() }
   })().catch(async error => {
     if (!backendConnectionState.clearPromiseForAttempt(connectionAttempt)) {
       throw error
@@ -12166,7 +12166,7 @@ function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {})
 
   installContextMenuBridge(win)
   // Always deny, never open as a side effect: GHSA-9f4c-93c8-jc8g. Trusted
-  // links arrive via `hermes:openExternal`, not here. See window-open-policy.ts.
+  // links arrive via `moor:openExternal`, not here. See window-open-policy.ts.
   // The trusted-hub delegation (window-open-policy.ts, #91612) also never
   // creates a window: it hands http/https/mailto opens from the EXACT hub
   // origin to the audited `openExternalUrl` as a deny side effect.
@@ -12189,11 +12189,11 @@ function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {})
     const frame = findFrameByIdentifier(win.webContents, frameProcessId, frameRoutingId)
     const frameOrigin = safeFrameOrigin(frame)
 
-    if (frameOrigin !== HERMES_HUB_ORIGIN && frameOrigin !== HERMES_HUB_FALLBACK_ORIGIN) {
+    if (frameOrigin !== MOOR_HUB_ORIGIN && frameOrigin !== MOOR_HUB_FALLBACK_ORIGIN) {
       return
     }
 
-    if (isHermesHubPickerUrl(url)) {
+    if (isMoorHubPickerUrl(url)) {
       return
     }
 
@@ -12325,7 +12325,7 @@ function focusWindow(win) {
   }
 
   // #83998: show() and focus() both seize the Windows OS foreground,
-  // dismissing other apps' native save/confirm dialogs while Hermes streams
+  // dismissing other apps' native save/confirm dialogs while Moor streams
   // in the background. Reveal without activation, and only take the keyboard
   // when the window doesn't already have focus — a redundant focus() still
   // pumps SetForegroundWindow.
@@ -12787,7 +12787,7 @@ function spawnPetOverlayWindow(bounds) {
     if (
       shouldPopInOnOverlayClosed({ appQuitting, mainWindowAlive: Boolean(mainWindow && !mainWindow.isDestroyed()) })
     ) {
-      mainWindow.webContents.send('hermes:pet-overlay:control', { type: 'pop-in' })
+      mainWindow.webContents.send('moor:pet-overlay:control', { type: 'pop-in' })
     }
   })
 
@@ -13791,7 +13791,7 @@ function createWindow() {
               LINUX_GPU_SOFTWARE_ACTIVE ||
               linuxGpuFallbackActive ||
               alreadyHasDisableGpu(process.argv, process.env) ||
-              isHermesDesktopGpuOverrideOff(process.env)
+              isMoorDesktopGpuOverrideOff(process.env)
 
             const gpuChildPresent = app
               .getAppMetrics()
@@ -13817,7 +13817,7 @@ function createWindow() {
               }
 
               console.warn(
-                '[hermes] Linux: no GPU child after window reveal — GPU init is retrying silently; software fallback engaged for the next launch (#124843)'
+                '[moor] Linux: no GPU child after window reveal — GPU init is retrying silently; software fallback engaged for the next launch (#124843)'
               )
             }
           }
@@ -14089,7 +14089,7 @@ function createWindow() {
   })
 }
 
-ipcMain.handle('hermes:connection', async (event, profile) => {
+ipcMain.handle('moor:connection', async (event, profile) => {
   const route = resolveDesktopConnectionRequest(
     profile,
     windowConnectionRoutes.get(event.sender.id),
@@ -14111,12 +14111,12 @@ async function connectDesktopProfileRoute(route: DesktopProfileRoute, sender?: E
   )
 
   // Every republish carries LIVE window state (#102451): the backend pool entry
-  // (and the getWindowState() snapshot startHermes baked into it) outlives
+  // (and the getWindowState() snapshot startMoor baked into it) outlives
   // reloads, reconnects and sleep/wake, so a reply built only from the cached
   // descriptor overwrites the renderer's live fullscreen flag with the
   // mint-time snapshot. Reading the caller's state HERE keeps registry-scoped,
   // primary-resolved and bare replies consistent with the
-  // hermes:window-state-changed live-push path.
+  // moor:window-state-changed live-push path.
   const windowState = liveWindowState(sender, {
     fromWebContents: BrowserWindow.fromWebContents,
     getWindowState,
@@ -14141,7 +14141,7 @@ async function connectDesktopProfileRoute(route: DesktopProfileRoute, sender?: E
 // ensureBackend when the v1 route is local, and attaches to this machine's
 // canonical gateway when the v1 global mode is remote (the registry 'local'
 // entry always means this machine) unless the profile is remote-only.
-ipcMain.handle('hermes:connection:for', async (event, payload) => {
+ipcMain.handle('moor:connection:for', async (event, payload) => {
   const { connectionId, profile } = payload && typeof payload === 'object' ? (payload as any) : ({} as any)
   const registry = readDesktopConnectionsRegistry()
   const id = registryDialConnectionId(connectionId, registry.primary)
@@ -14281,7 +14281,7 @@ function revalidateSuspectPoolAfterResume() {
   )
 }
 
-ipcMain.handle('hermes:gateway:ws-url', async (_event, profile) => {
+ipcMain.handle('moor:gateway:ws-url', async (_event, profile) => {
   return gatewayWsUrlIpcResult(() => freshGatewayWsUrl(profile, _event.sender.id))
 })
 ipcMain.handle('moor:window:openSession', async (_event, sessionId, opts) => {
@@ -14319,10 +14319,10 @@ ipcMain.handle('moor:window:openBrowser', async (_event, tabId) => {
 // between them over IPC. Destination validation and reply correlation stay
 // renderer-side, so every feature riding this relay still fails closed instead
 // of falling through to whatever window happens to be active later.
-ipcMain.on('hermes:window:relay', (event, payload) => {
+ipcMain.on('moor:window:relay', (event, payload) => {
   for (const other of BrowserWindow.getAllWindows()) {
     if (!other.isDestroyed() && other.webContents.id !== event.sender.id) {
-      other.webContents.send('hermes:window:relay', payload)
+      other.webContents.send('moor:window:relay', payload)
     }
   }
 })
@@ -14400,7 +14400,7 @@ ipcMain.on('moor:wake-indicator:set', (_event, state) => {
 // shortcuts and the View menu. Reads and writes target the asking window.
 registerPreparedSubmissions()
 
-ipcMain.handle('hermes:zoom:get', event => {
+ipcMain.handle('moor:zoom:get', event => {
   const window = BrowserWindow.fromWebContents(event.sender)
 
   const level = window && !window.isDestroyed() ? window.webContents.getZoomLevel() : DEFAULT_ZOOM_LEVEL
@@ -14572,7 +14572,7 @@ registerUpdateHoldIpc(ipcMain, {
   quit: () => app.quit()
 })
 
-ipcMain.handle('hermes:bootstrap:continue-local', async () => {
+ipcMain.handle('moor:bootstrap:continue-local', async () => {
   rememberLog('[bootstrap] local install selected by renderer; continuing first-launch bootstrap')
   continueFirstRunLocalBootstrap()
 
@@ -14594,8 +14594,8 @@ ipcMain.handle('moor:bootstrap:cancel', async () => {
 
   return { ok: false, cancelled: false }
 })
-ipcMain.handle('hermes:bootstrap:get', async () => getBootstrapState())
-ipcMain.handle('hermes:local-backend:probe', async () => {
+ipcMain.handle('moor:bootstrap:get', async () => getBootstrapState())
+ipcMain.handle('moor:local-backend:probe', async () => {
   // Resolution only. ensureRuntime/runBootstrap must not start from a hover
   // or a click that has not confirmed the install.
   const backend = await resolveMoorBackend([])
@@ -14914,8 +14914,8 @@ async function probeSshProfileInventory(connection) {
   )
 
   try {
-    const platform = await ssh.open().then(() => detectRemotePlatform(ssh, sshConfig.remoteHermesPath || ''))
-    const profiles = await remoteLifecycle.listRemoteHermesProfiles(ssh, platform)
+    const platform = await ssh.open().then(() => detectRemotePlatform(ssh, sshConfig.remoteMoorPath || ''))
+    const profiles = await remoteLifecycle.listRemoteMoorProfiles(ssh, platform)
 
     if (profiles.length > 0) {
       sshRosterCache.set(connection.id, profiles)
@@ -15074,7 +15074,7 @@ async function enumerateRegistryAgentSources(registry = readDesktopConnectionsRe
                 )
               : undefined
 
-            // The root HERMES_HOME is an agent too; enumerations that omit it
+            // The root MOOR_HOME is an agent too; enumerations that omit it
             // (older backends list only named profiles) still get a default row.
             if (!profiles.includes('default')) {
               profiles.unshift('default')
@@ -15160,12 +15160,12 @@ const registryGatewayWsUrlHandler = createRegistryGatewayWsUrlHandler({
   rememberHeaders: rememberRemoteWsHeaders
 })
 
-ipcMain.handle('hermes:gateway:ws-url-for', async (_event, payload) => {
+ipcMain.handle('moor:gateway:ws-url-for', async (_event, payload) => {
   return gatewayWsUrlIpcResult(async () => {
     const connection = await ensureRegistryBackend(payload?.connectionId, payload?.profile)
 
     if (connection.gatewayEndpoint) {
-      return localGatewayDial({ ensure: () => ensureRegistryBackend(payload?.connectionId, payload?.profile), launchHome: HERMES_HOME,
+      return localGatewayDial({ ensure: () => ensureRegistryBackend(payload?.connectionId, payload?.profile), launchHome: MOOR_HOME,
         forget: () => forgetRegistryLocalGatewayDescriptor(payload?.connectionId, payload?.profile), profile: String(payload?.profile ?? ''),
         prepare: (baseUrl, ticket) => localGatewayDials.prepare(baseUrl, ticket, _event.sender.id) })
     }
@@ -15175,9 +15175,9 @@ ipcMain.handle('hermes:gateway:ws-url-for', async (_event, payload) => {
 })
 
 const pluginWsUrl = createPluginWsUrlHandler({ ensureBackend, ensureRegistryBackend, forgetLocalGatewayDescriptor,
-  forgetRegistryLocalGatewayDescriptor, launchHome: HERMES_HOME, prepare: localGatewayDials.preparePlugin })
+  forgetRegistryLocalGatewayDescriptor, launchHome: MOOR_HOME, prepare: localGatewayDials.preparePlugin })
 
-ipcMain.handle('hermes:plugin:ws-url', (event, payload) => pluginWsUrl(payload ?? {}, event.sender.id))
+ipcMain.handle('moor:plugin:ws-url', (event, payload) => pluginWsUrl(payload ?? {}, event.sender.id))
 
 // Transactional update for a Desktop-managed SSH install. Unlike the generic
 // fleet fan-out below, this path owns the remote serve lifecycle: it gates new
@@ -15278,7 +15278,7 @@ ipcMain.handle('moor:connections:update-all', async (_event, payload) => {
           ensureRegistryBackend(connection.id, null)
         )
 
-        const body: any = await postJsonForBackend(descriptor, '/api/hermes/update', {}, { timeoutMs: 15_000 })
+        const body: any = await postJsonForBackend(descriptor, '/api/moor/update', {}, { timeoutMs: 15_000 })
 
         if (body?.ok === false) {
           // The backend refused (docker/nix/externally-managed installs) —
@@ -15378,8 +15378,8 @@ async function fetchJsonForBackend(
   })
 }
 
-ipcMain.handle('hermes:connection-config:probe', async (_event, rawUrl) => probeRemoteAuthMode(rawUrl))
-ipcMain.handle('hermes:connection-config:oauth-login', async (_event, rawUrl, rawOpts) => {
+ipcMain.handle('moor:connection-config:probe', async (_event, rawUrl) => probeRemoteAuthMode(rawUrl))
+ipcMain.handle('moor:connection-config:oauth-login', async (_event, rawUrl, rawOpts) => {
   // Capability-gated login (RFC 8252). Probe the gateway's public /api/status
   // for supported auth_flows and /api/auth/providers for provider capabilities:
   //   - all providers support password â†’ always use the embedded login window
@@ -15670,7 +15670,7 @@ ipcMain.on('moor:previewShortcutActive', (_event, active) => {
 
 // The host renderer reports which of its Browser guests are off screen (a
 // hidden session's kept-alive page), so focused-guest gestures skip them.
-ipcMain.on('hermes:preview-guest-hidden', (event, payload) => {
+ipcMain.on('moor:preview-guest-hidden', (event, payload) => {
   notePreviewGuestHidden(
     event.sender,
     electronWebContents.fromId(Number(payload?.webContentsId)),
@@ -15678,7 +15678,7 @@ ipcMain.on('hermes:preview-guest-hidden', (event, payload) => {
   )
 })
 
-ipcMain.on('hermes:f12ShortcutActive', (event, active) => {
+ipcMain.on('moor:f12ShortcutActive', (event, active) => {
   if (active) {
     f12ShortcutActiveWindows.add(event.sender.id)
   } else {
@@ -16146,7 +16146,7 @@ function isNotFoundApiError(error) {
   return /(?:^|\s)404\b/.test(String((error as any)?.message ?? error))
 }
 
-async function handleHermesApiRequest(request) {
+async function handleMoorApiRequest(request) {
   // Registry-pinned request (request.connectionId): the renderer is working
   // against a REGISTERED gateway connection, so the data â€” cron jobs and their
   // run sessions included â€” lives in THAT host's state.db, not any local
@@ -16298,7 +16298,7 @@ ipcMain.handle('moor:api', async (_event, request) => {
 
     return await handleMoorApiRequest(request).finally(releaseProfileDeletion)
   } catch (error) {
-    // Electron logs "Error occurred in handler for 'hermes:api'" with a full
+    // Electron logs "Error occurred in handler for 'moor:api'" with a full
     // stack for EVERY rejected invoke, and there is no opt-out on the handler.
     // Session resolution is a deliberate probe ladder (`resolveStoredSession`:
     // cache → active backend → each other profile) and the renderer already
@@ -16313,7 +16313,7 @@ ipcMain.handle('moor:api', async (_event, request) => {
     // contract is unchanged; only Electron's logging is bypassed. Every other
     // failure still rejects and still logs in full.
     if (isNotFoundApiError(error)) {
-      return { [HERMES_API_EXPECTED_404]: String((error as any)?.message ?? error) }
+      return { [MOOR_API_EXPECTED_404]: String((error as any)?.message ?? error) }
     }
 
     // Persist the failure (full stack) before the rejection crosses to the
@@ -16383,7 +16383,7 @@ ipcMain.handle('moor:data-url-read-max:set', (_event, maxMb) => {
   }
 })
 
-ipcMain.handle('hermes:readFileDataUrl', async (_event, filePath) => {
+ipcMain.handle('moor:readFileDataUrl', async (_event, filePath) => {
   // Backend-reported paths are WSL/POSIX (`/home/...`, `/mnt/c/...`); on a
   // Windows host bridge them to a UNC/drive form, same as directory reads.
   const bridgedPath = resolveIpcFileReadPath(filePath)
@@ -16407,7 +16407,7 @@ ipcMain.handle('hermes:readFileDataUrl', async (_event, filePath) => {
 // Keep a finite cap so Electron + base64 memory stays bounded while archives
 // can exceed the default 16 MiB preview ceiling (and still fit the gateway
 // WebSocket frame limit after base64 expansion).
-ipcMain.handle('hermes:readFileDataUrlForAttach', async (_event, filePath) => {
+ipcMain.handle('moor:readFileDataUrlForAttach', async (_event, filePath) => {
   const bridgedPath = resolveIpcFileReadPath(filePath)
 
   try {
@@ -16425,7 +16425,7 @@ ipcMain.handle('hermes:readFileDataUrlForAttach', async (_event, filePath) => {
   }
 })
 
-ipcMain.handle('hermes:readFileText', async (_event, filePath) => {
+ipcMain.handle('moor:readFileText', async (_event, filePath) => {
   try {
     const { resolvedPath, stat } = await resolveReadableFileForIpc(resolveIpcFileReadPath(filePath), {
       maxBytes: TEXT_PREVIEW_SOURCE_MAX_BYTES,
@@ -16529,7 +16529,7 @@ registerSaveDialogIpc(ipcMain, {
   showSaveDialog: options => dialog.showSaveDialog(mainWindow, options)
 })
 
-ipcMain.handle('hermes:saveGatewayFile', (_event, payload) => saveGatewayFile(payload))
+ipcMain.handle('moor:saveGatewayFile', (_event, payload) => saveGatewayFile(payload))
 
 ipcMain.handle('moor:saveImageFromUrl', (_event, url) => saveImageFromUrl(String(url || '')))
 
@@ -16589,7 +16589,7 @@ ipcMain.handle('moor:savePastedText', async (_event, payload) => {
   return writeComposerPaste(MOOR_HOME, text)
 })
 
-ipcMain.handle('hermes:saveClipboardImage', async () => {
+ipcMain.handle('moor:saveClipboardImage', async () => {
   // Electron 44 removed clipboard.readImage(); PNG bytes now arrive through
   // clipboard.read() + ClipboardItem.getType('image/png') as a Blob.
   const png = await readClipboardImagePng(clipboard)
@@ -16616,9 +16616,9 @@ ipcMain.handle('moor:normalizePreviewTarget', (_event, target, baseDir) =>
   normalizePreviewTarget(String(target || ''), baseDir ? String(baseDir) : '')
 )
 
-ipcMain.handle('hermes:watchPreviewFile', (event, url) => watchPreviewFile(event.sender, String(url || '')))
+ipcMain.handle('moor:watchPreviewFile', (event, url) => watchPreviewFile(event.sender, String(url || '')))
 
-ipcMain.handle('hermes:watchDirectory', (event, dir) => watchDirectory(event.sender, String(dir || '')))
+ipcMain.handle('moor:watchDirectory', (event, dir) => watchDirectory(event.sender, String(dir || '')))
 
 ipcMain.handle('moor:stopPreviewFileWatch', (_event, id) => stopPreviewFileWatch(String(id || '')))
 
@@ -16854,7 +16854,7 @@ const keepAwake = createKeepAwakeController({
       return false
     }
 
-    mainWindow.webContents.send('hermes:keep-awake-offer')
+    mainWindow.webContents.send('moor:keep-awake-offer')
 
     return true
   }
@@ -16865,7 +16865,7 @@ function applyKeepAwake(working = isAnyTurnInFlight()) {
   keepAwake.apply(working)
 }
 
-ipcMain.on('hermes:keep-awake', (_event, value) => keepAwake.setMode(value))
+ipcMain.on('moor:keep-awake', (_event, value) => keepAwake.setMode(value))
 
 // Quick Entry: the renderer reads the live registration state on settings mount
 // and writes the preference back. Main is authoritative â€” it owns the OS
@@ -16909,7 +16909,7 @@ const quickEntrySubmitRelay = createQuickEntrySubmitRelay({
   // resending a prompt that may already be delivered.
   onLateResult: (correlationId, result) => {
     if (quickEntryWindow && !quickEntryWindow.isDestroyed()) {
-      quickEntryWindow.webContents.send('hermes:quick-entry:late-result', { correlationId, result })
+      quickEntryWindow.webContents.send('moor:quick-entry:late-result', { correlationId, result })
     }
   },
   onSuccess: () => {
@@ -16928,7 +16928,7 @@ const quickEntrySubmitRelay = createQuickEntrySubmitRelay({
 
 // Main owns the request lifecycle so the capture window can keep text until
 // the primary renderer confirms delivery (#85590).
-ipcMain.handle('hermes:quick-entry:submit', (event, payload) => {
+ipcMain.handle('moor:quick-entry:submit', (event, payload) => {
   if (!quickEntryWindow || event.sender !== quickEntryWindow.webContents) {
     return { code: 'forbidden', message: 'Quick Entry sender is not authorized.', ok: false, retryable: false }
   }
@@ -16941,20 +16941,20 @@ ipcMain.handle('hermes:quick-entry:submit', (event, payload) => {
   }
 
   if (!mainWindow || mainWindow.isDestroyed()) {
-    return { code: 'no-primary', message: 'The primary Hermes window is unavailable.', ok: false, retryable: true }
+    return { code: 'no-primary', message: 'The primary Moor window is unavailable.', ok: false, retryable: true }
   }
 
   const target =
     typeof payload === 'object' && typeof payload?.target === 'string' && payload.target ? payload.target : 'current'
 
   return quickEntrySubmitRelay.begin(correlationId => {
-    mainWindow.webContents.send('hermes:quick-entry:submit', { correlationId, target, text })
+    mainWindow.webContents.send('moor:quick-entry:submit', { correlationId, target, text })
   })
 })
 
 // Main cannot invoke the primary renderer, so the primary returns by id. Stale
 // or duplicate acknowledgements are intentionally ignored (#85590).
-ipcMain.on('hermes:quick-entry:ack', (event, payload) => {
+ipcMain.on('moor:quick-entry:ack', (event, payload) => {
   if (!mainWindow || event.sender !== mainWindow.webContents) {
     return
   }
@@ -17008,7 +17008,7 @@ registerChallengeWindowIpc({
   rememberLog
 })
 
-ipcMain.handle('hermes:openExternal', async (_event, url) => {
+ipcMain.handle('moor:openExternal', async (_event, url) => {
   const result = await openExternalUrl(url)
 
   if (result.ok === false && result.reason === 'invalid') {
@@ -17157,8 +17157,8 @@ ipcMain.on('moor:logs:renderer-error', (_event, report) => {
 
 // Pre-paint payloads the preload reads synchronously: the local skin, and this
 // machine's shared UI preferences (#145213) — see local-skin.ts, ui-preferences.ts.
-registerLocalSkinIpc(ipcMain, HERMES_HOME, id => windowConnectionRoutes.get(id)?.profile, primaryProfileKey)
-registerMachineUiPreferences(HERMES_HOME)
+registerLocalSkinIpc(ipcMain, MOOR_HOME, id => windowConnectionRoutes.get(id)?.profile, primaryProfileKey)
+registerMachineUiPreferences(MOOR_HOME)
 
 // Renderer error toasts (notifyError): the toast shows the summarized copy,
 // so the caller posts the full error here for desktop.log. Fire-and-forget,
@@ -17231,7 +17231,7 @@ ipcMain.handle('moor:updates:apply', async (_event, payload) =>
 )
 
 // About ▸ Updates channel selector; source checkouts only (packages bake their channel).
-ipcMain.handle('hermes:updates:channel:set', async (_event, name: unknown): Promise<UpdaterStatusWire> => {
+ipcMain.handle('moor:updates:channel:set', async (_event, name: unknown): Promise<UpdaterStatusWire> => {
   assertSourceUpdateChannel(INSTALL_STAMP)
 
   return resolveCheckoutUpdateStrategy().check({ force: true, setChannel: sourceChannelName(name) })
@@ -17378,18 +17378,18 @@ const checkRendererSkew = createBundleSkewChecker(
   (args, options) => execGit(resolveGitBinary(), args, options),
   // Only a LIVE marker defers the warning: Desktop never deletes a dead one,
   // so a leftover file would otherwise suppress it indefinitely.
-  { isUpdating: async () => updateInFlight || isQuittingForHandoff || Boolean(await readLiveUpdateMarker(HERMES_HOME)) }
+  { isUpdating: async () => updateInFlight || isQuittingForHandoff || Boolean(await readLiveUpdateMarker(MOOR_HOME)) }
 )
 
 async function detectRendererSkew() {
   return checkRendererSkew(resolveUpdateRoot())
 }
 
-// Re-resolve the focused window's live Hermes version just before showing the native About
-// panel, so an in-place `hermes update` shows without a restart. macOS only (no-op elsewhere).
+// Re-resolve the focused window's live Moor version just before showing the native About
+// panel, so an in-place `moor update` shows without a restart. macOS only (no-op elsewhere).
 function showAboutPanelFresh(): void {
   const scope = windowConnectionRoutes.versionScopeFor(BrowserWindow.getFocusedWindow() ?? mainWindow)
-  void Promise.all([detectRendererSkew(), resolveHermesVersion(scope)]).then(([skew, version]) => {
+  void Promise.all([detectRendererSkew(), resolveMoorVersion(scope)]).then(([skew, version]) => {
     const info: AppVersionInfo = appVersionInfo(INSTALL_STAMP, version, app.getVersion())
     // The product name already identifies canary and commit builds. Never pass
     // through empty/placeholder: the panel would render the bundle's 0.0.0 (#124581).
@@ -17403,11 +17403,11 @@ function showAboutPanelFresh(): void {
   })
 }
 
-ipcMain.handle('hermes:version', async (_event, scope?: { connectionId?: string; profile?: string }) => {
+ipcMain.handle('moor:version', async (_event, scope?: { connectionId?: string; profile?: string }) => {
   const [skew, version, clientVersion] = await Promise.all([
     detectRendererSkew(),
-    resolveHermesVersion(scope),
-    resolveDesktopClientVersion(INSTALL_STAMP, resolveUpdateRoot(), HERMES_HOME, app.getVersion())
+    resolveMoorVersion(scope),
+    resolveDesktopClientVersion(INSTALL_STAMP, resolveUpdateRoot(), MOOR_HOME, app.getVersion())
   ])
 
   return {
@@ -17449,7 +17449,7 @@ ipcMain.handle('hermes:version', async (_event, scope?: { connectionId?: string;
 // The About page's "Restart Moor" button (shown when bundleSwapPending):
 // load the already-swapped bundle without asking the user to quit manually.
 // The relaunch re-executes by path, so the fresh process loads the bundle now there.
-ipcMain.handle('hermes:app:relaunch', async () => {
+ipcMain.handle('moor:app:relaunch', async () => {
   rememberLog('[updates] renderer requested an app relaunch (swapped bundle pending)')
   relaunchApp(relauncher, { args: buildNoSandboxRelaunchArgs(process.argv.slice(1)) })
   void exitAfterBackendShutdown(0)
@@ -17846,7 +17846,7 @@ function handleDeepLink(url) {
     return
   }
 
-  // hermes://close-preview — the out-of-band exit hatch for a preview pane
+  // moor://close-preview — the out-of-band exit hatch for a preview pane
   // that fullscreened itself and now owns all input (#97213). Handled here
   // rather than in the renderer because the whole point is to work when the
   // renderer cannot hear anything: exit the fullscreen window and close the
@@ -17885,7 +17885,7 @@ function handleDeepLink(url) {
     // #130810 un-hide a tray-hidden window; #83998 no foreground re-pump.
     activateWindow(mainWindow)
 
-    mainWindow.webContents.send('hermes:deep-link', payload)
+    mainWindow.webContents.send('moor:deep-link', payload)
     rememberLog(`[deeplink] delivered ${kind}/${name}`)
   } catch (err) {
     rememberLog(`[deeplink] delivery failed: ${err.message}`)
@@ -17916,7 +17916,7 @@ ipcMain.handle('moor:deep-link-ready', () => {
 
 function registerDeepLinkProtocol() {
   registerDeepLinkProtocolWith({
-    app, protocol: HERMES_PROTOCOL, env: process.env, defaultApp: Boolean(process.defaultApp),
+    app, protocol: MOOR_PROTOCOL, env: process.env, defaultApp: Boolean(process.defaultApp),
     argv: process.argv, execPath: process.execPath, resolve: entry => path.resolve(entry), log: rememberLog
   })
 }
@@ -17945,7 +17945,7 @@ if (!isPrimaryInstance) {
   app.exit(0)
 } else {
   // Cold-start --profile must win over the stored preference before
-  // startHermes() reads active-profile.json. Only the instance that will
+  // startMoor() reads active-profile.json. Only the instance that will
   // boot writes: a second launch must not retarget the running app. A missing
   // or invalid flag is a no-op, so the stored profile stays.
   try {
@@ -17953,16 +17953,16 @@ if (!isPrimaryInstance) {
       writeActiveDesktopProfile(name)
     })
   } catch (error) {
-    console.error('[hermes] failed to persist --profile launch override:', error)
+    console.error('[moor] failed to persist --profile launch override:', error)
   }
 
   app.on('second-instance', (_event, argv) => {
-    // --close-preview: the same escape hatch as hermes://close-preview, for
+    // --close-preview: the same escape hatch as moor://close-preview, for
     // environments where spawning a URL is harder than a flag (kiosk launchers,
-    // SSH-started sessions). Checked before deep links so a carried `hermes://`
+    // SSH-started sessions). Checked before deep links so a carried `moor://`
     // URL still routes normally when no flag is present.
     if (hasClosePreviewFlag(argv)) {
-      handleDeepLink('hermes://close-preview')
+      handleDeepLink('moor://close-preview')
     }
 
     const url = _extractDeepLink(argv)
@@ -17971,7 +17971,7 @@ if (!isPrimaryInstance) {
       handleDeepLink(url)
     }
 
-    // #130810: a second Start-menu / shortcut / Hermes.exe launch must never
+    // #130810: a second Start-menu / shortcut / Moor.exe launch must never
     // silently exit. Log it so a future silent exit stays diagnosable, then
     // restore a live primary with activation (restore + show + focus), or
     // re-create it when it was destroyed.
@@ -18046,7 +18046,7 @@ app.whenReady().then(() => {
   // APIs don't register as screen readers, so Chromium never builds the tree
   // and the composer stays invisible to them. Must run after `ready` (the
   // API's requirement). Opt out with desktop.renderer_accessibility: false
-  // (bridged as HERMES_DESKTOP_RENDERER_ACCESSIBILITY=0); the platform/env
+  // (bridged as MOOR_DESKTOP_RENDERER_ACCESSIBILITY=0); the platform/env
   // decision lives in the extracted helper.
   enableRendererAccessibility({ appApi: app })
 

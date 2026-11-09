@@ -13,8 +13,8 @@ only the profile-root location is pointed at tmp_path.
 import moor_yaml as yaml
 from pathlib import Path
 
-from hermes_cli import update_cmd
-from hermes_cli import update_cmd_config
+from moor_cli import update_cmd
+from moor_cli import update_cmd_config
 
 
 def _write_profile(root: Path, name: str, version: int) -> Path:
@@ -34,18 +34,18 @@ def _latest_version() -> int:
 
 
 def _setup(monkeypatch, tmp_path, active_home: Path, *, default_home: Path | None = None):
-    import hermes_cli.profiles as profiles_mod
+    import moor_cli.profiles as profiles_mod
 
     monkeypatch.setattr(profiles_mod, "_get_profiles_root", lambda: tmp_path / "profiles")
     # Default lives at the install root, not under profiles/; absent unless a test passes it,
-    # so no test can reach the real ~/.hermes.
+    # so no test can reach the real ~/.moor.
     missing = tmp_path / "no-such-default-home"
     monkeypatch.setattr(
         profiles_mod,
-        "_get_default_hermes_home",
+        "_get_default_moor_home",
         lambda: default_home if default_home is not None else missing,
     )
-    import hermes_constants
+    import moor_constants
 
     monkeypatch.setattr(
         moor_constants, "get_process_moor_home", lambda: active_home
@@ -127,7 +127,7 @@ def test_override_is_reset_after_run(monkeypatch, tmp_path):
 
     before = get_moor_home_override()
     update_cmd._migrate_sibling_profile_configs()
-    assert get_hermes_home_override() == before
+    assert get_moor_home_override() == before
 
 
 def test_named_active_migrates_default_outside_profiles(monkeypatch, tmp_path):
@@ -146,7 +146,7 @@ def test_named_active_migrates_default_outside_profiles(monkeypatch, tmp_path):
     assert entry[1] == 12 and entry[2] == _latest_version()
     on_disk = yaml.safe_load((default_home / "config.yaml").read_text())
     assert on_disk["_config_version"] == _latest_version()
-    assert on_disk["model"]["provider"] == "nous"
+    assert on_disk["model"]["provider"] == "moor"
     # named active is the invoking home: its own migrate path handles it
     assert "work" not in names
 
@@ -176,10 +176,10 @@ def test_sibling_step_notices_reach_the_update_output(monkeypatch, tmp_path, cap
     work.mkdir(parents=True)
     (work / "config.yaml").write_text("_config_version: 51\nbrowser:\n  backend: off\n", encoding="utf-8")
     _setup(monkeypatch, tmp_path, active)
-    monkeypatch.setenv("HERMES_HOME", str(active))
+    monkeypatch.setenv("MOOR_HOME", str(active))
     monkeypatch.setattr(update_cmd_config, "_restore_snapshot_safety_nets", lambda _sid: None)
-    monkeypatch.setattr("hermes_cli.config.get_missing_env_vars", lambda **_: [])
-    monkeypatch.setattr("hermes_cli.config.get_missing_config_fields", lambda: [{"key": "display.new_option"}])
+    monkeypatch.setattr("moor_cli.config.get_missing_env_vars", lambda **_: [])
+    monkeypatch.setattr("moor_cli.config.get_missing_config_fields", lambda: [{"key": "display.new_option"}])
 
     update_cmd_config._check_and_apply_config_migration()
 
@@ -187,6 +187,6 @@ def test_sibling_step_notices_reach_the_update_output(monkeypatch, tmp_path, cap
     profile_line = out.index("Profile 'work': config format updated (v51")
     notice = out.index("removed browser.backend: off")
     assert profile_line < notice
-    assert "`browser` toolset in `hermes tools`" in out[notice:]
+    assert "`browser` toolset in `moor tools`" in out[notice:]
     assert "display.new_option" not in out[profile_line:]
     assert "backend" not in (yaml.safe_load((work / "config.yaml").read_text()).get("browser") or {})

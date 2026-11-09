@@ -41,7 +41,7 @@ const RANKED_CATALOG = {
 const commandsOf = (items: readonly Unstable_TriggerItem[]) =>
   items.map(item => (item.metadata as { command?: string })?.command)
 
-function harness(gateway: HermesGateway, options: { profile?: string } = {}) {
+function harness(gateway: MoorGateway, options: { profile?: string } = {}) {
   const api: { search?: (query: string) => readonly Unstable_TriggerItem[] } = {}
 
   function Probe() {
@@ -99,7 +99,7 @@ describe('useSlashCompletions', () => {
   // profile's skills; the tile's rail-selected profile must ride along (#124651).
   it('scopes a sessionless catalog and typed lookup to the routed profile', async () => {
     const request = vi.fn().mockResolvedValue({ ...CATALOG, items: [] })
-    const api = harness({ request } as unknown as HermesGateway, { profile: 's6probe-b' })
+    const api = harness({ request } as unknown as MoorGateway, { profile: 's6probe-b' })
 
     await completions(api, '')
     await completions(api, 'b-only')

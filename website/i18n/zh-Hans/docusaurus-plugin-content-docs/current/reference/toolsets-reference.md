@@ -88,31 +88,31 @@ moor tools                            # curses UI to enable/disable per platform
 
 | 工具集 | 与 `moor-cli` 的差异 |
 |--------|------------------------|
-| `hermes-cli` | 完整工具集——交互式 CLI 会话的默认配置。包含 file、terminal、web、browser、memory、skills、vision、image_gen、todo、tts、delegation、code_execution、cronjob、session_search、clarify 和 `safe`（只读）套件，以及标准消息工具。 |
-| `hermes-acp` | 移除了 `clarify`、`cronjob`、`image_generate`、`send_message`、`text_to_speech`。专注于 IDE 环境中的编码任务。 |
-| `hermes-api-server` | 移除了 `clarify`、`send_message` 和 `text_to_speech`。保留其他所有工具——适用于无法进行用户交互的程序化访问场景。 |
-| `hermes-cron` | 与 `hermes-cli` 相同。 |
-| `hermes-telegram` | 与 `hermes-cli` 相同。 |
-| `hermes-discord` | 在 `hermes-cli` 基础上添加了 `discord` 和 `discord_admin`。 |
-| `hermes-slack` | 与 `hermes-cli` 相同。 |
-| `hermes-whatsapp` | 与 `hermes-cli` 相同。 |
-| `hermes-signal` | 与 `hermes-cli` 相同。 |
-| `hermes-matrix` | 与 `hermes-cli` 相同。 |
-| `hermes-mattermost` | 与 `hermes-cli` 相同。 |
-| `hermes-email` | 与 `hermes-cli` 相同。 |
-| `hermes-sms` | 与 `hermes-cli` 相同。 |
-| `hermes-bluebubbles` | 与 `hermes-cli` 相同。 |
-| `hermes-dingtalk` | 与 `hermes-cli` 相同。 |
-| `hermes-feishu` | 添加了五个 `feishu_doc_*` / `feishu_drive_*` 工具（仅由文档评论处理器使用，不用于常规聊天适配器）。 |
-| `hermes-qqbot` | 与 `hermes-cli` 相同。 |
-| `hermes-wecom` | 与 `hermes-cli` 相同。 |
-| `hermes-wecom-callback` | 与 `hermes-cli` 相同。 |
-| `hermes-weixin` | 与 `hermes-cli` 相同。 |
-| `hermes-yuanbao` | 在 `hermes-cli` 基础上添加了五个 `yb_*` 工具（私信/群组/表情包）。 |
-| `hermes-webhook` | 与 `hermes-cli` 相同。 |
-| `hermes-gateway` | 内部 gateway 编排器工具集——所有 `hermes-<platform>` 工具集的并集；当 gateway 需要接受任意消息来源时使用。 |
+| `moor-cli` | 完整工具集——交互式 CLI 会话的默认配置。包含 file、terminal、web、browser、memory、skills、vision、image_gen、todo、tts、delegation、code_execution、cronjob、session_search、clarify 和 `safe`（只读）套件，以及标准消息工具。 |
+| `moor-acp` | 移除了 `clarify`、`cronjob`、`image_generate`、`send_message`、`text_to_speech`。专注于 IDE 环境中的编码任务。 |
+| `moor-api-server` | 移除了 `clarify`、`send_message` 和 `text_to_speech`。保留其他所有工具——适用于无法进行用户交互的程序化访问场景。 |
+| `moor-cron` | 与 `moor-cli` 相同。 |
+| `moor-telegram` | 与 `moor-cli` 相同。 |
+| `moor-discord` | 在 `moor-cli` 基础上添加了 `discord` 和 `discord_admin`。 |
+| `moor-slack` | 与 `moor-cli` 相同。 |
+| `moor-whatsapp` | 与 `moor-cli` 相同。 |
+| `moor-signal` | 与 `moor-cli` 相同。 |
+| `moor-matrix` | 与 `moor-cli` 相同。 |
+| `moor-mattermost` | 与 `moor-cli` 相同。 |
+| `moor-email` | 与 `moor-cli` 相同。 |
+| `moor-sms` | 与 `moor-cli` 相同。 |
+| `moor-bluebubbles` | 与 `moor-cli` 相同。 |
+| `moor-dingtalk` | 与 `moor-cli` 相同。 |
+| `moor-feishu` | 添加了五个 `feishu_doc_*` / `feishu_drive_*` 工具（仅由文档评论处理器使用，不用于常规聊天适配器）。 |
+| `moor-qqbot` | 与 `moor-cli` 相同。 |
+| `moor-wecom` | 与 `moor-cli` 相同。 |
+| `moor-wecom-callback` | 与 `moor-cli` 相同。 |
+| `moor-weixin` | 与 `moor-cli` 相同。 |
+| `moor-yuanbao` | 在 `moor-cli` 基础上添加了五个 `yb_*` 工具（私信/群组/表情包）。 |
+| `moor-webhook` | 与 `moor-cli` 相同。 |
+| `moor-gateway` | 内部 gateway 编排器工具集——所有 `moor-<platform>` 工具集的并集；当 gateway 需要接受任意消息来源时使用。 |
 
-由插件提供的平台会获得一个隐式的 `hermes-<platform>` 工具集，且不属于 `hermes-gateway`。例如，安装插件目录中的 `homeassistant` 插件后，`hermes-homeassistant` 仍可解析，但它已不再是内置工具集。
+由插件提供的平台会获得一个隐式的 `moor-<platform>` 工具集，且不属于 `moor-gateway`。例如，安装插件目录中的 `homeassistant` 插件后，`moor-homeassistant` 仍可解析，但它已不再是内置工具集。
 
 ## 动态工具集
 

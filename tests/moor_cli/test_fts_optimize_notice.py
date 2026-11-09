@@ -33,7 +33,7 @@ def test_update_notice_offers_v1_trigram_tool_calls_rebuild(tmp_path, monkeypatc
         _db_needs_fts_storage_upgrade = staticmethod(
             moor_state.SessionDB._db_needs_fts_storage_upgrade
         )
-        _db_has_legacy_inline_fts = staticmethod(hermes_state.SessionDB._db_has_legacy_inline_fts)
+        _db_has_legacy_inline_fts = staticmethod(moor_state.SessionDB._db_has_legacy_inline_fts)
 
     monkeypatch.setattr(moor_constants, "get_moor_home", lambda: tmp_path)
     monkeypatch.setattr(moor_state, "SessionDB", FakeSessionDB)
@@ -63,10 +63,10 @@ def test_doctor_collects_structural_fts_upgrade_status(
     tmp_path, monkeypatch, base_layout, trigram_layout, marker, large,
 ):
     """Real read-only collection must ignore forged or lagging version markers."""
-    from hermes_cli import doctor_state
-    from hermes_state_dbfile import collect_state_db_stats
-    from hermes_state_fts import _expected_vtable_sql
-    from hermes_state_common import FTS_SQL, FTS_TRIGRAM_SQL
+    from moor_cli import doctor_state
+    from moor_state_dbfile import collect_state_db_stats
+    from moor_state_fts import _expected_vtable_sql
+    from moor_state_common import FTS_SQL, FTS_TRIGRAM_SQL
 
     db_path = tmp_path / "state.db"
     with sqlite3.connect(db_path) as conn:
@@ -96,17 +96,17 @@ def test_doctor_collects_structural_fts_upgrade_status(
     # Exercise the size gate without allocating a GiB database or forging collected stats.
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0 if large else stats["logical_size_bytes"])
     rows = doctor_state._render_state_db_stats(stats)
-    offered = any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
+    offered = any("moor sessions optimize-storage" in detail for _, _, detail in rows)
     assert offered is (large and needed)
     assert db_path.read_bytes() == before
 
 
 @pytest.mark.parametrize("progress, pending", [(0, True), (10, False)])
 def test_doctor_collects_pending_rebuild_with_settled_layout(tmp_path, monkeypatch, progress, pending):
-    from hermes_cli import doctor_state
-    from hermes_state_dbfile import collect_state_db_stats
-    from hermes_state_fts import _expected_vtable_sql
-    from hermes_state_common import FTS_SQL, FTS_TRIGRAM_SQL
+    from moor_cli import doctor_state
+    from moor_state_dbfile import collect_state_db_stats
+    from moor_state_fts import _expected_vtable_sql
+    from moor_state_common import FTS_SQL, FTS_TRIGRAM_SQL
 
     db_path = tmp_path / "state.db"
     with sqlite3.connect(db_path) as conn:
@@ -122,4 +122,4 @@ def test_doctor_collects_pending_rebuild_with_settled_layout(tmp_path, monkeypat
     assert stats["fts_rebuild_pending"] is pending
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(stats)
-    assert any("hermes sessions optimize-storage" in detail for _, _, detail in rows) is pending
+    assert any("moor sessions optimize-storage" in detail for _, _, detail in rows) is pending

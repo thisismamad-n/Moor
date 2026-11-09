@@ -611,10 +611,10 @@ def test_do_install_stale_index_names_the_problem(monkeypatch):
 def test_fetch_failure_names_rejected_github_credential():
     """A credential GitHub refused is named, never reported as a stale index entry (#98725)."""
     from types import SimpleNamespace
-    from hermes_cli.skills_hub import _print_fetch_failure
+    from moor_cli.skills_hub import _print_fetch_failure
 
     src = SimpleNamespace(is_rate_limited=False, auth=SimpleNamespace(rejected=["GITHUB_TOKEN/GH_TOKEN"]),
-                          source_id=lambda: "hermes-index")
+                          source_id=lambda: "moor-index")
     sink = StringIO()
     console = Console(file=sink, force_terminal=False, color_system=None, width=200)
     _print_fetch_failure(console, [src], "o/r/s", meta=object(), source=src)
@@ -683,12 +683,12 @@ def _stub_search(monkeypatch, results):
     "computer-use", "NousResearch/hermes-agent/skills/productivity/pdf",
     "skills-sh/nousresearch/hermes-agent/google-workspace", "blender-bpy-enhanced"])
 def test_install_by_name_resolves_to_the_skill_it_names(monkeypatch, tmp_path, identifier):
-    """`hermes skills install <bundled skill>` failed every time: the name resolved to a stranger's
+    """`moor skills install <bundled skill>` failed every time: the name resolved to a stranger's
     same-named hub skill or an ambiguity table, and this repo's own copy was rescanned as community
     content and refused. It now makes the shipped skill active and fetches nothing. A hub slug behind
     a prettified catalog title ("Blender Bpy Enhanced") resolves too, where it answered "No exact match"
     while printing that very slug as the suggestion."""
-    import hermes_cli.skills_hub as cli_hub
+    import moor_cli.skills_hub as cli_hub
 
     if identifier == "blender-bpy-enhanced":
         _stub_search(monkeypatch, [_meta("Blender Bpy Enhanced", "@emergencescience/blender-bpy-enhanced")])
@@ -741,7 +741,7 @@ def test_install_by_name_resolves_to_the_skill_it_names(monkeypatch, tmp_path, i
     assert cli_hub.do_install(identifier, console=console, skip_confirm=True) is False
     # One line, subject and remedy together: the Desktop toast shows only a failed action's last 3 lines.
     error = next(line for line in sink.getvalue().splitlines() if line.startswith("Error:"))
-    assert f"'{name}' is a built-in skill" in error and f"`hermes skills uninstall {name}`" in error
+    assert f"'{name}' is a built-in skill" in error and f"`moor skills uninstall {name}`" in error
     assert "already available" not in sink.getvalue()
     assert (stranger / "SKILL.md").read_text().endswith("stranger\n")
 
@@ -751,7 +751,7 @@ def test_built_in_restore_survives_leftovers_and_records_every_outcome_as_bundle
     restore copied with copytree onto a dest dir left behind without its SKILL.md (EEXIST on every
     retry), refused a skill already present behind a symlinked category the loader follows, and a
     failed restore was labelled a hub install."""
-    import hermes_cli.skills_hub as cli_hub
+    import moor_cli.skills_hub as cli_hub
     import tools.skills_hub as hub
     from tools import skill_usage, skills_sync
 
@@ -759,7 +759,7 @@ def test_built_in_restore_survives_leftovers_and_records_every_outcome_as_bundle
         monkeypatch.delitem(vars(hub), stale)
     monkeypatch.setattr(cli_hub, "_sources", lambda: pytest.fail("a bundled skill must not hit the hub"))
     rows = []
-    monkeypatch.setattr("hermes_cli.observability.shared_metrics_events.record_extension_install",
+    monkeypatch.setattr("moor_cli.observability.shared_metrics_events.record_extension_install",
                         lambda **row: rows.append((row["source"], row["outcome"])))
     src = dict(skills_sync._discover_bundled_skills(skills_sync._get_bundled_dir()))["obsidian"]
     dest = skill_usage._skills_dir() / src.parent.name / "obsidian"

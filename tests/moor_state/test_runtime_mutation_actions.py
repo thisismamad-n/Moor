@@ -1,8 +1,8 @@
 """Action-specific mutations share the canonical receipt transaction."""
 import sqlite3
 import pytest
-from hermes_state import SessionDB
-import hermes_state_runtime as rt
+from moor_state import SessionDB
+import moor_state_runtime as rt
 
 
 def test_sidebar_edit_is_atomic_and_revision_fenced(tmp_path):

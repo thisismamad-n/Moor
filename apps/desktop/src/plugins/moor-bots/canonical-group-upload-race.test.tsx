@@ -5,7 +5,7 @@ import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const request = vi.hoisted(() => vi.fn())
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   const gateway = createGroupGateway()
   const { en } = await import('@/i18n/en')
@@ -18,9 +18,9 @@ vi.mock('@hermes/plugin-sdk', async () => {
     host: { ...gateway.host, requestProfile: request } }
 })
 import { CanonicalGroupWorkspace } from './canonical-group-workspace'
-const originalDesktop = window.hermesDesktop
-beforeEach(() => { Object.defineProperty(window, 'hermesDesktop', { configurable: true, writable: true, value: undefined }) })
-afterEach(() => { cleanup(); request.mockReset(); localStorage.clear(); window.hermesDesktop = originalDesktop })
+const originalDesktop = window.moorDesktop
+beforeEach(() => { Object.defineProperty(window, 'moorDesktop', { configurable: true, writable: true, value: undefined }) })
+afterEach(() => { cleanup(); request.mockReset(); localStorage.clear(); window.moorDesktop = originalDesktop })
 
 // C21: while a selected file's upload acknowledgement is outstanding, Send cannot dispatch the text
 // without it, and the late manifest never lands on the cleared next draft.

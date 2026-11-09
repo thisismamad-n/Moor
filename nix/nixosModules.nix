@@ -236,7 +236,7 @@
       commonUnitEnvironment = {
         HOME = cfg.stateDir;
       }
-      // common.processEnvironment { inherit hermesHome; }
+      // common.processEnvironment { inherit moorHome; }
       // common.backendSessionEnvironment { inherit cfg; };
 
       unitPath = common.processPath { inherit pkgs cfg; };

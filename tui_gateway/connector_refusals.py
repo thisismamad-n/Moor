@@ -25,5 +25,5 @@ def auth_refusal(exc):
     if exc.code in {"no_access", "ORG_ACCESS_DENIED"}:
         return 4030, Reason.org_access_denied, "This account cannot manage connectors for this organization."
     if exc.status == 401 or exc.code in {"invalid_token", "INVALID_TOKEN", "NO_TOKEN"}:
-        return 4032, Reason.needs_nous_auth, "Sign in to use connectors."
+        return 4032, Reason.needs_moor_auth, "Sign in to use connectors."
     return 4030, Reason.forbidden_scope, "Connector access is not permitted for this account."

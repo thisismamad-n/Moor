@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
-import type { HermesGateway, ResolvedOwner } from '@/hermes'
+import type { MoorGateway, ResolvedOwner } from '@/moor'
 
 import type { DroppedFile } from '../hooks/use-composer-actions'
 

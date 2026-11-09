@@ -15,17 +15,17 @@ import httpx
 import pytest
 from starlette import formparsers
 
-from hermes_cli import web_server
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from hermes_cli.dashboard_auth.cookies import SESSION_AT_COOKIE, SESSION_RT_COOKIE
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+from moor_cli import web_server
+from moor_cli.dashboard_auth import clear_providers, register_provider
+from moor_cli.dashboard_auth.cookies import SESSION_AT_COOKIE, SESSION_RT_COOKIE
+from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
 
 
 @pytest.fixture
 def upload_app(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(web_server.app.state, "auth_required", True, raising=False)
     monkeypatch.setattr(web_server.app.state, "bound_host", "0.0.0.0", raising=False)
@@ -197,9 +197,9 @@ def test_cookie_upload_accepts_trusted_proxy_origin_only(upload_app, monkeypatch
             await _login(client)
             if public_url:
                 monkeypatch.setattr(web_server.app.state, "listener_public_url",
-                                    "https://dashboard.example.com:8443/hermes")
+                                    "https://dashboard.example.com:8443/moor")
             host = "127.0.0.1:9119" if public_url else "dashboard.example.com:8443"
-            headers = {"X-Forwarded-Prefix": "/hermes", "Host": host, "X-Forwarded-Proto": "https"}
+            headers = {"X-Forwarded-Prefix": "/moor", "Host": host, "X-Forwarded-Proto": "https"}
             for origin, expected in (
                 ("https://dashboard.example.com:8443", 200),
                 ("https://dashboard.example.com", 403),

@@ -210,7 +210,7 @@ ${preamble()}
 function buildFocusProbeScript(): string {
   return `(function () {
 ${preamble()}
-  // hermes-focus-probe
+  // moor-focus-probe
   var aimed = holder.aimed;
   var active = document.activeElement;
   var tag = aimed && aimed.tagName ? aimed.tagName : '';

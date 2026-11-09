@@ -36,9 +36,9 @@ def auth_json_path():
     return get_moor_home() / "auth.json"
 
 
-def _read_nous_provider_state() -> Optional[dict]:
-    """The profile's Nous state, or None. A free-tier identity counts only while guests are allowed:
-    with ``nous.guest: false`` it is invisible here, so no cached or refreshed token of it is ever
+def _read_moor_provider_state() -> Optional[dict]:
+    """The profile's Moor state, or None. A free-tier identity counts only while guests are allowed:
+    with ``moor.guest: false`` it is invisible here, so no cached or refreshed token of it is ever
     attached to a request.
 
     Resolves through the same profile-then-global-root fallback every other credential reader
@@ -51,9 +51,9 @@ def _read_nous_provider_state() -> Optional[dict]:
         moor_provider = get_provider_auth_state("moor")
         if not isinstance(moor_provider, dict):
             return None
-        from hermes_cli.anon_auth import guest_allowed, is_guest_state
+        from moor_cli.anon_auth import guest_allowed, is_guest_state
 
-        if is_guest_state(nous_provider) and not guest_allowed():
+        if is_guest_state(moor_provider) and not guest_allowed():
             return None
         return moor_provider
     except Exception:
@@ -76,16 +76,16 @@ def _read_user_token_override() -> Optional[str]:
 
 def peek_moor_access_token() -> Optional[str]:
     """Cheap token probe: env override or cached auth-store token, no expiry check and no network —
-    availability scans must stay off the synchronous OAuth refresh path (:func:`read_nous_access_token`)."""
-    from hermes_cli.anon_auth import held_connectors_token
+    availability scans must stay off the synchronous OAuth refresh path (:func:`read_moor_access_token`)."""
+    from moor_cli.anon_auth import held_connectors_token
 
-    return _read_user_token_override() or _clean(held_connectors_token(_read_nous_provider_state()))
+    return _read_user_token_override() or _clean(held_connectors_token(_read_moor_provider_state()))
 
 
 def read_moor_access_token() -> Optional[str]:
     """Read a Moor Subscriber OAuth access token from auth store or env override.
 
-    A read: with no Nous identity there is no bearer and the answer is None. The free-tier identity
+    A read: with no Moor identity there is no bearer and the answer is None. The free-tier identity
     is created by the boot bootstrap or the first hosted connector action, never on a token-read
     path (NS-845 Q1.2). A retired free-tier credential IS replaced here, once: that is the explicit
     dead-credential rule, shared with inference.
@@ -95,11 +95,11 @@ def read_moor_access_token() -> Optional[str]:
     moor_provider = _read_moor_provider_state() or {}
     if not moor_provider:
         return None
-    from hermes_cli.anon_auth import held_connectors_token
+    from moor_cli.anon_auth import held_connectors_token
 
-    if fresh_token := _clean(held_connectors_token(nous_provider, skew_seconds=_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS)):
+    if fresh_token := _clean(held_connectors_token(moor_provider, skew_seconds=_MOOR_ACCESS_TOKEN_REFRESH_SKEW_SECONDS)):
         return fresh_token
-    cached_token = peek_nous_access_token()
+    cached_token = peek_moor_access_token()
     try:
         from moor_cli.auth import resolve_moor_access_token
 
@@ -161,13 +161,13 @@ def resolve_managed_tool_gateway(
     vendor: str, gateway_builder: Optional[Callable[[str], str]] = None,
     token_reader: Optional[Callable[[], Optional[str]]] = None) -> Optional[ManagedToolGatewayConfig]:
     """Resolve shared managed-tool gateway config for a vendor (entitled accounts only)."""
-    if not managed_nous_tools_enabled():
+    if not managed_moor_tools_enabled():
         return None
     return _vendor_gateway(vendor, gateway_builder, token_reader)
 
 
 def resolve_free_search_gateway(token_reader: Optional[Callable[[], Optional[str]]] = None) -> Optional[ManagedToolGatewayConfig]:
-    """Perplexity ``search_type: "fast"`` is served to every Nous identity with no funding check, the
+    """Perplexity ``search_type: "fast"`` is served to every Moor identity with no funding check, the
     anonymous guest tier included, so it needs a token this profile may use (guest-disabled and refresh
     rules live in the reader), not paid entitlement or a registered account. Search only: every other
     vendor route goes through :func:`resolve_managed_tool_gateway`."""
@@ -180,4 +180,4 @@ def is_managed_tool_gateway_ready(
     """True when a gateway URL and a likely-usable Moor token are present. Defaults to
     :func:`peek_moor_access_token` (no OAuth refresh); callers about to make a real request use
     :func:`resolve_managed_tool_gateway` instead."""
-    return resolve_managed_tool_gateway(vendor, gateway_builder=gateway_builder, token_reader=token_reader or peek_nous_access_token) is not None
+    return resolve_managed_tool_gateway(vendor, gateway_builder=gateway_builder, token_reader=token_reader or peek_moor_access_token) is not None

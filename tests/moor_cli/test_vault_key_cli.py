@@ -1,4 +1,4 @@
-"""`hermes vault key migrate --to keychain|file` through the real argparse tree: the key moves, the
+"""`moor vault key migrate --to keychain|file` through the real argparse tree: the key moves, the
 vault still opens, and ``vault.key_storage`` follows so a recreated vault lands in the same place."""
 
 from __future__ import annotations
@@ -31,13 +31,13 @@ class _MemoryKeyring(KeyringBackend):
 
 
 @pytest.fixture
-def hermes(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+def moor(tmp_path, monkeypatch):
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     backend = _MemoryKeyring()
     keyring.set_keyring(backend)
-    from hermes_cli.subcommands.vault import build_vault_parser
+    from moor_cli.subcommands.vault import build_vault_parser
 
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="moor")
     build_vault_parser(parser.add_subparsers())
 
     def run(*argv):
@@ -48,11 +48,11 @@ def hermes(tmp_path, monkeypatch):
     keyring.set_keyring(fail.Keyring())
 
 
-def test_vault_key_migrate_moves_the_key_and_records_the_choice(hermes, capsys):
-    run, backend, home = hermes
+def test_vault_key_migrate_moves_the_key_and_records_the_choice(moor, capsys):
+    run, backend, home = moor
     item = VaultStore().add_item("login", "Example", {"identifier_type": "email", "identifier": "jane@example.com",
                                                       "password": "dummy-pw-cli-9"}, origin="https://example.com").id
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
 
     run("key", "migrate", "--to", "keychain")
     assert not (home / "vault" / "vault.key").exists() and len(backend.entries) == 1
@@ -67,8 +67,8 @@ def test_vault_key_migrate_moves_the_key_and_records_the_choice(hermes, capsys):
 
 
 @pytest.mark.parametrize("target", ["keychain", "file"])
-def test_migrating_an_empty_vault_says_no_key_exists_yet(hermes, capsys, target):
-    run, backend, home = hermes
+def test_migrating_an_empty_vault_says_no_key_exists_yet(moor, capsys, target):
+    run, backend, home = moor
     run("key", "migrate", "--to", target)
     out = capsys.readouterr().out
     assert "No vault key exists yet" in out

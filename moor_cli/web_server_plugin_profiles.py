@@ -5,7 +5,7 @@ request scoped to another served profile (its native grant, a ``?profile=`` sele
 profile's own plugins: discovered under its own home and the root, gated by its own ``plugins.enabled`` /
 ``plugins.disabled``, and run in its own plugin host (bound to its home and secret scope) whatever
 its ``plugins.isolation`` says, so another profile's plugin code never enters this process. Bundled
-plugins are Hermes code and stay in-process. The host protocol is request/response, so a secondary
+plugins are Moor code and stay in-process. The host protocol is request/response, so a secondary
 profile's plugin websockets are refused by name until it carries them.
 """
 
@@ -27,13 +27,13 @@ from starlette import status
 from starlette._utils import get_route_path
 from starlette.websockets import WebSocket
 
-from hermes_cli.config import get_process_hermes_home
+from moor_cli.config import get_process_moor_home
 
-_log = logging.getLogger("hermes_cli.web_server")
+_log = logging.getLogger("moor_cli.web_server")
 
 # Valid for every served profile, so a profile's plugin code must never receive them.
 _GATEWAY_CREDENTIAL_HEADERS = frozenset({
-    "authorization", "cookie", "host", "x-hermes-gateway-ticket", "x-hermes-session-token"})
+    "authorization", "cookie", "host", "x-moor-gateway-ticket", "x-moor-session-token"})
 # Every query credential the gateway accepts (``web_server_chat._ws_auth_ok``, ``_has_valid_query_token``,
 # the display bridge, the PTY reattach key) and the profile selector; compared after URL-decoding.
 _GATEWAY_QUERY_KEYS = frozenset({"token", "ticket", "internal", "display_ticket", "attach", "profile"})
@@ -60,20 +60,20 @@ _unknown_plugins: dict[tuple[str, str], float] = {}
 
 def secondary_profile_home() -> Optional[Path]:
     """The active scope's home when it is a profile other than the launch profile, else None."""
-    from hermes_constants import get_hermes_home, hermes_home_key
-    home = get_hermes_home()
-    return None if hermes_home_key(home) == hermes_home_key(get_process_hermes_home()) else Path(home)
+    from moor_constants import get_moor_home, moor_home_key
+    home = get_moor_home()
+    return None if moor_home_key(home) == moor_home_key(get_process_moor_home()) else Path(home)
 
 
 def _scan_profile_plugins(home: Path) -> list:
     """The profile at ``home``'s dashboard plugins, read from disk: its own ``plugins/``, then the
-    root's (as a standalone ``hermes --profile <name> serve`` scanned them; the profile's own copy
+    root's (as a standalone ``moor --profile <name> serve`` scanned them; the profile's own copy
     wins a same-name conflict), then the bundled ones."""
-    from hermes_cli.plugins import get_bundled_plugins_dir
-    from hermes_cli.profiles import _get_default_hermes_home
-    from hermes_cli.web_server_dashboard import _discover_dashboard_plugins
+    from moor_cli.plugins import get_bundled_plugins_dir
+    from moor_cli.profiles import _get_default_moor_home
+    from moor_cli.web_server_dashboard import _discover_dashboard_plugins
     bundled, own = get_bundled_plugins_dir(), Path(home) / "plugins"
-    dirs = [own] + [r for r in [_get_default_hermes_home() / "plugins"]
+    dirs = [own] + [r for r in [_get_default_moor_home() / "plugins"]
                     if r.resolve(strict=False) != own.resolve(strict=False)]
     return _discover_dashboard_plugins(
         [(d, "user") for d in dirs] + [(bundled / "memory", "bundled"), (bundled, "bundled")])
@@ -90,8 +90,8 @@ def _published(key: str, rescans: int, plugins: list) -> list:
 def profile_dashboard_plugins(home: Path, force_rescan: bool = False) -> list:
     """Dashboard plugins of the profile at ``home`` (:func:`_scan_profile_plugins`), cached per home
     like the launch profile's list. An explicit rescan also forgets the profile's cached misses."""
-    from hermes_constants import hermes_home_key
-    key = hermes_home_key(home)
+    from moor_constants import moor_home_key
+    key = moor_home_key(home)
     with _profile_plugins_lock:
         if force_rescan:
             _profile_rescans[key] = _profile_rescans.get(key, 0) + 1
@@ -111,8 +111,8 @@ def rescanned_plugin(home: Path, name: str) -> Optional[dict]:
     """The profile at ``home``'s entry for ``name`` after a rescan, or None; a name found missing
     within the last :data:`_UNKNOWN_PLUGIN_RESCAN_SECS` is answered without one. Blocking: the
     request gate runs it on a worker thread."""
-    from hermes_constants import hermes_home_key
-    home_key, now = hermes_home_key(home), time.monotonic()
+    from moor_constants import moor_home_key
+    home_key, now = moor_home_key(home), time.monotonic()
     key = (home_key, name)
     with _profile_plugins_lock:
         if _unknown_plugins.get(key, now) > now:
@@ -143,10 +143,10 @@ def _in_process_api_file(name: str) -> Optional[Path]:
     mounted (a hosted forward route has none here), else the copy the first request would mount,
     the launch profile's discovery entry."""
     import sys
-    from hermes_cli.web_server import _get_dashboard_plugins, app
-    from hermes_cli.web_server_dashboard import _launch_profile_scope, _plugin_api_mounted
+    from moor_cli.web_server import _get_dashboard_plugins, app
+    from moor_cli.web_server_dashboard import _launch_profile_scope, _plugin_api_mounted
     if _plugin_api_mounted(app, name):
-        file = getattr(sys.modules.get(f"hermes_dashboard_plugin_{name}"), "__file__", None)
+        file = getattr(sys.modules.get(f"moor_dashboard_plugin_{name}"), "__file__", None)
         return Path(file).resolve() if file else None
     with _launch_profile_scope():
         return plugin_api_path(_named(_get_dashboard_plugins(), name))
@@ -185,7 +185,7 @@ def plugin_request_scope(scope) -> Iterator[None]:
     dependency binds it again for the handler). An unknown profile binds nothing: the route
     dependency answers it as for any other route."""
     from fastapi import HTTPException
-    from hermes_cli.web_server_profiles import _config_profile_scope, _is_current_profile
+    from moor_cli.web_server_profiles import _config_profile_scope, _is_current_profile
     profile = dict(parse_qsl(scope.get("query_string", b"").decode("latin-1"))).get("profile")
     with ExitStack() as stack:
         if not _is_current_profile(profile):
@@ -206,8 +206,8 @@ def hosted_response(result: dict[str, Any]) -> Response:
 
 
 def _hosted_executor(home: Path) -> ThreadPoolExecutor:
-    from hermes_constants import hermes_home_key
-    key = hermes_home_key(home)
+    from moor_constants import moor_home_key
+    key = moor_home_key(home)
     with _profile_plugins_lock:
         executor = _hosted_executors.get(key)
         if executor is None:
@@ -246,11 +246,11 @@ async def forward_secondary_plugin_request(request, name: str) -> Optional[Respo
                        if k not in _GATEWAY_QUERY_KEYS])
     headers = [(k, v) for k, v in request.headers.items() if k.lower() not in _GATEWAY_CREDENTIAL_HEADERS]
     body = await request.body()
-    from hermes_cli.plugin_host_http_auth import admitted_for_sensitive_route
+    from moor_cli.plugin_host_http_auth import admitted_for_sensitive_route
     authenticated = admitted_for_sensitive_route(request)
 
     def call(timeout: float) -> dict[str, Any]:
-        from hermes_cli.plugins import get_plugin_manager
+        from moor_cli.plugins import get_plugin_manager
         host = get_plugin_manager()._plugin_host()  # the active (secondary) profile's own host
         return host.asgi_request(name, str(plugin["_dir"]), str(plugin["_api_file"]), request.method, path,
                                  query, headers, body, timeout=timeout, authenticated=authenticated)
@@ -269,7 +269,7 @@ async def refuse_secondary_plugin_socket(scope, receive, send, name: str) -> boo
     accept, so Desktop's reconnect budget counts it); any other gets the plain policy close."""
     if _secondary_hosted_plugin(name) is None:
         return False
-    from hermes_cli.web_server_chat import _ws_auth_ok
+    from moor_cli.web_server_chat import _ws_auth_ok
     socket = WebSocket(scope, receive, send)
     if not ((scope.get("state") or {}).get("native_http_principal") or _ws_auth_ok(socket)):
         await send({"type": "websocket.close", "code": status.WS_1008_POLICY_VIOLATION})

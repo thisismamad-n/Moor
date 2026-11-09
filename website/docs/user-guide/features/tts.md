@@ -422,7 +422,7 @@ For TTS engines that can't be expressed as a single shell command — Python SDK
 | Two or three CLIs chained with shell pipes | **Command provider** |
 | A Python SDK only — no CLI | **Plugin** |
 | An engine that emits audio as it synthesizes, and you want spoken replies to start on the first sentence | **Plugin** (set `streams_pcm`, override `stream()`) |
-| A voice-listing API used by `hermes setup` | **Plugin** (override `list_voices()`) |
+| A voice-listing API used by `moor setup` | **Plugin** (override `list_voices()`) |
 | OAuth refresh flow (not a static bearer token) | **Plugin** |
 
 Built-ins always win, and command providers win over a same-name plugin — so plugins are safe to register against any non-built-in name without worrying about shadowing your existing config.
@@ -483,9 +483,9 @@ Override these on your provider class for richer integration:
 
 - `list_voices()` → list of `{id, display, language, gender, preview_url}` dicts shown in `moor tools`.
 - `list_models()` → list of `{id, display, languages, max_text_length}` dicts.
-- `get_setup_schema()` → return `{name, badge, tag, env_vars: [{key, prompt, url}]}` to power the picker row in `hermes tools` / `hermes setup`. Without this, the plugin still works but its row in the picker is minimal.
+- `get_setup_schema()` → return `{name, badge, tag, env_vars: [{key, prompt, url}]}` to power the picker row in `moor tools` / `moor setup`. Without this, the plugin still works but its row in the picker is minimal.
 - `stream(text, *, voice, model, format, **extra)` → iterator yielding audio bytes (default raises `NotImplementedError`).
-- `streams_pcm = True` + `stream_sample_rate` (Hz) → join the streaming voice path (CLI/TUI voice mode, desktop read-aloud, gateway streaming audio). Hermes then calls `stream(text, format="pcm", voice=..., model=..., speed=...)` with the same `tts.voice` / `tts.model` / `tts.speed` that `synthesize()` gets, and expects raw int16 little-endian mono PCM at that rate. Both attributes and `is_available()` are read each time a reply starts, so they can be properties that reflect live state. Unlike `synthesize()`, `stream()` can be called for up to three consecutive sentences at once while earlier audio plays, so it must be thread-safe. Without a positive `stream_sample_rate`, or when `is_available()` is `False`, Hermes keeps synthesizing one sentence at a time.
+- `streams_pcm = True` + `stream_sample_rate` (Hz) → join the streaming voice path (CLI/TUI voice mode, desktop read-aloud, gateway streaming audio). Moor then calls `stream(text, format="pcm", voice=..., model=..., speed=...)` with the same `tts.voice` / `tts.model` / `tts.speed` that `synthesize()` gets, and expects raw int16 little-endian mono PCM at that rate. Both attributes and `is_available()` are read each time a reply starts, so they can be properties that reflect live state. Unlike `synthesize()`, `stream()` can be called for up to three consecutive sentences at once while earlier audio plays, so it must be thread-safe. Without a positive `stream_sample_rate`, or when `is_available()` is `False`, Moor keeps synthesizing one sentence at a time.
 - `voice_compatible` property → set `True` if your output is Opus-compatible and the gateway should deliver it as a voice bubble (default `False` = regular audio attachment).
 - `warm()` / `release()` → called when a surface toggles speech output on / when the last lease across surfaces is released, while your provider is the configured `tts.provider` — preload or unload a local model server here. Both default to no-ops; exceptions are logged at debug and never fail the toggle.
 
@@ -514,7 +514,7 @@ stt:
   language: "en"              # Global language hint applied to every provider unless a per-provider language overrides it; set "" to restore auto-detect
   local:
     model: "base"             # tiny, base, small, medium, large-v3, turbo
-    language: ""              # optional ISO-639-1 hint; blank = use HERMES_LOCAL_STT_LANGUAGE if set, else auto-detect
+    language: ""              # optional ISO-639-1 hint; blank = use MOOR_LOCAL_STT_LANGUAGE if set, else auto-detect
   groq:
     language: ""              # optional ISO-639-1 hint; blank = use MOOR_LOCAL_STT_LANGUAGE if set, else auto-detect
   openai:
@@ -523,7 +523,7 @@ stt:
     model: "voxtral-mini-latest"  # voxtral-mini-latest, voxtral-mini-2602
   xai:
     model: "grok-voice-transcribe-2.0"  # or grok-voice-transcribe-1.0
-    language: ""              # optional ISO-639-1 hint; blank = use HERMES_LOCAL_STT_LANGUAGE if set, else "en"
+    language: ""              # optional ISO-639-1 hint; blank = use MOOR_LOCAL_STT_LANGUAGE if set, else "en"
 ```
 
 ### Provider Details
@@ -553,7 +553,7 @@ HF_HUB_DISABLE_XET=1
 
 **Mistral API (Voxtral Transcribe)** — Requires `MISTRAL_API_KEY`. Uses Mistral's [Voxtral Transcribe](https://docs.mistral.ai/capabilities/audio/speech_to_text/) models. Supports 13 languages, speaker diarization, and word-level timestamps. Install with `cd ~/.moor/moor-agent && python -c "import pm; pm.sync_venv(['mistral'], explicit=True)"`.
 
-**xAI Grok STT** — Requires `XAI_API_KEY` (or xAI OAuth). Posts to `https://api.x.ai/v1/stt` as multipart/form-data and sends `model` (default `grok-voice-transcribe-2.0`; pin `grok-voice-transcribe-1.0` with `stt.xai.model` or `STT_XAI_MODEL`). Hermes always names the model, so a server-default change never silently switches what you run. With `stt.language: ""` (auto-detect) the `format` flag is dropped, since xAI requires a language for text formatting. Good choice if you're already using xAI for chat or TTS and want one API key for everything. Auto-detection order puts it after Mistral — explicitly set `stt.provider: xai` to force it.
+**xAI Grok STT** — Requires `XAI_API_KEY` (or xAI OAuth). Posts to `https://api.x.ai/v1/stt` as multipart/form-data and sends `model` (default `grok-voice-transcribe-2.0`; pin `grok-voice-transcribe-1.0` with `stt.xai.model` or `STT_XAI_MODEL`). Moor always names the model, so a server-default change never silently switches what you run. With `stt.language: ""` (auto-detect) the `format` flag is dropped, since xAI requires a language for text formatting. Good choice if you're already using xAI for chat or TTS and want one API key for everything. Auto-detection order puts it after Mistral — explicitly set `stt.provider: xai` to force it.
 
 **Custom local CLI fallback** — Set `MOOR_LOCAL_STT_COMMAND` if you want Moor to call a local transcription command directly. The command template supports `{input_path}`, `{output_dir}`, `{language}`, and `{model}` placeholders. Moor tokenizes the rendered template into an argument list and executes it without a shell, so operators such as `|`, `>`, `&&`, and `;` are passed as literal arguments. Your command must write a `.txt` transcript somewhere under `{output_dir}`.
 

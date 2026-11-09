@@ -102,8 +102,8 @@ class TestRichSentStorePathResolution:
 
     def test_store_path_follows_override(self, two_profiles, monkeypatch):
         _prof_a, prof_b = two_profiles
-        # Ensure no ambient HERMES_HOME env masks the test.
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+        # Ensure no ambient MOOR_HOME env masks the test.
+        monkeypatch.delenv("MOOR_HOME", raising=False)
         import gateway.rich_sent_store as rss
 
         b_seen = _under_override(prof_b, lambda: rss._store_path())

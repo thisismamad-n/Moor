@@ -60,7 +60,7 @@ def finish_flow(session_id: str) -> None:
 
 
 def start_flow(
-    hermes_home: str, server_name: str, cfg: dict, *, reconnect_live: bool = False,
+    moor_home: str, server_name: str, cfg: dict, *, reconnect_live: bool = False,
     url_timeout: float = 30.0, client_redirect_uri: Optional[str] = None) -> dict[str, Any]:
     """Begin an MCP OAuth flow and return ``{session_id, auth_url, flow}``; blocks up to
     ``url_timeout`` for the authorization URL. With ``client_redirect_uri`` (invalid values
@@ -113,7 +113,7 @@ def start_flow(
 
 
 def _lookup(
-    session_id: str, server_name: str, hermes_home: Optional[str] = None,
+    session_id: str, server_name: str, moor_home: Optional[str] = None,
 ) -> tuple[dict[str, Any] | None, str | None]:
     """Find a session belonging to the caller's resolved profile."""
     from moor_constants import moor_home_key
@@ -147,7 +147,7 @@ def poll_flow(session_id: str, server_name: str) -> dict[str, Any]:
     return out
 
 
-def cancel_flow(session_id: str, server_name: str, hermes_home: str) -> dict[str, Any]:
+def cancel_flow(session_id: str, server_name: str, moor_home: str) -> dict[str, Any]:
     """Cancel only the owning profile's flow and release its callback waiter."""
     rec, err = _lookup(session_id, server_name, moor_home)
     if rec is None:

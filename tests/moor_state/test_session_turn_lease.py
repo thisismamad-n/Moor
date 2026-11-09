@@ -442,11 +442,11 @@ def test_non_expired_turn_lease_from_dead_pid_is_reclaimed(
 
     Stamped with this process's own PID namespace: same-namespace kernel proof
     is still proof (a foreign or unstamped holder would defer to TTL instead —
-    see tests/hermes_state/test_lease_pid_namespace.py)."""
+    see tests/moor_state/test_lease_pid_namespace.py)."""
     db = SessionDB(tmp_path / "state.db")
     db.create_session("shared", source="test")
 
-    from hermes_state_pidns import holder_namespace_token
+    from moor_state_pidns import holder_namespace_token
     dead_holder = f"pid=424242{holder_namespace_token()}:turn=dead:platform=test"
     assert db.try_acquire_session_turn_lease(
         "shared", dead_holder, ttl_seconds=300

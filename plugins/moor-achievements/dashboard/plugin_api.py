@@ -545,7 +545,7 @@ def _scan_meta(mode: str, total: int, *, rescanned: int = 0, reused: int = 0, sc
 
 
 def scan_sessions(limit: Optional[int] = None, progress_callback: Optional[Any] = None, progress_every: int = 250) -> dict[str, Any]:
-    """Scan Hermes sessions and build per-session achievement stats.
+    """Scan Moor sessions and build per-session achievement stats.
 
     ``limit=None`` (default) scans the ENTIRE history (SQLite ``LIMIT -1``); a former cap
     of 200 silently shrank lifetime totals on long-running installs. The checkpoint stores

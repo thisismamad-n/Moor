@@ -410,14 +410,14 @@ function mutateSessionHttp<T>(id: string, method: 'PATCH' | 'DELETE', payload: R
 
       for (const [name, value] of Object.entries(identity)) { params.set(name, String(value)) }
 
-      return hermesApi<T>({ ...scope, path: params.size ? `${path}?${params}` : path, method })
+      return moorApi<T>({ ...scope, path: params.size ? `${path}?${params}` : path, method })
     }
 
-    return hermesApi<T>({ ...scope, path, method,
+    return moorApi<T>({ ...scope, path, method,
       body: { ...payload, ...identity, ...(scope.profile ? { profile: scope.profile } : {}) } })
   }
 
-  return mutateSessionFenced(key, () => hermesApi<SessionMutationSnapshot>({ ...scope, path: `${path}/mutation-snapshot${suffix}` }), send)
+  return mutateSessionFenced(key, () => moorApi<SessionMutationSnapshot>({ ...scope, path: `${path}/mutation-snapshot${suffix}` }), send)
 }
 
 export function setSessionArchived(id: string, archived: boolean, profile?: string | null): Promise<{ ok: boolean }> {
@@ -440,7 +440,7 @@ export function searchSessions(query: string, profile?: null | string): Promise<
   const scope = profileScoped(profile)
   const suffix = scope.profile ? `&profile=${encodeURIComponent(scope.profile)}` : ''
 
-  return hermesApi<SessionSearchResponse>({
+  return moorApi<SessionSearchResponse>({
     ...scope,
     path: `/api/sessions/search?q=${encodeURIComponent(query)}${suffix}`
   })
@@ -457,7 +457,7 @@ export function getSession(id: string, profile?: ProfileScope): Promise<SessionI
   const scope = { ...sessionScoped(profile), ...sessionReadOwnerPin(id, profile) }
   const suffix = scope.profile ? `?profile=${encodeURIComponent(scope.profile)}` : ''
 
-  return hermesApi<SessionInfo>({
+  return moorApi<SessionInfo>({
     ...scope,
     path: `/api/sessions/${encodeURIComponent(id)}${suffix}`
   })

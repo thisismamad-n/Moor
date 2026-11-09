@@ -84,7 +84,7 @@ def test_resolve_managed_tool_gateway_is_disabled_without_subscription():
 
 def test_read_moor_access_token_refreshes_expiring_cached_token(tmp_path, monkeypatch):
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     expires_at = (datetime.now(UTC) + timedelta(seconds=30)).isoformat()
     (tmp_path / "auth.json").write_text(json.dumps({
         "providers": {
@@ -105,7 +105,7 @@ def test_read_moor_access_token_refreshes_expiring_cached_token(tmp_path, monkey
 
 def test_is_managed_tool_gateway_ready_skips_refresh_for_expired_cached_token(tmp_path, monkeypatch):
     monkeypatch.delenv("TOOL_GATEWAY_USER_TOKEN", raising=False)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     expired_at = (datetime.now(UTC) - timedelta(seconds=30)).isoformat()
     (tmp_path / "auth.json").write_text(json.dumps({
         "providers": {
@@ -214,14 +214,14 @@ def test_read_moor_provider_state_falls_back_to_global_root_for_share_auth_profi
     # A profile created with ``share_auth`` has no auth.json of its own; it signs in with the
     # root identity. The connector gate must see that identity, or manage_connections vanishes
     # from the profile's tool list while every other credential reader still works.
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     profile = root / "profiles" / "work"
     profile.mkdir(parents=True)
     (root / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {"moor": {"auth_method": "anonymous", "access_token": "tok"}},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(profile))
+    monkeypatch.setenv("MOOR_HOME", str(profile))
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
     import moor_constants

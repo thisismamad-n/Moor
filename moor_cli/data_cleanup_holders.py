@@ -29,7 +29,7 @@ def manual_gateway_identity(home: Path) -> dict | None:
         if get_running_pid_identity_strict(home / "gateway.pid") is not None:
             raise RuntimeError(f"gateway has no usable control socket for {home}; stop it through its owner and retry")
         return None
-    if not identity.get("hermes_home") or Path(identity["hermes_home"]).resolve() != home:
+    if not identity.get("moor_home") or Path(identity["moor_home"]).resolve() != home:
         raise RuntimeError(f"gateway control identity does not match {home}")
     owner = launch_supervisor(identity)
     if owner != "manual":
@@ -70,8 +70,8 @@ def _drain_manual_gateway(home: Path) -> None:
 
 
 def _refuse_backend_writers(home: Path) -> None:
-    from hermes_constants import get_default_hermes_root
-    from hermes_cli.process_identity import LEDGER_FILENAME, _read_ledger, entry_still_running
+    from moor_constants import get_default_moor_root
+    from moor_cli.process_identity import LEDGER_FILENAME, _read_ledger, entry_still_running
 
     root = get_default_moor_root(home=home).resolve()
     rows = _read_ledger(root / LEDGER_FILENAME)

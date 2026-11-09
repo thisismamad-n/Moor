@@ -81,10 +81,10 @@ class TestStoreCacheEntry:
         must not save its snapshot afterwards and bring the cleared row back."""
         import threading
 
-        import hermes_cli.models as mod
-        from hermes_cli.models_cache_lock import write_under_cache_lock
+        import moor_cli.models as mod
+        from moor_cli.models_cache_lock import write_under_cache_lock
 
-        import hermes_cli.models_cache_lock as cache_lock_module
+        import moor_cli.models_cache_lock as cache_lock_module
         from tests.lock_contention import ContentionObservedLock, watch_file_lock_contention
         from tests.waiting import wait_until
 
@@ -158,9 +158,9 @@ class TestPrefetchProviderModelsParallel:
             fetch_calls.append(slug)
             return [f"model_{slug}"]
 
-        with patch("hermes_cli.models._load_provider_models_cache", return_value=cache), \
-             patch("hermes_cli.models._credential_fingerprint", return_value="fp_f"), \
-             patch("hermes_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
+        with patch("moor_cli.models._load_provider_models_cache", return_value=cache), \
+             patch("moor_cli.models._credential_fingerprint", return_value="fp_f"), \
+             patch("moor_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
             _prefetch_provider_models_parallel(["fresh_prov", "stale_prov"])
 
         assert "fresh_prov" not in fetch_calls
@@ -186,9 +186,9 @@ class TestPrefetchProviderModelsParallel:
 
         slugs = [f"prov_{i}" for i in range(6)]
 
-        with patch("hermes_cli.models._load_provider_models_cache", return_value={}), \
-             patch("hermes_cli.models._credential_fingerprint", return_value="fp"), \
-             patch("hermes_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
+        with patch("moor_cli.models._load_provider_models_cache", return_value={}), \
+             patch("moor_cli.models._credential_fingerprint", return_value="fp"), \
+             patch("moor_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
             _prefetch_provider_models_parallel(slugs)
 
         assert max_concurrent[0] > 1, "fetches were serial, not parallel"
@@ -200,9 +200,9 @@ class TestPrefetchProviderModelsParallel:
         def mock_fetch(slug, force_refresh=False):
             raise ConnectionError("simulated network failure")
 
-        with patch("hermes_cli.models._load_provider_models_cache", return_value={}), \
-             patch("hermes_cli.models._credential_fingerprint", return_value="fp"), \
-             patch("hermes_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
+        with patch("moor_cli.models._load_provider_models_cache", return_value={}), \
+             patch("moor_cli.models._credential_fingerprint", return_value="fp"), \
+             patch("moor_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
             # Should not raise
             _prefetch_provider_models_parallel(["failing_prov"])
 
@@ -250,9 +250,9 @@ class TestPrefetchProviderModelsParallel:
             fetched.append(slug)
             return ["m1"]
 
-        with patch("hermes_cli.models._load_provider_models_cache", return_value=cache), \
-             patch("hermes_cli.models._credential_fingerprint", return_value="fp"), \
-             patch("hermes_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
+        with patch("moor_cli.models._load_provider_models_cache", return_value=cache), \
+             patch("moor_cli.models._credential_fingerprint", return_value="fp"), \
+             patch("moor_cli.models.cached_provider_model_ids", side_effect=mock_fetch):
             _prefetch_provider_models_parallel(["openrouter"])
 
         assert fetched == ["openrouter"]
@@ -261,8 +261,8 @@ class TestPrefetchProviderModelsParallel:
         """A worker whose fetch outlasts another's must not write back its pre-fetch snapshot."""
         import threading
 
-        import hermes_cli.models as mod
-        from hermes_cli.model_switch_providers import _prefetch_provider_models_parallel
+        import moor_cli.models as mod
+        from moor_cli.model_switch_providers import _prefetch_provider_models_parallel
 
         monkeypatch.setattr(mod, "_provider_models_cache_path", lambda: tmp_path / "provider_models_cache.json")
         monkeypatch.setattr(mod, "_credential_fingerprint", lambda provider: "fp")
@@ -291,8 +291,8 @@ class TestPrefetchProviderModelsParallel:
     def test_failed_live_fetch_leaves_the_stale_row_untouched(self, tmp_path, monkeypatch):
         """A prefetch whose live fetch returns nothing serves the old rows but must not re-stamp
         them: the stale row stays stale so the next open retries instead of trusting it for a TTL."""
-        import hermes_cli.models as mod
-        from hermes_cli.model_switch_providers import _prefetch_provider_models_parallel
+        import moor_cli.models as mod
+        from moor_cli.model_switch_providers import _prefetch_provider_models_parallel
 
         monkeypatch.setattr(mod, "_provider_models_cache_path", lambda: tmp_path / "provider_models_cache.json")
         monkeypatch.setattr(mod, "_credential_fingerprint", lambda provider: "fp")

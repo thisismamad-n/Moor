@@ -6,9 +6,9 @@ import time
 
 import pytest
 
-from hermes_cli import anon_auth
-from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
-from tests.hermes_cli.anon_portal import as_local_desktop_backend, claimed_trial, install_portal
+from moor_cli import anon_auth
+from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+from tests.moor_cli.anon_portal import as_local_desktop_backend, claimed_trial, install_portal
 
 
 def _jwt(**claims) -> str:
@@ -30,7 +30,7 @@ def test_a_claimed_trial_has_the_notice_pending_once_and_the_flag_persists(porta
 
     assert anon_auth.mark_guest_notice_shown() is True
 
-    assert _load_auth_store()["providers"]["nous"][anon_auth.GUEST_NOTICE_FLAG] is True
+    assert _load_auth_store()["providers"]["moor"][anon_auth.GUEST_NOTICE_FLAG] is True
     assert not anon_auth.guest_notice_pending()
 
 

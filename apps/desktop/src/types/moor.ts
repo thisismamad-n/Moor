@@ -1,4 +1,4 @@
-import type { ConnectionRequestPayload, FreeTierChallengePayload, ToolLabel } from '@hermes/shared'
+import type { ConnectionRequestPayload, FreeTierChallengePayload, ToolLabel } from '@moor/shared'
 
 import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
 
@@ -140,7 +140,7 @@ export interface OAuthPollResponse {
   account_email?: null | string
   error_message?: null | string
   expires_at?: null | number
-  /** Approved Nous sign-ins only: the free tier's handoff the sign-in ran
+  /** Approved Moor sign-ins only: the free tier's handoff the sign-in ran
    *  (what moved, what to reconnect). Null when it replaced no free tier. */
   handoff_status?: AppHandoffStatus | null
   /** Approved sign-ins only: the default model the backend settled on. Null
@@ -151,17 +151,17 @@ export interface OAuthPollResponse {
    *  the account service's `anon_*` verdicts (status `error`). `error_message`
    *  carries the matching user-facing text. */
   reason?: null | string
-  /** Failed Nous sign-ins: the seconds the account service asked the client
+  /** Failed Moor sign-ins: the seconds the account service asked the client
    *  to wait before trying again (0 or absent when none). */
   retry_after?: null | number
-  /** Failed Nous sign-ins: whether a later attempt can succeed. */
+  /** Failed Moor sign-ins: whether a later attempt can succeed. */
   retryable?: boolean | null
   session_id: string
   status: 'approved' | 'denied' | 'error' | 'expired' | 'pending'
 }
 
 /** The free tier's apps moving to the account that replaced it
- *  (`hermes_cli/guest_handoff.py`, `wire_status`). `lines` is the backend's
+ *  (`moor_cli/guest_handoff.py`, `wire_status`). `lines` is the backend's
  *  own copy for this state, the same lines the terminal prints. */
 export interface AppHandoffStatus {
   account_email?: null | string
@@ -1252,7 +1252,7 @@ export interface SkillInfo {
   name: string
   /** Total observed activity (use + view + patch). Absent on older backends. */
   usage?: number
-  /** 'agent' = learned/local (editable), 'bundled' = ships with Hermes, 'hub' = installed,
+  /** 'agent' = learned/local (editable), 'bundled' = ships with Moor, 'hub' = installed,
    * 'external' = mounted from skills.external_dirs (externally authored, still editable). */
   provenance?: 'agent' | 'bundled' | 'external' | 'hub'
   /** User lock: the AGENT may not change this skill (the user still can). Absent on older backends. */
@@ -1315,9 +1315,9 @@ export interface ToolProvider {
   /** Web toolset only: capabilities this backend can serve. Search-only
    *  providers (ddgs, brave-free) report ['search']. */
   capabilities?: WebCapability[]
-  /** Set on the "Nous Subscription" rows (e.g. 'web'): served through the
-   *  Nous Tool Gateway rather than the user's own key. */
-  managed_nous_feature?: null | string
+  /** Set on the "Moor Subscription" rows (e.g. 'web'): served through the
+   *  Moor Tool Gateway rather than the user's own key. */
+  managed_moor_feature?: null | string
 }
 
 /** A web toolset capability — the runtime dispatches web_search and
@@ -1335,10 +1335,10 @@ export interface ToolsetConfig {
   active_search_backend?: string | null
   /** Web toolset only: backend the web_extract tool resolves to right now. */
   active_extract_backend?: string | null
-  /** Web toolset only: web_search / web_extract currently go through the Nous
+  /** Web toolset only: web_search / web_extract currently go through the Moor
    *  Tool Gateway (billed to the subscription) instead of the user's own key. */
-  search_via_nous?: boolean
-  extract_via_nous?: boolean
+  search_via_moor?: boolean
+  extract_via_moor?: boolean
 }
 
 /** Health status of a terminal execution backend row.
@@ -1653,7 +1653,7 @@ export interface BackendUpdateCheckResponse {
   update_available: boolean
   /** A stable release this build already contains: applying it moves back. */
   rollback_to?: null | string
-  /** A stable release `hermes update` refuses: the backend stays on its build. */
+  /** A stable release `moor update` refuses: the backend stays on its build. */
   held?: 'downgrade' | null
   /** Update-available only; absent on older backends. */
   channel?: string

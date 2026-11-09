@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# venv-style activation of the Hermes dev environment for an interactive shell.
+# venv-style activation of the Moor dev environment for an interactive shell.
 #
 #   source ./activate       (bash / zsh, repo root)
 #   source ./activate.fish  (fish)
@@ -14,7 +14,7 @@
 # keeps its own command. A prompt prefix names the worktree.
 #
 # Scripts and other processes do not source this: they run under
-# `scripts/run-in-hermes-env`. Both build on scripts/_activation.sh.
+# `scripts/run-in-moor-env`. Both build on scripts/_activation.sh.
 #
 # Sync through setup before selecting the environment. PM owns freshness;
 # activation does not maintain a second dependency stamp. It trusts the
@@ -46,17 +46,17 @@ if [ -n "$_moor_expect_extras" ]; then
     unset _moor_arg _moor_test_env _moor_expect_extras
     return 2 2>/dev/null || exit 2
 fi
-unset _hermes_arg _hermes_expect_extras
+unset _moor_arg _moor_expect_extras
 
 # shellcheck source=scripts/_activation.sh
-. "$_HERMES_REPO/scripts/_activation.sh"
+. "$_MOOR_REPO/scripts/_activation.sh"
 
-if ! hermes_sync "$_HERMES_REPO" "$_hermes_test_env"; then
+if ! moor_sync "$_MOOR_REPO" "$_moor_test_env"; then
     printf '%s\n' 'activate: setup failed; shell environment unchanged' >&2
-    unset _hermes_test_env
+    unset _moor_test_env
     return 1 2>/dev/null || exit 1
 fi
-unset _hermes_test_env
+unset _moor_test_env
 
 # Guard against double-sourcing: venv activate precedent (re-activating is a
 # no-op re-save; we keep it idempotent by deactivating first). Key on the
@@ -66,12 +66,12 @@ if [ "$(type -t deactivate 2>/dev/null)" = "function" ]; then
     deactivate
 fi
 
-_hermes_script="$(hermes_compose_env "$_HERMES_REPO" sh)" || {
+_moor_script="$(moor_compose_env "$_MOOR_REPO" sh)" || {
     echo "activate: could not compose the environment (see above)" >&2
-    unset _hermes_script
+    unset _moor_script
     return 1 2>/dev/null || exit 1
 }
-_hermes_keys="$(printf '%s\n' "$_hermes_script" | sed -n 's/^export \([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' | tr '\n' ' ')"
+_moor_keys="$(printf '%s\n' "$_moor_script" | sed -n 's/^export \([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' | tr '\n' ' ')"
 
 # --- snapshot what we are about to change (deactivate restores this) ---
 # __MOOR_ACTIVATED is part of the composed env below (it carries the
@@ -82,15 +82,15 @@ for _moor_k in $_moor_keys; do
     eval "__MOOR_SAVED_$_moor_k=\"\${$_moor_k+set}\""
     eval "__MOOR_PRIOR_$_moor_k=\${$_moor_k-__MOOR_UNSET__}"
 done
-hermes_apply_env "$_hermes_script"
+moor_apply_env "$_moor_script"
 
 # This checkout, not whichever `moor` PATH finds. A function beats PATH, an
 # alias, and a hashed command, including the MSIX execution alias.
-__HERMES_WORKTREE="$_HERMES_REPO"
+__MOOR_WORKTREE="$_MOOR_REPO"
 # The branch names the worktree. A checkout cannot share a branch with another.
-__HERMES_WORKTREE_NAME="$(git -C "$_HERMES_REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || :)"
-if [ -z "$__HERMES_WORKTREE_NAME" ] || [ "$__HERMES_WORKTREE_NAME" = HEAD ]; then
-    __HERMES_WORKTREE_NAME="$(basename "$_HERMES_REPO")"
+__MOOR_WORKTREE_NAME="$(git -C "$_MOOR_REPO" rev-parse --abbrev-ref HEAD 2>/dev/null || :)"
+if [ -z "$__MOOR_WORKTREE_NAME" ] || [ "$__MOOR_WORKTREE_NAME" = HEAD ]; then
+    __MOOR_WORKTREE_NAME="$(basename "$_MOOR_REPO")"
 fi
 __MOOR_SAVED_PS1="${PS1-__MOOR_UNSET__}"
 __MOOR_SAVED_PROMPT_COMMAND="${PROMPT_COMMAND-__MOOR_UNSET__}"
@@ -176,6 +176,6 @@ deactivate() {
 __MOOR_KEY_LIST="$_moor_keys"
 
 # The composition library is not part of the user's shell.
-unset -f hermes_sync hermes_bootstrap_python hermes_compose_env hermes_apply_env \
-         hermes_activation_current hermes_ensure_env
-unset _HERMES_REPO _hermes_script _hermes_keys _hermes_k _hermes_top
+unset -f moor_sync moor_bootstrap_python moor_compose_env moor_apply_env \
+         moor_activation_current moor_ensure_env
+unset _MOOR_REPO _moor_script _moor_keys _moor_k _moor_top

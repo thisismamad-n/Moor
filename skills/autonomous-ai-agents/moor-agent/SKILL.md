@@ -141,7 +141,7 @@ terminal(command="moor chat -q 'Set up CI/CD for ~/myapp'", background=true)
 
 ### Interactive PTY Mode (via tmux)
 
-Hermes uses prompt_toolkit, which requires a real terminal. Use tmux for interactive spawning. `tmux send-keys -t agent1 'text' Enter` in one call submits: Hermes treats a lone Enter that ends a fast burst of input as a submit once input has stayed quiet for a quarter second, while the Enters inside a multi-line paste stay newlines. The recipes below send `Enter` as its own call after a short pause, which submits at once and does not depend on that timing. Both recipes wait for the `❯` input prompt (the default skin's symbol; use your skin's prompt symbol if you changed it) instead of a fixed sleep: a first start can take far longer than a few seconds, and input sent before the prompt is lost.
+Moor uses prompt_toolkit, which requires a real terminal. Use tmux for interactive spawning. `tmux send-keys -t agent1 'text' Enter` in one call submits: Moor treats a lone Enter that ends a fast burst of input as a submit once input has stayed quiet for a quarter second, while the Enters inside a multi-line paste stay newlines. The recipes below send `Enter` as its own call after a short pause, which submits at once and does not depend on that timing. Both recipes wait for the `❯` input prompt (the default skin's symbol; use your skin's prompt symbol if you changed it) instead of a fixed sleep: a first start can take far longer than a few seconds, and input sent before the prompt is lost.
 
 ```
 # Start
@@ -160,10 +160,10 @@ terminal(command="tmux send-keys -t agent1 'Add rate limiting middleware' && sle
 terminal(command="tmux send-keys -t agent1 '/exit' && sleep 0.5 && tmux send-keys -t agent1 Enter && sleep 2 && tmux kill-session -t agent1", timeout=10)
 ```
 
-**No tmux** (`command -v tmux` prints nothing, e.g. an older Hermes Docker image): run Hermes as a PTY background process and drive it with `process_manage`. Stdin only exists with `pty=true`. `submit` sends the text plus the Enter key a keyboard sends, and Hermes submits it the same way as a one-call tmux `send-keys`. The recipe below instead `write`s the text, pauses, and `write`s the Enter (`"\r"`) on its own, which does not depend on burst timing. Wait for the input prompt before the first write: during startup Hermes queries the terminal's colours and then flushes its input, so text written before the prompt appears is silently dropped.
+**No tmux** (`command -v tmux` prints nothing, e.g. an older Moor Docker image): run Moor as a PTY background process and drive it with `process_manage`. Stdin only exists with `pty=true`. `submit` sends the text plus the Enter key a keyboard sends, and Moor submits it the same way as a one-call tmux `send-keys`. The recipe below instead `write`s the text, pauses, and `write`s the Enter (`"\r"`) on its own, which does not depend on burst timing. Wait for the input prompt before the first write: during startup Moor queries the terminal's colours and then flushes its input, so text written before the prompt appears is silently dropped.
 
 ```
-terminal(command="hermes", background=true, pty=true)   # returns session_id
+terminal(command="moor", background=true, pty=true)   # returns session_id
 process_manage(action="log", session_id="<id>", limit=20)   # repeat, with terminal(command="sleep 1") between, until the ❯ prompt line shows
 process_manage(action="write", session_id="<id>", data="Build a FastAPI auth service")
 terminal(command="sleep 0.5")
@@ -178,11 +178,11 @@ process_manage(action="write", session_id="<id>", data="\r")
 
 ```
 # Agent A: backend
-terminal(command="tmux new-session -d -s backend -x 120 -y 40 'hermes -w'", timeout=10)
+terminal(command="tmux new-session -d -s backend -x 120 -y 40 'moor -w'", timeout=10)
 terminal(command="for i in $(seq 90); do tmux capture-pane -t backend -p | grep -q '❯' && break; sleep 1; done; tmux capture-pane -t backend -p | grep -q '❯' && tmux send-keys -t backend 'Build REST API for user management' && sleep 0.5 && tmux send-keys -t backend Enter", timeout=100)
 
 # Agent B: frontend
-terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'hermes -w'", timeout=10)
+terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'moor -w'", timeout=10)
 terminal(command="for i in $(seq 90); do tmux capture-pane -t frontend -p | grep -q '❯' && break; sleep 1; done; tmux capture-pane -t frontend -p | grep -q '❯' && tmux send-keys -t frontend 'Build React dashboard for user management' && sleep 0.5 && tmux send-keys -t frontend Enter", timeout=100)
 
 # Check progress, relay context between them
@@ -205,7 +205,7 @@ terminal(command="tmux new-session -d -s resumed 'moor --resume 20260225_143052_
 - **Prefer `delegate_task` for quick subtasks** — less overhead than spawning a full process
 - **Use `-w` (worktree mode)** when spawning agents that edit code — prevents git conflicts
 - **Set timeouts** for one-shot mode — complex tasks can take 5-10 minutes
-- **Use `hermes chat -q` for fire-and-forget** — no PTY needed
+- **Use `moor chat -q` for fire-and-forget** — no PTY needed
 - **Prefer tmux for interactive sessions when it is installed** — `capture-pane` reads the rendered screen; the PTY-background fallback only has the raw output log
 - **For scheduled tasks**, use the `cronjob` tool instead of spawning — handles delivery and retry
 - **"delegate_task is capped at N" reports** — see `references/delegate-task-concurrency-diagnosis.md`. Three real cap paths in Moor; if none fired, the model is self-limiting and rationalising it as "the runtime caps."

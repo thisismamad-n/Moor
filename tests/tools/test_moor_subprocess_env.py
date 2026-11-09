@@ -117,7 +117,7 @@ class TestTierInvariants:
     def test_left_core_secrets_stripped_without_their_plugin(self):
         """A feature that left core for a catalog plugin keeps its credentials out of children even
         when the plugin is not installed (no manifest declares them then)."""
-        from hermes_cli.left_core_migration import LEFT_CORE
+        from moor_cli.left_core_migration import LEFT_CORE
         names = {"HASS_TOKEN"} | {n for feature in LEFT_CORE for n in feature.secret_env}
         for inherit in (False, True):
             assert not names & set(_build({n: "secret" for n in names}, inherit_credentials=inherit))
@@ -133,8 +133,8 @@ class TestTierInvariants:
 
     def test_tier1_covers_dashboard_auth(self):
         # Credentialed CLIs (claude/codex) must not be able to mint dashboard sessions.
-        assert {"HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "HERMES_DASHBOARD_BASIC_AUTH_SECRET",
-                "HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "HERMES_DASHBOARD_DRAIN_SECRET"} <= _ALWAYS_STRIP_KEYS
+        assert {"MOOR_DASHBOARD_BASIC_AUTH_PASSWORD", "MOOR_DASHBOARD_BASIC_AUTH_SECRET",
+                "MOOR_DASHBOARD_OIDC_CLIENT_SECRET", "MOOR_DASHBOARD_DRAIN_SECRET"} <= _ALWAYS_STRIP_KEYS
 
 
 class TestBrowserPassthroughPattern:
@@ -150,7 +150,7 @@ class TestBrowserPassthroughPattern:
             "TELEGRAM_BOT_TOKEN": "bot-should-go",
         }
         with patch.dict(os.environ, {**_SAFE_SAMPLE, **leaked}, clear=True):
-            env = hermes_subprocess_env(inherit_credentials=False)
+            env = moor_subprocess_env(inherit_credentials=False)
             for key in _HARNESS_PASSTHROUGH_KEYS:
                 if key in os.environ:
                     env[key] = os.environ[key]

@@ -252,7 +252,7 @@ def _record_codex_app_server_compaction(agent, turn, *, approx_tokens: int | Non
                       "runtime": "codex_app_server", "thread_id": thread_id, "turn_id": turn_id,
                   }))
     if not force:
-        # Hermes-forced compactions are recorded by their compress_context attempt; this one Codex ran alone.
+        # moor-forced compactions are recorded by their compress_context attempt; this one Codex ran alone.
         from agent.compaction_events import publish_provider_native
         publish_provider_native(agent)
     return True
@@ -262,7 +262,7 @@ def _record_codex_app_server_compaction(agent, turn, *, approx_tokens: int | Non
 # The app-server bypasses the Moor tool loop, so the bridge translates JSON-RPC notifications
 # into the callbacks the standard runtime fires (tool_progress_callback, _fire_stream_delta, ...).
 
-# Item types that project to a Hermes tool_call (keep in sync with agent/transports/codex_event_projector.py
+# Item types that project to a Moor tool_call (keep in sync with agent/transports/codex_event_projector.py
 # so UI names match recorded names). webSearch is codex's built-in tool; the projector records it under the same id.
 _CODEX_TOOL_ITEM_TYPES = frozenset({"commandExecution", "fileChange", "mcpToolCall", "dynamicToolCall", "webSearch"})
 # Text-delta notifications → the agent stream hook each one feeds. Single source for both the display
@@ -540,29 +540,29 @@ def _start_codex_thread(agent) -> str:
 
 def _codex_model_provider(agent) -> str | None:
     """codex's ``[model_providers.<id>]`` for a named custom provider (``providers.<name>``); None means codex's
-    own provider. Only the stable id is sent and codex resolves base_url/env_key itself, so Hermes' credential
+    own provider. Only the stable id is sent and codex resolves base_url/env_key itself, so Moor' credential
     never enters the JSON-RPC payload (#75186)."""
     if str(getattr(agent, "provider", "") or "").strip().lower() != "custom":
         return None
-    from hermes_cli.runtime_provider_custom import codex_model_provider_id
+    from moor_cli.runtime_provider_custom import codex_model_provider_id
     return codex_model_provider_id(str(getattr(agent, "requested_provider", "") or ""))
 
 
 def _codex_wire_model(agent, model_provider: str | None) -> str | None:
-    """The slug codex should run. ``-900k`` picker variants are Hermes-side aliases the backend rejects
+    """The slug codex should run. ``-900k`` picker variants are moor-side aliases the backend rejects
     ("not supported when using Codex with a ChatGPT account"); codex applies the catalog's extended window
     to the base slug itself. On codex's own provider the slug is bare (``openai/gpt-5.5`` -> ``gpt-5.5``),
     as for openai-codex; a named custom provider's model ids are its own and pass through."""
     from agent.model_metadata import strip_codex_context_variant_suffix
     model = strip_codex_context_variant_suffix(getattr(agent, "model", None)) or None
     if model and model_provider is None:
-        from hermes_cli.model_normalize import normalize_model_for_provider
+        from moor_cli.model_normalize import normalize_model_for_provider
         model = normalize_model_for_provider(model, "openai-codex")
     return model
 
 
 def _codex_turn_effort(agent, model: str | None) -> str | None:
-    """``turn/start.effort``: only an explicit Hermes reasoning setting overrides codex's own default, clamped
+    """``turn/start.effort``: only an explicit Moor reasoning setting overrides codex's own default, clamped
     to the route's vocabulary like the Responses path (a level the model lacks fails the turn with 400
     "Unsupported value"). ``ultra`` stays ``ultra`` where the model reaches ``max``: codex runs it as its
     harness mode. Disabled reasoning goes out as ``none`` where the route accepts it."""
@@ -589,7 +589,7 @@ def _codex_turn_effort(agent, model: str | None) -> str | None:
 
 
 def _codex_turn_service_tier(agent) -> str | None:
-    """``turn/start.serviceTier``: the tier Hermes' own Responses path would request this turn (a static
+    """``turn/start.serviceTier``: the tier Moor' own Responses path would request this turn (a static
     ``/fast`` tier pinned in request_overrides, or an open ``auto``/``cold`` window), in codex's words: the
     OpenAI ``priority`` tier is codex's ``fast``. A tier codex has no word for (``ultrafast``) is not sent."""
     from agent.fast_mode import CODEX_TIER_WORDS, effective_request_overrides
@@ -617,9 +617,9 @@ def _ensure_codex_session(agent, messages: list[dict[str, Any]] | None = None) -
     resume_thread_id = None if getattr(agent, "_codex_session_prompt", None) is not None else _stored_codex_thread_id(agent)
     from agent.runtime_cwd import resolve_agent_cwd
     from agent.transports.codex_app_server_session import CodexAppServerSession, _ServerRequestRouting
-    from hermes_cli.codex_runtime_switch import get_configured_codex_binary
-    from hermes_cli.config import load_config
-    # Approval callback: Hermes' standard prompt flow when a CLI thread installed one. `hermes chat -q`, cron and
+    from moor_cli.codex_runtime_switch import get_configured_codex_binary
+    from moor_cli.config import load_config
+    # Approval callback: Moor' standard prompt flow when a CLI thread installed one. `moor chat -q`, cron and
     # unattended platforms can have one registered with nobody to answer it, so they get none and fail closed at once.
     approval_callback = None
     with suppress(Exception):
@@ -650,7 +650,7 @@ def _ensure_codex_session(agent, messages: list[dict[str, Any]] | None = None) -
     agent._codex_session_model_provider = model_provider
     from agent.codex_runtime_history_seed import render_history_seed
     history_seed = render_history_seed(messages) or None
-    # The model always rides along: codex's home is shared, while the Hermes model is per profile/session,
+    # The model always rides along: codex's home is shared, while the Moor model is per profile/session,
     # so omitting it ran codex's own default instead of the selection.
     agent._codex_session = CodexAppServerSession(
         cwd=getattr(agent, "session_cwd", None) or str(resolve_agent_cwd()), approval_callback=approval_callback,

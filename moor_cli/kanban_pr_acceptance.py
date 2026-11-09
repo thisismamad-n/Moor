@@ -74,8 +74,8 @@ def _gh_env(profile_home: str | None) -> dict[str, str] | None:
     """
     if not profile_home:
         return None
-    from tools.environments.local import _is_routed_home, hermes_subprocess_env, served_profile_child_env
-    base = hermes_subprocess_env(inherit_credentials=True)
+    from tools.environments.local import _is_routed_home, moor_subprocess_env, served_profile_child_env
+    base = moor_subprocess_env(inherit_credentials=True)
     routed = _is_routed_home(profile_home)
     if routed:
         # gh's config dir decides which login `gh api` uses, yet it is a path, not a
@@ -97,7 +97,7 @@ def _assignee_profile_home(assignee: str | None) -> str | None:
     identity failure (``auth``), never a silent fall-through to the ambient login."""
     if not assignee:
         return None
-    from hermes_cli.profiles import normalize_profile_name, resolve_profile_env
+    from moor_cli.profiles import normalize_profile_name, resolve_profile_env
     try:
         return resolve_profile_env(normalize_profile_name(assignee))
     except (FileNotFoundError, ValueError):

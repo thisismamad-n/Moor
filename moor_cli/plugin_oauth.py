@@ -1,10 +1,10 @@
-"""OAuth clients a plugin declares in ``plugin.yaml``: Hermes signs in, stores and refreshes the grant.
+"""OAuth clients a plugin declares in ``plugin.yaml``: Moor signs in, stores and refreshes the grant.
 
 A plugin that calls a third-party API with the user's own OAuth client (a Google Cloud client, for example)
-declares it under ``oauth:``. ``hermes auth add <plugin>:<id>`` runs the PKCE login of
-:mod:`hermes_cli.auth_oauth_pkce_plugin` in a terminal, the grant lives in the active profile's
-``auth.json`` (section ``plugin_oauth``) and Hermes refreshes it. The plugin calls
-``credentialed_provider_request(<id>, ...)``: Hermes attaches the bearer for the declared hosts only, so
+declares it under ``oauth:``. ``moor auth add <plugin>:<id>`` runs the PKCE login of
+:mod:`moor_cli.auth_oauth_pkce_plugin` in a terminal, the grant lives in the active profile's
+``auth.json`` (section ``plugin_oauth``) and Moor refreshes it. The plugin calls
+``credentialed_provider_request(<id>, ...)``: Moor attaches the bearer for the declared hosts only, so
 the plugin never holds a token (#139077; the same contract as the Codex lane, #136117).
 
 Each grant remembers a fingerprint of the ``oauth:`` entry it was made for. A later version of the plugin
@@ -78,11 +78,11 @@ def _url_problems(where: str, url: Any) -> list[str]:
     return []
 
 
-def _hermes_owned_env(name: str) -> bool:
-    """A variable Hermes itself reads (a provider key, a platform secret): never a plugin's client variable,
-    or a manifest could have Hermes POST that secret to the token URL it names."""
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.config_env_routing import is_registered_env_name
+def _moor_owned_env(name: str) -> bool:
+    """A variable Moor itself reads (a provider key, a platform secret): never a plugin's client variable,
+    or a manifest could have Moor POST that secret to the token URL it names."""
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.config_env_routing import is_registered_env_name
 
     return is_registered_env_name(name) or any(name in p.api_key_env_vars for p in PROVIDER_REGISTRY.values())
 
@@ -100,8 +100,8 @@ def _entry_problems(entry: dict, where: str) -> list[str]:
         name = entry.get(field)
         if (required or name) and not (isinstance(name, str) and _ENV_RE.match(name)):
             problems.append(f"{where}.{field}: {name!r} must be an UPPER_SNAKE environment variable name")
-        elif name and _hermes_owned_env(name):
-            problems.append(f"{where}.{field}: {name} is a variable Hermes uses itself; declare the plugin's own")
+        elif name and _moor_owned_env(name):
+            problems.append(f"{where}.{field}: {name} is a variable Moor uses itself; declare the plugin's own")
     hosts = entry.get("hosts")
     if not (isinstance(hosts, list) and hosts and all(isinstance(h, str) and _HOST_RE.match(h) for h in hosts)):
         problems.append(f"{where}.hosts: must list lowercase DNS host names (no scheme, port, path or IP address)")
@@ -152,7 +152,7 @@ def _declared_clients(plugin_dir: Path) -> list[OAuthClient]:
 
 def plugin_key(plugin_dir: Path) -> str:
     """The plugin's key under the plugins root it lives in (``voice``, ``web/exa``); grants are stored by it."""
-    from hermes_cli.plugin_provider_requests import _plugin_roots
+    from moor_cli.plugin_provider_requests import _plugin_roots
 
     for path in (plugin_dir.absolute(), plugin_dir.resolve()):
         for root in _plugin_roots():
@@ -169,8 +169,8 @@ def oauth_notice(manifest: Mapping[str, Any]) -> str:
     """Install/show text for the declared clients; empty when the plugin declares none."""
     name = str((manifest or {}).get("name") or "<plugin>")
     return "; ".join(
-        f"Signs in to {c.id} at {_idp_hosts(c)} for {', '.join(c.hosts)} with `hermes auth add {name}:{c.id}` "
-        "(Hermes stores and refreshes the token; the plugin never receives it)"
+        f"Signs in to {c.id} at {_idp_hosts(c)} for {', '.join(c.hosts)} with `moor auth add {name}:{c.id}` "
+        "(Moor stores and refreshes the token; the plugin never receives it)"
         for c in parse_oauth_clients(manifest)[0])
 
 
@@ -193,18 +193,18 @@ def _declared_env_names(manifest: Mapping[str, Any]) -> set[str]:
 
 def oauth_admission_problems(manifest: Mapping[str, Any], plugin_dir: Path) -> list[str]:
     """Catalog admission on top of the shape: declared variables, no clash with core sign-ins or ``custom:``."""
-    from hermes_cli.plugin_provider_requests import _PROVIDERS
+    from moor_cli.plugin_provider_requests import _PROVIDERS
 
     clients, problems = parse_oauth_clients(manifest)
     declared = _declared_env_names(manifest)
     for client in clients:
         if client.id in _PROVIDERS:
-            problems.append(f"oauth id {client.id!r} is a Hermes sign-in provider; pick another id")
+            problems.append(f"oauth id {client.id!r} is a Moor sign-in provider; pick another id")
         for name in filter(None, (client.client_id_env, client.client_secret_env)):
             if name not in declared:
                 problems.append(f"oauth {client.id!r}: {name} must be declared under requires_env or optional_env")
     if clients and plugin_dir.name == "custom":
-        problems.append("a plugin named 'custom' cannot declare oauth: `hermes auth add custom:<name>` is a custom provider")
+        problems.append("a plugin named 'custom' cannot declare oauth: `moor auth add custom:<name>` is a custom provider")
     return problems
 
 
@@ -217,7 +217,7 @@ def _parent(host: str) -> str:
 
 def oauth_admission_warnings(manifest: Mapping[str, Any], plugin_dir: Path) -> list[str]:
     """Reviewer warnings: a host outside the sign-in provider's domains (does the IdP own it?), and plugin
-    code that names a declared token URL (Hermes refreshes the grant)."""
+    code that names a declared token URL (Moor refreshes the grant)."""
     clients = parse_oauth_clients(manifest)[0]
     warnings = [f"oauth {c.id!r}: host {host} shares no domain with {_idp_hosts(c)}; check the provider owns it"
                 for c in clients for host in c.hosts
@@ -228,7 +228,7 @@ def oauth_admission_warnings(manifest: Mapping[str, Any], plugin_dir: Path) -> l
             text = path.read_text(encoding="utf-8-sig", errors="replace")
         except OSError:
             continue
-        warnings += [f"oauth: {path.relative_to(plugin_dir).as_posix()} names the token URL {url}; Hermes "
+        warnings += [f"oauth: {path.relative_to(plugin_dir).as_posix()} names the token URL {url}; Moor "
                      "refreshes the grant, so the plugin should not call it" for url in urls if url in text]
     return warnings
 
@@ -236,7 +236,7 @@ def oauth_admission_warnings(manifest: Mapping[str, Any], plugin_dir: Path) -> l
 # ── Grant store: section ``plugin_oauth`` of the active profile's auth.json ────────────────────────
 
 def _read_grant(key: str) -> Optional[dict]:
-    from hermes_cli.auth import _load_auth_store
+    from moor_cli.auth import _load_auth_store
 
     section = _load_auth_store().get(_SECTION)
     row = section.get(key) if isinstance(section, dict) else None
@@ -244,8 +244,8 @@ def _read_grant(key: str) -> Optional[dict]:
 
 
 def forget_plugin_grants(plugin: str) -> None:
-    """Drop every grant of plugin key *plugin* from the active profile (``hermes plugins remove``)."""
-    from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+    """Drop every grant of plugin key *plugin* from the active profile (``moor plugins remove``)."""
+    from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
 
     with _auth_store_lock():
         store = _load_auth_store()
@@ -259,7 +259,7 @@ def forget_plugin_grants(plugin: str) -> None:
 
 def _write_grant(key: str, row: Optional[dict]) -> None:
     """Replace one grant (``None`` removes it) under the auth-store lock; other sections stay as they are."""
-    from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store, _store_section
+    from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store, _store_section
 
     with _auth_store_lock():
         store = _load_auth_store()
@@ -274,7 +274,7 @@ def _write_grant(key: str, row: Optional[dict]) -> None:
 # ── Token endpoint ─────────────────────────────────────────────────────────────────────────────────
 
 def _auth_error(key: str, message: str, code: str):
-    from hermes_cli.auth_constants import AuthError
+    from moor_cli.auth_constants import AuthError
 
     return AuthError(f"{key}: {message}", provider=key, code=code)
 
@@ -298,7 +298,7 @@ def _json_object(response: Any) -> dict:
 
 def _token_error(key: str, status: int, payload: Mapping[str, Any]):
     """Keep the OAuth ``error`` code a caller can act on; never echo the response body."""
-    from hermes_cli.auth import _OAUTH_GRANT_DEAD_CODES
+    from moor_cli.auth import _OAUTH_GRANT_DEAD_CODES
 
     error = str(payload.get("error") or "").strip()
     if error in _OAUTH_GRANT_DEAD_CODES or error in _CLIENT_ERROR_CODES:
@@ -321,8 +321,8 @@ def _token_request(client: OAuthClient, key: str) -> Callable[[dict[str, str]], 
     secret never sits in the frozen config, whose repr would show it."""
 
     def post(fields: dict[str, str]) -> Mapping[str, Any]:
-        from hermes_cli.auth import _default_verify
-        from hermes_cli.auth_constants import httpx
+        from moor_cli.auth import _default_verify
+        from moor_cli.auth_constants import httpx
 
         form = {**fields, "client_id": _env(client.client_id_env, "oauth_client_id_missing", key)}
         if client.client_secret_env:
@@ -346,7 +346,7 @@ def _token_request(client: OAuthClient, key: str) -> Callable[[dict[str, str]], 
 
 
 def _pkce_config(client: OAuthClient, key: str, *, timeout: Optional[float] = None):
-    from hermes_cli.auth_oauth_pkce_plugin import OAuthPKCEConfig
+    from moor_cli.auth_oauth_pkce_plugin import OAuthPKCEConfig
 
     return OAuthPKCEConfig(
         client_id=_env(client.client_id_env, "oauth_client_id_missing", key), authorize_url=client.authorize_url,
@@ -357,26 +357,26 @@ def _pkce_config(client: OAuthClient, key: str, *, timeout: Optional[float] = No
 # ── Bearer for credentialed_provider_request ───────────────────────────────────────────────────────
 
 def _not_signed_in(message: str):
-    from hermes_cli.plugin_provider_requests import ProviderNotSignedIn
+    from moor_cli.plugin_provider_requests import ProviderNotSignedIn
 
     return ProviderNotSignedIn(message)
 
 
 def _revoked(client: OAuthClient, key: str, code: str):
     return _not_signed_in(f"The {client.id} sign-in for plugin '{key.rsplit(':', 1)[0]}' was revoked ({code}). "
-                          f"Run `hermes auth add {key}` to sign in again.")
+                          f"Run `moor auth add {key}` to sign in again.")
 
 
 def _usable_grant(row: Optional[dict], client: OAuthClient, key: str) -> dict:
     plugin = key.rsplit(":", 1)[0]
     if row is None:
-        raise _not_signed_in(f"Not signed in to {client.id} for plugin '{plugin}' in this Hermes profile. "
-                             f"Run `hermes auth add {key}`.")
+        raise _not_signed_in(f"Not signed in to {client.id} for plugin '{plugin}' in this Moor profile. "
+                             f"Run `moor auth add {key}`.")
     if row.get("dead"):
         raise _revoked(client, key, str(row["dead"]))
     if row.get("fingerprint") != client.fingerprint:
         raise _not_signed_in(f"Plugin '{plugin}' changed its oauth entry '{client.id}' since you signed in. "
-                             f"Run `hermes auth add {key}` to sign in again.")
+                             f"Run `moor auth add {key}` to sign in again.")
     return row
 
 
@@ -390,9 +390,9 @@ def _live_token(row: Mapping[str, Any]) -> str:
 def _refresh(client: OAuthClient, key: str, row: dict) -> str:
     """Rotate the grant; the caller holds the auth-store lock, so a peer process waits instead of spending
     the same refresh token, and a logout cannot be undone by a refresh in flight."""
-    from hermes_cli.auth import _OAUTH_GRANT_DEAD_CODES
-    from hermes_cli.auth_constants import AuthError
-    from hermes_cli.auth_oauth_pkce_plugin import _post_token
+    from moor_cli.auth import _OAUTH_GRANT_DEAD_CODES
+    from moor_cli.auth_constants import AuthError
+    from moor_cli.auth_oauth_pkce_plugin import _post_token
 
     refresh_token = str(row.get("refresh_token") or "")
     if not refresh_token:
@@ -412,7 +412,7 @@ def _refresh(client: OAuthClient, key: str, row: dict) -> str:
 def _bearer(plugin_dir: Path, client: OAuthClient) -> str:
     """A live access token for the plugin's grant. Reading takes no lock (writes are atomic); a refresh
     re-reads under the lock, because a peer may have rotated the grant meanwhile."""
-    from hermes_cli.auth import _auth_store_lock
+    from moor_cli.auth import _auth_store_lock
 
     key = f"{plugin_key(plugin_dir)}:{client.id}"
     token = _live_token(_usable_grant(_read_grant(key), client, key))
@@ -447,11 +447,11 @@ def _origins(client: OAuthClient) -> frozenset:
     return frozenset(("https", host, 443) for host in client.hosts)
 
 
-# ── hermes auth add|status|refresh|logout <plugin>:<id> ────────────────────────────────────────────
+# ── moor auth add|status|refresh|logout <plugin>:<id> ────────────────────────────────────────────
 
 def _installed_client(plugin: str, oauth_id: str) -> Optional[tuple[Path, OAuthClient]]:
-    """Resolve *plugin* the way ``hermes plugins show`` does, then its ``oauth:`` entry *oauth_id*."""
-    from hermes_cli.plugins_cmd import _find_plugin_entry
+    """Resolve *plugin* the way ``moor plugins show`` does, then its ``oauth:`` entry *oauth_id*."""
+    from moor_cli.plugins_cmd import _find_plugin_entry
 
     entry = _find_plugin_entry(plugin)
     if entry is None or not entry[4]:
@@ -468,11 +468,11 @@ def _unattended() -> bool:
 
 
 def _cli_add(args: Any, client: OAuthClient, key: str) -> bool:
-    from hermes_cli.auth_constants import AuthError
-    from hermes_cli.auth_oauth_pkce_plugin import login
+    from moor_cli.auth_constants import AuthError
+    from moor_cli.auth_oauth_pkce_plugin import login
 
     if _unattended():
-        raise SystemExit(f"`hermes auth add {key}` signs you in through a browser; run it in your own terminal, "
+        raise SystemExit(f"`moor auth add {key}` signs you in through a browser; run it in your own terminal, "
                          "not from a gateway, cron job or agent session.")
     secret = " and the client secret" if client.client_secret_env else ""
     print(f"Plugin '{key.rsplit(':', 1)[0]}' signs in to {client.id} at {urlparse(client.authorize_url).hostname}. "
@@ -484,12 +484,12 @@ def _cli_add(args: Any, client: OAuthClient, key: str) -> bool:
     except AuthError as exc:
         raise SystemExit(f"Login failed: {exc}") from None
     _write_grant(key, {**fields, "fingerprint": client.fingerprint})
-    print(f"Signed in to {client.id} for plugin '{key.rsplit(':', 1)[0]}'; the grant is stored in this Hermes profile.")
+    print(f"Signed in to {client.id} for plugin '{key.rsplit(':', 1)[0]}'; the grant is stored in this Moor profile.")
     return True
 
 
 def _cli_status(args: Any, client: OAuthClient, key: str) -> bool:
-    from hermes_cli.plugin_provider_requests import ProviderNotSignedIn
+    from moor_cli.plugin_provider_requests import ProviderNotSignedIn
 
     row = _read_grant(key)
     try:
@@ -506,9 +506,9 @@ def _cli_status(args: Any, client: OAuthClient, key: str) -> bool:
 
 
 def _cli_refresh(args: Any, client: OAuthClient, key: str) -> bool:
-    from hermes_cli.auth import _auth_store_lock
-    from hermes_cli.auth_constants import AuthError
-    from hermes_cli.plugin_provider_requests import ProviderNotSignedIn
+    from moor_cli.auth import _auth_store_lock
+    from moor_cli.auth_constants import AuthError
+    from moor_cli.plugin_provider_requests import ProviderNotSignedIn
 
     try:
         with _auth_store_lock():
@@ -526,8 +526,8 @@ def _cli_logout(args: Any, client: OAuthClient, key: str) -> bool:
 
 
 def _logout_key(plugin: str, oauth_id: str) -> Optional[str]:
-    """The stored grant key ``hermes auth logout <plugin>:<id>`` means, without parsing the manifest."""
-    from hermes_cli.plugins_cmd import _find_plugin_entry
+    """The stored grant key ``moor auth logout <plugin>:<id>`` means, without parsing the manifest."""
+    from moor_cli.plugins_cmd import _find_plugin_entry
 
     entry = _find_plugin_entry(plugin)
     names = [f"{plugin_key(Path(str(entry[4])))}:{oauth_id}"] if entry is not None and entry[4] else []
@@ -538,7 +538,7 @@ _CLI_ACTIONS = {"add": _cli_add, "status": _cli_status, "refresh": _cli_refresh,
 
 
 def handle_auth_action(action: str, args: Any, provider: str) -> Optional[bool]:
-    """``hermes auth add|status|refresh|logout <plugin>:<id>``; None when *provider* is not a plugin's
+    """``moor auth add|status|refresh|logout <plugin>:<id>``; None when *provider* is not a plugin's
     ``oauth:`` entry (``custom:<name>`` stays the custom-provider pool)."""
     plugin, sep, oauth_id = str(provider or "").partition(":")
     handler = _CLI_ACTIONS.get(action)

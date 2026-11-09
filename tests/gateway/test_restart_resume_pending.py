@@ -668,7 +668,7 @@ async def test_startup_auto_resume_freshness_survives_spring_forward(monkeypatch
     spring-forward falls between the two (naive wall-clock subtraction read it as 80 minutes)."""
     runner, adapter = make_restart_runner()
     source = make_restart_source(chat_id="dst-chat")
-    monkeypatch.setenv("HERMES_AUTO_CONTINUE_FRESHNESS", "3600")
+    monkeypatch.setenv("MOOR_AUTO_CONTINUE_FRESHNESS", "3600")
     original_tz = os.environ.get("TZ")
     try:
         os.environ["TZ"] = "America/New_York"

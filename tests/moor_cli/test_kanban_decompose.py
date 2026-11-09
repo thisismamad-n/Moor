@@ -132,7 +132,7 @@ def test_decompose_fanout_children_inherit_root_assignee_when_unrouted(kanban_ho
         p.start()
     try:
         with _patch_aux_client(llm_payload), patch(
-            "hermes_cli.config.load_config_readonly",
+            "moor_cli.config.load_config_readonly",
             return_value={},
         ):
             outcome = decomp.decompose_task(tid, author="me")
@@ -174,7 +174,7 @@ def test_decompose_explicit_default_assignee_wins_over_root_assignee(kanban_home
         p.start()
     try:
         with _patch_aux_client(llm_payload), patch(
-            "hermes_cli.config.load_config_readonly",
+            "moor_cli.config.load_config_readonly",
             return_value={"kanban": {"default_assignee": "docs"}},
         ):
             outcome = decomp.decompose_task(tid, author="me")
@@ -207,7 +207,7 @@ def test_decompose_fanout_false_invalid_llm_assignee_uses_default(kanban_home):
         p.start()
     try:
         with _patch_aux_client(llm_payload), patch(
-            "hermes_cli.config.load_config_readonly",
+            "moor_cli.config.load_config_readonly",
             return_value={"kanban": {"default_assignee": "fallback"}},
         ):
             outcome = decomp.decompose_task(tid, author="me")

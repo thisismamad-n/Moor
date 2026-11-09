@@ -23,8 +23,8 @@ CONNECTOR_FILE_MAX_BYTES = 20 * 1024 * 1024
 # INITIALIZING and INITIATED both arrive as `pending`). Present only once the session binds an
 # account; a value outside this set is a contract break and fails validation.
 ConnectionStatus = Literal["pending", "active", "failed", "expired", "revoked", "inactive"]
-# Where the vendor's done page sends the browser after consent; the dev desktop registers hermes-dev://.
-ConnectorReturnTarget = Literal["hermes-desktop", "hermes-desktop-dev", "portal"]
+# Where the vendor's done page sends the browser after consent; the dev desktop registers moor-dev://.
+ConnectorReturnTarget = Literal["moor-desktop", "moor-desktop-dev", "portal"]
 # Who asked for a connect, so the gateway can attribute each minted link. The gateway sets
 # ``execute_link`` and ``portal`` itself; an older gateway ignores the field.
 ConnectorInitiator = Literal["agent_tool", "desktop_page", "card_retry"]
@@ -173,7 +173,7 @@ class ConnectorExecuteCall(_Wire):
     connector: str
     tool: str
     arguments: dict[str, Any] = Field(default_factory=dict)
-    # Never sent by hermes: the model picks an account with the ``connector_alias`` argument, which
+    # Never sent by moor: the model picks an account with the ``connector_alias`` argument, which
     # the gateway strips and resolves itself.
     account: Optional[str] = None
 

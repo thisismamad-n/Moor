@@ -163,12 +163,12 @@ def test_raw_api_server_child_notice_follows_the_served_profile_policy(
     from typing import cast
 
     from gateway import run as run_module
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     home = tmp_path / "home"
     served = home / "profiles" / "builder"
     served.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     policy = "delegation:\n  surface_child_process_notifications: {}\ndisplay:\n  background_process_notifications: all\n"
     (home / "config.yaml").write_text(policy.format(str(launch_policy).lower()))
     (served / "config.yaml").write_text(policy.format(str(served_policy).lower()))

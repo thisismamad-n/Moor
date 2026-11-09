@@ -11,7 +11,7 @@ schedule via the `cronjob` tool; users via `moor cron list|add|edit|pause|resume
 9am"`), 5-field cron (`"0 9 * * *"`), ISO one-shot (`"2026-06-01T09:00:00Z"`). Per-job fields:
 `skills`, `model`/`provider` overrides, `script` (pre-run data-collection script whose stdout is
 injected into the prompt; `no_agent=True` makes the script the whole job; always a FILE under
-`HERMES_HOME/scripts/`, never a command line — `script='echo hi'` is refused at creation), `context_from` (chain job
+`MOOR_HOME/scripts/`, never a command line — `script='echo hi'` is refused at creation), `context_from` (chain job
 A's last output into job B's prompt), `workdir` (run with that directory's `AGENTS.md`/`CLAUDE.md`
 loaded), `timezone` (pin the cron expression's wall clock to an IANA zone; absent = the profile's
 zone), `grace_minutes` (override the catch-up window; `0` = never catch up, cron only),
@@ -41,13 +41,13 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   executions ledger's `scheduled_instant` blocks a second fire, `cron.catch_up_missed: false`
   skips past-grace misses with a logged reason. Never drop a slot silently (#107485).
 - Per-home tick lock `<home>/cron/.tick.lock` prevents duplicate ticks across processes for
-  that profile's store; never a `~/.hermes/...` literal.
-- **Headless ticks refuse, never spawn.** `hermes cron tick` (system crontab / external scheduler)
+  that profile's store; never a `~/.moor/...` literal.
+- **Headless ticks refuse, never spawn.** `moor cron tick` (system crontab / external scheduler)
   calls `tick(headless=True)`; `cron/scheduler_gateway_gate.py` skips agent jobs when discovery
   says no gateway owns the home (`last_fire_error` stamped, one warning per tick, due instant
   untouched) instead of letting `run_canonical_job → connect_gateway → ensure_gateway_runtime`
   spawn an unmanaged daemon. Same policy as approvals (headless/cron = refuse). The in-process
-  ticker and `hermes cron run` are not headless.
+  ticker and `moor cron run` are not headless.
 - **The ticker binds each served profile's scope for the whole tick, including pre-loop code.**
   `scheduler_provider.py::_start_multiplex` is ONE ticker iterating `profiles_to_serve()`
   sequentially under `_profile_cron_scope(home)` (home + secret scope + terminal scope) — never N
@@ -92,14 +92,14 @@ Hardening invariants — each guards a real failure; don't weaken without answer
   in `served_profiles`, so a bare liveness answer would stand cron down host-wide.
 - **The restart-safe external worker boots itself.** `_launch_external_cron_worker` pins the
   checkout — and, on a PM install, the committed generation's `site-packages` — on the child's
-  `PYTHONPATH` and marks it `_HERMES_CRON_WORKER_BOOT`; the child's package entry
+  `PYTHONPATH` and marks it `_MOOR_CRON_WORKER_BOOT`; the child's package entry
   (`cron/__init__.py` → `cron/worker_bootstrap.py`, ahead of the `cron.jobs` import — `-m
   cron.scheduler` runs the package first) then runs PM's `activate_dependencies`, which
   leases the committed generation for the worker's lifetime, runs its `.pth` files and
   activates it before the first third-party import. A failed activation is fatal: the worker
   exits before its ownership ack (a reported dispatch failure) rather than run on an unleased
-  generation the collector may delete. The gateway never re-runs the boot — `hermes_bootstrap`
-  already did at its own launch (#122222). The worker's `__main__` imports `hermes_bootstrap`
+  generation the collector may delete. The gateway never re-runs the boot — `moor_bootstrap`
+  already did at its own launch (#122222). The worker's `__main__` imports `moor_bootstrap`
   (`finish_worker_boot`) and runs `run_agent`'s interrupted-pull recovery before it reads the
   payload, and only then drops the marker: a source-update relaunch (`-I`, no `PYTHONPATH`) or a
   post-restore re-exec must replay the whole worker, never land after the ack with the payload

@@ -29,7 +29,7 @@ def test_missing_provider_installs_its_catalog_plugin_and_keeps_config(home, mon
     assert mig.migrate_home(home, install=fake_install, say=said.append) == "honcho"
     assert calls == ["honcho"]
     # Must not imply config.yaml's memory.<name> keys still apply: the plugin reads its own (#124038).
-    assert "memory.honcho" not in said[0] and "hermes memory status" in said[0]
+    assert "memory.honcho" not in said[0] and "moor memory status" in said[0]
     assert "workspace: keep-me" in (home / "config.yaml").read_text()
     # present now → nothing to do, nothing said
     assert mig.migrate_home(home, install=fake_install, say=said.append) is None
@@ -108,7 +108,7 @@ def test_unattended_migration_install_carries_lazy_install_consent(tmp_path, mon
     (the whole point of the agent-start hook) can ever publish one."""
     import io
 
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     from pm import install as pm_install
 
     class _Stream(io.StringIO):
@@ -132,7 +132,7 @@ def test_startup_recovery_never_asks_a_dependency_question(tmp_path, monkeypatch
     with its built-in's consent even on a terminal; any other one is not attempted and names the command."""
     import io
 
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     from pm import install as pm_install
 
     class _Tty(io.StringIO):
@@ -140,7 +140,7 @@ def test_startup_recovery_never_asks_a_dependency_question(tmp_path, monkeypatch
             return True
 
     (tmp_path / "config.yaml").write_text(f"memory:\n  provider: {name}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr("sys.stdin", _Tty())
     monkeypatch.setattr("sys.stdout", _Tty())
     monkeypatch.setattr(mig, "_attempted", set())
@@ -152,21 +152,21 @@ def test_startup_recovery_never_asks_a_dependency_question(tmp_path, monkeypatch
     said: list[str] = []
     mig.recover_at_startup(name, say=said.append)
     assert [kw["assume_deps_consent"] for kw in seen] == ([True] if installs else [])
-    assert installs or f"`hermes plugins install {name}`" in said[-1]
+    assert installs or f"`moor plugins install {name}`" in said[-1]
 
 
 def test_update_asks_once_and_names_each_profile(tmp_path, monkeypatch):
     """Profiles sharing one environment face one dependency question for a migrating provider
     (#125794); every line names its profile, and a decline names the rest once with their commands."""
-    from hermes_cli import plugins_cmd_install
+    from moor_cli import plugins_cmd_install
 
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     homes = [root, root / "profiles" / "work-a", root / "profiles" / "work-b"]
     for profile_home in homes:
         profile_home.mkdir(parents=True, exist_ok=True)
         (profile_home / "config.yaml").write_text("memory:\n  provider: twin\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
     monkeypatch.setattr("pm.plugins_state.dependency_homes", lambda: homes)
     monkeypatch.setattr(mig, "provider_present", lambda name, home: (home / "plugins" / name).is_dir())
     monkeypatch.setattr(mig, "catalog_source", lambda name: name)
@@ -194,8 +194,8 @@ def test_update_asks_once_and_names_each_profile(tmp_path, monkeypatch):
         assert len(prompts) == 1
         if answer == "n":
             assert "[profile 'default']" in said[1] and "dependency install declined" in said[1]
-            assert "hermes -p work-a plugins install twin" in said[2]
-            assert "hermes -p work-b plugins install twin" in said[2]
+            assert "moor -p work-a plugins install twin" in said[2]
+            assert "moor -p work-b plugins install twin" in said[2]
             assert not any((h / "plugins").exists() for h in homes)
         else:
             assert [line.split("]")[0] for line in said[1:]] == [
@@ -203,13 +203,13 @@ def test_update_asks_once_and_names_each_profile(tmp_path, monkeypatch):
 
 
 def _profile_homes(tmp_path, monkeypatch, *names):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     homes = [root, *(root / "profiles" / n for n in names)]
     for profile_home in homes:
         profile_home.mkdir(parents=True, exist_ok=True)
         (profile_home / "config.yaml").write_text("memory:\n  provider: twin\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
     monkeypatch.setattr(mig, "provider_present", lambda name, home: (home / "plugins" / name).is_dir())
     monkeypatch.setattr(mig, "catalog_source", lambda name: name)
     monkeypatch.setattr(mig, "_LEFT_CORE", frozenset({"twin"}))  # stands in for a formerly bundled provider
@@ -221,19 +221,19 @@ def test_unattended_update_refusal_in_one_profile_does_not_skip_the_others(tmp_p
     nothing about a profile that allows it, which must still migrate (not be reported as failed)."""
     import io
 
-    from hermes_cli import plugins_cmd
-    from hermes_constants import get_hermes_home
+    from moor_cli import plugins_cmd
+    from moor_constants import get_moor_home
     from pm import install as pm_install
 
     default, work = _profile_homes(tmp_path, monkeypatch, "work")
     monkeypatch.setattr("pm.plugins_state.dependency_homes", lambda: [default, work])
-    monkeypatch.setattr("sys.stdin", io.StringIO())  # Desktop / scripted `hermes update`: no terminal
-    monkeypatch.setattr(pm_install, "lazy_installs_allowed", lambda: get_hermes_home() == work)
+    monkeypatch.setattr("sys.stdin", io.StringIO())  # Desktop / scripted `moor update`: no terminal
+    monkeypatch.setattr(pm_install, "lazy_installs_allowed", lambda: get_moor_home() == work)
 
     def install(*_a, catalog_name, assume_deps_consent, **_kw):
         if not assume_deps_consent:
             return {"ok": False, "error": "dependency install skipped (non-interactive)"}
-        (get_hermes_home() / "plugins" / catalog_name).mkdir(parents=True)
+        (get_moor_home() / "plugins" / catalog_name).mkdir(parents=True)
         return {"ok": True}
 
     monkeypatch.setattr(plugins_cmd, "dashboard_install_plugin", install)
@@ -244,16 +244,16 @@ def test_unattended_update_refusal_in_one_profile_does_not_skip_the_others(tmp_p
 
 
 def test_startup_hint_installs_into_the_profile_that_printed_it(tmp_path, monkeypatch):
-    """A bare `hermes plugins install` from a shell targets the sticky profile, so the hint an agent
-    started for a named profile (Desktop, gateway, `hermes -p`) prints must carry `-p`."""
+    """A bare `moor plugins install` from a shell targets the sticky profile, so the hint an agent
+    started for a named profile (Desktop, gateway, `moor -p`) prints must carry `-p`."""
     from pm import install as pm_install
 
     default, work = _profile_homes(tmp_path, monkeypatch, "work")
     monkeypatch.setattr(pm_install, "lazy_installs_allowed", lambda: False)
-    for profile_home, command in ((work, "hermes -p work plugins install twin"),
-                                  (default, "hermes plugins install twin")):
+    for profile_home, command in ((work, "moor -p work plugins install twin"),
+                                  (default, "moor plugins install twin")):
         monkeypatch.setattr(mig, "_attempted", set())
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("MOOR_HOME", str(profile_home))
         said: list[str] = []
         assert mig.recover_at_startup("twin", say=said.append) is False
         assert f"`{command}`" in said[0]
@@ -261,17 +261,17 @@ def test_startup_hint_installs_into_the_profile_that_printed_it(tmp_path, monkey
 
 def test_missing_catalog_provider_recovery_names_the_profile_install_command(tmp_path, monkeypatch, capsys):
     """Offline, lazy installs off, or a failed migration: every surface a user turns to (doctor,
-    ``memory status``, ``memory setup honcho``, ``hermes honcho``) names the one command that installs
+    ``memory status``, ``memory setup honcho``, ``moor honcho``) names the one command that installs
     the catalog plugin into THIS profile. Real in-tree catalog, nothing installed."""
     from types import SimpleNamespace
-    from hermes_cli import doctor_state, memory_setup
-    from hermes_cli._parser import build_top_level_parser
+    from moor_cli import doctor_state, memory_setup
+    from moor_cli._parser import build_top_level_parser
 
     home = tmp_path / "profiles" / "work"
     home.mkdir(parents=True)
     (home / "config.yaml").write_text("memory:\n  provider: honcho\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    want = "hermes -p work plugins install honcho"
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    want = "moor -p work plugins install honcho"
 
     doctor_state._memory_provider_generic("honcho")
     memory_setup.cmd_status(SimpleNamespace())
@@ -284,23 +284,23 @@ def test_missing_catalog_provider_recovery_names_the_profile_install_command(tmp
 
 
 def test_recovery_copy_without_a_catalog_memory_entry_keeps_the_generic_hint(tmp_path, monkeypatch, capsys):
-    from hermes_cli import doctor_state
+    from moor_cli import doctor_state
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # not a profile home: no -p to add
-    assert mig.catalog_install_hint("honcho", category="memory") == "hermes plugins install honcho"
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))  # not a profile home: no -p to add
+    assert mig.catalog_install_hint("honcho", category="memory") == "moor plugins install honcho"
     assert mig.catalog_install_hint("honcho", category="tools") is None
     assert mig.catalog_install_hint("no-such-provider") is None
     doctor_state._memory_provider_generic("no-such-provider")
-    assert "run: hermes memory setup" in capsys.readouterr().out
+    assert "run: moor memory setup" in capsys.readouterr().out
 
 
 def test_startup_recovery_backs_off_after_a_failed_install(tmp_path, monkeypatch):
-    """A failed agent-start install is not retried by every following process start (each `hermes chat`,
-    cron run, Desktop restart): one failure, then a quiet hour; `hermes update` still retries."""
+    """A failed agent-start install is not retried by every following process start (each `moor chat`,
+    cron run, Desktop restart): one failure, then a quiet hour; `moor update` still retries."""
     from pm import install as pm_install
 
     (tmp_path / "config.yaml").write_text("memory:\n  provider: hindsight\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(mig, "catalog_source", lambda n: n)
     monkeypatch.setattr(pm_install, "lazy_installs_allowed", lambda: True)
     attempts: list[str] = []
@@ -310,7 +310,7 @@ def test_startup_recovery_backs_off_after_a_failed_install(tmp_path, monkeypatch
         monkeypatch.setattr(mig, "_attempted", set())  # a fresh process each time
         assert mig.recover_at_startup("hindsight", say=said.append) is False
     assert attempts == ["hindsight"]
-    assert "`hermes plugins install hindsight`" in said[-1]  # still told memory is off, and the fix
+    assert "`moor plugins install hindsight`" in said[-1]  # still told memory is off, and the fix
     monkeypatch.setattr(mig, "STARTUP_RETRY_SECONDS", 0.0)
     monkeypatch.setattr(mig, "_attempted", set())
     mig.recover_at_startup("hindsight")

@@ -618,8 +618,8 @@ class TestResolveUpdatePrompt:
     @pytest.mark.asyncio
     async def test_writes_response_file(self, tmp_path, monkeypatch):
         adapter = _make_adapter()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        (tmp_path / ".hermes").mkdir()
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+        (tmp_path / ".moor").mkdir()
         adapter.set_authorization_check(lambda *_a, **_kw: True)
         adapter._update_prompt_state[1] = {
             "session_key": "sess-up-1",
@@ -684,7 +684,7 @@ def test_resolved_card_keeps_the_request(_patch_callback_card_types):
     adapter._loop.is_closed = MagicMock(return_value=False)
     adapter._allowed_group_users = {"ou_bob"}
     adapter._sender_name_cache["ou_bob"] = ("Bob", 9999999999)
-    data = _make_card_action_data({"hermes_action": "approve_once", "approval_id": approval_id}, open_id="ou_bob")
+    data = _make_card_action_data({"moor_action": "approve_once", "approval_id": approval_id}, open_id="ou_bob")
     with patch("asyncio.run_coroutine_threadsafe", side_effect=_close_submitted_coro):
         card = adapter._on_card_action_trigger(data).card.data
     content = card["elements"][0]["content"]

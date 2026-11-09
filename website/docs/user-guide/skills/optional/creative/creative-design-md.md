@@ -14,7 +14,7 @@ Author/validate/export Google's DESIGN.md token spec files.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/creative/design-md` |
+| Source | Optional — install with `moor skills install official/creative/design-md` |
 | Path | `optional-skills/creative/design-md` |
 | Version | `1.1.0` |
 | Author | Moor Agent |

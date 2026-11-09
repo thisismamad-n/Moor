@@ -2,9 +2,9 @@
 
 Lives under the shared Moor root: ``default`` board DB at ``<root>/kanban.db`` (pre-boards
 back-compat), other boards at ``<root>/kanban/boards/<slug>/``; a worker on one board never sees
-another. Board resolution: ``board=`` arg > ``HERMES_KANBAN_BOARD`` > ``HERMES_KANBAN_DB`` (pins the
+another. Board resolution: ``board=`` arg > ``MOOR_KANBAN_BOARD`` > ``MOOR_KANBAN_DB`` (pins the
 file path) > ``<root>/kanban/current`` > ``default`` — but only for unfenced callers; the dispatcher
-injects these into workers, and dispatched workers (``HERMES_KANBAN_TASK``), delegated children and
+injects these into workers, and dispatched workers (``MOOR_KANBAN_TASK``), delegated children and
 board-enumerating machine flows (gateway notifier/watcher/dispatcher, ``pin_first_board_resolution``)
 always resolve through the pin, so workers physically cannot see other boards.
 Concurrency: WAL + ``BEGIN IMMEDIATE`` + compare-and-swap on ``tasks.status``/``claim_lock`` —
@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-from hermes_cli.kanban_workflow import DEFAULT_STATUSES as VALID_STATUSES
+from moor_cli.kanban_workflow import DEFAULT_STATUSES as VALID_STATUSES
 from toolsets import get_toolset_names
 from utils import unlink_files_older_than
 
@@ -334,7 +334,7 @@ _CURRENT_BOARD_OVERRIDE: ContextVar[str | None] = ContextVar(
 # Machine flows that enumerate boards (gateway notifier / watcher / dispatcher
 # ticks) resolve board paths env-pin-first — see pin_first_board_resolution().
 _PIN_FIRST_BOARD_RESOLUTION: ContextVar[bool] = ContextVar(
-    "hermes_kanban_pin_first_board_resolution", default=False,
+    "moor_kanban_pin_first_board_resolution", default=False,
 )
 
 
@@ -345,7 +345,7 @@ def pin_first_board_resolution():
     The gateway notifier, per-subscription cursor writes and the embedded
     dispatcher poll every board slug from ``list_boards()`` — the slug is not
     caller intent, it is an iteration variable. On a box whose environment pins
-    ``HERMES_KANBAN_DB`` (the dispatcher default) every slug must map to that
+    ``MOOR_KANBAN_DB`` (the dispatcher default) every slug must map to that
     one pinned file: the notifier dedupes resolved DB paths, and per-slug
     paths read empty boards nobody writes, silently killing wake
     notifications. Explicit cross-board intent (CLI ``--board``, a model
@@ -434,7 +434,7 @@ def get_current_board() -> str:
         if not (normed and board_exists(normed)):
             return None
         # An archived board leaves a tombstone board.json; a stale `current`
-        # file or HERMES_KANBAN_BOARD pointing at one falls through to
+        # file or MOOR_KANBAN_BOARD pointing at one falls through to
         # default rather than resurrecting it (#43243).
         if read_board_metadata(normed).get("archived"):
             return None
@@ -502,13 +502,13 @@ def board_exists(board: Optional[str] = None) -> bool:
 
 def _explicit_board_slug(board: Optional[str]) -> Optional[str]:
     """Explicit caller intent: a direct ``board=`` argument, else the scoped
-    ``--board`` context (CLI ``hermes kanban --board``, dashboard plugin_api);
+    ``--board`` context (CLI ``moor kanban --board``, dashboard plugin_api);
     ``None`` when the caller expressed neither."""
     if board is not None:
         return _normalize_board_slug(board)
-    # A caller-scoped board (CLI `hermes kanban --board B ...`, dashboard
+    # A caller-scoped board (CLI `moor kanban --board B ...`, dashboard
     # plugin_api) is explicit intent just like a direct board= argument —
-    # without this a worker-pinned HERMES_KANBAN_DB silently outranks --board
+    # without this a worker-pinned MOOR_KANBAN_DB silently outranks --board
     # (os-reviewer P1 on PR#107195 / t_11c4afd8).
     ctx = (_CURRENT_BOARD_OVERRIDE.get() or "").strip()
     if ctx:
@@ -521,12 +521,12 @@ def _explicit_board_slug(board: Optional[str]) -> Optional[str]:
 
 def _explicit_board_intent_pinned() -> bool:
     """Whether an explicit ``board=`` (or scoped ``--board``) must still resolve
-    through the ``HERMES_KANBAN_DB``-style env pins instead of its own board dir.
+    through the ``MOOR_KANBAN_DB``-style env pins instead of its own board dir.
 
     True for machine flows wrapped in :func:`pin_first_board_resolution` and
     for every execution the dispatcher fences: its own workers (they carry
-    ``HERMES_KANBAN_TASK``) and delegated children / descendants (the
-    ``HERMES_DELEGATED_CHILD_CONTEXT`` marker). The pins ARE the "workers
+    ``MOOR_KANBAN_TASK``) and delegated children / descendants (the
+    ``MOOR_DELEGATED_CHILD_CONTEXT`` marker). The pins ARE the "workers
     physically cannot see other boards" isolation (5ec6baa), and
     ``agent.delegation_context.kanban_path_is_fenced`` checks the pinned path /
     fenced root — an explicit board that resolved elsewhere would also escape
@@ -2353,7 +2353,7 @@ def release_stale_claims(
         "WHERE status = 'running' AND claim_expires IS NOT NULL "
         "  AND claim_expires < ?", (now,),
     ).fetchall()
-    from hermes_cli.kanban_owner_recovery import owner_reclaim_blocked, owner_reclaim_blocked_after_kill, reclaim_error
+    from moor_cli.kanban_owner_recovery import owner_reclaim_blocked, owner_reclaim_blocked_after_kill, reclaim_error
     for row in stale:
         if owner_reclaim_blocked(conn, row["id"]):
             continue
@@ -3901,7 +3901,7 @@ def build_worker_context(conn: sqlite3.Connection, task_id: str) -> str:
     task = get_task(conn, task_id)
     if not task:
         raise ValueError(f"unknown task {task_id}")
-    from hermes_cli.kanban_db_context import (
+    from moor_cli.kanban_db_context import (
         _ctx_attachments, _ctx_comments, _ctx_header, _ctx_parent_results, _ctx_prior_attempts,
         _ctx_role_history,
     )
@@ -4195,7 +4195,7 @@ def current_run_started_ats(conn: sqlite3.Connection, task_ids: Iterable[str]) -
 
 
 # --- Split modules (imported at the tail: they import this module as ``_kb``) ---
-from hermes_cli.kanban_db_boards import (
+from moor_cli.kanban_db_boards import (
     _default_board_display_name,
     _dir_holds_board,
     board_metadata_path,
@@ -4205,18 +4205,18 @@ from hermes_cli.kanban_db_boards import (
     remove_board,
     write_board_metadata,
 )
-from hermes_cli.kanban_db_connect import (
+from moor_cli.kanban_db_connect import (
     _INITIALIZED_PATHS,
     init_db,
     write_txn,
 )
-from hermes_cli.kanban_db_workspace import (
+from moor_cli.kanban_db_workspace import (
     _cleanup_workspace,
     _is_managed_scratch_path,
     _managed_scratch_path_info,
     _scratch_workspace,
 )
-from hermes_cli.kanban_db_dispatch import (
+from moor_cli.kanban_db_dispatch import (
     DEFAULT_FAILURE_LIMIT,
     DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS,
     DispatchResult,

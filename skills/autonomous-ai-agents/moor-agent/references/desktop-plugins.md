@@ -127,8 +127,8 @@ The ONLY import surface is `@moor/plugin-sdk` (plus `react` /
   folder handle plus a RELATIVE path (`list`, `stat`, `readText`,
   `readDataUrl`, `writeText(…, { exclusive })`, `rename`, `trash`) and resolve
   `{ ok, … }` / `{ ok: false, error }`; `..`, absolute paths, escaping
-  symlinks and Hermes' own data are refused by the main process. Never call
-  `window.hermesDesktop` file methods from a plugin.
+  symlinks and Moor' own data are refused by the main process. Never call
+  `window.moorDesktop` file methods from a plugin.
 - `ctx.os` — the curated OS door, attributed to your plugin:
   `ctx.os.notify({ title, body?, silent?, icon?, activate?, onActivate?, actions? })`
   posts a native OS notification. Fires only while the user is away from Moor

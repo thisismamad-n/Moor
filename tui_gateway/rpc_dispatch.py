@@ -28,7 +28,7 @@ def _handle_admitted_request(req: dict) -> dict | None:
         params, problem = _contracts.validate_params(contract, params)
         if problem is not None:
             return _err(rid, 4000, problem)
-    from hermes_cli.config_backend import ConfigBackendUnavailable
+    from moor_cli.config_backend import ConfigBackendUnavailable
 
     token = _current_rpc_method.set(method)
     try:

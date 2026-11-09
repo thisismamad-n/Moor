@@ -5,13 +5,13 @@ from dataclasses import asdict
 
 import pytest
 
-from hermes_cli import process_identity
-from hermes_cli import update_cmd_fleet as fleet
-from hermes_cli import update_cmd_fleet_verify as fleet_verify
-from hermes_cli import update_receipt
-from hermes_cli.update_inventory import RuntimeRecord, UpdatePlan
-from hermes_cli.update_serve_obligations import defer_manual_serve, retain_receipt_manual_serves
-from hermes_constants import get_hermes_home
+from moor_cli import process_identity
+from moor_cli import update_cmd_fleet as fleet
+from moor_cli import update_cmd_fleet_verify as fleet_verify
+from moor_cli import update_receipt
+from moor_cli.update_inventory import RuntimeRecord, UpdatePlan
+from moor_cli.update_serve_obligations import defer_manual_serve, retain_receipt_manual_serves
+from moor_constants import get_moor_home
 
 
 @pytest.mark.parametrize("kind", ["serve", "dashboard"])
@@ -22,10 +22,10 @@ def test_manual_deferral_survives_receipt_rotation(monkeypatch, capsys, kind, co
     monkeypatch.setattr(process_identity, "_pid_alive_matches", lambda *a: True)
     monkeypatch.setattr(process_identity, "ledger_entries", lambda: [{"pid": 900, "purpose": kind, "create_time": 1000.0}])
     monkeypatch.setattr(fleet_verify, "_print_legacy_units_warning", lambda: None)
-    monkeypatch.setattr("hermes_cli.update_cmd._finish_dashboard_update_cleanup", lambda *a, **k: None)
-    # The live post-update dashboard pass restarts a managed hermes-dashboard unit.
-    monkeypatch.setattr("hermes_cli.update_cmd_maint._refresh_dashboard_after_update", lambda **k: set())
-    monkeypatch.setattr("hermes_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
+    monkeypatch.setattr("moor_cli.update_cmd._finish_dashboard_update_cleanup", lambda *a, **k: None)
+    # The live post-update dashboard pass restarts a managed moor-dashboard unit.
+    monkeypatch.setattr("moor_cli.update_cmd_maint._refresh_dashboard_after_update", lambda **k: set())
+    monkeypatch.setattr("moor_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
     monkeypatch.setattr(update_receipt, "collect_fleet_versions", lambda **k: [])
     restart = fleet._GatewayRestartOutcome(False, [], [], [], [], [], [], set())
     update_receipt.begin_update_receipt()
@@ -216,10 +216,10 @@ def test_unsaved_manual_restart_warning_survives_a_running_and_a_killed_update(m
     yet): the startup warning must read them while an update runs, after one is killed before its
     ``plan`` stage, and the next run must carry them forward again."""
     manual = asdict(RuntimeRecord(kind="serve", profile="work", pid=900, supervisor="manual-serve", restart_via="respawn-argv", detail={"create_time": 1000.0}))
-    root = get_hermes_home() / "logs" / "update_receipts"
+    root = get_moor_home() / "logs" / "update_receipts"
     root.mkdir(parents=True, exist_ok=True)
     (root / "latest.json").write_text(json.dumps({"outcome": "partial", "plan": {"runtimes": [manual]}}))
-    (get_hermes_home() / "serve_restart_pending").write_text("not a directory")  # the reminder can't be filed
+    (get_moor_home() / "serve_restart_pending").write_text("not a directory")  # the reminder can't be filed
     monkeypatch.setattr(process_identity, "_pid_alive_matches", lambda *a: True)
 
     update_receipt.begin_update_receipt()  # running record replaces latest.json

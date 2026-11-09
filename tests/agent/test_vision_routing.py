@@ -60,7 +60,7 @@ def _write_config(home: str, text: str) -> None:
 
 
 _RELOAD_PREFIXES = ("agent.auxiliary_client", "agent.image_routing",
-                    "tools.vision_tools", "hermes_cli.config")
+                    "tools.vision_tools", "moor_cli.config")
 
 
 def _drop_reload_targets():

@@ -93,7 +93,7 @@ def build_status_fields(
     row_title = meta.get("title") if title is None else title
     return {
         "session_id": str(session_id or ""),
-        "path": display_hermes_home(Path(home) if home else None),
+        "path": display_moor_home(Path(home) if home else None),
         "title": (row_title or "").strip(),
         "model": getattr(agent, "model", None) or model or "",
         "provider": getattr(agent, "provider", None) or provider or "",

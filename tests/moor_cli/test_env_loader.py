@@ -6,8 +6,8 @@ from moor_cli.env_loader import load_moor_dotenv
 
 def test_recovered_update_retry_skips_external_secret_sources(tmp_path, monkeypatch):
     """The post-recovery updater must not remap native vault dependencies."""
-    from hermes_cli import env_loader
-    from hermes_cli import _early_recovery
+    from moor_cli import env_loader
+    from moor_cli import _early_recovery
 
     home = tmp_path / "moor"
     home.mkdir()
@@ -245,8 +245,8 @@ def test_utf32_warning_fires_once_per_path(tmp_path, caplog, monkeypatch):
     """
     import logging
 
-    from hermes_cli import env_loader
-    from hermes_cli.env_loader import _sanitize_env_file_if_needed
+    from moor_cli import env_loader
+    from moor_cli.env_loader import _sanitize_env_file_if_needed
 
     # Isolate process-level seen-set so other tests' paths don't leak in.
     monkeypatch.setattr(env_loader, "_WARNED_UTF32_PATHS", set())

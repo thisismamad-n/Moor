@@ -17,8 +17,8 @@ _ARG_SYNONYMS = {
     "on": "codex_app_server", "codex": "codex_app_server", "enable": "codex_app_server",
     "off": "auto", "default": "auto", "disable": "auto", "moor": "auto"}
 
-_HERMES_TOOLS_CALLBACK_NOTE = (
-    "Hermes tool callback registered: codex can now use "
+_MOOR_TOOLS_CALLBACK_NOTE = (
+    "Moor tool callback registered: codex can now use "
     "web_search, web_extract, vision_analyze, "
     "image_generate, skill_view, skills_list, text_to_speech, "
     "kanban_* (worker + orchestrator) via MCP.",

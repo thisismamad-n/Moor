@@ -353,16 +353,16 @@ def _copy_seed_file(src: str | os.PathLike, dst: str | os.PathLike) -> str | os.
 
 
 def uv_cache_path() -> Path:
-    """Where the hermes-owned uv cache lives; unlike uv_cache_dir(), never seeds or writes."""
-    from hermes_constants import get_default_hermes_root
+    """Where the moor-owned uv cache lives; unlike uv_cache_dir(), never seeds or writes."""
+    from moor_constants import get_default_moor_root
 
-    return get_default_hermes_root() / "cache" / "uv"
+    return get_default_moor_root() / "cache" / "uv"
 
 
 def uv_cache_dir() -> Path:
     """The moor-owned uv cache: machine-scoped and shared (keyed by
     content — two profiles reuse one cache), anchored to the DEFAULT
-    hermes root like partials_root(). A bundle ships a seeded copy at
+    moor root like partials_root(). A bundle ships a seeded copy at
     the payload root (uv-cache/); the first call under each uv.lock
     merges it into the writable machine cache (the read-only payload
     can't serve uv's working cache), and a warm `uv sync --offline`
@@ -825,7 +825,7 @@ class Gh(BinaryPackage):
 class Ffmpeg(_BionicDebArm, BinaryPackage, DebPackage):
     """FFmpeg builds for supported targets; BtbN Linux archives require glibc.
     optional=False: ffmpeg is a required runtime tool where supported. Sealed bundles ship
-    it baked into the payload; every `hermes update` and `hermes pm install`
+    it baked into the payload; every `moor update` and `moor pm install`
     re-ensures it from the new lockfile before the venv sync
     (pm.client.ensure_tools_for_sync), so a pin bump lands. Windows + Linux:
     BtbN/FFmpeg-Builds (month-end autobuild tag, kept two years; ships ffprobe too).
@@ -1074,8 +1074,8 @@ class Chromium(Package):
             raise InstallError(self.name, f"Chromium executable missing under {native(entry)}")
         # Playwright launches without an executable_path (e.g. the
         # har-derived-api-client skill's `chromium.launch(channel="chromium")`)
-        # find this build through the root; Hermes's own launcher asks
-        # hermes_cli.browser_runtime.chromium_executable() instead.
+        # find this build through the root; Moor's own launcher asks
+        # moor_cli.browser_runtime.chromium_executable() instead.
         return {"PLAYWRIGHT_BROWSERS_PATH": str(entry.parent)}
 
 

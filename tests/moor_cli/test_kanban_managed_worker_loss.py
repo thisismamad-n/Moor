@@ -22,10 +22,10 @@ from pathlib import Path
 import psutil
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
-from hermes_cli import kanban_owner_recovery
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_owner_recovery
 
 NOW = int(time.time())
 HOST = kb._claimer_id().split(":", 1)[0]
@@ -42,11 +42,11 @@ def _absent_pid(base: int = 3_800_000) -> int:
 
 @pytest.fixture
 def board(tmp_path, monkeypatch):
-    """An isolated HERMES_HOME board plus the owner ledger a receipt points at."""
-    home = tmp_path / ".hermes"
+    """An isolated MOOR_HOME board plus the owner ledger a receipt points at."""
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_KANBAN_CRASH_GRACE_SECONDS", "0")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     conn = kbc.connect()
@@ -173,7 +173,7 @@ def test_a_lost_worker_that_exited_cleanly_still_charges_the_breaker(board):
     # The worker's own exit trailer says rc=0 (the CLI's epilogue after a lost turn).
     log = kb.worker_log_path("t_clean")
     log.parent.mkdir(parents=True, exist_ok=True)
-    from hermes_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
+    from moor_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
     log.write_text(f"I fixed the protocol violation from the last run.\n{KANBAN_WORKER_EXIT_TRAILER}0\n",
                    encoding="utf-8")
     board.tick(failure_limit=2)
@@ -198,7 +198,7 @@ def test_a_crash_whose_output_quotes_protocol_violation_is_not_one(board):
     run_id = board.running("t_quote", claim_expires_in=900, heartbeat_age=30, owner=False)
     log = kb.worker_log_path("t_quote")
     log.parent.mkdir(parents=True, exist_ok=True)
-    from hermes_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
+    from moor_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER
     log.write_text(f"Retrying after the earlier protocol violation.\n{KANBAN_WORKER_EXIT_TRAILER}1\n",
                    encoding="utf-8")
     board.tick(failure_limit=5)

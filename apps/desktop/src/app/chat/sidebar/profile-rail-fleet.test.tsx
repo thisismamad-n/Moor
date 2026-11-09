@@ -48,9 +48,9 @@ vi.mock('@/i18n', () => ({
           gatewayUnreachable: (gateway: string) => `${gateway} · unreachable`,
           installDeviceConfirm: 'Install locally',
           installDeviceDesc:
-            'This will install Hermes locally, then open a fresh session on this computer. Nothing is installed until you confirm.',
-          installDeviceTitle: 'Install Hermes on This device?',
-          localDevice: 'This device (local backend — installs Hermes if missing, otherwise opens a fresh session)',
+            'This will install Moor locally, then open a fresh session on this computer. Nothing is installed until you confirm.',
+          installDeviceTitle: 'Install Moor on This device?',
+          localDevice: 'This device (local backend — installs Moor if missing, otherwise opens a fresh session)',
           onGateway: (name: string, gateway: string) => `${name} · ${gateway}`,
           switchTo: (name: string, gateway: string) => `Open ${name} on ${gateway}`
         },

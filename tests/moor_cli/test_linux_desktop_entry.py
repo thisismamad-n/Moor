@@ -494,15 +494,15 @@ def test_exec_skips_managed_environment_cli_without_desktop(
     generation = installs / install_key(root) / "environments" / "gen"
     workspace = generation / "workspace"
     workspace.mkdir(parents=True)
-    managed = generation / "venv" / "bin" / "hermes"
+    managed = generation / "venv" / "bin" / "moor"
     managed.parent.mkdir(parents=True)
     managed.write_text("#!/usr/bin/env bash\nexec true\n", encoding="utf-8")
     managed.chmod(0o755)
 
-    known_wrapper = tmp_path / ".local" / "bin" / "hermes"
+    known_wrapper = tmp_path / ".local" / "bin" / "moor"
     known_wrapper.parent.mkdir(parents=True)
     known_wrapper.write_text(
-        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "hermes"} "$@"\n',
+        f'#!/usr/bin/env bash\nexec {root / "venv" / "bin" / "python"} {root / "moor"} "$@"\n',
         encoding="utf-8",
     )
     known_wrapper.chmod(0o755)
@@ -510,7 +510,7 @@ def test_exec_skips_managed_environment_cli_without_desktop(
     def fake_resolve():
         return str(managed)
 
-    monkeypatch.setattr("hermes_cli.relaunch.resolve_hermes_bin", fake_resolve)
+    monkeypatch.setattr("moor_cli.relaunch.resolve_moor_bin", fake_resolve)
     _argv0_context(monkeypatch, str(managed))
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
@@ -531,7 +531,7 @@ def test_exec_finds_known_wrapper_when_resolver_has_no_candidate(
     `python -m`, and PATH has no `moor`) makes resolve_moor_bin return
     None outright. The early `return primary` that used to fire here skipped
     the durable-wrapper probe, so the persisted Exec flipped to the bare
-    `<python> -m hermes_cli.main desktop` module form. Each flip between the
+    `<python> -m moor_cli.main desktop` module form. Each flip between the
     wrapper and module forms rewrites the entry on the next launch; any
     rewrite that lands while gnome-shell's ShellApp for the entry is still
     STARTING crashes the shell (shell_app_dispose `state == STOPPED`
@@ -686,7 +686,7 @@ def test_known_wrapper_candidates_cover_installer_layouts(
 
 
 def test_installed_entry_carries_the_window_app_id(tmp_path, xdg_home, monkeypatch):
-    """The window's app_id is what GNOME matches the entry against — not the old "Hermes"."""
+    """The window's app_id is what GNOME matches the entry against — not the old "Moor"."""
     _stub_install(tmp_path, monkeypatch)
     root = _make_project(tmp_path)
 
@@ -696,13 +696,13 @@ def test_installed_entry_carries_the_window_app_id(tmp_path, xdg_home, monkeypat
     assert entry.name == f"{lde.APP_ID}.desktop"
     values = _parse(entry.read_text(encoding="utf-8"))
     assert values["StartupWMClass"] == lde.APP_ID
-    assert values["Name"] == "Hermes"  # the menu label is not part of the identity
+    assert values["Name"] == "Moor"  # the menu label is not part of the identity
 
 
 def test_install_keeps_the_legacy_entry_as_a_hidden_alias(tmp_path, xdg_home, monkeypatch):
     """A pin resolves by the entry file name it was pinned against (#124492).
 
-    Deleting ``hermes.desktop`` silently kills existing taskbar pins (GNOME drops
+    Deleting ``moor.desktop`` silently kills existing taskbar pins (GNOME drops
     the favourite, Plasma leaves an inert item) and the shell has no mechanism to
     re-point the association for the user. The pre-rename entry must survive as a
     ``NoDisplay=true`` alias of the app-id entry: out of the app grid, still
@@ -714,7 +714,7 @@ def test_install_keeps_the_legacy_entry_as_a_hidden_alias(tmp_path, xdg_home, mo
     legacy = xdg_home / "applications" / lde.LEGACY_DESKTOP_ENTRY_NAME
     legacy.parent.mkdir(parents=True)
     legacy.write_text(
-        "[Desktop Entry]\nType=Application\nName=Hermes\nExec=hermes desktop\n",
+        "[Desktop Entry]\nType=Application\nName=Moor\nExec=moor desktop\n",
         encoding="utf-8",
     )
 
@@ -723,7 +723,7 @@ def test_install_keeps_the_legacy_entry_as_a_hidden_alias(tmp_path, xdg_home, mo
     assert entry is not None and entry.is_file()
     assert legacy.is_file(), "an existing pin resolves through this file — it must survive"
     alias = _parse(legacy.read_text(encoding="utf-8"))
-    assert alias["NoDisplay"] == "true"  # no second Hermes in the app grid
+    assert alias["NoDisplay"] == "true"  # no second Moor in the app grid
     assert alias["StartupWMClass"] == lde.APP_ID  # still groups with the window
     entry_values = _parse(entry.read_text(encoding="utf-8"))
     assert alias["Exec"] == entry_values["Exec"]  # launches the same command
@@ -736,7 +736,7 @@ def test_unchanged_entry_still_aliases_a_legacy_entry(tmp_path, xdg_home, monkey
     root = _make_project(tmp_path)
     assert lde.install_desktop_entry(root) is not None
     legacy = xdg_home / "applications" / lde.LEGACY_DESKTOP_ENTRY_NAME
-    legacy.write_text("[Desktop Entry]\nType=Application\nName=Hermes\nExec=hermes desktop\n", encoding="utf-8")
+    legacy.write_text("[Desktop Entry]\nType=Application\nName=Moor\nExec=moor desktop\n", encoding="utf-8")
 
     lde.install_desktop_entry(root)
 
@@ -766,10 +766,10 @@ def test_install_opt_out_preserves_the_legacy_entry(tmp_path, xdg_home, monkeypa
     The missing-entry path still creates the app-id entry; the rewrite is
     management too and must not run when the user asked to be left alone.
     """
-    hermes_home = tmp_path / "hermes-home"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    (hermes_home / "config.yaml").write_text(
+    moor_home = tmp_path / "moor-home"
+    moor_home.mkdir()
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
+    (moor_home / "config.yaml").write_text(
         "desktop:\n  manage_launcher_entry: false\n", encoding="utf-8"
     )
     _stub_install(tmp_path, monkeypatch)
@@ -777,7 +777,7 @@ def test_install_opt_out_preserves_the_legacy_entry(tmp_path, xdg_home, monkeypa
     legacy = xdg_home / "applications" / lde.LEGACY_DESKTOP_ENTRY_NAME
     legacy.parent.mkdir(parents=True)
     legacy.write_text(
-        "[Desktop Entry]\nType=Application\nName=Hermes\nExec=hermes desktop\n",
+        "[Desktop Entry]\nType=Application\nName=Moor\nExec=moor desktop\n",
         encoding="utf-8",
     )
 
@@ -785,7 +785,7 @@ def test_install_opt_out_preserves_the_legacy_entry(tmp_path, xdg_home, monkeypa
 
     assert entry == xdg_home / "applications" / lde.DESKTOP_ENTRY_NAME
     assert legacy.read_text(encoding="utf-8") == (
-        "[Desktop Entry]\nType=Application\nName=Hermes\nExec=hermes desktop\n"
+        "[Desktop Entry]\nType=Application\nName=Moor\nExec=moor desktop\n"
     ), "the opt-out must leave the legacy entry byte-for-byte untouched"
 
 
@@ -1352,11 +1352,11 @@ def _write_script(path: Path, text: str) -> Path:
 
 
 def _env_shaped_tree(tmp_path: Path, name: str = "managed-env") -> Path:
-    """The runtime env layout: a code tree (workspace/hermes_cli) with no desktop app in it."""
+    """The runtime env layout: a code tree (workspace/moor_cli) with no desktop app in it."""
     tree = tmp_path / name
-    (tree / "workspace" / "hermes_cli").mkdir(parents=True)
-    (tree / "workspace" / "hermes_cli" / "main.py").write_text("", encoding="utf-8")
-    _write_script(tree / "venv" / "bin" / "hermes", "#!/bin/sh\nexit 0\n")
+    (tree / "workspace" / "moor_cli").mkdir(parents=True)
+    (tree / "workspace" / "moor_cli" / "main.py").write_text("", encoding="utf-8")
+    _write_script(tree / "venv" / "bin" / "moor", "#!/bin/sh\nexit 0\n")
     python_bin = tree / "venv" / "bin" / "python"
     python_bin.write_bytes(b"\x7fELF fake")  # real interpreters are binaries, never scripts
     python_bin.chmod(0o755)
@@ -1364,12 +1364,12 @@ def _env_shaped_tree(tmp_path: Path, name: str = "managed-env") -> Path:
 
 
 def _full_tree(tmp_path: Path, name: str = "install") -> Path:
-    """A checkout that carries the desktop app beside hermes_cli."""
+    """A checkout that carries the desktop app beside moor_cli."""
     tree = tmp_path / name
-    (tree / "hermes_cli").mkdir(parents=True)
+    (tree / "moor_cli").mkdir(parents=True)
     (tree / "apps" / "desktop" / "assets").mkdir(parents=True)
     (tree / "apps" / "desktop" / "package.json").write_text("{}", encoding="utf-8")
-    _write_script(tree / "venv" / "bin" / "hermes", "#!/bin/sh\nexit 0\n")
+    _write_script(tree / "venv" / "bin" / "moor", "#!/bin/sh\nexit 0\n")
     python_bin = tree / "venv" / "bin" / "python"
     python_bin.write_bytes(b"\x7fELF fake")  # real interpreters are binaries, never scripts
     python_bin.chmod(0o755)
@@ -1379,17 +1379,17 @@ def _full_tree(tmp_path: Path, name: str = "install") -> Path:
 def test_capability_rejects_env_shaped_launcher_and_accepts_full_tree(tmp_path):
     env_tree = _env_shaped_tree(tmp_path)
     full_tree = _full_tree(tmp_path)
-    assert lde._can_serve_desktop(str(env_tree / "venv" / "bin" / "hermes")) is False
-    assert lde._can_serve_desktop(str(full_tree / "venv" / "bin" / "hermes")) is True
+    assert lde._can_serve_desktop(str(env_tree / "venv" / "bin" / "moor")) is False
+    assert lde._can_serve_desktop(str(full_tree / "venv" / "bin" / "moor")) is True
     # Interpreters are not judged: a launcher execing one is followed to its own tree instead.
     assert lde._can_serve_desktop(str(env_tree / "venv" / "bin" / "python")) is None
     assert lde._can_serve_desktop(str(full_tree / "venv" / "bin" / "python")) is None
 
 
 def test_capability_unknown_shapes_pass(tmp_path):
-    missing = tmp_path / "nowhere" / "bin" / "hermes"
+    missing = tmp_path / "nowhere" / "bin" / "moor"
     assert lde._can_serve_desktop(str(missing)) is None
-    native = _write_script(tmp_path / "opt" / "bin" / "hermes", "")
+    native = _write_script(tmp_path / "opt" / "bin" / "moor", "")
     assert lde._can_serve_desktop(str(native)) is None
 
 
@@ -1397,12 +1397,12 @@ def test_capability_follows_wrapper_to_its_target(tmp_path):
     env_tree = _env_shaped_tree(tmp_path)
     full_tree = _full_tree(tmp_path)
     bad_wrapper = _write_script(
-        tmp_path / "shims" / "hermes",
-        f'#!/usr/bin/env bash\nexec "{env_tree}/venv/bin/hermes" "$@"\n',
+        tmp_path / "shims" / "moor",
+        f'#!/usr/bin/env bash\nexec "{env_tree}/venv/bin/moor" "$@"\n',
     )
     good_wrapper = _write_script(
-        tmp_path / "shims" / "hermes-good",
-        f'#!/usr/bin/env bash\nexec "{full_tree}/venv/bin/hermes" "$@"\n',
+        tmp_path / "shims" / "moor-good",
+        f'#!/usr/bin/env bash\nexec "{full_tree}/venv/bin/moor" "$@"\n',
     )
     assert lde._can_serve_desktop(str(bad_wrapper)) is False
     assert lde._can_serve_desktop(str(good_wrapper)) is True
@@ -1413,11 +1413,11 @@ def test_resolver_skips_incapable_primary_for_wrapper(tmp_path, xdg_home):
     env_tree = _env_shaped_tree(tmp_path)
     checkout = _full_tree(tmp_path, "checkout")
     wrapper = _write_script(
-        tmp_path / ".local" / "bin" / "hermes",
-        f'#!/usr/bin/env bash\nexec "{checkout}/venv/bin/hermes" "$@"\n',
+        tmp_path / ".local" / "bin" / "moor",
+        f'#!/usr/bin/env bash\nexec "{checkout}/venv/bin/moor" "$@"\n',
     )
-    resolution = lde._resolve_hermes_bin_for_desktop_entry(
-        resolve_fn=lambda: str(env_tree / "venv" / "bin" / "hermes"),
+    resolution = lde._resolve_moor_bin_for_desktop_entry(
+        resolve_fn=lambda: str(env_tree / "venv" / "bin" / "moor"),
         checkout_root=checkout,
     )
     assert resolution == str(wrapper)
@@ -1431,7 +1431,7 @@ def test_install_skips_write_when_exec_provably_cannot_serve_desktop(tmp_path, x
     monkeypatch.setattr(
         lde,
         "resolve_exec_command",
-        lambda project_root=None: f"{env_tree / 'venv' / 'bin' / 'hermes'} desktop",
+        lambda project_root=None: f"{env_tree / 'venv' / 'bin' / 'moor'} desktop",
     )
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
@@ -1450,7 +1450,7 @@ def test_install_leaves_existing_entry_untouched_when_exec_incapable(tmp_path, x
     monkeypatch.setattr(
         lde,
         "resolve_exec_command",
-        lambda project_root=None: f"{env_tree / 'venv' / 'bin' / 'hermes'} desktop",
+        lambda project_root=None: f"{env_tree / 'venv' / 'bin' / 'moor'} desktop",
     )
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
@@ -1462,7 +1462,7 @@ def test_module_form_passes_the_gate(tmp_path):
     """The module fallback is not second-guessed: only a process that already passed the desktop
     launch checks (or the bundled payload) ever writes it."""
     env_tree = _env_shaped_tree(tmp_path)
-    module_form = f'"{env_tree / "venv" / "bin" / "python"}" -m hermes_cli.main desktop'
+    module_form = f'"{env_tree / "venv" / "bin" / "python"}" -m moor_cli.main desktop'
     assert lde._persisted_exec_serves_desktop(module_form) is None
 
 
@@ -1472,13 +1472,13 @@ def test_install_through_wrapper_when_primary_is_incapable(tmp_path, xdg_home, m
     (root / "apps" / "desktop" / "assets" / "icon.png").write_bytes(b"\x89PNG fake")
     env_tree = _env_shaped_tree(tmp_path)
     wrapper = _write_script(
-        tmp_path / ".local" / "bin" / "hermes",
-        f'#!/usr/bin/env bash\nexec "{root}/venv/bin/hermes" "$@"\n',
+        tmp_path / ".local" / "bin" / "moor",
+        f'#!/usr/bin/env bash\nexec "{root}/venv/bin/moor" "$@"\n',
     )
     monkeypatch.setattr(lde, "_launcher_entry_management_enabled", lambda: True)
     monkeypatch.setattr(
-        "hermes_cli.relaunch.resolve_hermes_bin",
-        lambda: str(env_tree / "venv" / "bin" / "hermes"),
+        "moor_cli.relaunch.resolve_moor_bin",
+        lambda: str(env_tree / "venv" / "bin" / "moor"),
     )
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
@@ -1496,8 +1496,8 @@ def test_exec_appends_skip_build_when_packaged_app_exists(tmp_path, xdg_home, mo
     root = _make_project(tmp_path)
     unpacked = root / "apps" / "desktop" / "release" / "linux-unpacked"
     unpacked.mkdir(parents=True)
-    (unpacked / "hermes").write_text("", encoding="utf-8")
-    monkeypatch.setattr("hermes_cli.relaunch.resolve_hermes_bin", lambda: None)
+    (unpacked / "moor").write_text("", encoding="utf-8")
+    monkeypatch.setattr("moor_cli.relaunch.resolve_moor_bin", lambda: None)
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
     entry = lde.install_desktop_entry(root)
@@ -1510,7 +1510,7 @@ def test_exec_keeps_build_then_launch_when_no_packaged_app(tmp_path, xdg_home, m
     # First install (nothing packaged yet): the click must still build and
     # launch — --skip-build would exit with "no packaged desktop app found".
     root = _make_project(tmp_path)
-    monkeypatch.setattr("hermes_cli.relaunch.resolve_hermes_bin", lambda: None)
+    monkeypatch.setattr("moor_cli.relaunch.resolve_moor_bin", lambda: None)
     monkeypatch.setattr(lde, "refresh_desktop_databases", lambda _dir: [])
 
     entry = lde.install_desktop_entry(root)

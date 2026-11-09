@@ -2,7 +2,7 @@
 routes under ``delegation.backends.<name>``.
 
 The settings shapes are the ones the official advanced-delegation plugin reads (``model_map``:
-named model routes; ``profile_routes``: Hermes profiles subagents may run as). Writes replace one
+named model routes; ``profile_routes``: Moor profiles subagents may run as). Writes replace one
 backend's block wholesale through the same profile scope + config lock every config route uses, so
 deleting a route really deletes it (``PUT /api/config`` deep-merges and cannot drop a key).
 """
@@ -16,17 +16,17 @@ from typing import Any, Callable, Mapping, Optional
 
 from fastapi import APIRouter, HTTPException
 
-from hermes_cli.web_deps import late
-from hermes_cli.web_models import DelegationBackendSelect, DelegationModelMapUpdate, DelegationProfileRoutesUpdate
-from hermes_cli.web_routers._common import (
+from moor_cli.web_deps import late
+from moor_cli.web_models import DelegationBackendSelect, DelegationModelMapUpdate, DelegationProfileRoutesUpdate
+from moor_cli.web_routers._common import (
     _profile_scope, config_write_scope, is_redacted_credential_preview, redacted_credential_preview,
 )
 
 router = APIRouter()
 _log = logging.getLogger(__name__)
 
-load_config = late("load_config", "hermes_cli.config")
-save_config = late("save_config", "hermes_cli.config")
+load_config = late("load_config", "moor_cli.config")
+save_config = late("save_config", "moor_cli.config")
 
 DEFAULT_BACKEND = "default"
 MODEL_MAP = "model_map"
@@ -62,7 +62,7 @@ def _registered_backends() -> list[dict[str, Any]]:
     """``default`` plus every plugin-registered backend of the active profile, with availability."""
     from agent.delegation_backends import list_backends
     from agent.delegation_registry import DEFAULT_BACKEND as builtin
-    from hermes_cli.plugins import discover_plugins
+    from moor_cli.plugins import discover_plugins
 
     discover_plugins()  # idempotent; a plugin enabled after boot loads on the next scan
     # ``description`` is the provider's ``summary``: the one line a backend picker shows for it.
@@ -85,7 +85,7 @@ def _redacted_options(options: Any) -> list[dict[str, Any]]:
 
 
 def _profile_names() -> list[str]:
-    from hermes_cli.profiles import list_profile_names
+    from moor_cli.profiles import list_profile_names
     return list_profile_names()
 
 
@@ -124,7 +124,7 @@ async def select_delegation_backend(body: DelegationBackendSelect, profile: Opti
 
     def _run():
         from agent.delegation_backends import set_global_backend
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         with config_write_scope(body.profile or profile):
             discover_plugins()
             try:
@@ -153,7 +153,7 @@ def _check_default(default: Optional[str], names: list[str], what: str) -> Optio
 def _clean_model_option(index: int, entry: dict, stored: dict[str, dict]) -> dict[str, Any]:
     from agent.delegation_provider import ROUTE_KEYS
     from agent.fast_mode import STATIC_TIERS, parse_exact_service_tier
-    from hermes_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
+    from moor_constants import VALID_REASONING_EFFORTS, parse_reasoning_effort
 
     row = {key: _text(entry, key) for key in _OPTION_TEXT_KEYS if _text(entry, key)}
     label = f"Route {index + 1}"
@@ -200,7 +200,7 @@ def _clean_model_option(index: int, entry: dict, stored: dict[str, dict]) -> dic
 
 
 def _write_backend_block(profile: Optional[str], backend: str, build: Callable[[dict], dict]) -> dict:
-    from hermes_cli.config import format_managed_message, is_managed
+    from moor_cli.config import format_managed_message, is_managed
     if is_managed():
         raise _managed_install(format_managed_message(f"save delegation.backends.{backend}"))
     with config_write_scope(profile):

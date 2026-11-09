@@ -21,9 +21,9 @@ import time
 import uuid
 from pathlib import Path
 
-# Never ``ai.hermes.*``: that prefix is what the gateway's restart route, its control-socket
+# Never ``ai.moor.*``: that prefix is what the gateway's restart route, its control-socket
 # supervisor declaration and every fleet scan read as "an installed, KeepAlive service".
-LABEL_PREFIX = "com.nousresearch.hermes.runtime."
+LABEL_PREFIX = "com.moorinc.moor.runtime."
 _POLL_INTERVAL_S = 0.5
 
 
@@ -98,7 +98,7 @@ def start_gateway_job(command: list[str], *, env: dict[str, str], cwd: str | Pat
     """Run ``command`` as a one-off job in this user's GUI launchd domain. ``None`` when launchd
     cannot take it (no GUI session, e.g. over SSH): the caller starts it as a plain child instead.
     ``deadline`` (monotonic) bounds every launchctl call, here and in the job's ``poll()``."""
-    from hermes_cli.gateway_launchd import launchd_program_arguments
+    from moor_cli.gateway_launchd import launchd_program_arguments
     _remove_finished_jobs(deadline)
     label = f"{LABEL_PREFIX}{uuid.uuid4().hex[:12]}"
     target = f"gui/{os.getuid()}/{label}"  # windows-footgun: ok — macOS-only module

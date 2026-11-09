@@ -7,7 +7,7 @@
  * Real SDK components and stores; only the gateway transport is mocked.
  */
 
-import type * as HermesSdk from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { atom } from 'nanostores'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -16,8 +16,8 @@ import { translateBotsIn } from './i18n-test-helper'
 
 const { notify, requestProfile } = vi.hoisted(() => ({ notify: vi.fn(), requestProfile: vi.fn() }))
 
-vi.mock('@hermes/plugin-sdk', async importOriginal => {
-  const sdk = await importOriginal<typeof HermesSdk>()
+vi.mock('@moor/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof MoorSdk>()
 
   return {
     ...sdk,

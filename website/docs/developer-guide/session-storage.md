@@ -4,14 +4,14 @@ Moor Agent uses a SQLite database (`~/.moor/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
-The profile's gateway is the **only writer of canonical sessions**: `hermes chat`,
+The profile's gateway is the **only writer of canonical sessions**: `moor chat`,
 the TUI, Desktop (local), the API server, ACP, cron, Bot Chat and Kanban workers are
 clients that admit input to its session authority over `/api/ws` (see
 [Gateway local sessions](./gateway-local-sessions.md)). Out-of-process managed
 workers write through that owner (`RuntimeSessionStore` RPC), never by opening
 `state.db` for transcript writes themselves.
 
-Source files: `hermes_state.py` (facade) plus the `hermes_state_*.py` siblings (schema, fts, search, compression, portability, gateway, ...)
+Source files: `moor_state.py` (facade) plus the `moor_state_*.py` siblings (schema, fts, search, compression, portability, gateway, ...)
 
 ## Moor home and profile isolation
 
@@ -62,8 +62,8 @@ pytest run.
 
 ### Desktop profile isolation and compaction generations
 
-Each named profile stores its transcript in its own `$HERMES_HOME/state.db`,
-including when one process (the multiplex gateway, or a `hermes serve`) serves several profiles. In-session
+Each named profile stores its transcript in its own `$MOOR_HOME/state.db`,
+including when one process (the multiplex gateway, or a `moor serve`) serves several profiles. In-session
 agent rebuilds (Bot Chat capability refresh and `tools.configure`) must retain
 that session's database handle and bind its profile home during construction.
 Releasing the outgoing agent must not close the handle inherited by its replacement.
@@ -147,13 +147,13 @@ rows in the same transaction and refuses while work is live or `unknown`. An inp
 was `started` when its owner died becomes `unknown` at the next owner start and is never
 replayed; its later inputs wait until it is resolved (`prompt.resolve_unknown`).
 
-`hermes sessions recover` copies the row-bearing tables above into the
+`moor sessions recover` copies the row-bearing tables above into the
 recovered database (FTS indexes and `schema_version` are regenerated), including
 the lazily-created `delivery_obligations` ledger when the source has one — its
 row count is verified like `sessions`/`messages`. The four runtime-ledger tables
 (`runtime_epoch`, `session_admissions`, `worker_executions`, `worker_receipts`) are
 inventoried and reported as excluded, not copied: a partial ledger could replay
-started effects or adopt another owner's workers. A full `hermes backup` restore keeps
+started effects or adopt another owner's workers. A full `moor backup` restore keeps
 the complete ledger for startup reconciliation instead.
 
 Key design decisions:
@@ -260,7 +260,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages(session_id, id);
 Notes:
 - `tool_calls` is stored as a JSON string (serialized list of tool call objects)
 - `reasoning_details`, `codex_reasoning_items`, and `codex_message_items` are stored as JSON strings
-- `reasoning`, `reasoning_content` and `reasoning_details` are always kept in history. On the chat-completions wire every assistant turn replays its stored reasoning on the carriers the route reads (`agent/message_sanitization.py::route_reasoning_carriers`): `reasoning_content` everywhere by default; plus `reasoning` and `reasoning_details` on OpenRouter-format gateways (OpenRouter, Kilo, Vercel AI Gateway, Nous Portal); `reasoning_details` on Novita, MiniMax `/v1` and TokenHub; `reasoning` on local servers, Ollama and Upstage. Strict schemas (Mistral, Groq, Cerebras, SambaNova) get no reasoning key, and Fireworks gets `reasoning_content` only. Only DeepSeek, Kimi and MiMo pad a reasoning-less tool-call turn with `" "`. When a route rejects a field by name ("Extra inputs are not permitted, field: messages[N].reasoning_details"), Hermes records it for that provider/host/model, strips it and retries once. The record lasts for the session and never touches history.
+- `reasoning`, `reasoning_content` and `reasoning_details` are always kept in history. On the chat-completions wire every assistant turn replays its stored reasoning on the carriers the route reads (`agent/message_sanitization.py::route_reasoning_carriers`): `reasoning_content` everywhere by default; plus `reasoning` and `reasoning_details` on OpenRouter-format gateways (OpenRouter, Kilo, Vercel AI Gateway, Moor Portal); `reasoning_details` on Novita, MiniMax `/v1` and TokenHub; `reasoning` on local servers, Ollama and Upstage. Strict schemas (Mistral, Groq, Cerebras, SambaNova) get no reasoning key, and Fireworks gets `reasoning_content` only. Only DeepSeek, Kimi and MiMo pad a reasoning-less tool-call turn with `" "`. When a route rejects a field by name ("Extra inputs are not permitted, field: messages[N].reasoning_details"), Moor records it for that provider/host/model, strips it and retries once. The record lasts for the session and never touches history.
 - Desktop history hydration retains assistant sidecars in both REST and JSON-RPC (`session.resume`, `session.activate`, `session.history`) projections, including rows with reasoning and tool calls. REST may return the SQLite JSON string while RPC returns decoded items; Desktop accepts both. A final Responses reply may live only in `codex_message_items` while `content` is empty. Canonical content still takes precedence, and analysis/commentary items are not promoted to reply text.
 - `reasoning` stores the raw reasoning text for providers that expose it
 - A reasoning-only clean stop (empty `content`, `finish_reason=stop`, reasoning present) is answered with the reasoning text, but the assistant row is never written with that text as `content`: `content` stays empty, the text lives in `reasoning`/`reasoning_content`, and `api_content` carries it so the next request replays the answer byte-identically. History surfaces therefore show it as reasoning, not as a reply.
@@ -344,7 +344,7 @@ Declarative column adds use `ALTER TABLE ADD COLUMN` wrapped in try/except to ha
 ## Write Contention Handling
 
 Several processes still open one `state.db`: the gateway (the canonical session
-writer), read-only browsers (dashboard, `hermes sessions list`), maintenance commands,
+writer), read-only browsers (dashboard, `moor sessions list`), maintenance commands,
 and writers of non-session tables. The `SessionDB` class handles write contention with:
 
 - **Short SQLite timeout** (1 second) instead of the default 30s

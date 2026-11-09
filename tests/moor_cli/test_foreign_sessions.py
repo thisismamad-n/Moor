@@ -1,7 +1,7 @@
 """Tests for moor_cli.foreign_sessions — Claude Code / Codex CLI import.
 
 Fixture JSONL is synthesized inline (tmp_path); imports reach a gateway owner over a temp
-state.db, so nothing touches the real HERMES_HOME store.
+state.db, so nothing touches the real MOOR_HOME store.
 """
 
 import asyncio
@@ -100,8 +100,8 @@ def _write_codex_fixture(tmp_path, extra_lines=None):
 
 def _route_store(monkeypatch, mutate):
     """Answer the importer's gateway calls with *mutate* (``session.mutate`` params -> receipt)."""
-    from hermes_cli.gateway_client import GatewayClientError
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_cli.gateway_client import GatewayClientError
+    from moor_state_runtime import RuntimeStoreError
     calls = []
 
     def call(method, **params):
@@ -111,7 +111,7 @@ def _route_store(monkeypatch, mutate):
         except (RuntimeStoreError, ValueError) as exc:  # a refusal crosses the wire as a bounded code
             raise GatewayClientError(getattr(exc, "reason", "invalid_params")) from exc
 
-    monkeypatch.setattr("hermes_cli.gateway_session_store.session_store", lambda: SimpleNamespace(call=call))
+    monkeypatch.setattr("moor_cli.gateway_session_store.session_store", lambda: SimpleNamespace(call=call))
     return calls
 
 
@@ -121,8 +121,8 @@ def gateway(tmp_path, monkeypatch):
     from gateway.session_authority import SessionAuthority
     from gateway.session_contract import Principal, SessionRef
     from gateway.session_mutations import mutate_session
-    from hermes_state import SessionDB
-    from hermes_state_runtime import begin_runtime_epoch
+    from moor_state import SessionDB
+    from moor_state_runtime import begin_runtime_epoch
 
     db = SessionDB(db_path=tmp_path / "state.db")
     authority = SessionAuthority(SimpleNamespace(_draining=False), profile_id="p", instance_id="owner",
@@ -299,8 +299,8 @@ def test_import_rejects_bad_input(tmp_path, gateway):
 
 def test_import_is_written_by_the_gateway_not_this_process(tmp_path, gateway, monkeypatch):
     """The gateway is the only state.db writer (#106742): the importer only sends ``session.mutate``."""
-    from hermes_state import SessionDB
-    from hermes_state_mutation_binding import history_binding
+    from moor_state import SessionDB
+    from moor_state_mutation_binding import history_binding
 
     def refused(*_a, **_k):
         raise AssertionError("the importer wrote state.db itself")
@@ -316,7 +316,7 @@ def test_import_is_written_by_the_gateway_not_this_process(tmp_path, gateway, mo
 
 @pytest.mark.asyncio
 async def test_imported_chat_resumes_writable_as_cli(tmp_path, monkeypatch):
-    """``hermes --resume @claude`` continues the import as an ordinary CLI session, not a read-only mount."""
+    """``moor --resume @claude`` continues the import as an ordinary CLI session, not a read-only mount."""
     from gateway import run
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore

@@ -13,18 +13,18 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import doctor
-import hermes_constants
-from hermes_cli import config as config_mod
-import hermes_cli.gateway as gateway_cli
-from hermes_cli import doctor as doctor_mod
-from hermes_cli.doctor_config import _has_provider_env_config
-from hermes_cli.doctor_report import Finding
+from moor_cli import doctor
+import moor_constants
+from moor_cli import config as config_mod
+import moor_cli.gateway as gateway_cli
+from moor_cli import doctor as doctor_mod
+from moor_cli.doctor_config import _has_provider_env_config
+from moor_cli.doctor_report import Finding
 import shutil
-from hermes_cli import doctor_tools
-from hermes_cli import doctor_state
-from hermes_cli import doctor_platform
-from hermes_cli import doctor_config
+from moor_cli import doctor_tools
+from moor_cli import doctor_state
+from moor_cli import doctor_platform
+from moor_cli import doctor_config
 
 
 @pytest.fixture(autouse=True)
@@ -284,7 +284,7 @@ class TestDoctorToolAvailabilityOverrides:
 
 
     def test_marks_kanban_available_only_when_missing_worker_env_gate(self, monkeypatch):
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
 
         available, unavailable = doctor_tools._apply_doctor_tool_availability_overrides(
             [],
@@ -381,8 +381,8 @@ class TestDoctorMemoryProviderSection:
 
         # Stub auth checks to avoid real API calls
         try:
-            from hermes_cli import auth as _auth_mod
-            monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+            from moor_cli import auth as _auth_mod
+            monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
             monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
             monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
         except Exception:
@@ -484,8 +484,8 @@ def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, t
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -528,8 +528,8 @@ def test_run_doctor_accepts_stable_key_when_provider_name_differs(
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -570,8 +570,8 @@ def test_run_doctor_accepts_bare_custom_provider(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -611,7 +611,7 @@ def test_run_doctor_flags_missing_credentials_for_active_openrouter_provider(mon
     try:
         from moor_cli import auth as _auth_mod
 
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_gemini_oauth_auth_status", dict)
@@ -661,8 +661,8 @@ def test_run_doctor_accepts_moor_provider_ids_that_catalog_aliases(
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -708,8 +708,8 @@ def test_run_doctor_accepts_vendor_slugs_for_named_custom_provider(monkeypatch, 
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -764,8 +764,8 @@ def test_run_doctor_vendor_slug_policy_for_openai_api_endpoint(
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -807,8 +807,8 @@ def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_auth_status", lambda provider: {"logged_in": True})
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
@@ -825,7 +825,7 @@ def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
 
 def _doctor_env_for_browser(monkeypatch, tmp_path):
     """Shared fixture setup for the Node + Chromium rows of run_doctor."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
     project = tmp_path / "project"
@@ -848,8 +848,8 @@ def _doctor_env_for_browser(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -859,7 +859,7 @@ def _doctor_env_for_browser(monkeypatch, tmp_path):
 def test_run_doctor_reports_installed_chromium(monkeypatch, tmp_path):
     _doctor_env_for_browser(monkeypatch, tmp_path)
 
-    monkeypatch.setattr("hermes_cli.browser_runtime.chromium_executable", lambda **_kw: "/pm/chromium/chrome")
+    monkeypatch.setattr("moor_cli.browser_runtime.chromium_executable", lambda **_kw: "/pm/chromium/chrome")
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -872,11 +872,11 @@ def test_run_doctor_reports_installed_chromium(monkeypatch, tmp_path):
 
 
 def test_doctor_fix_does_not_claim_success_without_published_binary(monkeypatch, tmp_path):
-    from hermes_cli import doctor_tools
+    from moor_cli import doctor_tools
     _doctor_env_for_browser(monkeypatch, tmp_path)
 
-    monkeypatch.setattr("hermes_cli.browser_runtime.chromium_executable", lambda **_kw: None)
-    monkeypatch.setattr("hermes_cli.doctor_tools._is_termux", lambda: False)
+    monkeypatch.setattr("moor_cli.browser_runtime.chromium_executable", lambda **_kw: None)
+    monkeypatch.setattr("moor_cli.doctor_tools._is_termux", lambda: False)
     monkeypatch.setattr("pm.ensure", lambda *a, **kw: None)
 
     buf = io.StringIO()
@@ -885,7 +885,7 @@ def test_doctor_fix_does_not_claim_success_without_published_binary(monkeypatch,
     out = buf.getvalue()
 
     assert "Chromium not installed" in out
-    assert "hermes pm install chromium" in out
+    assert "moor pm install chromium" in out
 
 
 def test_doctor_fix_reports_pm_install_failure(monkeypatch, tmp_path):
@@ -896,8 +896,8 @@ def test_doctor_fix_reports_pm_install_failure(monkeypatch, tmp_path):
     def refuse(*args, **kwargs):
         raise pm.InstallError("chromium", "offline")
 
-    monkeypatch.setattr("hermes_cli.browser_runtime.chromium_executable", lambda **_kw: None)
-    monkeypatch.setattr("hermes_cli.doctor_tools._is_termux", lambda: False)
+    monkeypatch.setattr("moor_cli.browser_runtime.chromium_executable", lambda **_kw: None)
+    monkeypatch.setattr("moor_cli.doctor_tools._is_termux", lambda: False)
     monkeypatch.setattr(pm, "ensure", refuse)
 
     buf = io.StringIO()
@@ -916,12 +916,12 @@ def test_doctor_fix_reports_pm_install_failure(monkeypatch, tmp_path):
 ])
 def test_missing_chromium_is_info_when_config_needs_none(monkeypatch, tmp_path, browser_yaml, reason):
     """A CDP override, Lightpanda or a cloud provider runs no local Chromium: no warning row."""
-    from hermes_cli import doctor_tools
-    from hermes_constants import get_hermes_home
+    from moor_cli import doctor_tools
+    from moor_constants import get_moor_home
 
-    (get_hermes_home() / "config.yaml").write_text(browser_yaml, encoding="utf-8")
+    (get_moor_home() / "config.yaml").write_text(browser_yaml, encoding="utf-8")
     monkeypatch.delenv("BROWSER_CDP_URL", raising=False)
-    monkeypatch.setattr("hermes_cli.browser_runtime.chromium_executable", lambda **_kw: None)
+    monkeypatch.setattr("moor_cli.browser_runtime.chromium_executable", lambda **_kw: None)
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -929,7 +929,7 @@ def test_missing_chromium_is_info_when_config_needs_none(monkeypatch, tmp_path, 
     out = buf.getvalue()
 
     assert "not needed" in out and reason in out
-    assert "hermes pm install chromium" not in out
+    assert "moor pm install chromium" not in out
 
 
 def test_run_doctor_kimi_cn_env_is_detected_and_probe_is_null_safe(monkeypatch, tmp_path):
@@ -952,8 +952,8 @@ def test_run_doctor_kimi_cn_env_is_detected_and_probe_is_null_safe(monkeypatch, 
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except Exception:
@@ -1001,8 +1001,8 @@ def test_run_doctor_dashscope_retries_china_endpoint_after_intl_unauthorized(mon
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except ImportError:
@@ -1060,8 +1060,8 @@ def test_run_doctor_opencode_go_skips_invalid_models_probe(monkeypatch, tmp_path
     monkeypatch.setitem(sys.modules, "model_tools", fake_model_tools)
 
     try:
-        from hermes_cli import auth as _auth_mod
-        monkeypatch.setattr(_auth_mod, "get_nous_auth_status", dict)
+        from moor_cli import auth as _auth_mod
+        monkeypatch.setattr(_auth_mod, "get_moor_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
         monkeypatch.setattr(_auth_mod, "get_xai_oauth_auth_status", dict)
     except ImportError:
@@ -1155,7 +1155,7 @@ def _run_doctor_with_healthy_oauth_fallback(
 
     from moor_cli import auth as _auth_mod
 
-    monkeypatch.setattr(_auth_mod, "get_nous_auth_status_local", lambda: {"logged_in": True})
+    monkeypatch.setattr(_auth_mod, "get_moor_auth_status_local", lambda: {"logged_in": True})
     monkeypatch.setattr(_auth_mod, "get_codex_auth_status", dict)
     monkeypatch.setattr(_auth_mod, "get_minimax_oauth_auth_status", lambda: minimax_oauth_status)
     _xai_status = xai_oauth_status if xai_oauth_status is not None else {}
@@ -1519,7 +1519,7 @@ def test_run_doctor_warns_when_lightpanda_binary_missing(monkeypatch, tmp_path):
 
     monkeypatch.setattr("tools.browser_lightpanda.using_lightpanda_engine", lambda: True, raising=False)
     monkeypatch.setattr("tools.browser_lightpanda.lightpanda_engine_status",
-                        lambda: (True, "Hermes spawns `lightpanda serve`"), raising=False)
+                        lambda: (True, "Moor spawns `lightpanda serve`"), raising=False)
     monkeypatch.setattr("tools.browser_lightpanda.find_lightpanda_binary", lambda: None)
     out = helper._run_doctor_and_capture(monkeypatch, tmp_path)
     assert "Lightpanda selected but binary not found" in out
@@ -1641,7 +1641,7 @@ def test_cron_store_check_reports_writability_and_low_space(
     from cron import store_health
 
     (tmp_path / "cron").mkdir()
-    monkeypatch.setattr(doctor, "HERMES_HOME", tmp_path)
+    monkeypatch.setattr(doctor, "MOOR_HOME", tmp_path)
     monkeypatch.setattr(store_health, "probe_store", lambda _d: probe_error)
     monkeypatch.setattr(store_health.shutil, "disk_usage", lambda _d: SimpleNamespace(free=free))
     if hasattr(os, "geteuid"):  # rows run as the user they name, whoever runs the suite
@@ -1656,20 +1656,20 @@ def test_cron_store_check_reports_writability_and_low_space(
 def test_profile_alias_status_follows_the_wrapper_the_profile_really_has(monkeypatch, tmp_path):
     """#131753: doctor said "no alias" for every Windows profile (``.bat`` wrapper) and for any
     profile reachable only through a custom alias name; a bare (pre-``.bat`` on Windows) wrapper counts."""
-    import hermes_cli.gateway_migrate as gm
-    from hermes_cli import profiles
+    import moor_cli.gateway_migrate as gm
+    from moor_cli import profiles
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
     monkeypatch.setattr(gm, "duplicate_credential_findings", list)
     for name in ("dev", "ops", "work", "old"):
-        (tmp_path / ".hermes" / "profiles" / name).mkdir(parents=True)
-        (tmp_path / ".hermes" / "profiles" / name / "config.yaml").write_text("model: m\n", encoding="utf-8")
+        (tmp_path / ".moor" / "profiles" / name).mkdir(parents=True)
+        (tmp_path / ".moor" / "profiles" / name / "config.yaml").write_text("model: m\n", encoding="utf-8")
     profiles.create_wrapper_script("dev")
     profiles.create_wrapper_script("w", target="work")
-    (tmp_path / ".local" / "bin" / "old").write_text('#!/bin/sh\nexec hermes -p old "$@"\n', encoding="utf-8")
-    for foreign in ("ops.bat", "old.bat"):  # same-named non-Hermes commands
+    (tmp_path / ".local" / "bin" / "old").write_text('#!/bin/sh\nexec moor -p old "$@"\n', encoding="utf-8")
+    for foreign in ("ops.bat", "old.bat"):  # same-named non-Moor commands
         (tmp_path / ".local" / "bin" / foreign).write_text("@echo off\r\nnotepad %*\r\n", encoding="utf-8")
 
     out = io.StringIO()

@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { HermesConnection } from '@/global'
+import type { MoorConnection } from '@/global'
 import {
   $realProfilePromptClaim,
   $realProfilePromptDismissed,
@@ -63,8 +63,8 @@ vi.mock('../../hooks/use-config-record', () => ({
   useMoorConfigRecord: () => ({ data: mocks.loadedConfig })
 }))
 
-const localConnection = { mode: 'local' } as HermesConnection
-const remoteConnection = { mode: 'remote', remoteKind: 'ssh' } as HermesConnection
+const localConnection = { mode: 'local' } as MoorConnection
+const remoteConnection = { mode: 'remote', remoteKind: 'ssh' } as MoorConnection
 
 const openGate = {
   claim: 'tab-1',
@@ -84,14 +84,14 @@ describe('shouldOfferRealProfilePrompt', () => {
   it('never offers it for a remote backend (#119398)', () => {
     for (const remoteKind of ['ssh', 'url', 'cloud'] as const) {
       expect(
-        shouldOfferRealProfilePrompt({ ...openGate, connection: { mode: 'remote', remoteKind } as HermesConnection })
+        shouldOfferRealProfilePrompt({ ...openGate, connection: { mode: 'remote', remoteKind } as MoorConnection })
       ).toBe(false)
     }
   })
 
   it('fails closed while the connection is unresolved', () => {
     expect(shouldOfferRealProfilePrompt({ ...openGate, connection: null })).toBe(false)
-    expect(shouldOfferRealProfilePrompt({ ...openGate, connection: {} as HermesConnection })).toBe(false)
+    expect(shouldOfferRealProfilePrompt({ ...openGate, connection: {} as MoorConnection })).toBe(false)
   })
 
   it('keeps the existing gates', () => {

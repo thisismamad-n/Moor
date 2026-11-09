@@ -33,7 +33,7 @@ PRs will be accepted to fix issues with them, but they will take precedence belo
 | OS / Architecture              | Installation methods                                                 | Notes                                                                        |
 | ------------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | **Nix** (macOS, Linux, NixOS) | [Nix flake and modules](./nix-setup.md) | Nix owns runtime installation and updates. |
-| **Android / [Termux](./termux.md)** (aarch64) | [Signed APT repository](./termux.md), then `pkg install hermes-agent` | Prerelease package with Python, Node, and TUI. Not built by default: only releases cut with `--with termux` (and `windows` and `macos-arm64`) update the APT channel. Run the gateway in a Termux session; Android can terminate background processes. |
+| **Android / [Termux](./termux.md)** (aarch64) | [Signed APT repository](./termux.md), then `pkg install moor-agent` | Prerelease package with Python, Node, and TUI. Not built by default: only releases cut with `--with termux` (and `windows` and `macos-arm64`) update the APT channel. Run the gateway in a Termux session; Android can terminate background processes. |
 
 ### Build targets and support priority
 
@@ -45,10 +45,10 @@ without macOS Intel replaces the one shared macOS stable update feed with an
 arm64-only feed, so Intel Macs installed from a desktop bundle get no update
 until a release is cut with `--with macos-intel`. A release without Termux
 leaves the Termux APT channel on its previous release.
-The `Hermes-Setup.dmg` bootstrap installer is built for Apple Silicon only, so
+The `moor-setup.dmg` bootstrap installer is built for Apple Silicon only, so
 on an Intel Mac it reports "not supported on this Mac". Intel Macs can install
 the [CLI](./installation.md#linux--macos--wsl2) and run
-`hermes desktop`, or use a `darwin-x64` bundle from a release that included it.
+`moor desktop`, or use a `darwin-x64` bundle from a release that included it.
 Linux desktop packaging is disabled in the release workflow, although local
 AppImage builds and native Linux PM bundle checks exist.
 
@@ -62,7 +62,7 @@ PRs to fix them will _not_ be accepted, and any code that keeps compatibility wi
 - Android / Termux on non-aarch64 devices (aarch64 is [supported](./termux.md) via our APT package)
 - installs via the AUR (we might upstream patches if it helps out &lt;3)
 - 32-bit x86 macOS. Intel x86_64 desktop bundles are built only for releases cut with `--with macos-intel`.
-- installs via `pypi` (e.g. `uv tool install hermes-agent`, `pip install hermes-agent`, etc.)
-- installs via `brew` (`brew install hermes-agent`)
+- installs via `pypi` (e.g. `uv tool install moor-agent`, `pip install moor-agent`, etc.)
+- installs via `brew` (`brew install moor-agent`)
 
 If you are using an unsupported distribution method, please read the [the installation guide](./installation.md) to learn how to switch to a supported one.

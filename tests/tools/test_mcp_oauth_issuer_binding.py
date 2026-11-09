@@ -14,7 +14,7 @@ pytest.importorskip("mcp")
 
 from mcp.shared.auth import OAuthToken
 
-from tools.mcp_oauth import HermesTokenStorage
+from tools.mcp_oauth import MoorTokenStorage
 from tools.mcp_oauth_provider import bind_issuer_from_context, enforce_refresh_token_issuer
 
 

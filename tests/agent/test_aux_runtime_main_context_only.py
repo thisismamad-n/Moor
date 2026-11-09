@@ -4,7 +4,7 @@ The process-global mirrors (``_RUNTIME_MAIN_PROVIDER`` and friends) were rewritt
 session in the process, and a main-thread lookup with no context binding fell back to them. The
 six fields were stored one at a time, unlocked for readers, so that fallback could return another
 session's runtime, or one session's base_url paired with another's api_key. The
-``auxiliary_is_nous`` flag was likewise written by every session and read by nothing.
+``auxiliary_is_moor`` flag was likewise written by every session and read by nothing.
 """
 
 import threading
@@ -12,7 +12,7 @@ import threading
 import agent.auxiliary_client as aux
 
 _DELETED = (
-    "auxiliary_is_nous",
+    "auxiliary_is_moor",
     "get_auxiliary_extra_body",
     "_RUNTIME_MAIN_PROVIDER",
     "_RUNTIME_MAIN_MODEL",

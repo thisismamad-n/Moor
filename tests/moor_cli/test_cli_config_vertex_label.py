@@ -12,11 +12,11 @@ from __future__ import annotations
 from datetime import datetime
 
 from agent.i18n import t
-from cli import HermesCLI
+from cli import MoorCLI
 
 
 def _config_text(capsys, api_key) -> str:
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.api_key, cli.agent = api_key, None
     cli.model = "google/gemini-3-flash-preview"
     cli.base_url = "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/p/locations/us-central1/endpoints/openapi"

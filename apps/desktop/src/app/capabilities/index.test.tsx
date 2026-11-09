@@ -578,7 +578,7 @@ describe('CapabilitiesView toolset management', { timeout: 60_000 }, () => {
       throw new Error(`unexpected ${path}`)
     })
 
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = { api }
+    ;(window as { moorDesktop?: unknown }).moorDesktop = { api }
     getSkills.mockResolvedValue(
       ['agent-git-oracle', 'pdf'].map(name => ({ name, description: name, enabled: true, usage: 0, provenance: 'hub' }))
     )
@@ -607,7 +607,7 @@ describe('CapabilitiesView toolset management', { timeout: 60_000 }, () => {
       expect(screen.queryByRole('button', { name: /^Add (Agent Git Oracle|My Pdf)$/ })).toBeNull()
       expect(installHubSkill).not.toHaveBeenCalled()
     } finally {
-      delete (window as { hermesDesktop?: unknown }).hermesDesktop
+      delete (window as { moorDesktop?: unknown }).moorDesktop
     }
   })
 })

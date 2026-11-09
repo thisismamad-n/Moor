@@ -1,4 +1,4 @@
-import { gaugeTitle } from '@hermes/shared'
+import { gaugeTitle } from '@moor/shared'
 import { useStore } from '@nanostores/react'
 import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router'
@@ -76,7 +76,7 @@ import {
   $updateStatus,
   openUpdateOverlayFor
 } from '@/store/updates'
-import type { FreeTierStatus, StatusResponse, UsageStats } from '@/types/hermes'
+import type { FreeTierStatus, StatusResponse, UsageStats } from '@/types/moor'
 
 import { CRON_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
 import type { StatusbarItem } from '../statusbar-controls'

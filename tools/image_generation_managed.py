@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
-from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER
+from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER
 
 FAL, KREA, PORTAL = "fal", "krea", "portal"
 
@@ -55,12 +55,12 @@ def managed_route(provider: Any, model_id: Any) -> Optional[str]:
     (raw config values; blank or non-string reads as unset).
 
     ``None`` when a direct/BYO provider owns the request. A Portal id reaches the Portal only under
-    an explicit ``nous`` pick; with the provider unset it stays on the in-tree FAL path."""
+    an explicit ``moor`` pick; with the provider unset it stays on the in-tree FAL path."""
     provider, model_id = (v.strip() if isinstance(v, str) and v.strip() else None for v in (provider, model_id))
-    if provider is not None and provider != NOUS_MANAGED_PROVIDER:
+    if provider is not None and provider != MOOR_MANAGED_PROVIDER:
         return None
     backend = managed_backend_for_model(model_id)
-    if backend == PORTAL and provider != NOUS_MANAGED_PROVIDER:
+    if backend == PORTAL and provider != MOOR_MANAGED_PROVIDER:
         return FAL
     return backend
 

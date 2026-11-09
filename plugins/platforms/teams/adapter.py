@@ -641,7 +641,7 @@ class TeamsAdapter(BasePlatformAdapter):
         data = ctx.activity.value.action.data or {}
         moor_action = data.get("moor_action", "")
         session_key = data.get("session_key", "")
-        if not hermes_action or not session_key:
+        if not moor_action or not session_key:
             return self._invoke_message(t("platform.teams.approval.unknown_action"))
         denied = self._card_action_denied(ctx.activity.from_)
         if denied:
@@ -700,8 +700,8 @@ class TeamsAdapter(BasePlatformAdapter):
         for label, choice, style in prompt.actions:
             kw = {"style": self._EA_CARD_STYLES[style]} if style else {}
             actions.append(ExecuteAction(
-                title=label, verb="hermes_approve",
-                data={**btn_data_base, "hermes_action": self._EA_CARD_ACTIONS[choice]}, **kw))
+                title=label, verb="moor_approve",
+                data={**btn_data_base, "moor_action": self._EA_CARD_ACTIONS[choice]}, **kw))
         body = _approval_body(cmd, prompt.description, always=True)
         body.append(TextBlock(text=format_approval_deadline_line(approval_timeout_seconds()), wrap=True))
         if prompt.smart_denied:
@@ -848,7 +848,7 @@ def _install_hint() -> str:
 def register(ctx) -> None:
     ctx.register_platform(
         name="teams", label="Microsoft Teams", adapter_factory=lambda cfg: TeamsAdapter(cfg),
-        dashboard_description="Connect Hermes to Microsoft Teams chats via the Bot Framework.",
+        dashboard_description="Connect Moor to Microsoft Teams chats via the Bot Framework.",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams",
         check_fn=check_requirements,  # PASSIVE probe — never installs
         ensure_deps_fn=check_teams_requirements,  # ACTIVE lazy-installer, run by create_adapter()

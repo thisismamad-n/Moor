@@ -6,10 +6,10 @@ registration keeps streaming. The hold lives as long as the registration and nev
 another profile's plugin manager.
 """
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
-from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
+from moor_cli.plugins import PluginContext, PluginManager, PluginManifest
 
 REDACTOR = (
     "def register(ctx):\n"
@@ -32,11 +32,11 @@ def test_the_hold_lasts_as_long_as_the_registration_that_declared_it():
 
 
 def test_only_the_declaring_profile_holds(tmp_path, monkeypatch):
-    from hermes_cli import plugins
-    from hermes_cli.plugins_dispatch import stream_held
+    from moor_cli import plugins
+    from moor_cli.plugins_dispatch import stream_held
 
-    monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", "0")
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(tmp_path / "no-bundled"))
+    monkeypatch.setenv("MOOR_ENABLE_PROJECT_PLUGINS", "0")
+    monkeypatch.setenv("MOOR_BUNDLED_PLUGINS", str(tmp_path / "no-bundled"))
     homes = {name: tmp_path / name for name in ("alpha", "beta")}
     for name, home in homes.items():
         plugin = home / "plugins" / "redactor"
@@ -49,7 +49,7 @@ def test_only_the_declaring_profile_holds(tmp_path, monkeypatch):
     try:
         seen = []
         for name in ("alpha", "beta", "alpha"):
-            monkeypatch.setenv("HERMES_HOME", str(homes[name]))
+            monkeypatch.setenv("MOOR_HOME", str(homes[name]))
             seen.append(stream_held())
         assert seen == [True, False, True]
     finally:
@@ -72,14 +72,14 @@ def test_a_turn_starting_during_a_plugin_reload_sees_the_settled_hold(tmp_path, 
     import threading
     import types
 
-    from hermes_cli import plugins
+    from moor_cli import plugins
 
     gate = types.ModuleType("hold_stream_reload_gate")
     gate.loading, gate.entered, gate.release = threading.Event(), threading.Event(), threading.Event()
     monkeypatch.setitem(sys.modules, gate.__name__, gate)
-    monkeypatch.setenv("HERMES_ENABLE_PROJECT_PLUGINS", "0")
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(tmp_path / "no-bundled"))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_ENABLE_PROJECT_PLUGINS", "0")
+    monkeypatch.setenv("MOOR_BUNDLED_PLUGINS", str(tmp_path / "no-bundled"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     plugin = tmp_path / "plugins" / "redactor"
     plugin.mkdir(parents=True)
     (plugin / "plugin.yaml").write_text(yaml.safe_dump({"name": "redactor", "version": "0.1.0"}))

@@ -183,12 +183,12 @@ def _report_requires_managed_execution(report: Any) -> bool:
     """Return whether a Relay plugin-host report enables any static or dynamic plugin.
 
     Relay owns the report contract. An unfamiliar report stays fail-safe by
-    retaining Hermes managed execution instead of silently bypassing plugins.
+    retaining Moor managed execution instead of silently bypassing plugins.
     """
 
     def keep_enabled() -> bool:
         logger.warning(
-            "Hermes could not determine whether the Relay plugin configuration is empty; keeping managed "
+            "Moor could not determine whether the Relay plugin configuration is empty; keeping managed "
             "execution enabled"
         )
         return True
@@ -307,7 +307,7 @@ class _ProcessRelayPluginConfiguration:
                 if self._state is _RelayPluginConfigurationState.ACTIVE:
                     logger.info(
                         "The Relay plugin host is active process-wide and applies to all profiles hosted by this "
-                        "Hermes process. Configuration files: %s",
+                        "Moor process. Configuration files: %s",
                         "; ".join(_activation_config_paths(self._activation)) or "none reported",
                     )
             self._owners.add(id(owner))
@@ -321,11 +321,11 @@ class _ProcessRelayPluginConfiguration:
             self._activation = None
             if _is_relay_host_conflict(exc):
                 logger.warning(
-                    "A process-global Relay plugin configuration is already active outside Hermes native "
-                    "ownership; leaving it unchanged and disabling Hermes-managed Relay middleware for this process"
+                    "A process-global Relay plugin configuration is already active outside Moor native "
+                    "ownership; leaving it unchanged and disabling moor-managed Relay middleware for this process"
                 )
                 return _RelayPluginConfigurationState.FOREIGN
-            logger.warning("Hermes Relay plugin initialization failed: %s", exc, exc_info=True)
+            logger.warning("Moor Relay plugin initialization failed: %s", exc, exc_info=True)
             return _RelayPluginConfigurationState.FAILED
         self._relay = relay
         return _RelayPluginConfigurationState.ACTIVE
@@ -534,7 +534,7 @@ class RelayRuntime:
             session.rotate_pending = False
             try:
                 self.run_in_session(
-                    session, self.relay.scope.pop, old_handle, output={"hermes.session.segment_reason": reason},
+                    session, self.relay.scope.pop, old_handle, output={"moor.session.segment_reason": reason},
                     metadata=runtime_metadata(self.runtime_id), timeout=SCOPE_OP_TIMEOUT,
                 )
             except Exception:
@@ -729,7 +729,7 @@ class RelayRuntime:
                 break
             try:
                 orphan_output = self._take_deferred_scope_output(top) or {
-                    "outcome": "cancelled", "hermes.orphan_drain": True,
+                    "outcome": "cancelled", "moor.orphan_drain": True,
                 }
                 pop_relay_scope(self.relay, top, output=orphan_output, metadata=metadata)
                 drained += 1
@@ -1341,17 +1341,17 @@ def _configured_plugin_inputs() -> Path | None:
     if config_path is None and (legacy_vars := configured_legacy_relay_env_vars(os.environ)):
         logger.warning(
             "Legacy NeMo Relay exporter variables are set but no %s was provided. %s no longer configure "
-            "Relay exporters; any standard user or system plugins.toml still applies. Run `hermes migrate "
-            "relay` (or `hermes update`, which runs it for every profile) to generate %s and select it in .env.",
+            "Relay exporters; any standard user or system plugins.toml still applies. Run `moor migrate "
+            "relay` (or `moor update`, which runs it for every profile) to generate %s and select it in .env.",
             RELAY_PLUGINS_CONFIG_ENV,
             ", ".join(legacy_vars),
-            get_hermes_home() / "relay-plugins.toml",
+            get_moor_home() / "relay-plugins.toml",
         )
     return config_path
 
 
 def _explicit_plugins_toml() -> Path | None:
-    """Return the file selected by ``HERMES_NEMO_RELAY_PLUGINS_TOML`` after checking that it parses."""
+    """Return the file selected by ``MOOR_NEMO_RELAY_PLUGINS_TOML`` after checking that it parses."""
     configured = os.environ.get(RELAY_PLUGINS_CONFIG_ENV, "").strip()
     if not configured:
         return None
@@ -1360,7 +1360,7 @@ def _explicit_plugins_toml() -> Path | None:
         with config_path.open("rb") as config_file:
             config = tomllib.load(config_file)
         if "dynamic_plugins" in config:
-            raise ValueError("Hermes [[dynamic_plugins]] records are unsupported; use Relay [[plugins.dynamic]] records")
+            raise ValueError("Moor [[dynamic_plugins]] records are unsupported; use Relay [[plugins.dynamic]] records")
         return config_path
     except Exception as exc:
         raise _RelayPluginConfigurationLoadError(

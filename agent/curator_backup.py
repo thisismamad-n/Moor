@@ -75,9 +75,9 @@ def _jobs_list(parsed: Any) -> Optional[list]:
 
 
 def _backup_cron_jobs_into(dest: Path) -> dict[str, Any]:
-    """Copy the live ``~/.hermes/cron/jobs.json`` into ``dest`` as ``cron-jobs.json``. Never raises: a missing/unreadable
+    """Copy the live ``~/.moor/cron/jobs.json`` into ``dest`` as ``cron-jobs.json``. Never raises: a missing/unreadable
     file yields ``backed_up=False`` plus a reason, and the snapshot proceeds."""
-    src = get_hermes_home() / "cron" / "jobs.json"
+    src = get_moor_home() / "cron" / "jobs.json"
     info: dict[str, Any] = {"backed_up": False, "jobs_count": 0}
     if not src.exists():
         return {**info, "reason": "no cron/jobs.json present"}
@@ -151,7 +151,7 @@ def _mkdir(path: Path, what: str, *, exist_ok: bool) -> bool:
 
 
 def snapshot_skills(reason: str = "manual", *, protect_ids: Optional[set[str]] = None) -> Optional[Path]:
-    """Create a tar.gz snapshot of ``~/.hermes/skills/`` and prune old ones. Returns the snapshot dir, or None when
+    """Create a tar.gz snapshot of ``~/.moor/skills/`` and prune old ones. Returns the snapshot dir, or None when
     skipped (disabled, skills dir missing, IO error) — logged at debug so the curator never aborts a pass over a
     backup failure. ``protect_ids`` survive the prune step (rollback protects its target)."""
     if not is_enabled():
@@ -404,7 +404,7 @@ def _cron_summary(cron_report: dict[str, Any]) -> Optional[str]:
 
 
 def rollback(backup_id: Optional[str] = None) -> tuple[bool, str, Optional[Path]]:
-    """Restore ``~/.hermes/skills/`` from a snapshot (explicit id or newest): safety-snapshot the CURRENT tree; stage
+    """Restore ``~/.moor/skills/`` from a snapshot (explicit id or newest): safety-snapshot the CURRENT tree; stage
     current top-level entries; extract; on failure move staged entries back. Returns ``(ok, message, snapshot_path)``."""
     target = _resolve_backup(backup_id)
     if target is None:

@@ -338,8 +338,8 @@ def _session_owns_live_wakeup_schedule(session: dict) -> bool:
     if not (sid_key := session.get("session_key") or ""):
         return False
     try:
-        from hermes_cli.heartbeat import HeartbeatManager
-        from hermes_cli.loops import LoopManager
+        from moor_cli.heartbeat import HeartbeatManager
+        from moor_cli.loops import LoopManager
         with _session_profile_runtime_scope(session, hydrate_secrets=False):
             loop = LoopManager(session_id=sid_key)
             if loop.is_active() and not _loop_route_is_gateway_chat(loop.state):

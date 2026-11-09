@@ -2,7 +2,7 @@
 
 Each step is ``_migrate_to_N(results, quiet)`` (a large topical step lives in a
 ``config_migrations_<topic>.py`` sibling, registered here); the version gate and strict ascending
-order live in :func:`run_migrations`. Every write goes through ``hermes_cli.config._persist_migration`` so a
+order live in :func:`run_migrations`. Every write goes through ``moor_cli.config._persist_migration`` so a
 step may only persist values that differ from the schema default (plus removals/renames).
 """
 
@@ -16,7 +16,7 @@ import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from hermes_cli.config_migrations_browser import migrate_to_52
+from moor_cli.config_migrations_browser import migrate_to_52
 
 logger = logging.getLogger(__name__)
 
@@ -298,7 +298,7 @@ def _migrate_to_17(results: dict[str, Any], quiet: bool) -> None:
 
 
 def _installed_user_plugins(disabled: set) -> list[str]:
-    """Names of plugins under ``$HERMES_HOME/plugins/`` with a manifest, minus *disabled*."""
+    """Names of plugins under ``$MOOR_HOME/plugins/`` with a manifest, minus *disabled*."""
     _c = _cfg()
     found: list[str] = []
     try:
@@ -356,7 +356,7 @@ def _migrate_to_23(results: dict[str, Any], quiet: bool) -> None:
 
     if _local_files_allowed():
         try:
-            curator_dir = _c.get_hermes_home() / "logs" / "curator"
+            curator_dir = _c.get_moor_home() / "logs" / "curator"
             curator_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             results["warnings"].append(f"Could not create {curator_dir}: {e}")
@@ -523,7 +523,7 @@ def _migrate_to_38(results: dict[str, Any], quiet: bool) -> None:
     message = (
         "Removed legacy Relay plugin from plugins.enabled: "
         f"{', '.join(removed)}. Configure a standard user or system Relay plugins.toml, or use "
-        "HERMES_NEMO_RELAY_PLUGINS_TOML for an explicit user-file override.")
+        "MOOR_NEMO_RELAY_PLUGINS_TOML for an explicit user-file override.")
     results["warnings"].append(message)
     if not quiet:
         print(f"  ⚠ {message}")
@@ -559,11 +559,11 @@ def _migrate_to_41(results: dict[str, Any], quiet: bool) -> None:
     # every other session (~600 tok) and shadowed the live roster in Bot Chat itself.
     if not _local_files_allowed():
         return  # SOUL.md files only, across the whole roster
-    from hermes_constants import get_hermes_home
-    from tools.bot_mode_probe import _PROTOCOL_HEADING, _hermes_root, _roster, strip_legacy_protocol
+    from moor_constants import get_moor_home
+    from tools.bot_mode_probe import _PROTOCOL_HEADING, _moor_root, _roster, strip_legacy_protocol
 
     cleaned: list[str] = []
-    for name, profile_dir in _roster(_hermes_root(get_hermes_home())):
+    for name, profile_dir in _roster(_moor_root(get_moor_home())):
         soul = profile_dir / "SOUL.md"
         try:
             text = soul.read_text(encoding="utf-8-sig") if soul.is_file() else ""
@@ -659,7 +659,7 @@ def _migrate_to_48(results: dict[str, Any], quiet: bool) -> None:
     # the file follows the default. It is not rewritten to the new image, because a written image
     # is a pin and a pin recreates a persisted Docker container without asking; unpinned, the
     # runtime keeps an existing sandbox and the CLI / Screen pane ask first. A pinned image stays.
-    from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, LEGACY_SANDBOX_IMAGES
+    from moor_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, LEGACY_SANDBOX_IMAGES
     for legacy in LEGACY_SANDBOX_IMAGES:
         for key, old in (
             ("docker_image", legacy),
@@ -690,7 +690,7 @@ def _migrate_to_49(results: dict[str, Any], quiet: bool) -> None:
     # not a choice, so both are dropped and fresh sandboxes follow terminal.vercel_image. A runtime
     # the user chose (node22, python3.13) stays and keeps overriding the image, as before. Persisted
     # sandboxes are unaffected either way: a snapshot restore never sends a runtime or an image.
-    from hermes_cli.config_defaults import DEFAULT_VERCEL_IMAGE, LEGACY_VERCEL_RUNTIME
+    from moor_cli.config_defaults import DEFAULT_VERCEL_IMAGE, LEGACY_VERCEL_RUNTIME
     _rewrite_stale_default(
         section="terminal", key="vercel_runtime", old=LEGACY_VERCEL_RUNTIME, new=None,
         added=f"terminal.vercel_runtime unset (fresh sandboxes use terminal.vercel_image, {DEFAULT_VERCEL_IMAGE})",
@@ -710,7 +710,7 @@ _RETIRED_TIRITH_KEYS = ("tirith_enabled", "tirith_path", "tirith_timeout", "tiri
 
 
 def _migrate_to_50(results: dict[str, Any], quiet: bool) -> None:
-    # 49 → 50: the bundled tirith scanner left Hermes. Nothing reads its keys now, so they are
+    # 49 → 50: the bundled tirith scanner left Moor. Nothing reads its keys now, so they are
     # dropped; nothing replaces them.
     config = read_raw_config()
     security = config.get("security")
@@ -722,7 +722,7 @@ def _migrate_to_50(results: dict[str, Any], quiet: bool) -> None:
     for key in present:
         del security[key]
     _commit(config, results, quiet, "removed security.tirith_* (scanner no longer bundled)",
-            "  ✓ Removed security.tirith_* — the tirith scanner is no longer bundled with Hermes.")
+            "  ✓ Removed security.tirith_* — the tirith scanner is no longer bundled with Moor.")
 
 
 MIGRATIONS: tuple[tuple[int, Callable[[dict[str, Any], bool], None]], ...] = (
@@ -858,7 +858,7 @@ MIGRATIONS: tuple[tuple[int, Callable[[dict[str, Any], bool], None]], ...] = (
     (49, _migrate_to_49),
     # 49 → 50: security.tirith_* dropped; the bundled scanner is gone (see _migrate_to_50).
     (50, _migrate_to_50),
-    # 50 → 51: cron.bot_chat_delivery_timeout_seconds is gone with the local `hermes chat`
+    # 50 → 51: cron.bot_chat_delivery_timeout_seconds is gone with the local `moor chat`
     # fallback lane it bounded. Bot Chat deliveries are admitted to the running gateway and
     # settle on its durable receipt; there is no cron-side turn left to time out.
     (51, functools.partial(

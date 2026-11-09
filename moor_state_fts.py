@@ -10,10 +10,10 @@ import time
 from pathlib import Path
 from typing import Sequence
 
-from hermes_constants import get_hermes_home
-from hermes_state_common import (FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_TRIGRAM_SQL, _FTS_CJK_TRIGGERS,
+from moor_constants import get_moor_home
+from moor_state_common import (FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_TRIGRAM_SQL, _FTS_CJK_TRIGGERS,
     _FTS_TRIGGERS, routed_sessions_setting)
-from hermes_state_errors import is_fts_scoped_corruption_error, is_sqlite_lock_error
+from moor_state_errors import is_fts_scoped_corruption_error, is_sqlite_lock_error
 
 # caplog tests pin the "moor_state" logger name.
 logger = logging.getLogger("moor_state")
@@ -539,7 +539,7 @@ class SessionFtsSetupMixin:
     # backfill and teardown run in chunks: each its own bounded transaction (WAL
     # growth stays small), resumable from its marker (claimed by CAS), and a
     # progress tick. They run back to back with no pause while no other process
-    # holds state.db: the foreground `hermes sessions optimize-storage` refuses to
+    # holds state.db: the foreground `moor sessions optimize-storage` refuses to
     # start under a holder (held_store_refusal, #110054), and a fixed 0.2 s pause
     # after each few-ms chunk was >95% of the wall time. Chunk size (in ROWS, never
     # an id span: a pruned store has id gaps) adapts toward TARGET seconds, since

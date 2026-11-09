@@ -23,11 +23,11 @@ from starlette.status import WS_1008_POLICY_VIOLATION
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from hermes_cli import plugins as plugins_mod
-from hermes_cli import web_server
-from hermes_cli.web_server_dashboard import PluginApiWebSocketGate
-from hermes_cli.web_server_profiles import _config_profile_scope
-from tests.hermes_cli import test_plugin_api_consent_gate as consent_gate
+from moor_cli import plugins as plugins_mod
+from moor_cli import web_server
+from moor_cli.web_server_dashboard import PluginApiWebSocketGate
+from moor_cli.web_server_profiles import _config_profile_scope
+from tests.moor_cli import test_plugin_api_consent_gate as consent_gate
 
 daemon = consent_gate.daemon  # the multiplexed daemon stand-in fixture
 _plugins = consent_gate._plugins
@@ -49,15 +49,15 @@ async def ping():
 async def events(ws: WebSocket):
     with Path(__file__).with_name("ENTERED").open("a") as entered:
         entered.write("x")
-    from hermes_cli.web_server_chat import _ws_auth_ok
+    from moor_cli.web_server_chat import _ws_auth_ok
     if not _ws_auth_ok(ws):
         await ws.close(code=1008)
         return
     await ws.accept()
     from agent.secret_scope import get_secret
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     while True:
-        await ws.send_json({"home": str(get_hermes_home()), "secret": get_secret("PLG_WS_SENTINEL")})
+        await ws.send_json({"home": str(get_moor_home()), "secret": get_secret("PLG_WS_SENTINEL")})
         if await ws.receive_text() == "bye":
             break
     await ws.close()
@@ -101,7 +101,7 @@ def _grant(home):
 
 
 def _headers(grant):
-    return {"X-Hermes-Gateway-Ticket": grant}
+    return {"X-moor-gateway-Ticket": grant}
 
 
 def _refused(client, path, grant):
@@ -185,7 +185,7 @@ def test_concurrent_sockets_keep_their_own_profiles(daemon):
                 await receive()
                 await send({"type": done})
             return
-        scope["hermes.gateway_socket_peer"] = ("127.0.0.1", 50000)
+        scope["moor.gateway_socket_peer"] = ("127.0.0.1", 50000)
         await web_server.app(scope, receive, send)
 
     beta = {"home": str(daemon.beta), "secret": "beta-sentinel"}
@@ -206,8 +206,8 @@ def test_concurrent_sockets_keep_their_own_profiles(daemon):
 
 def _ambient():
     from agent.secret_scope import get_secret
-    from hermes_constants import get_hermes_home
-    return str(get_hermes_home()), get_secret("PLG_WS_SENTINEL")
+    from moor_constants import get_moor_home
+    return str(get_moor_home()), get_secret("PLG_WS_SENTINEL")
 
 
 @pytest.mark.parametrize("ending", ["raises", "cancelled"])
@@ -231,8 +231,8 @@ def test_grant_scope_is_restored_when_the_connection_ends_abnormally(daemon, end
 
     scope = {"type": "websocket", "path": EVENTS, "raw_path": EVENTS.encode(), "root_path": "",
              "query_string": b"", "app": web_server.app,
-             "headers": [(b"x-hermes-gateway-ticket", _grant(daemon.beta).encode())],
-             "hermes.gateway_socket_peer": ("127.0.0.1", 50000)}
+             "headers": [(b"x-moor-gateway-ticket", _grant(daemon.beta).encode())],
+             "moor.gateway_socket_peer": ("127.0.0.1", 50000)}
 
     async def connection():
         with _config_profile_scope(None):  # the launch profile's ambient scope

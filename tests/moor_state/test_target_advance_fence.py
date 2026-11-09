@@ -8,12 +8,12 @@ from dataclasses import asdict
 
 import pytest
 
-from hermes_state import SessionDB
-import hermes_state_runtime as rt
+from moor_state import SessionDB
+import moor_state_runtime as rt
 
 
 def _local_session(db, epoch, cwd):
-    from hermes_state_local import commit_local_session
+    from moor_state_local import commit_local_session
     from gateway.config import Platform
     from gateway.session import SessionEntry, SessionSource
     from gateway.session_lifecycle import _now

@@ -4,12 +4,12 @@ import type { GatewayHostTranslations } from './types_gateway_host'
 export const deGatewayHost: GatewayHostTranslations = {
   unavailableTitle: 'Gateway-Einstellungen nicht verfügbar',
   unavailableDesc: 'Die Desktop-IPC-Brücke stellt keine Gateway-Einstellungen bereit.',
-  webappHostTitle: 'Hermes-Host',
+  webappHostTitle: 'moor-host',
   webappHostDesc:
-    'Die Webapp nutzt immer den Hermes-Host, der sie ausliefert. Um das Gateway zu wechseln, sich bei Hermes Cloud anzumelden oder gespeicherte Verbindungen zu verwalten, verwenden Sie die Hermes-Desktop-App.',
+    'Die Webapp nutzt immer den moor-host, der sie ausliefert. Um das Gateway zu wechseln, sich bei Moor Cloud anzumelden oder gespeicherte Verbindungen zu verwalten, verwenden Sie die moor-desktop-App.',
   webAccess: {
     title: 'Webzugriff',
-    intro: 'Öffne Hermes auf diesem Computer vom Handy oder einem anderen Computer aus, angemeldet mit deinem Nous-Konto. Wer sich anmeldet, kann Befehle auf diesem Computer ausführen.',
+    intro: 'Öffne Moor auf diesem Computer vom Handy oder einem anderen Computer aus, angemeldet mit deinem Moor-Konto. Wer sich anmeldet, kann Befehle auf diesem Computer ausführen.',
     failed: 'Der Webzugriff konnte nicht geändert werden',
     running: 'Läuft',
     stopped: 'Gestoppt',
@@ -17,8 +17,8 @@ export const deGatewayHost: GatewayHostTranslations = {
     stopping: 'Wird gestoppt',
     restartNeeded: 'Neustart nötig',
     unavailable: 'Nicht verfügbar',
-    notRunningDetail: 'Starte ihn, um Hermes von einem anderen Gerät aus zu öffnen.',
-    needsNous: 'Melde dich zuerst unter Anbieter bei deinem Nous-Konto an.',
+    notRunningDetail: 'Starte ihn, um Moor von einem anderen Gerät aus zu öffnen.',
+    needsMoor: 'Melde dich zuerst unter Anbieter bei deinem Moor-Konto an.',
     runningLan: 'Öffne diese Adresse auf einem Gerät im selben Netzwerk.',
     runningPublic: 'Über deine URL bereitgestellt.',
     runningLocal: 'Nur dieser Computer kann die Web-App öffnen. Stoppe sie und starte sie erneut, um sie von anderen Geräten aus zu öffnen.',

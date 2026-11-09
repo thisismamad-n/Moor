@@ -14,7 +14,7 @@ import time as _time
 from pathlib import Path
 from typing import Optional
 
-from hermes_cli.update_cmd_common import _best_effort
+from moor_cli.update_cmd_common import _best_effort
 from datetime import UTC
 
 # Log-record parity with the origin module.
@@ -139,7 +139,7 @@ def _print_fts_optimize_available_notice() -> None:
     try:
         db = SessionDB(db_path=db_path, read_only=True)
         # read_only opens skip schema init; probe the stored layout directly.
-        from hermes_state_fts import fts_layout_drift
+        from moor_state_fts import fts_layout_drift
         drift = fts_layout_drift(db._conn)
         legacy_inline = db._db_has_legacy_inline_fts(db._conn)
         # Interrupted optimize-storage: v23 table shape but backfill markers / trash
@@ -307,7 +307,7 @@ def _refresh_dashboard_after_update(*, already_restarted_units: set[str] | None 
         print()
         print(f"⚠ Could not refresh running dashboard/serve process(es): {exc}")
         print("  If one is still running, restart it so it serves the updated code:")
-        print("    hermes dashboard --port <port>   (or: systemctl --user restart hermes-dashboard)")
+        print("    moor dashboard --port <port>   (or: systemctl --user restart moor-dashboard)")
         return set()
     unrecovered = {int(pid) for pid in stop_result.get("unrecovered") or ()}
     if not unrecovered:
@@ -316,7 +316,7 @@ def _refresh_dashboard_after_update(*, already_restarted_units: set[str] | None 
     print()
     print("⚠ A web dashboard/serve process was stopped during update and could not be auto-restarted.")
     print("  Re-launch it when you want the web UI back:")
-    print("    hermes dashboard --port <port>")
+    print("    moor dashboard --port <port>")
     return unrecovered
 
 
@@ -419,8 +419,8 @@ def _restore_state_db_from_snapshot(state_path: Path, snap_state: Path) -> bool:
     Use the single-database primitive, not whole-profile restore: post-update config
     and unrelated files must not roll back with a damaged transcript store.
     """
-    from hermes_cli.backup import verify_sqlite_integrity
-    from hermes_cli.backup_restore import _safe_restore_db
+    from moor_cli.backup import verify_sqlite_integrity
+    from moor_cli.backup_restore import _safe_restore_db
 
     snap_state.stat()  # Preserve the caller's OSError reporting for missing snapshots.
     if not verify_sqlite_integrity(snap_state, check_header=True, run_pragma=True).get("valid"):
@@ -429,7 +429,7 @@ def _restore_state_db_from_snapshot(state_path: Path, snap_state: Path) -> bool:
         print("  ✗ Auto-restore refused or failed; state.db was not restored.")
         print("    Stop the owning runtime and close database handles before retrying.")
         print("    If the canonical runtime epoch is unreadable, do not restore in place:")
-        print("    use `hermes sessions recover --source <snapshot> --output <separate-path>`")
+        print("    use `moor sessions recover --source <snapshot> --output <separate-path>`")
         print("    to salvage transcripts into a separate output.")
         return False
     restored = verify_sqlite_integrity(state_path, check_header=True, run_pragma=True)
@@ -497,12 +497,12 @@ def _invalidate_live_plugin_catalog_caches() -> None:
     TTL (#119340). Mirrors the state.db guard's home + siblings iteration. Never raises —
     :func:`plugin_catalog.invalidate_live_cache_for_home` is best-effort per home.
     """
-    from hermes_cli.update_cmd import get_hermes_home
-    home = get_hermes_home()
-    from hermes_cli.plugin_catalog import invalidate_live_cache_for_home
+    from moor_cli.update_cmd import get_moor_home
+    home = get_moor_home()
+    from moor_cli.plugin_catalog import invalidate_live_cache_for_home
     invalidate_live_cache_for_home(home)
     with suppress(Exception):
-        from hermes_cli.backup import _sibling_profile_homes
+        from moor_cli.backup import _sibling_profile_homes
         for _name, profile_home in _sibling_profile_homes(home):
             invalidate_live_cache_for_home(profile_home)
 
@@ -800,8 +800,8 @@ def _sweep_bytecode_after_update(branch: str) -> None:
     Never fails the committed update: a failed sweep is a ``bytecode_sweep`` follow-up and the
     fingerprint stays un-stamped, so the launch-time sweep (fingerprint mismatch) retries it.
     """
-    from hermes_cli.update_cmd import _m
-    from hermes_cli.update_receipt import record_followup
+    from moor_cli.update_cmd import _m
+    from moor_cli.update_receipt import record_followup
     # Timestamp-based .pyc validation can accept old bytecode after the source swap.
     try:
         removed = _m()._clear_bytecode_cache(_m().PROJECT_ROOT)
@@ -814,7 +814,7 @@ def _sweep_bytecode_after_update(branch: str) -> None:
         _m()._refresh_bootstrap_cache_scripts(branch)
     except Exception as exc:  # health: allow BLE001 -- refreshed again by the next update
         record_followup("bootstrap_scripts", str(exc) or type(exc).__name__,
-                        retry="the next `hermes update` refreshes them")
+                        retry="the next `moor update` refreshes them")
 
 
 def _profile_skill_sync_status(r) -> str:
@@ -893,7 +893,7 @@ def _install_default_tools_after_update() -> None:
     cua-driver). browser_exec's engine (browser-harness) is a venv dependency.
 
     Runs at the end of both the installers (via the source completion) and
-    ``hermes update``: a source update re-syncs only the venv, so a tool that became
+    ``moor update``: a source update re-syncs only the venv, so a tool that became
     a default after this install was created would never arrive otherwise. Declined
     packages stay declined (pm/defaults.py). A failed download warns and never fails.
     """
@@ -910,7 +910,7 @@ def _install_default_tools_after_update() -> None:
     for name in default_packages(Lockfile(lockfile_path()).names()):
         if pm.installed_package(name) is not None:
             continue
-        print(f"\n→ Installing {name} (default tool; opt out with `hermes pm install --without {name}`)...")
+        print(f"\n→ Installing {name} (default tool; opt out with `moor pm install --without {name}`)...")
         try:
             pm.ensure(name, explicit=True)
         except (pm.InstallError, OSError) as exc:
@@ -949,7 +949,7 @@ def _print_post_update_notices_and_self_heals() -> None:
         ('cua-driver refresh failed: %s', _refresh_cua_driver_after_update),
         ('Default PM tool install failed: %s', _install_default_tools_after_update),
         ('Checkpoint footprint notice failed: %s', _print_checkpoint_footprint_notice),
-        # Legacy HERMES_NEMO_RELAY_ATIF_*/ATOF_* vars produce no traces since the Relay cutover;
+        # Legacy MOOR_NEMO_RELAY_ATIF_*/ATOF_* vars produce no traces since the Relay cutover;
         # generate each profile's relay-plugins.toml instead of leaving exports silently dead.
         ('Relay exporter migration failed: %s', _migrate_relay_exporter_env),
     ):
@@ -975,7 +975,7 @@ def _run_post_update_maintenance(
     that profile's error and carries on); only a sync that escapes the step is owed. An unsafe
     runtime withholds success (and is reported) but is not tail work.
     """
-    from hermes_cli.update_receipt import record_followup
+    from moor_cli.update_receipt import record_followup
 
     def owed_step(name, run):
         try:
@@ -986,8 +986,8 @@ def _run_post_update_maintenance(
             if followups is not None:
                 followups.append((name, reason))
 
-    from hermes_cli.update_cmd import _check_and_apply_config_migration, _m
-    from hermes_cli.update_windows_acl import repair_windows_home_acl
+    from moor_cli.update_cmd import _check_and_apply_config_migration, _m
+    from moor_cli.update_windows_acl import repair_windows_home_acl
     owed_step("windows_home_acl", repair_windows_home_acl)
     # macOS TCC: Desktop bundles are re-signed each update, so old grants can go stale
     # (toggle ON, yet macOS re-prompts with no Allow button). Tell users how to re-grant.
@@ -1029,7 +1029,7 @@ def _run_post_update_maintenance(
         print(f"  ⚠ Could not refresh release history ({detail[0]}); the version label may be stale or unknown until the next update")
     # Keeps every later version lookup off a full history walk; detached, so it never delays this run.
     with _best_effort('Commit-graph refresh failed to start: %s'):
-        from hermes_cli.git_commit_graph import spawn_commit_graph_refresh
+        from moor_cli.git_commit_graph import spawn_commit_graph_refresh
         spawn_commit_graph_refresh(Path(_m().PROJECT_ROOT))
 
     # Seed the model-catalog cache from the checkout instead of a bot-gated, flaky fetch.

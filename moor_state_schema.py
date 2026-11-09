@@ -26,12 +26,12 @@ from moor_state_common import (
     LEGACY_FTS_TRIGRAM_SQL, SCHEMA_SQL,
     SCHEMA_VERSION, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS, _ephemeral_child_sql, _sql_json_extract, fts_rebuild_admission,
 )
-from hermes_state_fts import (_drop_orphan_fts_shadow_tables, base_index_recognised, base_source_view_is_stale,
+from moor_state_fts import (_drop_orphan_fts_shadow_tables, base_index_recognised, base_source_view_is_stale,
                               fts_layout_current)
-from hermes_state_holders import _read_proc_argv
-from hermes_state_search import _delete_meta, _meta_row
-from hermes_state_errors import is_sqlite_lock_error
-from hermes_state_titles import next_title_in_lineage
+from moor_state_holders import _read_proc_argv
+from moor_state_search import _delete_meta, _meta_row
+from moor_state_errors import is_sqlite_lock_error
+from moor_state_titles import next_title_in_lineage
 
 # Pre-split logger identity so log filtering/capture is unchanged.
 logger = logging.getLogger("moor_state")

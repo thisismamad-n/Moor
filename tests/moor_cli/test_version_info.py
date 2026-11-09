@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-from hermes_cli.version_info import (
+from moor_cli.version_info import (
     VersionInfo,
     _derived_version,
     _git_version_info,
@@ -46,7 +46,7 @@ def test_display_version_keeps_tagless_stamp_identity(tmp_path, monkeypatch):
     }
     stamp_file = tmp_path / "install-stamp.json"
     stamp_file.write_text(json.dumps(stamp), encoding="utf-8")
-    monkeypatch.setattr("hermes_cli.version_info._resolve_stamp_file", lambda: stamp_file)
+    monkeypatch.setattr("moor_cli.version_info._resolve_stamp_file", lambda: stamp_file)
 
     info = get_version_info()
 

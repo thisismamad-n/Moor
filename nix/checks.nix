@@ -159,7 +159,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         # next to these archives. `nix flake check` otherwise only evaluates
         # the pm derivations, so a sidecar leaking into srcs ("do not know
         # how to unpack") stayed green; build the sidecar-bearing pin.
-        pm-packages-unpack = pkgs.runCommand "hermes-pm-packages-unpack" { } ''
+        pm-packages-unpack = pkgs.runCommand "moor-pm-packages-unpack" { } ''
           test -x ${self'.packages.pm-iron-proxy}/iron-proxy
           mkdir -p $out
           echo "ok" > $out/result
@@ -169,7 +169,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         # their interpreter at build time, and this sandbox has no
         # /lib64/ld-linux-x86-64.so.2 (that is host nix-ld), so exec'ing them
         # here is the proof they run on a host that never enabled nix-ld.
-        pm-packages-exec = pkgs.runCommand "hermes-pm-packages-exec" { } ''
+        pm-packages-exec = pkgs.runCommand "moor-pm-packages-exec" { } ''
           mkdir -p $out
           if [ -e /lib64/ld-linux-x86-64.so.2 ]; then
             echo "sandbox unexpectedly carries a host loader; this proves nothing" >&2
@@ -183,14 +183,14 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           cat $out/*
         '';
 
-        # The dev shell's HERMES_PYTHON must carry its own dependencies: the
+        # The dev shell's MOOR_PYTHON must carry its own dependencies: the
         # TUI and the test runner launch it with PYTHONPATH replaced or cleared.
-        dev-venv-self-contained = pkgs.runCommand "hermes-dev-venv-self-contained" { } ''
-          venv=${hermes-agent.devVenv}
+        dev-venv-self-contained = pkgs.runCommand "moor-dev-venv-self-contained" { } ''
+          venv=${moor-agent.devVenv}
           env -i "$venv/bin/python3" -c '
           import sys, ruamel.yaml, openai, httpx, pytest
           assert sys.prefix == "'"$venv"'", sys.prefix
-          assert sys.base_prefix == "${hermes-agent.pmPython}", sys.base_prefix
+          assert sys.base_prefix == "${moor-agent.pmPython}", sys.base_prefix
           '
           env -i "$venv/bin/pytest" --version
           # Native dev commands survive alongside the re-shebanged scripts.
@@ -490,9 +490,9 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             # The backend of the service, as the unit or the agent runs it.
             backendArgvList =
               if pkgs.stdenv.hostPlatform.isDarwin then
-                cfg.launchd.agents.hermes-backend.config.ProgramArguments
+                cfg.launchd.agents.moor-backend.config.ProgramArguments
               else
-                [ cfg.systemd.user.services.hermes-backend.Service.ExecStart ];
+                [ cfg.systemd.user.services.moor-backend.Service.ExecStart ];
             backendArgvText = lib.concatStringsSep " " (lib.flatten backendArgvList);
             backendScript =
               let
@@ -509,11 +509,11 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               # value quoted), launchd an attribute set that holds the bare
               # value.
               if pkgs.stdenv.hostPlatform.isDarwin then
-                "HERMES_DASHBOARD_SESSION_TOKEN=file:"
-                + (cfg.launchd.agents.hermes-backend.config.EnvironmentVariables.HERMES_DASHBOARD_SESSION_TOKEN
+                "MOOR_DASHBOARD_SESSION_TOKEN=file:"
+                + (cfg.launchd.agents.moor-backend.config.EnvironmentVariables.MOOR_DASHBOARD_SESSION_TOKEN
                   or "")
               else
-                lib.concatStringsSep "\n" cfg.systemd.user.services.hermes-backend.Service.Environment;
+                lib.concatStringsSep "\n" cfg.systemd.user.services.moor-backend.Service.Environment;
 
             failures =
               lib.optional (
@@ -542,19 +542,19 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               # The desktop launcher reads the file at start time (--run, not
               # --set: a --set value writes the token into a store path that
               # all users can read). The backend unit instead carries the
-              # token's PATH in its environment and hermes reads the file
+              # token's PATH in its environment and moor reads the file
               # itself, so the store never sees the token either way.
               ++ lib.optional (
                 !lib.hasInfix tokenFile wrapper || !lib.hasInfix "--run" wrapper
               ) "the launcher must read the token from ${tokenFile} at start time, with --run"
               ++ lib.optional (
-                !lib.hasInfix "HERMES_DASHBOARD_SESSION_TOKEN=" backendTokenText
+                !lib.hasInfix "MOOR_DASHBOARD_SESSION_TOKEN=" backendTokenText
                 || !lib.hasInfix "file:${tokenFile}" backendTokenText
-              ) "the backend unit must name the token file in its environment, or hermes mints a token the application cannot know"
+              ) "the backend unit must name the token file in its environment, or moor mints a token the application cannot know"
               # With no waitFor, a token must no longer force the launcher:
               # nothing in the command line has to read a secret any more.
               ++ lib.optional (
-                lib.hasInfix "hermes-backend-launch" backendArgvText
+                lib.hasInfix "moor-backend-launch" backendArgvText
               ) "a sessionTokenFile alone must not force the launcher; the token path rides in the unit environment (got: ${backendArgvText})"
 
               # Secret managers leave a "$XDG_RUNTIME_DIR" placeholder in
@@ -1058,10 +1058,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               (cfgFor "serve")
               // {
                 backend = (cfgFor "serve").backend // {
-                  sessionTokenFile = "/run/secrets/hermes-argv-probe-token";
+                  sessionTokenFile = "/run/secrets/moor-argv-probe-token";
                 };
               };
-            sentinel = "--hermes-nix-argv-probe";
+            sentinel = "--moor-nix-argv-probe";
             probe = argv: lib.escapeShellArgs (argv ++ [ sentinel ]);
           in
           pkgs.runCommand "moor-service-argv" { } ''
@@ -1273,10 +1273,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           test -f ${moor-agent}/ui-tui/dist/entry.js || (echo "FAIL: compiled entry.js missing"; exit 1)
           echo "PASS: compiled entry.js present"
 
-          # The compiled TUI runs these on HERMES_PYTHON; the Python package lives in another
+          # The compiled TUI runs these on MOOR_PYTHON; the Python package lives in another
           # store path, so they must ship beside entry.js (#139208).
           for helper in gateway_bootstrap.py clipboard_image.py; do
-            test -f ${hermes-agent}/ui-tui/dist/scripts/$helper || \
+            test -f ${moor-agent}/ui-tui/dist/scripts/$helper || \
               (echo "FAIL: TUI helper $helper missing"; exit 1)
           done
           echo "PASS: TUI Python helpers present"
@@ -1372,7 +1372,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         '';
 
         # Extras ADD to what a package ships, through both entry points:
-        # `pkgs.hermes-agent.override { ... }` (the documented overlay path)
+        # `pkgs.moor-agent.override { ... }` (the documented overlay path)
         # and the modules' extraPythonPackages / extraDependencyGroups.
         # Replacing semantics rebuilt the default package as `minimal` and
         # dropped every provider group. Each case asserts a positive effect
@@ -1384,23 +1384,23 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           newGroup = "google-meet";
           path = drv: builtins.unsafeDiscardStringContext drv.drvPath;
           modulePackage = settings:
-            (evalHomeModule ({ enable = true; } // settings)).config.programs.hermes-agent.package;
+            (evalHomeModule ({ enable = true; } // settings)).config.programs.moor-agent.package;
 
           viaModulePlugin = modulePackage { extraPythonPackages = [ testPkg ]; };
           viaModuleGroup = modulePackage { extraDependencyGroups = [ newGroup ]; };
           viaModuleShipped = modulePackage { extraDependencyGroups = [ "anthropic" ]; };
-          viaOverlayGroup = hermes-agent.override { extraDependencyGroups = [ newGroup ]; };
+          viaOverlayGroup = moor-agent.override { extraDependencyGroups = [ newGroup ]; };
           # No `or [ ]`: appending to prev.extraDependencyGroups is a shape users already write.
-          viaFunctionGroup = hermes-agent.override (prev: {
+          viaFunctionGroup = moor-agent.override (prev: {
             extraDependencyGroups = prev.extraDependencyGroups ++ [ newGroup ];
           });
-          viaOverlayShipped = hermes-agent.override { extraDependencyGroups = [ "messaging" ]; };
+          viaOverlayShipped = moor-agent.override { extraDependencyGroups = [ "messaging" ]; };
 
           # A custom `package` that already carries extras of its own: the
           # module's extras must land on top of them, not replace them.
           testPkg2 = pythonLock.interpreter.pkgs.tabulate;
           newGroup2 = "ddgs";
-          customPackage = hermes-agent.override {
+          customPackage = moor-agent.override {
             extraDependencyGroups = [ newGroup ];
             extraPythonPackages = [ testPkg ];
           };
@@ -1409,7 +1409,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             extraDependencyGroups = [ newGroup2 ];
             extraPythonPackages = [ testPkg2 ];
           };
-          bothExtras = hermes-agent.override {
+          bothExtras = moor-agent.override {
             extraDependencyGroups = [ newGroup newGroup2 ];
             extraPythonPackages = [ testPkg testPkg2 ];
           };
@@ -1417,35 +1417,35 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           cases = [
             {
               what = "module extraPythonPackages reaches the package (wrapper PYTHONPATH)";
-              ok = path viaModulePlugin != path hermes-agent;
+              ok = path viaModulePlugin != path moor-agent;
             }
             {
               what = "module extraPythonPackages keeps the default sealed venv";
-              ok = path viaModulePlugin.hermesVenv == path hermesVenv;
+              ok = path viaModulePlugin.moorVenv == path moorVenv;
             }
             {
               what = "a new group changes the venv (not ignored)";
-              ok = path viaFunctionGroup.hermesVenv != path hermesVenv;
+              ok = path viaFunctionGroup.moorVenv != path moorVenv;
             }
             {
               what = "module extraDependencyGroups == appending to the package's own";
-              ok = path viaModuleGroup.hermesVenv == path viaFunctionGroup.hermesVenv;
+              ok = path viaModuleGroup.moorVenv == path viaFunctionGroup.moorVenv;
             }
             {
               what = "overlay attrset override == appending (shipped groups survive)";
-              ok = path viaOverlayGroup.hermesVenv == path viaFunctionGroup.hermesVenv;
+              ok = path viaOverlayGroup.moorVenv == path viaFunctionGroup.moorVenv;
             }
             {
               what = "module group the package already ships leaves the venv unchanged";
-              ok = path viaModuleShipped.hermesVenv == path hermesVenv;
+              ok = path viaModuleShipped.moorVenv == path moorVenv;
             }
             {
               what = "overlay group the package already ships leaves the venv unchanged";
-              ok = path viaOverlayShipped.hermesVenv == path hermesVenv;
+              ok = path viaOverlayShipped.moorVenv == path moorVenv;
             }
             {
               what = "module extras on a custom package keep its groups (venv)";
-              ok = path viaModuleOnCustom.hermesVenv == path bothExtras.hermesVenv;
+              ok = path viaModuleOnCustom.moorVenv == path bothExtras.moorVenv;
             }
             {
               what = "module extras on a custom package keep its python packages";
@@ -1453,7 +1453,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             }
           ];
           report = lib.concatMapStrings (c: "${if c.ok then "PASS" else "FAIL"}: ${c.what}\n") cases;
-        in pkgs.runCommand "hermes-extras-extend-package" { inherit report; } ''
+        in pkgs.runCommand "moor-extras-extend-package" { inherit report; } ''
           echo "=== Checking extras extend the package's own ==="
           printf '%s' "$report"
           if printf '%s' "$report" | grep -q '^FAIL'; then exit 1; fi
@@ -1498,7 +1498,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
         # Verify extraDependencyGroups passes through to python.nix
         extra-dependency-groups = let
-          hermesWithGroups = hermes-agent.override {
+          moorWithGroups = moor-agent.override {
             extraDependencyGroups = [ "exa" ];
           };
         in pkgs.runCommand "moor-extra-dependency-groups" { } ''
@@ -1530,8 +1530,8 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           echo "ok" > $out/result
         '';
 
-        # A fresh declarative install must be current to the Hermes it ships
-        # with. Hermes cannot stamp config.yaml in managed mode, so an
+        # A fresh declarative install must be current to the Moor it ships
+        # with. Moor cannot stamp config.yaml in managed mode, so an
         # unstamped file reads as version 0 and trips the support-floor
         # warning at every boot.
         generated-config-version =
@@ -1540,21 +1540,21 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
             configFiles = common.mkConfigFiles {
               inherit pkgs;
               cfg = {
-                package = hermes-agent;
+                package = moor-agent;
                 extraPythonPackages = [ ];
                 extraDependencyGroups = [ ];
                 configFile = null;
                 settings.model.default = "test/nix-model";
               };
-              workingDirectory = "/var/lib/hermes/workspace";
+              workingDirectory = "/var/lib/moor/workspace";
             };
           in
-          pkgs.runCommand "hermes-generated-config-version" { } ''
+          pkgs.runCommand "moor-generated-config-version" { } ''
             set -e
-            export HOME=$(mktemp -d) HERMES_HOME=$(mktemp -d)
-            ${configMergeScript} ${configFiles.generated} "$HERMES_HOME/config.yaml"
-            ${hermesVenv}/bin/python3 -c '
-            from hermes_cli.config import check_config_version
+            export HOME=$(mktemp -d) MOOR_HOME=$(mktemp -d)
+            ${configMergeScript} ${configFiles.generated} "$MOOR_HOME/config.yaml"
+            ${moorVenv}/bin/python3 -c '
+            from moor_cli.config import check_config_version
             current, latest = check_config_version(raise_on_parse_error=True)
             assert current == latest, f"generated config.yaml reads as v{current}, package is v{latest}"
             print(f"PASS: generated config.yaml is at v{current}")

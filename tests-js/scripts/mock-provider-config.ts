@@ -92,7 +92,7 @@ export function writeEnvFile(moorHome: string, apiKey = 'e2e-mock-key', mockUrl?
     throw new Error('Mock key must be an inert single-line test value')
   }
 
-  const envPath = path.join(hermesHome, '.env')
+  const envPath = path.join(moorHome, '.env')
   const prior = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : ''
   const reps = new Map<string, string>([['MOCK_API_KEY', `MOCK_API_KEY=${apiKey}`]])
 

@@ -403,10 +403,10 @@ export const en: Translations = {
     compressDeferredDone: 'Context compression finished',
     backendOutOfDateTitle: 'Backend out of date',
     backendOutOfDateMessage:
-      'Your Hermes backend is older than this desktop build and may not work correctly. Update to align them.',
-    desktopOutOfDateTitle: 'Hermes app out of date',
+      'Your Moor backend is older than this desktop build and may not work correctly. Update to align them.',
+    desktopOutOfDateTitle: 'Moor app out of date',
     desktopOutOfDateMessage:
-      'This Hermes app is older than the backend it is connected to and may not work correctly. Update the app to align them.',
+      'This Moor app is older than the backend it is connected to and may not work correctly. Update the app to align them.',
     updateDesktopApp: 'Update app',
     installMethodUnsupportedTitle: 'Unsupported install method',
     updateMoor: 'Update Moor',
@@ -484,8 +484,8 @@ export const en: Translations = {
       rejectAction: 'Reject',
       inputTitle: 'Input needed',
       inputTitleNamed: session => `Input needed — ${session}`,
-      inputBody: 'Hermes is waiting for your response.',
-      turnDoneTitle: 'Hermes finished',
+      inputBody: 'Moor is waiting for your response.',
+      turnDoneTitle: 'Moor finished',
       turnDoneBody: 'Message complete.',
       turnErrorTitle: 'Turn failed',
       backgroundDoneTitle: 'Background task finished',
@@ -788,7 +788,7 @@ export const en: Translations = {
         repoLabel: 'Repository',
         verified: 'Verified',
         unverified: 'Unverified',
-        reviewedByNous: 'Reviewed by Nous.',
+        reviewedByMoor: 'Reviewed by Moor.',
         installsAndEnables: profile => `Installs for ${profile} and turns on right away.`,
         installsOnly: profile => `Installs for ${profile}.`,
         advanced: 'Advanced',
@@ -1498,9 +1498,9 @@ export const en: Translations = {
       sshErrPlatform:
         'Unsupported remote platform. Moor Desktop SSH mode supports Linux, macOS, and Windows remote hosts.',
       sshErrTimeout: 'SSH connection timed out. The host may be unreachable or asleep.',
-      sshErrUpdateRequired: 'Update Hermes on the remote host before connecting with Desktop SSH.',
+      sshErrUpdateRequired: 'Update Moor on the remote host before connecting with Desktop SSH.',
       sshErrInteractiveAuth:
-        'Tailscale SSH requires an interactive browser check. In Terminal, run `ssh <host> true`, complete the check, then retry — Hermes runs SSH non-interactively.',
+        'Tailscale SSH requires an interactive browser check. In Terminal, run `ssh <host> true`, complete the check, then retry — Moor runs SSH non-interactively.',
       sshErrUnknown: 'SSH connection failed.'
     },
     keys: {
@@ -1666,7 +1666,7 @@ export const en: Translations = {
       },
       keepGoingOnCredits: {
         title: 'Keep going on credits',
-        description: 'Use your credits when included usage runs out. Off: Hermes waits for the reset.',
+        description: 'Use your credits when included usage runs out. Off: Moor waits for the reset.',
         approveInBrowser: 'Approve Remote Spending in your browser to change this. It applies as soon as you approve.',
         openAgain: 'Open again',
         cancel: 'Cancel',
@@ -2100,7 +2100,7 @@ export const en: Translations = {
     locked: 'Locked',
     lockHint: "The agent can't change this skill while it's locked. You can still edit it yourself.",
     unlockedHint: 'Lock to stop the agent from changing this skill. You can still edit it yourself.',
-    skillArchivedMessage: 'Restorable via hermes curator restore.',
+    skillArchivedMessage: 'Restorable via moor curator restore.',
     tabPlugins: 'Plugins',
     plugins: {
       agentTitle: 'Agent plugins',
@@ -2135,12 +2135,12 @@ export const en: Translations = {
       toolsetOff: (name: string, profile: string) => `${name} agent tools disabled for ${profile}`,
       toolsetToggleFailed: (name: string) =>
         `Could not toggle the ${name} agent tools; the Desktop panel was left unchanged`,
-      legacyBackend: 'This backend predates key-addressed plugin toggles — update Hermes to manage it here.',
+      legacyBackend: 'This backend predates key-addressed plugin toggles — update Moor to manage it here.',
       portableBadge: 'portable',
       serverStates: {
         connected: 'connected',
         app_not_running: 'app not running',
-        hermes_not_connected: 'MCP connection missing',
+        moor_not_connected: 'MCP connection missing',
         endpoint_unavailable: 'endpoint unavailable',
         no_interactive_session: 'no interactive session',
         version_too_old: 'version too old',
@@ -2785,7 +2785,7 @@ export const en: Translations = {
     failedImport: 'Failed to import profile',
     failedExport: 'Failed to export profile',
     exportNeedsHost: name =>
-      `The browser can't save a profile archive. On the Hermes host, run: hermes profile export ${name}`,
+      `The browser can't save a profile archive. On the Moor host, run: moor profile export ${name}`,
     allProfiles: 'All profiles',
     showAllProfiles: 'Show all profiles',
     notServedHere: 'Not served here',
@@ -2801,8 +2801,8 @@ export const en: Translations = {
       onGateway: (name, gateway) => `${name} · ${gateway}`,
       switchTo: (name, gateway) => `Open ${name} on ${gateway}`,
       deleteOn: gateway => ` on ${gateway}`,
-      localDevice: 'This device (local backend — installs Hermes if missing, otherwise opens a fresh session)',
-      installDeviceTitle: 'Install Hermes on This device?',
+      localDevice: 'This device (local backend — installs Moor if missing, otherwise opens a fresh session)',
+      installDeviceTitle: 'Install Moor on This device?',
       installDeviceDesc:
         'This will install Moor locally, then open a fresh session on this computer. Nothing is installed until you confirm.',
       installDeviceConfirm: 'Install locally',
@@ -3719,9 +3719,9 @@ export const en: Translations = {
     copyFullLog: 'Copy full changelog',
     manualTitle: 'Update from your terminal',
     manualUnavailableTitle: "Can't update from here",
-    manualBody: 'You installed Hermes from the command line, so updates run there too. Paste this into your terminal:',
-    manualBodyBackend: 'The Hermes backend is managed outside this app. Run this on the server that hosts it:',
-    manualPickedUp: 'Hermes will pick up the new version next time you launch it.',
+    manualBody: 'You installed Moor from the command line, so updates run there too. Paste this into your terminal:',
+    manualBodyBackend: 'The Moor backend is managed outside this app. Run this on the server that hosts it:',
+    manualPickedUp: 'Moor will pick up the new version next time you launch it.',
     manualPickedUpBackend: 'The backend picks up the new version after the update completes.',
     guiSkewTitle: 'Update the desktop app',
     guiSkewBody:
@@ -3779,9 +3779,9 @@ export const en: Translations = {
       notAvailable: 'Update not available for this backend.',
       failed: 'Backend update failed.',
       noReturn: 'Backend didn’t come back online. The update may not have completed — check the backend host.',
-      owed: steps => `Backend updated, but still owed: ${steps}. Re-run \`hermes update\` to finish them.`
+      owed: steps => `Backend updated, but still owed: ${steps}. Re-run \`moor update\` to finish them.`
     },
-    appName: 'Hermes', // Update-status overlay + version-details (mechanism-aware update UI).
+    appName: 'Moor', // Update-status overlay + version-details (mechanism-aware update UI).
     version: (value: string) => `Version ${value}`,
     versionUnavailable: 'Version unavailable',
     checkNow: 'Check now',
@@ -3947,7 +3947,7 @@ export const en: Translations = {
     tryAgain: 'Try again',
     didNotComplete: "Sign-in didn't finish",
     timedOutHeading: 'That sign-in link has expired',
-    timedOutBody: "Start again whenever you're ready. You're still on the free Nous service.",
+    timedOutBody: "Start again whenever you're ready. You're still on the free Moor service.",
     errorBody: "Sign-in didn't finish. Try again whenever you're ready.",
     busyHeading: 'Almost there',
     busyBody: wait =>
@@ -3955,10 +3955,10 @@ export const en: Translations = {
     unreachableBody:
       "Moor couldn't reach the Moor service to finish signing you in. Check your internet connection and try again. Your session is still here.",
     alreadySignedInHeading: 'Already signed in.',
-    alreadySignedInBody: 'This Hermes is already signed in to a Nous account.',
+    alreadySignedInBody: 'This Moor is already signed in to a Moor account.',
     offer: {
-      heading: 'Keep going with Hermes',
-      body: "You're on the free allowance. If you keep using Hermes, you'll start running into limits. Sign in with a free Nous account for a bigger allowance.",
+      heading: 'Keep going with Moor',
+      body: "You're on the free allowance. If you keep using Moor, you'll start running into limits. Sign in with a free Moor account for a bigger allowance.",
       signIn: 'Sign in',
       notNow: 'Not now'
     },
@@ -4485,7 +4485,7 @@ export const en: Translations = {
       errorOpenMoorFolderFailed: 'Could not open the Moor folder',
       errorUpdateApiKey: 'Update API key',
       errorSignInAgain: provider => `Sign in to ${provider} again`,
-      errorSignInFreeTier: 'Sign in with a Nous account',
+      errorSignInFreeTier: 'Sign in with a Moor account',
       errorOauthExpired: provider => `Your ${provider} sign-in expired or was revoked. Sign in again to keep chatting.`,
       errorOpenLogs: 'Open logs',
       errorOpenLogsFailed: 'Could not open the logs folder',

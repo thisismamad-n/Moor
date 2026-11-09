@@ -131,7 +131,7 @@ async def test_delete_does_not_claim_success_on_a_corrupt_store(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_rename_endpoint_reports_corruption(monkeypatch):
-    from hermes_cli.web_models import SessionRename
+    from moor_cli.web_models import SessionRename
 
     request = _mutation_request(monkeypatch)
     with pytest.raises(HTTPException) as excinfo:

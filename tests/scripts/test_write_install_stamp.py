@@ -75,7 +75,7 @@ def test_invalid_variant_cannot_emit_stamp(tmp_path, variant, tag, error):
         [sys.executable, str(Path(__file__).resolve().parents[2] / "scripts/write_install_stamp.py"),
          "--output", str(out), "--commit", "d" * 40, "--base-version", "0.18.0",
          "--update-mechanism", "self"],
-        env={**os.environ, "HERMES_DESKTOP_VARIANT": variant, "HERMES_PAYLOAD_TAG": tag, "HERMES_BUILD_COMMIT": ""},
+        env={**os.environ, "MOOR_DESKTOP_VARIANT": variant, "MOOR_PAYLOAD_TAG": tag, "MOOR_BUILD_COMMIT": ""},
         capture_output=True, text=True, timeout=30, check=False)
     assert result.returncode != 0 and error in result.stderr
     assert not out.exists()

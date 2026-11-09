@@ -3,12 +3,12 @@ label: BlueBubbles (iMessage)
 kind: platform
 version: 1.0.0
 description: >
-  BlueBubbles (Apple iMessage) gateway adapter for Hermes Agent.
+  BlueBubbles (Apple iMessage) gateway adapter for Moor Agent.
   Talks to a local BlueBubbles macOS server: outbound sends over its REST API,
   inbound messages via a registered webhook listener. Supports media
   attachments, typing indicators, read receipts and tapbacks (Private API
   helper), group wake-word gating, and home-channel cron delivery.
-author: NousResearch
+author: Moor inc.
 requires_env:
   - name: BLUEBUBBLES_SERVER_URL
     description: "BlueBubbles server URL (e.g. http://192.168.1.10:1234)"
@@ -56,6 +56,6 @@ optional_env:
     prompt: "Require mention in groups? (true/false)"
     password: false
   - name: BLUEBUBBLES_MENTION_PATTERNS
-    description: "Group wake-word regexes (JSON list or comma/newline-separated); default Hermes wake words"
+    description: "Group wake-word regexes (JSON list or comma/newline-separated); default Moor wake words"
     prompt: "Mention patterns"
     password: false

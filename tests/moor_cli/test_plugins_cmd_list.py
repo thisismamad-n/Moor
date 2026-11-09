@@ -140,7 +140,7 @@ def test_entrypoint_spec_does_not_abort_plugin_status(monkeypatch):
     real_stat = Path.stat
 
     def stat(self, *args, **kwargs):
-        if str(self).startswith("mnemosyne_hermes:register"):
+        if str(self).startswith("mnemosyne_moor:register"):
             err = OSError(22, "The filename, directory name, or volume label syntax is incorrect")
             err.winerror = 123
             raise err
@@ -149,8 +149,8 @@ def test_entrypoint_spec_does_not_abort_plugin_status(monkeypatch):
     monkeypatch.setattr(Path, "stat", stat)
 
     assert plugins_cmd._plugin_status(
-        "mnemosyne_hermes", set(), set(), key="mnemosyne_hermes",
-        source="entrypoint", dir_path="mnemosyne_hermes:register",
+        "mnemosyne_moor", set(), set(), key="mnemosyne_moor",
+        source="entrypoint", dir_path="mnemosyne_moor:register",
     ) == "not enabled"
 
 
@@ -170,7 +170,7 @@ def test_unreadable_plugin_dir_is_skipped_by_every_manifest_scan(monkeypatch, tm
         (user_dir / name / "plugin.yaml").write_text(f"name: {name}\nversion: 1.0.0\n", encoding="utf-8")
     (user_dir / "denied").chmod(0)
     monkeypatch.setattr(plugins_cmd, "_plugins_dir", lambda: user_dir)
-    monkeypatch.setattr("hermes_cli.plugins.get_bundled_plugins_dir", lambda: bundled_dir)
+    monkeypatch.setattr("moor_cli.plugins.get_bundled_plugins_dir", lambda: bundled_dir)
     monkeypatch.setattr(importlib.metadata, "entry_points", list)
 
     try:

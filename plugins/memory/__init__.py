@@ -226,7 +226,7 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
         logger.debug("Memory provider '%s' not found in bundled, user plugins, or entry points", name)
         return None
     if provider_dir is not None and _explicitly_disabled(name, provider_dir):
-        # The Plugins hub / `hermes plugins disable` (or an update that could not install it) park a
+        # The Plugins hub / `moor plugins disable` (or an update that could not install it) park a
         # user-installed provider in ``plugins.disabled``; the loader must honour it or "disabled" is a lie.
         logger.warning("%s", parked_provider_notice(name))
         return None
@@ -234,7 +234,7 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
     def _load(_dir):
         if provider_dir:
             return _load_provider_from_dir(provider_dir, register_skills=register_skills)
-        from hermes_cli.plugin_isolation import in_process_import_refusal
+        from moor_cli.plugin_isolation import in_process_import_refusal
         refusal = in_process_import_refusal(f"pip-installed memory provider {name!r}")
         if refusal:
             logger.warning("%s", refusal)
@@ -255,7 +255,7 @@ def import_memory_provider_module(name: Optional[str] = None) -> bool:
     name = name or _get_active_memory_provider()
     if not name:
         return False
-    from hermes_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
+    from moor_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
     if isolation_mode() == ISOLATION_HOST and not _is_bundled(find_provider_dir(name) or Path("/")):
         return False  # third-party code runs in the plugin host; nothing to warm in this process
     imported = False
@@ -362,7 +362,7 @@ def _load_provider_from_entry_point(entry_point, *, register_skills: bool = True
 def _load_provider_from_dir(provider_dir: Path, *, register_skills: bool = True) -> Optional[MemoryProvider]:
     """Import a provider module; ``register(ctx)`` first, else a top-level subclass."""
     name = provider_dir.name
-    from hermes_cli.plugin_isolation import user_plugin_host
+    from moor_cli.plugin_isolation import user_plugin_host
     host = None if _is_bundled(provider_dir) else user_plugin_host()
     if host is not None:
         return _ProviderCollector(name, register_skills=register_skills).collect_in_host(
@@ -421,7 +421,7 @@ class _ProviderCollector:
         """``collect`` for a provider whose code runs in the plugin host: the host captures the
         provider and forwards every other registration here. The discovery lock is NOT held across
         the host call — its registrations arrive on another thread and take the lock themselves."""
-        from hermes_cli.plugins_ledger import _hook_source_of
+        from moor_cli.plugins_ledger import _hook_source_of
 
         self._hook_source = _hook_source_of(self.name, SimpleNamespace(__file__=str(provider_dir / "__init__.py")))
         manager = self._plugin_context()._manager
@@ -510,14 +510,14 @@ def parked_provider_notice(name: str) -> Optional[str]:
     provider_dir = find_provider_dir(name)
     if provider_dir is None or not _explicitly_disabled(name, provider_dir):
         return None
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
     from pm.plugins_state import RECORD
     record = cfg_get(load_config(), "plugins", RECORD)
     recorded = record.get(name) if isinstance(record, dict) else None
     why = (f" An update turned it off ({recorded.get('reason')}) and a later update retries it."
            if isinstance(recorded, dict) and recorded.get("reason") else "")
     return (f"⚠ Memory provider '{name}' is turned off: plugins.disabled lists it, so external memory is off "
-            f"(built-in memory still works).{why} Turn it back on with `hermes plugins enable {name}`.")
+            f"(built-in memory still works).{why} Turn it back on with `moor plugins enable {name}`.")
 
 
 def _explicitly_disabled(name: str, provider_dir: Path) -> bool:
@@ -565,7 +565,7 @@ def discover_plugin_cli_commands() -> list[dict]:
 
     module_name = _module_name(plugin_dir, active_provider) + ".cli"
     if not _is_bundled(plugin_dir):
-        from hermes_cli.plugin_isolation import in_process_import_refusal
+        from moor_cli.plugin_isolation import in_process_import_refusal
         if in_process_import_refusal(f"memory provider {active_provider!r} CLI commands"):
             return []
     try:

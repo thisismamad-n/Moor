@@ -12,7 +12,7 @@ import os
 import stat
 from pathlib import Path
 from typing import IO
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 __all__ = ["ensure_spill_dir", "open_exclusive", "write_text_exclusive"]
 

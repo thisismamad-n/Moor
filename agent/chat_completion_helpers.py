@@ -442,13 +442,13 @@ def openai_codex_stale_timeout_floor(est_tokens: int) -> float:
 def _bound_openai_codex_stale_timeout(stale_timeout: float, est_tokens: int) -> float:
     """Apply the openai-codex stale bounds: raise to ``openai_codex_stale_timeout_floor``
     so healthy gateway-scale requests aren't aborted mid-prefill, then clamp to the flat
-    HERMES_CODEX_HARD_TIMEOUT_SECONDS ceiling (#64507, default 1500s — above the max
+    MOOR_CODEX_HARD_TIMEOUT_SECONDS ceiling (#64507, default 1500s — above the max
     floor, a backstop for a request that emits SOME events then wedges; 0 disables).
     Shared by the worker watchdogs and the inline cron path (#69734)."""
     floor = openai_codex_stale_timeout_floor(est_tokens)
     if floor:
         stale_timeout = max(stale_timeout, floor)
-    hard_timeout = env_float("HERMES_CODEX_HARD_TIMEOUT_SECONDS", 1500.0)
+    hard_timeout = env_float("MOOR_CODEX_HARD_TIMEOUT_SECONDS", 1500.0)
     return min(stale_timeout, hard_timeout) if hard_timeout > 0 else stale_timeout
 
 
@@ -498,19 +498,19 @@ def _prompt_cache_scope_for_agent(agent) -> str | None:
         return None
 
 
-def _merge_nous_portal_messages_extra_body(agent, anthropic_kwargs: dict, api_messages: list) -> dict:
-    """The Nous profile body on the Messages wire, which the profile hook never reaches; never
+def _merge_moor_portal_messages_extra_body(agent, anthropic_kwargs: dict, api_messages: list) -> dict:
+    """The Moor profile body on the Messages wire, which the profile hook never reaches; never
     ``provider_preferences`` (OpenAI-wire routing the Portal 400s on)."""
-    if getattr(agent, "provider", None) not in {"nous", "nous-portal", "nousresearch"}:
+    if getattr(agent, "provider", None) not in {"moor", "moor-portal", "nousresearch"}:
         return anthropic_kwargs
     try:
         from providers import get_provider_profile
-        nous_profile = get_provider_profile("nous")
-        if nous_profile is not None:
-            anthropic_kwargs.setdefault("extra_body", {}).update(nous_profile.build_extra_body(
+        moor_profile = get_provider_profile("moor")
+        if moor_profile is not None:
+            anthropic_kwargs.setdefault("extra_body", {}).update(moor_profile.build_extra_body(
                 session_id=getattr(agent, "session_id", None), data_use=data_use_requirement(api_messages)))
     except Exception as exc:
-        logger.debug("Nous Portal extra_body merge failed: %s", exc)
+        logger.debug("Moor Portal extra_body merge failed: %s", exc)
     return anthropic_kwargs
 
 
@@ -619,10 +619,10 @@ def _check_stale_giveup(agent) -> None:
 
 
 def _stream_env_stale_base() -> tuple[float, bool]:
-    """(HERMES_STREAM_STALE_TIMEOUT or the implicit 180s, explicit) — like
+    """(MOOR_STREAM_STALE_TIMEOUT or the implicit 180s, explicit) — like
     ``AIAgent._resolved_api_call_stale_timeout_base``; an explicit env value is the
     user's deadline, so it is never capped to the run budget."""
-    return env_float("HERMES_STREAM_STALE_TIMEOUT", 180.0), "HERMES_STREAM_STALE_TIMEOUT" in os.environ
+    return env_float("MOOR_STREAM_STALE_TIMEOUT", 180.0), "MOOR_STREAM_STALE_TIMEOUT" in os.environ
 
 
 def _configured_stale_base(agent) -> float:
@@ -729,7 +729,7 @@ def _bedrock_reasoning_stale_floor(model_id: object) -> float | None:
 
 
 def _bedrock_converse_call(api_kwargs: dict, *, stream: bool, on_stream_denied=None):
-    """Pop the Hermes routing keys and call ``converse`` / ``converse_stream`` (boto3 directly) with the
+    """Pop the Moor routing keys and call ``converse`` / ``converse_stream`` (boto3 directly) with the
     adapter's shared recovery: a cachePoint rejection (Nova: toolConfig.tools, #97281) or a replayed sealed
     reasoning rejection resends once without the offending blocks inside the same attempt; a streaming IAM
     denial hands off to ``on_stream_denied(client, kwargs, exc)``; a stale connection evicts the cached
@@ -1389,7 +1389,7 @@ def _build_anthropic_kwargs(agent, api_messages, tools_for_api, reasoning_config
         drop_context_1m_beta=bool(getattr(agent, "_oauth_1m_beta_disabled", False)))
     # Portal reads ``tags`` / ``session_id`` on its Messages route too, but the profile hook
     # is only consulted by the OpenAI-wire transport — merge here to keep sticky routing.
-    return _merge_nous_portal_messages_extra_body(agent, anthropic_kwargs, api_messages)
+    return _merge_moor_portal_messages_extra_body(agent, anthropic_kwargs, api_messages)
 
 
 def _build_bedrock_kwargs(agent, api_messages, tools_for_api, reasoning_config):
@@ -2097,7 +2097,7 @@ def try_activate_fallback(agent, reason: FailoverReason | None = None, reset_at=
             agent._provider_fallback_active = True
             agent._provider_fallback_route = (str(fb_model), str(fb_provider))
             _log_fallback_activated(agent, reason, old_model, old_provider, fb_model, fb_provider)
-            from hermes_cli.observability.shared_metrics_events import record_fallback
+            from moor_cli.observability.shared_metrics_events import record_fallback
             record_fallback(from_provider=old_provider, to_provider=fb_provider, reason=reason)
             # The stale-call streak measured the OLD provider; carrying it over would
             # short-circuit the fresh fallback before its first stream attempt.
@@ -2245,7 +2245,7 @@ def _anthropic_summary_attempt(agent, api_messages: list, api_request_id: str):
             model=agent.model, messages=api_messages, tools=None, max_tokens=agent.max_tokens,
             reasoning_config=agent.reasoning_config, is_oauth=agent._is_anthropic_oauth,
             preserve_dots=agent._anthropic_preserve_dots(), base_url=getattr(agent, "_anthropic_base_url", None))
-        ant_kw = _merge_nous_portal_messages_extra_body(agent, ant_kw, api_messages)
+        ant_kw = _merge_moor_portal_messages_extra_body(agent, ant_kw, api_messages)
         response = _managed_summary_call(
             agent, api_request_id, ant_kw, agent._interruptible_api_call, retry_count=retry_count)
         return _summary_text(agent, response, strip_tool_prefix=agent._is_anthropic_oauth)

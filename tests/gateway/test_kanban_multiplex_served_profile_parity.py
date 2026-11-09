@@ -66,9 +66,9 @@ def test_worker_for_served_profile_gets_its_own_env_and_toolset_pin(served, monk
     kbd._default_spawn(task, str(served.alpha), board=None)
 
     env = spawned["env"]
-    assert env["HERMES_HOME"] == str(served.alpha)
-    assert "HERMES_MODEL" not in env and "TERMINAL_ENV" not in env
-    assert spawned["argv"][-2:] == ["-m", "hermes_cli.kanban_worker_client"]
+    assert env["MOOR_HOME"] == str(served.alpha)
+    assert "MOOR_MODEL" not in env and "TERMINAL_ENV" not in env
+    assert spawned["argv"][-2:] == ["-m", "moor_cli.kanban_worker_client"]
 
 
 class RecordingAdapter:

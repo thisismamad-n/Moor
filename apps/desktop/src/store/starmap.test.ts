@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { StarmapGraph } from '@/types/hermes'
+import type { StarmapGraph } from '@/types/moor'
 
 const { fetches } = vi.hoisted(() => ({
   fetches: [] as Array<{ reject: (error: unknown) => void; resolve: (graph: StarmapGraph) => void }>
 }))
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getStarmapGraph: () =>
     new Promise<StarmapGraph>((resolve, reject) => {
       fetches.push({ reject, resolve })

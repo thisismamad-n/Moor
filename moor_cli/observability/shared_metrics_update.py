@@ -1,15 +1,15 @@
-"""Shared-metrics facts for ``hermes update`` runs and Desktop self-updates.
+"""Shared-metrics facts for ``moor update`` runs and Desktop self-updates.
 
-``hermes.update.run`` / ``hermes.update.stage`` are DERIVED from the final update receipt in the
+``moor.update.run`` / ``moor.update.stage`` are DERIVED from the final update receipt in the
 process that finalizes it (``update_receipt.finalize_update_receipt``): the receipt already carries
 the outcome, the stage marks with timestamps, the admission refusal and the fleet matrix, so no
 stage is instrumented for metrics. A pre-pull interpreter must never import pulled code, so when
 it is the finalizer it parks the receipt under the store dir (stdlib-only code in update_receipt)
-and :func:`report_pending_updates` records it on the next Hermes start.
+and :func:`report_pending_updates` records it on the next Moor start.
 
-Desktop's packaged updaters (electron-updater, App Installer, Store) never run ``hermes update``;
+Desktop's packaged updaters (electron-updater, App Installer, Store) never run ``moor update``;
 Desktop reports their outcome through the ``shared_metrics.update_run`` RPC instead. Desktop's
-source-checkout hand-off DOES run ``hermes update``; that receipt is tagged ``initiator=desktop``
+source-checkout hand-off DOES run ``moor update``; that receipt is tagged ``initiator=desktop``
 and counted here, never by the RPC, so no run is counted twice.
 
 Run and stage rows agree on where a FAILED run stopped: a run whose ``failed_stage`` names a stage it
@@ -39,7 +39,7 @@ PENDING_DIRNAME = "pending_updates"
 RECORDED_DIRNAME = "recorded_updates"
 _RECORDED_KEEP = 64
 _UPDATE_ID = re.compile(r"[0-9a-f]{8,64}")
-# Receipt pm/Desktop outcome words → hermes.update.run outcome; anything else failed.
+# Receipt pm/Desktop outcome words → moor.update.run outcome; anything else failed.
 _RUN_OUTCOMES = {"success": "success", "refused": "refused", "noop": "noop"}
 _FLEET_BAD_STATES = frozenset({"stale", "down"})
 # Desktop mechanism (updater strategy kind) → apply_mode.
@@ -52,7 +52,7 @@ _DESKTOP_APPLY_MODES = {
 # a run that ended on an exception (main.cmd_update, update_completion._finish). Only the leading
 # type name is read, never the message; other stop reasons ("sys.exit(1)", "completion exited 1",
 # "Windows gateway recovery failed: ...") do not start with a bare CamelCase name and a colon
-# (the fixed prefixes Hermes writes are matched by _STOP_REASON_PREFIX_CLASSES).
+# (the fixed prefixes Moor writes are matched by _STOP_REASON_PREFIX_CLASSES).
 _EXCEPTION_STOP_REASON = re.compile(r"([A-Z][A-Za-z0-9_]*):(?: |$)")
 # pm's own failure types (pm/package.py, pm/environment.py, pm/downloader.py, pm/lock.py, ...).
 _PM_ERROR_TYPES = frozenset({
@@ -69,7 +69,7 @@ _EXCEPTION_TYPE_CLASSES = (
     (frozenset({"PermissionError"}), "permission_denied"), (_PM_ERROR_TYPES, "deps_failed"),
     (_OS_ERROR_TYPES, "os_error"), (_SUBPROCESS_ERROR_TYPES, "subprocess_failed"),
 )
-# Fixed stop-reason prefixes Hermes itself writes (only the prefix is read, never what follows):
+# Fixed stop-reason prefixes Moor itself writes (only the prefix is read, never what follows):
 # _update_takeover's preparation failure and update_completion's Windows gateway resume failure.
 _STOP_REASON_PREFIX_CLASSES = (
     ("historical takeover preparation failed", "deps_failed"), ("Windows gateway recovery failed", "restart_failed"),
@@ -259,7 +259,7 @@ def _committed_with_work_owed(receipt: dict[str, Any]) -> bool:
 
 
 def update_receipt_fields(receipt: dict[str, Any]) -> tuple[dict[str, str], list[dict[str, str]]] | None:
-    """Bounded hermes.update.run + hermes.update.stage dimensions for one FINAL receipt."""
+    """Bounded moor.update.run + moor.update.stage dimensions for one FINAL receipt."""
     from .shared_metrics_contract import update_duration_bucket, version_age_bucket
 
     if not isinstance(receipt, dict) or not receipt.get("finished_at"):
@@ -325,7 +325,7 @@ def _unmarked_failed_stage(run: dict[str, str], stages: list[dict[str, Any]]) ->
 
 def _collection_on() -> bool:
     """Cheap pre-gate so a disabled install never loads the Relay runtime; `_emit` re-checks."""
-    from hermes_cli.config import read_raw_config_readonly
+    from moor_cli.config import read_raw_config_readonly
 
     config: Any = read_raw_config_readonly() or {}
     for key in ("telemetry", "shared_metrics"):
@@ -335,11 +335,11 @@ def _collection_on() -> bool:
 
 def _claim_update_id(update_id: Any) -> tuple[bool, Path | None]:
     """``(first, latch)``: first is False when this profile already counted ``update_id``."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     if not isinstance(update_id, str) or not _UPDATE_ID.fullmatch(update_id):
         return True, None  # nothing stable to dedupe on
-    directory = get_hermes_home() / "telemetry" / "shared_metrics" / RECORDED_DIRNAME
+    directory = get_moor_home() / "telemetry" / "shared_metrics" / RECORDED_DIRNAME
     directory.mkdir(parents=True, exist_ok=True)
     latch = directory / update_id
     try:
@@ -399,11 +399,11 @@ def purge_pending_updates(home: Path) -> None:
 def report_pending_updates() -> None:
     """Record receipts a pre-pull interpreter parked (it must not import pulled code). Never raises."""
     try:
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         from .shared_metrics_process import _claim, settle_claim
 
-        directory = pending_updates_dir(get_hermes_home())
+        directory = pending_updates_dir(get_moor_home())
         if not directory.is_dir():
             return
         for path in sorted(directory.iterdir()):
@@ -425,7 +425,7 @@ def report_pending_updates() -> None:
 def desktop_update_fields(
     *, outcome: Any, failed_stage: Any, duration_ms: Any, mechanism: Any, from_commit_date: Any = None,
 ) -> dict[str, str]:
-    """hermes.update.run dims for a Desktop packaged self-update (RPC-reported)."""
+    """moor.update.run dims for a Desktop packaged self-update (RPC-reported)."""
     from .shared_metrics_contract import (
         DESKTOP_UPDATE_STAGES, UPDATE_OUTCOMES, update_duration_bucket, version_age_bucket,
     )

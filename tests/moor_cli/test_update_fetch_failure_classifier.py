@@ -11,7 +11,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from hermes_cli import update_cmd, update_cmd_git
+from moor_cli import update_cmd, update_cmd_git
 
 
 RATE_LIMIT_STDERR = (
@@ -85,13 +85,13 @@ class TestClassifyFetchFailure:
     def test_only_a_checkout_git_rejects_gets_the_installer_repair(self, tmp_path, capsys):
         # The updater fetches only when .git exists; git rejecting the checkout itself (here an
         # empty .git) cannot be retried away. A remote with a dangling `.git` file makes git print
-        # the same "fatal: not a git repository" line, and reinstalling Hermes cannot fix that.
+        # the same "fatal: not a git repository" line, and reinstalling Moor cannot fix that.
         def fetch(cwd: Path, *source: str) -> str:
             return subprocess.run(["git", "fetch", *source], cwd=cwd, capture_output=True, check=False,
                                   text=True, encoding="utf-8", errors="replace",
                                   env={**os.environ, "GIT_CEILING_DIRECTORIES": str(tmp_path)}).stderr
 
-        damaged = tmp_path / "custom-dir" / "hermes-agent"
+        damaged = tmp_path / "custom-dir" / "moor-agent"
         (damaged / ".git").mkdir(parents=True)
         update_cmd_git._print_fetch_failure(fetch(damaged, "origin"), git_cmd=["git"], root=damaged)
         out = capsys.readouterr().out
@@ -188,7 +188,7 @@ def test_update_and_upstream_network_calls_disable_terminal_prompts(monkeypatch,
     (tmp_path / ".git").mkdir()  # the fork ff's recovery marker lives there: no marker, no move
     update_cmd._git_run(["git"], ["fetch", "origin", "main"], cwd=tmp_path, network=True, check=True)
     assert update_cmd_git._sync_with_upstream_if_needed(["git"], tmp_path, assume_yes=True)
-    from hermes_cli.update_custody import git_subcommand
+    from moor_cli.update_custody import git_subcommand
 
     # The fork push runs only after the update is validated (_push_synced_fork), never inside the sync.
     update_cmd_git._sync_fork_with_upstream(["git"], tmp_path)

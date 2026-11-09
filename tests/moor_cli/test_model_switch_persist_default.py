@@ -10,7 +10,7 @@ Covers:
 
 from unittest.mock import patch
 
-from hermes_cli.model_switch import resolve_persist_behavior
+from moor_cli.model_switch import resolve_persist_behavior
 
 
 # ---------------------------------------------------------------------------

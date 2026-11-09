@@ -21,14 +21,14 @@ def _normalize_provider_id(value: str) -> str:
     and letting an alias slip past the same-backend skip (#85235).
     """
     try:
-        from hermes_cli.providers import normalize_provider
+        from moor_cli.providers import normalize_provider
     except Exception:  # pragma: no cover - import resilience
         # Silent degradation: alias collapse is disabled and we fall back to a
         # bare lowercase. Log so a future import cycle/refactor can't regress
         # the dedup invisibly.
         logger.warning(
             "fallback provider alias collapse degraded to lowercase: "
-            "could not import hermes_cli.providers.normalize_provider",
+            "could not import moor_cli.providers.normalize_provider",
             exc_info=True,
         )
         return value.lower()

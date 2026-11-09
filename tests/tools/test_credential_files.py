@@ -455,17 +455,17 @@ class TestCacheDirectoryMounts:
         remote host."""
         from tools.environments.file_sync import iter_sync_files
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        paste = hermes_home / "composer-pastes" / "pasted_content_20260924_x.txt"
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
+        paste = moor_home / "composer-pastes" / "pasted_content_20260924_x.txt"
         paste.parent.mkdir()
         paste.write_text("pasted body", encoding="utf-8")
 
         mounts = get_cache_directory_mounts()
-        assert "/root/.hermes/composer-pastes" in {m["container_path"] for m in mounts}
+        assert "/root/.moor/composer-pastes" in {m["container_path"] for m in mounts}
 
-        synced = {Path(host) for host, _ in iter_sync_files("~/.hermes")}
+        synced = {Path(host) for host, _ in iter_sync_files("~/.moor")}
         assert paste in synced
 
 
@@ -519,7 +519,7 @@ class TestMapCachePathToContainer:
 
 class TestToAgentVisiblePathPerBackend:
     """#76577 follow-up: translation covers every backend that relocates the
-    Hermes cache — not just docker — and skips the ones where the host path
+    Moor cache — not just docker — and skips the ones where the host path
     stays correct (local, unknown)."""
 
     def _staged(self, tmp_path, monkeypatch):
@@ -555,18 +555,18 @@ class TestToAgentVisiblePathPerBackend:
 
     def test_symlinked_home_maps_resolved_path(self, tmp_path, monkeypatch):
         """#103147: ``@file:`` expansion resolves the staged path, but the mount roots
-        keep HERMES_HOME's symlinked spelling; the resolved path must still map."""
-        real_home = tmp_path / "real-hermes"
+        keep MOOR_HOME's symlinked spelling; the resolved path must still map."""
+        real_home = tmp_path / "real-moor"
         (real_home / "attachments").mkdir(parents=True)
-        link_home = tmp_path / ".hermes"
+        link_home = tmp_path / ".moor"
         link_home.symlink_to(real_home, target_is_directory=True)
-        monkeypatch.setenv("HERMES_HOME", str(link_home))
+        monkeypatch.setenv("MOOR_HOME", str(link_home))
         monkeypatch.setenv("TERMINAL_ENV", "docker")
         staged = link_home / "attachments" / "paste.txt"
         staged.write_text("x", encoding="utf-8")
         from tools.credential_files import to_agent_visible_cache_path
-        assert to_agent_visible_cache_path(str(staged.resolve())) == "/root/.hermes/attachments/paste.txt"
-        assert to_agent_visible_cache_path(str(staged)) == "/root/.hermes/attachments/paste.txt"
+        assert to_agent_visible_cache_path(str(staged.resolve())) == "/root/.moor/attachments/paste.txt"
+        assert to_agent_visible_cache_path(str(staged)) == "/root/.moor/attachments/paste.txt"
         # A sibling outside the mounted dirs still passes through.
         outside = real_home / "notes.txt"
         assert to_agent_visible_cache_path(str(outside)) == str(outside)
@@ -585,12 +585,12 @@ class TestIterCacheFiles:
         old = time.time() - 25 * 3600
         os.utime(doc_dir / "report.pdf", (old, old))
         # cache/generated is never swept: sync only its last-24h files (#126445).
-        gen_dir = hermes_home / "cache" / "generated" / "images"
+        gen_dir = moor_home / "cache" / "generated" / "images"
         gen_dir.mkdir(parents=True)
         (gen_dir / "fresh.png").write_bytes(b"\x89PNG")
         (gen_dir / "stale.png").write_bytes(b"\x89PNG")
         os.utime(gen_dir / "stale.png", (old, old))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
 
         entries = iter_cache_files()
         names = {Path(e["container_path"]).name for e in entries}

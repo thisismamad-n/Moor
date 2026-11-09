@@ -36,7 +36,7 @@ def _find_stale_dashboard_pids(*, exclude_pids: set[int] | None = None,
         _scan_dashboard_processes,
     )
     pids = [pid for pid, _cmd in _scan_dashboard_processes(exclude_pids=exclude_pids)]
-    # The scan also selects the caller's own wrapper shell (``bash -c 'hermes dashboard --stop'``);
+    # The scan also selects the caller's own wrapper shell (``bash -c 'moor dashboard --stop'``);
     # killing it takes down the invoking terminal.
     ancestors = _caller_ancestor_pids()
     pids = [pid for pid in pids if not _is_caller_wrapper_shell(pid, ancestors)]
@@ -49,8 +49,8 @@ def _parse_dashboard_runtime(command: str) -> tuple[str, str, int] | None:
     The mode is the canonical holder subcommand, never an argv substring: this gates the launchd
     backend inventory (a kill + kickstart path) and ``--status`` (#121156).
     """
-    from hermes_cli.update_cmd_windows import _hermes_holder_subcommand
-    mode = _hermes_holder_subcommand(command)
+    from moor_cli.update_cmd_windows import _moor_holder_subcommand
+    mode = _moor_holder_subcommand(command)
     if mode not in ("dashboard", "serve"):
         return None
 
@@ -185,7 +185,7 @@ def _pid_unified_cgroup_entries(pid: int):
 
 
 def _get_systemd_service_for_pid(pid: int) -> str | None:
-    """The systemd service unit that supervises *pid* (``hermes-serve.service``), or None.
+    """The systemd service unit that supervises *pid* (``moor-serve.service``), or None.
 
     A ``.service`` cgroup alone only says where the process was started: a dashboard launched by
     hand from a shell that itself runs under some unit (a CI runner agent, ``cron.service``, a
@@ -402,18 +402,18 @@ _RESPAWN_LIVENESS_GRACE_SECONDS = 1.0
 
 
 def _respawnable_command_for_current_install(argv: list[str]) -> list[str]:
-    """Rebuild a captured ``[<interpreter>, <hermes launcher>, ...]`` argv on this install's launcher.
+    """Rebuild a captured ``[<interpreter>, <moor launcher>, ...]`` argv on this install's launcher.
 
-    A pre-PM-takeover install left ``~/.local/bin/hermes`` as a symlink to a Python console
+    A pre-PM-takeover install left ``~/.local/bin/moor`` as a symlink to a Python console
     script, so the kernel recorded a manual backend as ``[<old venv python>, <launcher>, dashboard,
     ...]``. The takeover then rewrote that launcher into a POSIX shell shim, and replaying the
     captured argv verbatim asks the old interpreter to parse a shell script (#124778). This
-    checkout's own ``hermes`` entry script stays Python, so it and every other shape replay unchanged.
+    checkout's own ``moor`` entry script stays Python, so it and every other shape replay unchanged.
     """
     root = Path(__file__).resolve().parents[1]
     if (len(argv) > 2 and os.path.basename(argv[0]).startswith("python")
-            and os.path.basename(argv[1]) == "hermes" and Path(argv[1]) != root / "hermes"):
-        from hermes_cli._launchers import runtime_command
+            and os.path.basename(argv[1]) == "moor" and Path(argv[1]) != root / "moor"):
+        from moor_cli._launchers import runtime_command
         return runtime_command(root, argv[2:])
     return list(argv)
 
@@ -429,7 +429,7 @@ def _respawn_dashboard_processes(commands: list[list[str]]) -> list[list[str]]:
     respawned: list[list[str]] = []
     spawned: list[tuple[list[str], list[str], subprocess.Popen]] = []
     failed: list[tuple[list[str], list[str], str]] = []
-    log_path = get_hermes_home() / "logs" / "dashboard-restart.log"
+    log_path = get_moor_home() / "logs" / "dashboard-restart.log"
     with contextlib.suppress(OSError):
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -540,7 +540,7 @@ def _install_hangup_protection(gateway_mode: bool = False):
         # Late-bound import so tests can monkeypatch it to simulate setup failure. The ROOT
         # home, never a sticky profile's: the update mutates the shared checkout, and the
         # Desktop and the hand-off scripts read <root>/logs/update.log.
-        from hermes_constants import get_default_hermes_root as _get_root_home
+        from moor_constants import get_default_moor_root as _get_root_home
         logs_dir = _get_root_home() / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         log_file = open(logs_dir / "update.log", "a", buffering=1, encoding="utf-8")
@@ -586,7 +586,7 @@ def _report_dashboard_status() -> int:
     augmentation in _scan_dashboard_processes, and the ledger's recorded bind replaces the argv port so
     ``--port 0`` backends are probed on the port the OS actually gave them. See #81564.
     """
-    from hermes_cli.dashboard_procs import _ledger_serve_binds, _scan_dashboard_processes
+    from moor_cli.dashboard_procs import _ledger_serve_binds, _scan_dashboard_processes
     from gateway.status import _pid_exists
     binds = _ledger_serve_binds()
     live: list[tuple[int, str, str]] = []
@@ -949,7 +949,7 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
     except Exception:
         profile = "default"
     wanted = getattr(args, "open_profile", "") or profile
-    from hermes_cli.url_utils import format_url_host
+    from moor_cli.url_utils import format_url_host
 
     url = f"http://{format_url_host(hr.dial_host(record))}:{record.port}/?profile={wanted}"
 

@@ -13,9 +13,9 @@ from types import SimpleNamespace
 import pytest
 import moor_yaml as yaml
 
-import hermes_constants
-from hermes_cli import gateway_migrate as gm
-from hermes_cli.profile_channels import (
+import moor_constants
+from moor_cli import gateway_migrate as gm
+from moor_cli.profile_channels import (
     channel_platforms_configured, shared_channel_credentials, strip_channel_config, strip_channel_env_file,
 )
 from moor_cli.profiles import create_profile

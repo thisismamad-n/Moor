@@ -159,7 +159,7 @@ _CLEANUP_STEPS = (
 def _gateway_owns_session_end(agent) -> bool:
     """A gateway-backed session ends in the gateway: the viewer's ``end_session`` (``session.detach
     {end_reason}``) makes the owner run finalize and the memory commit (gateway/session_viewer_close)."""
-    from hermes_cli.gateway_agent import GatewayAgent
+    from moor_cli.gateway_agent import GatewayAgent
     return isinstance(agent, GatewayAgent)
 
 
@@ -181,7 +181,7 @@ def _should_emit_cleanup_session_finalize(session_id: str | None) -> bool:
 def _notify_session_finalize(*, session_id: str | None, platform: str = "cli", reason: str = "shutdown") -> list[str]:
     """Fire on_session_finalize; return the plugin messages meant for the user (never raises)."""
     with suppress(Exception):
-        from hermes_cli.lifecycle import finalize_session, session_end_messages
+        from moor_cli.lifecycle import finalize_session, session_end_messages
         return session_end_messages(finalize_session(session_id=session_id, platform=platform, reason=reason))
     return []
 

@@ -1,15 +1,15 @@
-"""Notes `hermes gateway status` prints beside the running/not-running verdict."""
+"""Notes `moor gateway status` prints beside the running/not-running verdict."""
 from __future__ import annotations
 
-from hermes_cli.config import get_hermes_home
+from moor_cli.config import get_moor_home
 
 
 def _incompatible_owner_verdict() -> str | None:
-    """``incompatible: <reason>`` when the gateway answering for this home is one this Hermes's clients
-    (TUI, Desktop, chat) refuse, e.g. an older Hermes's daemon left running across an upgrade."""
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
+    """``incompatible: <reason>`` when the gateway answering for this home is one this Moor's clients
+    (TUI, Desktop, chat) refuse, e.g. an older Moor's daemon left running across an upgrade."""
+    from moor_cli.gateway_runtime import discover_gateway_endpoint
     try:
-        observed = discover_gateway_endpoint(get_hermes_home(), timeout=1.5)
+        observed = discover_gateway_endpoint(get_moor_home(), timeout=1.5)
     except (OSError, ValueError):  # discovery reports peers as verdicts; only a bad home lands here
         return None
     if observed.state != "incompatible":
@@ -18,23 +18,23 @@ def _incompatible_owner_verdict() -> str | None:
 
 
 def report_incompatible_owner(pids) -> bool:
-    """Print ✗ (with the fix) when the running gateway cannot serve this Hermes; True if printed.
+    """Print ✗ (with the fix) when the running gateway cannot serve this Moor; True if printed.
     ``pids`` names the scanned processes for the manual-run line; empty for a service-managed one."""
     stale = _incompatible_owner_verdict()
     if not stale:
         return False
     running = f"Gateway is running (PID: {', '.join(map(str, pids))})" if pids else "The running gateway"
-    print(f"✗ {running} but cannot serve this Hermes ({stale})")
-    print("  It was started by another Hermes version; TUI, Desktop and chat cannot attach to it.")
+    print(f"✗ {running} but cannot serve this Moor ({stale})")
+    print("  It was started by another Moor version; TUI, Desktop and chat cannot attach to it.")
     print("  Replace it with this version:")
-    print("    hermes gateway restart")
+    print("    moor gateway restart")
     return True
 
 
 def print_standalone_by_config() -> None:
     """Default-profile status: name the profiles that opted out of the host multiplexer by config,
     so the served set the host gateway reports is not mistaken for the installed roster."""
-    from hermes_cli.profiles import get_active_profile_name, profiles_to_serve
+    from moor_cli.profiles import get_active_profile_name, profiles_to_serve
     if (get_active_profile_name() or "default") != "default":
         return
     roster = {name for name, _home in profiles_to_serve(True, include_standalone=True)}

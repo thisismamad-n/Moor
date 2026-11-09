@@ -122,23 +122,23 @@ describe('runExportProfileFlow', () => {
 
     try {
       expect(installBrowserDesktopBridge()).toBe(true)
-      expect(window.hermesDesktop.selectSavePath).toBeUndefined()
+      expect(window.moorDesktop.selectSavePath).toBeUndefined()
       await expect(runExportProfileFlow('glam')).resolves.toBeNull()
       expect(exportProfileArchive).not.toHaveBeenCalled()
       expect($notifications.get().at(-1)).toMatchObject({ kind: 'error', title: 'Failed to export profile' })
-      expect($notifications.get().at(-1)?.message).toContain('hermes profile export glam')
+      expect($notifications.get().at(-1)?.message).toContain('moor profile export glam')
     } finally {
       clearWebappSession()
-      Reflect.deleteProperty(window, 'hermesDesktop')
-      document.documentElement.removeAttribute('data-hermes-desktop-host')
+      Reflect.deleteProperty(window, 'moorDesktop')
+      document.documentElement.removeAttribute('data-moor-desktop-host')
       vi.unstubAllGlobals()
     }
   })
 })
 
 describe('importProfileBundle', () => {
-  const folderKey = (profile: string) => `hermes:browser:default-project-dir:${JSON.stringify(['/hermes', profile])}`
-  const startupKey = 'hermes:webapp:default-profile:/hermes'
+  const folderKey = (profile: string) => `moor:browser:default-project-dir:${JSON.stringify(['/moor', profile])}`
+  const startupKey = 'moor:webapp:default-profile:/moor'
 
   function seedLeftovers() {
     window.localStorage.setItem(folderKey('imported'), '/srv/deleted-imported')
@@ -147,16 +147,16 @@ describe('importProfileBundle', () => {
   }
 
   afterEach(() => {
-    document.documentElement.removeAttribute('data-hermes-desktop-host')
-    Reflect.deleteProperty(window, '__HERMES_BASE_PATH__')
+    document.documentElement.removeAttribute('data-moor-desktop-host')
+    Reflect.deleteProperty(window, '__MOOR_BASE_PATH__')
   })
 
   // An import never lands on a live profile's name, so prefs stored under it were left by a deleted one.
   it('drops what a deleted profile of the same name left, only once the import succeeded', async () => {
     const { importProfileBundle } = await import('./profile-share')
-    const { importProfileArchive } = await import('@/hermes')
-    document.documentElement.dataset.hermesDesktopHost = 'browser'
-    Object.assign(window, { __HERMES_BASE_PATH__: '/hermes' })
+    const { importProfileArchive } = await import('@/moor')
+    document.documentElement.dataset.moorDesktopHost = 'browser'
+    Object.assign(window, { __MOOR_BASE_PATH__: '/moor' })
     seedLeftovers()
     vi.mocked(importProfileArchive).mockRejectedValueOnce(new Error('bad archive'))
 
@@ -172,7 +172,7 @@ describe('importProfileBundle', () => {
 
   it('keeps browser prefs in native Desktop', async () => {
     const { importProfileBundle } = await import('./profile-share')
-    Object.assign(window, { __HERMES_BASE_PATH__: '/hermes' })
+    Object.assign(window, { __MOOR_BASE_PATH__: '/moor' })
     seedLeftovers()
 
     await expect(importProfileBundle('/tmp/in.tar.gz')).resolves.toBe('imported')

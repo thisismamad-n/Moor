@@ -21,42 +21,42 @@ import pytest
     ("dropin_home", "profile_mismatch"), ("manager_home", "profile_mismatch"),
 ])
 def test_ensure_checks_effective_service_binding_before_start(tmp_path, monkeypatch, case, reason):
-    from hermes_cli import gateway_runtime as runtime
-    from hermes_cli.gateway_runtime_service import service_suffix
+    from moor_cli import gateway_runtime as runtime
+    from moor_cli.gateway_runtime_service import service_suffix
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / (".hermes" if case == "default" else "custom root")
+    home = tmp_path / (".moor" if case == "default" else "custom root")
     if case == "named":
         home = home / "profiles" / "worker"
     home.mkdir(mode=0o700, parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     suffix = service_suffix(home)
-    unit = tmp_path / ".config/systemd/user" / f"hermes-gateway{'-' + suffix if suffix else ''}.service"
+    unit = tmp_path / ".config/systemd/user" / f"moor-gateway{'-' + suffix if suffix else ''}.service"
     unit.parent.mkdir(parents=True)
-    unit.write_text(f'[Service]\nExecStart={sys.executable} -m hermes_cli.main gateway run\nEnvironment="HERMES_HOME={home}"\n', encoding="utf-8")
+    unit.write_text(f'[Service]\nExecStart={sys.executable} -m moor_cli.main gateway run\nEnvironment="MOOR_HOME={home}"\n', encoding="utf-8")
     original = unit.read_bytes()
     configured = home
     if case in {"wrong_home", "dropin_home"}:
         configured = tmp_path / "unrequested"
     if case == "wrong_home":
-        unit.write_text(f'[Service]\nEnvironment="HERMES_HOME={configured}"\n', encoding="utf-8")
+        unit.write_text(f'[Service]\nEnvironment="MOOR_HOME={configured}"\n', encoding="utf-8")
         original = unit.read_bytes()
     if case == "dropin_home":
         override = unit.parent / (unit.name + '.d') / 'override.conf'
         override.parent.mkdir()
-        override.write_text(f'[Service]\nEnvironment="HERMES_HOME={configured}"\n', encoding="utf-8")
+        override.write_text(f'[Service]\nEnvironment="MOOR_HOME={configured}"\n', encoding="utf-8")
     if case == "alias":
         configured = tmp_path / "alias"
         configured.symlink_to(home, target_is_directory=True)
-    command = f'{sys.executable} -m hermes_cli.main gateway run'
+    command = f'{sys.executable} -m moor_cli.main gateway run'
     if case == "named":
         command += " --profile worker"
     if case == "command_profile":
         command += " --profile stranger"
     if case == "wrong_command":
-        command = '/bin/echo hermes_cli.main gateway run'
+        command = '/bin/echo moor_cli.main gateway run'
     props = dict(LoadState="loaded", ActiveState="inactive", SubState="dead", UnitFileState="enabled",
-                 User=str(os.getuid()), DynamicUser="no", Environment=f'"HERMES_HOME={configured}" "HERMES_SUPERVISED_CHILD=1"',
+                 User=str(os.getuid()), DynamicUser="no", Environment=f'"MOOR_HOME={configured}" "MOOR_SUPERVISED_CHILD=1"',
                  EnvironmentFiles="", PassEnvironment="", UnsetEnvironment="", PAMName="",
                  RootDirectory="", RootImage="", ExecStartPre="", ExecCondition="",
                  ExecStart=f'{{ path={command.split()[0]} ; argv[]={command} ; ignore_errors=no ; }}',
@@ -73,16 +73,16 @@ def test_ensure_checks_effective_service_binding_before_start(tmp_path, monkeypa
             del props[key]
     if case == "env_file":
         env_file = tmp_path / "override.env"
-        env_file.write_text(f'HERMES_HOME={tmp_path / "other"}\n', encoding="utf-8")
+        env_file.write_text(f'MOOR_HOME={tmp_path / "other"}\n', encoding="utf-8")
         props['EnvironmentFiles'] = f'{env_file} (ignore_errors=no)'
     if case == "dynamic_user":
         props['DynamicUser'] = 'yes'
     if case == "manager_home":
-        props['Environment'] = 'HERMES_SUPERVISED_CHILD=1'
-        manager_env = f'HERMES_HOME={tmp_path / "other"}\n'
+        props['Environment'] = 'MOOR_SUPERVISED_CHILD=1'
+        manager_env = f'MOOR_HOME={tmp_path / "other"}\n'
     if case == "default":
         # An older default install may rely on the user manager's HOME.
-        props['Environment'] = 'HERMES_SUPERVISED_CHILD=1'
+        props['Environment'] = 'MOOR_SUPERVISED_CHILD=1'
         manager_env = f'HOME={tmp_path}\n'
     definition = tmp_path / "effective.json"
     definition.write_text(json.dumps({'props': props, 'system': False, 'env': manager_env}), encoding="utf-8")
@@ -98,7 +98,7 @@ def test_ensure_checks_effective_service_binding_before_start(tmp_path, monkeypa
         + 'elif "start" not in sys.argv: sys.exit(91)\n', encoding='utf-8')
     executable.chmod(0o700)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     monkeypatch.setattr(gw, "_systemctl_cmd", lambda system=False: [str(executable)] + ([] if system else ["--user"]))
     result = runtime.ensure_gateway_runtime(home, timeout=3.0)
     assert result.reason_code == reason
@@ -118,15 +118,15 @@ def test_ensure_checks_effective_service_binding_before_start(tmp_path, monkeypa
     ("requested", "wrong_account", "service_account_mismatch"),
 ])
 def test_loaded_launchd_identity_is_independent_of_disk(configured, command, reason, tmp_path):
-    from hermes_cli.gateway_runtime_service_identity import verify_launchd_loaded
+    from moor_cli.gateway_runtime_service_identity import verify_launchd_loaded
     home = tmp_path / "requested"
-    argv = [sys.executable, "-m", "hermes_cli.main", "gateway", "run"]
+    argv = [sys.executable, "-m", "moor_cli.main", "gateway", "run"]
     if command == "echo":
-        argv = ["/bin/echo", "hermes_cli.main", "gateway", "run"]
-    environment = f"HERMES_HOME => {tmp_path / configured}" if configured else ""
-    output = "gui/123/ai.hermes.gateway = {\n\tstate = not running\n\tprogram = " + argv[0] + "\n\targuments = {\n" + "\n".join("\t\t" + a for a in argv) + "\n\t}\n\tenvironment = {\n\t\t" + environment + "\n\t}\n}"
+        argv = ["/bin/echo", "moor_cli.main", "gateway", "run"]
+    environment = f"MOOR_HOME => {tmp_path / configured}" if configured else ""
+    output = "gui/123/ai.moor.gateway = {\n\tstate = not running\n\tprogram = " + argv[0] + "\n\targuments = {\n" + "\n".join("\t\t" + a for a in argv) + "\n\t}\n\tenvironment = {\n\t\t" + environment + "\n\t}\n}"
     if command != "unsupervised":
-        output = output.replace("\n\tenvironment = {\n", "\n\tenvironment = {\n\t\tHERMES_SUPERVISED_CHILD => 1\n")
+        output = output.replace("\n\tenvironment = {\n", "\n\tenvironment = {\n\t\tMOOR_SUPERVISED_CHILD => 1\n")
     if command == "wrong_account":
         output = output.replace("\n\tstate", "\n\tusername = other\n\tstate")
     if reason:
@@ -138,9 +138,9 @@ def test_loaded_launchd_identity_is_independent_of_disk(configured, command, rea
 
 def _launchd_gateway_command(tmp_path, monkeypatch, *, store, profile=""):
     """The gateway command generate_launchd_plist persists, from a store Python or an external one."""
-    from hermes_cli import _launchers, gateway as gw
-    from hermes_cli.gateway_launchd import _timestamped_stderr_gateway_command
-    monkeypatch.setattr(gw, "PROJECT_ROOT", tmp_path / "hermes-agent")
+    from moor_cli import _launchers, gateway as gw
+    from moor_cli.gateway_launchd import _timestamped_stderr_gateway_command
+    monkeypatch.setattr(gw, "PROJECT_ROOT", tmp_path / "moor-agent")
     monkeypatch.setattr(gw, "get_python_path", lambda: sys.executable)
     monkeypatch.setattr(gw, "_profile_arg", lambda *a, **k: profile)
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda *a, **k: Path(sys.executable) if store else None)
@@ -164,15 +164,15 @@ def test_launchd_verifies_the_osascript_wrapped_command_the_installer_writes(cas
     """The Local Network wrapper (#71206) is unwrapped only as its exact template, and the command inside
     is held to the same gateway identity as a bare ProgramArguments, on disk and as launchd loaded it."""
     import plistlib
-    from hermes_cli.gateway_launchd import launchd_program_arguments
-    from hermes_cli.gateway_runtime_service_identity import verify_launchd_loaded, verify_launchd_plist
-    home = tmp_path / ".hermes"
-    from hermes_cli import gateway as gw
+    from moor_cli.gateway_launchd import launchd_program_arguments
+    from moor_cli.gateway_runtime_service_identity import verify_launchd_loaded, verify_launchd_plist
+    home = tmp_path / ".moor"
+    from moor_cli import gateway as gw
     command = _launchd_gateway_command(tmp_path, monkeypatch,
                                        store=case not in {"inline", "tampered_bootstrap", "foreign_root_inline"},
                                        profile="--profile stranger" if case == "store_profile" else "")
     if case.startswith("foreign_root"):  # the installer's own output, written for another checkout
-        from hermes_cli.gateway_launchd import _timestamped_stderr_gateway_command
+        from moor_cli.gateway_launchd import _timestamped_stderr_gateway_command
         root = gw.PROJECT_ROOT
         monkeypatch.setattr(gw, "PROJECT_ROOT", tmp_path / "other-checkout")
         command = _timestamped_stderr_gateway_command(tmp_path / "logs" / "gateway.error.log", external_supervisor=True)
@@ -180,22 +180,22 @@ def test_launchd_verifies_the_osascript_wrapped_command_the_installer_writes(cas
     if case in {"own_wrapper_foreign_inner", "osascript_foreign_bare"}:
         # The installer's own gateway command for ANOTHER checkout: inside OUR stderr wrapper, or bare
         # inside the Local Network wrapper. Neither is a launcher this install root writes.
-        from hermes_cli._launchers import installation_command
+        from moor_cli._launchers import installation_command
         foreign = installation_command(tmp_path / "other-checkout", ["gateway", "run", "--external-supervisor"],
                                        python=sys.executable)
-        assert Path(foreign[0]).name == "hermes"
+        assert Path(foreign[0]).name == "moor"
         command = foreign if case == "osascript_foreign_bare" else installation_command(
             gw.PROJECT_ROOT, ["--error-log", str(tmp_path / "logs" / "gateway.error.log"), "--", *foreign],
-            module="hermes_cli.stderr_timestamp", python=sys.executable)
+            module="moor_cli.stderr_timestamp", python=sys.executable)
     if case == "osascript_legacy_module":
         # The legacy ``python -m`` form from any interpreter: accepted unwrapped, never written inside osascript.
-        command = [sys.executable, "-m", "hermes_cli.stderr_timestamp", "--error-log",
+        command = [sys.executable, "-m", "moor_cli.stderr_timestamp", "--error-log",
                    str(tmp_path / "logs" / "gateway.error.log"), "--",
-                   sys.executable, "-m", "hermes_cli.main", "gateway", "run", "--external-supervisor"]
+                   sys.executable, "-m", "moor_cli.main", "gateway", "run", "--external-supervisor"]
     if case == "osascript_non_gateway":
         command = ["/bin/sh", "-c", "id"]
     if case == "tampered_bootstrap":
-        tampered = command[3].replace("import hermes_bootstrap; ", "import hermes_bootstrap; print('injected'); ")
+        tampered = command[3].replace("import moor_bootstrap; ", "import moor_bootstrap; print('injected'); ")
         assert tampered != command[3]
         command[3] = tampered
     if case == "arbitrary_inline":
@@ -212,13 +212,13 @@ def test_launchd_verifies_the_osascript_wrapped_command_the_installer_writes(cas
         argv[4] += ' $.system("id");'
     if case == "foreign_osascript":
         argv[0] = str(tmp_path / "osascript")
-    env = dict(HERMES_HOME=str(home if case != "other_home" else tmp_path / "elsewhere" / ".hermes"),
-               HERMES_SUPERVISED_CHILD="1")
-    definition = plistlib.loads(plistlib.dumps(dict(Label="ai.hermes.gateway", ProgramArguments=argv, EnvironmentVariables=env)))
-    output = ("gui/123/ai.hermes.gateway = {\n\tstate = not running\n\tprogram = " + argv[0] + "\n\targuments = {\n"
+    env = dict(MOOR_HOME=str(home if case != "other_home" else tmp_path / "elsewhere" / ".moor"),
+               MOOR_SUPERVISED_CHILD="1")
+    definition = plistlib.loads(plistlib.dumps(dict(Label="ai.moor.gateway", ProgramArguments=argv, EnvironmentVariables=env)))
+    output = ("gui/123/ai.moor.gateway = {\n\tstate = not running\n\tprogram = " + argv[0] + "\n\targuments = {\n"
               + "\n".join("\t\t" + arg for arg in argv) + "\n\t}\n\tenvironment = {\n"
               + "".join(f"\t\t{key} => {value}\n" for key, value in env.items()) + "\t}\n}")
-    for verify in (lambda: verify_launchd_plist(definition, "ai.hermes.gateway", home),
+    for verify in (lambda: verify_launchd_plist(definition, "ai.moor.gateway", home),
                    lambda: verify_launchd_loaded(output, home, uid=123, username="owner")):
         if reason:
             with pytest.raises(ValueError, match=reason):
@@ -231,16 +231,16 @@ def _installed_vbs(home, configured):
     """The current installed launcher grammar; no script is executed."""
     script = home / 'gateway.vbs'
     script.write_text("\n".join([
-        "' Hermes Agent Gateway", "Option Explicit", "Dim sh, env, existing_pp",
+        "' Moor Agent Gateway", "Option Explicit", "Dim sh, env, existing_pp",
         'Set sh = CreateObject("WScript.Shell")', 'Set env = sh.Environment("PROCESS")',
-        f'env.Item("HERMES_HOME") = "{configured}"',
-        'env.Item("HERMES_SUPERVISED_CHILD") = "1"',
-        'env.Item("VIRTUAL_ENV") = "C:\\Hermes"',
+        f'env.Item("MOOR_HOME") = "{configured}"',
+        'env.Item("MOOR_SUPERVISED_CHILD") = "1"',
+        'env.Item("VIRTUAL_ENV") = "C:\\Moor"',
         'existing_pp = env.Item("PYTHONPATH")', 'If Len(existing_pp) > 0 Then',
-        '  env.Item("PYTHONPATH") = "C:\\Hermes;" & existing_pp', 'Else',
-        '  env.Item("PYTHONPATH") = "C:\\Hermes"', 'End If',
+        '  env.Item("PYTHONPATH") = "C:\\Moor;" & existing_pp', 'Else',
+        '  env.Item("PYTHONPATH") = "C:\\Moor"', 'End If',
         f'sh.CurrentDirectory = "{home}"',
-        f'sh.Run "{sys.executable} -m hermes_cli.main gateway run", 0, False',
+        f'sh.Run "{sys.executable} -m moor_cli.main gateway run", 0, False',
     ]) + "\n", encoding='utf-8')
     return script
 
@@ -259,13 +259,13 @@ def _as_schtasks_exports(xml):
     ("empty_run_level", "service_identity_unverified"), ("empty_enabled", "service_disabled"),
 ])
 def test_task_xml_binds_actual_action_and_principal(case, reason, tmp_path):
-    from hermes_cli.gateway_runtime_service_identity import verify_windows_task
-    from hermes_cli.gateway_windows import _build_scheduled_task_xml
+    from moor_cli.gateway_runtime_service_identity import verify_windows_task
+    from moor_cli.gateway_windows import _build_scheduled_task_xml
     home = tmp_path / 'requested'
     home.mkdir()
     script = _installed_vbs(home, str(home if case != 'wrong_home' else tmp_path / 'other'))
     user = 'DOMAIN\\owner'
-    xml = _build_scheduled_task_xml('Hermes_Gateway', script, user)
+    xml = _build_scheduled_task_xml('Moor_Gateway', script, user)
     if case == 'schtasks_export':
         xml = _as_schtasks_exports(xml)
     if case == 'elevated':  # an explicit non-default value is still refused
@@ -296,15 +296,15 @@ def test_task_xml_binds_actual_action_and_principal(case, reason, tmp_path):
 
 
 def test_task_launcher_for_a_non_ascii_home_is_utf16_and_still_verifies(tmp_path, monkeypatch):
-    """wscript.exe reads a BOM-less .vbs in the ANSI code page, so a non-ASCII HERMES_HOME (any CJK or
+    """wscript.exe reads a BOM-less .vbs in the ANSI code page, so a non-ASCII MOOR_HOME (any CJK or
     accented Windows username) reached python garbled and the gateway died before logging. The installed
     launcher is UTF-16 with a BOM; ensure must verify it, and a UTF-8 one an older version wrote."""
     import codecs
-    from hermes_cli import gateway_windows
-    from hermes_cli.gateway_runtime_service_identity import verify_windows_task
+    from moor_cli import gateway_windows
+    from moor_cli.gateway_runtime_service_identity import verify_windows_task
 
     home = tmp_path / 'Usuário 方舟'
-    script = home / 'gateway-service' / 'Hermes_Gateway.cmd'
+    script = home / 'gateway-service' / 'Moor_Gateway.cmd'
     script.parent.mkdir(parents=True)
     monkeypatch.setattr(gateway_windows, '_assert_windows', lambda: None)
     monkeypatch.setattr(gateway_windows, 'get_task_script_path', lambda: script)
@@ -313,7 +313,7 @@ def test_task_launcher_for_a_non_ascii_home_is_utf16_and_still_verifies(tmp_path
     raw = launcher.read_bytes()
     assert raw.startswith(codecs.BOM_UTF16_LE) and str(home) in raw.decode('utf-16')
     user = 'DOMAIN\\owner'
-    xml = gateway_windows._build_scheduled_task_xml('Hermes_Gateway', launcher, user)
+    xml = gateway_windows._build_scheduled_task_xml('Moor_Gateway', launcher, user)
     verify_windows_task(xml, home, user, 'S-1-5-21-123')
     launcher.write_bytes(raw.decode('utf-16').encode('utf-8'))
     verify_windows_task(xml, home, user, 'S-1-5-21-123')
@@ -325,13 +325,13 @@ def test_task_discovery_skips_listing_lines_that_are_not_task_rows(tmp_path, mon
     one-field diagnostic among the rows (#142140). That refused every cold start with
     service_state_unknown, task or not. Such lines are skipped; one naming our task still never counts."""
     from types import SimpleNamespace
-    from hermes_cli import gateway_runtime_service as service
-    from hermes_cli.gateway_windows import _build_scheduled_task_xml
+    from moor_cli import gateway_runtime_service as service
+    from moor_cli.gateway_windows import _build_scheduled_task_xml
 
     home = tmp_path / "profile"
     home.mkdir()
     script = _installed_vbs(home, str(home))
-    name = "Hermes_Gateway_" + service.service_suffix(home)
+    name = "Moor_Gateway_" + service.service_suffix(home)
     account, sid = "DESKTOP-1\\owner", "S-1-5-21-123"
     listing = ('"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag","N/A","Ready"\r\n'
                '错误: 任务映像已损坏或已篡改。\r\n'
@@ -361,21 +361,21 @@ def test_native_launchd_checks_loaded_job_before_disk(case, reason, tmp_path, mo
     import plistlib
     import pwd
     from types import SimpleNamespace
-    from hermes_cli import gateway_runtime_service as service
+    from moor_cli import gateway_runtime_service as service
     home = tmp_path / 'profile'
     home.mkdir(mode=0o700)
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('MOOR_HOME', str(home))
     monkeypatch.setattr(pwd, 'getpwuid', lambda uid: SimpleNamespace(pw_dir=str(tmp_path), pw_name="owner"))
-    label = 'ai.hermes.gateway' + ('-' + service.service_suffix(home) if service.service_suffix(home) else '')
+    label = 'ai.moor.gateway' + ('-' + service.service_suffix(home) if service.service_suffix(home) else '')
     plist = tmp_path / 'Library/LaunchAgents' / (label + '.plist')
     plist.parent.mkdir(parents=True)
-    argv = [sys.executable, '-m', 'hermes_cli.main', 'gateway', 'run']
+    argv = [sys.executable, '-m', 'moor_cli.main', 'gateway', 'run']
     disk_home = tmp_path / 'wrong' if case == 'loaded_good_disk_wrong' else home
     plist.write_bytes(plistlib.dumps(dict(Label=label, ProgramArguments=argv,
-        EnvironmentVariables=dict(HERMES_HOME=str(disk_home), HERMES_SUPERVISED_CHILD='1'))))
+        EnvironmentVariables=dict(MOOR_HOME=str(disk_home), MOOR_SUPERVISED_CHILD='1'))))
     original = plist.read_bytes()
     loaded_home = tmp_path / 'wrong' if case == 'loaded_wrong_disk_good' else home
-    output = 'gui/' + str(os.getuid()) + '/' + label + ' = {\n\tstate = not running\n\tprogram = ' + argv[0] + '\n\targuments = {\n' + '\n'.join('\t\t' + arg for arg in argv) + '\n\t}\n\tenvironment = {\n\t\tHERMES_HOME => ' + str(loaded_home) + '\n\t\tHERMES_SUPERVISED_CHILD => 1\n\t}\n}'
+    output = 'gui/' + str(os.getuid()) + '/' + label + ' = {\n\tstate = not running\n\tprogram = ' + argv[0] + '\n\targuments = {\n' + '\n'.join('\t\t' + arg for arg in argv) + '\n\t}\n\tenvironment = {\n\t\tMOOR_HOME => ' + str(loaded_home) + '\n\t\tMOOR_SUPERVISED_CHILD => 1\n\t}\n}'
     peer = tmp_path / 'supervisor.py'
     peer.write_text('import sys\n' + f'output={output!r}\nbootstrap={case == "bootstrap"!r}\n' +
         'if "print" in sys.argv:\n sys.exit(113) if bootstrap or any(a.startswith("user/") for a in sys.argv) else print(output)\n', encoding='utf-8')
@@ -401,11 +401,11 @@ def test_native_launchd_checks_loaded_job_before_disk(case, reason, tmp_path, mo
 @pytest.mark.platforms("windows")
 @pytest.mark.parametrize("wrong", [False, True])
 def test_native_task_query_uses_installed_xml_and_vendor_launcher(wrong, tmp_path, monkeypatch):
-    from hermes_cli import gateway_runtime_service as service
-    from hermes_cli.gateway_windows import _build_gateway_vbs_script, _build_scheduled_task_xml
+    from moor_cli import gateway_runtime_service as service
+    from moor_cli.gateway_windows import _build_gateway_vbs_script, _build_scheduled_task_xml
     home = tmp_path / 'profile'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
+    monkeypatch.setenv('MOOR_HOME', str(home))
     script = home / 'gateway.vbs'
     # newline='' mirrors the installer's _atomic_write: the template is already CRLF and
     # Windows text mode would otherwise double it to \r\r\n, which is not the vendor template.
@@ -413,11 +413,11 @@ def test_native_task_query_uses_installed_xml_and_vendor_launcher(wrong, tmp_pat
     original = script.read_bytes()
     # whoami is read-only native account evidence; no task-manager mutation.
     identity = subprocess.run(['whoami.exe', '/USER', '/FO', 'CSV', '/NH'], stdin=subprocess.DEVNULL, capture_output=True, timeout=5, check=False)
-    from hermes_cli.gateway_windows import _schtasks_encoding
+    from moor_cli.gateway_windows import _schtasks_encoding
     import csv
     _account, sid = next(csv.reader(identity.stdout.decode(_schtasks_encoding()).splitlines()))
     suffix = service.service_suffix(home)
-    name = 'Hermes_Gateway' + ('_' + suffix if suffix else '')
+    name = 'Moor_Gateway' + ('_' + suffix if suffix else '')
     xml = _build_scheduled_task_xml(name, script, 'S-1-5-18' if wrong else sid)
     peer = tmp_path / 'supervisor.py'
     row = f'"\\{name}","N/A","Ready"'
@@ -447,7 +447,7 @@ def test_native_task_query_uses_installed_xml_and_vendor_launcher(wrong, tmp_pat
 
 @pytest.mark.platforms("linux")
 def test_service_definition_reads_reject_fifo_without_waiting(tmp_path):
-    from hermes_cli.gateway_runtime_service_identity import read_definition
+    from moor_cli.gateway_runtime_service_identity import read_definition
     regular = tmp_path / 'regular'
     regular.write_bytes(b'installed definition')
     assert read_definition(regular) == regular.read_bytes()
@@ -459,8 +459,8 @@ def test_service_definition_reads_reject_fifo_without_waiting(tmp_path):
 
 @pytest.mark.parametrize("outer", ["python", "echo"])
 def test_gateway_wrapper_requires_actual_python_entrypoint(outer, tmp_path):
-    from hermes_cli.gateway_runtime_service_identity import verify_gateway_argv
-    argv = [sys.executable if outer == 'python' else '/bin/echo', '-m', 'hermes_cli.stderr_timestamp', '--error-log', str(tmp_path / 'error.log'), '--', sys.executable, '-m', 'hermes_cli.main', 'gateway', 'run']
+    from moor_cli.gateway_runtime_service_identity import verify_gateway_argv
+    argv = [sys.executable if outer == 'python' else '/bin/echo', '-m', 'moor_cli.stderr_timestamp', '--error-log', str(tmp_path / 'error.log'), '--', sys.executable, '-m', 'moor_cli.main', 'gateway', 'run']
     if outer == 'echo':
         with pytest.raises(ValueError, match='service_identity_unverified'):
             verify_gateway_argv(argv, tmp_path)
@@ -471,7 +471,7 @@ def test_gateway_wrapper_requires_actual_python_entrypoint(outer, tmp_path):
 def test_android_python_reaches_the_unmanaged_start(tmp_path, monkeypatch):
     """Termux is supported and has no service manager; Python 3.13+ there reports
     sys.platform == "android". Ensure must start the gateway unmanaged, not refuse the platform."""
-    from hermes_cli import gateway_runtime as runtime, gateway_runtime_service as service, gateway_runtime_start as start
+    from moor_cli import gateway_runtime as runtime, gateway_runtime_service as service, gateway_runtime_start as start
 
     home = tmp_path / "profile"
     home.mkdir(mode=0o700)
@@ -487,8 +487,8 @@ def test_android_python_reaches_the_unmanaged_start(tmp_path, monkeypatch):
 
 def test_s6_runtime_ensure_starts_the_registered_gateway_slot(tmp_path, monkeypatch):
     """A Docker TUI client starts its s6 gateway instead of probing systemd."""
-    from hermes_cli import gateway_runtime_service as service
-    from hermes_cli import service_manager
+    from moor_cli import gateway_runtime_service as service
+    from moor_cli import service_manager
 
     home = tmp_path / "data"
     home.mkdir()
@@ -511,7 +511,7 @@ def test_s6_runtime_ensure_starts_the_registered_gateway_slot(tmp_path, monkeypa
     monkeypatch.setattr(service_manager, "S6ServiceManager", FakeS6ServiceManager)
     read_text = Path.read_text
     monkeypatch.setattr(Path, "read_text", lambda path, *args, **kwargs: (
-        str(home) if str(path).replace("\\", "/") == "/run/s6/container_environment/HERMES_HOME"
+        str(home) if str(path).replace("\\", "/") == "/run/s6/container_environment/MOOR_HOME"
         else read_text(path, *args, **kwargs)))
     monkeypatch.setattr(service, "_systemd", lambda *_args: pytest.fail("s6 must not probe systemd"))
 
@@ -524,8 +524,8 @@ def test_s6_runtime_ensure_starts_the_registered_gateway_slot(tmp_path, monkeypa
 
 def test_s6_command_timeout_ends_at_the_runtime_deadline(tmp_path, monkeypatch):
     """A hung s6-svstat or s6-svc reaches ensure as its deadline, not an uncaught TimeoutExpired."""
-    from hermes_cli import gateway_runtime_service as service
-    from hermes_cli import service_manager
+    from moor_cli import gateway_runtime_service as service
+    from moor_cli import service_manager
 
     home = tmp_path / "data"
     home.mkdir()
@@ -541,7 +541,7 @@ def test_s6_command_timeout_ends_at_the_runtime_deadline(tmp_path, monkeypatch):
                         lambda self: setattr(self, "scandir", scandir))
     read_text = Path.read_text
     monkeypatch.setattr(Path, "read_text", lambda path, *args, **kwargs: (
-        str(home) if str(path).replace("\\", "/") == "/run/s6/container_environment/HERMES_HOME"
+        str(home) if str(path).replace("\\", "/") == "/run/s6/container_environment/MOOR_HOME"
         else read_text(path, *args, **kwargs)))
 
     with pytest.raises(TimeoutError):
@@ -554,16 +554,16 @@ def test_s6_command_timeout_ends_at_the_runtime_deadline(tmp_path, monkeypatch):
 def test_windows_startup_folder_entry_still_restarts_a_stopped_owner(tmp_path, monkeypatch):
     """The Startup-folder fallback is login persistence only (no start verb, no identity): with it
     present and no Scheduled Task registered, ensure takes the same detached direct spawn manual
-    `hermes gateway start` uses instead of refusing until the next login."""
+    `moor gateway start` uses instead of refusing until the next login."""
     from types import SimpleNamespace
-    from hermes_cli import gateway_runtime as runtime, gateway_runtime_service as service, gateway_runtime_start as start
-    from hermes_cli import gateway_windows
+    from moor_cli import gateway_runtime as runtime, gateway_runtime_service as service, gateway_runtime_start as start
+    from moor_cli import gateway_windows
 
     home = tmp_path / "profile"
     home.mkdir(mode=0o700)
     startup = tmp_path / "Startup"
     startup.mkdir()
-    (startup / f"Hermes_Gateway_{service.service_suffix(home)}.vbs").write_text("' fallback\r\n")
+    (startup / f"Moor_Gateway_{service.service_suffix(home)}.vbs").write_text("' fallback\r\n")
     monkeypatch.setattr(gateway_windows, "_startup_dir", lambda: startup)
     queries, spawned = [], []
     monkeypatch.setattr(service, "_run", lambda argv, *a, **k: queries.append(argv) or SimpleNamespace(returncode=0, stdout=b""))
@@ -582,13 +582,13 @@ def test_task_discovery_reads_localized_schtasks_output(tmp_path, monkeypatch):
     cp936 bytes, and /XML declares UTF-16 over them with the defaults elided (#139083, #139013).
     The installed task must still be verified, not refused as service_identity_unverified."""
     from types import SimpleNamespace
-    from hermes_cli import gateway_runtime_service as service, gateway_windows
-    from hermes_cli.gateway_windows import _build_scheduled_task_xml
+    from moor_cli import gateway_runtime_service as service, gateway_windows
+    from moor_cli.gateway_windows import _build_scheduled_task_xml
 
     home = tmp_path / "profile"
     home.mkdir()
     script = _installed_vbs(home, str(home))
-    name = "Hermes_Gateway_" + service.service_suffix(home)
+    name = "Moor_Gateway_" + service.service_suffix(home)
     account, sid = "DESKTOP-1\\\u65b9\u821f", "S-1-5-21-123"
     # whoami first: it is queried with /FO CSV too.
     out = {"whoami.exe": f'"{account}","{sid}"\r\n', "/XML": _as_schtasks_exports(

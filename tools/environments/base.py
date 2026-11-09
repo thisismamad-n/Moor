@@ -186,7 +186,7 @@ def touch_activity_if_due(state: dict, label: str) -> None:
 
 def get_sandbox_dir() -> Path:
     """Host-side root for all sandbox storage (Docker workspaces, plugin backends'
-    host-side state). ``TERMINAL_SANDBOX_DIR`` overrides ``{HERMES_HOME}/sandboxes``."""
+    host-side state). ``TERMINAL_SANDBOX_DIR`` overrides ``{MOOR_HOME}/sandboxes``."""
     custom = os.getenv("TERMINAL_SANDBOX_DIR")
     p = Path(custom) if custom else get_moor_home() / "sandboxes"
     p.mkdir(parents=True, exist_ok=True)
@@ -220,7 +220,7 @@ def _update_json_store(path: Path, update: Callable[[dict], None]) -> None:
     update: a sandbox lifecycle step (modal's restore fallback included) must not abort on it."""
     from contextlib import ExitStack
 
-    from hermes_cli.auth import _file_lock
+    from moor_cli.auth import _file_lock
 
     lock_path = path.with_name(f"{path.name}.lock")
     with ExitStack() as stack:
@@ -488,14 +488,14 @@ class BaseEnvironment(ABC):
         Redirections apply left to right, so the substitution inherits the heredoc as its stdin;
         the heredoc stays outside ``<( )`` because bash 3.2 mis-parses bodies inside it. ``|| :``
         keeps an inherited ``set -e`` from killing the reader on read's EOF status."""
-        delimiter = f"HERMES_STDIN_{uuid.uuid4().hex[:12]}"
+        delimiter = f"MOOR_STDIN_{uuid.uuid4().hex[:12]}"
         return (f"{{\n{command}\n}} << '{delimiter}' < <(IFS= read -r -d '' s || :; printf '%s' \"${{s%?}}\")\n"
                 f"{stdin_data}\n{delimiter}")
 
     def _staged_stdin_path(self) -> str:
         """Unique sandbox path for staging a payload-mode stdin file."""
         temp_dir = self.get_temp_dir().rstrip("/") or "/"
-        return f"{temp_dir}/.hermes-stdin-{uuid.uuid4().hex}"
+        return f"{temp_dir}/.moor-stdin-{uuid.uuid4().hex}"
 
     @staticmethod
     def _redirect_stdin_from_file(command: str, path: str) -> str:
@@ -552,7 +552,7 @@ class BaseEnvironment(ABC):
                     trace.interrupted()
                     _kill_and_join()
                     return {**self._finalize_wait_result(output, output.render(suffix="\n[Command interrupted]"), 130),
-                            "hermes_interrupted": True}
+                            "moor_interrupted": True}
                 if yield_handler is not None and consume_yield(watch_interrupt_tid):
                     drain_stop.set()
                     drain_thread.join(timeout=1)
@@ -572,8 +572,8 @@ class BaseEnvironment(ABC):
                     rendered = output.render(suffix=f"\n[Command timed out after {timeout}s]")
                     if output.total_chars == 0:
                         rendered = rendered.lstrip()
-                    # The flag tells Hermes' own deadline apart from a command's own ``exit 124``.
-                    return {**self._finalize_wait_result(output, rendered, 124), "hermes_timed_out": True}
+                    # The flag tells Moor' own deadline apart from a command's own ``exit 124``.
+                    return {**self._finalize_wait_result(output, rendered, 124), "moor_timed_out": True}
                 touch_activity_if_due(_activity_state, "terminal command running")
                 trace.heartbeat()
                 time.sleep(_poll_sleep)
@@ -773,7 +773,7 @@ class BaseEnvironment(ABC):
                 result = self._finalize_wait_result(collector, collector.render(suffix=suffix).lstrip("\n"), 124)
             else:
                 result = {"output": suffix.lstrip(), "returncode": 124}
-            result["hermes_timed_out"] = True
+            result["moor_timed_out"] = True
         else:
             result = bounded.value
         self._update_cwd(result)
@@ -809,7 +809,7 @@ class BaseEnvironment(ABC):
 
         Also applies the macOS ``open`` frontmost raise-ladder (a pure string
         rewrite, no-op on non-Darwin) so files opened via tool calls are
-        brought to the front instead of landing behind the Hermes window.
+        brought to the front instead of landing behind the Moor window.
         """
         from tools.terminal_tool_macos_open import _transform_macos_open_command
         from tools.terminal_tool_sudo import _transform_sudo_command

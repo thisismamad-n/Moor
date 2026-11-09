@@ -1,6 +1,6 @@
 # health: allow FILE_LINES -- security fix for #82010: distinguish an explicitly-empty toolset allowlist (fail closed, nothing allowed) from an absent one (no restriction); the added lines are minimal fail-closed branches at this existing chokepoint
-"""Cron job storage: ~/.hermes/cron/jobs.json; output in
-~/.hermes/cron/output/{job_id}/{timestamp}.md"""
+"""Cron job storage: ~/.moor/cron/jobs.json; output in
+~/.moor/cron/output/{job_id}/{timestamp}.md"""
 
 import contextlib
 import copy
@@ -31,7 +31,7 @@ except ImportError:  # pragma: no cover - non-Windows
 from datetime import datetime, timedelta, UTC
 from pathlib import Path
 from agent.deadline import poll_until
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from cron.constants import CLAIM_TTL_INACTIVITY_HEADROOM, FIRE_CLAIM_SKEW_SECONDS, FIRE_CLAIM_TTL_SECONDS
 from cron.env_settings import cron_env_setting
 from cron.jobs_invariants import _validate_job_mode_invariants, validate_schedule_knobs
@@ -43,9 +43,9 @@ from typing import Optional, Dict, List, Any, Callable, Set, Tuple, Union, Colle
 
 logger = logging.getLogger(__name__)
 
-from hermes_time import now as _hermes_now
-from hermes_time import get_timezone
-from hermes_cli.observability.shared_metrics_gateway import record_cron_missed
+from moor_time import now as _moor_now
+from moor_time import get_timezone
+from moor_cli.observability.shared_metrics_gateway import record_cron_missed
 from utils import atomic_replace, atomic_write_text, fsync_directory, mkstemp_beside
 
 # croniter is imported lazily (slow import, only needed for cron exprs). HAS_CRONITER stays a
@@ -817,8 +817,8 @@ def parse_schedule(schedule: str) -> dict[str, Any]:
     if 'T' in schedule or re.match(r'^\d{4}-\d{2}-\d{2}', schedule):
         try:
             dt = datetime.fromisoformat(schedule)
-            # Naive timestamps become aware in the CONFIGURED Hermes timezone (not server-local):
-            # the due-check compares against hermes_time.now().
+            # Naive timestamps become aware in the CONFIGURED Moor timezone (not server-local):
+            # the due-check compares against moor_time.now().
             # Make naive timestamps timezone-aware at parse time so the stored value doesn't depend on the
             # system timezone matching at check time. UTC) while now() runs in Asia/Kolkata, the stored
             # instant would land hours off from the user's wall-clock intent — far enough that one-shots
@@ -861,14 +861,14 @@ def parse_schedule(schedule: str) -> dict[str, Any]:
 
 
 def _ensure_aware(dt: datetime, target_tz: Optional[Any] = None) -> datetime:
-    """Aware datetime in *target_tz*, defaulting to the configured Hermes timezone. Legacy naive
+    """Aware datetime in *target_tz*, defaulting to the configured Moor timezone. Legacy naive
     values are read as *system-local* wall time (what created them) then converted, preserving
     ordering across timezone changes and avoiding false not-due results.
 
     The due scan passes the JOB's pinned zone here: every downstream cron predicate compares wall
     clocks, so normalizing a pinned job's instant into the profile zone makes a due occurrence
     look still-in-the-future and the repair path re-anchors past it (job lost, never fired)."""
-    target_tz = target_tz or _hermes_now().tzinfo
+    target_tz = target_tz or _moor_now().tzinfo
     if dt.tzinfo is None:
         return dt.replace(tzinfo=datetime.now().astimezone().tzinfo).astimezone(target_tz)
     return dt.astimezone(target_tz)
@@ -1196,7 +1196,7 @@ def compute_next_run(
     *timezone* is the job's pinned IANA zone (a job record or a bare zone name); None inherits
     the profile's configured zone. Every caller that advances a job's ``next_run_at`` must pass
     it, or a pinned job is computed in the wrong zone and jumps a slot."""
-    now = _hermes_now()
+    now = _moor_now()
     if not isinstance(schedule, dict):
         return None
     kind = schedule.get("kind")
@@ -1221,7 +1221,7 @@ def compute_next_run(
             logger.warning(
                 "Cannot compute next run for cron schedule %r: 'croniter' is "
                 "not installed. croniter is a core dependency as of v0.9.x; "
-                "reinstall hermes-agent or run 'pip install croniter' in your runtime env "
+                "reinstall moor-agent or run 'pip install croniter' in your runtime env "
                 "(interpreter: %s).",
                 expr, sys.executable)
             return None
@@ -1309,7 +1309,7 @@ def ticker_heartbeat_writer_alive() -> bool:
     bare-epoch stamp names no writer and is NOT proof of a live scheduler by itself."""
     fields = _read_marker_fields("ticker_heartbeat")
     try:
-        from hermes_cli._subprocess_compat import pid_exists_stdlib
+        from moor_cli._subprocess_compat import pid_exists_stdlib
         return len(fields) >= 2 and pid_exists_stdlib(int(fields[1]))
     except Exception:
         return False
@@ -2527,7 +2527,7 @@ def mark_job_run(
                     "mark_job_run: job_id %s fire claim owner changed; discarding stale completion",
                     job_id)
                 return False
-        now = _hermes_now().isoformat()
+        now = _moor_now().isoformat()
         extra = extra_fire.is_extra(job)  # read before the outcome clears the claim
         held = extra_fire.held_markers(job) if extra else {}
         _record_run_outcome(job, success, error, delivery_error, status, now)

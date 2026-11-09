@@ -23,14 +23,14 @@ from moor_cli.config import cfg_get
 from moor_cli.web_server_cron import (
     _create_cron_job_sync, _cron_optional_text, _cron_string_list, _mutate_cron_for_profile, _normalize_dashboard_cron_script, _raise_if_cron_registration_error, _run_cron_dashboard_io, _validate_dashboard_cron_context_from, _validate_dashboard_cron_effective_job,
 )
-from hermes_cli.web_models import AutomationBlueprintInstantiate, CronJobCreate, CronJobUpdate
-from hermes_cli.web_routers._common import log as _log
-from hermes_time import get_timezone as _get_timezone
-from hermes_state_keys import legacy_cron_run_job
-from hermes_constants import (
-    get_hermes_home as _get_hermes_home,
-    reset_hermes_home_override as _reset_hermes_home_override,
-    set_hermes_home_override as _set_hermes_home_override,
+from moor_cli.web_models import AutomationBlueprintInstantiate, CronJobCreate, CronJobUpdate
+from moor_cli.web_routers._common import log as _log
+from moor_time import get_timezone as _get_timezone
+from moor_state_keys import legacy_cron_run_job
+from moor_constants import (
+    get_moor_home as _get_moor_home,
+    reset_moor_home_override as _reset_moor_home_override,
+    set_moor_home_override as _set_moor_home_override,
 )
 
 router = APIRouter()
@@ -169,9 +169,9 @@ def _cron_output_runs_dir(profile: Optional[str], job_id: str) -> Path:
         try:
             _, profile_home = _cron_profile_home(profile)
         except Exception:
-            profile_home = _get_hermes_home()
+            profile_home = _get_moor_home()
     else:
-        profile_home = _get_hermes_home()
+        profile_home = _get_moor_home()
     return Path(profile_home) / "cron" / "output" / job_id
 
 
@@ -179,8 +179,8 @@ def _cron_output_runs_dir(profile: Optional[str], job_id: str) -> Path:
 def _owner_home_scope(profile: Optional[str]):
     """Keep reads in the owner's profile context for the whole run-history build.
 
-    Filename stems, the execution ledger and ``hermes_time``'s configured zone all
-    resolve through the *current* ``get_hermes_home()``; without this scope a
+    Filename stems, the execution ledger and ``moor_time``'s configured zone all
+    resolve through the *current* ``get_moor_home()``; without this scope a
     cross-profile listing decodes another profile's docs with the dashboard's
     zone (an hours-off timestamp) and reads the dashboard's executions.db. The
     dashboard's own profile needs no override (its home is already current).
@@ -193,21 +193,21 @@ def _owner_home_scope(profile: Optional[str]):
     except Exception:
         yield None
         return
-    if Path(profile_home).resolve() == _get_hermes_home().resolve():
+    if Path(profile_home).resolve() == _get_moor_home().resolve():
         yield None
         return
-    token = _set_hermes_home_override(str(profile_home))
+    token = _set_moor_home_override(str(profile_home))
     try:
         yield profile_home
     finally:
-        _reset_hermes_home_override(token)
+        _reset_moor_home_override(token)
 
 
 def _cron_output_run_timestamp(path: Path) -> Optional[float]:
     """Epoch seconds for an output filename's wall time.
 
-    save_job_output writes the stem with hermes_time.now() — the configured
-    IANA timezone (HERMES_TIMEZONE / config), falling back to server-local.
+    save_job_output writes the stem with moor_time.now() — the configured
+    IANA timezone (MOOR_TIMEZONE / config), falling back to server-local.
     Read it back with that same ZONE, not a fixed offset snapshot of today's
     local offset: a snapshot is wrong when the configured zone differs from
     the server's, and off by an hour for a historical file across a DST
@@ -325,7 +325,7 @@ def _execution_contains(
 
     ``save_job_output`` runs after the script finishes but before
     ``finish_execution`` closes the attempt, and both clocks are
-    ``hermes_time.now()`` in the owner's zone, so a doc written by an attempt
+    ``moor_time.now()`` in the owner's zone, so a doc written by an attempt
     lands within ``[claimed_at, finished_at + grace]`` of THAT attempt (a still-
     open attempt has no ``finished_at``). Older attempts closed before this doc
     was written, which is what keeps a fast-firing job's status from bleeding

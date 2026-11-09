@@ -47,7 +47,7 @@ class _scoped:
 def two_homes(tmp_path, monkeypatch):
     a = _make_home(tmp_path / "A", {})
     b = _make_home(tmp_path / "A" / "profiles" / "B", {})
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("MOOR_HOME", str(a))
     return a, b
 
 

@@ -3,7 +3,7 @@
 Every read and write of a profile's user ``config.yaml`` goes through the backend returned by
 :func:`get_config_backend` (``scripts/check_config_yaml_readers.py`` and
 ``scripts/check_config_yaml_writers.py`` reject direct file access elsewhere). The key per call is
-the hermes home (profile): one multiplexed process serves N profiles, and every config cache
+the moor home (profile): one multiplexed process serves N profiles, and every config cache
 already keys on the config path, so a backend keeps per-home state.
 
 :class:`FileBackend` (the default) is today's behaviour byte for byte:
@@ -11,10 +11,10 @@ the version is the ``file_signature`` stat tuple, reads are ``open`` + ``fast_sa
 exactly what those raise (``FileNotFoundError`` for an absent file, ``OSError``, YAML errors), and
 writes are the ruamel round-trip writers in ``utils``. Callers keep their own error handling, so a
 backend whose layer always exists simply never takes the "no file" branches. Every other kind
-(``HERMES_CONFIG_BACKEND=<kind>``, e.g. ``remote``) is the package ``plugins/config_backends/<kind>/``,
+(``MOOR_CONFIG_BACKEND=<kind>``, e.g. ``remote``) is the package ``plugins/config_backends/<kind>/``,
 whose ``get_backend()`` returns the instance; this module names no backend beyond that.
 
-The managed scope (``/etc/hermes``) is NOT a backend concern: it stays an overlay applied on top of
+The managed scope (``/etc/moor``) is NOT a backend concern: it stays an overlay applied on top of
 whatever user layer the backend returns.
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Any, Mapping, Optional, Protocol, Union, runtime_checkable
 
 CONFIG_FILENAME = "config.yaml"
-BACKEND_ENV = "HERMES_CONFIG_BACKEND"
+BACKEND_ENV = "MOOR_CONFIG_BACKEND"
 
 PathLike = Union[str, "os.PathLike[str]"]
 
@@ -97,11 +97,11 @@ class ConfigBackend(Protocol):
         ...
 
     def honors_managed_config(self) -> bool:
-        """Whether the managed ``/etc/hermes/config.yaml`` overlay applies (D18: not in remote mode)."""
+        """Whether the managed ``/etc/moor/config.yaml`` overlay applies (D18: not in remote mode)."""
         ...
 
     def boot(self, home: Path) -> None:
-        """Called once per ``load_hermes_dotenv`` after the ``.env`` loads and before the first
+        """Called once per ``load_moor_dotenv`` after the ``.env`` loads and before the first
         config read (design §4.4): a backend that fetches config does it here, failing closed."""
         ...
 
@@ -125,7 +125,7 @@ class ConfigBackend(Protocol):
         ...
 
     def doctor_warnings(self, home: Path) -> tuple:
-        """``(warning, hint, issue)`` triples ``hermes doctor`` reports after a successful read."""
+        """``(warning, hint, issue)`` triples ``moor doctor`` reports after a successful read."""
         ...
 
     def apply_in_memory(self, home: Path, doc: dict) -> None:
@@ -294,13 +294,13 @@ def _ensure_bootstrap_env() -> None:
     """Once per process, before the first selection: the deployment that selects, addresses and
     authenticates the backend comes from the process env, the launch home's ``.env`` and the
     managed ``.env`` (design §4.4 steps 1-2, D26/D32) — also when the first config read comes before
-    ``load_hermes_dotenv`` (``hermes_cli.config`` reads config at import time)."""
+    ``load_moor_dotenv`` (``moor_cli.config`` reads config at import time)."""
     if not _BOOTSTRAPPED:
         _bootstrap(None, None, once=True)
 
 
 def bootstrap_deployment(home: Optional[PathLike] = None, project_env: Optional[PathLike] = None) -> None:
-    """Publish the deployment from an explicit dotenv load's layers (``load_hermes_dotenv``: its
+    """Publish the deployment from an explicit dotenv load's layers (``load_moor_dotenv``: its
     home and project ``.env``) before that load's first config read. Runs even when the
     once-per-process bootstrap already ran: an earlier one did not know this load's project file."""
     _bootstrap(Path(home) if home is not None else None,
@@ -314,7 +314,7 @@ def _bootstrap(home: Optional[Path], project_env: Optional[Path], *, once: bool)
             return  # done, or this thread's own bootstrap re-entering (import-time config read)
         _BOOTSTRAP_OWNER = threading.get_ident()
         try:
-            from hermes_cli.env_loader import apply_config_bootstrap_env
+            from moor_cli.env_loader import apply_config_bootstrap_env
             # names resolved only for the kind the .env layers select
             apply_config_bootstrap_env(_bootstrap_names, home, project_env)
         except ImportError:  # no usable python-dotenv (a bare installer interpreter): no .env loads either
@@ -327,7 +327,7 @@ def _bootstrap(home: Optional[Path], project_env: Optional[Path], *, once: bool)
 
 
 def get_config_backend() -> ConfigBackend:
-    """The backend selected by ``HERMES_CONFIG_BACKEND`` (default ``file``).
+    """The backend selected by ``MOOR_CONFIG_BACKEND`` (default ``file``).
 
     Read from the environment on every call, before any config read, so no config value can
     select it (D11). Raises :class:`ConfigBackendUnavailable` for a backend this build lacks.

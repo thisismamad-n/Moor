@@ -14,7 +14,7 @@ from collections import deque
 from pathlib import Path
 from typing import IO, Callable, Protocol
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from tools.environments.fd_wait import open_fd_waiter
 from tools.tool_output_truncate import head_tail_split, truncation_notice
 from moor_cli._subprocess_compat import windows_hide_flags

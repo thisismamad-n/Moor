@@ -115,14 +115,14 @@ moor plugins disable disk-cleanup
 
 ### Langfuse（已移至插件目录）
 
-Langfuse 追踪不再随 Hermes 内置，而是作为官方目录插件 [`langfuse`](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse) 提供，
-hook、`HERMES_LANGFUSE_*` 环境变量和捕获模式保持不变：
+Langfuse 追踪不再随 Moor 内置，而是作为官方目录插件 [`langfuse`](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse) 提供，
+hook、`MOOR_LANGFUSE_*` 环境变量和捕获模式保持不变：
 
 ```bash
-hermes plugins install langfuse
+moor plugins install langfuse
 ```
 
-已启用 `observability/langfuse` 的配置文件会在 `hermes update`（或更新后的首次启动）时自动安装并启用该插件，
+已启用 `observability/langfuse` 的配置文件会在 `moor update`（或更新后的首次启动）时自动安装并启用该插件，
 继续向同一个 Langfuse 项目发送 trace。安装、调优和捕获模式见[插件 README](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse)。
 
 ### google_meet

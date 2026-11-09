@@ -1,4 +1,4 @@
-"""``hermes update`` reuses the packaged desktop app across commits that changed no desktop input.
+"""``moor update`` reuses the packaged desktop app across commits that changed no desktop input.
 
 A real git checkout carries the real receipt reader (``scripts/build/freshness.mjs``), the real
 stamp resolver (``apps/desktop/scripts/write-build-stamp.mjs``) and the real reuse probe; only the
@@ -50,8 +50,8 @@ def packaged_checkout(tmp_path, monkeypatch):
         shutil.copy2(REPOSITORY / name, root / name)
     (root / "apps/desktop/src").mkdir(parents=True)
     (root / "apps/desktop/src/main.tsx").write_text("export {}\n", encoding="utf-8")
-    (root / "hermes_cli").mkdir()
-    (root / "hermes_cli/banner.py").write_text("BANNER = 1\n", encoding="utf-8")
+    (root / "moor_cli").mkdir()
+    (root / "moor_cli/banner.py").write_text("BANNER = 1\n", encoding="utf-8")
     (root / ".gitignore").write_text("apps/desktop/build/\napps/desktop/release/\n", encoding="utf-8")
     _git(root, "init", "-q", "-b", "main")
     _git(root, "add", "-A")
@@ -61,7 +61,7 @@ def packaged_checkout(tmp_path, monkeypatch):
     stamp = desktop / "build/install-stamp.json"
     dist = desktop / "release/linux-unpacked/resources/app.asar.unpacked/dist"
     dist.mkdir(parents=True)
-    (desktop / "release/linux-unpacked/hermes").write_text("", encoding="utf-8")
+    (desktop / "release/linux-unpacked/moor").write_text("", encoding="utf-8")
     (dist / "electron-main.mjs").write_text("// baked\n", encoding="utf-8")
     _node("import {resolveStamp, buildStampPayload, writeDesktopStamp} from './apps/desktop/scripts/write-build-stamp.mjs';"
           "writeDesktopStamp('apps/desktop/build', buildStampPayload(resolveStamp({repoRoot: process.cwd()}), process.env, process.platform, null))",
@@ -74,7 +74,7 @@ def packaged_checkout(tmp_path, monkeypatch):
 
 
 def _update_builds_desktop(root: Path, monkeypatch) -> bool:
-    from hermes_cli import desktop_build_lock, main_desktop, source_build
+    from moor_cli import desktop_build_lock, main_desktop, source_build
 
     builds = []
     monkeypatch.setattr(main_desktop, "build_prepared_desktop", lambda *_a, **_k: builds.append(1))
@@ -89,7 +89,7 @@ def _update_builds_desktop(root: Path, monkeypatch) -> bool:
 def test_update_reuses_the_packaged_app_until_a_desktop_input_changes(packaged_checkout, monkeypatch):
     root = packaged_checkout
     built_at = _git(root, "rev-parse", "HEAD")
-    (root / "hermes_cli/banner.py").write_text("BANNER = 2\n", encoding="utf-8")
+    (root / "moor_cli/banner.py").write_text("BANNER = 2\n", encoding="utf-8")
     _git(root, "commit", "-q", "-am", "python only")
 
     assert not _update_builds_desktop(root, monkeypatch), "a Python-only commit rebuilt the desktop app"
@@ -106,7 +106,7 @@ def test_a_stamp_a_build_would_bake_differently_still_rebuilds(packaged_checkout
     """Same inputs, but a build at HEAD would stamp another branch: the shipped identity changed."""
     root = packaged_checkout
     _git(root, "checkout", "-q", "-b", "other")
-    (root / "hermes_cli/banner.py").write_text("BANNER = 3\n", encoding="utf-8")
+    (root / "moor_cli/banner.py").write_text("BANNER = 3\n", encoding="utf-8")
     _git(root, "commit", "-q", "-am", "python only, on another branch")
 
     assert _update_builds_desktop(root, monkeypatch)

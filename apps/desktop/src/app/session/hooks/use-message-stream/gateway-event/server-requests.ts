@@ -1,4 +1,4 @@
-import { JSON_RPC_INTERNAL_ERROR, type SetupBeat } from '@hermes/shared'
+import { JSON_RPC_INTERNAL_ERROR, type SetupBeat } from '@moor/shared'
 
 import {
   hasLivePreviewSurface,
@@ -624,7 +624,7 @@ const previewAct: Handler = ({ deps, isActiveSession, request, sessionId }) => {
  *  agent relays it instead of retrying a call that can never succeed. */
 const BROWSER_WINDOW_READ_REFUSAL = {
   error:
-    'read_window_below needs the Hermes desktop app: this session is in a browser tab, which cannot see the OS windows around it.',
+    'read_window_below needs the Moor desktop app: this session is in a browser tab, which cannot see the OS windows around it.',
   platform: 'browser'
 }
 

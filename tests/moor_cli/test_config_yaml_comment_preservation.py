@@ -106,7 +106,7 @@ class TestEveryWriterPreservesComments:
 
     def test_atomic_config_write_direct(self, home):
         """Non-deleting direct callers keep using the guarded writer."""
-        from hermes_cli.config import atomic_config_write, read_user_config_raw
+        from moor_cli.config import atomic_config_write, read_user_config_raw
 
         raw = read_user_config_raw(home / "config.yaml")
         raw["model"]["provider"] = "auto"

@@ -200,7 +200,7 @@ def _cua_autostart_opt_in() -> bool:
     install/enable time — needed when driving Windows over SSH (Session 0 has no interactive
     desktop). Unreadable config fails closed to the on-demand default."""
     with contextlib.suppress(Exception):
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
         return bool(((load_config() or {}).get("computer_use") or {}).get("autostart", False))
     return False
 

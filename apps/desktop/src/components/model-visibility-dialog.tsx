@@ -46,7 +46,7 @@ import { knownOwnerForSession, requestForOwnedSession } from '@/store/session-st
  *  socket refuses a secondary profile's session_id and the dialog fell back to
  *  the launch profile's REST catalog. An owner nothing names yet keeps the
  *  ambient path (and its REST recovery) — this is a settings view, not a write. */
-function ownerModelOptionsRequest(gw: HermesGateway | undefined, sessionId: null | string | undefined) {
+function ownerModelOptionsRequest(gw: MoorGateway | undefined, sessionId: null | string | undefined) {
   if (!gw || !sessionId || !sessionOwnerIsKnown(knownOwnerForSession(sessionId))) {
     return undefined
   }

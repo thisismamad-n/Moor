@@ -1,5 +1,5 @@
-import type { BillingBlock } from '@hermes/shared/billing'
-import type { UsageLimit } from '@hermes/shared/plan-usage'
+import type { BillingBlock } from '@moor/shared/billing'
+import type { UsageLimit } from '@moor/shared/plan-usage'
 
 import { t } from '../i18n/runtime.js'
 
@@ -81,7 +81,7 @@ export function usageLimitDialog(limit: UsageLimit): UsageLimitDialog {
     cancelLabel: t('libText.billingDialog.dismiss'),
     confirmLabel: t('libText.billingDialog.limitSwitchTo', `${suggestion.label}${note}`),
     detail: [sentence, credits].filter(Boolean).join('\n'),
-    switchValue: `${suggestion.model} --provider ${suggestion.provider || 'nous'} --session`,
+    switchValue: `${suggestion.model} --provider ${suggestion.provider || 'moor'} --session`,
     title: t('libText.billingDialog.limitTitle')
   }
 }

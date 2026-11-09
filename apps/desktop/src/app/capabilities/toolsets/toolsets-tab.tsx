@@ -1,8 +1,8 @@
-import { compactNumber } from '@hermes/shared'
+import { compactNumber } from '@moor/shared'
 import { useCallback, useMemo, useState } from 'react'
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { type ProfileScope, setToolsetEnabled } from '@/hermes'
+import { type ProfileScope, setToolsetEnabled } from '@/moor'
 import { useI18n } from '@/i18n'
 import { isDesktopToolsetVisible } from '@/lib/desktop-toolsets'
 import { queryClient } from '@/lib/query-client'

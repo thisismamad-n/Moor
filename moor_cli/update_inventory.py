@@ -262,13 +262,13 @@ def _launchd_owner_for_ledger_entry(entry: dict, pid: int, jobs: list) -> tuple[
 def _systemd_owner_for_ledger_pid(pid: int) -> tuple[str, str | None] | None:
     """``(unit, scope)`` of the systemd unit whose live ``MainPID`` is *pid*, if any.
 
-    A unit-launched backend sets neither ``HERMES_SPAWN`` nor ``HERMES_PARENT_PID``, so the spawner
+    A unit-launched backend sets neither ``MOOR_SPAWN`` nor ``MOOR_PARENT_PID``, so the spawner
     probe reads ``manual-serve`` and the update tells the user to "ask the owner to relaunch
-    `hermes dashboard`" for a process systemd owns (#141021). Ownership is the unit's MainPID, not
+    `moor dashboard`" for a process systemd owns (#141021). Ownership is the unit's MainPID, not
     cgroup membership (a hand-started dashboard inside some unrelated unit's cgroup is still manual);
     ``None`` off Linux, when unreadable, or when no unit owns it."""
     with suppress(Exception):
-        from hermes_cli import main_dashboard as _dash
+        from moor_cli import main_dashboard as _dash
 
         return _dash._systemd_owner_for_pid(pid)
     return None
@@ -278,7 +278,7 @@ def _is_desktop_ssh_ledger_entry(entry: dict) -> bool:
     """Is this row the backend a (possibly remote) Desktop spawned over SSH? The canonical argv
     predicate also classifies rows written before the ledger carried ``isolated``, which is exactly
     the pre-update serve the first update after this change inventories."""
-    from hermes_cli._startup_fast import is_desktop_ssh_backend_argv
+    from moor_cli._startup_fast import is_desktop_ssh_backend_argv
 
     try:
         return is_desktop_ssh_backend_argv(shlex.split(str(entry.get("argv") or "")))
@@ -438,7 +438,7 @@ def match_runtime_outcomes(
     profile it SERVES, while the restart bookkeeping names the SERVICE it runs under, and those two
     disagree whenever a service serves a profile its name does not encode — a root-home launchd
     label running the sticky active profile, a hash-suffixed systemd unit for a custom
-    ``HERMES_HOME``. No name rule can bridge that, so a planned PID that is gone while a gateway
+    ``MOOR_HOME``. No name rule can bridge that, so a planned PID that is gone while a gateway
     answers for the same profile counts as ``restarted``. A missing successor, or the planned PID
     still answering, stays ``unaccounted`` — the tripwire keeps its teeth.
 
@@ -606,7 +606,7 @@ def report_unaccounted_runtimes(outcomes: list[dict[str, Any]]) -> bool:
     if any(o.get("kind") in _SERVE_KINDS for o in missed):
         # A serve/dashboard is not reachable by any `gateway restart` command: name the process, not the wrong verb.
         # See #100479.
-        from hermes_cli.main_dashboard import _systemd_restart_commands
+        from moor_cli.main_dashboard import _systemd_restart_commands
 
         for o in missed:
             if o.get("kind") in _SERVE_KINDS and o.get("systemd_unit"):
@@ -615,8 +615,8 @@ def report_unaccounted_runtimes(outcomes: list[dict[str, Any]]) -> bool:
                     print(f"      {command}   # pid {o['pid']}")
         if any(o.get("kind") in _SERVE_KINDS and not o.get("systemd_unit") for o in missed):
             if sys.platform == "linux":
-                print("      systemctl --user restart hermes-serve.service   # unit-managed serve")
-            print("      relaunch `hermes serve` / `hermes dashboard`")
+                print("      systemctl --user restart moor-serve.service   # unit-managed serve")
+            print("      relaunch `moor serve` / `moor dashboard`")
     return True
 
 

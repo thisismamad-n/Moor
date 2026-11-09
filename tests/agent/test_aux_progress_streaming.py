@@ -380,8 +380,8 @@ class TestAggregateChatStream:
             return
         if case == "provider_stale_timeout_before_first_token":
             gates["release"].set()
-            monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", "0.5")
-            monkeypatch.setattr("hermes_cli.config.load_config_readonly",
+            monkeypatch.setenv("MOOR_STREAM_STALE_TIMEOUT", "0.5")
+            monkeypatch.setattr("moor_cli.config.load_config_readonly",
                                 lambda: {"providers": {"openrouter": {"stale_timeout_seconds": 900}}})
             result = call("slow", "compression", via_relay_seam=True, provider="openrouter")
             assert result.choices[0].message.content == "partial"

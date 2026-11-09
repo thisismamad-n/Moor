@@ -87,8 +87,8 @@ def test_skip_flags_replace_the_isinstance_checks_for_in_and_out_of_tree_clients
     from agent.auxiliary_client import _maybe_wrap_anthropic, _to_async_client
     from agent.gemini_native_adapter import GeminiNativeClient
 
-    assert GeminiNativeClient.HERMES_SKIP_TRANSPORT_WRAP
-    assert not getattr(GeminiNativeClient, "HERMES_SKIP_ASYNC_WRAP", False)
+    assert GeminiNativeClient.MOOR_SKIP_TRANSPORT_WRAP
+    assert not getattr(GeminiNativeClient, "MOOR_SKIP_ASYNC_WRAP", False)
 
     client = _FakeClient()  # never imported by auxiliary_client
     assert _maybe_wrap_anthropic(client, "m", "k", "acp://seam-test") is client

@@ -22,7 +22,7 @@ from typing import Any, Dict, Iterator, List, Optional
 from moor_constants import get_moor_home
 from moor_time import now as _moor_now
 from cron.constants import CLAIM_TTL_INACTIVITY_HEADROOM
-from hermes_cli.observability.shared_metrics_gateway import record_cron_finish
+from moor_cli.observability.shared_metrics_gateway import record_cron_finish
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ MAX_TERMINAL_EXECUTIONS = 1000
 HANDOFF_ADOPTION_GRACE_SECONDS = 30.0
 # Floor for the live-owner stale-claim bound (#115692); see _live_owner_stale_after_seconds.
 LIVE_OWNER_STALE_CLAIM_FLOOR_SECONDS = 7200.0
-# ``cancelled``: an operator stopped the run (``hermes cron cancel``, removing the job mid-run).
+# ``cancelled``: an operator stopped the run (``moor cron cancel``, removing the job mid-run).
 # ``missed``: never started — one row books every occurrence the scheduler skipped past.
 _TERMINAL_STATES = ("completed", "failed", "unknown", "cancelled", "missed")
 _STATUS_CHECK = "('claimed','running','completed','failed','unknown','cancelled','missed')"
@@ -223,7 +223,7 @@ def _stale_age_seconds(claimed_at: str, progress_at: Optional[str]) -> float:
 def touch_execution_progress(execution_id: str) -> bool:
     """Stamp ``progress_at`` on a running attempt this process owns. Returns False when the row
     is no longer ours or no longer running (the caller treats that as informational only)."""
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     with _transaction() as conn:
         cur = conn.execute(
             """UPDATE executions SET progress_at=?
@@ -353,7 +353,7 @@ def finish_execution(
     Only the owning process may finish its attempt; receipt recovery for a departed owner
     settles through ``recover_receipted_execution``.
     """
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     status = "cancelled" if cancelled else ("completed" if success else "failed")
     detail = None if success else (str(error) if error else "unknown failure")
     with _transaction() as conn:
@@ -385,7 +385,7 @@ def record_missed_occurrences(
 
     if count < 1:
         return None
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     execution_id = uuid.uuid4().hex
     pid = os.getpid()
     with _transaction() as conn:
@@ -409,7 +409,7 @@ def recover_receipted_execution(execution_id, job_id, *, success, error=None, de
     Terminal verdicts stay immutable. A live firer still owns its bookkeeping
     (``execution_owner_live``).
     """
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     with _transaction() as conn:
         row = _recoverable_row(conn, execution_id, job_id)
         if row is None or _row_owner_live(row):
@@ -581,7 +581,7 @@ def terminalize_dead_owner(execution_id: str, *, reason: str) -> bool:
     this process, inside the handoff adoption grace, or owned by a live process: a
     worker that is still running must never be terminalized out from under itself.
     """
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     with _transaction() as conn:
         row = conn.execute(
             """SELECT id, status, process_id, pid, process_started_at,
@@ -622,7 +622,7 @@ def give_up_execution(execution_id: str, *, reason: str) -> bool:
     ``unknown`` now, owner-fenced to this process, instead of leaving it ``running`` until a
     restart's dead-owner sweep. Receipt recovery never acts for a same-process running row, so
     the owner's later terminal receipt can settle it only once it is marked given up."""
-    now = _hermes_now().isoformat()
+    now = _moor_now().isoformat()
     with _transaction() as conn:
         cur = conn.execute(
             """UPDATE executions SET status='unknown', finished_at=?, error=?,

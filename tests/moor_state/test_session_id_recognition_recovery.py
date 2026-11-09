@@ -1,6 +1,6 @@
 """Session recovery must recognise every session-id shape this repo really mints.
 
-``hermes sessions recover`` classifies schema-less lost_and_found rows by the id cell. Ids that
+``moor sessions recover`` classifies schema-less lost_and_found rows by the id cell. Ids that
 surfaces DERIVE (cron, /bg, rooms, API server, ACP) instead of minting via ``new_session_id`` were
 dropped, and as a ``parent_session_id`` one of them vetoed layout inference for the whole table.
 """
@@ -13,9 +13,9 @@ from datetime import datetime
 
 import pytest
 
-from hermes_state import SessionDB
-from hermes_cli.session_recovery import _quoted_columns, _table_columns
-from hermes_cli.session_lost_and_found import _is_session_id, map_lost_and_found_rows
+from moor_state import SessionDB
+from moor_cli.session_recovery import _quoted_columns, _table_columns
+from moor_cli.session_lost_and_found import _is_session_id, map_lost_and_found_rows
 
 # Exactly as the minting sites build them (see module docstring for file/line).
 CRON_ID = "cron_0b36145ae5c7_20260626_100059"

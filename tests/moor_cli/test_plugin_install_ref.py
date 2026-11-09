@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.hermes_cli.plugin_worker_support import (
+from tests.moor_cli.plugin_worker_support import (
     isolated_python as isolated_python,  # noqa: PLC0414 -- the self-alias is load-bearing: it suppresses F811 for the pytest fixture parameter shadowing this import
     plugin_world as plugin_world,  # noqa: PLC0414 -- the self-alias is load-bearing: it suppresses F811 for the pytest fixture parameter shadowing this import
 )
@@ -290,14 +290,14 @@ def test_force_reinstall_of_the_same_source_keeps_the_users_files(monkeypatch, t
     code, not the user's state. Untracked/ignored files stay live, edits to tracked files go to
     plugins-backup, and nothing the new revision ships is overwritten by the old tree. Another
     repository under the same plugin name is another plugin and still starts clean."""
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
 
     (tmp_path / "first").mkdir()
     repo, _old, _new = _plugin_repo(tmp_path / "first")
     (repo / ".gitignore").write_text("data/\n", encoding="utf-8")
     old_sha = _commit(repo, "ignore data", "old")
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     target, _manifest, _name = _install_plugin_core(
         repo.as_uri(), force=False, ref=old_sha if move == "pinned-new-ref" else None)
     (target / "data").mkdir()

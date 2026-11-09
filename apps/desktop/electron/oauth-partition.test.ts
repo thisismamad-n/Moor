@@ -262,8 +262,8 @@ describe('resolveOauthPartition with connectionId (pre-save sign-in identity)', 
   // The unknown-id shortcut must grant a private jar ONLY to the draft
   // shapes that earn one after the save. Before this gate, ANY unsaved id got
   // its own jar — so a pre-save CLOUD sign-in wrote its portal session into
-  // `persist:hermes-remote-oauth-conn-<id>` while the saved cloud entry kept
-  // reading the shared `persist:hermes-remote-oauth` (the silent per-agent
+  // `persist:moor-remote-oauth-conn-<id>` while the saved cloud entry kept
+  // reading the shared `persist:moor-remote-oauth` (the silent per-agent
   // cascade jar): a successful-looking sign-in that bounces straight back to
   // signed-out, plus an orphan jar. The invariant below is the contract: for
   // every draft shape, the jar the login writes equals the jar the saved
@@ -301,7 +301,7 @@ describe('resolveOauthPartition with connectionId (pre-save sign-in identity)', 
   it('keeps a pending cloud draft on the legacy shared jar (portal cascade)', () => {
     const reg = registry('local', [{ id: 'local', kind: 'local' }])
 
-    const got = resolveOauthPartition('https://team.hermes.cloud', {
+    const got = resolveOauthPartition('https://team.moor.cloud', {
       registry: reg,
       connectionId: 'team-cloud',
       pendingAuthMode: 'oauth',

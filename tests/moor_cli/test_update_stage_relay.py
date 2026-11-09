@@ -13,12 +13,12 @@ class _StopBeforeAnyGateway(BaseException):
 def test_restart_after_a_failed_build_names_the_restart(tmp_path, monkeypatch):
     """A failed build does not end the update (the code is committed): the fleet restart still
     runs, and the window must say so instead of the build message it last showed."""
-    from hermes_cli import update_cmd, update_cmd_fleet
-    from hermes_cli.update_finish import finish_update
-    from hermes_cli.update_stage import publish_stage
+    from moor_cli import update_cmd, update_cmd_fleet
+    from moor_cli.update_finish import finish_update
+    from moor_cli.update_stage import publish_stage
 
-    status = tmp_path / "hermes-update-status.1"
-    monkeypatch.setenv("HERMES_UPDATE_STATUS_FILE", str(status))
+    status = tmp_path / "moor-update-status.1"
+    monkeypatch.setenv("MOOR_UPDATE_STATUS_FILE", str(status))
 
     def shown() -> str:
         return json.loads(status.read_text(encoding="utf-8"))["message"] if status.exists() else ""
@@ -43,4 +43,4 @@ def test_restart_after_a_failed_build_names_the_restart(tmp_path, monkeypatch):
                       had_desktop_app_before_update=False, pre_update_version=None, plan=None,
                       windows_resume=None)
 
-    assert during_restart == ["Restarting Hermes services"]
+    assert during_restart == ["Restarting Moor services"]

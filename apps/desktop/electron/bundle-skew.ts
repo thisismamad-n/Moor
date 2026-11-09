@@ -20,7 +20,7 @@
  *
  * The count is evidence and the endpoint content is the verdict: a change and its revert
  * inside one update range leave the runtime byte-identical, which is exactly when
- * `hermes update` reuses the packaged app (hermes_cli/desktop_build_reuse.py).
+ * `moor update` reuses the packaged app (moor_cli/desktop_build_reuse.py).
  *
  * Ancestry has to come first, because `A..HEAD` only means "how far HEAD is
  * ahead of A" when A is an ancestor of HEAD. When it is not, the range
@@ -68,7 +68,7 @@ export type RunGit = (
  * The paths that actually reach the user: renderer sources, main-process
  * sources, the HTML entry, the public/ assets Vite copies into the bundle, app
  * icons, and the packaging config -- plus apps/shared, which both bundles
- * compile in (the renderer through the `@hermes/shared` alias, the main process
+ * compile in (the renderer through the `@moor/shared` alias, the main process
  * by relative import). Docs, e2e specs, scratch scripts, and dev tooling never
  * reach the shipped app, so a delta confined to them is not a torn install in
  * any way the user can see.
@@ -217,7 +217,7 @@ export async function detectBundleSkew(
     }
 
     // Commits are evidence, content is the verdict: a change and its revert in one update range
-    // count 2 but leave the runtime byte-identical, and `hermes update` then rightly reuses the
+    // count 2 but leave the runtime byte-identical, and `moor update` then rightly reuses the
     // packaged app instead of rebuilding it. Warning there would never clear.
     return { desktopCommitsBehind: count, outOfSync: !(await runtimeContentMatches(runGit, stamp.commit, options)) }
   } catch {

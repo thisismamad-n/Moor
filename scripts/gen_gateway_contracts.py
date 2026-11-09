@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-moor-env" python3 "$0" "$@"'
 """Render ``tui_gateway/contracts`` into TypeScript and OpenRPC.
 
 Python-only (the Python CI lane has no Node): Pydantic's ``model_json_schema()`` output is walked
@@ -246,7 +246,7 @@ def render_ts() -> str:
     out.append("export type RpcMethod = keyof RpcMethods\n")
     out.append("export const RPC_METHODS = [\n" + _const_items(sorted(METHODS)) + "] as const satisfies readonly RpcMethod[]\n")
 
-    out.append("\n// ── Canonical (hermes-gateway-v1) methods only the session authority serves ──\n")
+    out.append("\n// ── Canonical (moor-gateway-v1) methods only the session authority serves ──\n")
     out.append("export interface CanonicalRpcMethods {\n")
     for m in sorted(CANONICAL_METHODS.values(), key=lambda x: x.name):
         out.append(_doc(m.doc, "  "))

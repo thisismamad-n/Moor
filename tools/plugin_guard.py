@@ -273,7 +273,7 @@ def _inert_context_cap(f: Finding, rel_path: str, line: str, joined: str, is_cod
     to_medium = (
         is_base64_archive_roundtrip(f, line)      # `tar c… | base64 | base64 -d | tar x`: transport
         or is_coin_name_only(f, line)             # "monero gateway" in a connector index, no miner
-        or is_trusted_installer_pipe(f, line)     # `curl … hermes/ollama/bun install.sh | sh`
+        or is_trusted_installer_pipe(f, line)     # `curl … moor/ollama/bun install.sh | sh`
         or is_sudo_inert(f, line, rel_path)       # advisory `sudo apt install` hint / "never … sudo"
         or is_env_dump_in_safety_clause(f, line)  # `env`/`printenv` in a "never inspect env" rule
         or is_repo_root_traversal(f, line)        # `../../..` to the repo root, no sensitive leaf
@@ -316,7 +316,7 @@ def _dangerous_findings_summary(findings: list[Finding]) -> str:
 
 
 def _tracked_bytecode(plugin_dir: Path) -> set[str]:
-    """``.pyc``/``.pyo`` the checkout tracks. ``hermes plugins validate`` imports the plugin before
+    """``.pyc``/``.pyo`` the checkout tracks. ``moor plugins validate`` imports the plugin before
     it scans, so an untracked ``__pycache__`` that run wrote is not shipped content; only the index
     says what the pinned commit carries. Not a checkout (or no git) → empty."""
     try:

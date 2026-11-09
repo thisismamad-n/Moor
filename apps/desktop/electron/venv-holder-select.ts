@@ -36,10 +36,10 @@ export function isMoorOwnedVenvDaemon(
 }
 
 /**
- * True when a process is an external Hermes process holding this install's venv
+ * True when a process is an external Moor process holding this install's venv
  * (#62311): its exe lives under `<venv>\Scripts\` AND it is unambiguously a
- * Hermes program — the `hermes.exe` shim, `python -m hermes_cli...`, or
- * `python -m hermes ...`. These are the autostart holders (the gateway Startup
+ * Moor program — the `moor.exe` shim, `python -m moor_cli...`, or
+ * `python -m moor ...`. These are the autostart holders (the gateway Startup
  * item, the dashboard Scheduled Task) that neither the desktop's backend
  * teardown nor the hindsight-daemon sweep reach, and that keep the venv shim
  * locked so the update hand-off aborts every time.
@@ -47,7 +47,7 @@ export function isMoorOwnedVenvDaemon(
  * Deliberately NARROWER than a bare path/cmdline substring against the install
  * root (the approach that sank #62445): an unrelated process that merely
  * mentions the install root or borrows the venv interpreter for its own script
- * must NOT be tree-killed. Non-Hermes venv users still abort the hand-off via
+ * must NOT be tree-killed. Non-Moor venv users still abort the hand-off via
  * the shim-lock probe instead.
  */
 export function isExternalVenvHolder(
@@ -65,9 +65,9 @@ export function isExternalVenvHolder(
 
   const exeName = exePath.slice(exePath.lastIndexOf('\\') + 1).toLowerCase()
 
-  if (exeName === 'hermes.exe') {
+  if (exeName === 'moor.exe') {
     return true
   }
 
-  return /hermes_cli/i.test(cmdline) || /(^|\s|")-m\s+hermes([.\s"']|$)/i.test(cmdline)
+  return /moor_cli/i.test(cmdline) || /(^|\s|")-m\s+moor([.\s"']|$)/i.test(cmdline)
 }

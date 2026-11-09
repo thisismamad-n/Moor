@@ -29,7 +29,7 @@ def _run_owned_job(job, tmp_path, db=None):
     """Run the production owner bridge, preserving each test's agent/DB probes."""
     from gateway.session_contract import SessionRef
     from gateway.session_cron import current_execution, execute
-    from hermes_state_registry import acquire, release
+    from moor_state_registry import acquire, release
 
     ref = SessionRef("test-profile", "canonical-cron-session")
     admission_id = "cron-owner-admission"
@@ -1043,9 +1043,9 @@ class TestRunJobConfigEnvVarExpansion:
         """${VAR} in config.yaml model: is expanded from the PROFILE's own secret scope. The owner
         bridge runs the job under that profile's runtime scope, where a process-env value would be
         another profile's leak, so the ref resolves from ``<home>/.env`` and never os.environ."""
-        (tmp_path / "config.yaml").write_text("model: ${_HERMES_TEST_CRON_MODEL}\n")
-        (tmp_path / ".env").write_text("_HERMES_TEST_CRON_MODEL=gpt-4o-mini-cron-test\n")
-        monkeypatch.setenv("_HERMES_TEST_CRON_MODEL", "leaked-from-process-env")
+        (tmp_path / "config.yaml").write_text("model: ${_MOOR_TEST_CRON_MODEL}\n")
+        (tmp_path / ".env").write_text("_MOOR_TEST_CRON_MODEL=gpt-4o-mini-cron-test\n")
+        monkeypatch.setenv("_MOOR_TEST_CRON_MODEL", "leaked-from-process-env")
 
         job = {"id": "env-job", "name": "env test", "prompt": "hi"}
         fake_db = MagicMock()
@@ -1306,7 +1306,7 @@ class TestRunJobModelResolution:
             success, _, _, error = _run_owned_job(job, tmp_path, fake_db)
 
         assert success is False
-        assert "Hermes stopped because your settings file" in error
+        assert "Moor stopped because your settings file" in error
         mock_agent_cls.assert_not_called()
 
 class TestRunJobSkillBacked:

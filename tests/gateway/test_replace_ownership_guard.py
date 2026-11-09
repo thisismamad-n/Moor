@@ -474,7 +474,7 @@ class TestStampDurability:
         repo_root = str(Path(__file__).resolve().parents[2])
         child = tmp_path / "refusal_child.py"
         child.write_text(_CHILD_SCRIPT.replace("@@REPO@@", repo_root), encoding="utf-8")
-        env = {**os.environ, "HERMES_HOME": str(home)}
+        env = {**os.environ, "MOOR_HOME": str(home)}
 
         proc = subprocess.run(
             [sys.executable, str(child)],

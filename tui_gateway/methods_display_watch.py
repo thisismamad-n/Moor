@@ -56,7 +56,7 @@ def _notify_agents_of_screen_change(profile_key: str, payload: dict) -> None:
     agent per turn, so the note is staged on every live session of the profile, not just one.
     ``payload`` is the just-broadcast display.status snapshot (``running``/``display`` and the
     lease's public view), already read under the profile's home override."""
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
     try:
         from agent.prompt_builder import bot_screen_note
         lease_view = payload.get("lease") if isinstance(payload.get("lease"), dict) else {}
@@ -68,7 +68,7 @@ def _notify_agents_of_screen_change(profile_key: str, payload: dict) -> None:
         return
     with _sessions_lock:
         sids = [sid for sid, sess in _sessions.items() if isinstance(sess, dict) and sess.get("agent") is not None
-                and hermes_home_key(sess.get("profile_home") or get_process_hermes_home()) == profile_key]
+                and moor_home_key(sess.get("profile_home") or get_process_moor_home()) == profile_key]
     for sid in sids:
         agent = _sessions[sid]["agent"]
         try:

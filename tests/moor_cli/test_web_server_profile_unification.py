@@ -140,7 +140,7 @@ class TestProfileScopedMcp:
     ):
         """An `auth: oauth` server that serves tools/list anonymously must not
         false-green: a successful probe with no token on disk reports needs-auth."""
-        from hermes_cli import mcp_config
+        from moor_cli import mcp_config
 
         (isolated_profiles["worker_beta"] / "config.yaml").write_text(
             "mcp_servers:\n  oauth-srv:\n    url: http://x/sse\n    auth: oauth\n",
@@ -174,7 +174,7 @@ class TestProfileScopedMcp:
         """The probe's per-tool `schema_chars` (details out-param) surfaces as an
         ADDITIVE per-tool field on the wire; tools without a size stay bare so
         older/partial probes degrade to 'no estimate' in the renderer."""
-        from hermes_cli import mcp_config
+        from moor_cli import mcp_config
 
         (isolated_profiles["worker_beta"] / "config.yaml").write_text(
             "mcp_servers:\n  sized-srv:\n    url: http://x/mcp\n",
@@ -209,8 +209,8 @@ class TestProfileScopedMcp:
         (Bitwarden/1Password) never has it in the shared process env, so the
         probe used to send the literal placeholder — or the default profile's
         value of the same name — and the server answered 400 (#109901)."""
-        from hermes_cli import env_loader
-        from hermes_cli import mcp_config
+        from moor_cli import env_loader
+        from moor_cli import mcp_config
 
         worker_home = isolated_profiles["worker_beta"]
         (worker_home / "config.yaml").write_text(
@@ -249,7 +249,7 @@ class TestProfileScopedMcp:
     ):
         """Same class for the read endpoint: a ``${VAR}`` in a secondary profile's server
         ``url`` must expand from THAT profile's secret scope, never the dashboard process env."""
-        from hermes_cli import env_loader
+        from moor_cli import env_loader
 
         worker_home = isolated_profiles["worker_beta"]
         (worker_home / "config.yaml").write_text(
@@ -382,15 +382,15 @@ class TestProfileScopedGateway:
     def test_status_reads_requested_profile_home(
         self, client, isolated_profiles, monkeypatch
     ):
-        from hermes_cli import web_server
-        from hermes_constants import get_hermes_home
+        from moor_cli import web_server
+        from moor_constants import get_moor_home
 
         seen_homes = []
 
         def fake_get_running_pid(*args, **kwargs):
             # /api/status?profile= now passes pid_path= explicitly (the TTL
             # cache would otherwise serve another profile's PID) — accept it.
-            seen_homes.append(str(get_hermes_home()))
+            seen_homes.append(str(get_moor_home()))
 
         monkeypatch.setattr(_cfg_mod, "check_config_version", lambda: (1, 1))
         # get_status probes via the TTL-cached wrapper (PR #53511 salvage);
@@ -412,7 +412,7 @@ class TestProfileScopedGateway:
     def test_status_uses_runtime_pid_when_profile_pid_file_is_missing(
         self, client, isolated_profiles, monkeypatch
     ):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         worker_home = isolated_profiles["worker_beta"]
         (worker_home / ".env").write_text(
@@ -470,7 +470,7 @@ class TestProfileScopedGateway:
         Non-fatal leftovers (e.g. a platform that connected before the crash)
         are still dropped — only fatals survive.
         """
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         runtime = {
             "pid": 4242,
@@ -511,7 +511,7 @@ class TestProfileScopedGateway:
         self, client, isolated_profiles, monkeypatch
     ):
         """A durable stop intent takes precedence over an old startup failure."""
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         runtime = {
             "pid": 4242,
@@ -541,7 +541,7 @@ class TestProfileScopedGateway:
         self, client, isolated_profiles, monkeypatch
     ):
         """A cleanly stopped gateway still reports no platforms (stale-noise rule)."""
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         runtime = {
             "pid": 4242,
@@ -726,8 +726,8 @@ class TestProfileScopedChatPty:
     ):
         import logging
 
-        import hermes_cli.config as config_mod
-        from hermes_cli import web_server
+        import moor_cli.config as config_mod
+        from moor_cli import web_server
 
         (isolated_profiles["default"] / "config.yaml").write_text(
             "terminal:\n  backend: docker\n",

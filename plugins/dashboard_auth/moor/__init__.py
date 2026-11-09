@@ -8,7 +8,7 @@ reuse detection: the middleware MUST persist ``Session.refresh_token`` back to t
 every refresh or the next refresh replays a rotated token and revokes the whole session.
 
 While the gateway serves the Webapp, its sign-in uses the client Web Access registered for the
-Webapp instead of the configured one (``hermes_cli.dashboard_auth.listener_client``).
+Webapp instead of the configured one (``moor_cli.dashboard_auth.listener_client``).
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Optional
 
-from hermes_cli.dashboard_auth import LoginStart, ProviderError, Session, listener_client
+from moor_cli.dashboard_auth import LoginStart, ProviderError, Session, listener_client
 from plugins.dashboard_auth._shared import (
     DEFAULT_TOKEN_LEEWAY_SECONDS,
     JwtOAuthProvider,
@@ -138,8 +138,8 @@ def _settings() -> dict:
     if own is not None:
         return {"client_id": own[0], "portal_url": own[1],
                 "token_leeway": parse_leeway(section.get("token_leeway"))}
-    client_id = resolve_env_or_cfg("HERMES_DASHBOARD_OAUTH_CLIENT_ID", section.get("client_id", ""))
-    portal_url = resolve_env_or_cfg("HERMES_DASHBOARD_PORTAL_URL", section.get("portal_url", "")) or _DEFAULT_PORTAL_URL
+    client_id = resolve_env_or_cfg("MOOR_DASHBOARD_OAUTH_CLIENT_ID", section.get("client_id", ""))
+    portal_url = resolve_env_or_cfg("MOOR_DASHBOARD_PORTAL_URL", section.get("portal_url", "")) or _DEFAULT_PORTAL_URL
     if not client_id:
         raise SkipRegistration(
             "MOOR_DASHBOARD_OAUTH_CLIENT_ID is not set (and dashboard.oauth.client_id "
@@ -167,17 +167,17 @@ def register(ctx) -> None:
     kwargs, LAST_SKIP_REASON = register_provider(ctx, logger, _TAG, MoorDashboardAuthProvider, _settings)
     if kwargs is not None:
         logger.info(
-            "dashboard-auth-nous: registered provider (client_id=%s, portal=%s, token_leeway=%ss)",
+            "dashboard-auth-moor: registered provider (client_id=%s, portal=%s, token_leeway=%ss)",
             kwargs["client_id"], kwargs["portal_url"], kwargs["token_leeway"])
 
 
 def _swap_provider() -> Callable[[], None]:
     """Put a provider on the listener's own client (``listener_client.use`` has made it current) in
     place of the registered one; the returned undo puts that one, or none, back."""
-    from hermes_cli.dashboard_auth.registry import (
+    from moor_cli.dashboard_auth.registry import (
         register_global_provider, restore_registration, snapshot_registration)
 
-    previous = snapshot_registration(NousDashboardAuthProvider.name)
-    provider = NousDashboardAuthProvider(**_settings())
+    previous = snapshot_registration(MoorDashboardAuthProvider.name)
+    provider = MoorDashboardAuthProvider(**_settings())
     register_global_provider(provider)
-    return lambda: restore_registration(NousDashboardAuthProvider.name, provider, previous)
+    return lambda: restore_registration(MoorDashboardAuthProvider.name, provider, previous)

@@ -7,15 +7,15 @@ return value that crosses the wire as a generic placeholder fails here the way i
 import os
 import sys
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
-from hermes_cli import plugins as plugins_mod
-from hermes_cli.plugins import PluginManager
+from moor_cli import plugins as plugins_mod
+from moor_cli.plugins import PluginManager
 
 
 def _home_with_plugin(tmp_path, monkeypatch, name: str, body: str):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     plugin_dir = home / "plugins" / name
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": name, "version": "1.0"}), encoding="utf-8")
@@ -25,7 +25,7 @@ def _home_with_plugin(tmp_path, monkeypatch, name: str, body: str):
     empty_bundled = tmp_path / "bundled"
     empty_bundled.mkdir()
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     return home
 

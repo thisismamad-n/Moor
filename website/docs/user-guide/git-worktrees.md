@@ -53,7 +53,7 @@ into it — no restart needed. Omit the name to get a random `moor-<id>`
 tree. `/worktree` alone shows the active tree; `/worktree list` lists all of
 them. On exit a clean, pushed tree is removed; a tree with uncommitted changes
 or unpushed commits triggers the same keep / archive / remove question as
-`hermes -w`.
+`moor -w`.
 
 ### Manually with git
 
@@ -172,7 +172,7 @@ Moor will:
 - Check out an isolated branch (e.g. `moor/moor-<hash>`).
 - Run the full CLI session inside that worktree.
 
-Hermes checks the worktree out without running the repository's own git configuration: its hooks, `core.fsmonitor` and clean/smudge filters are off for that checkout, as they are for the worktrees Hermes creates for kanban tasks and subagents. A repository that stores files through Git LFS gets pointer files there; run `git lfs pull` inside the worktree if the session needs their contents.
+Moor checks the worktree out without running the repository's own git configuration: its hooks, `core.fsmonitor` and clean/smudge filters are off for that checkout, as they are for the worktrees Moor creates for kanban tasks and subagents. A repository that stores files through Git LFS gets pointer files there; run `git lfs pull` inside the worktree if the session needs their contents.
 
 This is the easiest way to get worktree isolation. You can also combine it with a single query:
 
@@ -184,13 +184,13 @@ For parallel agents, open multiple terminals and run `moor -w` in each — every
 
 ### Leaving a session with unfinished work
 
-When an interactive `hermes -w` session (classic CLI or `--tui`) exits and its
-worktree has uncommitted changes or unpushed commits, Hermes asks:
+When an interactive `moor -w` session (classic CLI or `--tui`) exits and its
+worktree has uncommitted changes or unpushed commits, Moor asks:
 
 - **Keep the worktree** (default, also what Enter/Esc picks) — nothing changes.
 - **Archive and remove it** — the full working state is archived (see below)
   and the tree is removed before the session finishes exiting, so a large tree
-  is never cut short; Hermes prints the `hermes worktree restore` command. If
+  is never cut short; Moor prints the `moor worktree restore` command. If
   the archive fails, the tree is kept.
 - **Remove it and discard the changes** — only when you pick it explicitly.
 
@@ -200,17 +200,17 @@ later. A clean tree whose commits are pushed is removed without asking.
 
 ## Stale worktree sweep and restore
 
-Every repository Hermes creates a worktree in (`hermes -w`, `/worktree new`,
+Every repository Moor creates a worktree in (`moor -w`, `/worktree new`,
 subagent worktree isolation, the desktop app's git pane) is recorded in
-`<HERMES_HOME>/worktree_repos.json` for the active profile. At `hermes -w`
-startup and every 6 hours from the cron ticker, Hermes sweeps each of those
+`<MOOR_HOME>/worktree_repos.json` for the active profile. At `moor -w`
+startup and every 6 hours from the cron ticker, Moor sweeps each of those
 repositories' `.worktrees/`:
 
 | Tree | Decision |
 |---|---|
-| Idle past its tier (`hermes-*`/`subagent-*` 24 h, named trees 72 h), clean and merged or pushed | removed |
+| Idle past its tier (`moor-*`/`subagent-*` 24 h, named trees 72 h), clean and merged or pushed | removed |
 | Idle past its tier with uncommitted changes or unpushed commits | **archived, then removed** |
-| A live hermes lock owner, or any live process whose cwd (Linux: or an open file) is inside | never touched |
+| A live moor lock owner, or any live process whose cwd (Linux: or an open file) is inside | never touched |
 | File, `HEAD` or reflog activity younger than its tier (a deleted file counts through its folder) | never touched |
 | Kanban task trees (`t_<hex>`) | never touched (the Kanban GC owns them) |
 | Any submodule: a gitlink in the index, or a submodule repository kept under the tree's `modules/` (even after `git submodule deinit`) | kept (`keep-submodule-work`: an archive records only the submodule pointer). A clean merged tree is removed only if its submodules were never initialized |
@@ -226,7 +226,7 @@ The same checks run on clean merged trees, and every dirty check counts files
 that `status.showUntrackedFiles=no` would hide and skip-worktree /
 assume-unchanged files whose bytes differ from the index.
 
-An archive is a commit stored at `refs/hermes/archive/<tree>` holding the
+An archive is a commit stored at `refs/moor/archive/<tree>` holding the
 tree's `HEAD`, staged changes, unstaged changes and untracked files (files your
 `.gitignore` excludes, such as `node_modules/` or `.venv/`, are not captured).
 It is built with a temporary index, so the tree itself is never modified; if
@@ -241,10 +241,10 @@ branch that exists on a remote (an open PR) is kept; otherwise the archive
 holds its commits and the local branch is deleted.
 
 ```bash
-hermes worktree list                 # trees plus archives (name, age, branch, reason)
-hermes worktree prune --dry-run      # every archive/remove/skip decision and why; changes nothing
-hermes worktree restore lane-x       # recreate .worktrees/lane-x with its branch, staged and untracked files
-hermes worktree restore lane-x --path ../lane-x-review
+moor worktree list                 # trees plus archives (name, age, branch, reason)
+moor worktree prune --dry-run      # every archive/remove/skip decision and why; changes nothing
+moor worktree restore lane-x       # recreate .worktrees/lane-x with its branch, staged and untracked files
+moor worktree restore lane-x --path ../lane-x-review
 ```
 
 Restore puts the branch back when it is missing or still points at the

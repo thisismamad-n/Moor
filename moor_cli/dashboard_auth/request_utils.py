@@ -69,8 +69,8 @@ def cookie_origin_is_allowed(request: Request) -> bool:
     Host and ASGI scheme (uvicorn applies *trusted* proxy headers). Never trust
     raw forwarded headers here or reuse WS's opaque/non-HTTP Origin exemption.
     """
-    from hermes_cli.dashboard_auth.prefix import resolve_public_url
-    from hermes_cli.web_server import _is_accepted_host
+    from moor_cli.dashboard_auth.prefix import resolve_public_url
+    from moor_cli.web_server import _is_accepted_host
 
     bound_host = getattr(request.app.state, "bound_host", None)
     if bound_host and not _is_accepted_host(

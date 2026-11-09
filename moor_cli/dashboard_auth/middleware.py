@@ -6,7 +6,7 @@ the auth-bootstrap routes and static assets through unauthenticated; for
 everything else demands a bearer token or a valid session cookie and attaches
 the verified :class:`Session` to ``request.state.session``. On the gateway's
 Webapp a cookie session also needs its sign-in binding to the browser credential
-(``hermes_cli.webapp_sign_in``), and its cookie writes, sign-out included, must come
+(``moor_cli.webapp_sign_in``), and its cookie writes, sign-out included, must come
 from the Webapp's own origin. HTML routes are
 redirected to ``/login``; ``/api/*`` routes get a 401 JSON envelope.
 """
@@ -20,11 +20,11 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from hermes_cli import webapp_sign_in
-from hermes_cli.dashboard_auth import list_interactive_providers, list_session_providers
-from hermes_cli.dashboard_auth.audit import AuditEvent, audit_log
-from hermes_cli.dashboard_auth.base import ProviderError
-from hermes_cli.dashboard_auth.cookies import (
+from moor_cli import webapp_sign_in
+from moor_cli.dashboard_auth import list_interactive_providers, list_session_providers
+from moor_cli.dashboard_auth.audit import AuditEvent, audit_log
+from moor_cli.dashboard_auth.base import ProviderError
+from moor_cli.dashboard_auth.cookies import (
     clear_session_cookies, clear_sso_attempt_cookie, detect_https, read_session_cookies,
     read_session_provider, read_sso_attempt_cookie, set_session_cookies,
     set_session_provider_cookie, set_sso_attempt_cookie)
@@ -63,11 +63,11 @@ def _path_is_public(path: str) -> bool:
 def _safe_next_target(request: Request) -> str:
     """URL-encoded ``next`` value for the login redirect, or ``""``. Only same-origin paths outside
     the auth flow and ``/api`` are kept (query preserved); dropped deep links fall back to the
-    SPA's ``sessionStorage["hermes.lastLocation"]``.
+    SPA's ``sessionStorage["moor.lastLocation"]``.
 
-    Behind a reverse proxy at a sub-path (``X-Forwarded-Prefix``, e.g. ``/hermes``), the prefix
+    Behind a reverse proxy at a sub-path (``X-Forwarded-Prefix``, e.g. ``/moor``), the prefix
     is prepended AFTER validation so the post-login redirect lands within the mount
-    (``/hermes/sessions`` rather than bare ``/sessions``)."""
+    (``/moor/sessions`` rather than bare ``/sessions``)."""
     path = request.url.path
     if not path or not is_safe_next_path(path):
         return ""
@@ -86,7 +86,7 @@ _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
 
 
 def _own_origin_writes(request: Request) -> bool:
-    from hermes_cli.web_server_surface import policy
+    from moor_cli.web_server_surface import policy
     return policy(request.app.state).own_origin_cookie_writes
 
 

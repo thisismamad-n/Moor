@@ -1,6 +1,6 @@
 """The update fence never reads another reader's probe of the checkout lock as a held lock.
 
-A killed update always leaves a dead ``.hermes-update-in-progress`` marker, and while it is there
+A killed update always leaves a dead ``.moor-update-in-progress`` marker, and while it is there
 ``gateway_runtime._update_fenced`` probes the checkout kernel lock on every ``ensure`` poll. The
 gateway that ``ensure`` just started probes the same lock while it boots (its launch reclaims the
 dead marker). A probe that took the lock exclusively turned that collision into "an update owns
@@ -19,14 +19,14 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import gateway_runtime, update_lock
+from moor_cli import gateway_runtime, update_lock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _PAUSED_PROBE = r"""
 import sys
 sys.path.insert(0, sys.argv[1])
-from hermes_cli import update_lock
+from moor_cli import update_lock
 paused = []
 
 def pause():
@@ -69,7 +69,7 @@ _HOLDER = r"""
 import sys
 from pathlib import Path
 sys.path.insert(0, sys.argv[1])
-from hermes_cli import update_lock
+from moor_cli import update_lock
 assert update_lock._acquire_checkout(Path(sys.argv[2])) is None
 print("held", flush=True)
 sys.stdin.readline()

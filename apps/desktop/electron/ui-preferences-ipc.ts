@@ -4,15 +4,15 @@ import { BrowserWindow, ipcMain } from 'electron'
 
 import { registerUiPreferencesIpc } from './ui-preferences'
 
-/** `hermesHome` is main's resolved ROOT home (never a profile's), the one the
+/** `moorHome` is main's resolved ROOT home (never a profile's), the one the
  *  Webapp's Python server resolves too. */
-export function registerMachineUiPreferences(hermesHome: string): () => void {
+export function registerMachineUiPreferences(moorHome: string): () => void {
   return registerUiPreferencesIpc({
     ipcMain,
-    hermesHome,
+    moorHome,
     broadcast: snapshot => {
       for (const window of BrowserWindow.getAllWindows()) {
-        window.webContents.send('hermes:ui-preferences:changed', snapshot)
+        window.webContents.send('moor:ui-preferences:changed', snapshot)
       }
     }
   })

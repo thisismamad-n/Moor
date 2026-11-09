@@ -224,7 +224,7 @@ else:
     raise AssertionError('entrypoint never reached the application import boundary')
 """
     result = subprocess.run([sys.executable, "-I", "-S", "-c", program, str(root), str(entry)],
-                            cwd=tmp_path, env={**os.environ, "HERMES_HOME": str(tmp_path / "home")},
+                            cwd=tmp_path, env={**os.environ, "MOOR_HOME": str(tmp_path / "home")},
                             capture_output=True, text=True, timeout=30, check=False)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "bootstrap-before-app"
@@ -284,7 +284,7 @@ assert moor_bootstrap._pm_repair is True
 print('reached-pm')
 """
     result = subprocess.run([sys.executable, "-I", "-S", "-c", program, str(root)],
-                            cwd=tmp_path, env={**os.environ, "HERMES_HOME": str(tmp_path / "home")},
+                            cwd=tmp_path, env={**os.environ, "MOOR_HOME": str(tmp_path / "home")},
                             capture_output=True, text=True, timeout=30, check=False)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "reached-pm"

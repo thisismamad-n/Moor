@@ -90,7 +90,7 @@ def update_tree(tmp_path, monkeypatch):
 
 def _publish_stable(monkeypatch, t):
     """stable = the latest published GitHub release; its resolver pins t.wanted (v1.1.0)."""
-    from hermes_cli import source_releases
+    from moor_cli import source_releases
 
     monkeypatch.setattr(source_releases, '_resolve_stable', lambda repository, *_: source_releases.SourceTarget(
         'stable', 'stable', repository, commit=t.wanted, version='1.1.0'))
@@ -318,7 +318,7 @@ def test_stable_zip_consumes_the_same_commit_through_the_real_swap(update_tree, 
             local += '?' + parsed.query
         return real_open(local, *args, **kwargs)
 
-    from hermes_cli import update_custody
+    from moor_cli import update_custody
 
     real_custody_run, seam = update_custody.run, threading.local()
 
@@ -446,7 +446,7 @@ def test_update_syntax_failure_restores_pre_update_head(update_tree, monkeypatch
         # The broken upstream commit never landed; the unexpected branch keeps the HEAD it was cut at.
         assert git(t.clone, 'rev-parse', 'unexpected') == switched[0] != unexpected_head
         assert git(t.clone, 'branch', '--show-current') == 'unexpected'
-        assert not (t.clone / 'hermes_cli/config.py').exists()
+        assert not (t.clone / 'moor_cli/config.py').exists()
         assert "checkout is on 'unexpected'" in output
         assert 'Rolling back' not in output
     else:
@@ -455,7 +455,7 @@ def test_update_syntax_failure_restores_pre_update_head(update_tree, monkeypatch
         assert ('The update target has a syntax error' if sync_phase == 'origin'
                 else 'has a syntax error in a critical file; it was not merged') in output
         assert git(t.clone, 'rev-parse', 'HEAD') == t.base
-        assert not (t.clone / 'hermes_cli' / 'config.py').exists()
+        assert not (t.clone / 'moor_cli' / 'config.py').exists()
     if sync_phase == 'origin' and dirty:
         # Refused before the autostash too: the local work never left the tree, index included.
         assert not git(t.clone, 'stash', 'list')

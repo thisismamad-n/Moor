@@ -104,12 +104,12 @@ _SENSITIVE_QUERY_PARAMS = frozenset({
 _REDACT_ENABLED = os.getenv("MOOR_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
 
 # Routed multiplex profiles: the import-time snapshot above is the LAUNCH profile's policy. A profile
-# served under a HERMES_HOME override follows its own ``security.redact_secrets`` (its ``.env`` value
-# first, like the standalone bridge in hermes_cli/main.py). The formatter never reads config or files
+# served under a MOOR_HOME override follows its own ``security.redact_secrets`` (its ``.env`` value
+# first, like the standalone bridge in moor_cli/main.py). The formatter never reads config or files
 # for it (it runs under the logging handler's lock, per record): the values are recorded when that
 # profile's .env / config is loaded (``note_env_policy`` / ``note_config_policy``) or when log routing
 # is set up for it (``resolve_profile_policy``). Until then the profile redacts (the secure default).
-_ENV_POLICY_BY_HOME: dict = {}     # home key -> raw HERMES_REDACT_SECRETS from its .env, or None
+_ENV_POLICY_BY_HOME: dict = {}     # home key -> raw MOOR_REDACT_SECRETS from its .env, or None
 _CONFIG_POLICY_BY_HOME: dict = {}  # home key -> raw security.redact_secrets from its config, or None
 
 
@@ -123,29 +123,29 @@ def note_config_policy(home_key: str, raw) -> None:
 
 def resolve_profile_policy(home) -> None:
     """Record ``home``'s redaction policy now (log-routing setup), so its records never wait for it."""
-    from hermes_constants import hermes_home_key, reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(home)
+    from moor_constants import moor_home_key, reset_moor_home_override, set_moor_home_override
+    token = set_moor_home_override(home)
     try:
-        key = hermes_home_key()
-        from hermes_cli.config import load_config_readonly, load_env
-        note_env_policy(key, load_env().get("HERMES_REDACT_SECRETS"))
+        key = moor_home_key()
+        from moor_cli.config import load_config_readonly, load_env
+        note_env_policy(key, load_env().get("MOOR_REDACT_SECRETS"))
         note_config_policy(key, (load_config_readonly().get("security") or {}).get("redact_secrets"))
     except (Exception, SystemExit) as exc:  # health: allow BLE001 -- unreadable now: stays unknown, which redacts
         logging.getLogger(__name__).debug("redaction policy for %s not read: %s", home, exc)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _redact_enabled() -> bool:
     """Effective redaction switch for the active profile (launch snapshot when no override). Reads
     only in-memory state: the live secret scope and the recorded per-profile policy."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    from moor_constants import get_moor_home_override, moor_home_key
+    if get_moor_home_override() is None:
         return _REDACT_ENABLED
-    home_key = hermes_home_key()
+    home_key = moor_home_key()
     from agent.secret_scope import current_secret_scope
     scope = current_secret_scope()
-    raw = scope.get("HERMES_REDACT_SECRETS") if scope else None
+    raw = scope.get("MOOR_REDACT_SECRETS") if scope else None
     if raw is None and scope is None:
         # No live scope (the log listener thread formats routed records): the profile's own .env, as
         # its scope would have it. Not recorded yet: redact, since .env may opt the profile back in.
@@ -576,11 +576,11 @@ _URL_BARE_TOKEN_RE = re.compile(
 # JWTs always start with "eyJ" (base64 "{"); 1-, 2- and 3-part forms.
 _JWT_RE = re.compile(r"eyJ[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_=-]{4,}){0,2}")
 
-# Links ``hermes webapp`` prints that sign a browser in as the user: the gateway's browser credential
-# after ``hermes-session=`` and the one-use ticket of a ``/webapp/launch`` link. Both values are
+# Links ``moor webapp`` prints that sign a browser in as the user: the gateway's browser credential
+# after ``moor-session=`` and the one-use ticket of a ``/webapp/launch`` link. Both values are
 # URL-safe base64 (43 characters); the 20-character floor leaves placeholders and code (``${token}``).
 _WEBAPP_LINK_CREDENTIAL_RE = re.compile(
-    r"((?<![A-Za-z0-9_-])hermes-session=|/webapp/launch#(?:[^\s#]*?&)?ticket=)[A-Za-z0-9_-]{20,}")
+    r"((?<![A-Za-z0-9_-])moor-session=|/webapp/launch#(?:[^\s#]*?&)?ticket=)[A-Za-z0-9_-]{20,}")
 
 # E.164 phone numbers, 7-15 digits; the lookahead rejects hex strings / identifiers.
 _SIGNAL_PHONE_RE = re.compile(r"(\+[1-9]\d{6,14})(?![A-Za-z0-9])")
@@ -1067,7 +1067,7 @@ def redact_sensitive_text(text: str, *, force: bool = False, code_file: bool = F
 
     # A Webapp sign-in link signs a browser in as the user, so its credential is masked whatever the
     # web-URL policy below.
-    if "hermes-session=" in text or "/webapp/launch#" in text:
+    if "moor-session=" in text or "/webapp/launch#" in text:
         text = _WEBAPP_LINK_CREDENTIAL_RE.sub(lambda m: m.group(1) + "***", text)
 
     if redact_url_credentials:  # opt-in; known credential shapes in URLs are caught above

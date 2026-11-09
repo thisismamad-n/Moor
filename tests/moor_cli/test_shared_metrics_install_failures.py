@@ -1,5 +1,5 @@
-"""Why installs and updates fail: failure_class on hermes.extension.install.count and
-hermes.update.run, registry on hub skill installs (closed sets, never error text)."""
+"""Why installs and updates fail: failure_class on moor.extension.install.count and
+moor.update.run, registry on hub skill installs (closed sets, never error text)."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import observability
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_fields as fields
-from hermes_cli.observability import shared_metrics_update as update_metrics
+from moor_cli import observability
+from moor_cli.observability import shared_metrics_contract as contract
+from moor_cli.observability import shared_metrics_fields as fields
+from moor_cli.observability import shared_metrics_update as update_metrics
 
-_SCHEMA = Path(observability.__file__).parent / "schemas/hermes.shared_metrics.v4.schema.json"
+_SCHEMA = Path(observability.__file__).parent / "schemas/moor.shared_metrics.v4.schema.json"
 
 
 def _schema_dimensions(metric: str) -> list[dict]:
@@ -46,7 +46,7 @@ def test_registry_ids_are_exactly_the_hub_router_adapters():
 def test_a_raised_install_error_is_classified_by_type_and_never_carries_its_text():
     """Invariant: no free-form string reaches failure_class; an untagged exception keeps only its type's
     class, a user path in its message never leaves."""
-    from hermes_cli.plugins_cmd import PluginOperationError
+    from moor_cli.plugins_cmd import PluginOperationError
 
     leaky = "/home/alice/secret-repo: Permission denied"
     cases = [
@@ -174,8 +174,8 @@ def test_failure_classifiers_never_raise_on_an_exception_whose_attribute_hooks_r
     """Invariant: classification is inert. The raise-site classifiers run outside the metrics guard
     (collection on or off), so a raising hook must not replace the user's error, and the metric row
     still records (as ``exception``) instead of being dropped."""
-    from hermes_cli.mcp_config import probe_failure_class
-    from hermes_cli.plugins_cmd_install import _publish_failure_class
+    from moor_cli.mcp_config import probe_failure_class
+    from moor_cli.plugins_cmd_install import _publish_failure_class
 
     assert _publish_failure_class(_HostileError("x")) == "deps_failed"
     assert probe_failure_class(_HostileError("x")) == "connect_failed"
@@ -203,7 +203,7 @@ def test_a_declined_dependency_consent_carries_its_class_not_its_copy(monkeypatc
     turn a decline into ``manifest_invalid``; the user still reads the same text."""
     from types import SimpleNamespace
 
-    from hermes_cli import plugins_cmd_install
+    from moor_cli import plugins_cmd_install
 
     console = SimpleNamespace(print=lambda *a, **k: None)
     monkeypatch.setattr("sys.stdin.isatty", lambda: False)
@@ -222,21 +222,21 @@ def test_a_declined_dependency_consent_carries_its_class_not_its_copy(monkeypatc
     ("https://h/a/SKILL.md", "url"), ("acme-corp/skills/x", "unresolved"),
 ])
 def test_an_unserved_identifier_names_the_registry_its_adapter_accepts(identifier, registry):
-    from hermes_cli.skills_hub import _registry_from_identifier
+    from moor_cli.skills_hub import _registry_from_identifier
 
     assert _registry_from_identifier(identifier) == registry
 
 
 @pytest.mark.parametrize(("url", "expected"), [
     ("n8n.example.com/mcp-server/http", "config_invalid"),     # a pasted URL with no scheme
-    ("${HERMES_TEST_UNSET_MCP_URL}", "missing_credentials"),   # the URL's setup value never arrived
+    ("${MOOR_TEST_UNSET_MCP_URL}", "missing_credentials"),   # the URL's setup value never arrived
 ])
 def test_an_oauth_card_install_that_fails_before_authorization_keeps_its_class(monkeypatch, url, expected):
     """Invariant: the card/agent OAuth install (``mcp_oauth.start``) rebuilds the worker's error from
     its text, so it must carry the worker's closed class; the row is never the bare ``exception``."""
     from tools.connectors import mcp_oauth
 
-    monkeypatch.delenv("HERMES_TEST_UNSET_MCP_URL", raising=False)
+    monkeypatch.delenv("MOOR_TEST_UNSET_MCP_URL", raising=False)
     with pytest.raises(Exception) as raised:
         mcp_oauth.start("n8n-probe", cfg={"url": url, "auth": "oauth"}, url_timeout=60)
     dims = fields.extension_install_fields(kind="mcp_server", source="catalog", name=None, outcome="failed",

@@ -20,7 +20,7 @@ _HTTP = ("http://", "https://")
 
 def _note_setup_failure(failure_class: str) -> None:
     """Why a flow returns without a pick, for the provider-setup metric (no-op outside a tracked flow)."""
-    from hermes_cli.observability.shared_metrics_setup import note_provider_setup_failure
+    from moor_cli.observability.shared_metrics_setup import note_provider_setup_failure
 
     note_provider_setup_failure(failure_class)
 
@@ -234,7 +234,7 @@ def _models_dev_merged(provider_id: str, curated) -> list:
     it comes from the provider). Live-first providers keep
     models.dev order ahead of curated, matching ``_profile_live_catalog``. Empty list when
     models.dev has nothing / is unavailable."""
-    from hermes_cli.models_catalog_static import _LIVE_FIRST_PICKER_PROVIDERS
+    from moor_cli.models_catalog_static import _LIVE_FIRST_PICKER_PROVIDERS
     mdev_models: list = []
     with contextlib.suppress(Exception):
         from agent.models_dev import list_agentic_models

@@ -146,9 +146,9 @@ def test_setup_lists_the_requirements_pm_would_install(tmp_path, monkeypatch, ma
         "name": "provider", **({"pip_dependencies": ["stale-manifest-dep"]} if manifest_lists else {}),
     }))
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "provider"\nversion = "1"\ndependencies = ["provider_dep>=1,<2", "hermes-agent"]\n')
+        '[project]\nname = "provider"\nversion = "1"\ndependencies = ["provider_dep>=1,<2", "moor-agent"]\n')
     monkeypatch.setattr("plugins.memory.find_provider_dir", lambda name: tmp_path)
     monkeypatch.setattr("pm.venv_is_current", lambda **inputs: True)
-    from hermes_cli.web_server_memory import _memory_provider_setup_info
+    from moor_cli.web_server_memory import _memory_provider_setup_info
 
     assert _memory_provider_setup_info("provider")["pip_dependencies"] == ["provider_dep>=1,<2"]

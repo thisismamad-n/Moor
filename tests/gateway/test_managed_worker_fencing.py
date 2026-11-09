@@ -8,9 +8,9 @@ from types import SimpleNamespace
 import psutil
 import pytest
 
-from hermes_cli.process_identity import worker_birth
-from hermes_state import SessionDB
-from hermes_state_runtime import admit_session_input, begin_runtime_epoch, claim_session_input
+from moor_cli.process_identity import worker_birth
+from moor_state import SessionDB
+from moor_state_runtime import admit_session_input, begin_runtime_epoch, claim_session_input
 
 
 def hello(process):
@@ -51,7 +51,7 @@ async def test_late_bootstrap_handshake_cannot_rearm_a_recovered_admission(tmp_p
     ``worker.adopt``; that handshake reaches the restarted owner. Adopting it would flip the
     recovered ``unknown`` admission back to ``started`` under an owner with no pipe to the child
     (which refuses the foreign epoch and exits), stranding the FIFO where Discard cannot reach it."""
-    import hermes_state_runtime as rt
+    import moor_state_runtime as rt
     from gateway.session_worker import worker_request
     from gateway.session_worker_reservation import reserve_admission_worker
     with closing(SessionDB(tmp_path / 'state.db')) as db:

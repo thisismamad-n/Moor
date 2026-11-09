@@ -22,7 +22,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 | `AI_GATEWAY_BASE_URL` | 覆盖 AI Gateway base URL（默认：`https://ai-gateway.vercel.sh/v1`） |
 | `OPENAI_API_KEY` | 自定义 OpenAI 兼容端点的 API 密钥（与 `OPENAI_BASE_URL` 配合使用）。设置 `OPENAI_BASE_URL` 后，它只会发送到该 URL 完全相同的源（scheme、主机和端口），绝不会发送到同一主机的其他端口或 `http://` |
 | `OPENAI_BASE_URL` | 自定义端点的 base URL（VLLM、SGLang 等） |
-| `GH_TOKEN` | GitHub token（也供 `gh` CLI 使用）；凡 Hermes 读取 `GITHUB_TOKEN` 之处均可作为其替代 |
+| `GH_TOKEN` | GitHub token（也供 `gh` CLI 使用）；凡 Moor 读取 `GITHUB_TOKEN` 之处均可作为其替代 |
 | `GITHUB_TOKEN` | 用于访问 GitHub API 的 GitHub token（Skills Hub、git 凭据、更新检查；另见下方 Skills Hub 一行） |
 | `GLM_API_KEY` | z.ai / ZhipuAI GLM API 密钥（[z.ai](https://z.ai)） |
 | `ZAI_API_KEY` | `GLM_API_KEY` 的别名 |
@@ -128,7 +128,7 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 | `BROWSER_USE_API_KEY` | Browser Use 云浏览器 API 密钥（[browser-use.com](https://browser-use.com/)） |
 | `FIRECRAWL_BROWSER_TTL` | Firecrawl 浏览器会话 TTL（秒，默认：300） |
 | `BROWSER_CDP_URL` | 浏览器工具附加的 Chrome DevTools Protocol（CDP）端点，设置后不再自行启动 Chromium（通过 `/browser connect` 设置，例如 `ws://localhost:9222`；等同于 `browser.cdp_url`） |
-| `CAMOFOX_*` | 仅由 Camofox 插件（`hermes plugins install camofox`）读取；核心 Hermes 忽略它们。 |
+| `CAMOFOX_*` | 仅由 Camofox 插件（`moor plugins install camofox`）读取；核心 Moor 忽略它们。 |
 | `BROWSER_INACTIVITY_TIMEOUT` | 浏览器会话不活动超时（秒） |
 | `AGENT_BROWSER_*` | 不再读取。更新时，若对应键未设置，profile 的 `.env` 中的值会被复制到配置中：`AGENT_BROWSER_EXECUTABLE_PATH` → `browser.executable_path`、`AGENT_BROWSER_PROFILE` → `browser.user_data_dir`、`AGENT_BROWSER_ARGS` → `browser.chromium_args`、`AGENT_BROWSER_HEADED` → `browser.headed`、`AGENT_BROWSER_ENGINE` → `browser.engine`。 |
 | `FAL_KEY` | 图像生成（[fal.ai](https://fal.ai/)） |
@@ -151,21 +151,21 @@ description: "Moor Agent 使用的所有环境变量完整参考"
 
 ### Langfuse 可观测性
 
-官方目录插件 [`langfuse`](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse)（原内置的 `observability/langfuse`）的环境变量。在 `~/.hermes/.env` 中设置。在这些变量生效之前，必须先安装该插件（`hermes plugins install langfuse`）。
+官方目录插件 [`langfuse`](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse)（原内置的 `observability/langfuse`）的环境变量。在 `~/.moor/.env` 中设置。在这些变量生效之前，必须先安装该插件（`moor plugins install langfuse`）。
 
 | 变量 | 描述 |
 |----------|-------------|
-| `HERMES_LANGFUSE_PUBLIC_KEY` | Langfuse 项目公钥（`pk-lf-...`）。必填。 |
-| `HERMES_LANGFUSE_SECRET_KEY` | Langfuse 项目密钥（`sk-lf-...`）。必填。 |
-| `HERMES_LANGFUSE_BASE_URL` | Langfuse 服务器 URL（默认：`https://cloud.langfuse.com`）。自托管时设置。 |
-| `HERMES_LANGFUSE_ENV` | trace 上的环境标签（`production`、`staging` 等） |
-| `HERMES_LANGFUSE_RELEASE` | trace 上的发布/版本标签 |
-| `HERMES_LANGFUSE_SAMPLE_RATE` | SDK 采样率 0.0–1.0（默认：`1.0`） |
-| `HERMES_LANGFUSE_MAX_CHARS` | 序列化载荷的每字段截断长度（默认：`12000`） |
-| `HERMES_LANGFUSE_MAX_DEPTH` | 捕获的工具输入/输出保留的嵌套深度，超出部分变为 `<max-depth>`（默认：`4`；无效值会告警并使用默认值） |
-| `HERMES_LANGFUSE_CAPTURE` | 内容捕获模式：`metadata`（不含内容）、`sanitized`（默认：密钥脱敏 + 截断）或 `full`（仅截断） |
-| `HERMES_LANGFUSE_DEBUG` | `true` 可将详细插件日志输出到 `agent.log` |
-| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | 标准 Langfuse SDK 变量名。当对应的 `HERMES_LANGFUSE_*` 未设置时作为回退。 |
+| `MOOR_LANGFUSE_PUBLIC_KEY` | Langfuse 项目公钥（`pk-lf-...`）。必填。 |
+| `MOOR_LANGFUSE_SECRET_KEY` | Langfuse 项目密钥（`sk-lf-...`）。必填。 |
+| `MOOR_LANGFUSE_BASE_URL` | Langfuse 服务器 URL（默认：`https://cloud.langfuse.com`）。自托管时设置。 |
+| `MOOR_LANGFUSE_ENV` | trace 上的环境标签（`production`、`staging` 等） |
+| `MOOR_LANGFUSE_RELEASE` | trace 上的发布/版本标签 |
+| `MOOR_LANGFUSE_SAMPLE_RATE` | SDK 采样率 0.0–1.0（默认：`1.0`） |
+| `MOOR_LANGFUSE_MAX_CHARS` | 序列化载荷的每字段截断长度（默认：`12000`） |
+| `MOOR_LANGFUSE_MAX_DEPTH` | 捕获的工具输入/输出保留的嵌套深度，超出部分变为 `<max-depth>`（默认：`4`；无效值会告警并使用默认值） |
+| `MOOR_LANGFUSE_CAPTURE` | 内容捕获模式：`metadata`（不含内容）、`sanitized`（默认：密钥脱敏 + 截断）或 `full`（仅截断） |
+| `MOOR_LANGFUSE_DEBUG` | `true` 可将详细插件日志输出到 `agent.log` |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | 标准 Langfuse SDK 变量名。当对应的 `MOOR_LANGFUSE_*` 未设置时作为回退。 |
 
 ### Moor Tool Gateway
 

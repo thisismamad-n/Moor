@@ -84,7 +84,7 @@ export function setMcpServerEnabled(name: string, enabled: boolean): Promise<{ o
 }
 
 export function getMcpCatalog(profile?: ProfileScope): Promise<McpCatalogResponse> {
-  return window.hermesDesktop.api<McpCatalogResponse>({
+  return window.moorDesktop.api<McpCatalogResponse>({
     ...capabilityScoped(profile),
     path: '/api/mcp/catalog'
   })

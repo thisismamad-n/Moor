@@ -151,7 +151,7 @@ class TestMaintainPackHealth:
         import os
         import time
 
-        from hermes_cli import worktree_ops
+        from moor_cli import worktree_ops
 
         src = tmp_path / "src"
         src.mkdir()
@@ -185,7 +185,7 @@ class TestMaintainPackHealth:
         worktree_ops._maintain_pack_health(str(linked))
 
         assert (info / "commit-graphs" / "commit-graph-chain").stat().st_mtime > time.time() - 300
-        assert (clone / ".git" / "hermes-commit-graph.fresh").is_file()
+        assert (clone / ".git" / "moor-commit-graph.fresh").is_file()
         assert sorted((clone / ".git" / "objects" / "pack").glob("*.pack")) == packs, "the write lazy-fetched"
         _git(clone, "commit-graph", "verify")
 

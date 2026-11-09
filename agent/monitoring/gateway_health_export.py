@@ -45,12 +45,12 @@ _METRICS_SDK = (
 )
 # Every gauge the runtime snapshot can emit MUST be listed here or it is silently dropped.
 _OBSERVABLE_METRIC_NAMES = (
-    "hermes.gateway.up", "hermes.gateway.state", "hermes.gateway.active_agents", "hermes.gateway.busy",
-    "hermes.gateway.drainable", "hermes.gateway.restart_requested", "hermes.gateway.background_work",
-    "hermes.gateway.background_delegations", "hermes.platform.up", "hermes.platform.degraded",
-    "hermes.cron.scheduler.heartbeat_age_seconds", "hermes.cron.scheduler.last_success_age_seconds",
-    "hermes.cron.scheduler.catch_up_occurrences", "hermes.cron.jobs.enabled", "hermes.cron.jobs.running",
-    "hermes.cron.jobs.overdue", "hermes.cron.store.writable", "hermes.cron.store.skipped_runs",
+    "moor.gateway.up", "moor.gateway.state", "moor.gateway.active_agents", "moor.gateway.busy",
+    "moor.gateway.drainable", "moor.gateway.restart_requested", "moor.gateway.background_work",
+    "moor.gateway.background_delegations", "moor.platform.up", "moor.platform.degraded",
+    "moor.cron.scheduler.heartbeat_age_seconds", "moor.cron.scheduler.last_success_age_seconds",
+    "moor.cron.scheduler.catch_up_occurrences", "moor.cron.jobs.enabled", "moor.cron.jobs.running",
+    "moor.cron.jobs.overdue", "moor.cron.store.writable", "moor.cron.store.skipped_runs",
 )
 
 

@@ -133,7 +133,7 @@ def gateway_delegation_inline(user_config: Any, platform_key: str, *, interim_en
     return not interim_enabled and str(platform_key or "").lower() not in NON_MESSAGING_SESSION_SURFACES
 
 # Set by the gateway around building a session's agent; read once by that agent's first tool build.
-_GATEWAY_DELEGATION_INLINE: ContextVar[bool] = ContextVar("hermes_gateway_delegation_inline", default=False)
+_GATEWAY_DELEGATION_INLINE: ContextVar[bool] = ContextVar("moor_gateway_delegation_inline", default=False)
 
 @contextmanager
 def gateway_delegation_inline_scope(inline: bool) -> Iterator[None]:
@@ -551,7 +551,7 @@ def _child_reasoning(parent_agent, delegation_cfg: dict, route_effort: Any) -> A
     if not (delegation_effort or delegation_effort is False):
         delegation_effort = (delegation_cfg or {}).get("reasoning_effort")
     if delegation_effort or delegation_effort is False:
-        from hermes_constants import parse_reasoning_effort
+        from moor_constants import parse_reasoning_effort
         parsed = parse_reasoning_effort(delegation_effort)
         if parsed is None:
             logger.warning("Unknown delegation.reasoning_effort '%s', inheriting parent level", delegation_effort)

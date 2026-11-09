@@ -50,7 +50,7 @@ describe('PreviewPane console state', () => {
 
   afterEach(() => {
     cleanup()
-    globalThis.document.documentElement.removeAttribute('data-hermes-desktop-host')
+    globalThis.document.documentElement.removeAttribute('data-moor-desktop-host')
     $previewTabs.set([])
     $rightRailActiveTabId.set(null)
     $connection.set(null)
@@ -132,7 +132,7 @@ describe('PreviewPane console state', () => {
   })
 
   it('uses a capability-minimal sandboxed iframe in browser-hosted Desktop', async () => {
-    globalThis.document.documentElement.dataset.hermesDesktopHost = 'browser'
+    globalThis.document.documentElement.dataset.moorDesktopHost = 'browser'
 
     const target = {
       kind: 'url' as const,
@@ -176,7 +176,7 @@ describe('PreviewPane console state', () => {
   })
 
   it('reuses the browser iframe when a tab navigates to another target URL', () => {
-    globalThis.document.documentElement.dataset.hermesDesktopHost = 'browser'
+    globalThis.document.documentElement.dataset.moorDesktopHost = 'browser'
 
     const target = {
       kind: 'url' as const,
@@ -243,9 +243,9 @@ describe('PreviewPane console state', () => {
   })
 
   it('keeps the original URL available outside an embedded browser preview after loading', () => {
-    globalThis.document.documentElement.dataset.hermesDesktopHost = 'browser'
+    globalThis.document.documentElement.dataset.moorDesktopHost = 'browser'
     const openPreviewInBrowser = vi.fn(async () => undefined)
-    vi.stubGlobal('hermesDesktop', { openPreviewInBrowser })
+    vi.stubGlobal('moorDesktop', { openPreviewInBrowser })
 
     const target = {
       kind: 'url' as const,
@@ -824,7 +824,7 @@ describe('PreviewPane console state', () => {
 
   // A browser tab's back button belongs to the tab: the pane leaves it alone.
   it('leaves the mouse back button to the browser tab in browser-hosted Desktop', async () => {
-    globalThis.document.documentElement.dataset.hermesDesktopHost = 'browser'
+    globalThis.document.documentElement.dataset.moorDesktopHost = 'browser'
     const target = { kind: 'url' as const, label: 'Example', source: 'https://example.com/', url: 'https://example.com/' }
 
     let rendered!: ReturnType<typeof render>
@@ -1109,8 +1109,8 @@ describe('PreviewPane guest external handoff', () => {
 })
 
 describe('PreviewPane off-screen guest', () => {
-  const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
-  const initialHermesDesktop = desktopWindow.hermesDesktop
+  const desktopWindow = window as unknown as { moorDesktop?: Window['moorDesktop'] }
+  const initialMoorDesktop = desktopWindow.moorDesktop
 
   const target = {
     kind: 'url',
@@ -1122,10 +1122,10 @@ describe('PreviewPane off-screen guest', () => {
   afterEach(() => {
     cleanup()
 
-    if (initialHermesDesktop) {
-      desktopWindow.hermesDesktop = initialHermesDesktop
+    if (initialMoorDesktop) {
+      desktopWindow.moorDesktop = initialMoorDesktop
     } else {
-      delete desktopWindow.hermesDesktop
+      delete desktopWindow.moorDesktop
     }
   })
 
@@ -1134,7 +1134,7 @@ describe('PreviewPane off-screen guest', () => {
   // tells main the guest left the screen — and that it came back.
   it('tells main when its guest leaves the screen and when it returns', async () => {
     const setPreviewGuestHidden = vi.fn()
-    desktopWindow.hermesDesktop = { setPreviewGuestHidden } as unknown as Window['hermesDesktop']
+    desktopWindow.moorDesktop = { setPreviewGuestHidden } as unknown as Window['moorDesktop']
 
     const pane = (visible: boolean) => (
       <PaneVisibleContext value={visible}>
@@ -1167,7 +1167,7 @@ describe('PreviewPane off-screen guest', () => {
   // was already parked must still be reported to main and muted.
   it('reports and mutes a guest that attaches while its session is already hidden', async () => {
     const setPreviewGuestHidden = vi.fn()
-    desktopWindow.hermesDesktop = { setPreviewGuestHidden } as unknown as Window['hermesDesktop']
+    desktopWindow.moorDesktop = { setPreviewGuestHidden } as unknown as Window['moorDesktop']
     act(() => setTreePaneParked('preview-tile:url:late', true))
 
     let rendered!: ReturnType<typeof render>
@@ -1200,7 +1200,7 @@ describe('PreviewPane off-screen guest', () => {
   // A hidden session's kept page keeps running, but is not heard from the chat
   // the user switched to; it comes back with the sound it had.
   async function renderAudibleGuest(tabId: string, mutedBefore: boolean) {
-    desktopWindow.hermesDesktop = {} as unknown as Window['hermesDesktop']
+    desktopWindow.moorDesktop = {} as unknown as Window['moorDesktop']
     let rendered!: ReturnType<typeof render>
 
     await act(async () => {

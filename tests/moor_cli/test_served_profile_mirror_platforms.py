@@ -30,7 +30,7 @@ def served_root(tmp_path, monkeypatch):
         }}), encoding="utf-8")
     monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
-    import hermes_constants
+    import moor_constants
     from gateway import status
     # Liveness is a verified identity; this pytest process passes as the default gateway only by
     # wearing a gateway command line.
@@ -44,7 +44,7 @@ def test_messaging_card_shows_mirrored_api_server_enabled_without_local_config(s
     409s: the shared listener already serves ``/p/<profile>/v1``), so the REAL enablement
     reads (False, False) from its own empty config and the card printed Disabled over a
     live mirror. No ``_platform_enablement`` monkeypatch here: that mask hid the bug."""
-    from hermes_cli.web_routers import messaging
+    from moor_cli.web_routers import messaging
     entry = {"id": "api_server", "name": "API server", "description": "", "docs_url": "", "env_vars": [],
              "required_env": []}
     alpha = served_root / "profiles" / "alpha"
@@ -96,28 +96,28 @@ def test_default_profile_keeps_its_flat_adapters_when_rekeyed(served_root):
 
 def test_messaging_card_for_the_default_home_rekeys_by_the_profile_not_the_dirname(tmp_path, monkeypatch):
     """The multiplexer fold keys on the profile NAME; ``_platform_payloads`` used to pass
-    ``own_home.name`` — the directory basename, ``.hermes`` for the shipped default root or any
-    custom ``HERMES_HOME`` name, equal to the profile id only for secondaries under
+    ``own_home.name`` — the directory basename, ``.moor`` for the shipped default root or any
+    custom ``MOOR_HOME`` name, equal to the profile id only for secondaries under
     ``profiles/<name>``. On the default home the fold came back empty and the Channels card read
     "Restart needed" forever while the multiplexer served its flat-keyed adapters (#123088)."""
     from gateway import status
-    from hermes_cli.web_routers import messaging
-    root = tmp_path / ".hermes"  # the shipped default root's literal name — never equal to "default"
+    from moor_cli.web_routers import messaging
+    root = tmp_path / ".moor"  # the shipped default root's literal name — never equal to "default"
     root.mkdir()
     (root / "config.yaml").write_text("gateway: {multiplex_profiles: true}\n", encoding="utf-8")
     record = {
-        "pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running",
+        "pid": os.getpid(), "moor_home": str(root), "gateway_state": "running",
         "served_profiles": ["default", "route-runner"],
         "platforms": {"telegram": {"state": "connected"}},
     }
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    import hermes_constants
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    import moor_constants
+    monkeypatch.setattr(moor_constants, "_default_moor_root_memo", None)
     # A launch-service gateway's record fails the own-rung argv check (inline ``-c``), so the card
     # falls through to the multiplexer rung — mirrored here by an absent own record.
     monkeypatch.setattr(messaging, "read_runtime_status", lambda *a, **k: None)
     monkeypatch.setattr(status, "multiplexer_liveness_for_profile", lambda home: (os.getpid(), record))
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "moor gateway run")
     monkeypatch.setattr(messaging, "_platform_enablement", lambda *a, **k: (True, True, None))
     entry = {"id": "telegram", "name": "Telegram", "description": "", "docs_url": "", "env_vars": [],
              "required_env": []}
@@ -168,7 +168,7 @@ def test_messaging_card_keeps_a_live_own_gateway_record_over_the_multiplexer(ser
     own record (rung 3) before the multiplexer (rung 4); the card must read the same record, or
     liveness and platform state come from two different gateways."""
     from gateway import status
-    from hermes_cli.web_routers import messaging
+    from moor_cli.web_routers import messaging
     monkeypatch.setattr(messaging, "_platform_enablement", lambda *a, **k: (True, True, None))
     alpha = served_root / "profiles" / "alpha"
     # Two live gateways: this process is the default multiplexer; a second (fake, never signalled)

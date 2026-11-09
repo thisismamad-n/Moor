@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cli import HermesCLI
+from cli import MoorCLI
 
 
 class _Conn:
@@ -33,8 +33,8 @@ class _Conn:
 def gateway_cli(monkeypatch):
     def make(**replies):
         conn = _Conn(replies)
-        monkeypatch.setattr("hermes_cli.gateway_side.connection_for", lambda cli: conn)
-        cli = HermesCLI.__new__(HermesCLI)
+        monkeypatch.setattr("moor_cli.gateway_side.connection_for", lambda cli: conn)
+        cli = MoorCLI.__new__(MoorCLI)
         cli.session_id = "local-s"
         cli.agent = SimpleNamespace(_checkpoint_mgr=None)
         return cli, conn
@@ -47,7 +47,7 @@ def _browser_calls(conn):
 
 def test_classic_browser_connect_is_the_gateways_browser_manage(gateway_cli, monkeypatch, capsys):
     monkeypatch.delenv("BROWSER_CDP_URL", raising=False)
-    monkeypatch.delenv("HERMES_TUI_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("MOOR_TUI_GATEWAY_URL", raising=False)
     cli, conn = gateway_cli(**{"browser.manage": lambda p: (
         {"connected": True, "url": p.get("url"), "messages": ["Chrome is already listening"]}
         if p["action"] == "connect" else {"connected": True, "url": "http://127.0.0.1:9333"})})
@@ -74,7 +74,7 @@ def test_classic_browser_use_is_gone_and_prints_usage(gateway_cli, capsys):
 
 def test_classic_browser_connect_against_a_remote_gateway_is_refused(gateway_cli, monkeypatch, capsys):
     """Desktop's rule: connect/disconnect manage a browser on the gateway HOST."""
-    monkeypatch.setenv("HERMES_TUI_GATEWAY_URL", "wss://gateway.example.com/api/ws")
+    monkeypatch.setenv("MOOR_TUI_GATEWAY_URL", "wss://gateway.example.com/api/ws")
     cli, conn = gateway_cli(**{"browser.manage": {"connected": False}})
     for line in ("/browser connect", "/browser disconnect"):
         cli.process_command(line)
@@ -102,8 +102,8 @@ def homes(tmp_path, monkeypatch):
     launch = tmp_path / "root"
     bee = launch / "profiles" / "bee"
     bee.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    monkeypatch.setattr(server, "_hermes_home", launch)
+    monkeypatch.setenv("MOOR_HOME", str(launch))
+    monkeypatch.setattr(server, "_moor_home", launch)
     monkeypatch.delenv("BROWSER_CDP_URL", raising=False)
     import tools.browser_session_lifecycle as lifecycle
     from tools import browser_session_cdp
@@ -156,22 +156,22 @@ def test_a_browser_one_profile_connects_never_reaches_another_profiles_session(h
     disconnect from A leaves B's own live connection standing."""
     import os
     from gateway import run_api
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
     server, launch, bee, url, reaps = homes
     (bee / "config.yaml").write_text("browser:\n  cdp_url: ws://bee.invalid/devtools/browser/PROFILE-B\n")
     monkeypatch.setattr(run_api, "_ACTIVE_RUNNER", types.SimpleNamespace(session_authorities=_registry(launch, bee)))
     reply = _call(server, launch, {"action": "connect", "url": url})
     assert reply["result"] == {"connected": True, "url": url}, reply
     assert _resolved(launch) == url and _resolved(bee).endswith("/PROFILE-B")
-    assert reaps == [hermes_home_key(launch)] * 2 and "BROWSER_CDP_URL" not in os.environ
+    assert reaps == [moor_home_key(launch)] * 2 and "BROWSER_CDP_URL" not in os.environ
     assert _call(server, launch, {"action": "status"})["result"]["url"] == url
     assert _call(server, bee, {"action": "status"})["result"]["url"].endswith("/PROFILE-B")
     reaps.clear()
     assert _call(server, bee, {"action": "connect", "url": url + "/"})["result"]["connected"] is True
-    assert reaps == [hermes_home_key(bee)] * 2
+    assert reaps == [moor_home_key(bee)] * 2
     reaps.clear()
     assert _call(server, launch, {"action": "disconnect"})["result"]["connected"] is False
-    assert reaps == [hermes_home_key(launch)] * 2  # B's browsers are not reaped
+    assert reaps == [moor_home_key(launch)] * 2  # B's browsers are not reaped
     assert _resolved(launch) == "" and _resolved(bee) == url  # B's live connection stands
     assert _call(server, bee, {"action": "status"})["result"]["url"] == url
 

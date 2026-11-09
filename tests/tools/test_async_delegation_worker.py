@@ -6,9 +6,9 @@ import time
 import pytest
 import psutil
 
-from hermes_cli.process_identity import worker_birth
-from hermes_state import SessionDB
-from hermes_state_runtime import RuntimeStoreError
+from moor_cli.process_identity import worker_birth
+from moor_state import SessionDB
+from moor_state_runtime import RuntimeStoreError
 from tools import async_delegation as ledger
 
 

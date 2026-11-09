@@ -20,9 +20,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import moor_yaml as yaml
 
-from hermes_cli._subprocess_compat import noninteractive_git_env
-from hermes_cli.archive_safe import normalize_archive_parts
-from hermes_cli.profiles import (
+from moor_cli._subprocess_compat import noninteractive_git_env
+from moor_cli.archive_safe import normalize_archive_parts
+from moor_cli.profiles import (
     DEFAULT_EXPORT_EXCLUDE_ROOT, profile_path_contains_private_store,
     profile_path_is_private,
 )
@@ -48,7 +48,7 @@ _CRON_STORE_REL = ("cron", "jobs.json")
 
 
 def _is_installer_owned_path(parts: tuple[str, ...]) -> bool:
-    """Entries a distribution never writes: credential stores (and Hermes' copies of them) at any
+    """Entries a distribution never writes: credential stores (and Moor' copies of them) at any
     depth, and runtime-owned entries nested under otherwise distribution-owned roots."""
     if profile_path_is_private(parts):
         return True
@@ -502,7 +502,7 @@ def _refuse_store_ancestor_replacement(dest: Path, rel_parts: tuple[str, ...]) -
 def _merges_per_root(src: Path, rel_parts: tuple[str, ...]) -> bool:
     """An owned top-level dir, or an owned container (``skills/research/``, see
     ``_is_container``), is merged per authored root instead of replaced whole, so skills the installer
-    added to it (``hermes skills install`` and agent-created skills land in
+    added to it (``moor skills install`` and agent-created skills land in
     ``skills/<category>/``) survive. The pre-write symlink guard and the copy loop both
     use this, so the guard covers exactly what the copy merges. An ancestor of a credential
     store (``platforms`` of ``platforms/pairing``) is merged too, so replacing it whole can
@@ -539,7 +539,7 @@ def _copy_dist_payload(staged: Path, target: Path, manifest: DistributionManifes
     A top-level owned directory, and an owned container (``_is_container``), is merged per
     authored root. ``cron/jobs.json`` is special: it is one multi-record runtime store, so
     shipped definitions merge by job id instead of replacing the file."""
-    from hermes_cli.config_backend import require_file_tooling
+    from moor_cli.config_backend import require_file_tooling
     require_file_tooling("Profile distribution install")
     target.mkdir(parents=True, exist_ok=True)
     entries = list(_owned_entries(staged, manifest))

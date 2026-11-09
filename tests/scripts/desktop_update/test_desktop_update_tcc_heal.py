@@ -236,12 +236,12 @@ class TestHandoffSurvivesBrickAB:
                          marker="STORE")
         moor = self._make_moor(root)
         # BEFORE the heal: the entrypoint dies exactly like the field logs.
-        before = subprocess.run([str(hermes)], capture_output=True,
+        before = subprocess.run([str(moor)], capture_output=True,
                                 text=True, encoding="utf-8", errors="replace", check=False)
         assert before.returncode == 1
         assert "No module named 'encodings'" in before.stderr
         # Heal (real posix.sh function), then the same entrypoint boots.
         assert "state=healed-aliases" in run_selftest(root)
-        after = subprocess.run([str(hermes)], capture_output=True,
+        after = subprocess.run([str(moor)], capture_output=True,
                                text=True, encoding="utf-8", errors="replace", check=False)
         assert after.returncode == 0

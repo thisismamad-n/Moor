@@ -209,7 +209,7 @@ the middle. Results at or below the threshold remain unchanged.
 The shared `hooks.output_spill` preview lengths and directory still apply, and
 `hooks.output_spill.enabled: false` disables spilling even with memory opt-in.
 Both settings are snapshotted when the external provider is registered; restart
-Hermes to apply changes to existing sessions. Built-in memory and normal
+Moor to apply changes to existing sessions. Built-in memory and normal
 plugin-hook spilling are unaffected. See
 [Plugins — oversized-context spill](./plugins/index.md#oversized-context-spill).
 
@@ -336,7 +336,7 @@ def get_config_schema(self):
 Fields with `secret: True` and `env_var` go to `.env`. Non-secret fields are passed to `save_config()`.
 
 :::tip Minimal vs Full Schema
-Every field in `get_config_schema()` is prompted during `hermes memory setup`. Providers with many options should keep the schema minimal — only include fields the user **must** configure (API key, required credentials). Document optional settings in a config file reference (e.g. `$HERMES_HOME/myprovider.json`) rather than prompting for them all during setup. This keeps the setup wizard fast while still supporting advanced configuration. See the [Supermemory provider](https://github.com/supermemoryai/hermes-supermemory) (a plugin catalog entry) for an example — it only prompts for the API key; all other options live in `supermemory.json`.
+Every field in `get_config_schema()` is prompted during `moor memory setup`. Providers with many options should keep the schema minimal — only include fields the user **must** configure (API key, required credentials). Document optional settings in a config file reference (e.g. `$MOOR_HOME/myprovider.json`) rather than prompting for them all during setup. This keeps the setup wizard fast while still supporting advanced configuration. See the [Supermemory provider](https://github.com/supermemoryai/moor-supermemory) (a plugin catalog entry) for an example — it only prompts for the API key; all other options live in `supermemory.json`.
 :::
 
 ## Save Config
@@ -430,7 +430,7 @@ All storage paths **must** use the `moor_home` kwarg from `initialize()`, not ha
 ```python
 # CORRECT — profile-scoped, bound on the instance
 def initialize(self, session_id, **kwargs):
-    self._data_dir = Path(kwargs["hermes_home"]) / "my-provider"
+    self._data_dir = Path(kwargs["moor_home"]) / "my-provider"
 
 # WRONG — shared across all profiles
 data_dir = Path("~/.moor/my-provider").expanduser()
@@ -441,12 +441,12 @@ data_dir = Path("~/.moor/my-provider").expanduser()
 One gateway process can serve several profiles at once, and their turns run concurrently on different threads. Each agent gets its own `MemoryManager` and its own provider instance, initialized for one profile. Your provider must:
 
 - **Return a new instance per load.** `register(ctx)` should construct the provider (`ctx.register_memory_provider(MyProvider())`), not hand back a module-level singleton. The manager refuses to initialize an instance that another profile's manager already bound, and logs `memory_provider_instance_shared`.
-- **Bind from `initialize()`.** Derive every store, path, client, bank and tenant from the `hermes_home` keyword (and secrets read through `get_secret()` during `initialize`), and keep that binding on `self`.
+- **Bind from `initialize()`.** Derive every store, path, client, bank and tenant from the `moor_home` keyword (and secrets read through `get_secret()` during `initialize`), and keep that binding on `self`.
 - **Keep nothing profile-specific at module or class level.** No global "current store", and no rebinding a shared binding on each call. Two profiles' calls interleave, so a per-call rebind races.
 
-The manager enforces the other half. It runs tool calls and every lifecycle hook (`prefetch`, `queue_prefetch`, `sync_turn`, `on_memory_write`, `on_session_end`, …) only from the profile the instance was initialized for. On a multiplexed gateway a caller that names no profile is refused, and the refusal is logged as `memory_caller_profile_unresolved` in the profile's `errors.log` (`hermes logs errors`) and in `gateway.log`. Background hooks run under the owning profile's `HERMES_HOME`. `handle_tool_call(..., **kwargs)` also receives `hermes_home`, `agent_identity` and `caller_gsk`. They name the profile your instance is already bound to, so you can assert on them, but don't rebind from them.
+The manager enforces the other half. It runs tool calls and every lifecycle hook (`prefetch`, `queue_prefetch`, `sync_turn`, `on_memory_write`, `on_session_end`, …) only from the profile the instance was initialized for. On a multiplexed gateway a caller that names no profile is refused, and the refusal is logged as `memory_caller_profile_unresolved` in the profile's `errors.log` (`moor logs errors`) and in `gateway.log`. Background hooks run under the owning profile's `MOOR_HOME`. `handle_tool_call(..., **kwargs)` also receives `moor_home`, `agent_identity` and `caller_gsk`. They name the profile your instance is already bound to, so you can assert on them, but don't rebind from them.
 
-Hermes can't verify a provider's internals. A provider that keeps a process-wide binding still mixes profiles' memories, even with these checks in place.
+Moor can't verify a provider's internals. A provider that keeps a process-wide binding still mixes profiles' memories, even with these checks in place.
 
 ## Testing
 
@@ -509,7 +509,7 @@ def register_cli(subparser) -> None:
 
 ### Reference implementation
 
-See the Honcho plugin's [`cli.py`](https://github.com/plastic-labs/honcho/blob/main/hermes-plugin-honcho/cli.py) for a full example with 13 subcommands, cross-profile management (`--target-profile`), and config read/write.
+See the Honcho plugin's [`cli.py`](https://github.com/plastic-labs/honcho/blob/main/moor-plugin-honcho/cli.py) for a full example with 13 subcommands, cross-profile management (`--target-profile`), and config read/write.
 
 ### Directory structure with CLI
 

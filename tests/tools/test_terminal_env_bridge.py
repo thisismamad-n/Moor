@@ -11,7 +11,7 @@ import os
 import pytest
 
 from tools import terminal_tool
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 
 @pytest.fixture(autouse=True)

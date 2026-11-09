@@ -50,7 +50,7 @@ class TerminalEnvironmentProvider(ProviderBase):
       docker/ssh, instead of refusing.
 
     ``default_cwd`` home resolution and ``exec_prefix`` need the environment object itself, so they
-    work for in-process plugins only; under ``plugins.isolation: host`` the environment reaches Hermes
+    work for in-process plugins only; under ``plugins.isolation: host`` the environment reaches Moor
     as an opaque placeholder and Bot Desktop placement refuses a ``supports_streams`` backend.
     """
 
@@ -98,14 +98,14 @@ class TerminalEnvironmentProvider(ProviderBase):
         return ("ready", "") if self.is_available() else ("needs_setup", f"{self.display_name} is not configured.")
 
     def setup_instructions(self) -> list[str]:
-        """Lines printed by ``hermes setup`` after selection (the wizard persists ``terminal.backend`` itself)."""
+        """Lines printed by ``moor setup`` after selection (the wizard persists ``terminal.backend`` itself)."""
         return []
 
     def post_setup(self) -> None:
         """Optional interactive hook run by ``moor setup`` after selection (prompt for tokens, install SDKs)."""
 
     def doctor_checks(self) -> list[tuple[bool, str, str]]:
-        """``hermes doctor`` rows ``(ok, label, detail)``; default reflects :meth:`is_available`."""
+        """``moor doctor`` rows ``(ok, label, detail)``; default reflects :meth:`is_available`."""
         try:
             ok = bool(self.is_available())
         except Exception:

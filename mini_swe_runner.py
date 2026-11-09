@@ -214,9 +214,9 @@ class MiniSWERunner:
             j += 1
         return ("\n".join(tool_responses), j - 1) if tool_responses else (None, i)
 
-    def _convert_to_hermes_format(self, messages: list[dict[str, Any]], user_query: str) -> list[dict[str, Any]]:
-        """Convert the OpenAI-style message list to the Hermes trajectory format used by batch_runner.py."""
-        system_msg = HERMES_SYSTEM_PREFIX + f"<tools>\n{self._format_tools_for_system_message()}\n</tools>\n" + HERMES_SYSTEM_SUFFIX
+    def _convert_to_moor_format(self, messages: list[dict[str, Any]], user_query: str) -> list[dict[str, Any]]:
+        """Convert the OpenAI-style message list to the Moor trajectory format used by batch_runner.py."""
+        system_msg = MOOR_SYSTEM_PREFIX + f"<tools>\n{self._format_tools_for_system_message()}\n</tools>\n" + MOOR_SYSTEM_SUFFIX
         trajectory = [{"from": "system", "value": system_msg}, {"from": "human", "value": user_query}]
         i = 1  # first user message already added
         while i < len(messages):

@@ -222,9 +222,9 @@ def test_headless_serve_announces_both_ready_tokens(tmp_path):
     """#60772 — a headless ``serve`` must announce BOTH ready tokens.
 
     The packaged Desktop artifact can be older than the Python backend (the
-    CLI-only ``hermes update`` path does not rebuild the packaged app). Its
-    readiness parser may still match only the legacy ``HERMES_DASHBOARD_READY``
-    line; a backend that announces only ``HERMES_BACKEND_READY`` then boots
+    CLI-only ``moor update`` path does not rebuild the packaged app). Its
+    readiness parser may still match only the legacy ``MOOR_DASHBOARD_READY``
+    line; a backend that announces only ``MOOR_BACKEND_READY`` then boots
     healthily and gets killed after the port-announcement timeout — the exact
     artifact-skew signature in #60772. The neutral token must come first so
     current parsers match it before the legacy one.
@@ -239,20 +239,20 @@ def test_headless_serve_announces_both_ready_tokens(tmp_path):
         # Read past the NEUTRAL token to the legacy one: _read_until stops at
         # its token, so waiting for the legacy line proves BOTH were written
         # (the neutral one precedes it) without a timing race.
-        ready, lines = _read_until(proc, f"HERMES_DASHBOARD_READY port={port}")
+        ready, lines = _read_until(proc, f"MOOR_DASHBOARD_READY port={port}")
         out = "".join(lines)
         assert ready, (
             f"legacy token missing (a stale packaged Desktop would time out); output:\n{out}"
         )
         # The neutral token must come first: current parsers stop at their
         # first hit, and they should bind to the newer contract.
-        assert f"HERMES_BACKEND_READY port={port}" in out
-        backend_at = out.index(f"HERMES_BACKEND_READY port={port}")
-        legacy_at = out.index(f"HERMES_DASHBOARD_READY port={port}")
+        assert f"MOOR_BACKEND_READY port={port}" in out
+        backend_at = out.index(f"MOOR_BACKEND_READY port={port}")
+        legacy_at = out.index(f"MOOR_DASHBOARD_READY port={port}")
         assert backend_at < legacy_at
         # Exactly one of each — never a loop of announcements.
-        assert out.count("HERMES_BACKEND_READY port=") == 1
-        assert out.count("HERMES_DASHBOARD_READY port=") == 1
+        assert out.count("MOOR_BACKEND_READY port=") == 1
+        assert out.count("MOOR_DASHBOARD_READY port=") == 1
     finally:
         proc.terminate()
         try:

@@ -30,7 +30,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _offline_model_inventory(monkeypatch):
     """Stub the shared model inventory so ACP tests never hit the network."""
-    from hermes_cli import inventory
+    from moor_cli import inventory
 
     class _StubPickerContext:
         def with_overrides(self, **_kwargs):
@@ -71,10 +71,10 @@ def daemon(tmp_path, model_peer, request):
         config.setdefault(key, {}).update(value)
     (home / "config.yaml").write_text(json.dumps(config))
     env = {k: os.environ[k] for k in ("PATH", "LANG", "TZ") if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home),
+    env.update(HOME=str(user), USERPROFILE=str(user), MOOR_HOME=str(home),
                PYTHONPATH=str(root), PYTHONUNBUFFERED="1",
                OPENAI_API_KEY="loopback-only", OPENAI_BASE_URL=model_url,
-               HERMES_ACP_SKIP_CONFIGURED_MCP="1")
+               MOOR_ACP_SKIP_CONFIGURED_MCP="1")
     command = [sys.executable, "-m", "gateway.run"]
     if getattr(request, 'param', None) == 'proposed-acp-descriptor':
         # API-owner handoff only: execution/create/policy stay unmodified. This

@@ -217,7 +217,7 @@ export function setEnvVar(
   profile?: ProfileScope,
   { providerSetup = false }: { providerSetup?: boolean } = {}
 ): Promise<{ ok: boolean }> {
-  return window.hermesDesktop.api<{ ok: boolean }>({
+  return window.moorDesktop.api<{ ok: boolean }>({
     ...capabilityScoped(profile),
     path: '/api/env',
     method: 'PUT',
@@ -369,21 +369,21 @@ export function pollOAuthSession(
 ): Promise<OAuthPollResponse> {
   const query = waitSeconds > 0 ? `?wait=${waitSeconds}` : ''
 
-  return window.hermesDesktop.api<OAuthPollResponse>({
+  return window.moorDesktop.api<OAuthPollResponse>({
     ...capabilityScoped(profile),
     path: `/api/providers/oauth/${encodeURIComponent(providerId)}/poll/${encodeURIComponent(sessionId)}${query}`,
     ...(waitSeconds > 0 ? { timeoutMs: OAUTH_LONG_POLL_TIMEOUT_MS } : {})
   })
 }
 
-/** The free tier's handoff after a Nous sign-in. A long-poll: given `since`
+/** The free tier's handoff after a Moor sign-in. A long-poll: given `since`
  *  (the `updated_at` on screen) the backend answers once the record changes. */
-export function getNousHandoffStatus(since: null | string, profile?: ProfileScope): Promise<AppHandoffStatus> {
+export function getMoorHandoffStatus(since: null | string, profile?: ProfileScope): Promise<AppHandoffStatus> {
   const query = new URLSearchParams({ wait: String(OAUTH_LONG_POLL_SECONDS), ...(since ? { since } : {}) })
 
-  return window.hermesDesktop.api<AppHandoffStatus>({
+  return window.moorDesktop.api<AppHandoffStatus>({
     ...capabilityScoped(profile),
-    path: `/api/providers/oauth/nous/handoff?${query}`,
+    path: `/api/providers/oauth/moor/handoff?${query}`,
     timeoutMs: OAUTH_LONG_POLL_TIMEOUT_MS
   })
 }

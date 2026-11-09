@@ -517,7 +517,7 @@ export function useComposerState({ gw, submitRef, sys }: UseComposerStateOptions
   const openEditor = useCallback(async () => {
     const destination = captureDestination()
     const revision = composerRevision.current
-    const dir = mkdtempSync(join(tmpdir(), 'hermes-'))
+    const dir = mkdtempSync(join(tmpdir(), 'moor-'))
     const file = join(dir, 'prompt.md')
     const [cmd, ...args] = resolveEditor()
 

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import worktree_ops
+from moor_cli import worktree_ops
 
 
 def _git(args, cwd):
@@ -67,7 +67,7 @@ def _idle(path, hours=100):
 
 
 def _archives(repo):
-    out = _git(["for-each-ref", "--format=%(refname)", "refs/hermes/archive/"], repo)
+    out = _git(["for-each-ref", "--format=%(refname)", "refs/moor/archive/"], repo)
     return [line for line in out.splitlines() if line]
 
 
@@ -77,8 +77,8 @@ def _digest(path):
 
 
 def _set_worktrees_config(text):
-    from hermes_constants import get_hermes_home
-    home = get_hermes_home()
+    from moor_constants import get_moor_home
+    home = get_moor_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(text, encoding="utf-8")
 
@@ -87,7 +87,7 @@ def test_removed_dirty_tree_restores_byte_for_byte_and_archiving_never_touches_t
     """I1 + I4: HEAD, staged, unstaged (CRLF) and untracked bytes survive delete -> restore,
     even under eol rules from info/attributes and core.attributesFile (which ``--attr-source``
     does not replace); the archive step leaves the real index and every working file untouched."""
-    from hermes_cli.worktree_archive import restore_archive, snapshot_worktree
+    from moor_cli.worktree_archive import restore_archive, snapshot_worktree
 
     (repo / ".git" / "info").mkdir(exist_ok=True)
     (repo / ".git" / "info" / "attributes").write_text("*.md text eol=crlf\n", encoding="utf-8")
@@ -128,10 +128,10 @@ def test_sweep_archives_idle_work_and_never_touches_live_kanban_or_young_trees(r
     """I1/I2/I3/I4 on one board through the real pruner entry point."""
     clean = _tree(repo, "lane-clean")
     dirty = _tree(repo, "lane-dirty", dirty=True)
-    unpushed = _tree(repo, "hermes-unpushed", unpushed=True)
+    unpushed = _tree(repo, "moor-unpushed", unpushed=True)
     live_cwd = _tree(repo, "lane-live-cwd", dirty=True)
-    live_lock = _tree(repo, "hermes-live-lock", dirty=True)
-    _git(["worktree", "lock", "--reason", f"hermes pid={os.getpid()}", str(live_lock)], repo)
+    live_lock = _tree(repo, "moor-live-lock", dirty=True)
+    _git(["worktree", "lock", "--reason", f"moor pid={os.getpid()}", str(live_lock)], repo)
     kanban = _tree(repo, "t_0abc12", dirty=True)
     young = _tree(repo, "lane-young", dirty=True)
     unarchivable = _tree(repo, "lane-embedded", dirty=True)
@@ -146,7 +146,7 @@ def test_sweep_archives_idle_work_and_never_touches_live_kanban_or_young_trees(r
     _git(["commit", "-qm", "sub"], deleted)
     for tree in (clean, dirty, unpushed, live_cwd, live_lock, kanban, unarchivable, deleted):
         _idle(tree)
-    _idle(subagent, hours=30)                   # past the 24h hermes-made tier, inside 72h
+    _idle(subagent, hours=30)                   # past the 24h moor-made tier, inside 72h
     (deleted / "sub" / "x.py").unlink()         # the newest work: a deletion in a subdir
     sleeper = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"], cwd=str(live_cwd))
     try:
@@ -160,9 +160,9 @@ def test_sweep_archives_idle_work_and_never_touches_live_kanban_or_young_trees(r
         assert not gone.exists(), f"idle {gone.name} should be archived then removed"
     assert not subagent.exists(), "subagent-* trees age on the 24h tier"
     archived = {ref.rsplit("/", 1)[-1] for ref in _archives(repo)}
-    assert archived == {"lane-dirty", "hermes-unpushed", "subagent-done"}
+    assert archived == {"lane-dirty", "moor-unpushed", "subagent-done"}
     assert (deleted / "sub" / "y.py").exists(), "a fresh deletion is activity: the tree is not idle"
-    assert _git(["show", "refs/hermes/archive/lane-dirty:notes.md"], repo) == "uncommitted"
+    assert _git(["show", "refs/moor/archive/lane-dirty:notes.md"], repo) == "uncommitted"
     for kept in (live_cwd, live_lock, kanban, young, unarchivable):
         assert kept.exists() and (kept / "notes.md").read_text(encoding="utf-8-sig") == "uncommitted\n", kept.name
 
@@ -172,7 +172,7 @@ def test_a_tree_resumed_mid_sweep_is_never_removed(repo, monkeypatch, capsys):
     archived, an edit made while a tree's own snapshot ran, or an index-only edit (``git apply
     --cached``: no file, HEAD or reflog mtime moves) made right after capture keeps that tree, and
     the sweep reports it as archived-but-kept, not removed."""
-    from hermes_cli import worktree_archive, worktree_cmd, worktree_sweep
+    from moor_cli import worktree_archive, worktree_cmd, worktree_sweep
 
     first, second = _tree(repo, "lane-a", dirty=True), _tree(repo, "lane-b", dirty=True)
     staged = _tree(repo, "lane-staged", dirty=True)
@@ -203,8 +203,8 @@ def test_a_tree_resumed_mid_sweep_is_never_removed(repo, monkeypatch, capsys):
     assert second.exists() and (second / "notes.md").read_text(encoding="utf-8-sig") == "uncommitted\n"
     assert staged.exists() and _git(["show", ":b.py"], staged) == "NEW STAGED CONTENT"
     assert sorted(ref.rsplit("/", 1)[-1] for ref in _archives(repo)) == ["lane-a", "lane-staged"]
-    assert sorted(actions) == ["archived, kept (changed 0s ago) → refs/hermes/archive/lane-a",
-                               "archived, kept (staged changes since the snapshot) → refs/hermes/archive/lane-staged"]
+    assert sorted(actions) == ["archived, kept (changed 0s ago) → refs/moor/archive/lane-a",
+                               "archived, kept (staged changes since the snapshot) → refs/moor/archive/lane-staged"]
 
 
 def test_dirty_submodule_work_is_never_archived_away(repo, tmp_path, monkeypatch):
@@ -213,8 +213,8 @@ def test_dirty_submodule_work_is_never_archived_away(repo, tmp_path, monkeypatch
     submodule; a deinitialized one whose retained module repository holds an unpushed private
     commit; and one whose submodule file is edited right after the snapshot step. The shared
     snapshot entry point (exit-time Archive, subagent finalization) refuses them too."""
-    from hermes_cli import worktree_archive, worktree_sweep
-    from hermes_cli.worktree_archive import ArchiveError, snapshot_worktree
+    from moor_cli import worktree_archive, worktree_sweep
+    from moor_cli.worktree_archive import ArchiveError, snapshot_worktree
 
     sub_origin, sub_work = tmp_path / "sub.git", tmp_path / "subwork"
     _git(["init", "-q", "--bare", "-b", "main", str(sub_origin)], tmp_path)
@@ -372,12 +372,12 @@ def test_the_pruner_removes_a_tree_only_when_everything_irreproducible_is_archiv
 
 
 def test_prune_older_than_bounds_what_the_sweep_removes(repo, capsys):
-    """`hermes worktree prune --older-than N` never archives or removes a tree idle < N days."""
+    """`moor worktree prune --older-than N` never archives or removes a tree idle < N days."""
     import argparse
 
-    from hermes_cli.worktree_cmd import cmd_worktree
+    from moor_cli.worktree_cmd import cmd_worktree
 
-    dirty, clean = _tree(repo, "hermes-dirty", dirty=True), _tree(repo, "hermes-clean")
+    dirty, clean = _tree(repo, "moor-dirty", dirty=True), _tree(repo, "moor-clean")
     for tree in (dirty, clean):
         _idle(tree)                                   # ~4 days idle: past every tier
     args = argparse.Namespace(repo=str(repo), worktree_action="prune", dry_run=False, json=True,
@@ -392,7 +392,7 @@ def test_archive_dirty_false_keeps_the_classic_never_delete_dirty_pruner(repo):
     _set_worktrees_config("worktrees:\n  archive_dirty: false\n")
     clean = _tree(repo, "lane-clean")
     dirty = _tree(repo, "lane-dirty", dirty=True)
-    unpushed = _tree(repo, "hermes-unpushed", unpushed=True)
+    unpushed = _tree(repo, "moor-unpushed", unpushed=True)
     for tree in (clean, dirty, unpushed):
         _idle(tree)
     worktree_ops._prune_stale_worktrees(str(repo))
@@ -405,30 +405,30 @@ def test_cron_sweep_visits_only_the_active_profiles_registered_repos(repo, tmp_p
     """I7: a worktree made under profile A registers its repo for A's sweep only, and a
     registered repo that was deleted drops out."""
     import cron.scheduler as sched
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     home_a, home_b = tmp_path / "home-a", tmp_path / "home-b"
     home_a.mkdir()
     home_b.mkdir()
     monkeypatch.setattr("cron.jobs.load_jobs", list)
-    token = set_hermes_home_override(str(home_a))
+    token = set_moor_home_override(str(home_a))
     try:
         assert worktree_ops._setup_worktree(repo_root=str(repo), sync_base=False, name="reg") is not None
         gone = tmp_path / "gone"
         _git(["init", "-q", str(gone)], tmp_path)
         (gone / ".worktrees").mkdir()
-        from hermes_cli.worktree_registry import record_worktree_repo
+        from moor_cli.worktree_registry import record_worktree_repo
         record_worktree_repo(gone)
         import shutil
         shutil.rmtree(gone)
         repos_a = sched._worktree_maintenance_repos()
     finally:
-        reset_hermes_home_override(token)
-    token = set_hermes_home_override(str(home_b))
+        reset_moor_home_override(token)
+    token = set_moor_home_override(str(home_b))
     try:
         repos_b = sched._worktree_maintenance_repos()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     assert os.path.realpath(repo) in repos_a
     assert str(gone) not in repos_a and os.path.realpath(gone) not in repos_a
     assert os.path.realpath(repo) not in repos_b
@@ -436,11 +436,11 @@ def test_cron_sweep_visits_only_the_active_profiles_registered_repos(repo, tmp_p
 
 def test_exit_question_never_prompts_without_a_tty(repo, monkeypatch):
     """I5: a dirty tree at a non-interactive exit is kept without any prompt."""
-    from hermes_cli import curses_ui, worktree_exit
+    from moor_cli import curses_ui, worktree_exit
 
-    wt = _tree(repo, "hermes-exit", dirty=True)
+    wt = _tree(repo, "moor-exit", dirty=True)
     monkeypatch.setattr(curses_ui, "curses_radiolist",
                         lambda *a, **k: pytest.fail("non-interactive exit must never prompt"))
-    info = {"path": str(wt), "repo_root": str(repo), "branch": "wt/hermes-exit"}
+    info = {"path": str(wt), "repo_root": str(repo), "branch": "wt/moor-exit"}
     assert worktree_exit.ask_exit_choice(info) == worktree_exit.KEEP
     assert "exit_choice" not in info and wt.exists()

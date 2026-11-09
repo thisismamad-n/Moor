@@ -82,12 +82,12 @@ def parse_turn_author(raw: Any) -> Optional[dict[str, Any]]:
 
 
 def turn_author_from_env(environ: Mapping[str, str] = os.environ) -> Optional[dict[str, Any]]:
-    """The author the dispatcher placed in ``HERMES_TURN_AUTHOR``, or None."""
+    """The author the dispatcher placed in ``MOOR_TURN_AUTHOR``, or None."""
     return parse_turn_author(environ.get(TURN_AUTHOR_ENV))
 
 
 def take_turn_author_from_env(environ: MutableMapping[str, str] = os.environ) -> Optional[dict[str, Any]]:
-    """Read and remove ``HERMES_TURN_AUTHOR`` so subprocesses started during the turn do not inherit it."""
+    """Read and remove ``MOOR_TURN_AUTHOR`` so subprocesses started during the turn do not inherit it."""
     return parse_turn_author(environ.pop(TURN_AUTHOR_ENV, None))
 
 

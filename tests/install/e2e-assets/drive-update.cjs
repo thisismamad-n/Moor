@@ -4,8 +4,8 @@
 //
 // Run the current CI checkout's entrypoint with its locked driver deps:
 //
-//   node <this file> <path-to-Hermes.exe> <proof-dir> <old-sha> <target-sha>
-//   node <this file> <path-to-Hermes.exe> <proof-dir> <old-sha> --native-handoff
+//   node <this file> <path-to-Moor.exe> <proof-dir> <old-sha> <target-sha>
+//   node <this file> <path-to-Moor.exe> <proof-dir> <old-sha> --native-handoff
 // <target-sha> is the staged Git main the source update must offer.
 // --native-handoff leaves the native UIA caller in charge of clicking Update.
 //
@@ -32,8 +32,8 @@ const oldSha = process.argv[4]
 const nativeHandoff = process.argv[5] === '--native-handoff'
 const targetSha = nativeHandoff ? undefined : process.argv[5]
 
-if (!exePath || !proofDir || !oldSha || !(nativeHandoff || targetSha) || !process.env.HERMES_E2E_MOCK_URL) {
-  console.error('usage: node drive-update.cjs <Hermes.exe> <proof-dir> <old-sha> (<target-sha> | --native-handoff); HERMES_E2E_MOCK_URL required')
+if (!exePath || !proofDir || !oldSha || !(nativeHandoff || targetSha) || !process.env.MOOR_E2E_MOCK_URL) {
+  console.error('usage: node drive-update.cjs <Moor.exe> <proof-dir> <old-sha> (<target-sha> | --native-handoff); MOOR_E2E_MOCK_URL required')
   process.exit(1)
 }
 
@@ -67,16 +67,16 @@ async function main() {
   const { runUpdateWindowChat } = await import('./update-window-chat.mjs')
   const { isolateUpdateWindowEnvironment, isolatedElectronArgs, updateWindowEnvironment } = await import('./smoke-env.mjs')
   const origin = nativeHandoff ? 'bundled' : 'source'
-  const root = nativeHandoff ? path.join(path.dirname(exePath), 'resources', 'agent-payload') : path.join(process.env.HERMES_HOME, 'hermes-agent')
+  const root = nativeHandoff ? path.join(path.dirname(exePath), 'resources', 'agent-payload') : path.join(process.env.MOOR_HOME, 'moor-agent')
   const capturedEnv = updateWindowEnvironment(process.env, root, origin)
   const launchEnv = isolateUpdateWindowEnvironment(capturedEnv)
   if (!nativeHandoff) {
     // The app's update check asks api.github.com for main's tip first, so it would compare against the
     // real GitHub main and never the staged serve.git. Point the check at the staged repo, the same
     // way launch-from-spec.mjs does for the macOS and Linux source legs.
-    prepareSourceBranchEnvironment(root, targetSha, process.env.HERMES_E2E_REAL_GIT, capturedEnv, launchEnv)
+    prepareSourceBranchEnvironment(root, targetSha, process.env.MOOR_E2E_REAL_GIT, capturedEnv, launchEnv)
   }
-  const userData = launchEnv.HERMES_DESKTOP_USER_DATA_DIR
+  const userData = launchEnv.MOOR_DESKTOP_USER_DATA_DIR
   log(`launching ${exePath}`)
 
   const app = await _electron.launch({

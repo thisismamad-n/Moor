@@ -730,11 +730,11 @@ _PLATFORM_HINT = (
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Moor plugin system."""
     from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
         name="mattermost", label="Mattermost", adapter_factory=MattermostAdapter,
-        dashboard_description="Connect Hermes to Mattermost channels and direct messages.",
+        dashboard_description="Connect Moor to Mattermost channels and direct messages.",
         docs_url="https://mattermost.com/deploy/",
         dashboard_env_vars=("MATTERMOST_URL", "MATTERMOST_TOKEN", "MATTERMOST_ALLOWED_USERS"),
         check_fn=check_mattermost_requirements, validate_config=validate_mattermost_config,

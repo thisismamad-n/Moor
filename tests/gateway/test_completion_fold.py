@@ -5,14 +5,14 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent
 from gateway.run import GatewayRunner
 from gateway.session_authority import SessionAuthority, initialize_session_authority
-from hermes_state_runtime import list_session_admissions
+from moor_state_runtime import list_session_admissions
 
 
 async def _discord_session(tmp_path, monkeypatch):
     from gateway.session_ingress_context import native_callback, register_transport_home
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     from plugins.platforms.discord.adapter import DiscordAdapter
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('MOOR_HOME', str(tmp_path))
     monkeypatch.setenv('DISCORD_ALLOWED_USERS', '42')
     monkeypatch.setattr(SessionAuthority, '_schedule', lambda self, ref: None)  # nothing claims: all stay queued
     runner = GatewayRunner(GatewayConfig(sessions_dir=tmp_path / 'sessions'))

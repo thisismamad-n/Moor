@@ -1,7 +1,7 @@
 """A launch under a data root that does not own the checkout leaves the checkout to its owner (#123238).
 
-Layout in every test: the user's default root is ``<tmp>/.hermes`` (``Path.home`` is ``<tmp>``) and
-the checkout is ``<tmp>/.hermes/hermes-agent``, the ``install.sh`` layout. A root "has state" for the
+Layout in every test: the user's default root is ``<tmp>/.moor`` (``Path.home`` is ``<tmp>``) and
+the checkout is ``<tmp>/.moor/moor-agent``, the ``install.sh`` layout. A root "has state" for the
 checkout when ``<root>/installs/<install_key>/facts.json`` exists -- the record a committed
 dependency sync leaves.
 """
@@ -14,7 +14,7 @@ import sys
 
 import pytest
 
-from hermes_cli import venv_sync
+from moor_cli import venv_sync
 from pm.environments import install_key, install_state_dir, owning_home_root, store_root
 
 # Every lane, Windows included: the owner check resolves the platform default root, which differs on Windows, so the
@@ -32,7 +32,7 @@ def _no_tool_downloads(monkeypatch):
 @pytest.fixture
 def completion_tail(monkeypatch):
     """Record the completion child instead of running it (the tail spawns via update_custody.run)."""
-    from hermes_cli import update_custody
+    from moor_cli import update_custody
 
     spawned: list = []
     monkeypatch.setattr(update_custody, "run", lambda command, **kw: spawned.append(command)
@@ -41,16 +41,16 @@ def completion_tail(monkeypatch):
 
 
 def _checkout(tmp_path, monkeypatch, *, parent: Path | None = None) -> Path:
-    import hermes_constants
+    import moor_constants
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    # The layout's default root is ``<tmp>/.hermes`` on every OS. On Windows the platform default is
-    # ``%LOCALAPPDATA%\hermes`` (``Path.home`` only backs an unset ``LOCALAPPDATA``), and no
-    # ``LOCALAPPDATA`` value spells ``<tmp>/.hermes``, so pin the default itself.
-    monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: tmp_path / ".hermes")
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
-    monkeypatch.delenv("HERMES_RUNTIME_DIR", raising=False)
-    root = (parent or tmp_path / ".hermes") / "hermes-agent"
+    # The layout's default root is ``<tmp>/.moor`` on every OS. On Windows the platform default is
+    # ``%LOCALAPPDATA%\moor`` (``Path.home`` only backs an unset ``LOCALAPPDATA``), and no
+    # ``LOCALAPPDATA`` value spells ``<tmp>/.moor``, so pin the default itself.
+    monkeypatch.setattr(moor_constants, "_get_platform_default_moor_home", lambda: tmp_path / ".moor")
+    monkeypatch.delenv("MOOR_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("MOOR_RUNTIME_DIR", raising=False)
+    root = (parent or tmp_path / ".moor") / "moor-agent"
     root.mkdir(parents=True)
     (root / ".git").mkdir()
     (root / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
@@ -67,7 +67,7 @@ def _state(data_root: Path, checkout: Path) -> Path:
 
 def _home(monkeypatch, path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(path))
+    monkeypatch.setenv("MOOR_HOME", str(path))
     return path
 
 
@@ -78,38 +78,38 @@ def test_a_fresh_install_and_a_custom_root_keep_their_own_store(tmp_path, monkey
     assert owning_home_root(root) is None
     assert store_root(root) == tmp_path / "data" / "h" / "tools"
 
-    # `install.sh --hermes-home /data/h` owns its tree even if the default root once
+    # `install.sh --moor-home /data/h` owns its tree even if the default root once
     # borrowed it and kept state of its own.
     _state(tmp_path / "data" / "h", root)
-    _state(tmp_path / ".hermes", root)
+    _state(tmp_path / ".moor", root)
     assert owning_home_root(root) is None
     assert store_root(root) == tmp_path / "data" / "h" / "tools"
 
 
 def test_a_borrowers_own_dependency_state_never_makes_it_the_owner(tmp_path, monkeypatch):
-    """`install.sh --hermes-home <custom>` owns the checkout. The default root launching it borrows,
+    """`install.sh --moor-home <custom>` owns the checkout. The default root launching it borrows,
     and still borrows after its own dependency sync leaves state for the checkout."""
     custom = tmp_path / "data" / "h"
     root = _checkout(tmp_path, monkeypatch, parent=custom)
     _state(custom, root)
-    monkeypatch.delenv("HERMES_HOME", raising=False)
+    monkeypatch.delenv("MOOR_HOME", raising=False)
     assert owning_home_root(root) == custom
 
-    _state(tmp_path / ".hermes", root)  # the borrowing launch's own sync
+    _state(tmp_path / ".moor", root)  # the borrowing launch's own sync
     assert owning_home_root(root) == custom
     assert store_root(root) == custom / "tools"
 
 
 def test_a_borrower_holding_the_checkout_never_becomes_its_owner(tmp_path, monkeypatch):
     """`install.sh --dir <dir>` puts the default root's checkout in <dir>. Launching it with
-    HERMES_HOME=<dir> borrows, and still borrows after that root's own sync leaves state --
-    even when an explicit sync points HERMES_RUNTIME_DIR at <dir>'s own store."""
+    MOOR_HOME=<dir> borrows, and still borrows after that root's own sync leaves state --
+    even when an explicit sync points MOOR_RUNTIME_DIR at <dir>'s own store."""
     import os
 
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
-    default = tmp_path / ".hermes"
+    default = tmp_path / ".moor"
     holder = tmp_path / "data" / "dir"
     root = _checkout(tmp_path, monkeypatch, parent=holder)
     entry = default / "tools" / "python-owner"
@@ -120,7 +120,7 @@ def test_a_borrower_holding_the_checkout_never_becomes_its_owner(tmp_path, monke
         {"schema": 1, "packages": {"python": {"version": "fixture", "entry": entry.name}}}), encoding="utf-8")
     _state(default, root)
     _home(monkeypatch, default)
-    local = root / ".hermes" / "bin"
+    local = root / ".moor" / "bin"
     published = {path: Path(path).read_bytes() for path in _launchers.ensure_install_launchers(root, local)}
     assert published
 
@@ -138,11 +138,11 @@ def test_a_borrower_holding_the_checkout_never_becomes_its_owner(tmp_path, monke
     (borrowed / ("python.exe" if os.name == "nt" else "bin/python3")).touch()
     (holder / "tools" / "facts.json").write_text(json.dumps(
         {"schema": 1, "packages": {"python": {"version": "fixture", "entry": borrowed.name}}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(holder / "tools"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(holder / "tools"))
     monkeypatch.setattr(_launchers, "expose_cli", lambda *args, **kwargs: {"ok": True})
     assert venv_sync.sync(root)["ok"]
     assert {path: Path(path).read_bytes() for path in published} == published
-    monkeypatch.delenv("HERMES_RUNTIME_DIR")
+    monkeypatch.delenv("MOOR_RUNTIME_DIR")
     assert owning_home_root(root) == default
 
 
@@ -152,14 +152,14 @@ def test_a_borrowing_launch_syncs_its_own_dependencies_and_nothing_of_the_checko
     """The first launch under a temporary home: its own dependency generation, but no tail (products,
     maintenance, install stamp), no launcher publication and no owner marker touched."""
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
     root = _checkout(tmp_path, monkeypatch)
-    _state(tmp_path / ".hermes", root)
-    _home(monkeypatch, tmp_path / "tmp" / "hermes-flash-compat-x" / "a")
+    _state(tmp_path / ".moor", root)
+    _home(monkeypatch, tmp_path / "tmp" / "moor-flash-compat-x" / "a")
     # The owner's store, so no tool store is downloaded into the temporary home.
-    assert owning_home_root(root) == tmp_path / ".hermes"
-    assert store_root(root) == tmp_path / ".hermes" / "tools"
+    assert owning_home_root(root) == tmp_path / ".moor"
+    assert store_root(root) == tmp_path / ".moor" / "tools"
     stamp = (root / "install-stamp.json").read_bytes()
     owner_marker = root / ".update-incomplete"
     owner_marker.write_text("owner's update\n", encoding="utf-8")
@@ -171,7 +171,7 @@ def test_a_borrowing_launch_syncs_its_own_dependencies_and_nothing_of_the_checko
         borrowed_facts.parent.mkdir(parents=True, exist_ok=True)
         borrowed_facts.write_text("{}", encoding="utf-8")
 
-    python = tmp_path / ".hermes" / "tools" / "python" / "bin" / "python3"
+    python = tmp_path / ".moor" / "tools" / "python" / "bin" / "python3"
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: borrowed_facts.is_file())
     monkeypatch.setattr(pm, "sync_venv", sync)
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda _: python)
@@ -193,11 +193,11 @@ def test_a_borrowing_launch_syncs_its_own_dependencies_and_nothing_of_the_checko
 def test_the_owner_still_owes_and_runs_its_tail(tmp_path, monkeypatch, completion_tail):
     """Unchanged for the owner: a stale environment syncs, arms and runs the tail."""
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
     root = _checkout(tmp_path, monkeypatch)
-    facts = _state(tmp_path / ".hermes", root)
-    monkeypatch.delenv("HERMES_HOME", raising=False)
+    facts = _state(tmp_path / ".moor", root)
+    monkeypatch.delenv("MOOR_HOME", raising=False)
     facts.unlink()
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: facts.is_file())
     monkeypatch.setattr(pm, "sync_venv", lambda *a, **kw: facts.write_text("{}", encoding="utf-8"))

@@ -108,10 +108,10 @@ export const ruOverrides = {
     copyDetailFailed: 'Не удалось скопировать подробность уведомления',
     backendOutOfDateTitle: 'Устаревший бэкенд',
     backendOutOfDateMessage:
-      'Ваш бэкенд Hermes старше этой сборки приложения и может работать некорректно. Обновите их, чтобы они совпали.',
+      'Ваш бэкенд Moor старше этой сборки приложения и может работать некорректно. Обновите их, чтобы они совпали.',
     desktopOutOfDateTitle: 'Устаревшее приложение',
     desktopOutOfDateMessage:
-      'Это приложение Hermes старше подключённого бэкенда и может работать некорректно. Обновите приложение, чтобы они совпали.',
+      'Это приложение Moor старше подключённого бэкенда и может работать некорректно. Обновите приложение, чтобы они совпали.',
     updateDesktopApp: 'Обновить приложение',
     installMethodUnsupportedTitle: 'Неподдерживаемый способ установки',
     updateMoor: 'Обновить Moor',
@@ -335,11 +335,11 @@ export const ruOverrides = {
   },
   settings: {
     memoryLayers: ruMemoryLayers,
-    // Window plans (Nous subscription with included usage). Other billing strings: overlay-gaps.json.
+    // Window plans (Moor subscription with included usage). Other billing strings: overlay-gaps.json.
     billing: {
       keepGoingOnCredits: {
         title: 'Продолжать за кредиты',
-        description: 'Тратить кредиты, когда включённый объём закончится. Выключено: Hermes ждёт сброса.',
+        description: 'Тратить кредиты, когда включённый объём закончится. Выключено: Moor ждёт сброса.',
         approveInBrowser:
           'Чтобы изменить это, одобрите удалённые траты в браузере. Изменение применится сразу после одобрения.',
         openAgain: 'Открыть снова',
@@ -1207,9 +1207,9 @@ export const ruOverrides = {
       sshErrPlatform:
         'Неподдерживаемая удалённая платформа. SSH-режим Moor Desktop поддерживает удалённые хосты Linux, macOS и Windows.',
       sshErrTimeout: 'SSH-соединение истекло. Хост может быть недоступен или «спит».',
-      sshErrUpdateRequired: 'Перед подключением через SSH обновите Hermes на удалённой машине.',
+      sshErrUpdateRequired: 'Перед подключением через SSH обновите Moor на удалённой машине.',
       sshErrInteractiveAuth:
-        'Tailscale SSH требует интерактивной проверки в браузере. Выполните `ssh <host> true` в терминале, завершите проверку и повторите попытку — Hermes запускает SSH неинтерактивно.',
+        'Tailscale SSH требует интерактивной проверки в браузере. Выполните `ssh <host> true` в терминале, завершите проверку и повторите попытку — Moor запускает SSH неинтерактивно.',
       sshErrUnknown: 'SSH-соединение не удалось.'
     },
     keys: {
@@ -2077,7 +2077,7 @@ export const ruOverrides = {
     failedImport: 'Не удалось импортировать профиль',
     failedExport: 'Не удалось экспортировать профиль',
     exportNeedsHost: name =>
-      `Браузер не может сохранить архив профиля. На хосте Hermes выполните: hermes profile export ${name}`,
+      `Браузер не может сохранить архив профиля. На хосте Moor выполните: moor profile export ${name}`,
     allProfiles: 'Все профили',
     showAllProfiles: 'Показать все профили',
     notServedHere: 'Здесь не обслуживается',
@@ -2087,8 +2087,8 @@ export const ruOverrides = {
     manageProfiles: 'Управлять профилями…',
     connectGateway: 'Управлять шлюзами…',
     fleet: {
-      localDevice: 'Это устройство (локальный бэкенд — установит Hermes, если его нет, иначе откроет новую сессию)',
-      installDeviceTitle: 'Установить Hermes на это устройство?',
+      localDevice: 'Это устройство (локальный бэкенд — установит Moor, если его нет, иначе откроет новую сессию)',
+      installDeviceTitle: 'Установить Moor на это устройство?',
       installDeviceDesc:
         'Moor будет установлен локально, затем откроется новая сессия на этом компьютере. Установка не начнётся, пока вы не подтвердите.',
       installDeviceConfirm: 'Установить локально',
@@ -2887,9 +2887,9 @@ export const ruOverrides = {
     }
   },
   updates: {
-    discontinuedTitle: 'Эта сборка Hermes больше не поддерживается',
+    discontinuedTitle: 'Эта сборка Moor больше не поддерживается',
     discontinuedBody:
-      'Эта сборка Hermes больше не поддерживается и может перестать работать — удалите её. Ваши данные останутся на диске.',
+      'Эта сборка Moor больше не поддерживается и может перестать работать — удалите её. Ваши данные останутся на диске.',
     channels: { stable: 'Стабильный', canary: 'Тестовый' },
     bundleSwapPending: 'Перезапустите, чтобы завершить обновление',
     bundleSwapPendingDesc:
@@ -2934,9 +2934,9 @@ export const ruOverrides = {
     manualTitle: 'Обновление из терминала',
     manualUnavailableTitle: 'Обновление здесь недоступно',
     manualBody:
-      'Hermes установлен из командной строки, поэтому обновления тоже выполняются там. Вставьте это в терминал:',
-    manualPickedUp: 'Hermes подхватит новую версию при следующем запуске.',
-    manualBodyBackend: 'Бэкенд Hermes управляется вне этого приложения. Выполните это на сервере, где он размещён:',
+      'Moor установлен из командной строки, поэтому обновления тоже выполняются там. Вставьте это в терминал:',
+    manualPickedUp: 'Moor подхватит новую версию при следующем запуске.',
+    manualBodyBackend: 'Бэкенд Moor управляется вне этого приложения. Выполните это на сервере, где он размещён:',
     manualPickedUpBackend: 'Бэкенд загрузит новую версию после завершения обновления.',
     guiSkewTitle: 'Обновите desktop-приложение',
     guiSkewBody:
@@ -3863,8 +3863,8 @@ export const ruOverrides = {
   },
   freeTier: {
     offer: {
-      heading: 'Продолжайте с Hermes',
-      body: 'Вы пользуетесь бесплатным лимитом. Если продолжите работать с Hermes, скоро начнёте упираться в ограничения. Войдите с бесплатной учётной записью Nous, чтобы получить больший лимит.',
+      heading: 'Продолжайте с Moor',
+      body: 'Вы пользуетесь бесплатным лимитом. Если продолжите работать с Moor, скоро начнёте упираться в ограничения. Войдите с бесплатной учётной записью Moor, чтобы получить больший лимит.',
       signIn: 'Войти',
       notNow: 'Не сейчас'
     }

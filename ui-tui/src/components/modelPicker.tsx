@@ -1,9 +1,9 @@
-import { Box, Text, useInput, useStdout } from '@hermes/ink'
-import { fuzzyRank } from '@hermes/shared/fuzzy'
-import type { ModelOptionProvider, ModelOptionsResult } from '@hermes/shared/gateway-events'
-import { modelSearchText } from '@hermes/shared/model-search-text'
-import { hasTopTier, planBlocks, planLimitLine, sectionAt, usageLevel, usageTag } from '@hermes/shared/plan-usage'
-import { REASONING_EFFORTS } from '@hermes/shared/reasoning-effort'
+import { Box, Text, useInput, useStdout } from '@moor/ink'
+import { fuzzyRank } from '@moor/shared/fuzzy'
+import type { ModelOptionProvider, ModelOptionsResult } from '@moor/shared/gateway-events'
+import { modelSearchText } from '@moor/shared/model-search-text'
+import { hasTopTier, planBlocks, planLimitLine, sectionAt, usageLevel, usageTag } from '@moor/shared/plan-usage'
+import { REASONING_EFFORTS } from '@moor/shared/reasoning-effort'
 import { useEffect, useMemo, useState } from 'react'
 
 import { providerDisplayNames } from '../domain/providers.js'
@@ -371,7 +371,7 @@ export function ModelPicker({
                         authenticated: false,
                         models: [],
                         total_models: 0,
-                        warning: p.key_env ? M.pasteKeyToActivate(p.key_env) : M.runHermesModelToConfigure
+                        warning: p.key_env ? M.pasteKeyToActivate(p.key_env) : M.runMoorModelToConfigure
                       }
                     : p
                 )

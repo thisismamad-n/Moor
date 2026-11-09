@@ -49,9 +49,9 @@ export async function bundleElectronMain({ source, out, stamp, dev = false }) {
     // The baked bytes, and the clock the caller must record: re-reading the stamp
     // after this point would report a restamp the output never saw.
     bakedStamp = metadata.builtAt ?? null
-    define['process.env.HERMES_DESKTOP_IS_PACKAGED'] = JSON.stringify(true)
-    define.__HERMES_INSTALL_STAMP__ = raw
-    define.__HERMES_PRODUCT_IDENTITY__ = productIdentity(source, metadata)
+    define['process.env.MOOR_DESKTOP_IS_PACKAGED'] = JSON.stringify(true)
+    define.__MOOR_INSTALL_STAMP__ = raw
+    define.__MOOR_PRODUCT_IDENTITY__ = productIdentity(source, metadata)
   }
   mkdirSync(out, { recursive: true })
   const common = {

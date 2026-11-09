@@ -68,11 +68,11 @@ def _pinned_manifest(repo: str, sha: str, subdir: str) -> Optional[dict[str, Any
 
 
 def _server_presence(decl: Any, liveness_raw: Any, title: str) -> Presence:
-    from hermes_platform.declaration import gpu_label
-    from hermes_platform.host import facts
-    from hermes_platform.resolver.app import AppResolver
-    from hermes_platform.resolver.availability import availability
-    from hermes_platform.resolver.base import Effort
+    from moor_platform.declaration import gpu_label
+    from moor_platform.host import facts
+    from moor_platform.resolver.app import AppResolver
+    from moor_platform.resolver.availability import availability
+    from moor_platform.resolver.base import Effort
     from tools.mcp_liveness import parse_liveness
 
     available = availability(decl)
@@ -126,9 +126,9 @@ def presence(entry: Any) -> Presence:
 
 def _onboarding_catalog() -> list:
     """Catalog entries curated for onboarding (``onboarding: true``) that this OS can run."""
-    from hermes_cli.plugin_catalog import load_catalog_live
-    from hermes_cli.plugins_cmd_catalog import normalized_platforms
-    from hermes_platform.host.facts import os_family
+    from moor_cli.plugin_catalog import load_catalog_live
+    from moor_cli.plugins_cmd_catalog import normalized_platforms
+    from moor_platform.host.facts import os_family
 
     here = os_family()
     return [entry for entry in load_catalog_live()
@@ -163,9 +163,9 @@ def presence_for(names: list[str]) -> list[dict[str, Any]]:
     catalog description's disclosure. A name the live catalog does not carry (unknown or removed) is dropped."""
     from concurrent.futures import ThreadPoolExecutor
 
-    from hermes_cli.plugin_catalog import load_catalog_live
-    from hermes_cli.plugins_cmd_catalog import normalized_platforms
-    from hermes_platform.host.facts import os_family
+    from moor_cli.plugin_catalog import load_catalog_live
+    from moor_cli.plugins_cmd_catalog import normalized_platforms
+    from moor_platform.host.facts import os_family
 
     here = os_family()
     by_name = {entry.name: entry for entry in load_catalog_live()}

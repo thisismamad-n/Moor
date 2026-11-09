@@ -64,13 +64,13 @@ def test_background_notification_history_replay_is_not_new_delivery():
 
 
 def test_retained_result_lookup_does_not_initialize_session_store(tmp_path, monkeypatch):
-    import hermes_state
+    import moor_state
     from gateway.session_context import scoped_current_session_id
     from tools import process_registry_results as receipts
 
     db_path = tmp_path / "state.db"
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", db_path)
-    monkeypatch.setattr(receipts, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", db_path)
+    monkeypatch.setattr(receipts, "get_moor_home", lambda: tmp_path)
     directory = tmp_path / "logs" / "process-results"
     directory.mkdir(parents=True)
     (directory / "proc_owned.json").write_text(json.dumps({

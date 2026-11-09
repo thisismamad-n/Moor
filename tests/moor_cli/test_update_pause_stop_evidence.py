@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import update_pause_record as pause_record
+from moor_cli import update_pause_record as pause_record
 
 pytestmark = [
     pytest.mark.skipif(sys.platform == "win32", reason="POSIX modes stand in for Windows refusals"),
@@ -30,7 +30,7 @@ def _accepted_then_orphaned(tmp_path: Path, monkeypatch, *, home_writable: bool)
     from gateway import status
     root, home = tmp_path / "root", tmp_path / "root" / "profiles" / "p"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     pid = os.getpid()
     marker = status._get_planned_stop_marker_path()
     token = pause_record.record_pause({"resume_needed": True, "profiles": {"p": pid},

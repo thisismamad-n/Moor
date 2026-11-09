@@ -172,16 +172,16 @@ def fresh_install_env(sb: Sandbox) -> dict[str, str]:
     install saves the choice, which carries every rerun (a rerun passes nothing, as users do)."""
     if sb.checkout.exists():
         return sb.env
-    return {**sb.env, "HERMES_INSTALL_CHANNEL": "main"}
+    return {**sb.env, "MOOR_INSTALL_CHANNEL": "main"}
 
 
 def pin_main_channel(sb: Sandbox) -> None:
-    """Follow every commit on main, as `hermes update --set-channel main` records it.
+    """Follow every commit on main, as `moor update --set-channel main` records it.
 
     An official-origin source checkout defaults to the stable channel (the latest published GitHub
     release). These sandboxes publish commits on main and no releases, and their subject is moving
     between commits; channel resolution has its own suites (test_release_channel_records,
-    tests/hermes_cli/test_source_release_channels.py)."""
+    tests/moor_cli/test_source_release_channels.py)."""
     cp = sb.cli("update", "--set-channel", "main", timeout=120)
     assert cp.returncode == 0 and "Update channel for" in cp.stdout, "could not pin the main channel:\n" + describe(cp)
 

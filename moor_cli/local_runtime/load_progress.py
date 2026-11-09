@@ -143,7 +143,7 @@ def get_prefill_progress(model: str) -> dict | None:
     if ep is None:
         return None
     try:
-        from hermes_cli.local_runtime.endpoint import child_query, managed_get_json
+        from moor_cli.local_runtime.endpoint import child_query, managed_get_json
 
         slots = managed_get_json(*ep, f"/slots?{child_query(model)}", timeout_s=2)
     except Exception:

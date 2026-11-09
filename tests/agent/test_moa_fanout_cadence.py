@@ -136,9 +136,9 @@ def test_every_n_off_cadence_iterations_reuse_cached_guidance(monkeypatch, tmp_p
 
 def test_preset_reference_timeout_reaches_reference_calls(monkeypatch, tmp_path):
     """A preset's reference_timeout is the timeout each advisor call_llm request carries."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     _cadence_config(home, "user_turn", reference_timeout=900)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     timeouts = []
 

@@ -274,7 +274,7 @@ def apply_wal_with_fallback(conn: sqlite3.Connection, *, db_label: str = "state.
     still documents the WAL-reset bug as real through 3.51.2 with serious consequences. Until a fixed
     runtime is delivered, keep new databases out of WAL.
     """
-    config_module = sys.modules.get("hermes_cli.config")
+    config_module = sys.modules.get("moor_cli.config")
     if getattr(getattr(config_module, "__spec__", None), "_initializing", False):
         config_module = None
     config_lock = getattr(config_module, "_CONFIG_LOCK", None)
@@ -599,9 +599,9 @@ _log_configured_delete_overridden_once = functools.partial(_log_once, "delete_ov
 
 
 # Operators write synchronous as a name; mapped so a typo becomes a warning, not a silently different level.
-_SYNCHRONOUS_LEVELS: dict[str, int] = {"OFF": 0, "NORMAL": 1, "FULL": 2, "EXTRA": 3}
-_SYNCHRONOUS_NAMES: dict[int, str] = {v: k for k, v in _SYNCHRONOUS_LEVELS.items()}
-_SYNCHRONOUS_FULL = 2
+_SYNCHROMOOR_LEVELS: dict[str, int] = {"OFF": 0, "NORMAL": 1, "FULL": 2, "EXTRA": 3}
+_SYNCHROMOOR_NAMES: dict[int, str] = {v: k for k, v in _SYNCHROMOOR_LEVELS.items()}
+_SYNCHROMOOR_FULL = 2
 
 
 def resolve_synchromoor_level(raw_value: Any) -> Optional[int]:

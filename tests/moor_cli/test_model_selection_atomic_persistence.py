@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-import hermes_yaml as yaml
-from hermes_cli.model_switch import ModelSwitchResult, persist_model_selection
+import moor_yaml as yaml
+from moor_cli.model_switch import ModelSwitchResult, persist_model_selection
 
 
 _SEED = (
@@ -52,7 +52,7 @@ def profile_config(tmp_path, monkeypatch):
     default_home.mkdir()
     default_config = default_home / "config.yaml"
     default_config.write_text("model: default-profile-model\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("MOOR_HOME", str(default_home))
     monkeypatch.setenv("OLD_MODEL_KEY", "synthetic-expanded-old-key")
     monkeypatch.setenv("VISION_KEY", "synthetic-expanded-vision-key")
     profile_home = tmp_path / "selected-profile"
@@ -107,7 +107,7 @@ def test_failed_route_publication_leaves_original_bytes(profile_config, monkeypa
 
 def test_setting_saved_while_route_is_decided_survives(profile_config, monkeypatch):
     """Another process saving a setting during the (I/O-capable) route decision is not erased."""
-    from hermes_cli import model_switch, route_identity
+    from moor_cli import model_switch, route_identity
 
     decide = route_identity.should_clear_context_pin
     writer = (
@@ -139,7 +139,7 @@ def test_setting_saved_while_route_is_decided_survives(profile_config, monkeypat
 
 def test_anchored_model_route_reused_later_saves_the_new_route(tmp_path, monkeypatch):
     """``model: &route`` aliased later (``vision: *route``) must not resurrect the old route."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     path = tmp_path / "config.yaml"
     path.write_text(
         "model: &route\n"

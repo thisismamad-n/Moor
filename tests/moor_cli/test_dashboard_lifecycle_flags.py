@@ -61,8 +61,8 @@ class TestDashboardStatus:
         so ``--status`` shows every backend ``--stop`` would kill (#81564)."""
         import socket
 
-        from hermes_cli import dashboard_procs, process_identity
-        from hermes_cli.main_dashboard import _find_stale_dashboard_pids
+        from moor_cli import dashboard_procs, process_identity
+        from moor_cli.main_dashboard import _find_stale_dashboard_pids
 
         pid = 424242
         with socket.socket() as listener:
@@ -70,7 +70,7 @@ class TestDashboardStatus:
             listener.listen()
             real_port = listener.getsockname()[1]
             monkeypatch.setattr(dashboard_procs, "_iter_process_table", lambda: [
-                (pid, "/usr/local/bin/hermes serve --host 127.0.0.1 --port 0 --ssh-isolated")])
+                (pid, "/usr/local/bin/moor serve --host 127.0.0.1 --port 0 --ssh-isolated")])
             monkeypatch.setattr(process_identity, "ledger_entries", lambda: [
                 {"pid": pid, "purpose": "serve", "host": "127.0.0.1", "port": real_port}])
             monkeypatch.setattr("gateway.status._pid_exists", lambda p: p == pid)

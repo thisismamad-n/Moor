@@ -276,9 +276,9 @@ describe('useProjectTree', () => {
     async ({ read, refresh }) => {
       const src = { name: 'src', path: '/p/src', isDirectory: true }
       const fresh = { name: 'fresh.txt', path: '/p/fresh.txt', isDirectory: false }
-      let resolveOld!: (value: HermesReadDirResult) => void
+      let resolveOld!: (value: MoorReadDirResult) => void
 
-      const oldRead = new Promise<HermesReadDirResult>(resolve => {
+      const oldRead = new Promise<MoorReadDirResult>(resolve => {
         resolveOld = resolve
       })
 
@@ -334,14 +334,14 @@ describe('useProjectTree', () => {
 
   it('keeps a refreshed folder read in flight when its predecessor finishes', async () => {
     const src = { name: 'src', path: '/p/src', isDirectory: true }
-    let finishOld!: (value: HermesReadDirResult) => void
-    let finishNew!: (value: HermesReadDirResult) => void
+    let finishOld!: (value: MoorReadDirResult) => void
+    let finishNew!: (value: MoorReadDirResult) => void
 
-    const oldRead = new Promise<HermesReadDirResult>(resolve => {
+    const oldRead = new Promise<MoorReadDirResult>(resolve => {
       finishOld = resolve
     })
 
-    const newRead = new Promise<HermesReadDirResult>(resolve => {
+    const newRead = new Promise<MoorReadDirResult>(resolve => {
       finishNew = resolve
     })
 

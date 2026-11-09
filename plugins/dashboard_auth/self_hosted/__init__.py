@@ -6,7 +6,7 @@ URL, exchanges the code, and verifies the **ID token** (the access token is opaq
 against the discovered ``jwks_uri`` with ``iss``/``aud`` pinned. Public and confidential
 (``client_secret`` layered on top of PKCE, never replacing it) clients both work. Config:
 ``dashboard.oauth.self_hosted.{issuer,client_id,scopes,client_secret,id_token_leeway}`` or
-``HERMES_DASHBOARD_OIDC_*`` (leeway is config.yaml-only; default 60s of clock-skew tolerance
+``MOOR_DASHBOARD_OIDC_*`` (leeway is config.yaml-only; default 60s of clock-skew tolerance
 for the ID token's time claims, ``0`` restores strict verification).
 """
 
@@ -310,9 +310,9 @@ def _settings() -> dict:
             f"--insecure to skip the OAuth gate entirely. (issuer set: {bool(issuer)}; client_id set: {bool(client_id)})")
     return {
         "issuer": issuer, "client_id": client_id,
-        "scopes": setting("HERMES_DASHBOARD_OIDC_SCOPES", "scopes") or _DEFAULT_SCOPES,
-        # Credential: canonical home is the env var / ~/.hermes/.env. Empty ⇒ public client.
-        "client_secret": setting("HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "client_secret"),
+        "scopes": setting("MOOR_DASHBOARD_OIDC_SCOPES", "scopes") or _DEFAULT_SCOPES,
+        # Credential: canonical home is the env var / ~/.moor/.env. Empty ⇒ public client.
+        "client_secret": setting("MOOR_DASHBOARD_OIDC_CLIENT_SECRET", "client_secret"),
         # Clock-skew tolerance for ID-token exp/nbf/iat (config.yaml only; default 60s, 0 = strict).
         "id_token_leeway": parse_leeway(oidc_cfg.get("id_token_leeway"))}
 

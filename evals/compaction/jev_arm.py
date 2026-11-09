@@ -383,7 +383,7 @@ def _truncated_result(text: str, is_error: bool, head: int) -> str:
 
 
 def apply_decisions(messages, decisions: list[Decision], calls: list[ToolCall], head: int):
-    """Rebuild the Hermes transcript: dropped calls vanish with their result row,
+    """Rebuild the Moor transcript: dropped calls vanish with their result row,
     dropped results keep a bounded head + note, untouched rows are the same objects."""
     by_id = {c.id: c for c in calls}
     actions: dict[str, str] = {}

@@ -231,8 +231,8 @@ def _list_sessions(source: str, root: Optional[Path]) -> list[ForeignSession]:
 
 def import_foreign_session(source: str, path) -> str:
     """Import one foreign session through the gateway's ``session.mutate import`` (the gateway is the
-    only state.db writer, #106742); returns the new Hermes session id. The row lands as an ordinary
-    ``cli`` session bound to this importer, so ``hermes --resume`` continues it writable.
+    only state.db writer, #106742); returns the new Moor session id. The row lands as an ordinary
+    ``cli`` session bound to this importer, so ``moor --resume`` continues it writable.
 
     Raises ``ValueError`` on unknown source or a session with no usable conversation turns, and
     ``GatewayClientError`` (a ``ValueError``) when the gateway refuses the import."""
@@ -249,8 +249,8 @@ def import_foreign_session(source: str, path) -> str:
     first_user = _first_user_line([(t["role"], t["content"]) for t in turns]) or path.stem
     if len(first_user) > _TITLE_MAX:
         first_user = first_user[: _TITLE_MAX - 1] + "…"
-    from hermes_cli.gateway_client import GatewayClientError
-    from hermes_cli.gateway_session_store import session_store
+    from moor_cli.gateway_client import GatewayClientError
+    from moor_cli.gateway_session_store import session_store
     store = session_store()
     session_id = new_session_id()
     cwd = parsed.get("cwd")
@@ -306,7 +306,7 @@ def pick_foreign_session(source: Optional[str] = None, *, limit: int = 25) -> Op
 
 
 def run_sessions_import(args) -> Optional[str]:
-    """`hermes sessions import` entry point. Returns new session id or None."""
+    """`moor sessions import` entry point. Returns new session id or None."""
     source = getattr(args, "from_source", None)
     path = getattr(args, "path", None)
     if path:

@@ -1,5 +1,5 @@
 /**
- * RED for hermes-agent#120810: a Bot Chat compression leaves two tabs
+ * RED for moor-agent#120810: a Bot Chat compression leaves two tabs
  * captioned with the bot name.
  *
  * openStoredBotChat (via openBotCanonicalChat) must run the same
@@ -17,7 +17,7 @@ const { focusMock, hostMock, requestForBotMock } = vi.hoisted(() => ({
   requestForBotMock: vi.fn()
 }))
 
-vi.mock('@hermes/plugin-sdk', () => ({
+vi.mock('@moor/plugin-sdk', () => ({
   BOT_CHAT_SESSION_HYDRATION_TIMEOUT_MS: 15_000,
   host: hostMock
 }))

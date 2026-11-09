@@ -1,4 +1,4 @@
-import { Button, host, randomUuid } from '@hermes/plugin-sdk'
+import { Button, host, randomUuid } from '@moor/plugin-sdk'
 import { type ClipboardEvent, type DragEvent, useEffect, useRef, useState } from 'react'
 
 import { type CanonicalDriverActivity, CanonicalGroupWorkingLine, canonicalMemberPhases } from './canonical-group-activity'

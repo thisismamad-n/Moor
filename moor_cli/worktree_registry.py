@@ -1,11 +1,11 @@
-"""Per-profile registry of every repository Hermes has created a worktree in.
+"""Per-profile registry of every repository Moor has created a worktree in.
 
-The 6-hourly cron sweep (``cron.scheduler._worktree_maintenance_repos``) only knew the Hermes
-checkout and cron job workdirs, so trees made by ``hermes -w`` / ``/worktree new`` / subagent
+The 6-hourly cron sweep (``cron.scheduler._worktree_maintenance_repos``) only knew the Moor
+checkout and cron job workdirs, so trees made by ``moor -w`` / ``/worktree new`` / subagent
 isolation / the Desktop git pane in any other repo were never swept. Each creation path records
 its repo here; the sweep unions this list with its other sources.
 
-The file lives under the ACTIVE profile's home (``get_hermes_home()``), so one profile's sweep
+The file lives under the ACTIVE profile's home (``get_moor_home()``), so one profile's sweep
 never visits another profile's repos. Writes are atomic under a cross-process lock; entries whose
 repo no longer exists are dropped on every read-modify-write and filtered on read.
 """
@@ -24,8 +24,8 @@ _holder = threading.local()
 
 
 def registry_path() -> Path:
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / _REGISTRY_NAME
+    from moor_constants import get_moor_home
+    return get_moor_home() / _REGISTRY_NAME
 
 
 def _repo_exists(repo: str) -> bool:
@@ -48,11 +48,11 @@ def registered_repos() -> list[str]:
 
 
 def record_worktree_repo(repo_root) -> None:
-    """Remember *repo_root* as a repo with Hermes-made worktrees. Never raises."""
+    """Remember *repo_root* as a repo with moor-made worktrees. Never raises."""
     if not repo_root:
         return
     try:
-        from hermes_cli.auth import _file_lock
+        from moor_cli.auth import _file_lock
         from utils import atomic_json_write
 
         repo = os.path.realpath(str(repo_root))

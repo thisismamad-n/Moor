@@ -157,7 +157,7 @@ def test_unreadable_store_keeps_last_digest(watcher_home):
 def test_projects_db_move_broadcasts_projects_changed(watcher_home):
     """#53046 / #56757: the CLI and other windows write projects.db directly, in
     processes that never touch this gateway's transports. Without a watch, a
-    `hermes projects create` (or a set_primary / folder edit from another
+    `moor projects create` (or a set_primary / folder edit from another
     window) leaves the Desktop's project tree stale until an unrelated refresh."""
     home, events = watcher_home
     server._broadcast_watched_changes(now=0.0)
@@ -175,7 +175,7 @@ def test_served_profile_projects_db_move_broadcasts_projects_changed(watcher_hom
     coder_home = home / "profiles" / "coder"
     coder_home.mkdir(parents=True)
     monkeypatch.setattr(server, "_served_profile_homes", set())
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir", lambda name: home / "profiles" / name)
+    monkeypatch.setattr("moor_cli.profiles.get_profile_dir", lambda name: home / "profiles" / name)
     assert server._profile_home("coder") == coder_home
     server._broadcast_watched_changes(now=0.0)
 
@@ -506,14 +506,14 @@ def test_skill_installed_from_another_terminal_broadcasts_skills_changed(watcher
 
 def test_a_skill_installed_in_another_sessions_repo_broadcasts_skills_changed(watcher_home, monkeypatch, tmp_path):
     """The gateway runs in repo A; a session's catalog resolved under repo B (its workspace, via the
-    session cwd). Installing a skill in B's ``.hermes/skills`` must still notify viewers: the watcher
+    session cwd). Installing a skill in B's ``.moor/skills`` must still notify viewers: the watcher
     signs every scope a session resolved commands in, not only the launch repo."""
     import json
     import agent.skill_commands as sc
     import tools.skills_tool as st
     from agent.runtime_cwd import reset_session_cwd, set_session_cwd
     home, events = watcher_home
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     (home / "skills").mkdir()
     monkeypatch.setattr(st, "SKILLS_DIR", home / "skills")
     monkeypatch.setattr(sc, "_skill_commands_by_key", {})
@@ -521,7 +521,7 @@ def test_a_skill_installed_in_another_sessions_repo_broadcasts_skills_changed(wa
     repo_a, repo_b = tmp_path / "repo-a", tmp_path / "repo-b"
     for repo in (repo_a, repo_b):
         (repo / ".git").mkdir(parents=True)
-        (repo / ".hermes" / "skills").mkdir(parents=True)
+        (repo / ".moor" / "skills").mkdir(parents=True)
     (home / "config.yaml").write_text(json.dumps({"skills": {"trusted_project_dirs": [str(repo_a), str(repo_b)]}}))
     monkeypatch.chdir(repo_a)
     st.clear_skills_cache()
@@ -533,7 +533,7 @@ def test_a_skill_installed_in_another_sessions_repo_broadcasts_skills_changed(wa
     server._broadcast_watched_changes(now=0.0)
     assert not [e for e in events if e[0] == "skills.changed"]
 
-    skill = repo_b / ".hermes" / "skills" / "workspace-only"
+    skill = repo_b / ".moor" / "skills" / "workspace-only"
     skill.mkdir()
     (skill / "SKILL.md").write_text("---\nname: workspace-only\ndescription: d\n---\nbody\n")
     server._broadcast_watched_changes(now=10.0)

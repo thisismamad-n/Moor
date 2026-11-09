@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone, UTC
 from agent import account_usage
 from agent.account_usage import AccountUsageSnapshot, AccountUsageWindow
 from agent.account_usage_cache import cached_account_usage
-from hermes_cli.inventory import build_model_options_payload, load_picker_context
+from moor_cli.inventory import build_model_options_payload, load_picker_context
 from tests.waiting import wait_until
 
 

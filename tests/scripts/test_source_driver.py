@@ -41,7 +41,7 @@ chmod +x "$INSTALL_DIR/venv/bin/moor"
 # A PM checkout cannot hide missing publication behind its old venv.
 mkdir -p "$INSTALL_DIR/pm"
 printf '{}' > "$INSTALL_DIR/pm/lock.json"
-if source_hermes "$INSTALL_DIR"; then exit 92; fi
+if source_moor "$INSTALL_DIR"; then exit 92; fi
 '''], env=env, cwd=tmp_path, capture_output=True, text=True, timeout=30, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.splitlines() == ["published:literal argument", "legacy"]

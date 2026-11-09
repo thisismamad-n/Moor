@@ -6,7 +6,7 @@ import sqlite3
 
 import pytest
 
-from hermes_cli.worktree_ops import _retained_tree_is_live
+from moor_cli.worktree_ops import _retained_tree_is_live
 
 
 def _store(tmp_path, cwd):

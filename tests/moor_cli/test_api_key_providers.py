@@ -54,7 +54,7 @@ PROVIDER_ENV_VARS = tuple(
 def _clear_provider_env(monkeypatch):
     for key in PROVIDER_ENV_VARS:
         monkeypatch.delenv(key, raising=False)
-    monkeypatch.setattr("hermes_cli.auth._load_auth_store", dict)
+    monkeypatch.setattr("moor_cli.auth._load_auth_store", dict)
 
 
 class TestResolveProvider:
@@ -221,12 +221,12 @@ class TestRuntimeProviderResolution:
 
     def test_runtime_external_process_provider_uses_process_runtime(self, monkeypatch, tmp_path):
         import providers
-        from hermes_cli import auth
+        from moor_cli import auth
         from providers.base import ProviderProfile
 
         profile = ProviderProfile(name="acme-acp", auth_type="external_process", base_url="acp://acme",
                                   process_command="acme", process_args=("--acp", "--stdio"),
-                                  process_args_env_var="HERMES_ACME_ACP_ARGS")
+                                  process_args_env_var="MOOR_ACME_ACP_ARGS")
         monkeypatch.setitem(providers._REGISTRY, profile.name, profile)
         monkeypatch.setattr(providers, "_PROVIDER_LIST_CACHE", None)
         monkeypatch.setattr(auth, "PROVIDER_REGISTRY", dict(auth.PROVIDER_REGISTRY))
@@ -236,9 +236,9 @@ class TestRuntimeProviderResolution:
         cli.write_text("", encoding="utf-8")
         cli.chmod(0o755)
         monkeypatch.setenv("PATH", str(tmp_path))
-        monkeypatch.setenv("HERMES_ACME_ACP_ARGS", "--acp --stdio --debug")
+        monkeypatch.setenv("MOOR_ACME_ACP_ARGS", "--acp --stdio --debug")
 
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
 
         result = resolve_runtime_provider(requested="acme-acp")
 
@@ -258,12 +258,12 @@ class TestHasAnyProviderConfigured:
 
 
     def test_claude_code_creds_ignored_on_fresh_install(self, monkeypatch, tmp_path):
-        """Claude Code credentials should NOT skip the wizard when Hermes is unconfigured."""
-        from hermes_cli import config as config_module
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setattr(config_module, "get_env_path", lambda: hermes_home / ".env")
-        monkeypatch.setattr(config_module, "get_hermes_home", lambda: hermes_home)
+        """Claude Code credentials should NOT skip the wizard when Moor is unconfigured."""
+        from moor_cli import config as config_module
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        monkeypatch.setattr(config_module, "get_env_path", lambda: moor_home / ".env")
+        monkeypatch.setattr(config_module, "get_moor_home", lambda: moor_home)
         # Clear all provider env vars so earlier checks don't short-circuit
         _all_vars = {"OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY",
                       "ANTHROPIC_TOKEN", "OPENAI_BASE_URL"}
@@ -753,7 +753,7 @@ class TestFetchDeepInfraModels:
                     {"id": "stabilityai/stable-diffusion-xl-base-1.0", "metadata": {}},
                 ]}).encode()
 
-        from hermes_cli import models
+        from moor_cli import models
         monkeypatch.setattr(
             models, "_urlopen_model_catalog_request", lambda *a, **kw: _Resp()
         )
@@ -769,7 +769,7 @@ class TestFetchDeepInfraModels:
 
 
     def test_catalog_uses_credential_safe_opener(self, monkeypatch):
-        from hermes_cli import models
+        from moor_cli import models
 
         seen = {}
 
@@ -891,7 +891,7 @@ class TestDeepInfraPricingFetcher:
             # non-chat — must not appear
             {"id": "vendor/model-image", "metadata": {"tags": ["image-gen"], "pricing": {"per_image_unit": 0.05}}},
         ]}
-        from hermes_cli import models
+        from moor_cli import models
         monkeypatch.setattr(
             models,
             "_urlopen_model_catalog_request",
@@ -917,7 +917,7 @@ def _kilo_pricing_isolation(monkeypatch):
     a reset, one test's payload (or its negative cache entry) would answer
     the next test's read.
     """
-    import hermes_cli.models_pricing as _mp
+    import moor_cli.models_pricing as _mp
     monkeypatch.setattr(_mp, "_pricing_cache", {})
     monkeypatch.setattr(_mp, "_pricing_cache_retry_after", {})
     monkeypatch.setattr(_mp, "_pricing_provider_cache_keys", {})
@@ -952,13 +952,13 @@ class TestKilocodePricingFetcher:
             {"id": ""},
             "not-a-dict",
         ]}
-        from hermes_cli import models
+        from moor_cli import models
         monkeypatch.setattr(
             models,
             "_urlopen_model_catalog_request",
             _make_urlopen_returning(payload),
         )
-        from hermes_cli.models_pricing import get_pricing_for_provider
+        from moor_cli.models_pricing import get_pricing_for_provider
 
         # get_pricing_for_provider → _fetch_kilocode_pricing dispatch path
         result = get_pricing_for_provider("kilocode")
@@ -975,8 +975,8 @@ class TestKilocodePricingFetcher:
         """Default endpoint is the kilocode provider profile's base_url + /models
         (no second hardcode); KILOCODE_BASE_URL overrides it; the catalog is
         fetched without a key; a failing endpoint yields {} without raising."""
-        from hermes_cli import models
-        from hermes_cli.models_pricing import get_pricing_for_provider
+        from moor_cli import models
+        from moor_cli.models_pricing import get_pricing_for_provider
 
         seen = []
 

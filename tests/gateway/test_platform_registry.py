@@ -7,7 +7,7 @@ import pytest
 
 from gateway.platform_registry import PlatformRegistry, PlatformEntry
 from gateway.config import Platform, GatewayConfig
-from hermes_cli import plugins_loader
+from moor_cli import plugins_loader
 
 
 # ── Platform enum dynamic members ─────────────────────────────────────────

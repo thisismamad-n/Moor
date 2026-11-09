@@ -11,11 +11,11 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from hermes_cli import plugin_catalog as pc
-from hermes_cli import plugin_catalog_presence as presence_mod
+from moor_cli import plugin_catalog as pc
+from moor_cli import plugin_catalog_presence as presence_mod
 
 SHA = "0" * 40
-NEEDS_APP = {"extensions": {"com.nousresearch.hermes": {"servers": {"srv": {
+NEEDS_APP = {"extensions": {"com.moorinc.moor": {"servers": {"srv": {
     "app": {"darwin": {"presence": "executable", "location": "/nonexistent/fx-app"},
             "linux": {"presence": "executable", "location": "/nonexistent/fx-app"},
             "win32": {"presence": "executable", "location": "C:/nonexistent/fx-app.exe"}},
@@ -31,14 +31,14 @@ def _entry(name, *, platforms=(), title="", description=""):
 
 @pytest.fixture
 def catalog(monkeypatch):
-    from hermes_platform.host import facts
+    from moor_platform.host import facts
 
     here = {"darwin": "macos", "win32": "windows"}.get(facts.os_family(), "linux")
     other = "windows" if here != "windows" else "macos"
     entries = [
         _entry("app", title="Fx App", platforms=[here],
                description="Drives Fx. Disclosure: the tools change Fx settings; nothing leaves loopback. Needs Fx 2."),
-        _entry("dashed", description="Pane. Disclosure \u2014 reads the cron file under HERMES_HOME."),
+        _entry("dashed", description="Pane. Disclosure \u2014 reads the cron file under MOOR_HOME."),
         _entry("broken", title="Broken"),
         _entry("elsewhere", platforms=[other]),
     ]
@@ -71,7 +71,7 @@ def test_row_shape_state_and_disclosure(catalog):
     assert rows["app"] == {"name": "app", "title": "Fx App", "state": "missing_app", "sentence": "needs Fx App",
                            "disclosure": "the tools change Fx settings; nothing leaves loopback."}
     assert rows["dashed"]["title"] == "dashed"
-    assert rows["dashed"]["disclosure"] == "reads the cron file under HERMES_HOME."
+    assert rows["dashed"]["disclosure"] == "reads the cron file under MOOR_HOME."
     assert rows["dashed"]["state"] == "unknown"  # a manifest without a declared app
     assert rows["broken"]["state"] == "unknown" and rows["broken"]["sentence"] == ""  # manifest unreadable
     assert rows["broken"]["disclosure"] == ""

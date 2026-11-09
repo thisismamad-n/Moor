@@ -303,7 +303,7 @@ class _JsonStateFile:
 
         An unusable lock (no flock on the filesystem, a wedged holder) degrades to an unlocked
         update rather than failing the install that triggered it."""
-        from hermes_cli.auth import _file_lock
+        from moor_cli.auth import _file_lock
         with ExitStack() as stack:
             try:
                 stack.enter_context(_file_lock(

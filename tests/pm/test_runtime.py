@@ -139,7 +139,7 @@ def test_sealed_worker_command_uses_only_its_recorded_site(tmp_path, monkeypatch
 
 
 def test_one_store_through_symlinked_homes_keeps_one_pm_runtime(tmp_path, monkeypatch):
-    """#123798: a store reached through symlinks (a per-task HERMES_HOME whose tools/ links back,
+    """#123798: a store reached through symlinks (a per-task MOOR_HOME whose tools/ links back,
     a home under /home -> /var/home) is ONE PM runtime: every spelling reuses the selected
     generation, and a record written before canonicalization is not re-staged."""
     from pm import runtime

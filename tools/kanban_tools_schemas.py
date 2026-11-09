@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from hermes_cli.kanban_workflow import ARCHIVED, DEFAULT_WORKFLOW
+from moor_cli.kanban_workflow import ARCHIVED, DEFAULT_WORKFLOW
 
 _DESC_TASK_ID_DEFAULT = (
-    "Task id. If omitted, defaults to HERMES_KANBAN_TASK from the env — the "
+    "Task id. If omitted, defaults to MOOR_KANBAN_TASK from the env — the "
     "task the dispatcher spawned you to work on. That default only exists for "
     "a dispatcher-spawned worker; any other caller has no default and must "
     "pass an explicit task_id (use kanban_list to discover ids)."
@@ -352,7 +352,7 @@ KANBAN_ATTACH_SCHEMA = _schema(
 KANBAN_ATTACH_URL_SCHEMA = _schema(
     "kanban_attach_url",
     (
-        "Attach a file to a task by URL (Hermes downloads it server-side, max 25 MB). Use when "
+        "Attach a file to a task by URL (Moor downloads it server-side, max 25 MB). Use when "
         "you have a link rather than the bytes. Only http/https URLs are "
         "accepted."
     ),

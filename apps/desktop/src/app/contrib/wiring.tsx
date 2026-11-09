@@ -94,7 +94,7 @@ import { $titlebarAppActionsSide, titlebarAppActionsClusterCounts } from '@/stor
 import { armWakeWord, stopClientCapture } from '@/store/wake-word'
 import { isAuxiliaryWindow, isBrowserWindow, isHudWindow, isMainWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { closeWorkspaceTab } from '../chat/close-tab'
 import { requestComposerInsert } from '../chat/composer/focus'
@@ -240,7 +240,7 @@ function useFirstRunOnboarding(request: OnboardingRequest, open: OnboardingResum
   }, [open])
 }
 
-// Recovery actions raised by toast buttons (Restart Hermes, Open Billing, cron
+// Recovery actions raised by toast buttons (Restart Moor, Open Billing, cron
 // review) fire from stores with no router context. Each counter is
 // consumed here: the ref skips the initial mount value, and only a fresh
 // request navigates or recycles the backend.
@@ -574,7 +574,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   })
 
   useFreshSessionRequest(startFreshSessionDraft)
-  useGatewayScopeRefresh(activeConnectionId, activeGatewayProfile, refreshCurrentModel, refreshHermesConfig)
+  useGatewayScopeRefresh(activeConnectionId, activeGatewayProfile, refreshCurrentModel, refreshMoorConfig)
 
   // New session anchored to a workspace. Seeds cwd + branch from the clicked
   // workspace; an explicit worktree path also drills the sidebar into that
@@ -896,7 +896,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     const report = () => void reportPendingUpdateRun(requestGateway)
     report()
 
-    return window.hermesDesktop?.updates?.onPendingRun?.(report)
+    return window.moorDesktop?.updates?.onPendingRun?.(report)
   }, [gatewayState, requestGateway])
 
   useDesktopMetrics({

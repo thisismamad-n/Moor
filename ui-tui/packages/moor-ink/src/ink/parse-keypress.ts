@@ -278,7 +278,7 @@ export const INITIAL_STATE: KeyParseState = {
 // any read inside the window makes it paste content. Once a read carried a
 // pasted line break, a read ending in CR is the tail of that paste and stays
 // content until input has been quiet for this long, however many reads the
-// paste spans. Mirrors hermes_cli/cli_enter_burst.py.
+// paste spans. Mirrors moor_cli/cli_enter_burst.py.
 export const BURST_END_QUIET_MS = 250
 
 interface TextBurst {

@@ -15,7 +15,7 @@ import pytest
 
 from tests.posix_lock_probe import own_posix_locks
 
-from hermes_state import (
+from moor_state import (
     SessionDB,
     StateDbReplacedError,
     classify_persistence_error,

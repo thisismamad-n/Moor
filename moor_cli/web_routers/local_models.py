@@ -38,8 +38,8 @@ from moor_cli.local_runtime import (
 from agent.memory_provider import spawn_context_thread
 from pm.downloader import Download, DownloadPaused, Source
 
-from hermes_cli.local_runtime.endpoint import _state_endpoint, child_query
-from hermes_cli.local_runtime.gguf import split_parts
+from moor_cli.local_runtime.endpoint import _state_endpoint, child_query
+from moor_cli.local_runtime.gguf import split_parts
 
 logger = logging.getLogger(__name__)
 

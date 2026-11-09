@@ -396,7 +396,7 @@ describe('deriveBillingView', () => {
     // A free-tier install is logged_in:false, so this branch must win — otherwise
     // the generic "connect your account" notice sends the user to the portal.
     const view = deriveBillingView(
-      okBilling({ ...loggedOutBillingState, free_tier_account: true, free_tier_model: 'nous/welcome' }),
+      okBilling({ ...loggedOutBillingState, free_tier_account: true, free_tier_model: 'moor/welcome' }),
       okSubscription(loggedOutSubscriptionState)
     )
 

@@ -31,7 +31,7 @@ def connectors_unavailable(failure: str, *, verb: str,
     hint = (f"Hosted connector tools could not be {verb} right now. "
             "Do not conclude the app is missing.")
     if failure == SIGN_IN_EXPIRED:
-        hint += " The user must sign in to Nous again."
+        hint += " The user must sign in to Moor again."
     field = {"status": "unavailable", "reason": failure, "hint": hint}
     if names:
         field["names"] = names

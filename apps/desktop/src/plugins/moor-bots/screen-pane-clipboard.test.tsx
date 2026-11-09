@@ -17,7 +17,7 @@ const rfbs = vi.hoisted(
   () => [] as Array<{ target: HTMLElement; viewOnly: boolean; clipboardPasteFrom: (text: string) => void }>
 )
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { useStore } = await import('@nanostores/react')
   const { onGatewayEvent } = await import('../../contrib/events')
 
@@ -85,7 +85,7 @@ const bot: RosterRow = { name: 'default' }
 // which is what makes this viewer the lease holder (`iHold`) and puts `client.viewOnly = false`.
 const status: DisplayStatus = {
   profile: 'default',
-  profile_key: '/home/hermes/.hermes',
+  profile_key: '/home/moor/.moor',
   supported: true,
   installed: true,
   missing: [],

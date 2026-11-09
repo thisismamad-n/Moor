@@ -22,8 +22,8 @@ def _write_skill(name: str) -> None:
 def test_built_in_name_collision_is_visible_on_every_listing_surface(monkeypatch):
     import cli
     from tools import skills_tool
-    from hermes_cli.cli_info_mixin import CLIInfoMixin
-    from hermes_cli.skills_hub import do_list
+    from moor_cli.cli_info_mixin import CLIInfoMixin
+    from moor_cli.skills_hub import do_list
     from tui_gateway import server
 
     _write_skill("handoff")  # core CommandDef → dropped by scan_skill_commands

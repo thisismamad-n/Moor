@@ -1,7 +1,7 @@
 """First-run routing between the classic CLI guard, the TUI and the shared-metrics offer.
 
 A blank install (no provider) must reach the TUI's own "Setup Required" screen under
-``hermes --tui``; the classic "Run setup now? [Y/n]" guard only fronts the classic CLI, and the
+``moor --tui``; the classic "Run setup now? [Y/n]" guard only fronts the classic CLI, and the
 one-time shared-metrics offer waits until a provider exists (#128663).
 """
 
@@ -18,9 +18,9 @@ class _Launched(Exception):
 
 
 def _run_chat(monkeypatch, argv, *, provider_configured):
-    import hermes_cli.main as main_mod
-    from hermes_cli._parser import build_top_level_parser
-    import hermes_cli.observability.shared_metrics_consent as consent
+    import moor_cli.main as main_mod
+    from moor_cli._parser import build_top_level_parser
+    import moor_cli.observability.shared_metrics_consent as consent
 
     parser, _subparsers, chat_parser = build_top_level_parser()
     chat_parser.set_defaults(func=main_mod.cmd_chat)
@@ -45,7 +45,7 @@ def _run_chat(monkeypatch, argv, *, provider_configured):
     fake_cli = types.ModuleType("cli")
     fake_cli.main = classic_main
     monkeypatch.setitem(sys.modules, "cli", fake_cli)
-    from hermes_cli import gateway_chat
+    from moor_cli import gateway_chat
 
     # The classic CLI rides the gateway client: it must still front the guard and never reach
     # a session (no gateway, no admission) when no provider is configured.
@@ -63,7 +63,7 @@ def _run_chat(monkeypatch, argv, *, provider_configured):
 
 @pytest.fixture(autouse=True)
 def _no_tui_env(monkeypatch):
-    monkeypatch.delenv("HERMES_TUI", raising=False)
+    monkeypatch.delenv("MOOR_TUI", raising=False)
 
 
 def test_blank_install_tui_skips_classic_guard_and_offer(monkeypatch):

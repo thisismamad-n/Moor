@@ -3,7 +3,7 @@
 The known-provider gate, the binary, the argv and the env var names used to be
 spelled out for one vendor, so a profile registered from a plugin died with
 "Unknown provider" before any client was built. This registers a provider the
-way a standalone package does — before importing ``hermes_cli`` — and walks the
+way a standalone package does — before importing ``moor_cli`` — and walks the
 real resolution path.
 """
 

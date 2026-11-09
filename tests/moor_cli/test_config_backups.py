@@ -1,4 +1,4 @@
-"""config.yaml backups: one dir, deduped, bounded — never a pile of siblings in HERMES_HOME."""
+"""config.yaml backups: one dir, deduped, bounded — never a pile of siblings in MOOR_HOME."""
 import os
 from pathlib import Path
 
@@ -30,7 +30,7 @@ def test_same_size_edit_within_one_mtime_tick_is_still_backed_up(tmp_path: Path,
     cfg = tmp_path / "config.yaml"
     cfg.write_text("model: a\n")
     stamps = iter(f"2026010100000{i}" for i in range(10))
-    monkeypatch.setattr("hermes_cli.config_backups.time.strftime", lambda _fmt: next(stamps))
+    monkeypatch.setattr("moor_cli.config_backups.time.strftime", lambda _fmt: next(stamps))
 
     assert backup_config(cfg, "pre-setup") is not None
     assert backup_config(cfg, "pre-setup") is None

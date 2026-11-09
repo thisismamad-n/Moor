@@ -87,7 +87,7 @@ class OpenRouterProfile(ProviderProfile):
                 return cfg
             # A reasoning-mandatory route 400s on a disable ("Reasoning is
             # mandatory for this endpoint and cannot be disabled") — omit
-            # the field and let the model think, same as the Nous profile.
+            # the field and let the model think, same as the Moor profile.
             # OpenRouter's catalog lists ``none`` for openai/gpt-6.1-sol, but upstream 400s on it
             # (live 2026-09-29), so the OpenAI ladder in agent.reasoning_effort wins over the catalog.
             if disabled:
@@ -110,7 +110,7 @@ class OpenRouterProfile(ProviderProfile):
         self, *, api_key: str | None = None, base_url: str | None = None, timeout: float = 8.0
     ) -> list[str] | None:
         """Public OpenRouter catalog (no auth), cached per process. Tool-call
-        filtering happens in hermes_cli/models.py, which the picker reaches first."""
+        filtering happens in moor_cli/models.py, which the picker reaches first."""
         global _CACHE
         if _CACHE is not None:
             return _CACHE

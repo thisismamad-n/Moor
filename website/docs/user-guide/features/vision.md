@@ -244,16 +244,16 @@ vision:
 
 ### Images in follow-up turns: `vision.replay_recent_images`
 
-The session database stores user messages as text, with one `[screenshot]` line per attached image. A turn whose history is rebuilt from the database (every request to the [API server](api-server.md) that continues a session with `X-Hermes-Session-Id`, `hermes chat --resume`, a gateway restart) used to show the model that placeholder, so a follow-up question about a photo sent one message earlier got a guess.
+The session database stores user messages as text, with one `[screenshot]` line per attached image. A turn whose history is rebuilt from the database (every request to the [API server](api-server.md) that continues a session with `X-moor-session-Id`, `moor chat --resume`, a gateway restart) used to show the model that placeholder, so a follow-up question about a photo sent one message earlier got a guess.
 
-When the model takes images natively (see [Image Routing](#image-routing-vision-capable-vs-text-only-models)), Hermes now sends the most recent images again, in their original message:
+When the model takes images natively (see [Image Routing](#image-routing-vision-capable-vs-text-only-models)), Moor now sends the most recent images again, in their original message:
 
 ```yaml
 vision:
   replay_recent_images: 3   # default; 0 = never re-send earlier images
 ```
 
-- The bytes come from the copy Hermes already keeps for every attached image under `cache/documents/native-inputs/` in the profile. Nothing new is stored, and the database and session messages API stay text only.
+- The bytes come from the copy Moor already keeps for every attached image under `cache/documents/native-inputs/` in the profile. Nothing new is stored, and the database and session messages API stay text only.
 - A re-sent message is byte-identical to the request that first carried the image, so the provider's prompt cache stays valid. Older images leave the window in batches: with the default 3, the newest 3 to 5 images are re-sent, and every third new image drops the oldest batch at once. An earlier message is rewritten at most once per batch, not on every new photo, and an image that left the window does not come back.
 - Replay reaches only images whose kept copy still exists. On the gateway, the kept copy of an image attached in chat is removed once it is older than the media-cache age (24 hours), so a follow-up more than a day later sees `[screenshot]` again. The removal can also happen in the middle of a session, which changes the request once. Images sent to the API server stay with the API request record that carried them and are not removed by that 24-hour cleanup.
 - Images outside the window, images sent as remote URLs (they can expire, which would fail every later turn), and retained files that are missing or changed keep the `[screenshot]` text.

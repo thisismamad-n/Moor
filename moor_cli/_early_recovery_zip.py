@@ -1,4 +1,4 @@
-"""Settles a ZIP ``hermes update`` swap whose owner died: its journal, owner lock and recovery.
+"""Settles a ZIP ``moor update`` swap whose owner died: its journal, owner lock and recovery.
 
 Split out of ``_early_recovery`` (stdlib-only, like it). ``_early_recovery.restore_interrupted_pull``
 imports this only when the journal exists, so the git-marker repair and its published closure
@@ -15,14 +15,14 @@ import sys
 import time
 from pathlib import Path
 
-from hermes_cli._early_recovery import (
+from moor_cli._early_recovery import (
     _CLAIM_HELD_ERRNOS, ZIP_SWAP_JOURNAL, _keep_aside, _lock_fd, _project_root, _pytest_owns_live_checkout,
     write_durable_text)
 
 # A journal in the install root naming every entry the swap stages/renames and whether it existed
 # before, plus an OS lock its owner holds for the whole stage+swap (the kernel drops it with the
 # owner: liveness without pids or ages).
-_ZIP_STAGING_SUFFIX, _ZIP_OLD_SUFFIX = ".hermes-update-staging", ".hermes-update-old"
+_ZIP_STAGING_SUFFIX, _ZIP_OLD_SUFFIX = ".moor-update-staging", ".moor-update-old"
 
 
 class ZipSwapLock:
@@ -231,11 +231,11 @@ def restore_interrupted_zip_swap(project_root: Path | None = None) -> bool:
 
     ``committed``: every rename landed, only backups remain -> drop them (finish). ``swapping``: put
     each moved-aside entry back and remove entries the swap added (roll back to the old tree, which
-    the venv was built for; ``hermes update`` redoes it). ``staging``: nothing live moved -> drop the
-    staging copies. Either way no ``*.hermes-update-staging``/``-old`` sibling is left to wedge the
+    the venv was built for; ``moor update`` redoes it). ``staging``: nothing live moved -> drop the
+    staging copies. Either way no ``*.moor-update-staging``/``-old`` sibling is left to wedge the
     next run's free-space or dirty-tree checks. A live owner (lock held) is never second-guessed.
     Provenance (review Z1): a sibling or entry is deleted only when its identity is the one the journal
-    recorded; anything else is kept aside under a ``.hermes-update-kept`` name and reported.
+    recorded; anything else is kept aside under a ``.moor-update-kept`` name and reported.
     """
     root = _project_root() if project_root is None else Path(project_root)
     journal = root / ZIP_SWAP_JOURNAL
@@ -256,7 +256,7 @@ def restore_interrupted_zip_swap(project_root: Path | None = None) -> bool:
         if parsed is None:
             # Never guess which live entry to move, and never retire the only record of a mixed tree.
             print(f"⚠ The interrupted ZIP update's journal {journal} is unreadable or from another version; "
-                  "it and every `*.hermes-update-old` backup were kept. Put back what each backup replaced "
+                  "it and every `*.moor-update-old` backup were kept. Put back what each backup replaced "
                   "(or reinstall), then delete the journal.", file=sys.stderr)
             return False
         phase, gen, entries, temps = parsed
@@ -284,6 +284,6 @@ def restore_interrupted_zip_swap(project_root: Path | None = None) -> bool:
             return changed  # the journal stays: the next launch retries
         journal.unlink(missing_ok=True)
     if changed:
-        print("⚠ A previous ZIP `hermes update` was interrupted mid-swap; the old install was put back. "
-              "`hermes update` updates it again.", file=sys.stderr)
+        print("⚠ A previous ZIP `moor update` was interrupted mid-swap; the old install was put back. "
+              "`moor update` updates it again.", file=sys.stderr)
     return changed

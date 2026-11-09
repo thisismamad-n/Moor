@@ -2,7 +2,7 @@
 // profile, so a local profile never gets a backend process of its own.
 //
 // The PRIMARY attaches to the host's running gateway through
-// `hermes gateway ensure` (local-gateway.ts). This module removes the other
+// `moor gateway ensure` (local-gateway.ts). This module removes the other
 // producer of local backend children: the per-profile backend pool.
 // Every local profile now resolves onto the same host backend and carries its
 // own `profile` on the wire — the server binds a SESSION to a profile home

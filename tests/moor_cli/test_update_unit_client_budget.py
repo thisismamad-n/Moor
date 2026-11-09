@@ -4,8 +4,8 @@ import types
 
 import pytest
 
-from hermes_cli import update_cmd_fleet as fleet
-from hermes_cli import update_cmd_fleet_unit_budget as budget
+from moor_cli import update_cmd_fleet as fleet
+from moor_cli import update_cmd_fleet_unit_budget as budget
 
 
 @pytest.fixture(autouse=True)
@@ -108,7 +108,7 @@ def test_budget_fallback_keeps_real_errors(monkeypatch, limits, outcome):
         clock = [0.0]
         monkeypatch.setattr(budget, "time", types.SimpleNamespace(
             monotonic=lambda: clock[0], sleep=lambda s: clock.__setitem__(0, clock[0] + s)))
-        result = fleet._systemctl_reset_and_restart(["systemctl"], "hermes-serve-test")
+        result = fleet._systemctl_reset_and_restart(["systemctl"], "moor-serve-test")
         assert result.returncode == budget.UNIT_JOB_STILL_RUNNING
         assert clock[0] <= budget._UNIT_JOB_HARD_CAP_S
     else:

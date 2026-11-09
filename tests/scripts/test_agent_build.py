@@ -91,11 +91,11 @@ def test_contained_cli_assembly_runs_after_move_and_preserves_prepared_state(tmp
     assert manifest["runtime"] == {
         "repoDir": "app", "toolsDir": "tools", "storePython": "tools/python/bin/python3",
         "sitePackages": "venv/lib/python3.14/site-packages", "commands": {"probe": "bin/probe"}}
-    assert (out / "app/hermes_cli/tui_dist/entry.js").is_file()
-    assert json.loads((out / "app/hermes_cli/tui_dist/package.json").read_text())["type"] == "module"
-    assert (out / "app/hermes_cli/web_dist/index.html").is_file()
+    assert (out / "app/moor_cli/tui_dist/entry.js").is_file()
+    assert json.loads((out / "app/moor_cli/tui_dist/package.json").read_text())["type"] == "module"
+    assert (out / "app/moor_cli/web_dist/index.html").is_file()
     assert (out / "app/apps/desktop/dist-webapp/index.html").read_text() == "built webapp"
-    assert not (tmp_path / "home/.hermes").exists()
+    assert not (tmp_path / "home/.moor").exists()
     moved = tmp_path / "relocated payload"
     out.rename(moved)
     (tmp_path / "entry.py").write_text("raise RuntimeError('cwd shadowed source')", encoding="utf-8")
@@ -133,15 +133,15 @@ def test_referenced_installed_code_uses_derived_command_map_without_copying(tmp_
     mapping = json.loads((out / "command-map.json").read_text())
     assert mapping["commands"] == {"probe": {
         "source": str(command), "destination": "bin/probe", "entry": "entry:main"}}
-    assert Path(mapping["env"]["HERMES_TUI_DIR"]).resolve() == Path(data["frontends"]["tui"])
-    assert Path(mapping["env"]["HERMES_WEB_DIST"]).resolve() == Path(data["frontends"]["web"])
-    assert Path(mapping["env"]["HERMES_WEBAPP_DIST"]).resolve() == Path(data["frontends"]["webapp"])
-    assert mapping["env"]["HERMES_INSTALL_ROOT"] == str(out / "share/hermes-agent")
+    assert Path(mapping["env"]["MOOR_TUI_DIR"]).resolve() == Path(data["frontends"]["tui"])
+    assert Path(mapping["env"]["MOOR_WEB_DIST"]).resolve() == Path(data["frontends"]["web"])
+    assert Path(mapping["env"]["MOOR_WEBAPP_DIST"]).resolve() == Path(data["frontends"]["webapp"])
+    assert mapping["env"]["MOOR_INSTALL_ROOT"] == str(out / "share/moor-agent")
     assert not list(out.rglob("entry.py"))
     assert (out / "share/moor-agent/skills").is_symlink()
     assert (out / "ui-tui").is_symlink()
-    assert (out / "share/hermes-agent/web_dist").is_symlink()
-    assert (out / "share/hermes-agent/webapp_dist").is_symlink()
+    assert (out / "share/moor-agent/web_dist").is_symlink()
+    assert (out / "share/moor-agent/webapp_dist").is_symlink()
     assert not (out / "bin/probe").exists(), "Nix owns native makeWrapper"
     run = subprocess.run([mapping["commands"]["probe"]["source"]], cwd=tmp_path,
                          env={"PATH": os.environ["PATH"], "HOME": str(tmp_path / "home"),
@@ -181,7 +181,7 @@ def test_fixed_root_keeps_privilege_shim_and_resolves_venv_command_symlink(tmp_p
 def test_fixed_layout_manifest_makes_the_tree_a_resolvable_payload(tmp_path):
     """Regression for #138990: the image's ``repo: "."`` assembly must resolve like a payload.
 
-    The Dockerfile assembles /opt/hermes in place, so the manifest lands on the tree
+    The Dockerfile assembles /opt/moor in place, so the manifest lands on the tree
     itself. A store-Python child boots through committed_venv(), which resolves the
     sealed venv from that manifest; without it every runtime_command child died with
     "no dependency environment is committed for this install".
@@ -194,7 +194,7 @@ def test_fixed_layout_manifest_makes_the_tree_a_resolvable_payload(tmp_path):
     out, data = inputs_fixture(tmp_path)
     shutil.copytree(data["code"], out, dirs_exist_ok=True)
     project = out / "pyproject.toml"
-    project.write_text(project.read_text(encoding="utf-8") + 'hermes="entry:main"\n', encoding="utf-8")
+    project.write_text(project.read_text(encoding="utf-8") + 'moor="entry:main"\n', encoding="utf-8")
     outside = tmp_path / "usr-local-bin-python3"
     outside.symlink_to(data["python"])
     venv_python = out / "venv/bin/python"
@@ -332,7 +332,7 @@ def test_payload_smoke_uses_relocated_manifest_commands(tmp_path):
     assert missing_dep.returncode != 0
     assert 'SMOKE OK' not in missing_dep.stdout
     # A broken published command cannot be rescued by importing raw Python.
-    (out / "libexec/hermes").unlink()
+    (out / "libexec/moor").unlink()
     failed = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=30, check=False)
     assert failed.returncode != 0
     assert "SMOKE OK" not in failed.stdout

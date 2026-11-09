@@ -91,14 +91,14 @@ import json
 import os
 import subprocess
 import sys
-from hermes_cli.main_tui_launch import _apply_tui_python_env
+from moor_cli.main_tui_launch import _apply_tui_python_env
 
 env = dict(os.environ)
 _apply_tui_python_env(env)
 child = subprocess.run(
-    [env["HERMES_PYTHON"], "-c",
+    [env["MOOR_PYTHON"], "-c",
      "import os, sys; print(os.path.realpath(sys.executable), flush=True); import tui_gateway.entry"],
-    cwd="/opt/hermes", env=env, capture_output=True, text=True, timeout=30,
+    cwd="/opt/moor", env=env, capture_output=True, text=True, timeout=30,
 )
 print(json.dumps({
     "parent": os.path.realpath(sys.executable),
@@ -108,14 +108,14 @@ print(json.dumps({
 }))
 '''
     # Run as the image user without `su`, which would erase Docker's
-    # HERMES_PYTHON and hide the broken runtime environment.
+    # MOOR_PYTHON and hide the broken runtime environment.
     inner = (
-        "source /opt/hermes/.venv/bin/activate && "
-        "cd /opt/hermes && "
+        "source /opt/moor/.venv/bin/activate && "
+        "cd /opt/moor && "
         f"python3 -c {shlex.quote(py)}"
     )
     r = subprocess.run(
-        ["docker", "run", "--rm", "--network=none", "--user", "hermes",
+        ["docker", "run", "--rm", "--network=none", "--user", "moor",
          "--entrypoint", "/bin/bash", built_image, "-c", inner],
         capture_output=True, text=True, timeout=120,
         check=False,

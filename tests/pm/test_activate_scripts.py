@@ -1,7 +1,7 @@
 """``activate`` / ``activate.ps1``: an interactive shell takes on the environment and gives it back.
 
-What a process launched under ``scripts/run-in-hermes-env`` sees is covered in
-tests/scripts/test_run_in_hermes_env.py; how the environment is composed, in
+What a process launched under ``scripts/run-in-moor-env`` sees is covered in
+tests/scripts/test_run_in_moor_env.py; how the environment is composed, in
 test_environment_script.py; the fish port, in test_activate_fish.py.
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from tests.pm.activation_support import (
-    ACTIVATE, ACTIVATE_PS1, CANARY, SETUP_HERMES_PS1, SETUP_HERMES_SH, bash, bash_env,
+    ACTIVATE, ACTIVATE_PS1, CANARY, SETUP_MOOR_PS1, SETUP_MOOR_SH, bash, bash_env,
     child_env, fake_store, isolated_checkout, posix, powershell, spawnable_python,
 )
 
@@ -33,7 +33,7 @@ def test_source_activate_exports_the_pm_env(tmp_path: Path):
     store, _ = fake_store(tmp_path)
     script = (
         f'source "{posix(root / "activate")}" && '
-        f'test -n "$__HERMES_ACTIVATED" && '
+        f'test -n "$__MOOR_ACTIVATED" && '
         f'printf "%s" "${CANARY}"'
     )
     result = subprocess.run(
@@ -57,7 +57,7 @@ def test_activate_exports_the_sentinel_to_child_processes(tmp_path: Path):
     store, _ = fake_store(tmp_path)
     script = (
         f'source "{posix(root / "activate")}" && '
-        f'"$BASH" -c \'test -n "$__HERMES_ACTIVATED"\' && '
+        f'"$BASH" -c \'test -n "$__MOOR_ACTIVATED"\' && '
         f'deactivate && '
         f'! "$BASH" -c \'test -n "$__MOOR_ACTIVATED"\' && '
         f'echo exported-then-cleared'

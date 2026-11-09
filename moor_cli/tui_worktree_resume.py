@@ -1,4 +1,4 @@
-"""Bring back a ``hermes --tui -w`` worktree a resume needs (N8).
+"""Bring back a ``moor --tui -w`` worktree a resume needs (N8).
 
 Quitting a clean, idle ``--tui -w`` session removes its tree and branch, but the session's policy
 froze that cwd, and the owner refuses every turn in a missing directory (``workspace_unavailable``).
@@ -27,8 +27,8 @@ _holder = threading.local()
 
 
 def _record_path() -> Path:
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / _RECORD_NAME
+    from moor_constants import get_moor_home
+    return get_moor_home() / _RECORD_NAME
 
 
 def _key(path) -> str:
@@ -45,7 +45,7 @@ def record_tui_worktree(wt_info: dict) -> None:
     """Remember a tree the ``-w`` / ``--tui -w`` launcher created, or a classic ``/worktree new``
     moved its gateway session into. Never raises."""
     try:
-        from hermes_cli.auth import _file_lock
+        from moor_cli.auth import _file_lock
         from utils import atomic_json_write
 
         path = _record_path()
@@ -74,7 +74,7 @@ def _recorded_tree_for(cwd: str) -> Optional[dict]:
         repo = Path(str(entry.get("repo_root") or ""))
         tree = Path(str(entry.get("path") or ""))
         branch = str(entry.get("branch") or "")
-        # Only a direct child of the repo's Hermes worktree dir, as _setup_worktree makes them.
+        # Only a direct child of the repo's Moor worktree dir, as _setup_worktree makes them.
         if (branch and (repo / ".git").exists()
                 and _key(tree.parent) == _key(repo / ".worktrees") and _key(tree) == _key(candidate)):
             return {"path": str(tree), "branch": branch, "repo_root": str(repo)}
@@ -83,7 +83,7 @@ def _recorded_tree_for(cwd: str) -> Optional[dict]:
 
 
 def _branch_exists(repo_root: str, branch: str) -> bool:
-    from hermes_cli.worktree_ops import _git
+    from moor_cli.worktree_ops import _git
     result = _git(["rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], repo_root)
     return result.returncode == 0
 
@@ -99,14 +99,14 @@ def recreate_tui_worktree(cwd: str, session_id: str) -> Optional[str]:
     entry = _recorded_tree_for(cwd)
     if entry is None:
         return None
-    from hermes_cli._subprocess_compat import noninteractive_repo_git_env
-    from hermes_cli.worktree_ops import (
+    from moor_cli._subprocess_compat import noninteractive_repo_git_env
+    from moor_cli.worktree_ops import (
         _copy_worktree_includes,
         _git,
         _git_quiet,
         _retain_worktree_for_session,
     )
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     repo_root, tree, branch = entry["repo_root"], Path(entry["path"]), entry["branch"]
     if tree.exists():  # a file, or a dir that appeared since: never overwrite it
@@ -125,7 +125,7 @@ def recreate_tui_worktree(cwd: str, session_id: str) -> Optional[str]:
             logger.warning("could not recreate worktree %s: %s", tree, result.stderr.strip())
             return None
         _copy_worktree_includes(repo_root, tree)
-        _retain_worktree_for_session(repo_root, str(tree), session_id, get_hermes_home() / "state.db")
+        _retain_worktree_for_session(repo_root, str(tree), session_id, get_moor_home() / "state.db")
     except (OSError, subprocess.SubprocessError) as exc:
         logger.warning("could not recreate worktree %s: %s", tree, exc)
         return None

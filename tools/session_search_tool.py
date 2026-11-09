@@ -604,9 +604,9 @@ def session_search(query: str = "", role_filter: str | None = None, limit: int =
                    after: str | None = None, before: str | None = None, exclude_session_ids: Optional[list[str]] = None) -> str:
     """Run session search, closing DBs opened here. Positional order is frozen for old callers;
     new parameters are appended after ``detail``."""
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB, format_session_db_unavailable
-    from hermes_state_registry import release_or_close
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB, format_session_db_unavailable
+    from moor_state_registry import release_or_close
     owned_dbs: list[Any] = []
     # A raw `@session:<profile>/<id>` link as session_id: ids never contain "/", so
     # split on it and adopt the embedded profile only when none was passed.
@@ -635,7 +635,7 @@ def session_search(query: str = "", role_filter: str | None = None, limit: int =
         db = None
     if db is None:
         db = _quiet(
-            lambda: SessionDB(db_path=get_hermes_home() / "state.db", read_only=True),
+            lambda: SessionDB(db_path=get_moor_home() / "state.db", read_only=True),
             None, "SessionDB unavailable for session_search",
         )
         if db is None:
@@ -662,7 +662,7 @@ def check_session_search_requirements() -> bool:
 SESSION_SEARCH_SCHEMA = {
     "name": "session_search",
     "description": (
-        "Search or read past Hermes conversations (FTS5), or scroll inside one. Four shapes, picked by args: `query` = discovery "
+        "Search or read past Moor conversations (FTS5), or scroll inside one. Four shapes, picked by args: `query` = discovery "
         "(top-N matching sessions, top result fully hydrated); `session_id` + "
         "`around_message_id` = scroll (window of messages around an anchor); "
         "`session_id` alone = read a whole session — how you resolve an "

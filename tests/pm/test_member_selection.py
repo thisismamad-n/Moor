@@ -98,7 +98,7 @@ def test_virtual_member_without_project_metadata_gets_a_version(tmp_path):
     import tomllib
     from pm.workspace import _workspace_member
 
-    plugin = tmp_path / "home" / "plugins" / "hermes-lcm"
+    plugin = tmp_path / "home" / "plugins" / "moor-lcm"
     plugin.mkdir(parents=True)
     (plugin / "pyproject.toml").write_text('[tool.ruff]\ntarget-version = "py311"\n', encoding="utf-8")
     root = tmp_path / "gen"

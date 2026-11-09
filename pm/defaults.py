@@ -1,10 +1,10 @@
 """Optional packages the default install carries, and the user's opt-outs.
 
 A ``default`` package (see ``Package.default``) joins the installers' PM stage,
-a bare ``hermes pm install`` and ``hermes update`` on every target it builds
+a bare ``moor pm install`` and ``moor update`` on every target it builds
 for. The user can decline one (``install.sh --skip-browser`` /
 ``--skip-computer-use``, ``install.ps1 -SkipBrowser`` / ``-SkipComputerUse``,
-``hermes pm install --without NAME``). The choice
+``moor pm install --without NAME``). The choice
 is recorded per installation beside PM's other install state, so a later
 update or bare install never re-adds it. An explicit
 ``moor pm install NAME`` clears it.

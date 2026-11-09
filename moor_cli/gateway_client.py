@@ -13,7 +13,7 @@ import time
 # The owner's protocol name; session_contract is dependency-free (no config/plugins load).
 from gateway.session_contract import CANONICAL_GATEWAY_PROTOCOL as GATEWAY_WS_PROTOCOL
 
-GATEWAY_WS_TICKET_PREFIX = "hermes-gateway-ticket."
+GATEWAY_WS_TICKET_PREFIX = "moor-gateway-ticket."
 # Per-request answer budget. Owner verbs are admissions/reads that answer promptly; the one that
 # legitimately runs long passes its own budget (``rpc(..., _timeout=...)``).
 DEFAULT_RPC_TIMEOUT = 30
@@ -249,7 +249,7 @@ def private_control_query(home: Path, request: bytes, timeout: float = 5) -> byt
     if os.name == "nt":
         from gateway.runtime_bootstrap_windows import query_runtime_control
         return query_runtime_control(home, request, timeout)
-    from hermes_cli.gateway_runtime_discovery import connect_private
+    from moor_cli.gateway_runtime_discovery import connect_private
     deadline = time.monotonic() + timeout
     with connect_private(home, timeout) as peer:
         peer.sendall(request)
@@ -272,8 +272,8 @@ _UNKNOWN_TICKET_PARAMS = "PermissionError: invalid bootstrap parameters"
 
 def _session_ticket(home: Path, endpoint, *, purpose="interactive", scope=None, subject=None,
                     refuse_restart_wait=False) -> str:
-    from hermes_cli.gateway_runtime import control_home_for
-    from hermes_cli.gateway_runtime_discovery import _identify_response
+    from moor_cli.gateway_runtime import control_home_for
+    from moor_cli.gateway_runtime_discovery import _identify_response
     # A served secondary's ticket is minted by the multiplexer's socket, bound to the secondary.
     home = control_home_for(home, endpoint)
     # ``subject`` names the principal a same-user caller acts for (the standalone dashboard's
@@ -301,7 +301,7 @@ def _session_ticket(home: Path, endpoint, *, purpose="interactive", scope=None, 
 
 # A restart's after-turn wait admits clients so a human can answer a parked prompt (#139041). A machine
 # poller held in it (a Kanban worker reading its card's receipt) keeps the turn the wait is waiting
-# on alive, so the restart, and ``hermes update`` behind it, is held until its cap.
+# on alive, so the restart, and ``moor update`` behind it, is held until its cap.
 _REFUSE_RESTART_WAIT: contextvars.ContextVar[bool] = contextvars.ContextVar("refuse_restart_wait", default=False)
 
 
@@ -326,15 +326,15 @@ async def connect_gateway(endpoint=None, subject=None, *, max_size=8 * 1024 * 10
     ``draining`` (``restart_wait``) instead of attached, and the ticket carries that policy so the
     owner also refuses the socket when the wait opens between discovery and the dial."""
     from websockets.asyncio.client import connect
-    from hermes_constants import get_hermes_home
-    from hermes_cli.gateway_runtime import attachable, ensure_gateway_runtime, gateway_profile_home
-    from hermes_cli.gateway_runtime_discovery import DiscoveryError
+    from moor_constants import get_moor_home
+    from moor_cli.gateway_runtime import attachable, ensure_gateway_runtime, gateway_profile_home
+    from moor_cli.gateway_runtime_discovery import DiscoveryError
     from urllib.parse import urlsplit
 
-    remote = "" if endpoint is not None else os.environ.get("HERMES_TUI_GATEWAY_URL", "").strip()
+    remote = "" if endpoint is not None else os.environ.get("MOOR_TUI_GATEWAY_URL", "").strip()
     protocols = None
     if endpoint is not None:
-        ticket = await asyncio.to_thread(_session_ticket, gateway_profile_home(get_hermes_home()), endpoint,
+        ticket = await asyncio.to_thread(_session_ticket, gateway_profile_home(get_moor_home()), endpoint,
                                          subject=subject)
         url, protocols = gateway_ws_target(endpoint, ticket)
     elif remote:
@@ -344,7 +344,7 @@ async def connect_gateway(endpoint=None, subject=None, *, max_size=8 * 1024 * 10
         url = remote
     else:
         # A per-task overlay home is served by the profile its symlinked lock names (#138949).
-        home = gateway_profile_home(get_hermes_home())
+        home = gateway_profile_home(get_moor_home())
         # A client's own start: the daemon it may launch ends itself once idle (no client, adapter,
         # cron/kanban work or admission), and the next client starts a fresh one.
         result = await asyncio.to_thread(ensure_gateway_runtime, home, idle_exit=True)

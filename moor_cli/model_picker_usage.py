@@ -27,7 +27,7 @@ _RED_BELOW = 0.2
 # Per-model label on a window plan, as the gateway sends it (``usage_level``). Display words only.
 USAGE_LEVELS = ("free", "low", "medium", "top_tier")
 # Words, limit lines and switch notices come from ``plan_usage.*`` in locales/ (``usage_level_label``,
-# ``_t``); the `hermes model` setup picker passes ``lang="en"`` (its own text is English, as on main).
+# ``_t``); the `moor model` setup picker passes ``lang="en"`` (its own text is English, as on main).
 # One line for that picker, shown only when a Large row is listed.
 TOP_TIER_FOOTNOTE = "Large models also use your monthly large-model limit."
 # Window pickers split the list here; messaging pickers just order recommended first.
@@ -36,7 +36,7 @@ SECTION_OTHER = "Other models"
 
 _BP_FULL = 10_000
 
-# The server's allowance ids Hermes has its own words for (agent/usage_gauges.py); any other id
+# The server's allowance ids Moor has its own words for (agent/usage_gauges.py); any other id
 # renders with the server's label.
 GAUGE_TODAY = "day"
 GAUGE_WEEK = "week"
@@ -172,7 +172,7 @@ class PickerUsage:
         plan is paused."""
         if self.paused_reason:
             return "included usage paused"
-        # Only the `hermes model` setup picker shows this, and its own text is English.
+        # Only the `moor model` setup picker shows this, and its own text is English.
         return self.limit_line(lang="en") or "every model below is included"
 
     def gauges_for_model(self, model_id: str) -> tuple[UsageGauge, ...]:
@@ -270,7 +270,7 @@ def usage_levels(model_ids: list[str], pricing: Optional[dict[str, dict[str, Any
 
 def is_subscription_billed_row(pricing_row: Any) -> bool:
     """The gateway bills this catalog row to a subscription the account holds (``billing_mode: subscription``)."""
-    from hermes_cli.models import _is_subscription_billed
+    from moor_cli.models import _is_subscription_billed
     return _is_subscription_billed(pricing_row)
 
 
@@ -286,7 +286,7 @@ def usage_tag_levels(model_ids: list[str], pricing: Optional[dict[str, dict[str,
 def is_free_model(pricing_row: Optional[dict[str, Any]]) -> bool:
     """True when the catalog lists the model at $0 in and $0 out (``:free`` / natively free). A row
     with no pricing is NOT free — unknown price is not a promise."""
-    from hermes_cli.models_pricing import _price_float
+    from moor_cli.models_pricing import _price_float
     if not pricing_row:
         return False
     inp = _price_float(pricing_row.get("prompt"), positive=False)
@@ -369,7 +369,7 @@ def _get(obj: Any, name: str, default: Any = None) -> Any:
 
 
 def picker_usage_from_account(info: Any) -> Optional[PickerUsage]:
-    """``NousPortalAccountInfo`` (or a dict shaped like one) → PickerUsage, or None when there is nothing to
+    """``MoorPortalAccountInfo`` (or a dict shaped like one) → PickerUsage, or None when there is nothing to
     gauge: only a usage-window plan has plan chrome (credit-grant, pay-as-you-go and free tier get
     None, as does an unreadable snapshot). Never raises."""
     try:
@@ -410,31 +410,31 @@ def _credits_pay(info: Any, window: Any) -> Optional[bool]:
     return purchased > 0
 
 
-def nous_picker_usage(*, warm: bool = False, any_age: bool = False) -> Optional[PickerUsage]:
+def moor_picker_usage(*, warm: bool = False, any_age: bool = False) -> Optional[PickerUsage]:
     """PickerUsage from the portal account snapshot. Cache-only by default so a picker never adds a
     round trip; ``warm=True`` fetches once (fills the 60s cache) so a window plan is known
     on a cold start. ``any_age`` reads the last snapshot past the 60s TTL (plan-shape callers only:
     its percents may be stale). Never raises."""
     try:
-        from hermes_cli.nous_account import cached_nous_portal_account_info, get_nous_portal_account_info
-        if warm and cached_nous_portal_account_info() is None:
+        from moor_cli.moor_account import cached_moor_portal_account_info, get_moor_portal_account_info
+        if warm and cached_moor_portal_account_info() is None:
             # A known window plan needs a real fetch: the JWT snapshot carries no gauges and never fills the cache.
             from agent.credits_tracker import _window_seed_fields
-            on_window = _window_seed_fields(_get(cached_nous_portal_account_info(any_age=True), "usage_window")) is not None
-            get_nous_portal_account_info(force_fresh=on_window)
-        return picker_usage_from_account(cached_nous_portal_account_info(any_age=any_age))
+            on_window = _window_seed_fields(_get(cached_moor_portal_account_info(any_age=True), "usage_window")) is not None
+            get_moor_portal_account_info(force_fresh=on_window)
+        return picker_usage_from_account(cached_moor_portal_account_info(any_age=any_age))
     except Exception:
-        logging.getLogger(__name__).debug("Nous plan usage unavailable", exc_info=True)
+        logging.getLogger(__name__).debug("Moor plan usage unavailable", exc_info=True)
         return None
 
 
-def _nous_catalog(*, fetch: bool = False) -> dict[str, dict[str, Any]]:
-    """This profile's Nous ``/v1/models`` rows: its resident cache, one fetch only when ``fetch``. Never a
+def _moor_catalog(*, fetch: bool = False) -> dict[str, dict[str, Any]]:
+    """This profile's Moor ``/v1/models`` rows: its resident cache, one fetch only when ``fetch``. Never a
     catalog cached for another credential (another profile's plan marks different models Large)."""
-    from hermes_cli.models_pricing import get_pricing_for_provider
-    rows = get_pricing_for_provider("nous", cached_only=True) or {}
+    from moor_cli.models_pricing import get_pricing_for_provider
+    rows = get_pricing_for_provider("moor", cached_only=True) or {}
     if not rows and fetch:
-        rows = get_pricing_for_provider("nous") or {}
+        rows = get_pricing_for_provider("moor") or {}
     return rows
 
 
@@ -447,11 +447,11 @@ def large_model_notice(
     be fetched once (``fetch``); without one only the resident cache is read, so any other account adds no
     network call. Never raises."""
     try:
-        if str(provider or "").strip().lower() != "nous" or not model_id:
+        if str(provider or "").strip().lower() != "moor" or not model_id:
             return None
-        fresh = nous_picker_usage()
-        usage = fresh or nous_picker_usage(any_age=True)
-        rows = _nous_catalog(fetch=fetch and usage is not None)
+        fresh = moor_picker_usage()
+        usage = fresh or moor_picker_usage(any_age=True)
+        rows = _moor_catalog(fetch=fetch and usage is not None)
         row = rows.get(model_id)
         if not row:
             return None
@@ -500,7 +500,7 @@ def plan_gauge_lines(usage: PickerUsage) -> list[str]:
     stays readable at a normal terminal width."""
     from agent.usage_gauges import paused_for_payment
     paused = (" (paused: renewal unpaid)" if paused_for_payment(usage.paused_reason) else " (paused)") if usage.paused_reason else ""
-    head = (usage.plan or "Hermes plan") + paused
+    head = (usage.plan or "Moor plan") + paused
     label_w = max((len(_gauge_name(g)) for g in usage.gauges), default=4)
     return [head, *(
         f"{_gauge_name(g):<{label_w}}  {g.bar}  {g.percent_used + ' used':<9}  {format_resets_in(g.resets_at_ms)}"
@@ -512,7 +512,7 @@ def window_plan_default(model_ids: list[str], pricing: Optional[dict] = None) ->
     """A usage-window plan's first featured pick that is listed (the picker's top Recommended row), or
     "" for every other account. Cache-only: the caller's fresh tier read just filled the snapshot. Never raises."""
     try:
-        usage = nous_picker_usage(any_age=True)
+        usage = moor_picker_usage(any_age=True)
         if usage is None:
             return ""
         recommended, _other = split_recommended(model_ids, usage.featured_model_ids)
@@ -527,13 +527,13 @@ def window_plan_default(model_ids: list[str], pricing: Optional[dict] = None) ->
 
 
 def annotate_window_plan_rows(provider_data: dict, model_ids: list) -> tuple[list, Optional[str]]:
-    """``(labels, limit_line)`` for the /model picker's model stage. On a Nous usage-window plan rows carry
+    """``(labels, limit_line)`` for the /model picker's model stage. On a Moor usage-window plan rows carry
     the TUI's ``Large`` / ``Free`` tags, and with a full allowance ``limit_line`` (above the hint) says it
     once, with what happens next. Every other account: the bare ids and None. Display only."""
-    if str((provider_data or {}).get("slug") or "").lower() != "nous":
+    if str((provider_data or {}).get("slug") or "").lower() != "moor":
         return list(model_ids), None
     try:
-        usage = nous_picker_usage()  # fresh snapshot only: a stale percent would mislabel the line
+        usage = moor_picker_usage()  # fresh snapshot only: a stale percent would mislabel the line
         return window_row_labels(provider_data, model_ids), (usage.limit_line() if usage is not None else None)
     except Exception:
         logging.getLogger(__name__).debug("Window plan row labels unavailable", exc_info=True)

@@ -272,9 +272,9 @@ docs/superpowers/*
 # — ignore so `git status` stays clean and update's autostash skips them.
 .update-incomplete
 .update-incomplete.lock
-# Kernel lock `hermes update` holds on the checkout (hermes_cli/update_lock.py).
-.hermes-update.lock
-.hermes-update-zip-swap.lock
+# Kernel lock `moor update` holds on the checkout (moor_cli/update_lock.py).
+.moor-update.lock
+.moor-update-zip-swap.lock
 
 # Checkout fingerprint the __pycache__ tree was last validated against
 # (launch-time stale-bytecode sweep). Runtime state, never a code change.

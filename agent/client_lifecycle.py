@@ -681,9 +681,9 @@ class ClientLifecycleMixin:
         if not account or not isinstance(exp, (int, float)) or exp - time.time() > self._MOOR_KEY_ADOPT_SKEW_S:
             return False
         try:
-            return self._try_refresh_nous_client_credentials(force=False, require_account=str(account))
+            return self._try_refresh_moor_client_credentials(force=False, require_account=str(account))
         except Exception:
-            logger.debug("Nous key pre-expiry adoption failed", exc_info=True)
+            logger.debug("Moor key pre-expiry adoption failed", exc_info=True)
             return False
 
 

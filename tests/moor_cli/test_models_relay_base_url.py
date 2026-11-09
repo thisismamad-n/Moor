@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import models
+from moor_cli import models
 
 
 class _RecordingProfile:
@@ -19,14 +19,14 @@ class _RecordingProfile:
         return ["relay-only-model"]
 
 
-@pytest.mark.parametrize("provider", ["openai-codex", "nous", "opencode-zen", "openrouter"])
+@pytest.mark.parametrize("provider", ["openai-codex", "moor", "opencode-zen", "openrouter"])
 def test_canonical_url_preserves_native_catalog_but_other_paths_stay_relays(monkeypatch, provider):
-    from hermes_cli.config import atomic_config_write
-    from hermes_constants import get_hermes_home
+    from moor_cli.config import atomic_config_write
+    from moor_constants import get_moor_home
     from providers import get_provider_profile
 
     canonical = get_provider_profile(provider).base_url
-    config_path = get_hermes_home() / "config.yaml"
+    config_path = get_moor_home() / "config.yaml"
     calls = []
 
     def native_catalog(slug, force_refresh):
@@ -49,9 +49,9 @@ def test_canonical_url_preserves_native_catalog_but_other_paths_stay_relays(monk
 
 def test_registry_endpoint_is_canonical_when_the_profile_leaves_base_url_empty(monkeypatch):
     """TokenHub's profile leaves ``base_url`` to its auth-registry row. A ``model.base_url`` that
-    ``hermes model`` saved as that endpoint is not a relay: the picker keeps the curated Hy list
+    ``moor model`` saved as that endpoint is not a relay: the picker keeps the curated Hy list
     instead of replacing it with a live probe of the same host."""
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.auth import PROVIDER_REGISTRY
     from providers import get_provider_profile
 
     assert get_provider_profile("tencent-tokenhub").base_url == ""

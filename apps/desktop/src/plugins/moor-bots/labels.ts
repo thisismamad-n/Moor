@@ -22,7 +22,7 @@ export function displayName(bot: Partial<RosterRow>, meta?: BotMeta | null): str
   // rung as botFriendlyNames, so the row and its @handle name the same bot.
   const backendTitle = alias
     ? ''
-    : String(bot?.ui_meta?.['hermes-bots']?.title || (typeof bot?.title === 'string' ? bot.title : '')).trim()
+    : String(bot?.ui_meta?.['moor-bots']?.title || (typeof bot?.title === 'string' ? bot.title : '')).trim()
 
   // Only THIN rows from another source trade the friendly name for their
   // connection label — the active gateway's own default must keep reading
@@ -50,7 +50,7 @@ export function displayName(bot: Partial<RosterRow>, meta?: BotMeta | null): str
     return backendTitle
   }
 
-  // Core-profile display name (profile.yaml, set via `hermes profile rename
+  // Core-profile display name (profile.yaml, set via `moor profile rename
   // default <name>` or the dashboard) — the CLI-level equivalent of a Bot
   // Mode title. Rides the profiles.list row; presentation-only.
   if (typeof bot?.display_name === 'string' && bot.display_name.trim()) {

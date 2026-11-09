@@ -55,7 +55,7 @@ describe('media protocol helpers', () => {
       expect(isStreamableMediaPath(url)).toBe(false)
       expect(() => remoteMediaEndpoint('https://gateway.test', url)).toThrow('Invalid media file URL')
       expect(
-        (await createMediaProtocolHandler(deps)(request(`hermes-media://remote/${encodeURIComponent(url)}`))).status
+        (await createMediaProtocolHandler(deps)(request(`moor-media://remote/${encodeURIComponent(url)}`))).status
       ).toBe(415)
       expect(deps.fetchRemote).not.toHaveBeenCalled()
     }
@@ -73,7 +73,7 @@ describe('media protocol helpers', () => {
 
     expect(isStreamableMediaPath(url)).toBe(true)
 
-    const response = await createMediaProtocolHandler(deps)(request(`hermes-media://remote/${encodeURIComponent(url)}`))
+    const response = await createMediaProtocolHandler(deps)(request(`moor-media://remote/${encodeURIComponent(url)}`))
 
     expect(response.status).toBe(206)
     expect(deps.fetchRemote).toHaveBeenCalledOnce()
@@ -94,7 +94,7 @@ describe('media protocol helpers', () => {
 
     expect(isStreamableMediaPath(url)).toBe(false)
     expect(
-      (await createMediaProtocolHandler(deps)(request(`hermes-media://remote/${encodeURIComponent(url)}`))).status
+      (await createMediaProtocolHandler(deps)(request(`moor-media://remote/${encodeURIComponent(url)}`))).status
     ).toBe(415)
     expect(deps.fetchRemote).not.toHaveBeenCalled()
   })
@@ -121,8 +121,8 @@ describe('media protocol helpers', () => {
   })
 
   it('names a native media save after the file, not the flattened path', () => {
-    const local = `hermes-media://stream/${encodeURIComponent('C:\\Users\\me\\Videos\\clip (cut).mp4')}`
-    const remote = `hermes-media://remote/${encodeURIComponent('/home/me/out/render.webm')}?profile=work`
+    const local = `moor-media://stream/${encodeURIComponent('C:\\Users\\me\\Videos\\clip (cut).mp4')}`
+    const remote = `moor-media://remote/${encodeURIComponent('/home/me/out/render.webm')}?profile=work`
 
     expect(mediaProtocolDownloadName(local)).toBe('clip (cut).mp4')
     expect(mediaProtocolDownloadName(remote)).toBe('render.webm')
@@ -224,7 +224,7 @@ describe('createMediaProtocolHandler', () => {
     })
 
     const response = await createMediaProtocolHandler(deps)(
-      request(`hermes-media://remote/${encodeURIComponent(file)}?connectionId=work-ssh&profile=reviewer`, {
+      request(`moor-media://remote/${encodeURIComponent(file)}?connectionId=work-ssh&profile=reviewer`, {
         Range: 'bytes=0-1023'
       })
     )
@@ -234,7 +234,7 @@ describe('createMediaProtocolHandler', () => {
     expect(deps.fetchRemote).toHaveBeenCalledOnce()
     const [rawUrl, headers] = vi.mocked(deps.fetchRemote).mock.calls[0]
     const url = new URL(rawUrl)
-    expect(url.pathname).toBe('/hermes/api/files/stream')
+    expect(url.pathname).toBe('/moor/api/files/stream')
     expect(url.searchParams.get('path')).toBe(expectedPath)
     expect(url.searchParams.has('token')).toBe(false)
     expect(headers.get('x-moor-session-token')).toBe('s e/cret')

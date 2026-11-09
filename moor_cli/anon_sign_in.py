@@ -1,4 +1,4 @@
-"""The one Nous sign-in: the plain device-code login every surface renders, plus its states and copy."""
+"""The one Moor sign-in: the plain device-code login every surface renders, plus its states and copy."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ UPGRADE_TIMED_OUT = "That sign-in link has expired. Start again whenever you're 
 UPGRADE_NOT_COMPLETED = "Sign-in didn't finish. Try again whenever you're ready."
 # The account service was busy or unreachable mid sign-in (an ``anon_*`` code from
 # ``anon_auth.classify_mint_exception``): nothing was saved, so the copy reassures before the way forward.
-UPGRADE_SERVICE_BUSY = ("Signing in couldn't finish because the Nous service is busy. "
+UPGRADE_SERVICE_BUSY = ("Signing in couldn't finish because the Moor service is busy. "
                         "Try again in {wait}. Your session is still here in the meantime.")
 UPGRADE_SERVICE_UNREACHABLE = ("The Moor service couldn't be reached to finish signing you in. "
                                "Check your internet connection and try again. Your session is still here.")
@@ -170,12 +170,12 @@ class Failed(SignInState):
 
     @property
     def retryable(self) -> bool:
-        from hermes_cli import anon_auth as _core
+        from moor_cli import anon_auth as _core
         return bool(self.reason.startswith("anon_") and self.reason not in _core.ANON_TERMINAL_CODES)
 
     @property
     def copy(self) -> str:
-        from hermes_cli import anon_auth as _core
+        from moor_cli import anon_auth as _core
         if self.reason in _core.ANON_UNREACHABLE_CODES:
             return UPGRADE_SERVICE_UNREACHABLE
         if self.reason in (_core.ANON_RATE_LIMITED, _core.ANON_GATE_PAUSED):
@@ -206,7 +206,7 @@ def _failed_from_exception(exc: BaseException) -> Failed:
     """A ``Failed`` that keeps the service's own verdict: the ``anon_*`` code and wait hint an
     ``AuthError`` carries, or the wire's shape for a transport error. The raw detail never reaches a
     chat; ``copy_terminal`` may show it when nothing better is known."""
-    from hermes_cli import anon_auth as _core
+    from moor_cli import anon_auth as _core
     err = _core.classify_mint_exception(exc)
     reason = str(err.code or "")
     if reason == _core.ANON_SERVER_ERROR and not isinstance(exc, _core.AuthError):
@@ -226,13 +226,13 @@ def _default_persist_guard(is_cancelled: Callable[[], bool]) -> Callable[[], Con
 
 def _account_email(account_state: dict[str, Any], fallback: Optional[str]) -> str:
     """The signed-in account's email, read from its own access token."""
-    from hermes_cli.auth_constants import _decode_jwt_claims
+    from moor_cli.auth_constants import _decode_jwt_claims
     email = _decode_jwt_claims(account_state.get("access_token")).get("email")
     return str(email or fallback or "").strip()
 
 
 def _handoff_lines(results: list[dict[str, Any]]) -> tuple[str, ...]:
-    from hermes_cli.guest_handoff import result_lines
+    from moor_cli.guest_handoff import result_lines
     return tuple(line for view in results for line in result_lines(view))
 
 
@@ -240,8 +240,8 @@ def _handoff_status(results: list[dict[str, Any]], replaced: Optional[dict[str, 
     """The handoff a completed sign-in reports (``guest_handoff.wire_status`` form): the latest record its
     own run attempted, else the replaced free tier's saved record (another process held it), else
     None when it replaced no free tier. Read under the scope."""
-    from hermes_cli import anon_auth as _core
-    from hermes_cli.guest_handoff import record_status, wire_status
+    from moor_cli import anon_auth as _core
+    from moor_cli.guest_handoff import record_status, wire_status
     if results:
         return wire_status(results[-1])
     anon_token = replaced.get("anon_token") if _core.is_guest_state(replaced) else None
@@ -258,7 +258,7 @@ def run_sign_in(
     scope: Optional[Callable[[], ContextManager[Any]]] = None,
     client_factory: Optional[Callable[[float, Any], ContextManager[httpx.Client]]] = None,
 ) -> Iterator[SignInState]:
-    """Sign in with a Nous account: the plain device-code login. Yields :class:`SignInState`s.
+    """Sign in with a Moor account: the plain device-code login. Yields :class:`SignInState`s.
 
     One composition behind every surface: device code, then a cancel-aware token poll on one
     deadline, then the save. The save is where the guest handoff hooks in (``guest_handoff``): a free
@@ -278,12 +278,12 @@ def run_sign_in(
     entered inside the generator, on whichever thread is advancing it.
     *client_factory* is the HTTP client seam, ``client_factory(timeout_seconds, verify)``.
     """
-    from hermes_cli import anon_auth as _core
-    from hermes_cli.auth import PROVIDER_REGISTRY, _resolve_verify
-    from hermes_cli.auth_device_flow import DeviceFlowCancelled, _request_device_code
-    from hermes_cli.auth_error_copy import is_device_code_expired
-    from hermes_cli.auth_nous import _nous_http_client, _nous_portal_base_url
-    from hermes_cli.guest_handoff import drain
+    from moor_cli import anon_auth as _core
+    from moor_cli.auth import PROVIDER_REGISTRY, _resolve_verify
+    from moor_cli.auth_device_flow import DeviceFlowCancelled, _request_device_code
+    from moor_cli.auth_error_copy import is_device_code_expired
+    from moor_cli.auth_moor import _moor_http_client, _moor_portal_base_url
+    from moor_cli.guest_handoff import drain
 
     is_cancelled = cancelled or (lambda: False)
     open_scope = scope or contextlib.nullcontext
@@ -292,10 +292,10 @@ def run_sign_in(
     state: Optional[dict[str, Any]] = None
     try:
         with open_scope():
-            state = _core.current_nous_state()
+            state = _core.current_moor_state()
             # Inside the scope: the operator's Portal override is a profile setting, and it wins over
-            # a saved URL the same way it does for every other Nous call.
-            portal = _nous_portal_base_url(state or {})
+            # a saved URL the same way it does for every other Moor call.
+            portal = _moor_portal_base_url(state or {})
     except Exception as exc:  # health: allow BLE001 -- the generator's contract is one terminal state, never a raise
         yield Failed(reason="", detail=str(exc))
         return

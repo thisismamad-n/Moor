@@ -72,13 +72,13 @@ def transition(tmp_path):
         "    from moor_cli.probe import event\n"
         "    event('activate')\n"
     )
-    (root / "hermes_constants.py").write_text(
+    (root / "moor_constants.py").write_text(
         # source_completion's update lock resolves the process home through
-        # hermes_constants (never a profile override), like the Rust updater does.
+        # moor_constants (never a profile override), like the Rust updater does.
         "import os\n"
         "from pathlib import Path\n"
-        "def get_process_hermes_home():\n"
-        "    return Path(os.environ['HERMES_HOME'])\n"
+        "def get_process_moor_home():\n"
+        "    return Path(os.environ['MOOR_HOME'])\n"
     )
     (package / "venv_sync.py").write_text(
         "from moor_cli.probe import event\n"
@@ -113,7 +113,7 @@ def transition(tmp_path):
     shutil.copy2(Path(update_completion.__file__).with_name("_subprocess_compat.py"),
                  package / "_subprocess_compat.py")
     (package / "gitlock.py").write_text(
-        "from hermes_cli.probe import event\n"
+        "from moor_cli.probe import event\n"
         "convert_treeless_checkout_first = lambda root: event('convert')\n"
     )
     (package / "main.py").write_text("")
@@ -167,7 +167,7 @@ def transition(tmp_path):
         "def amend_terminal_followup(*args): pass\n"
         "def record_user_action(*args): pass\n"
         "def _receipt_dir():\n"
-        "    return pathlib.Path(os.environ['HERMES_HOME']) / 'logs/update_receipts'\n"
+        "    return pathlib.Path(os.environ['MOOR_HOME']) / 'logs/update_receipts'\n"
         "def read_run_record(update_id):\n"
         "    for path in _receipt_dir().glob(f'update_*_{update_id}.json'):\n"
         "        return path, json.loads(path.read_text(encoding='utf-8-sig'))\n"
@@ -253,11 +253,11 @@ def test_old_process_new_git_tree_completes_in_fresh_python(transition, tmp_path
 
 
 def _run_cmd_update(monkeypatch, request, capsys):
-    """``hermes update --gateway`` whose impl hands this request to the real post-commit completion."""
+    """``moor update --gateway`` whose impl hands this request to the real post-commit completion."""
     from types import SimpleNamespace
-    from hermes_cli import main, update_cmd, update_receipt
+    from moor_cli import main, update_cmd, update_receipt
 
-    monkeypatch.setenv("HERMES_HOME", request["home"])
+    monkeypatch.setenv("MOOR_HOME", request["home"])
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)
     monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)
@@ -284,11 +284,11 @@ def test_missing_child_result_is_an_owed_completion_and_releases_lock(transition
     Was exit ``code or 1``, receipt ``failed``, ``.update_exit_code`` 1 and the paused gateways left
     paused: that pinned the failure invariant 3 forbids.
     """
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
 
     root, _git, _old, _new, request = transition
     die = f"os._exit({code})" if code >= 0 else "os.kill(os.getpid(), 9)"
-    (root / "hermes_cli/update_completion.py").write_text(f"import os\n{die}\n", encoding="utf-8")
+    (root / "moor_cli/update_completion.py").write_text(f"import os\n{die}\n", encoding="utf-8")
     exit_code, receipt, out = _run_cmd_update(monkeypatch, request, capsys)
     assert exit_code == 0, out
     assert receipt["update_id"] == request["receipt"]["update_id"]
@@ -327,10 +327,10 @@ def test_completion_spawn_failure_after_commit_is_owed(transition, monkeypatch, 
 
 def test_lost_completion_with_parked_local_changes_stays_partial(transition, monkeypatch, capsys):
     """The one documented exception survives the owed path: parked user changes still exit 1."""
-    from hermes_cli import update_cmd
+    from moor_cli import update_cmd
 
     root, _git, _old, _new, request = transition
-    (root / "hermes_cli/update_completion.py").write_text("import os\nos._exit(0)\n", encoding="utf-8")
+    (root / "moor_cli/update_completion.py").write_text("import os\nos._exit(0)\n", encoding="utf-8")
     notice = "⚠ Your local changes are parked in stash@{0}; re-apply them by hand."
     monkeypatch.setattr(update_cmd, "_unrestored_autostash_notice", lambda: notice)
     exit_code, receipt, out = _run_cmd_update(monkeypatch, request, capsys)
@@ -353,16 +353,16 @@ def test_desktop_build_that_never_ran_is_named_for_the_handoff(transition, capsy
     assert update_completion.DESKTOP_BUILD_OWED == "Desktop app build owed:"
     root, _git, _old, _new, request = transition
     request["desktop"] = desktop
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     if never_built == "dependencies":
         (root / "pm/__init__.py").write_text("def sync_venv(**kw): raise RuntimeError('dependency refused')\n",
                                             encoding="utf-8")
     elif never_built == "refused":
-        (root / "hermes_cli/source_completion.py").write_text(
+        (root / "moor_cli/source_completion.py").write_text(
             "def complete_source_checkout(*args, **kwargs):\n"
             "    raise RuntimeError('an update is still running (pid 1); wait for it to exit')\n", encoding="utf-8")
     else:
-        (root / "hermes_cli/source_completion.py").write_text(
+        (root / "moor_cli/source_completion.py").write_text(
             "import os\n"
             "def complete_source_checkout(*args, **kwargs): os.kill(os.getpid(), 9)  # posix-only test\n",
             encoding="utf-8")
@@ -376,7 +376,7 @@ def test_desktop_build_that_never_ran_is_named_for_the_handoff(transition, capsy
 def test_unwritable_gateway_status_never_fails_a_settled_commit(tmp_path, monkeypatch):
     """Review P1: the bootstrap's gateway status write is best effort, like
     ``_write_gateway_update_exit_code``; the committed run still answers its result with exit 0."""
-    from hermes_cli import venv_sync
+    from moor_cli import venv_sync
 
     monkeypatch.setattr(venv_sync, "arm_completion", lambda root: None)
     receipt = {"update_id": "u1", "outcome": "success", "finished_at": "now"}
@@ -420,7 +420,7 @@ def test_interrupt_after_child_success_demotes_gateway_marker_at_boundary(transi
         proc = popen(*args, **kwargs)
         # Hook the completion child itself: arming the host obligation may probe the checkout
         # identity through git first (#125952), and that probe is not the process under test.
-        if not children and str(root / "hermes_cli/update_completion.py") in args[0]:
+        if not children and str(root / "moor_cli/update_completion.py") in args[0]:
             children.append(proc)
             wait = proc.wait
             kill = proc.kill
@@ -491,8 +491,8 @@ def test_killed_selected_python_returns_signal_exit_status(transition):
     from moor_cli import update_completion
 
     root, _git, _old, _new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
-    (root / "hermes_cli/source_build.py").write_text(
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
+    (root / "moor_cli/source_build.py").write_text(
         "import os, signal\n"
         "def build_update_products(*a, **kw): os.kill(os.getpid(), signal.SIGKILL)\n"
     )
@@ -508,11 +508,11 @@ def test_killed_selected_python_returns_signal_exit_status(transition):
 
 def test_failed_build_after_commit_is_a_followup_and_later_steps_still_run(transition):
     """Contract C3: the code is committed, so a failed product build cannot fail the update."""
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, _git, _old, _new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
-    (root / "hermes_cli/source_build.py").write_text(
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
+    (root / "moor_cli/source_build.py").write_text(
         "import subprocess\n"
         "def build_update_products(*a, **kw): raise subprocess.CalledProcessError(23, ['builder'])\n"
     )
@@ -522,7 +522,7 @@ def test_failed_build_after_commit_is_a_followup_and_later_steps_still_run(trans
     assert result["receipt"]["outcome"] == "success"
     # The failure is not silent: it is a named receipt follow-up.
     assert [f["step"] for f in result["receipt"]["followups"]] == ["build"]
-    # The tail obligation stays armed so the next launch / `hermes update` rebuilds.
+    # The tail obligation stays armed so the next launch / `moor update` rebuilds.
     assert (Path(request["home"]) / "completion-pending").read_text() == "owed"
     events = [json.loads(line)["name"] for line in (root / "events.jsonl").read_text().splitlines()]
     # Was "not in": the failed build no longer skips maintenance (config migration) ...
@@ -538,10 +538,10 @@ def test_failed_build_after_commit_is_a_followup_and_later_steps_still_run(trans
 
 
 def test_prepare_failure_preserves_correlated_pm_receipt(transition):
-    from hermes_cli import update_completion
+    from moor_cli import update_completion
 
     root, _git, _old, _new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     (root / "pm/__init__.py").write_text(
         "def sync_venv(**kw): raise RuntimeError('dependency refused')\n"
     )
@@ -564,7 +564,7 @@ def test_bootstrap_does_not_initialize_old_site_packages(transition, tmp_path, m
     from moor_cli import update_completion
 
     root, _git, _old, _new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     obsolete = tmp_path / "obsolete-python"
     venv.EnvBuilder(with_pip=False).create(obsolete)
     site = obsolete / ("Lib/site-packages" if os.name == "nt" else
@@ -584,7 +584,7 @@ def test_progress_is_forwarded_before_held_stage_is_released(transition, monkeyp
     from moor_cli import update_completion
 
     root, _git, _old, _new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
     release = root / "release"
     released = root / "released"
     held_body = (
@@ -643,9 +643,9 @@ def test_interactive_configuration_keeps_terminal_input(transition):
     from moor_cli import update_completion
 
     root, _git, _old, _new, request = transition
-    shutil.copy2(update_completion.__file__, root / "hermes_cli/update_completion.py")
-    (root / "hermes_cli/update_cmd_maint.py").write_text(
-        "import sys\nfrom hermes_cli.probe import event\n"
+    shutil.copy2(update_completion.__file__, root / "moor_cli/update_completion.py")
+    (root / "moor_cli/update_cmd_maint.py").write_text(
+        "import sys\nfrom moor_cli.probe import event\n"
         "def _run_post_update_maintenance(**kw):\n"
         "    assert sys.stdin.isatty() and sys.stdout.isatty()\n"
         "    event('answer', value=input('CONFIG? '))\n"
@@ -683,7 +683,7 @@ def test_interrupt_reaps_completion_descendants_before_return(transition, monkey
     from moor_cli import update_completion
 
     root, _git, _old, _new, request = transition
-    (root / "hermes_cli/update_completion.py").write_text(
+    (root / "moor_cli/update_completion.py").write_text(
         "import subprocess, sys, time\n"
         "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(600)'])\n"
         "print('READY ' + str(child.pid), flush=True)\n"

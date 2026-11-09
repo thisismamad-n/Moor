@@ -29,7 +29,7 @@ from utils import base_url_host_matches, base_url_hostname
 import fire
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, TimeRemainingColumn
 from rich.console import Console
-from hermes_constants import OPENROUTER_BASE_URL, get_hermes_home
+from moor_constants import OPENROUTER_BASE_URL, get_moor_home
 from agent.compression_marker import elide_middle
 from agent.retry_utils import jittered_backoff
 from moor_cli.env_loader import load_moor_dotenv
@@ -246,7 +246,7 @@ class AggregateMetrics:
 
 # Ordered (hostname, provider) table for _detect_provider (codex is matched separately).
 _PROVIDER_HOSTS: tuple[tuple[str, str], ...] = (
-    ("openrouter.ai", "openrouter"), ("nousresearch.com", "nous"), ("z.ai", "zai"), ("moonshot.ai", "kimi-coding"),
+    ("openrouter.ai", "openrouter"), ("nousresearch.com", "moor"), ("z.ai", "zai"), ("moonshot.ai", "kimi-coding"),
     ("moonshot.cn", "kimi-coding"), ("api.kimi.com", "kimi-coding"), ("arcee.ai", "arcee"), ("minimaxi.com", "minimax-cn"),
     ("minimax.io", "minimax"),
 )

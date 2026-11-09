@@ -165,7 +165,7 @@ export function copyableCodeText(code: string): string {
   })
 }
 
-export const SyntaxHighlighter: FC<HermesSyntaxHighlighterProps> = ({
+export const SyntaxHighlighter: FC<MoorSyntaxHighlighterProps> = ({
   components: { Pre },
   language,
   code,

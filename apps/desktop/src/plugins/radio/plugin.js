@@ -176,7 +176,7 @@ function createPlayer(ctx) {
   let timeout = null
   let disposed = false
   let lastVolume = volume.get() || 25
-  const bus = new BroadcastChannel('hermes:radio:playback')
+  const bus = new BroadcastChannel('moor:radio:playback')
   const windowId = randomUuid()
 
   function stop(nextStatus = 'paused') {

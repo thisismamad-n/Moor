@@ -1,6 +1,6 @@
 """Memory bounds for ``agent.model_metadata``'s per-credential in-process memos.
 
-The memos are keyed by a credential fingerprint, and minted keys (Nous agent keys, OAuth access
+The memos are keyed by a credential fingerprint, and minted keys (Moor agent keys, OAuth access
 tokens) rotate, so each rotation adds a key the process never reads again. Only entries no reader
 can use are shed: expired ones, or the oldest past a count far above any real working set.
 """

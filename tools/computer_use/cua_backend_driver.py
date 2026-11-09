@@ -158,7 +158,7 @@ def _manifest_contract_reason(manifest: Optional[dict[str, Any]]) -> str:
     return "driver manifest is missing: " + ", ".join(missing) if missing else ""
 
 def cua_driver_runtime_contract_status(binary: Optional[str] = None) -> dict[str, Any]:
-    """Report whether a local driver can host Hermes' 0.20 integration."""
+    """Report whether a local driver can host Moor' 0.20 integration."""
     resolved = binary or resolve_cua_driver_cmd()
     version: Optional[str] = None
     reason = "cua-driver is not installed"

@@ -24,8 +24,8 @@ _SYSTEM_BROWSERS = ("google-chrome", "google-chrome-stable", "chromium", "chromi
 
 def profile_dir() -> Path:
     """User-data-dir the bot's browser uses on this profile's screen. ``browser.user_data_dir`` pins your own:
-    ``~`` expands, and a relative path is anchored at this profile's HERMES_HOME (where the rest of the screen's
-    state lives), so ``pin`` means ``<HERMES_HOME>/pin`` and two profiles never share one jar by accident."""
+    ``~`` expands, and a relative path is anchored at this profile's MOOR_HOME (where the rest of the screen's
+    state lives), so ``pin`` means ``<MOOR_HOME>/pin`` and two profiles never share one jar by accident."""
     from tools.browser_session_cloud import user_data_dir
     override = user_data_dir()
     return Path(override) if override else runtime.state_dir() / "browser-profile"

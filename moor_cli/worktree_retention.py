@@ -1,7 +1,7 @@
 """What a worktree holds that neither git nor an archive can bring back.
 
 Every path that deletes a tree (the sweep, the classic clean-tree pruner, exit-time Archive,
-subagent finalization, the attended ``hermes worktree prune``) asks :func:`removal_blocker`
+subagent finalization, the attended ``moor worktree prune``) asks :func:`removal_blocker`
 first; anything it names keeps the tree. The rule: a tree may only be removed when everything
 that is not reproducible is in git or in the archive. Not reproducible:
 
@@ -43,12 +43,12 @@ KEEP_SUBMODULE_WORK = "keep-submodule-work"
 
 
 def _env(wt: Path) -> dict:
-    from hermes_cli.worktree_archive import _env as archive_env
+    from moor_cli.worktree_archive import _env as archive_env
     return {**archive_env(wt), "GIT_OPTIONAL_LOCKS": "0"}
 
 
 def _git(args, wt: Path, env, timeout: float = 120) -> str:
-    from hermes_cli.worktree_archive import _ok
+    from moor_cli.worktree_archive import _ok
     return _ok(args, wt, env, timeout=timeout)
 
 
@@ -85,7 +85,7 @@ def _ignored_entries(wt: Path, env) -> list[str]:
     """Ignored paths, whole ignored directories collapsed to ``dir/``. ``ls-files --directory``
     hits an internal error on some trees (git 2.53: "directory entry not superset of prefix");
     ``status --ignored`` reports the same set."""
-    from hermes_cli.worktree_archive import ArchiveError
+    from moor_cli.worktree_archive import ArchiveError
     try:
         out = _git(["ls-files", "--others", "--ignored", "--exclude-standard", "--directory",
                     "--no-empty-directory", "-z"], wt, env)
@@ -178,7 +178,7 @@ def private_worktree_refs(wt_path, env=None) -> list[str]:
     for line in out.splitlines():
         name, _, sha = line.partition("\0")
         if sha and _git(["rev-list", "--max-count=1", sha, "--not", "--branches", "--tags", "--remotes",
-                         "--glob=refs/hermes/archive/*"], wt, env).strip():
+                         "--glob=refs/moor/archive/*"], wt, env).strip():
             private.append(name)
     return private
 
@@ -197,7 +197,7 @@ def removal_blocker(wt_path, *, skipped: Optional[list] = None, gitlinks: bool =
     would skip). *gitlinks* refuses any submodule (archive paths); without it only a checked-out
     or retained module repository blocks. Any failure to verify blocks. Read-only.
     """
-    from hermes_cli.worktree_archive import ArchiveError, submodule_work
+    from moor_cli.worktree_archive import ArchiveError, submodule_work
     try:
         why = submodule_work(wt_path, gitlinks=gitlinks)
         if why:

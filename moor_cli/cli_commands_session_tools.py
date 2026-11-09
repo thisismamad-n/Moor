@@ -1,6 +1,6 @@
 """Shared print/translate helpers + session-info slash handlers (``cli_commands_mixin`` split).
 
-Moved verbatim from ``hermes_cli/cli_commands_mixin.py`` (file-line ratchet #68779): the
+Moved verbatim from ``moor_cli/cli_commands_mixin.py`` (file-line ratchet #68779): the
 lazy-binding contract carries over unchanged — ``cli.py``-internal symbols are imported at
 call time via ``from cli import ...``, so patch seams on the ``cli`` facade still intercept.
 ``cli_commands_mixin`` re-imports every helper moved here, so existing ``from
@@ -82,7 +82,7 @@ def _lines(text: str, pad: str = "  ") -> list:
 
 def _rollback_kept(result: dict) -> None:
     """The kept / not-removed path lines of a restore result (in-process CLI and gateway client alike)."""
-    from hermes_cli.cli_commands_mixin import _summarize_paths
+    from moor_cli.cli_commands_mixin import _summarize_paths
     if skipped := result.get("skipped_user_edits"):
         _pr(*_lines(_gt("rollback.kept_user_edits", files=_summarize_paths(skipped))))
     if oversize := result.get("skipped_oversize"):
@@ -127,7 +127,7 @@ class CLICommandsSessionToolsMixin:
     def _handle_agents_command(self):
         """Handle /agents — show background processes and agent status. On the gateway both run there:
         the session's ``process.list`` and its usage's running-subagent count (no per-delegation rows)."""
-        from hermes_cli.gateway_tools import process_registry as _registry, process_view
+        from moor_cli.gateway_tools import process_registry as _registry, process_view
         from tools.process_registry import format_uptime_short
         process_registry, view = _registry(), process_view()
         if view is not None:
@@ -150,10 +150,10 @@ class CLICommandsSessionToolsMixin:
 
     # ---- /journey, /paste, /copy, /image --------------------------------------------------
     def _handle_journey_command(self, cmd_original: str) -> None:
-        """Handle /journey — the learning timeline (see `hermes journey`). Read-only views render
+        """Handle /journey — the learning timeline (see `moor journey`). Read-only views render
         Rich color that patch_stdout would swallow, so capture with forced ANSI and re-emit via
         ``_cprint``; ``delete``/``edit`` are interactive and keep real stdio."""
-        from hermes_cli.journey import register_cli
+        from moor_cli.journey import register_cli
         parser = argparse.ArgumentParser(prog="/journey", add_help=False)
         register_cli(parser)
         try:
@@ -179,7 +179,7 @@ class CLICommandsSessionToolsMixin:
         doesn't fire for image-only clipboard content (e.g., VSCode terminal,
         Windows Terminal with WSL2).
         """
-        from hermes_cli.clipboard import has_clipboard_image
+        from moor_cli.clipboard import has_clipboard_image
         if not has_clipboard_image():
             _cp(_dim_line(_t("paste.no_image")))
         elif self._try_attach_clipboard_image():
@@ -210,7 +210,7 @@ class CLICommandsSessionToolsMixin:
         if not text:
             return _cp(f"  {_t('copy.nothing_in_response')}")
         try:
-            from hermes_cli.clipboard import is_remote_shell_session, write_clipboard_text
+            from moor_cli.clipboard import is_remote_shell_session, write_clipboard_text
             # Over SSH native tools write the REMOTE clipboard; OSC 52 reaches the user's terminal.
             # Locally, OSC 52 is the fallback when native tools are unavailable/fail (SSH/tmux).
             if is_remote_shell_session() or not write_clipboard_text(text):
@@ -262,8 +262,8 @@ class CLICommandsSessionToolsMixin:
         _cp(_accent(_t("tools.disabling" if subcommand == "disable" else "tools.enabling",
                        names=", ".join(names))))
         self._run_tools_config(tools_action=subcommand, names=names, platform="cli")
-        from hermes_cli.tools_config import _get_platform_tools
-        from hermes_cli.config import load_config
+        from moor_cli.tools_config import _get_platform_tools
+        from moor_cli.config import load_config
         self.enabled_toolsets = sorted(_get_platform_tools(load_config(), "cli"))  # plain data for session.create
         self.new_session()
         _cp(_dim(_t("tools.session_reset")))
@@ -273,7 +273,7 @@ class CLICommandsSessionToolsMixin:
         is captured (isatty=True so colors still render) and re-emitted through _cprint so
         patch_stdout's StdoutProxy doesn't garble the escapes; standalone/tests call straight through."""
         from argparse import Namespace
-        from hermes_cli.tools_config import tools_disable_enable_command
+        from moor_cli.tools_config import tools_disable_enable_command
         if getattr(self, "_app", None) is None:
             return tools_disable_enable_command(Namespace(**ns))
         buf = _TTYBuf()
@@ -283,12 +283,12 @@ class CLICommandsSessionToolsMixin:
 
     def _handle_autoprune_command(self, cmd: str):
         """/autoprune [on|off|later|status] — the low-disk auto-prune decision."""
-        from hermes_cli.slash_exec import CommandContext, execute_command
+        from moor_cli.slash_exec import CommandContext, execute_command
         _say_block(execute_command("autoprune", CommandContext(surface="cli", args=cmd.partition(" ")[2])).text)
 
     def _handle_profile_command(self):
         """Display active profile name and home directory."""
-        from hermes_cli.slash_exec import CommandContext, execute_command
+        from moor_cli.slash_exec import CommandContext, execute_command
         reply = execute_command("profile", CommandContext(surface="cli"))
         _say_block(f"  {_t('profile.profile', profile=reply.data['profile'])}",
                    f"  {_t('profile.home', home=reply.data['home'])}")
@@ -298,7 +298,7 @@ def _stop_background_work() -> None:
     """``/stop``'s cleanup: kill the background processes, then interrupt the background (async)
     delegations. Mid-turn it runs on a worker thread, so it prints through ``_cprint``: a plain
     print() from off the input loop is buried by the prompt_toolkit redraw."""
-    from hermes_cli.gateway_tools import process_registry as _registry, process_view
+    from moor_cli.gateway_tools import process_registry as _registry, process_view
     process_registry, view = _registry(), process_view()
     if view is not None:
         view.refresh(force=True)
@@ -368,7 +368,7 @@ def _print_local_delegations() -> None:
 
 
 class _TTYBuf(StringIO):
-    """StringIO that claims to be a TTY so ``hermes_cli.colors.color()`` still emits ANSI escapes."""
+    """StringIO that claims to be a TTY so ``moor_cli.colors.color()`` still emits ANSI escapes."""
     def isatty(self) -> bool:
         return True
 

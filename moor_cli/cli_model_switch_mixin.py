@@ -73,12 +73,12 @@ def stored_session_route(session_meta, *, current_model, current_provider):
     provider_changed = bool(provider) and provider != current_provider
     if stored_model == current_model and not provider_changed:
         return None
-    from hermes_cli.runtime_provider import is_foreign_provider_endpoint
+    from moor_cli.runtime_provider import is_foreign_provider_endpoint
     if is_foreign_provider_endpoint(provider, base_url):
         # The endpoint and its wire belong to the provider this chat left; resolve the stored one's own.
         base_url = api_mode = None
     # A row's api_mode/base_url were written for whichever model the session last ran. Providers that
-    # pick the wire per model (OpenCode Zen/Go, Nous, plugin profiles) re-derive both from the stored model, or a
+    # pick the wire per model (OpenCode Zen/Go, Moor, plugin profiles) re-derive both from the stored model, or a
     # resumed opencode-go session keeps a MiniMax-era anthropic_messages route for a chat_completions
     # model (#96066) — the CLI/oneshot twin of tui_gateway's _rederive_per_model_route.
     from moor_cli.model_switch import model_derived_api_mode
@@ -153,7 +153,7 @@ def _print_switch_summary(cli, result, old_model, *, one_turn: bool, strict_cont
             _acting = f"{agg.get('provider')}:{agg.get('model')}"
             _cprint(f"    {t('cli.model.acting_model', model=_acting)}")
 
-    # Provider-aware context chain: Codex OAuth / Nous / profile live-catalog caps win over the raw
+    # Provider-aware context chain: Codex OAuth / Moor / profile live-catalog caps win over the raw
     # models.dev entry (gpt-5.5 is 1.05M on openai but 272K on Codex OAuth).
     mi = result.model_info
     agent = cli.agent
@@ -217,7 +217,7 @@ def _one_turn_selection_context(cli):
     A live compressor measurement wins. Otherwise refresh ``session.stats``, then the session row's
     persisted usage anchor (a resume, before this process has run a turn).
     """
-    from hermes_cli.model_selection_guards import SelectionContext, selection_context_for_agent
+    from moor_cli.model_selection_guards import SelectionContext, selection_context_for_agent
     agent = getattr(cli, "agent", None)
     if agent is not None and hasattr(agent, "_refresh_stats"):
         agent._refresh_stats()
@@ -266,7 +266,7 @@ _MODEL_USAGE_COL = 36
 def _configured_default_route() -> tuple[str, str]:
     """``(model, provider)`` config.yaml names NOW (``/model reset``'s target). A fresh read, not the
     startup snapshot: the dashboard or another surface may have changed the default since launch."""
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     model_cfg = (load_config_readonly() or {}).get("model")
     if not isinstance(model_cfg, dict):
         return (model_cfg.strip() if isinstance(model_cfg, str) else ""), ""
@@ -306,7 +306,7 @@ def _apply_reasoning_after_switch(cli, effort: str, *, persist_global: bool, one
         return
     cli.reasoning_config = parsed
     if one_turn:
-        from hermes_cli.gateway_agent import GatewayAgent
+        from moor_cli.gateway_agent import GatewayAgent
         pending = getattr(cli, "_pending_one_turn_model_restore", None)
         if isinstance(pending, dict):
             pending["one_turn_reasoning"] = effort  # the agent chat rebuilds carries it too
@@ -337,7 +337,7 @@ def _commit_model_switch(
     ``picker``: tolerate context-resolution errors and label the config write "(--global)"; the
     typed path additionally records the one-turn restore snapshot. ``reasoning_effort`` (from
     ``--reasoning`` or the picker's effort step) is applied after the swap."""
-    from cli import HermesCLI, _cprint
+    from cli import MoorCLI, _cprint
     old_model, old_provider = cli.model, getattr(cli, "provider", None)
     # A second ``--once`` before the turn restores to the route before the first one.
     snapshot = (getattr(cli, "_pending_one_turn_model_restore", None)
@@ -357,7 +357,7 @@ def _commit_model_switch(
         return
     # A TUI slash worker replays /model on its shadow CLI; the tui_gateway mirror counts the real switch.
     if not getattr(cli, "is_slash_worker", False):
-        from hermes_cli.observability.shared_metrics_events import record_model_switch
+        from moor_cli.observability.shared_metrics_events import record_model_switch
         record_model_switch(
             from_provider=old_provider, to_provider=result.target_provider, surface="cli", from_model=old_model,
             session_id=getattr(getattr(cli, "agent", None), "session_id", None) or getattr(cli, "session_id", None))
@@ -469,7 +469,7 @@ class CLIModelSwitchMixin:
             logger.debug("normalize_model_id(%s) failed", resolved_provider, exc_info=True)
             native_id = None
         if native_id is not None:  # a profile-owned id space also re-derives the wire for the new id
-            from hermes_cli.model_switch import model_derived_api_mode
+            from moor_cli.model_switch import model_derived_api_mode
             return _adopt_with_mode(
                 lambda m: native_id,
                 lambda m: model_derived_api_mode(resolved_provider, m, self.api_key or "") or self.api_mode,
@@ -681,7 +681,7 @@ class CLIModelSwitchMixin:
         large context; Ink/Desktop/ACP show the same ``confirm_message``): ask in the same prompt as
         ``_confirm_expensive_model_switch``. Only a yes re-sends with the owner's token. The identical
         warning the user just confirmed for this switch is not asked twice."""
-        from hermes_cli.gateway_mutations import confirmation_title
+        from moor_cli.gateway_mutations import confirmation_title
         message = refusal.get("confirm_message") or ""
         confirmed, self._confirmed_switch_warning = getattr(self, "_confirmed_switch_warning", None), None
         if message and message == confirmed:
@@ -729,7 +729,7 @@ class CLIModelSwitchMixin:
         agent = getattr(self, "agent", None)
         if agent is None:
             return
-        from hermes_cli.gateway_agent import GatewayAgent
+        from moor_cli.gateway_agent import GatewayAgent
         # A gateway agent's one-turn level only rode the admission: put it back locally, write nothing.
         restore_reasoning = (agent.restore_reasoning if isinstance(agent, GatewayAgent)
                              else lambda config: setattr(agent, "reasoning_config", config))
@@ -856,7 +856,7 @@ class CLIModelSwitchMixin:
                     setattr(self, _k, _v)
                 if str(exc) == "launch_credentials_unavailable":
                     # No model switch can fix a chat whose launch key changed; say what does.
-                    from hermes_cli.cli_chat_error_copy import refusal_text
+                    from moor_cli.cli_chat_error_copy import refusal_text
                     _cprint(f"  {refusal_text(exc)}")
                     return False
                 _cprint(f"  {t('cli.model.switch_failed', model=result.new_model, error=exc, old_model=old_model)}")

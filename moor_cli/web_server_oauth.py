@@ -41,7 +41,7 @@ def _token_status(source: str, source_label: str, creds: dict[str, Any]) -> dict
 
 
 def _anthropic_oauth_status() -> dict[str, Any]:
-    """Status for the "Anthropic Account" card: Hermes-managed PKCE file first, then the
+    """Status for the "Anthropic Account" card: moor-managed PKCE file first, then the
     registry-ordered env vars (process env — where Bitwarden-sourced secrets land — then .env).
 
     Claude Code's ``~/.claude/.credentials.json`` is deliberately NOT read here; it has its own
@@ -134,13 +134,13 @@ _OAUTH_PROVIDER_CATALOG: tuple[dict[str, Any], ...] = (
      "cli_command": "moor auth add minimax-oauth", "docs_url": "https://www.minimax.io", "status_fn": None},
     # Device code works in remote shells/containers without a reachable 127.0.0.1 callback.
     {"id": "xai-oauth", "name": "xAI Grok OAuth (SuperGrok / Premium+)", "flow": "device_code",
-     "cli_command": "hermes auth add xai-oauth",
+     "cli_command": "moor auth add xai-oauth",
      "docs_url": "https://hermes-agent.nousresearch.com/docs/guides/xai-grok-oauth", "status_fn": None},
     # Anthropic / Claude entries sit at the bottom. Deliberately flow == "external": an
     # in-dashboard Connect button would let a scriptable HTTP endpoint mint Claude Pro/Max
     # subscription tokens outside Anthropic's own client, against its OAuth usage policies.
-    # Login works via the terminal (`hermes auth add anthropic`) or a plain API key.
-    {"id": "anthropic", "name": "Anthropic Account", "flow": "external", "cli_command": "hermes auth add anthropic",
+    # Login works via the terminal (`moor auth add anthropic`) or a plain API key.
+    {"id": "anthropic", "name": "Anthropic Account", "flow": "external", "cli_command": "moor auth add anthropic",
      "docs_url": "https://docs.claude.com/en/api/getting-started", "status_fn": _anthropic_oauth_status},
     {"id": "claude-code", "name": "Anthropic OAuth: Required Extra Usage Credits to Use Subscription",
      "flow": "external", "cli_command": "claude setup-token",
@@ -181,7 +181,7 @@ def _oauth_poller(label: str):
                 else:
                     _log.info("oauth/device: %s login completed (session=%s)", label, session_id)
             except Exception as e:
-                from hermes_cli.observability.shared_metrics_setup import note_oauth_failure
+                from moor_cli.observability.shared_metrics_setup import note_oauth_failure
                 _log.warning("%s device-code poll failed (session=%s): %s", label, session_id, e)
                 note_oauth_failure(sess, e)
                 with _oauth_sessions_lock:
@@ -227,11 +227,11 @@ def _record_sign_in_state(sess: dict[str, Any], state: Any) -> None:
         sess["retry_after"] = int(getattr(state, "retry_after", 0) or 0)
 
 
-@_oauth_poller("nous")
-def _nous_sign_in_poller(session_id: str, sess: dict[str, Any]) -> None:
+@_oauth_poller("moor")
+def _moor_sign_in_poller(session_id: str, sess: dict[str, Any]) -> None:
     """Drain the sign-in the start route began: the one shared flow, rendered onto the session.
 
-    The generator was created and advanced to its ``Code`` state by ``_start_nous_device_code``, so
+    The generator was created and advanced to its ``Code`` state by ``_start_moor_device_code``, so
     it is already holding the device code and its HTTP client. Nothing here is wrapped in
     ``_profile_scope``: that context manager holds a process-global lock and swaps module
     attributes across its ``yield``, and this loop can last the sign-in code's whole expiry. The
@@ -250,7 +250,7 @@ def _nous_sign_in_poller(session_id: str, sess: dict[str, Any]) -> None:
 
 @_oauth_poller("minimax")
 def _minimax_poller(session_id: str, sess: dict[str, Any]) -> None:
-    """MiniMax poller: PKCE-style ``code_verifier`` + ``user_code`` instead of Nous's
+    """MiniMax poller: PKCE-style ``code_verifier`` + ``user_code`` instead of Moor's
     ``device_code``. Builds the same auth_state as the CLI's ``_minimax_oauth_login`` and persists
     via ``_minimax_save_auth_state`` so the system ends up as after ``moor auth add minimax-oauth``.
     Region is fixed to "global" here; cn-region operators use the CLI's ``--region cn``."""
@@ -288,7 +288,7 @@ def _minimax_poller(session_id: str, sess: dict[str, Any]) -> None:
     }
     with _profile_scope(sess.get("profile")):
         # The cancellation check and the save share the session lock, so a cancel cannot land
-        # between them (the same contract as the Nous and Codex savers).
+        # between them (the same contract as the Moor and Codex savers).
         with _oauth_sessions_lock:
             if sess.get("cancelled"):
                 sess["status"] = "cancelled"
@@ -320,7 +320,7 @@ def _xai_device_poller(session_id: str, sess: dict[str, Any]) -> None:
         "token_type": str(token_data.get("token_type") or "Bearer").strip() or "Bearer",
     }
     with _profile_scope(sess.get("profile")), _oauth_sessions_lock:
-        # One critical section with the cancel check, as in the Nous and Codex savers.
+        # One critical section with the cancel check, as in the Moor and Codex savers.
         if sess.get("cancelled"):
             sess["status"] = "cancelled"
             return
@@ -359,7 +359,7 @@ def _profile_device_poller(session_id: str, sess: dict[str, Any]) -> None:
     """Drive a device-code login a provider profile owns (``ProviderProfile.start_device_login``):
     one ``poll_device_login`` per interval (each bound to the session's profile) until approved, then
     ``save_device_login`` under the session's profile scope, in one critical section with the cancel check like the built-in savers."""
-    from hermes_cli.web_server_profiles import _config_profile_scope, _profile_scope
+    from moor_cli.web_server_profiles import _config_profile_scope, _profile_scope
     profile, state, interval = sess["_provider_profile"], sess["_device_state"], int(sess["interval"])
     result: dict[str, Any] = {}
     while time.time() < sess["expires_at"]:

@@ -133,7 +133,7 @@ print(json.dumps(boot_bootstrap.run_boot_bootstrap(root)))
             assert first.poll() is None
             assert time.monotonic() < deadline
             time.sleep(0.02)
-        second = subprocess.run([*command, "go"], env=dict(env, HERMES_HOME=str(other)),
+        second = subprocess.run([*command, "go"], env=dict(env, MOOR_HOME=str(other)),
                                 capture_output=True, text=True, timeout=30, check=False)
         assert second.returncode == 0, second.stderr
         result = json.loads(second.stdout.splitlines()[-1])

@@ -112,7 +112,7 @@ def _transcribe_command_stt(
     language = (language_override or config.get("language")
                 or _resolve_stt_language(provider_name, stt_config) or DEFAULT_COMMAND_STT_LANGUAGE)
     try:
-        with tempfile.TemporaryDirectory(prefix=f"hermes-cmd-stt-{provider_name}-") as tmpdir:
+        with tempfile.TemporaryDirectory(prefix=f"moor-cmd-stt-{provider_name}-") as tmpdir:
             input_path, normalize_error = _normalize_command_stt_input(audio, tmpdir, provider_name, config)
             if normalize_error:
                 return fail(normalize_error)

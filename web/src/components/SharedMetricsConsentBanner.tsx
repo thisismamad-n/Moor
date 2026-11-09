@@ -76,12 +76,12 @@ export function SharedMetricsConsentBanner() {
   return (
     <div
       role="region"
-      aria-label={t.app.sharedMetricsTitle ?? "Help improve Hermes?"}
+      aria-label={t.app.sharedMetricsTitle ?? "Help improve Moor?"}
       data-testid="shared-metrics-consent-banner"
       className="flex flex-wrap items-center gap-2 border-b border-current/20 bg-current/5 px-4 py-1.5 text-xs text-midground"
     >
       <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-      <span className="font-semibold">{t.app.sharedMetricsTitle ?? "Help improve Hermes?"}</span>
+      <span className="font-semibold">{t.app.sharedMetricsTitle ?? "Help improve Moor?"}</span>
       <span className="min-w-0 flex-1 opacity-80">
         {failed
           ? (t.app.sharedMetricsSaveFailed ?? "Couldn't save your choice")
@@ -89,13 +89,13 @@ export function SharedMetricsConsentBanner() {
             ? (t.app.sharedMetricsReaskBody ??
               'Asking once more: an earlier version could save "No thanks" before you saw this question.')
             : (t.app.sharedMetricsBody ??
-            "Shared metrics are bounded counters, never prompts, files, paths or error text. Sharing sends them to Nous once a day.")}{" "}
+            "Shared metrics are bounded counters, never prompts, files, paths or error text. Sharing sends them to Moor once a day.")}{" "}
         <a href={DOCS_URL} target="_blank" rel="noreferrer" className="underline">
           {t.app.sharedMetricsDetails ?? "Details"}
         </a>
       </span>
       <button type="button" disabled={saving} className={choice} onClick={() => answer(true, true)}>
-        {t.app.sharedMetricsShare ?? "Share with Nous"}
+        {t.app.sharedMetricsShare ?? "Share with Moor"}
       </button>
       <button type="button" disabled={saving} className={choice} onClick={() => answer(false, false)}>
         {t.app.sharedMetricsOff ?? "No thanks"}

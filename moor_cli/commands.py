@@ -15,7 +15,7 @@ from typing import Optional
 
 from utils import is_truthy_value
 from agent.i18n import t
-from hermes_constants import INDICATOR_STYLES
+from moor_constants import INDICATOR_STYLES
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True, args_hint="<archive.tar.gz> [--name <name>]"),
     CommandDef("stop", "Kill all running background processes", "Session",
                busy_policy="interrupt_then_dispatch", busy_handler="stop"),
-    CommandDef("discard", "Drop a turn lost when Hermes restarted so this chat's queue runs again", "Session",
+    CommandDef("discard", "Drop a turn lost when Moor restarted so this chat's queue runs again", "Session",
                gateway_only=True, busy_policy="dispatch"),
     CommandDef("pause", "Pause new work globally (emergency stop); '/pause off' resumes", "Session",
                gateway_only=True, args_hint="[reason | off]", busy_policy="dispatch"),
@@ -146,7 +146,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                busy_policy="dispatch", busy_handler="queue"),
     CommandDef("steer", "Inject a message after the next tool call without interrupting", "Session",
                aliases=("s",), args_hint="<prompt>", busy_policy="dispatch", busy_handler="steer"),
-    CommandDef("goal", "Set a standing goal Hermes works on across turns until achieved", "Session",
+    CommandDef("goal", "Set a standing goal Moor works on across turns until achieved", "Session",
                args_hint="[text | -- <text> | draft <text> | show | gate add <cmd> | pause | resume | clear | status | wait <pid> | unwait]",
                argument_mode="mixed", busy_policy="dispatch", busy_handler="goal"),
     CommandDef("heartbeat", "Set a recurring prompt that re-enters this session when idle", "Session",
@@ -434,7 +434,7 @@ def build_commands() -> dict[str, str]:
 
 
 # ``COMMANDS`` / ``COMMANDS_BY_CATEGORY`` resolve lazily through the module ``__getattr__`` below so
-# every ``from hermes_cli.commands import COMMANDS`` sees the active language.
+# every ``from moor_cli.commands import COMMANDS`` sees the active language.
 _LAZY_LOCALIZED_TABLES = {"COMMANDS": build_commands, "COMMANDS_BY_CATEGORY": build_commands_by_category}
 
 # Subcommands lookup: "/cmd" -> ["sub1", ...]; explicit ``subcommands`` first (in

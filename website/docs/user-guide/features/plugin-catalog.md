@@ -44,16 +44,16 @@ directory of the moor-agent repository, declaring:
 
 | Field | Meaning |
 |---|---|
-| `name` | The catalog key you pass to `hermes plugins install` |
+| `name` | The catalog key you pass to `moor plugins install` |
 | `description` | One-line summary shown on cards and in the install prompt, including any reviewer disclosure |
 | `repo` | The plugin's public git repository |
 | `sha` | The **exact 40-hex commit** that was reviewed — installs check out this pin, not a branch tip |
 | `subdir` | Path to the plugin inside the repo for monorepos — a plain relative path matching `[A-Za-z0-9._/-]+` (no `..`, `.`, empty segments, absolute or backslash forms) (optional, default repo root) |
-| `tier` | `official` (maintained by NousResearch), `verified` (verified by the Nous team to come from the reputable company whose product it integrates), or `community`. Only Nous maintainers set `official` or `verified` |
+| `tier` | `official` (maintained by Moor inc.), `verified` (verified by the Moor team to come from the reputable company whose product it integrates), or `community`. Only Moor maintainers set `official` or `verified` |
 | `category` | Browse shelf: `desktop` (default), `memory`, `platform`, `web`, `tools`, `voice`, `automation`, `models` or `general` |
 | `maintainer` | Who owns the plugin |
 | `capabilities` | Declared tools, hooks, middleware, and required env vars |
-| `requires_hermes` | Minimum Hermes version, e.g. `>=0.19` (optional). Enforced: installing on an older Hermes is refused with the version it needs, and `hermes plugins update` keeps the installed version until you update Hermes. `search` and `info` still list the entry, marked as needing a newer Hermes |
+| `requires_moor` | Minimum Moor version, e.g. `>=0.19` (optional). Enforced: installing on an older Moor is refused with the version it needs, and `moor plugins update` keeps the installed version until you update Moor. `search` and `info` still list the entry, marked as needing a newer Moor |
 | `platforms` | OS restrictions, empty = all (optional) |
 | `title` | Human name shown on cards, e.g. `NVIDIA App` (optional; defaults to `name`) |
 | `onboarding` | `true` offers the plugin on the desktop onboarding card, beside the hosted connectors, on the platforms it lists. Curated: official or verified entries only (optional, default `false`) |
@@ -89,7 +89,7 @@ The catalog is designed so you know exactly what you're installing:
   above — a human read the exact pinned commit, and the install is that
   commit — plus two tripwires: admission's `desktop surface` lint refuses
   the obvious moves outside the plugin SDK (`eval`, importing anything
-  other than `@hermes/plugin-sdk`/`react`,
+  other than `@moor/plugin-sdk`/`react`,
   including remote scripts), and the app's loader refuses every non-SDK
   import again at load time. The lint reads a `<script` regex — a literal, or
   the pattern string of a `new RegExp(...)` passed straight to
@@ -98,11 +98,11 @@ The catalog is designed so you know exactly what you're installing:
   including one built from `new RegExp(...).source`, still fails. Treat the
   lint as a review aid, not a
   guarantee; give Desktop halves the same scrutiny you'd give a Python half.
-- **No runtime overrides of Hermes.** Listed plugins extend Hermes through
+- **No runtime overrides of Moor.** Listed plugins extend Moor through
   its public surfaces (hooks, middleware, provider profiles, Desktop SDK slots)
   and never replace core functions, methods or Desktop UI in place: two plugins
   patching the same seam would break each other, and a core release could break
-  both. Admission's `no core override` check refuses Python that rebinds Hermes
+  both. Admission's `no core override` check refuses Python that rebinds Moor
   modules, classes or their tables at runtime, and the `desktop surface` lint
   refuses `desktop/plugin.js` code that queries the app's own markup to restyle,
   hide, click or rewrite core UI.
@@ -146,15 +146,15 @@ answer yes (`--enable` / `--no-enable` answer it for scripts).
 The catalog name and the plugin's own manifest name can differ. Every later
 command (`enable`, `disable`, `show`, `capabilities`, `update`, `remove`)
 accepts either one: the catalog name resolves through the install record
-Hermes wrote when it cloned the entry, never through a file in the plugin's
+Moor wrote when it cloned the entry, never through a file in the plugin's
 own repo. For example the `touchdesigner` entry (a portable Agent Plugins v1
 package that bundles the twozero MCP server with the `touchdesigner-mcp`
 skill) installs as `td`, kept short so its generated MCP tool names stay
 under provider function-name limits:
 
 ```bash
-hermes plugins install touchdesigner
-hermes plugins enable touchdesigner   # same as: hermes plugins enable td
+moor plugins install touchdesigner
+moor plugins enable touchdesigner   # same as: moor plugins enable td
 ```
 
 In the Desktop app a package with both an agent half and a Desktop half
@@ -255,12 +255,12 @@ The complete guidelines live in
 what to check before you submit, how the PR and review work, every admission
 rule, and how pin updates, delisting and removal work. That page mirrors the
 canonical rules in the
-[plugin-catalog README](https://github.com/NousResearch/hermes-agent/tree/main/plugin-catalog).
+[plugin-catalog README](https://github.com/thisismamad-n/Moor/tree/main/plugin-catalog).
 
 In short, a listed plugin is submitted by its owner (or added in a reviewed
 maintainer sweep), lives in a public repository, pins an exact commit, passes
-`hermes plugins validate` in catalog CI, never updates itself, and extends
-Hermes only through public hooks and the Desktop SDK, never by patching core
+`moor plugins validate` in catalog CI, never updates itself, and extends
+Moor only through public hooks and the Desktop SDK, never by patching core
 code or Desktop UI at runtime.
 
 ## See also

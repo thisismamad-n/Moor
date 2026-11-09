@@ -541,7 +541,7 @@ def _browser_setting(key: str):
     """``browser.<key>`` from the effective user config (managed overlay, ``${VAR}`` expanded); None when
     unset/unreadable."""
     try:
-        from hermes_cli.config_effective import load_user_config_effective
+        from moor_cli.config_effective import load_user_config_effective
         browser_cfg = load_user_config_effective().get("browser", {})
         return browser_cfg.get(key) if isinstance(browser_cfg, dict) else None
     except Exception as e:
@@ -841,12 +841,12 @@ def _managed_install() -> bool:
     """True when a package manager (NixOS) owns this install's modes.
 
     Read once per creation so the *creation* mode honours the same carve-out
-    ``hermes_cli.config._secure_dir`` applies to reconciliation. Import is
+    ``moor_cli.config._secure_dir`` applies to reconciliation. Import is
     local and failure means "not managed": an unimportable config module is
     the single-user source-install case, where 0700 is the right default.
     """
     try:
-        from hermes_cli.config import is_managed
+        from moor_cli.config import is_managed
 
         return bool(is_managed())
     except Exception:  # pragma: no cover - defensive
@@ -859,16 +859,16 @@ def _ensure_chrome_debug_data_dir(data_dir: str) -> None:
     ``chrome-debug`` is a real Chromium profile: Cookies, Login Data, and
     Local Storage live here. Created with a bare ``os.makedirs`` it inherits
     the umask and lands 0755, so every other local account could list and
-    read those stores. ``HERMES_HOME`` is 0700 by default, which contains the
-    damage — but the documented ``HERMES_HOME_MODE=0701`` hatch (so nginx can
+    read those stores. ``MOOR_HOME`` is 0700 by default, which contains the
+    damage — but the documented ``MOOR_HOME_MODE=0701`` hatch (so nginx can
     traverse to a served subdirectory) makes a 0755 child genuinely
     world-readable.
 
     The mode is passed to ``os.makedirs`` so it is set *at creation* — no
     window where the profile sits world-readable before a follow-up chmod.
-    Policy is then reconciled by ``hermes_cli.config._secure_dir``, the house
+    Policy is then reconciled by ``moor_cli.config._secure_dir``, the house
     helper, rather than a hand-rolled chmod: it skips managed/NixOS installs,
-    honours ``HERMES_HOME_MODE``, and applies ``HERMES_UID``/``HERMES_GID``
+    honours ``MOOR_HOME_MODE``, and applies ``MOOR_UID``/``MOOR_GID``
     ownership so a root-created dir does not lock out uid-mapped Docker
     workers (#34107).
 
@@ -879,12 +879,12 @@ def _ensure_chrome_debug_data_dir(data_dir: str) -> None:
     rules pre-create — it is made lazily at runtime, so a hardcoded 0700 here
     would be the only thing setting its mode and would silently override that
     design. On such a host the gateway and a hostUsers CLI share one
-    ``$HERMES_HOME`` through the hermes group, so a 0700 profile created by
+    ``$MOOR_HOME`` through the moor group, so a 0700 profile created by
     whichever ran first locks the other out of the browser entirely.
     Omitting the explicit mode there lets the inherited setgid + umask decide,
-    matching ``ensure_hermes_home``'s managed branch.
+    matching ``ensure_moor_home``'s managed branch.
 
-    Reconciling unconditionally also heals a profile an older Hermes left at
+    Reconciling unconditionally also heals a profile an older Moor left at
     0755, which is the whole point — the exposure is on disk already. It is
     safe against a *running* browser: only group/other bits are dropped, the
     owner keeps ``rwx``, and POSIX checks the mode at ``open()`` rather than
@@ -899,7 +899,7 @@ def _ensure_chrome_debug_data_dir(data_dir: str) -> None:
         return
     os.makedirs(data_dir, mode=0o700, exist_ok=True)
     try:
-        from hermes_cli.config import _secure_dir
+        from moor_cli.config import _secure_dir
 
         _secure_dir(data_dir)
     except Exception as exc:  # pragma: no cover - defensive
@@ -911,7 +911,7 @@ def _open_launch_stderr_log(path: str):
 
     Opened with a plain ``open(path, "wb")`` this lands 0644 under a default
     umask — a fixed, guessable name inside the profile dir hardened just
-    above. Under ``HERMES_HOME_MODE=0701`` the directory is traversable but
+    above. Under ``MOOR_HOME_MODE=0701`` the directory is traversable but
     unlistable, so a predictable filename is exactly the case that stays
     reachable; the uuid-named files elsewhere in the profile do not.
 
@@ -922,9 +922,9 @@ def _open_launch_stderr_log(path: str):
       per-candidate overwrite semantics.
     * **On an already-existing log** ``O_CREAT`` applies ``mode`` only to a
       file it actually creates, so the inode keeps whatever it had. An older
-      Hermes left this file at 0644 on disk, so creation-time hardening alone
+      Moor left this file at 0644 on disk, so creation-time hardening alone
       would leave every *upgrading* install exposed at the one path in this
-      change with a guessable name. ``hermes_cli.config._secure_file``
+      change with a guessable name. ``moor_cli.config._secure_file``
       reconciles it, for the same reason ``_ensure_chrome_debug_data_dir``
       delegates to ``_secure_dir``: that helper is the single owner of the
       owner-only file policy — it skips managed/NixOS installs and containers
@@ -935,8 +935,8 @@ def _open_launch_stderr_log(path: str):
     The managed/NixOS carve-out applies at creation here too — the same defect
     the profile directory had. This log is created lazily at runtime and is
     not covered by the module's ``systemd.tmpfiles`` rules; the gateway and an
-    interactive ``hostUsers`` CLI share one ``$HERMES_HOME`` at two uids
-    through the hermes group, and a 0600 log created by whichever ran first
+    interactive ``hostUsers`` CLI share one ``$MOOR_HOME`` at two uids
+    through the moor group, and a 0600 log created by whichever ran first
     makes the other's truncating open fail with ``EACCES`` — and because every
     candidate binary reuses this one path, that fails *the whole launch*.
     There the inherited ``UMask = "0007"`` decides, like the merge base's
@@ -958,7 +958,7 @@ def _open_launch_stderr_log(path: str):
         handle = os.fdopen(fd, "wb")
     if not managed:
         try:
-            from hermes_cli.config import _secure_file
+            from moor_cli.config import _secure_file
 
             _secure_file(path)
         except Exception as exc:  # pragma: no cover - defensive
@@ -1055,9 +1055,9 @@ def manual_chrome_debug_command(port: int = DEFAULT_BROWSER_CDP_PORT, system: st
 
 def _detach_kwargs(system: str) -> dict:
     if system != "Windows":
-        # /browser connect launches the USER's debug browser: it must outlive this Hermes (the connection persists in
+        # /browser connect launches the USER's debug browser: it must outlive this Moor (the connection persists in
         # BROWSER_CDP_URL and a later session re-attaches to it), and it is never ours to stop.
-        return {"start_new_session": True}  # detached-spawn: ok — the user's browser, meant to outlive Hermes
+        return {"start_new_session": True}  # detached-spawn: ok — the user's browser, meant to outlive Moor
     flags = (getattr(subprocess, "DETACHED_PROCESS", 0)
              | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
     return {"creationflags": flags} if flags else {}

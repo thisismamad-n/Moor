@@ -211,7 +211,7 @@ def trailing_amp_background_command(command: str) -> str | None:
     if not stripped.strip():
         return None
     # Approval runs on what executes (the stripped command). Some patterns key on the `&` itself
-    # (`hermes gateway run &` = gateway outside its service manager), and approvals are stored per
+    # (`moor gateway run &` = gateway outside its service manager), and approvals are stored per
     # pattern key, so a different key would let a pre-approval for another category pass.
     if _approval_identity(command) != _approval_identity(stripped):
         return None
@@ -370,7 +370,7 @@ def self_repo_block(
 
 def locked_skill_block(*, command: str, cwd: str, workdir: Optional[str], session_key: str) -> Optional[str]:
     """Refuse commands that write into a skill the user locked, change the lock record, or run
-    ``hermes curator unlock`` (see tools/skill_lock). Local backend only: a remote or container
+    ``moor curator unlock`` (see tools/skill_lock). Local backend only: a remote or container
     backend cannot reach this profile's skills dir. Returns the JSON error string when blocked."""
     from tools.skill_lock import command_refusal
     from tools.terminal_tool import _resolve_command_cwd

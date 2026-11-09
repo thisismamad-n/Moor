@@ -155,17 +155,17 @@ describe('usage-window plan rows', () => {
         {
           authenticated: true,
           models: ['example/model-b', 'example/model-free:free'],
-          name: 'Nous',
+          name: 'Moor',
           plan_usage: {
             gauges: [{ label: 'day', left_fraction: 0, scope: 'all', style: 'red' }],
             kind: 'usage_window'
           },
-          slug: 'nous',
+          slug: 'moor',
           usage_levels: { 'example/model-free:free': 'free', 'example/model-b': 'medium' }
         }
       ]
     })
-    renderMenu({ model: 'example/model-free:free', provider: 'nous' })
+    renderMenu({ model: 'example/model-free:free', provider: 'moor' })
 
     await screen.findByText('Free')
     // Only Large / Free carry a tag. A spent all-model allowance shows once under the provider, not on each row.
@@ -180,7 +180,7 @@ describe('usage-window plan rows', () => {
         {
           authenticated: true,
           models: ['example/model-b', 'example/model-a', 'example/model-free:free'],
-          name: 'Nous',
+          name: 'Moor',
           plan_usage: {
             credits_pay: true,
             gauges: [
@@ -189,7 +189,7 @@ describe('usage-window plan rows', () => {
             ],
             kind: 'usage_window'
           },
-          slug: 'nous',
+          slug: 'moor',
           usage_levels: {
             'example/model-a': 'low',
             'example/model-free:free': 'free',
@@ -198,7 +198,7 @@ describe('usage-window plan rows', () => {
         }
       ]
     })
-    renderMenu({ model: 'example/model-free:free', provider: 'nous' })
+    renderMenu({ model: 'example/model-free:free', provider: 'moor' })
 
     await screen.findByText('Large')
     expect(screen.queryByText('Small')).toBeNull()
@@ -214,17 +214,17 @@ describe('usage-window plan sections', () => {
         {
           authenticated: true,
           models: ['example/model-a', 'example/model-b'],
-          name: 'Nous',
+          name: 'Moor',
           plan_usage: {
             featured_model_ids: ['example/model-a'],
             gauges: [{ label: 'day', left_fraction: 0.5, scope: 'all', style: 'green' }],
             kind: 'usage_window'
           },
-          slug: 'nous'
+          slug: 'moor'
         }
       ]
     })
-    renderMenu({ model: 'custom/model-x', provider: 'nous' })
+    renderMenu({ model: 'custom/model-x', provider: 'moor' })
 
     const recommended = await screen.findByText('Recommended')
     const other = screen.getByText('Other models')
@@ -508,7 +508,7 @@ describe('the current model the catalog omits (#57534)', () => {
       providers: [{ models: ['openai/gpt-4o-mini'], name: 'OpenRouter', slug: 'openrouter' }]
     })
 
-    renderMenu({ model: 'qwen/qwen-2.5-72b-instruct', provider: 'nous' })
+    renderMenu({ model: 'qwen/qwen-2.5-72b-instruct', provider: 'moor' })
 
     await screen.findByText('GPT-4o-mini')
     expect(screen.queryByText('Qwen 2.5 72B Instruct')).toBeNull()
@@ -686,12 +686,12 @@ describe('the catalog renders per-model pricing', () => {
     getGlobalModelOptions.mockResolvedValue({
       providers: [
         {
-          models: ['anthropic/claude-sonnet-5', 'nous/hermes-4'],
-          name: 'Nous Portal',
-          slug: 'nous',
+          models: ['anthropic/claude-sonnet-5', 'moor/hermes-4'],
+          name: 'Moor Portal',
+          slug: 'moor',
           pricing: {
             'anthropic/claude-sonnet-5': { input: '$1.60', output: '$8.00', cache: '$0.16', free: false },
-            'nous/hermes-4': { input: 'free', output: 'free', cache: null, free: true }
+            'moor/hermes-4': { input: 'free', output: 'free', cache: null, free: true }
           }
         }
       ]
@@ -713,8 +713,8 @@ describe('the catalog renders per-model pricing', () => {
       providers: [
         {
           models: ['anthropic/claude-sonnet-5'],
-          name: 'Nous Portal',
-          slug: 'nous',
+          name: 'Moor Portal',
+          slug: 'moor',
           pricing: {
             'anthropic/claude-sonnet-5': {
               input: '$1.60',
@@ -738,11 +738,11 @@ describe('the catalog renders per-model pricing', () => {
     getGlobalModelOptions.mockResolvedValue({
       providers: [
         {
-          models: ['nous/hermes-4'],
-          name: 'Nous Portal',
-          slug: 'nous',
+          models: ['moor/hermes-4'],
+          name: 'Moor Portal',
+          slug: 'moor',
           pricing: {
-            'nous/hermes-4': { input: 'free', output: 'free', cache: null, free: true }
+            'moor/hermes-4': { input: 'free', output: 'free', cache: null, free: true }
           }
         }
       ]
@@ -758,8 +758,8 @@ describe('the catalog renders per-model pricing', () => {
       providers: [
         {
           models: ['anthropic/claude-sonnet-5'],
-          name: 'Nous Portal',
-          slug: 'nous',
+          name: 'Moor Portal',
+          slug: 'moor',
           pricing: {
             'anthropic/claude-sonnet-5': {
               input: '$1.60',
@@ -785,8 +785,8 @@ describe('the catalog renders per-model pricing', () => {
       providers: [
         {
           models: ['anthropic/claude-sonnet-5', 'anthropic/claude-sonnet-5-fast'],
-          name: 'Nous Portal',
-          slug: 'nous',
+          name: 'Moor Portal',
+          slug: 'moor',
           pricing: {
             'anthropic/claude-sonnet-5-fast': {
               input: '$0.80',
@@ -809,8 +809,8 @@ describe('the catalog renders per-model pricing', () => {
       providers: [
         {
           models: ['anthropic/claude-sonnet-5'],
-          name: 'Nous Portal',
-          slug: 'nous'
+          name: 'Moor Portal',
+          slug: 'moor'
         }
       ]
     })

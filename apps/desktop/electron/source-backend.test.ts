@@ -135,7 +135,7 @@ test.skipIf(process.platform === 'win32')(
         }
 
         const backend: SourceBackend | null = await resolveSourceInstallationBackend(fixture.root, SERVE_ARGS, {
-          hermesHome: env.HERMES_HOME,
+          moorHome: env.MOOR_HOME,
           env
         })
 
@@ -199,7 +199,7 @@ test.skipIf(process.platform === 'win32')(
 
       fs.unlinkSync(fixture.launcher)
       assert.equal(
-        await resolveSourceInstallationBackend(fixture.root, SERVE_ARGS, { hermesHome: env.HERMES_HOME, env }),
+        await resolveSourceInstallationBackend(fixture.root, SERVE_ARGS, { moorHome: env.MOOR_HOME, env }),
         null,
         'a missing PM command must not fall back to the stale venv'
       )

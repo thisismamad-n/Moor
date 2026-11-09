@@ -9,7 +9,7 @@
     "build": "node ../scripts/build/tui.mjs",
     "i18n:keys": "tsx scripts/i18n-keys.ts",
     "i18n:keys:check": "tsx scripts/i18n-keys.ts --check",
-    "build:ink": "npm run build --prefix packages/hermes-ink",
+    "build:ink": "npm run build --prefix packages/moor-ink",
     "visual": "node scripts/visual/run.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src/ packages/",

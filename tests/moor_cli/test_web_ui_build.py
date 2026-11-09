@@ -6,9 +6,9 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.main_web_build import _build_web_ui, _web_ui_build_needed
-from tests.hermes_cli.test_source_build import stamp_product, copy_freshness_scripts, use_host_node_as_pm_node
-from tests.hermes_cli.test_source_build import source_checkout, source_products, _events
+from moor_cli.main_web_build import _build_web_ui, _web_ui_build_needed
+from tests.moor_cli.test_source_build import stamp_product, copy_freshness_scripts, use_host_node_as_pm_node
+from tests.moor_cli.test_source_build import source_checkout, source_products, _events
 
 
 @pytest.fixture(autouse=True)

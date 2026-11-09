@@ -1,9 +1,9 @@
-name: hermes-ledgerline
-repo: https://github.com/Adolanium/hermes-ledgerline
+name: moor-ledgerline
+repo: https://github.com/Adolanium/moor-ledgerline
 sha: fa28160845d530ecbd5b9559c0f960a8c589dfb2
 version: "0.1.8"
-image: https://raw.githubusercontent.com/Adolanium/hermes-ledgerline/fa28160845d530ecbd5b9559c0f960a8c589dfb2/assets/catalog-banner.png
-description: Inspect session costs and usage in Hermes Desktop.
+image: https://raw.githubusercontent.com/Adolanium/moor-ledgerline/fa28160845d530ecbd5b9559c0f960a8c589dfb2/assets/catalog-banner.png
+description: Inspect session costs and usage in Moor Desktop.
 maintainer: Adolanium
 tier: community
 category: desktop

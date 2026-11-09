@@ -485,8 +485,8 @@ test('observeUpdaterHandoff settles ok for children without an event interface',
 
 test.skipIf(process.platform === 'win32')('launcherInstallDirectory returns the root the launcher reports', async () => {
   const dir = await realpathMkdtemp('launcher-install-')
-  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'hermes-agent')).then(() => path.join(dir, 'hermes-agent')))
-  const launcher = await writeLauncher(dir, `printf 'Hermes Agent v0.22.1\\nInstall directory: ${reported}\\n'`)
+  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'moor-agent')).then(() => path.join(dir, 'moor-agent')))
+  const launcher = await writeLauncher(dir, `printf 'Moor Agent v0.22.1\\nInstall directory: ${reported}\\n'`)
 
   assert.equal(launcherInstallDirectory(launcher), reported)
 })
@@ -494,7 +494,7 @@ test.skipIf(process.platform === 'win32')('launcherInstallDirectory returns the 
 test.skipIf(process.platform === 'win32')('launcherInstallDirectory stays null when the launcher reports nothing', async () => {
   const dir = await realpathMkdtemp('launcher-install-')
 
-  for (const body of ["printf 'Hermes Agent v0.22.1\\n'", 'exit 3']) {
+  for (const body of ["printf 'Moor Agent v0.22.1\\n'", 'exit 3']) {
     const launcher = await writeLauncher(dir, body)
 
     assert.equal(launcherInstallDirectory(launcher), null)
@@ -506,7 +506,7 @@ test.skipIf(process.platform === 'win32')('launcherInstallDirectory stays null w
 // names its root must not pay a fresh spawn on each resolve.
 test.skipIf(process.platform === 'win32')('launcherInstallRoot probes off the main thread, once for concurrent callers', async () => {
   const dir = await realpathMkdtemp('launcher-root-')
-  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'hermes-agent')).then(() => path.join(dir, 'hermes-agent')))
+  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'moor-agent')).then(() => path.join(dir, 'moor-agent')))
   const calls = path.join(dir, 'calls')
   const launcher = await writeLauncher(dir, `echo x >> ${calls}; sleep 0.4; printf 'Install directory: ${reported}\\n'`)
   let ticked = false
@@ -526,9 +526,9 @@ test.skipIf(process.platform === 'win32')('launcherInstallRoot probes off the ma
 // permanent miss would keep the override rootless until Desktop restarts.
 test.skipIf(process.platform === 'win32')('launcherInstallRoot caches a miss for a short window, then retries and keeps the root', async () => {
   const dir = await realpathMkdtemp('launcher-root-')
-  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'hermes-agent')).then(() => path.join(dir, 'hermes-agent')))
+  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'moor-agent')).then(() => path.join(dir, 'moor-agent')))
   const calls = path.join(dir, 'calls')
-  const launcher = await writeLauncher(dir, `echo x >> ${calls}; printf 'Hermes Agent v0.22.1\\n'`)
+  const launcher = await writeLauncher(dir, `echo x >> ${calls}; printf 'Moor Agent v0.22.1\\n'`)
   const count = async () => (await fs.readFile(calls, 'utf8')).trim().split('\n').length
   const now = vi.spyOn(Date, 'now')
 
@@ -553,7 +553,7 @@ async function realpathMkdtemp(prefix: string): Promise<string> {
 
 /** A POSIX script stands in for the installation launcher's --version boundary. */
 async function writeLauncher(dir: string, body: string): Promise<string> {
-  const file = path.join(dir, 'hermes')
+  const file = path.join(dir, 'moor')
   await fs.writeFile(file, `#!/bin/sh\n${body}\n`, { mode: 0o755 })
 
   return file

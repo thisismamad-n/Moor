@@ -14,10 +14,10 @@ Tools are functions that extend the agent's capabilities. They're organized into
 
 ## Available Tools
 
-Hermes ships with a broad built-in tool registry covering web search, browser automation, terminal execution, file editing, memory, delegation, scheduled tasks, and more. Plugins add more tools — for example Home Assistant device control comes from the `homeassistant` catalog plugin.
+Moor ships with a broad built-in tool registry covering web search, browser automation, terminal execution, file editing, memory, delegation, scheduled tasks, and more. Plugins add more tools — for example Home Assistant device control comes from the `homeassistant` catalog plugin.
 
 :::note
-**Honcho cross-session memory** is available as a memory provider plugin from the plugin catalog (`hermes plugins install honcho`), not as a built-in toolset. See [Memory Providers](./memory-providers.md#honcho).
+**Honcho cross-session memory** is available as a memory provider plugin from the plugin catalog (`moor plugins install honcho`), not as a built-in toolset. See [Memory Providers](./memory-providers.md#honcho).
 :::
 
 High-level categories:
@@ -27,11 +27,11 @@ High-level categories:
 | **Web** | `web_search`, `web_extract` | Search the web and extract page content. |
 | **X Search** | `x_search` | Search X (Twitter) posts and threads via xAI's built-in `x_search` Responses tool — gated on xAI credentials (SuperGrok OAuth or `XAI_API_KEY`); off by default, opt in via `moor tools` → 🐦 X (Twitter) Search. |
 | **Terminal & Files** | `terminal`, `process`, `read_file`, `patch` | Execute commands and manipulate files. |
-| **Browser** | `browser_exec`, `browser_cdp`, `browser_dialog`, `browser_vault` | Browser automation: `browser_exec` drives Chromium with Python over CDP (screenshots included). The Camofox browser is a separate catalog plugin (`hermes plugins install camofox`). |
+| **Browser** | `browser_exec`, `browser_cdp`, `browser_dialog`, `browser_vault` | Browser automation: `browser_exec` drives Chromium with Python over CDP (screenshots included). The Camofox browser is a separate catalog plugin (`moor plugins install camofox`). |
 | **Media** | `vision_analyze`, `image_generate`, `text_to_speech` | Multimodal analysis and generation. |
 | **Agent orchestration** | `todo`, `clarify`, `execute_code`, `delegate_task` | Planning, clarification, code execution, and subagent delegation. |
 | **Memory & recall** | `memory`, `session_search` | Persistent memory and session search. |
-| **Automation** | `cronjob` | Scheduled tasks with create/list/update/pause/resume/run/remove actions. Outbound delivery is handled by cron's own delivery, the `hermes send` CLI, and the gateway notifier — not by an agent-callable tool. |
+| **Automation** | `cronjob` | Scheduled tasks with create/list/update/pause/resume/run/remove actions. Outbound delivery is handled by cron's own delivery, the `moor send` CLI, and the gateway notifier — not by an agent-callable tool. |
 | **Integrations** | MCP server tools, plugin tools | MCP and plugin integrations, e.g. Home Assistant (`ha_*`, from the [`homeassistant` catalog plugin](../messaging/homeassistant.md)). |
 
 For the authoritative code-derived registry, see [Built-in Tools Reference](../../reference/tools-reference.md) and [Toolsets Reference](../../reference/toolsets-reference.md).
@@ -143,10 +143,10 @@ TERMINAL_SSH_KEY=~/.ssh/id_rsa
 
 ### Singularity/Apptainer
 
-An official plugin ([`singularity`](https://github.com/NousResearch/hermes-official-plugins/tree/main/singularity)), formerly built in; `hermes update` installs it for profiles that already use it.
+An official plugin ([`singularity`](https://github.com/NousResearch/hermes-official-plugins/tree/main/singularity)), formerly built in; `moor update` installs it for profiles that already use it.
 
 ```bash
-hermes plugins install singularity
+moor plugins install singularity
 
 # Pre-build SIF for parallel workers
 apptainer build ~/python.sif docker://python:3.11-slim
@@ -168,11 +168,11 @@ moor config set terminal.backend modal
 
 ```bash
 python -c "import pm; pm.sync_venv(['vercel'], explicit=True)"
-hermes config set terminal.backend vercel_sandbox
-hermes config set terminal.vercel_image vercel/sandbox/universal:latest
+moor config set terminal.backend vercel_sandbox
+moor config set terminal.vercel_image vercel/sandbox/universal:latest
 ```
 
-Authenticate with all three of `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, and `VERCEL_TEAM_ID`. This access-token setup is the supported path for deployments and normal long-running Hermes processes on Render, Railway, Docker, and similar hosts. Fresh sandboxes start from `terminal.vercel_image` (default `vercel/sandbox/universal:latest`; the legacy `vercel_runtime` presets are deprecated by Vercel); Hermes defaults to `/vercel/sandbox` as the remote workspace root.
+Authenticate with all three of `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, and `VERCEL_TEAM_ID`. This access-token setup is the supported path for deployments and normal long-running Moor processes on Render, Railway, Docker, and similar hosts. Fresh sandboxes start from `terminal.vercel_image` (default `vercel/sandbox/universal:latest`; the legacy `vercel_runtime` presets are deprecated by Vercel); Moor defaults to `/vercel/sandbox` as the remote workspace root.
 
 For one-off local development, Moor also accepts short-lived Vercel OIDC tokens:
 
@@ -247,20 +247,20 @@ approval checks as any background command. Shapes that mix in other commands
 (`server & curl ...`, `a; b &`, multi-line scripts), `nohup`/`disown`/`setsid`
 wrappers, command substitutions (`$(...)`, backticks, `<(...)`) and commands
 whose approval category would change without the `&` are still refused with
-guidance, because Hermes cannot safely tell which part should keep running.
+guidance, because Moor cannot safely tell which part should keep running.
 
 ### Repeated waits on a quiet process
 
 When the agent calls `process(action="wait")` or `process(action="poll")` twice in a row on a
-process that is still running and has printed nothing new, Hermes turns on `notify_on_complete`
+process that is still running and has printed nothing new, Moor turns on `notify_on_complete`
 for that process and the result tells the agent to stop checking: the exit (code and final output)
 arrives later as its own message, so the agent can do other work or end its turn instead of
 spending a model call on every unchanged check. New output, the process exiting, or any other
 action on that process resets the count.
 
 This applies where a completion can reach the agent: the interactive CLI (including interactive
-`hermes chat -q`), the TUI and desktop app, and messaging chats. Non-interactive `hermes chat -q`,
-one-shot `hermes -z`, cron jobs, Kanban workers, stateless API requests and delegated subagents keep the
+`moor chat -q`), the TUI and desktop app, and messaging chats. Non-interactive `moor chat -q`,
+one-shot `moor -z`, cron jobs, Kanban workers, stateless API requests and delegated subagents keep the
 previous behaviour because they cannot receive a later completion, as does any profile with
 `display.background_process_notifications: off` (completions never start an agent turn there). Checking
 a process whose completion goes to someone else (another session's process, or a subagent's process

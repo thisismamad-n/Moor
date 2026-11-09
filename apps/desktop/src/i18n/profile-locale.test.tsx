@@ -2,8 +2,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, expect, it, vi } from 'vitest'
 
 import { setApiRequestConnection } from '@/api/client'
-import type { HermesApiRequest } from '@/global'
-import type { HermesConfigRecord } from '@/hermes'
+import type { MoorApiRequest } from '@/global'
+import type { MoorConfigRecord } from '@/moor'
 import { $gateway } from '@/store/gateway'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $connection, $gatewayState } from '@/store/session'
@@ -153,7 +153,7 @@ it('isolates stale reads and failed saves when the same profile moves between co
   await waitFor(() => expect(screen.getByTestId('locale').textContent).toBe('ar'))
 })
 
-// A backend whose hermes-lang-ko pack carries Desktop strings.
+// A backend whose moor-lang-ko pack carries Desktop strings.
 function koPackRequest() {
   return vi.fn(async (method: string) =>
     method === 'i18n.languages'
@@ -163,7 +163,7 @@ function koPackRequest() {
               id: 'ko',
               endonym: '한국어',
               rtl: false,
-              source: 'plugin:hermes-lang-ko',
+              source: 'plugin:moor-lang-ko',
               surfaces: ['core', 'tui', 'desktop']
             }
           ]
@@ -180,7 +180,7 @@ function savedKoWithDeferredProbe() {
     resolveProfile = resolve
   })
 
-  window.hermesDesktop = {
+  window.moorDesktop = {
     api: vi.fn(async () => ({ display: { language: 'ko' } })),
     getMachineProfile: vi.fn(() => machineProfile)
   } as never
@@ -205,13 +205,13 @@ function mountWithOpenSocket() {
 
 // Boot reports the socket `open` before the client is published in `$gateway`.
 // The backend-pack sync must still run once the client arrives, or a language
-// only a pack renders (ko via hermes-lang-ko) never leaves English.
+// only a pack renders (ko via moor-lang-ko) never leaves English.
 it('pulls the backend language pack once the gateway client is published after the socket opened', async () => {
-  window.hermesDesktop = { api: vi.fn(async () => ({ display: { language: 'ko' } })) } as never
+  window.moorDesktop = { api: vi.fn(async () => ({ display: { language: 'ko' } })) } as never
   const request = koPackRequest()
 
   mountWithOpenSocket()
-  await waitFor(() => expect(window.hermesDesktop.api).toHaveBeenCalled())
+  await waitFor(() => expect(window.moorDesktop.api).toHaveBeenCalled())
   expect(request).not.toHaveBeenCalled()
 
   act(() => $gateway.set({ request } as never))
@@ -225,7 +225,7 @@ it('keeps a pack-rendered saved language when the OS-language probe resolves aft
   const resolveProbe = savedKoWithDeferredProbe()
 
   mountWithOpenSocket()
-  await waitFor(() => expect(window.hermesDesktop.getMachineProfile).toHaveBeenCalled())
+  await waitFor(() => expect(window.moorDesktop.getMachineProfile).toHaveBeenCalled())
 
   act(() => $gateway.set({ request: koPackRequest() } as never))
   await waitFor(() => expect(screen.getByTestId('locale').textContent).toBe('ko'))
@@ -240,7 +240,7 @@ it('promotes a saved pack language that arrives after the OS-language probe', as
   const resolveProbe = savedKoWithDeferredProbe()
 
   mountWithOpenSocket()
-  await waitFor(() => expect(window.hermesDesktop.getMachineProfile).toHaveBeenCalled())
+  await waitFor(() => expect(window.moorDesktop.getMachineProfile).toHaveBeenCalled())
 
   await resolveProbe('en-US')
   expect(screen.getByTestId('locale').textContent).toBe('en')

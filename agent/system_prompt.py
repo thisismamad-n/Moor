@@ -168,7 +168,7 @@ def restore_plugin_prompt_sections(agent: Any, prompt: str) -> None:
 
 
 def _plugin_section_blocks(sections: tuple, position: str) -> list[str]:
-    from hermes_cli.plugins import format_system_prompt_sections
+    from moor_cli.plugins import format_system_prompt_sections
     block = format_system_prompt_sections([s for s in sections if s.position == position])
     return [block] if block else []
 
@@ -420,7 +420,7 @@ def _default_platform_hint(platform_key: str) -> str:
             if _entry is None:
                 # A prompt can be built before anything ran plugin discovery (direct builders,
                 # one-shot callers); the hint lives on the plugin's entry, so discover (idempotent).
-                from hermes_cli.plugins import discover_plugins
+                from moor_cli.plugins import discover_plugins
                 discover_plugins()
                 _entry = platform_registry.get(platform_key)
             hint = (_entry and _entry.platform_hint) or ""
@@ -720,7 +720,7 @@ def _context_files_part(agent: Any, ctx_len: Optional[int], soul_loaded: bool) -
     install-tree fallback is only legitimate for cli/tui where the launch dir
     IS the user's shell cwd. Desktop launch artifacts skip the session cwd but
     still honor the profile-scoped TERMINAL_CWD; without one, the fallback guard
-    can reject Hermes's bundled AGENTS.md."""
+    can reject Moor's bundled AGENTS.md."""
     if agent.skip_context_files:
         return []
     launch_artifact = getattr(agent, "_context_cwd_is_launch_artifact", False)

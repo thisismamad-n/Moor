@@ -173,7 +173,7 @@ class TestFallbackEvictionHonorsChannelOverrides:
     @staticmethod
     def _evicted_after_turn(
         monkeypatch, source, agent_model, *, global_model="default/model", channel_model="chan/model",
-        session_model=None, session_provider="nous", **agent_attrs,
+        session_model=None, session_provider="moor", **agent_attrs,
     ):
         from gateway.turn_context import TurnContext
 
@@ -204,34 +204,34 @@ class TestFallbackEvictionHonorsChannelOverrides:
 
     _WELCOME = "https://welcome-api.nousresearch.com/v1"
 
-    @pytest.mark.parametrize("global_model", ["nous/welcome", "default/model"])
+    @pytest.mark.parametrize("global_model", ["moor/welcome", "default/model"])
     def test_the_welcome_host_pins_its_model_over_the_channel_model(self, monkeypatch, global_model):
-        """AIAgent.__init__ runs a welcome-host agent on ``nous/welcome`` whatever the chat configured."""
-        from hermes_cli.anon_auth import pin_model_for_route
+        """AIAgent.__init__ runs a welcome-host agent on ``moor/welcome`` whatever the chat configured."""
+        from moor_cli.anon_auth import pin_model_for_route
 
-        agent_model = pin_model_for_route("nous", self._WELCOME, "chan/model")
-        assert agent_model == "nous/welcome"
+        agent_model = pin_model_for_route("moor", self._WELCOME, "chan/model")
+        assert agent_model == "moor/welcome"
         assert self._evicted_after_turn(
             monkeypatch, _make_source(), agent_model, global_model=global_model,
-            provider="nous", base_url=self._WELCOME,
+            provider="moor", base_url=self._WELCOME,
         ) is False
 
     def test_the_recorded_welcome_alias_switch_keeps_the_cached_agent(self, monkeypatch):
         assert self._evicted_after_turn(
-            monkeypatch, _make_source(), "backing/model", provider="nous", base_url=self._WELCOME,
-            _nous_model_switch=("nous/welcome", "backing/model"),
+            monkeypatch, _make_source(), "backing/model", provider="moor", base_url=self._WELCOME,
+            _moor_model_switch=("moor/welcome", "backing/model"),
         ) is False
 
     def test_a_fallback_onto_the_welcome_host_still_evicts(self, monkeypatch):
         """The pin applies to the agent's primary route, not the fallback route it is on now."""
         assert self._evicted_after_turn(
-            monkeypatch, _make_source(), "nous/welcome", provider="nous", base_url=self._WELCOME,
+            monkeypatch, _make_source(), "moor/welcome", provider="moor", base_url=self._WELCOME,
             _primary_runtime={"provider": "openrouter", "base_url": "https://openrouter.ai/api/v1"},
         ) is True
 
     @pytest.mark.parametrize("agent_model, session_provider, switch, evicted", [
-        ("backing/model", "nous", ("nous/welcome", "backing/model"), False),  # the server's recorded move
-        ("chan/model", "nous", None, True),  # a fallback that happens to land on the channel's model
+        ("backing/model", "moor", ("moor/welcome", "backing/model"), False),  # the server's recorded move
+        ("chan/model", "moor", None, True),  # a fallback that happens to land on the channel's model
         # The override's provider was unavailable, so this turn ran on the channel's model.
         ("chan/model", "openai-codex", None, False),
     ], ids=["recorded-switch-off-the-session-model", "fallback-onto-the-channel-model", "override-unavailable"])
@@ -240,9 +240,9 @@ class TestFallbackEvictionHonorsChannelOverrides:
     ):
         """The agent was built on the session's /model choice, so drift is measured from it."""
         assert self._evicted_after_turn(
-            monkeypatch, _make_source(), agent_model, global_model="backing/model", session_model="nous/welcome",
-            session_provider=session_provider, provider="nous", base_url="https://inference-api.nousresearch.com/v1",
-            **({"_nous_model_switch": switch} if switch else {}),
+            monkeypatch, _make_source(), agent_model, global_model="backing/model", session_model="moor/welcome",
+            session_provider=session_provider, provider="moor", base_url="https://inference-api.nousresearch.com/v1",
+            **({"_moor_model_switch": switch} if switch else {}),
         ) is evicted
 
     @pytest.mark.parametrize("session_model", [None, "chan/model"], ids=["channel-model", "session-model"])
@@ -319,7 +319,7 @@ class TestOneTurnNeverPersisted:
             ),
             encoding="utf-8",
         )
-        monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+        monkeypatch.setattr(gateway_run, "_moor_home", moor_home)
         monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
         monkeypatch.setattr(
             "moor_cli.model_switch.switch_model",

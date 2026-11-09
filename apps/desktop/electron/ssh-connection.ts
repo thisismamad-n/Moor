@@ -36,7 +36,7 @@ import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 
-import { platformDefaultHermesHome } from './data-paths'
+import { platformDefaultMoorHome } from './data-paths'
 import { type ControlMasterHolders, sharedControlMasterHolders } from './ssh-control-master-holders'
 
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000
@@ -479,7 +479,7 @@ function sshErrorMessage(kind, conn, stderr?) {
 
       return (
         `Tailscale SSH requires an interactive browser check for ${host}. ` +
-        `Hermes Desktop runs SSH non-interactively. In Terminal, run ` +
+        `Moor Desktop runs SSH non-interactively. In Terminal, run ` +
         `\`ssh${portArg} ${host} true\`, complete the browser check, then retry. ` +
         `If checks recur, use a key-authenticated OpenSSH route or adjust the tailnet SSH check policy.`
       )

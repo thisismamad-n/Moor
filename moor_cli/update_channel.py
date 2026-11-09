@@ -170,8 +170,8 @@ def _tracks_official_origin(root: Path) -> bool:
     Read from the git config file (no git process: the banner and boot paths call this).
     Forks, mirrors and local-path origins publish no official releases.
     """
-    from hermes_cli.source_releases import _GITHUB_ORIGIN, OFFICIAL_REPOSITORY
-    from hermes_cli.update_lock import _git_common_dir
+    from moor_cli.source_releases import _GITHUB_ORIGIN, OFFICIAL_REPOSITORY
+    from moor_cli.update_lock import _git_common_dir
 
     common = _git_common_dir(root)
     try:
@@ -322,7 +322,7 @@ def _write_channel_record_locked(sha16: str, path: str, channel: str,
     the dotted writer would otherwise turn a scalar into a mapping and
     destroy whatever the user had there.
     """
-    from hermes_cli.config_backend import write_config_key
+    from moor_cli.config_backend import write_config_key
 
     from moor_cli.config import require_readable_config_before_write
     existing = require_readable_config_before_write(config_path)

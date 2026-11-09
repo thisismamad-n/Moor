@@ -7,7 +7,7 @@ import { terminalMenuHandleFor } from '@/app/right-sidebar/terminal/terminal-con
 import { openStarMapNodeMenuFor } from '@/app/starmap/context-menu-handle'
 import { DROPDOWN_KIT } from '@/components/ui/actions-menu'
 import { Codicon } from '@/components/ui/codicon'
-import { HERMES_CONTEXT_MENU_TRIGGER_ATTR } from '@/components/ui/context-menu'
+import { MOOR_CONTEXT_MENU_TRIGGER_ATTR } from '@/components/ui/context-menu'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,7 +99,7 @@ function composerSectionsFor(contributions: readonly Contribution[], target: Com
 /** Our Cut, Copy and Paste run through Electron main (`contextMenuEdit`) and our spelling rows
  * come from its spellcheck feed; a browser host has neither. */
 function lacksEditVerbs(): boolean {
-  return !hostHas('mainProcessEditVerbs') && !window.hermesDesktop?.contextMenuEdit
+  return !hostHas('mainProcessEditVerbs') && !window.moorDesktop?.contextMenuEdit
 }
 
 /** Without them an editable keeps the browser's own menu, where both work: pane and row menus
@@ -685,7 +685,7 @@ export function AppContextMenu() {
         return
       }
 
-      const trigger = element?.closest(`[${HERMES_CONTEXT_MENU_TRIGGER_ATTR}], [data-slot="context-menu-trigger"]`)
+      const trigger = element?.closest(`[${MOOR_CONTEXT_MENU_TRIGGER_ATTR}], [data-slot="context-menu-trigger"]`)
 
       // Only the pane-body wrapper is a fallback menu. Explicit row, tab and
       // status-bar menus still own their whole gesture, even inside a pane.

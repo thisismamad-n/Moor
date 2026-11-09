@@ -94,12 +94,12 @@ Developer ID in your keychain.
 `-Store` allocates a local claim tag `rc.<N>-vX.Y.Z` (N starts at 900) for the
 next patch after the newest published stable tag, and deletes it when the
 build ends. The tag is never pushed. Each architecture builds on its own host.
-`-Store` prints the claim timestamp as `HERMES_RELEASE_EPOCH=<n>`. To combine the
+`-Store` prints the claim timestamp as `MOOR_RELEASE_EPOCH=<n>`. To combine the
 x64 and arm64 Store packages, copy both `Store-*.msix` files into one
 `apps/desktop/release`, then run this on that host:
 
 ```powershell
-$env:HERMES_RELEASE_EPOCH = '<n from the build>'
+$env:MOOR_RELEASE_EPOCH = '<n from the build>'
 node scripts/bundle-store-msixbundle.mjs --tag vX.Y.Z
 ```
 
@@ -203,9 +203,9 @@ defaults into the desktop app, for example:
 
 ```sh
 python scripts/release.py --build-commit REV --remote fork --publish \
-  --bundle-env HERMES_PREVIEW_FULL_CONNECTORS=1 \
-  --bundle-env HERMES_DATA_DIR_SUFFIX=magic-test \
-  --bundle-unset HERMES_HOME
+  --bundle-env MOOR_PREVIEW_FULL_CONNECTORS=1 \
+  --bundle-env MOOR_DATA_DIR_SUFFIX=magic-test \
+  --bundle-unset MOOR_HOME
 ```
 
 These defaults run before Electron initializes its paths and are inherited by
@@ -224,9 +224,9 @@ runtime overrides; `--bundle-env MOOR_HOME=` is a default, not a forced clear.
 
 For local commit builds, `MOOR_BUNDLE_ENV_JSON` accepts a JSON object whose
 string values are defaults and whose `null` values are explicit clears. For example,
-`{"HERMES_HOME":null,"HERMES_DATA_DIR_SUFFIX":"magic-test"}`. Only
-`HERMES_HOME`, `HERMES_DATA_DIR_SUFFIX`, `HERMES_DESKTOP_USER_DATA_DIR`,
-`HERMES_SHARED_AUTH_DIR`, and `HERMES_PREVIEW_FULL_CONNECTORS` are accepted. Process-control variables such as `NODE_OPTIONS` and `PATH`
+`{"MOOR_HOME":null,"MOOR_DATA_DIR_SUFFIX":"magic-test"}`. Only
+`MOOR_HOME`, `MOOR_DATA_DIR_SUFFIX`, `MOOR_DESKTOP_USER_DATA_DIR`,
+`MOOR_SHARED_AUTH_DIR`, and `MOOR_PREVIEW_FULL_CONNECTORS` are accepted. Process-control variables such as `NODE_OPTIONS` and `PATH`
 are rejected. These settings are not applied to the build runner itself.
 Commit archive keys still use the SHA, so use a fresh commit for different
 defaults: an existing artifact is never overwritten with different bytes.
@@ -322,7 +322,7 @@ On Windows bundles, PM builds dependency generations on a verified writable
 copy of the bundled Python in its user store. A venv's `Scripts\python.exe` is a
 redirector outside the package. Windows refuses it (WinError 5) when it starts the
 packaged interpreter, and uv runs that redirector during every lock, sync and
-`pip check`. Hermes never runs a venv's own executables. The app and execution
+`pip check`. Moor never runs a venv's own executables. The app and execution
 aliases keep their signed bundled launchers, and children that need a
 generation's packages start through `pm.environments.venv_command`: the bundled
 Python with `-S` plus `pm/_venv_entry.py`, which attaches the generation's

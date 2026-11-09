@@ -14,16 +14,16 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import gateway, profiles
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_cli import gateway, profiles
+from moor_constants import reset_moor_home_override, set_moor_home_override
 
 
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
     real = pwd.getpwuid(os.getuid())
     fake = pwd.struct_passwd((real.pw_name, real.pw_passwd, real.pw_uid, real.pw_gid,
@@ -40,13 +40,13 @@ def profile_env(tmp_path, monkeypatch):
 
 
 def _host_unit_path(profile_dir: Path) -> Path:
-    token = set_hermes_home_override(str(profile_dir))
+    token = set_moor_home_override(str(profile_dir))
     try:
         if platform.system() == "Darwin":
             return gateway.get_launchd_plist_path()
         return gateway.user_systemd_unit_dir() / f"{gateway.get_service_name()}.service"
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 @pytest.mark.platforms("posix")
@@ -55,7 +55,7 @@ def test_rename_removes_the_old_names_service_while_the_gateway_is_stopped(profi
     unit = _host_unit_path(old_dir)
     assert "coder" in unit.name
     unit.parent.mkdir(parents=True, exist_ok=True)
-    unit.write_text("installed by `hermes -p coder gateway install`\n", encoding="utf-8")
+    unit.write_text("installed by `moor -p coder gateway install`\n", encoding="utf-8")
 
     new_dir = profiles.rename_profile("coder", "dev")
 
@@ -78,8 +78,8 @@ def test_rename_moves_the_s6_slot_to_the_new_name(profile_env, monkeypatch):
             self.slots.discard(name)
 
     s6 = _S6()
-    monkeypatch.setattr("hermes_cli.service_manager.detect_service_manager", lambda: "s6")
-    monkeypatch.setattr("hermes_cli.service_manager.get_service_manager", lambda: s6)
+    monkeypatch.setattr("moor_cli.service_manager.detect_service_manager", lambda: "s6")
+    monkeypatch.setattr("moor_cli.service_manager.get_service_manager", lambda: s6)
     profiles.create_profile("coder", no_alias=True)
 
     profiles.rename_profile("coder", "dev")

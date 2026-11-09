@@ -413,10 +413,10 @@ export const frOverrides = {
     copyDetailFailed: 'Impossible de copier le détail de la notification',
     backendOutOfDateTitle: 'Backend obsolète',
     backendOutOfDateMessage:
-      'Votre backend Hermes est plus ancien que cette version du desktop et peut ne pas fonctionner correctement. Mettez-le à jour pour les aligner.',
-    desktopOutOfDateTitle: 'Application Hermes obsolète',
+      'Votre backend Moor est plus ancien que cette version du desktop et peut ne pas fonctionner correctement. Mettez-le à jour pour les aligner.',
+    desktopOutOfDateTitle: 'Application Moor obsolète',
     desktopOutOfDateMessage:
-      "Cette application Hermes est plus ancienne que le backend auquel elle est connectée et peut ne pas fonctionner correctement. Effectuez la mise à jour de l'application pour les aligner.",
+      "Cette application Moor est plus ancienne que le backend auquel elle est connectée et peut ne pas fonctionner correctement. Effectuez la mise à jour de l'application pour les aligner.",
     updateDesktopApp: "Mettre à jour l'application",
     installMethodUnsupportedTitle: "Méthode d'installation non prise en charge",
     updateMoor: 'Mettre à jour Moor',
@@ -839,7 +839,7 @@ export const frOverrides = {
           `${name} est installé, mais a besoin d'une clé pour fonctionner : ${vars}. Ajoutez-la maintenant, sinon les outils du plugin échoueront.`,
         verified: 'Vérifié',
         unverified: 'Non vérifié',
-        reviewedByNous: 'Examiné par Nous.',
+        reviewedByMoor: 'Examiné par Moor.',
         installsAndEnables: profile => `S’installe pour ${profile} et s’active tout de suite.`,
         installsOnly: profile => `S’installe pour ${profile}.`,
         advanced: 'Avancé',
@@ -1854,9 +1854,9 @@ export const frOverrides = {
       sshErrPlatform:
         'Plateforme distante non prise en charge. Le mode SSH de Moor Desktop supporte les hôtes distants Linux, macOS et Windows.',
       sshErrTimeout: "Expiration de la connexion SSH. L'hôte peut être inaccessible ou en veille.",
-      sshErrUpdateRequired: "Mettez à jour Hermes sur l'hôte distant avant de vous connecter avec Desktop SSH.",
+      sshErrUpdateRequired: "Mettez à jour Moor sur l'hôte distant avant de vous connecter avec Desktop SSH.",
       sshErrInteractiveAuth:
-        'Tailscale SSH exige une vérification interactive dans le navigateur. Exécutez `ssh <host> true` dans le terminal, terminez la vérification, puis réessayez — Hermes exécute SSH de façon non interactive.',
+        'Tailscale SSH exige une vérification interactive dans le navigateur. Exécutez `ssh <host> true` dans le terminal, terminez la vérification, puis réessayez — Moor exécute SSH de façon non interactive.',
       sshErrUnknown: 'Échec de la connexion SSH.'
     },
     keys: {
@@ -2022,7 +2022,7 @@ export const frOverrides = {
       keepGoingOnCredits: {
         title: 'Continuer avec les crédits',
         description:
-          'Utilise vos crédits quand l’usage inclus est épuisé. Désactivé : Hermes attend la réinitialisation.',
+          'Utilise vos crédits quand l’usage inclus est épuisé. Désactivé : Moor attend la réinitialisation.',
         approveInBrowser:
           "Approuvez Remote Spending dans votre navigateur pour modifier ce réglage. Il s'applique dès votre approbation.",
         openAgain: 'Rouvrir',
@@ -2507,12 +2507,12 @@ export const frOverrides = {
       toolsetOff: (name: string, profile: string) => `Outils agent de ${name} désactivés pour ${profile}`,
       toolsetToggleFailed: (name: string) =>
         `Impossible de modifier les outils agent de ${name} ; le panneau Desktop reste inchangé`,
-      legacyBackend: 'Ce backend est trop ancien pour gérer les plugins depuis cet écran ; mettez Hermes à jour.',
+      legacyBackend: 'Ce backend est trop ancien pour gérer les plugins depuis cet écran ; mettez Moor à jour.',
       portableBadge: 'portable',
       serverStates: {
         connected: 'connecté',
         app_not_running: 'application non lancée',
-        hermes_not_connected: 'connexion MCP manquante',
+        moor_not_connected: 'connexion MCP manquante',
         endpoint_unavailable: 'point de terminaison indisponible',
         no_interactive_session: 'aucune session interactive',
         version_too_old: 'version trop ancienne',
@@ -3229,7 +3229,7 @@ export const frOverrides = {
     failedImport: "Échec de l'importation du profil",
     failedExport: "Échec de l'exportation du profil",
     exportNeedsHost: name =>
-      `Le navigateur ne peut pas enregistrer une archive de profil. Sur l'hôte Hermes, exécutez : hermes profile export ${name}`,
+      `Le navigateur ne peut pas enregistrer une archive de profil. Sur l'hôte Moor, exécutez : moor profile export ${name}`,
     allProfiles: 'Tous les profils',
     showAllProfiles: 'Afficher tous les profils',
     notServedHere: 'Non proposé ici',
@@ -3245,8 +3245,8 @@ export const frOverrides = {
       onGateway: (name, gateway) => `${name} · ${gateway}`,
       switchTo: (name, gateway) => `Ouvrir ${name} sur ${gateway}`,
       deleteOn: gateway => ` sur ${gateway}`,
-      localDevice: 'Cet appareil (backend local — installe Hermes s’il manque, sinon ouvre une nouvelle session)',
-      installDeviceTitle: 'Installer Hermes sur cet appareil ?',
+      localDevice: 'Cet appareil (backend local — installe Moor s’il manque, sinon ouvre une nouvelle session)',
+      installDeviceTitle: 'Installer Moor sur cet appareil ?',
       installDeviceDesc:
         'Moor sera installé localement, puis une nouvelle session s’ouvrira sur cet ordinateur. Rien n’est installé tant que vous ne confirmez pas.',
       installDeviceConfirm: 'Installer localement',
@@ -4118,23 +4118,23 @@ export const frOverrides = {
     }
   },
   updates: {
-    discontinuedTitle: "Cette version de Hermes n'est plus prise en charge",
+    discontinuedTitle: "Cette version de Moor n'est plus prise en charge",
     discontinuedBody:
-      "Cette version de Hermes n'est plus prise en charge et risque de ne plus fonctionner — désinstallez-la. Vos données restent sur le disque.",
+      "Cette version de Moor n'est plus prise en charge et risque de ne plus fonctionner — désinstallez-la. Vos données restent sur le disque.",
     channels: { stable: 'Stable', canary: 'Canary' },
     appName: 'Moor',
     availableBodyRelease: tag => `La version ${tag} est prête à être installée.`,
     releaseAvailable: tag => `La version ${tag} est disponible.`,
     checkingShort: 'Vérification…',
     availableBodyAppInstaller:
-      'Une nouvelle version de Hermes est prête. Hermes va se fermer, Windows terminera la mise à jour, puis Hermes rouvrira automatiquement.',
+      'Une nouvelle version de Moor est prête. Moor va se fermer, Windows terminera la mise à jour, puis Moor rouvrira automatiquement.',
     applyingBodyAppInstaller:
-      "Hermes va se fermer et Windows terminera la mise à jour. Hermes rouvrira ensuite automatiquement — vous n'avez rien à faire.",
+      "Moor va se fermer et Windows terminera la mise à jour. Moor rouvrira ensuite automatiquement — vous n'avez rien à faire.",
     applyingCloseAppInstaller:
-      'Cette fenêtre va se fermer, Windows terminera la mise à jour et Hermes rouvrira automatiquement.',
+      'Cette fenêtre va se fermer, Windows terminera la mise à jour et Moor rouvrira automatiquement.',
     checkUnknownTitleAppInstaller: 'Impossible de vérifier les mises à jour',
     checkUnknownBodyAppInstaller:
-      "Windows n'a pas pu rechercher les mises à jour. Elles s'installent également automatiquement au redémarrage de Hermes.",
+      "Windows n'a pas pu rechercher les mises à jour. Elles s'installent également automatiquement au redémarrage de Moor.",
     versionDetailsTitle: 'Détails de la version',
     versionDetailsBody:
       "Cette installation est gérée hors de l'application. Mettez-la à jour de la même manière que vous l'avez installée.",
@@ -4161,12 +4161,12 @@ export const frOverrides = {
     versionUnavailable: 'Version indisponible',
     bundleOutOfSync: "Version de l'application obsolète",
     bundleOutOfSyncDesc:
-      "Le runtime Hermes a été mis à jour, mais l'application Desktop utilise encore une ancienne version. Les nouvelles fonctions de l'interface, comme le mode Bot, resteront absentes jusqu'à sa mise à jour. Lancez la mise à jour ci-dessous pour reconstruire l'application. Si cet avertissement persiste, réinstallez-la avec le dernier installateur Desktop.",
+      "Le runtime Moor a été mis à jour, mais l'application Desktop utilise encore une ancienne version. Les nouvelles fonctions de l'interface, comme le mode Bot, resteront absentes jusqu'à sa mise à jour. Lancez la mise à jour ci-dessous pour reconstruire l'application. Si cet avertissement persiste, réinstallez-la avec le dernier installateur Desktop.",
     bundleOutOfSyncAction: "Obtenir l'installateur",
     bundleSwapPending: 'Redémarrez pour terminer la mise à jour',
     bundleSwapPendingDesc:
-      "L'application mise à jour est déjà installée — Hermes doit seulement redémarrer pour la charger. Vos conversations et paramètres sont préservés.",
-    bundleSwapPendingAction: 'Redémarrer Hermes',
+      "L'application mise à jour est déjà installée — Moor doit seulement redémarrer pour la charger. Vos conversations et paramètres sont préservés.",
+    bundleSwapPendingAction: 'Redémarrer Moor',
     checkNow: 'Vérifier maintenant',
     seeWhatsNew: 'Voir les nouveautés',
     releaseNotes: 'Notes de version',
@@ -4223,10 +4223,10 @@ export const frOverrides = {
     manualTitle: 'Mise à jour depuis votre terminal',
     manualUnavailableTitle: 'Mise à jour impossible ici',
     manualBody:
-      "Vous avez installé Hermes depuis la ligne de commande, les mises à jour s'y effectuent donc aussi. Collez ceci dans votre terminal :",
-    manualPickedUp: 'Hermes prendra en compte la nouvelle version au prochain lancement.',
+      "Vous avez installé Moor depuis la ligne de commande, les mises à jour s'y effectuent donc aussi. Collez ceci dans votre terminal :",
+    manualPickedUp: 'Moor prendra en compte la nouvelle version au prochain lancement.',
     manualBodyBackend:
-      'Le backend Hermes est géré en dehors de cette app. Exécutez ceci sur le serveur qui l’héberge :',
+      'Le backend Moor est géré en dehors de cette app. Exécutez ceci sur le serveur qui l’héberge :',
     manualPickedUpBackend: 'Le backend chargera la nouvelle version une fois la mise à jour terminée.',
     guiSkewTitle: "Mettre à jour l'application de bureau",
     guiSkewBody:
@@ -4401,10 +4401,10 @@ export const frOverrides = {
     unreachableBody:
       "Moor n'a pas pu joindre le service Moor pour terminer votre connexion. Vérifiez votre connexion Internet et réessayez. Votre session reste disponible.",
     alreadySignedInHeading: 'Déjà connecté.',
-    alreadySignedInBody: 'Cette installation Hermes est déjà connectée à un compte Nous.',
+    alreadySignedInBody: 'Cette installation Moor est déjà connectée à un compte Moor.',
     offer: {
-      heading: 'Continuez avec Hermes',
-      body: 'Vous utilisez le quota gratuit. Si vous continuez à utiliser Hermes, vous allez commencer à atteindre des limites. Connectez-vous avec un compte Nous gratuit pour obtenir un quota plus important.',
+      heading: 'Continuez avec Moor',
+      body: 'Vous utilisez le quota gratuit. Si vous continuez à utiliser Moor, vous allez commencer à atteindre des limites. Connectez-vous avec un compte Moor gratuit pour obtenir un quota plus important.',
       signIn: 'Se connecter',
       notNow: 'Pas maintenant'
     },
@@ -4909,11 +4909,11 @@ export const frOverrides = {
         },
         timeout: {
           title: provider => `Impossible de joindre ${provider}`,
-          body: provider => `Hermes n'a pas pu joindre ${provider}. Vérifiez votre connexion, puis réessayez.`
+          body: provider => `Moor n'a pas pu joindre ${provider}. Vérifiez votre connexion, puis réessayez.`
         },
         no_reply: {
           title: "La réponse n'est pas arrivée",
-          body: "Hermes a terminé ce tour, mais aucune réponse n'est parvenue à cette fenêtre. Réessayez pour la renvoyer."
+          body: "Moor a terminé ce tour, mais aucune réponse n'est parvenue à cette fenêtre. Réessayez pour la renvoyer."
         },
         stream_drop: {
           title: 'La réponse a été interrompue',
@@ -4978,23 +4978,23 @@ export const frOverrides = {
         agent_init_failed: {
           title: 'Impossible de démarrer cette conversation',
           body: provider =>
-            `Hermes n'a pas pu se connecter à ${provider} pour cette conversation. Réessayez ; si l'échec persiste, vérifiez le fournisseur dans Paramètres.`
+            `Moor n'a pas pu se connecter à ${provider} pour cette conversation. Réessayez ; si l'échec persiste, vérifiez le fournisseur dans Paramètres.`
         },
         SESSION_NOT_OWNED: {
           title: 'Conversation ouverte ailleurs',
-          body: "Cette conversation est ouverte dans une autre fenêtre Hermes ou un terminal. Démarrez-en une nouvelle ici, ou fermez-la d'abord là-bas."
+          body: "Cette conversation est ouverte dans une autre fenêtre Moor ou un terminal. Démarrez-en une nouvelle ici, ou fermez-la d'abord là-bas."
         },
         disk_full: {
           title: 'Votre disque est plein',
-          body: "Hermes n'a pas pu enregistrer cette conversation. Libérez de l'espace, puis réessayez."
+          body: "Moor n'a pas pu enregistrer cette conversation. Libérez de l'espace, puis réessayez."
         },
         free_tier_disabled: {
           title: 'Connectez-vous pour continuer',
-          body: 'Connectez-vous avec un compte Nous gratuit pour continuer.'
+          body: 'Connectez-vous avec un compte Moor gratuit pour continuer.'
         },
         free_tier_rate_limited: {
           title: 'Quota gratuit épuisé',
-          body: 'Il sera bientôt renouvelé. Connectez-vous avec un compte Nous gratuit pour obtenir un quota plus élevé.'
+          body: 'Il sera bientôt renouvelé. Connectez-vous avec un compte Moor gratuit pour obtenir un quota plus élevé.'
         },
         free_tier_at_capacity: {
           title: 'Offre gratuite très sollicitée',
@@ -5002,11 +5002,11 @@ export const frOverrides = {
         },
         free_tier_model_not_free: {
           title: 'Ce modèle nécessite une connexion',
-          body: 'Hermes utilise le modèle gratuit pour le moment. Connectez-vous avec un compte Nous gratuit pour accéder à plus de modèles.'
+          body: 'Moor utilise le modèle gratuit pour le moment. Connectez-vous avec un compte Moor gratuit pour accéder à plus de modèles.'
         },
         free_tier_route: {
           title: 'Modèle gratuit injoignable',
-          body: 'Connectez-vous avec un compte Nous gratuit ou vérifiez le paramètre NOUS_INFERENCE_BASE_URL.'
+          body: 'Connectez-vous avec un compte Moor gratuit ou vérifiez le paramètre MOOR_INFERENCE_BASE_URL.'
         },
         free_tier_outage: {
           title: 'Modèle gratuit en difficulté',
@@ -5014,7 +5014,7 @@ export const frOverrides = {
         },
         free_tier_refused: {
           title: 'Connectez-vous pour continuer',
-          body: 'La connexion avec un compte Nous est gratuite.'
+          body: 'La connexion avec un compte Moor est gratuite.'
         },
         usage_window: {
           title: 'Usage inclus épuisé',

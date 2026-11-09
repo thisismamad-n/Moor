@@ -185,7 +185,7 @@ def _spawn_pyright(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
 
 
 def _detect_python(root: Optional[str]) -> Optional[str]:
-    # Pyright needs the project's dependencies, not Hermes's runtime packages.  ``VIRTUAL_ENV`` is the
+    # Pyright needs the project's dependencies, not Moor's runtime packages.  ``VIRTUAL_ENV`` is the
     # operator's own environment; ``root`` (the project's .venv/venv) is None for an untrusted workspace.
     project = (os.path.join(root, ".venv"), os.path.join(root, "venv")) if root else ()
     venvs = [v for v in (os.environ.get("VIRTUAL_ENV"), *project) if v]
@@ -237,10 +237,10 @@ _VUE_TSDK_MSG = (
 
 def _node_modules_trees(bin_path: str, root: Optional[str]) -> list[str]:
     """``node_modules`` trees that may hold a server and its TypeScript SDK: the launcher's own tree
-    (symlinks resolved), Hermes staging, then the project's (``root`` None: Hermes's trees only, for
+    (symlinks resolved), Moor staging, then the project's (``root`` None: Moor's trees only, for
     TypeScript's SDK pin in an untrusted workspace, whose own JavaScript must not load)."""
-    from agent.lsp.install import hermes_lsp_bin_dir
-    trees = [str(hermes_lsp_bin_dir().parent / "node_modules")] + ([os.path.join(root, "node_modules")] if root else [])
+    from agent.lsp.install import moor_lsp_bin_dir
+    trees = [str(moor_lsp_bin_dir().parent / "node_modules")] + ([os.path.join(root, "node_modules")] if root else [])
     real = os.path.realpath(bin_path)
     marker = f"{os.sep}node_modules{os.sep}"
     if (idx := real.rfind(marker)) >= 0:
@@ -285,14 +285,14 @@ def _spawn_vue(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
 
 _TS_UNTRUSTED_MSG = (
     "typescript-language-server: no TypeScript SDK next to the server, and this workspace is untrusted so its "
-    "own node_modules/typescript is not loaded — diagnostics are skipped. Reinstall: hermes lsp install "
+    "own node_modules/typescript is not loaded — diagnostics are skipped. Reinstall: moor lsp install "
     "typescript-language-server, or list the workspace under lsp.trusted_workspaces."
 )
 
 
 def _spawn_typescript(root: str, ctx: ServerContext) -> Optional[SpawnSpec]:
     """typescript-language-server loads the workspace's own ``node_modules/typescript`` unless
-    ``tsserver.path`` names another, so an untrusted workspace is pinned to Hermes's copy."""
+    ``tsserver.path`` names another, so an untrusted workspace is pinned to Moor's copy."""
     bin_path = _find_binary(ctx, "typescript", ("typescript-language-server",), "typescript-language-server")
     if bin_path is None:
         return None
@@ -372,14 +372,14 @@ def moor_lsp_session_dir() -> str:
 # ---- workspace trust ----
 
 # The only servers that start in an untrusted workspace (``workspace.is_trusted_workspace``): with the
-# settings Hermes passes they run nothing the checkout ships.  Everything else waits for trust, because
+# settings Moor passes they run nothing the checkout ships.  Everything else waits for trust, because
 # it evaluates project build files on start or on save (cargo check / build.rs / proc-macros, Gradle,
 # mix.exs, build.zig, stack/cabal, Lua ``runtime.plugin``, terraform providers, prisma.config.ts, Vue's
 # tsconfig ``vueCompilerOptions.plugins``, which @vue/language-core require()s from the project, ...),
-# and so do user-declared ``lsp.servers`` entries, whose behaviour Hermes cannot vouch for.
+# and so do user-declared ``lsp.servers`` entries, whose behaviour Moor cannot vouch for.
 UNTRUSTED_SAFE_SERVERS = frozenset({
     "pyright",                  # interpreter pinned to the operator's own (_spawn_pyright)
-    "typescript",               # tsserver pinned to Hermes's SDK; plugins then resolve beside it (_spawn_typescript)
+    "typescript",               # tsserver pinned to Moor's SDK; plugins then resolve beside it (_spawn_typescript)
     "svelte-language-server",   # isTrusted: false — no svelte.config.js, no project svelte/prettier
     "bash-language-server",     # parses scripts; diagnostics from shellcheck on PATH
     "yaml-language-server",     # validates against JSON schemas (may fetch them); no project code

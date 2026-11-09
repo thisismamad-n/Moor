@@ -67,8 +67,8 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
     source.mkdir()
     for name in ("pm", "moor_cli", "moor_platform"):
         shutil.copytree(ROOT / name, source / name, ignore=shutil.ignore_patterns("__pycache__"))
-    for name in ("utils.py", "hermes_constants.py", "hermes_dir_acl.py", "hermes_yaml.py", "hermes_bootstrap.py",
-                 "setup-hermes.sh"):
+    for name in ("utils.py", "moor_constants.py", "moor_dir_acl.py", "moor_yaml.py", "moor_bootstrap.py",
+                 "setup-moor.sh"):
         shutil.copy2(ROOT / name, source / name)
     # The CLI's user-facing text resolves through the i18n kernel (agent.i18n + the English catalog),
     # its config/env layer consults the stdlib-only safe-worker policy, and the update path's wait

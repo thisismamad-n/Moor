@@ -156,7 +156,7 @@ def _load_moor_env() -> None:
     the profile's external secret sources over it — so it is authoritative as-is; replaying raw
     ``.env`` over it would let a stale user value beat the secret-manager one for this request.
     """
-    from hermes_cli.config_backend import config_exists
+    from moor_cli.config_backend import config_exists
     import os
     try:
         from moor_cli.config import get_moor_home

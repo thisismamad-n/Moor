@@ -2,8 +2,8 @@ import re
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from hermes_cli import memory_setup
-from hermes_cli.memory_setup import _CANCELLED
+from moor_cli import memory_setup
+from moor_cli.memory_setup import _CANCELLED
 
 
 

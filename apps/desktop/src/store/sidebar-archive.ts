@@ -1,9 +1,9 @@
-import { backendScopeKey } from '@hermes/shared'
+import { backendScopeKey } from '@moor/shared'
 import { atom, computed } from 'nanostores'
 
 import { $apiRequestScope } from '@/api/client'
 import { listAllProfileSessions } from '@/api/sessions'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { $sidebarShowArchived } from './layout'
 import { $sessions } from './session'

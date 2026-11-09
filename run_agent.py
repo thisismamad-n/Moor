@@ -8,9 +8,9 @@
 
 # moor_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
-    import hermes_bootstrap
-except ModuleNotFoundError as exc:  # partial `hermes update` left the bootstrap unregistered
-    if exc.name != "hermes_bootstrap":
+    import moor_bootstrap
+except ModuleNotFoundError as exc:  # partial `moor update` left the bootstrap unregistered
+    if exc.name != "moor_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import sys
@@ -37,7 +37,7 @@ from datetime import datetime
 from pathlib import Path
 
 from agent.session_source import CLI_FAMILY_SOURCES, session_source_for
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 
 def _launch_cwd_for_session(source: str) -> Optional[str]:
@@ -135,7 +135,7 @@ from agent.codex_responses_adapter import (
     _summarize_user_message_for_log,
 )
 from agent.tool_guardrails import ToolGuardrailDecision, append_toolguard_guidance, toolguard_synthetic_result
-from hermes_cli.observability.shared_metrics_harness import record_guardrail_decision, record_guardrail_warnings
+from moor_cli.observability.shared_metrics_harness import record_guardrail_decision, record_guardrail_warnings
 from utils import base_url_host_matches, base_url_hostname, env_float, model_forces_max_completion_tokens
 
 
@@ -308,7 +308,7 @@ class AIAgent(
 
     def _session_row_model_config(self) -> Any:
         """``model_config`` for the lazily created session row: the init config plus a live /yolo toggled
-        before the first turn (``hermes --resume`` restores it)."""
+        before the first turn (``moor --resume`` restores it)."""
         from tools.approval_yolo import with_session_yolo
         return with_session_yolo(self._session_init_model_config, self.session_id)
 
@@ -1011,7 +1011,7 @@ class AIAgent(
     @staticmethod
     def _trim_process_memory() -> None:
         """Return freed pages to the OS; no full GC here (it would freeze every other session), the idle one runs."""
-        from hermes_cli.mem_trim import note_agent_closed, trim_memory
+        from moor_cli.mem_trim import note_agent_closed, trim_memory
         note_agent_closed()
         trim_memory(force=True, reason="agent close", collect=False)
 

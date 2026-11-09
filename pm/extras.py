@@ -235,7 +235,7 @@ def ensure_import(extra: str) -> None:
         if selected not in {Path(entry).resolve() for entry in sys.path}:
             reason = restart_needed(root) or "this process does not run from the install's dependency environment"
             note_restart_pending(f"{extra} installed ({reason})")
-            raise InstallError("venv", f"{extra} installed; restart Hermes to activate it ({reason})")
+            raise InstallError("venv", f"{extra} installed; restart Moor to activate it ({reason})")
 
 
 def ensure_and_bind(extra, importer, target_globals) -> bool:

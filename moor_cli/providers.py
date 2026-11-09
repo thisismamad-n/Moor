@@ -26,11 +26,11 @@ class MoorOverlay:
     keyless: bool = False
 
 
-HERMES_OVERLAYS: dict[str, HermesOverlay] = {
-    "moa": HermesOverlay(auth_type="virtual", base_url_override="moa://local"),
-    "openrouter": HermesOverlay(is_aggregator=True, base_url_env_var="OPENROUTER_BASE_URL"),
-    "nous": HermesOverlay(auth_type="oauth_device_code", base_url_override="https://inference-api.nousresearch.com/v1"),
-    "openai-codex": HermesOverlay(transport="codex_responses", auth_type="oauth_external",
+MOOR_OVERLAYS: dict[str, MoorOverlay] = {
+    "moa": MoorOverlay(auth_type="virtual", base_url_override="moa://local"),
+    "openrouter": MoorOverlay(is_aggregator=True, base_url_env_var="OPENROUTER_BASE_URL"),
+    "moor": MoorOverlay(auth_type="oauth_device_code", extra_env_vars=("MOOR_API_KEY", "NOUS_API_KEY"), base_url_override="https://inference-api.nousresearch.com/v1"),  # LEGACY-REBRAND-COMPAT: dual API key support
+    "openai-codex": MoorOverlay(transport="codex_responses", auth_type="oauth_external",
                                   base_url_override="https://chatgpt.com/backend-api/codex"),
     "openai-api": MoorOverlay(transport="codex_responses", base_url_override="https://api.openai.com/v1",
                                 base_url_env_var="OPENAI_BASE_URL"),
@@ -40,10 +40,10 @@ HERMES_OVERLAYS: dict[str, HermesOverlay] = {
                                 base_url_env_var="MOOR_QWEN_BASE_URL"),
     "lmstudio": MoorOverlay(extra_env_vars=("LM_API_KEY",), base_url_override="http://127.0.0.1:1234/v1",
                               base_url_env_var="LM_BASE_URL"),
-    "anthropic": HermesOverlay(transport="anthropic_messages", extra_env_vars=("ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")),
-    "zai": HermesOverlay(extra_env_vars=("GLM_API_KEY", "ZAI_API_KEY", "Z_AI_API_KEY"), base_url_env_var="GLM_BASE_URL"),
-    "kimi-for-coding": HermesOverlay(base_url_env_var="KIMI_BASE_URL"),
-    "stepfun": HermesOverlay(extra_env_vars=("STEPFUN_API_KEY",),
+    "anthropic": MoorOverlay(transport="anthropic_messages", extra_env_vars=("ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")),
+    "zai": MoorOverlay(extra_env_vars=("GLM_API_KEY", "ZAI_API_KEY", "Z_AI_API_KEY"), base_url_env_var="GLM_BASE_URL"),
+    "kimi-for-coding": MoorOverlay(base_url_env_var="KIMI_BASE_URL"),
+    "stepfun": MoorOverlay(extra_env_vars=("STEPFUN_API_KEY",),
                              base_url_override="https://api.stepfun.ai/step_plan/v1",
                              base_url_env_var="STEPFUN_BASE_URL"),
     "minimax": MoorOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_BASE_URL"),
@@ -67,12 +67,12 @@ HERMES_OVERLAYS: dict[str, HermesOverlay] = {
     "tencent-tokenplan": MoorOverlay(transport="anthropic_messages",
                                        base_url_override="https://api.lkeap.cloud.tencent.com/plan/anthropic",
                                        base_url_env_var="TOKENPLAN_BASE_URL"),
-    "arcee": HermesOverlay(base_url_override="https://api.arcee.ai/api/v1", base_url_env_var="ARCEE_BASE_URL"),
+    "arcee": MoorOverlay(base_url_override="https://api.arcee.ai/api/v1", base_url_env_var="ARCEE_BASE_URL"),
     # models.dev lists CommandCode under CMD_API_KEY; the plugin profile and docs use COMMANDCODE_API_KEY.
-    "commandcode": HermesOverlay(extra_env_vars=("COMMANDCODE_API_KEY",),
+    "commandcode": MoorOverlay(extra_env_vars=("COMMANDCODE_API_KEY",),
                                  base_url_override="https://api.commandcode.ai/provider/v1",
                                  base_url_env_var="COMMANDCODE_BASE_URL"),
-    "gmi": HermesOverlay(extra_env_vars=("GMI_API_KEY",), base_url_override="https://api.gmi-serving.com/v1",
+    "gmi": MoorOverlay(extra_env_vars=("GMI_API_KEY",), base_url_override="https://api.gmi-serving.com/v1",
                          base_url_env_var="GMI_BASE_URL"),
     "fireworks": MoorOverlay(extra_env_vars=("FIREWORKS_API_KEY",),
                                base_url_override="https://api.fireworks.ai/inference/v1"),
@@ -116,6 +116,7 @@ class ProviderDef:
 # -- Aliases: human-friendly / legacy names grouped by canonical (models.dev where possible) id;
 # ``ALIASES`` is the inverted lookup table. ---------------------------------------------------
 _ALIAS_GROUPS: dict[str, tuple[str, ...]] = {
+    "moor": ("moor", "moor", "nousresearch", "moor-portal"),  # LEGACY-REBRAND-COMPAT: fallback provider alias
     "openrouter": ("openai",), "zai": ("glm", "z-ai", "z.ai", "zhipu"), "xai": ("x-ai", "x.ai", "grok"),
     "xai-oauth": ("grok-oauth", "xai-oauth", "x-ai-oauth", "xai-grok-oauth"),
     "nvidia": ("nim", "nvidia-nim", "build-nvidia", "nemotron"),
@@ -136,7 +137,7 @@ _ALIAS_GROUPS: dict[str, tuple[str, ...]] = {
     "nebius-token-factory": ("nebius", "nebius-tokenfactory", "nebius-tf", "token-factory", "tokenfactory"),
     "lmstudio": ("lmstudio", "lm-studio", "lm_studio"),
     # Local OpenAI-compatible servers route through the generic "custom" provider,
-    # matching hermes_cli.auth and hermes_cli.models so every layer agrees. Issue #62213.
+    # matching moor_cli.auth and moor_cli.models so every layer agrees. Issue #62213.
     "custom": ("ollama", "local", "vllm", "llamacpp", "llama.cpp", "llama-cpp"),
 }
 ALIASES: dict[str, str] = {alias: canon for canon, aliases in _ALIAS_GROUPS.items() for alias in aliases}
@@ -145,7 +146,7 @@ ALIASES: dict[str, str] = {alias: canon for canon, aliases in _ALIAS_GROUPS.item
 # -- Display labels for providers not in the models.dev catalog ---------------
 
 _LABEL_OVERRIDES: dict[str, str] = {
-    "moa": "Mixture of Agents", "nous": "Nous Portal", "openai-codex": "ChatGPT or Codex Subscription",
+    "moa": "Mixture of Agents", "moor": "Moor Portal", "openai-codex": "ChatGPT or Codex Subscription",
     "stepfun": "StepFun Step Plan", "xiaomi": "Xiaomi MiMo", "gmi": "GMI Cloud",
     "upstage": "Upstage Solar", "actual": "Actual Computer", "tencent-tokenhub": "Tencent TokenHub",
     "nebius-token-factory": "Nebius Token Factory", "tencent-tokenplan": "Tencent TokenPlan", "lmstudio": "LM Studio",
@@ -183,11 +184,11 @@ def _profile_overlay_key(prof) -> str:
     return prof.models_dev_id or prof.name
 
 
-def hermes_overlays() -> dict[str, HermesOverlay]:
-    """``HERMES_OVERLAYS`` plus the overlays registered profiles declare (``provider_overlay``)."""
-    merged = dict(HERMES_OVERLAYS)
+def moor_overlays() -> dict[str, MoorOverlay]:
+    """``MOOR_OVERLAYS`` plus the overlays registered profiles declare (``provider_overlay``)."""
+    merged = dict(MOOR_OVERLAYS)
     for prof in _overlay_profiles():
-        merged.setdefault(_profile_overlay_key(prof), HermesOverlay(**prof.provider_overlay))
+        merged.setdefault(_profile_overlay_key(prof), MoorOverlay(**prof.provider_overlay))
     return merged
 
 
@@ -198,16 +199,16 @@ def _is_static_canonical(key: str) -> bool:
     """Whether *key* is a built-in canonical id (static tables + the auth registry's built-in rows).
 
     Those never take a profile overlay's name, so ``normalize_provider`` answers them without
-    the per-home profile scan. Asked mid-``hermes_cli.auth`` import (plugin discovery), before its
+    the per-home profile scan. Asked mid-``moor_cli.auth`` import (plugin discovery), before its
     built-in set exists, only the local tables answer and nothing is cached.
     """
     global _STATIC_CANONICAL_IDS
     if not _STATIC_CANONICAL_IDS:
         try:
-            from hermes_cli.auth import BUILTIN_PROVIDER_IDS
+            from moor_cli.auth import BUILTIN_PROVIDER_IDS
         except ImportError:
-            return key in HERMES_OVERLAYS or key in _ALIAS_GROUPS
-        _STATIC_CANONICAL_IDS = BUILTIN_PROVIDER_IDS | frozenset(_ALIAS_GROUPS) | frozenset(HERMES_OVERLAYS)
+            return key in MOOR_OVERLAYS or key in _ALIAS_GROUPS
+        _STATIC_CANONICAL_IDS = BUILTIN_PROVIDER_IDS | frozenset(_ALIAS_GROUPS) | frozenset(MOOR_OVERLAYS)
     return key in _STATIC_CANONICAL_IDS
 
 
@@ -223,16 +224,16 @@ def normalize_provider(name: str, overlay_profiles: Optional[list] = None) -> st
     return _profile_overlay_key(prof) if prof is not None else key
 
 
-def _get_overlay(canonical: str) -> tuple[Optional[HermesOverlay], str]:
+def _get_overlay(canonical: str) -> tuple[Optional[MoorOverlay], str]:
     """``(overlay, label)`` for a canonical id: the static table, else a profile's ``provider_overlay``,
     labelled with the profile's ``display_name`` also when keyed by its models.dev id: without a
     models.dev catalog (offline, blocked) that label is the one picker rows and headings show."""
-    if canonical in HERMES_OVERLAYS:
-        return HERMES_OVERLAYS[canonical], _LABEL_OVERRIDES.get(canonical, canonical)
+    if canonical in MOOR_OVERLAYS:
+        return MOOR_OVERLAYS[canonical], _LABEL_OVERRIDES.get(canonical, canonical)
     prof = _overlay_profile(canonical)
     if prof is None or _profile_overlay_key(prof) != canonical:
         return None, canonical
-    return HermesOverlay(**prof.provider_overlay), _LABEL_OVERRIDES.get(canonical, prof.display_name or canonical)
+    return MoorOverlay(**prof.provider_overlay), _LABEL_OVERRIDES.get(canonical, prof.display_name or canonical)
 
 
 def is_actual_route(provider: str = "", base_url: str = "") -> bool:
@@ -265,7 +266,7 @@ def _plugin_alias_owner(canonical: str) -> str:
     A plugin alias that is also a models.dev provider id (``meta`` -> ``meta-ai``, ``azure`` ->
     ``azure-foundry``) otherwise resolved to the bare models.dev entry whenever the catalog
     loaded and to the plugin when it did not, so ``--provider meta`` persisted a different
-    provider depending on the network. ``hermes_cli.auth.resolve_provider`` already answers the
+    provider depending on the network. ``moor_cli.auth.resolve_provider`` already answers the
     plugin id. Built-in ids and overlay profiles keep what ``normalize_provider`` gave them.
     The owner comes from the registry's own lookup, so the bound home's plugin claiming the alias
     wins over a bundled one, exactly as ``get_provider_profile`` would pick it."""
@@ -283,10 +284,10 @@ def _plugin_alias_owner(canonical: str) -> str:
 
 
 def get_provider(name: str, *, allow_network: bool = True) -> Optional[ProviderDef]:
-    """Look up a built-in provider by id or alias: models.dev catalog merged with the Hermes overlay;
-    Hermes-only overlay (nous, openai-codex, …); plugin provider profiles with a concrete endpoint."""
+    """Look up a built-in provider by id or alias: models.dev catalog merged with the Moor overlay;
+    moor-only overlay (moor, openai-codex, …); plugin provider profiles with a concrete endpoint."""
     canonical = _plugin_alias_owner(normalize_provider(name))
-    from hermes_cli.left_core_migration import provider_left_core
+    from moor_cli.left_core_migration import provider_left_core
     if provider_left_core(canonical):  # its plugin is not loaded: models.dev must not stand in for it
         return None
     mdev_info = _models_dev_info(canonical, allow_network)
@@ -301,7 +302,7 @@ def get_provider(name: str, *, allow_network: bool = True) -> Optional[ProviderD
                              mdev_info.doc, "models.dev")
     if overlay is not None:
         return _overlay_pdef(canonical, overlay, overlay_label, overlay.extra_env_vars,
-                             overlay.base_url_override, "", "hermes")
+                             overlay.base_url_override, "", "moor")
     # Plugin-registered profiles (plugins/model-providers/<name>/) absent from models.dev and
     # MOOR_OVERLAYS would otherwise be "Unknown provider" in /model, --provider and model-switch
     # even though the picker lists them. Only profiles with a literal or env-configured endpoint
@@ -572,7 +573,7 @@ def _lossy_alias_registry_pdef(raw: str, canonical: str) -> Optional[ProviderDef
     """Exact Moor registry ids win over LOSSY alias collapsing (kimi-coding-cn must stay distinct
     from kimi-coding instead of collapsing through the shared models.dev alias "kimi-for-coding").
     A collapse is lossy only when MULTIPLE registry providers normalize to the same canonical name;
-    single-entry rewrites (a Hermes id -> its models.dev id) are correct routing and keep resolving
+    single-entry rewrites (a Moor id -> its models.dev id) are correct routing and keep resolving
     through the built-in chain so overlay transports apply."""
     try:
         from moor_cli.auth import PROVIDER_REGISTRY as _AUTH_PROVIDER_REGISTRY

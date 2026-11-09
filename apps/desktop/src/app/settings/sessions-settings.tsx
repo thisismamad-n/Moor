@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Tip } from '@/components/ui/tooltip'
 import {
   deleteSession,
-  getHermesConfigRecord,
+  getMoorConfigRecord,
   peekConfigReadOrigin,
   retainConfigReadOrigin,
   saveMoorConfig,
@@ -29,7 +29,7 @@ import { $connection, applyConfiguredDefaultProjectDir, ensureDefaultWorkspaceCw
 import { untombstoneSessions } from '@/store/session-removal'
 import { forgetSessionUnread } from '@/store/session-unread'
 import { listEveryArchivedSession } from '@/store/sidebar-archive'
-import type { HermesConfigRecord, SessionInfo } from '@/types/hermes'
+import type { MoorConfigRecord, SessionInfo } from '@/types/moor'
 
 import { EmptyState, ListRow, SectionHeading, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { SETTING_IDS, settingElementId } from './settings-manifest'

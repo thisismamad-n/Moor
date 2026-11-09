@@ -1,4 +1,4 @@
-"""`hermes curator lock|unlock` (#25083, #140332): a per-profile user declaration that the
+"""`moor curator lock|unlock` (#25083, #140332): a per-profile user declaration that the
 autonomous passes may not change a skill's content. The flag lives beside ``pinned`` in the
 active profile's ``skills/.usage.json``; ``curator status`` lists it."""
 
@@ -22,22 +22,22 @@ def _make_skill(skills_dir: Path, name: str) -> Path:
 
 @pytest.fixture
 def lock_env(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with freshly reloaded modules (same shape as test_curator_pin_visibility)."""
-    home = tmp_path / ".hermes"
+    """Isolated MOOR_HOME with freshly reloaded modules (same shape as test_curator_pin_visibility)."""
+    home = tmp_path / ".moor"
     skills = home / "skills"
     skills.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import moor_constants
+    importlib.reload(moor_constants)
     from tools import skill_usage
     importlib.reload(skill_usage)
     from agent import curator
     importlib.reload(curator)
     monkeypatch.setattr(curator, "_load_config", dict)
     monkeypatch.setattr(skill_usage, "_prune_builtins_enabled", lambda: False)
-    from hermes_cli import curator as curator_cli
+    from moor_cli import curator as curator_cli
     importlib.reload(curator_cli)
     # `lock` resolves the name through skill_manage's finder; pin its search roots to this profile.
     monkeypatch.setattr("agent.skill_utils.get_all_skills_dirs", lambda: [skills])
@@ -64,7 +64,7 @@ def test_lock_then_unlock_round_trip_on_a_hand_written_skill(lock_env):
     code, out = _run(env["cli"], "lock", "coding-standards")
     assert code == 0, out
     assert "locked 'coding-standards'" in out
-    assert "hermes curator unlock coding-standards" in out
+    assert "moor curator unlock coding-standards" in out
     assert env["usage"].is_locked("coding-standards") is True
     rec = _sidecar(env["skills"])["coding-standards"]
     assert rec["locked"] is True

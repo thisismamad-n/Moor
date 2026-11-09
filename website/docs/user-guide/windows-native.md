@@ -33,7 +33,7 @@ No admin rights required. The installer goes to `%LOCALAPPDATA%\moor\` and adds 
 
 | Parameter | Purpose |
 |---|---|
-| `-Channel stable\|main` | `stable` (default): the latest published release. `main`: every commit, saved like `hermes update --set-channel main`. `$env:HERMES_INSTALL_CHANNEL` sets it for a plain `irm \| iex`. |
+| `-Channel stable\|main` | `stable` (default): the latest published release. `main`: every commit, saved like `moor update --set-channel main`. `$env:MOOR_INSTALL_CHANNEL` sets it for a plain `irm \| iex`. |
 | `-Branch NAME` | Select the source branch; default `main`. Another branch is installed at its tip. |
 | `-Commit SHA` | Select a commit after the branch checkout. |
 | `-MoorHome PATH` | Select the data directory. |
@@ -221,9 +221,9 @@ moor gateway install
 
 What happens under the hood:
 
-1. `schtasks /Create /SC ONLOGON /RL LIMITED /TN Hermes_Gateway` — registers a task that runs at your login with standard (non-elevated) permissions. No UAC prompt.
-2. If schtasks is blocked by group policy, falls back to writing a small `Hermes_Gateway.vbs` launcher (run hidden via `wscript.exe`) into `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. Same effect, slightly cruder. A VBScript is used rather than a `cmd.exe` shortcut because a console allocated at logon can receive a close event that kills the gateway before it finishes starting.
-   Only one of the two is ever kept: a successful task install removes any Startup-folder entry (including a legacy `Hermes_Gateway.cmd`), the fallback is skipped while a task is still registered, and `hermes update` / `hermes doctor --fix` clean up older installs that have both, since both would launch the gateway at logon.
+1. `schtasks /Create /SC ONLOGON /RL LIMITED /TN Moor_Gateway` — registers a task that runs at your login with standard (non-elevated) permissions. No UAC prompt.
+2. If schtasks is blocked by group policy, falls back to writing a small `Moor_Gateway.vbs` launcher (run hidden via `wscript.exe`) into `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`. Same effect, slightly cruder. A VBScript is used rather than a `cmd.exe` shortcut because a console allocated at logon can receive a close event that kills the gateway before it finishes starting.
+   Only one of the two is ever kept: a successful task install removes any Startup-folder entry (including a legacy `Moor_Gateway.cmd`), the fallback is skipped while a task is still registered, and `moor update` / `moor doctor --fix` clean up older installs that have both, since both would launch the gateway at logon.
 3. Spawns the gateway **detached via `pythonw.exe`** — not `python.exe`. `pythonw.exe` has no console attached, which immunizes it against `CTRL_C_EVENT` broadcasts from sibling processes (a real issue that used to kill the gateway when you Ctrl+C'd anything in the same process group).
 
 Flags used when spawning: `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB`.
@@ -263,11 +263,11 @@ Windows package removal instead of deleting that root to repair an app.
 
 ## Browser tool
 
-The browser tool (`browser_exec`) is part of Hermes's Python environment.
-For local browsing, Hermes launches the pinned Chromium that PM installs
-(`hermes pm install chromium` if it is missing); set `browser.executable_path`
+The browser tool (`browser_exec`) is part of Moor's Python environment.
+For local browsing, Moor launches the pinned Chromium that PM installs
+(`moor pm install chromium` if it is missing); set `browser.executable_path`
 to use another Chromium-family binary. Cloud browsers are selected in
-`hermes tools`. A self-contained MSIX includes the browser tools in its payload.
+`moor tools`. A self-contained MSIX includes the browser tools in its payload.
 
 On Windows ARM64, the pinned Chromium is the x64 build and runs under
 Windows' x64 emulation. This differs from the native ARM64 Python runtime.
@@ -357,7 +357,7 @@ Check `moor gateway status` — it merges the schtasks entry, the Startup-folder
 You set it in the current process only; close and reopen the shell, or set it at User scope in System Properties → Environment Variables. Verify with `echo $env:EDITOR` in a new PowerShell window.
 
 **Browser tool launches but tools time out.**
-Run `hermes doctor` and `hermes pm doctor`. Use `hermes tools` to inspect the
+Run `moor doctor` and `moor pm doctor`. Use `moor tools` to inspect the
 selected browser provider. A slow first Chromium start can be given more time
 with `browser.command_timeout` (the launch timeout floor, in seconds). Do not
 install an unrelated Playwright revision into a signed app payload.

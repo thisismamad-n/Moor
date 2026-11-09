@@ -1,8 +1,8 @@
-"""The Linux launcher asks the Hermes binary itself whether Chromium's sandbox starts (#130177).
+"""The Linux launcher asks the Moor binary itself whether Chromium's sandbox starts (#130177).
 
 Under ``kernel.apparmor_restrict_unprivileged_userns=1`` a generic ``unshare --user`` succeeds while
-Chromium, unconfined, aborts with ``No usable sandbox!``; an AppArmor profile attached to the Hermes
-path flips that answer for Hermes alone. The fake packaged app below answers the probe the way the
+Chromium, unconfined, aborts with ``No usable sandbox!``; an AppArmor profile attached to the Moor
+path flips that answer for Moor alone. The fake packaged app below answers the probe the way the
 real Electron build does: exit 0 when its sandbox starts, Chromium's FATAL when it does not.
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import main_desktop, main_desktop_apparmor
+from moor_cli import main_desktop, main_desktop_apparmor
 
 pytestmark = pytest.mark.platforms("linux")
 
@@ -34,7 +34,7 @@ def _packaged_app(tmp_path, script: str):
     (dist / "electron-main.mjs").write_text(
         f"if (process.argv.includes('{main_desktop_apparmor.SANDBOX_PROBE_SWITCH}')) process.exit(0)\n",
         encoding="utf-8")
-    exe = unpacked / "Hermes"
+    exe = unpacked / "Moor"
     exe.write_text(script, encoding="utf-8")
     exe.chmod(0o755)
     helper = unpacked / "chrome-sandbox"
@@ -76,7 +76,7 @@ def test_generic_unshare_success_does_not_override_a_blocked_binary(tmp_path, mo
 
 
 def test_apparmor_profile_for_the_binary_enables_the_userns_path(tmp_path, monkeypatch, restricted_host):
-    """A profile granting Hermes ``userns`` is honoured although unconfined probes fail."""
+    """A profile granting Moor ``userns`` is honoured although unconfined probes fail."""
     exe = _packaged_app(tmp_path, _ALLOWED)
     monkeypatch.setattr(main_desktop, "_desktop_linux_userns_sandbox_available", lambda: False)
 
@@ -151,7 +151,7 @@ def test_install_stages_loads_then_replaces_the_old_profile(tmp_path, monkeypatc
     monkeypatch.setattr(main_desktop_apparmor, "RESTRICT_SYSCTL", sysctl)
     exe = _packaged_app(tmp_path, _ALLOWED)
     target = main_desktop_apparmor.profile_path(exe)
-    target.write_text("# an older Hermes profile\n", encoding="utf-8")
+    target.write_text("# an older Moor profile\n", encoding="utf-8")
 
     assert main_desktop_apparmor.install_profile(exe) is True
     calls = [call.split() for call in sudo_log.read_text(encoding="utf-8").splitlines()]

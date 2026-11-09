@@ -336,7 +336,7 @@ def _command_result(
 
 
 def _install_memory_provider_python_dependencies(name: str) -> list[dict[str, Any]]:
-    from hermes_cli.memory_setup import prepare_memory_provider_dependencies
+    from moor_cli.memory_setup import prepare_memory_provider_dependencies
 
     command = "moor pm install"
     try:

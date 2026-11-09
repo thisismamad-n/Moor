@@ -222,11 +222,11 @@ moor peer stop spark run_abc123
 
 ## 本地 Bot 与 gateway（同时运行多少个 Bot）
 
-Desktop 不会为每个 Bot 运行一个后端。每台主机只有一个 gateway 进程，负责所有本地 profile 的会话：当你打开一个本地 Bot 时，Desktop 会为该 profile 运行 `hermes gateway ensure --json`，它会附加到正在运行的 gateway；如果还没有进程服务该 profile，就启动它。随后 Desktop 通过 WebSocket（`/api/ws`）使用一次性 ticket 连接它。Desktop 端没有后端池，没有“同时保持多少个 Bot 预热”的设置，也没有空闲回收——打开另一个 Bot 从不需要等待槽位，读取另一个 Bot 的历史也只是向同一个 gateway 发一个请求。
+Desktop 不会为每个 Bot 运行一个后端。每台主机只有一个 gateway 进程，负责所有本地 profile 的会话：当你打开一个本地 Bot 时，Desktop 会为该 profile 运行 `moor gateway ensure --json`，它会附加到正在运行的 gateway；如果还没有进程服务该 profile，就启动它。随后 Desktop 通过 WebSocket（`/api/ws`）使用一次性 ticket 连接它。Desktop 端没有后端池，没有“同时保持多少个 Bot 预热”的设置，也没有空闲回收——打开另一个 Bot 从不需要等待槽位，读取另一个 Bot 的历史也只是向同一个 gateway 发一个请求。
 
-gateway 的生命周期与 Desktop 窗口无关。关闭窗口或退出 Desktop 只会丢弃连接，绝不会停止 gateway，因此你的消息平台 bot、Routines 和进行中的轮次都会继续运行，Desktop 下次打开时会重新附加。要停止它，请显式运行 `hermes gateway stop`。如果 gateway 在 Desktop 运行期间重启（更新、崩溃，或 `hermes gateway stop` 之后再次打开），Desktop 会重新运行一次 `gateway ensure` 并重新连接。标记为 `gateway.standalone: true` 的 profile 会保留自己的 gateway；Desktop 以同样方式附加到它。
+gateway 的生命周期与 Desktop 窗口无关。关闭窗口或退出 Desktop 只会丢弃连接，绝不会停止 gateway，因此你的消息平台 bot、Routines 和进行中的轮次都会继续运行，Desktop 下次打开时会重新附加。要停止它，请显式运行 `moor gateway stop`。如果 gateway 在 Desktop 运行期间重启（更新、崩溃，或 `moor gateway stop` 之后再次打开），Desktop 会重新运行一次 `gateway ensure` 并重新连接。标记为 `gateway.standalone: true` 的 profile 会保留自己的 gateway；Desktop 以同样方式附加到它。
 
-**设置 → Connections** 中的远程 gateway、SSH 主机和 Hermes Cloud 实例是独立的主机，拥有各自的进程；它们的 Bot 运行在那台机器上（参见上文*跨机器的 Bot*），而不是本机的 gateway 上。
+**设置 → Connections** 中的远程 gateway、SSH 主机和 Moor Cloud 实例是独立的主机，拥有各自的进程；它们的 Bot 运行在那台机器上（参见上文*跨机器的 Bot*），而不是本机的 gateway 上。
 
 ## 关闭它
 

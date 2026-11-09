@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from hermes_cli.gateway_chat_view import GatewayChatView
+from moor_cli.gateway_chat_view import GatewayChatView
 
 
 def _control_event(kind, *, admission="neighbor", prompt_id="p1"):

@@ -50,7 +50,7 @@ class TestWriteToSandbox:
     def test_success(self, tmp_path):
         env = MagicMock()
         env.execute.return_value = {"output": "", "returncode": 0}
-        remote = str(tmp_path / "shared" / "hermes-results" / "abc.txt")
+        remote = str(tmp_path / "shared" / "moor-results" / "abc.txt")
         if sys.platform != "win32":
             # Run the real commands so the owner-only modes are observed, not
             # pattern-matched.
@@ -218,7 +218,7 @@ class TestBuildPersistedMessage:
         have been a mutation whose effect already landed."""
         msg = _build_persisted_message(
             preview="preview", has_more=True, original_size=50_000,
-            file_path="/tmp/hermes-results/test123.txt")
+            file_path="/tmp/moor-results/test123.txt")
         assert "re-run the original tool" not in msg
         assert "inspect the current state before retrying" in msg
 
@@ -536,47 +536,47 @@ class TestSpillover:
         assert not orphan.exists()
 
     def test_retention_hours_reads_session_retention_days(self, monkeypatch):
-        import hermes_cli.config
+        import moor_cli.config
         import tools.tool_result_storage as trs
 
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            moor_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": 7}})
         assert trs._spillover_retention_hours() == 7 * 24
 
     def test_retention_hours_defaults_and_falls_back(self, monkeypatch):
-        import hermes_cli.config
+        import moor_cli.config
         import tools.tool_result_storage as trs
 
-        monkeypatch.setattr(hermes_cli.config, "load_config_readonly", dict)
+        monkeypatch.setattr(moor_cli.config, "load_config_readonly", dict)
         assert trs._spillover_retention_hours() == 90 * 24
 
         def _boom():
             raise RuntimeError("config unreadable")
 
-        monkeypatch.setattr(hermes_cli.config, "load_config_readonly", _boom)
+        monkeypatch.setattr(moor_cli.config, "load_config_readonly", _boom)
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            moor_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": -5}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
         # 0 is a legal prune setting (ended sessions go at once) but open sessions survive it;
         # a 0h spill window would delete the file the first spill just wrote.
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            moor_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": 0}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
         # YAML ``.inf`` / ``.nan`` parse as floats; int() on them raises and used to
         # silently kill every sweep after the once-per-home flag was set.
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            moor_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": float("inf")}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
         monkeypatch.setattr(
-            hermes_cli.config, "load_config_readonly",
+            moor_cli.config, "load_config_readonly",
             lambda: {"sessions": {"retention_days": float("nan")}})
         assert trs._spillover_retention_hours() == trs.SPILLOVER_MAX_AGE_HOURS
 
@@ -667,7 +667,7 @@ class TestMcpEnvelopeSpillover:
 
     @pytest.fixture(autouse=True)
     def _isolated_home(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         import tools.tool_result_storage as trs
         monkeypatch.setattr(trs, "_spillover_pruned_homes", set())
         yield

@@ -21,21 +21,21 @@ export const isWindowsPlatform = (): boolean =>
 export const isLinuxPlatform = (): boolean =>
   typeof navigator !== 'undefined' && /linux/i.test(navigator.platform || navigator.userAgent || '')
 
-/** Globals the Hermes web server injects into the page it serves. */
+/** Globals the Moor web server injects into the page it serves. */
 export interface BrowserHostGlobals {
-  __HERMES_AUTH_REQUIRED__?: boolean
-  __HERMES_BASE_PATH__?: string
-  __HERMES_DASHBOARD_PROFILE__?: string
-  __HERMES_UI_SURFACE__?: string
+  __MOOR_AUTH_REQUIRED__?: boolean
+  __MOOR_BASE_PATH__?: string
+  __MOOR_DASHBOARD_PROFILE__?: string
+  __MOOR_UI_SURFACE__?: string
 }
 
 /**
  * The profile the server that served this page runs as: its gateway socket and its REST answer for
  * this profile when a request names none. Empty when the server cannot name its own home (a custom
- * HERMES_HOME), which the browser host reads as `default`.
+ * MOOR_HOME), which the browser host reads as `default`.
  */
 export function browserLaunchProfile(): string {
-  return String((window as Window & BrowserHostGlobals).__HERMES_DASHBOARD_PROFILE__ ?? '').trim()
+  return String((window as Window & BrowserHostGlobals).__MOOR_DASHBOARD_PROFILE__ ?? '').trim()
 }
 
 /** The profile a request that names none reaches: the one the server runs as, else `default`. */
@@ -53,7 +53,7 @@ export function browserLaunchProfileOrDefault(): string {
 export function hasBrowserHostBootstrap(): boolean {
   const win = window as Window & BrowserHostGlobals
 
-  return win.__HERMES_AUTH_REQUIRED__ === true || win.__HERMES_UI_SURFACE__ === 'webapp'
+  return win.__MOOR_AUTH_REQUIRED__ === true || win.__MOOR_UI_SURFACE__ === 'webapp'
 }
 
 /** Renderer host, independent of the OS or the gateway's connection mode. */
@@ -65,8 +65,8 @@ export function isBrowserHostedDesktop() {
   // The bridge writes the marker once it installs. During static module
   // evaluation, use the browser bootstrap globals too; otherwise an OS check
   // can classify a browser page as native before the marker is written.
-  return document.documentElement.dataset.hermesDesktopHost === 'browser' ||
-    (!window.hermesDesktop && hasBrowserHostBootstrap())
+  return document.documentElement.dataset.moorDesktopHost === 'browser' ||
+    (!window.moorDesktop && hasBrowserHostBootstrap())
 }
 
 /**

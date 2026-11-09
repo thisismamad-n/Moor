@@ -7,8 +7,8 @@ import threading
 
 import pytest
 
-from hermes_cli.gateway_client import GatewayClientError
-from hermes_cli.gateway_connection import CallStopped, GatewayConnection
+from moor_cli.gateway_client import GatewayClientError
+from moor_cli.gateway_connection import CallStopped, GatewayConnection
 
 
 class _Client:
@@ -44,7 +44,7 @@ class _Gateway:
 
 
 def _threads():
-    return [t for t in threading.enumerate() if t.name == 'hermes-gateway-command']
+    return [t for t in threading.enumerate() if t.name == 'moor-gateway-command']
 
 
 def _waiting(conn, wake):

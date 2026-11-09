@@ -8,21 +8,21 @@ import tempfile
 
 import pytest
 
-from hermes_cli import config as config_api
-from hermes_cli import gateway
-from hermes_cli import gateway_setup_service as setup_service
+from moor_cli import config as config_api
+from moor_cli import gateway
+from moor_cli import gateway_setup_service as setup_service
 
 
 @pytest.fixture
 def supervisor(tmp_path, monkeypatch):
     # The installer intentionally rejects /tmp profiles. A disposable RAM-backed
     # home exercises that real guard without disabling it or touching user state.
-    with tempfile.TemporaryDirectory(prefix="hermes-choice-", dir="/dev/shm") as directory:
+    with tempfile.TemporaryDirectory(prefix="moor-choice-", dir="/dev/shm") as directory:
         home = Path(directory)
         profile = home / "profile"
         profile.mkdir()
         monkeypatch.setenv("HOME", str(home))
-        monkeypatch.setenv("HERMES_HOME", str(profile))
+        monkeypatch.setenv("MOOR_HOME", str(profile))
         runtime = home / "run"
         runtime.mkdir()
         (runtime / "bus").touch()
@@ -78,7 +78,7 @@ def test_import_and_ordinary_setup_never_authorize_install(supervisor, choice, i
     assert setup_service.ensure_gateway_service() is installed
     assert setup_service.ensure_gateway_service(interactive=True) is installed
     assert setup_service.ensure_gateway_service(context="import", install=True) is installed
-    from hermes_cli.backup import _revive_gateway_after_import
+    from moor_cli.backup import _revive_gateway_after_import
     _revive_gateway_after_import(profile)
     assert gateway.get_systemd_unit_path().exists() is installed
     forbidden = {"enable", "enable-linger", "daemon-reload"}
@@ -133,7 +133,7 @@ def test_wizard_service_choice_controls_installation(supervisor, monkeypatch, st
     original_popen = gateway.subprocess.Popen
 
     def popen(argv, *args, **kwargs):
-        if "hermes_cli.main" in argv:
+        if "moor_cli.main" in argv:
             spawned.append((argv, kwargs))
             return None
         return original_popen(argv, *args, **kwargs)
@@ -178,7 +178,7 @@ def test_wizard_start_does_not_spawn_over_reserved_owner(supervisor, monkeypatch
     spawned = []
     original = gateway.subprocess.Popen
     def boundary(argv, *args, **kwargs):
-        if "hermes_cli.main" in argv:
+        if "moor_cli.main" in argv:
             spawned.append(argv)
             return None
         return original(argv, *args, **kwargs)

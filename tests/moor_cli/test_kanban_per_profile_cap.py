@@ -26,8 +26,8 @@ def isolated_kanban_home_with_profiles(monkeypatch):
     for mod in list(sys.modules.keys()):
         if mod.startswith("moor_cli") or mod.startswith("moor_state") or mod == "moor_constants":
             del sys.modules[mod]
-    from hermes_cli import kanban_db
-    from hermes_cli import kanban_db_dispatch
+    from moor_cli import kanban_db
+    from moor_cli import kanban_db_dispatch
     # The module purge above discards the conftest's memory-sample neutralizer;
     # re-apply it so the host's live memory pressure cannot cap this tick.
     monkeypatch.setattr(kanban_db_dispatch, "_system_memory_sample", dict)

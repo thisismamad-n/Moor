@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Callable, Dict, Optional
 
 from agent.deadline import poll_until
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from tools.bot_desktop import placement
 
 logger = logging.getLogger(__name__)
@@ -530,7 +530,7 @@ def published_env() -> dict[str, str]:
     """Variables the launcher wrote once Xfce's private bus existed; empty when the desktop is down.
 
     Pure file reads on the common path: this is called from every browser / cua-driver env builder, so it
-    must not load config (that initializes HERMES_HOME). A sandbox-hosted screen leaves a host-side marker at
+    must not load config (that initializes MOOR_HOME). A sandbox-hosted screen leaves a host-side marker at
     start; only its presence routes to the sandbox probe."""
     from tools.bot_desktop import sandbox_host
     if sandbox_host._read_marker():
@@ -671,7 +671,7 @@ def _sandbox_status(profile: Optional[str], where) -> DesktopStatus:
         if where.backend == "docker":
             # The usual reason on an upgraded install: the persisted container predates the default
             # flip and was kept on purpose. The pane offers the switch instead of a config hint.
-            from hermes_cli.sandbox_image_switch import pending
+            from moor_cli.sandbox_image_switch import pending
             sw = pending()
             if sw is not None:
                 image_switch = {"current_image": sw.current_image, "target_image": sw.target_image,
@@ -787,35 +787,35 @@ def _spawn_and_wait(sd: Path, wait_seconds: float) -> DesktopStatus:
         # scrubbed child env like any other agent child, keeping the user's HOME.
         from tools.environments.local import served_profile_child_env
         child_env = served_profile_child_env(inherit_credentials=False)
-        child_env["HOME"] = child_env["HERMES_REAL_HOME"]
+        child_env["HOME"] = child_env["MOOR_REAL_HOME"]
         for key in ("DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "SESSION_MANAGER"):
             child_env.pop(key, None)
-        from hermes_cli._launchers import installation_command
+        from moor_cli._launchers import installation_command
         from tools.bot_desktop.idle_watch import next_check_in
         child_env.update({
-            "HERMES_BD_PROFILE": _profile_name(),
-            "HERMES_BD_DISPLAY_NUM": str(num),
-            "HERMES_BD_SOCKET": str(sd / "rfb.sock"),
-            "HERMES_BD_XAUTH": str(sd / "Xauthority"),
-            "HERMES_BD_ENV_FILE": str(env_file),
-            "HERMES_BD_CONFIG_HOME": str(sd / "xdg"),
-            "HERMES_BD_GEOMETRY": geometry(),
+            "MOOR_BD_PROFILE": _profile_name(),
+            "MOOR_BD_DISPLAY_NUM": str(num),
+            "MOOR_BD_SOCKET": str(sd / "rfb.sock"),
+            "MOOR_BD_XAUTH": str(sd / "Xauthority"),
+            "MOOR_BD_ENV_FILE": str(env_file),
+            "MOOR_BD_CONFIG_HOME": str(sd / "xdg"),
+            "MOOR_BD_GEOMETRY": geometry(),
             # The launcher's idle self-stop runs tools.bot_desktop.idle_watch through the install's stable
-            # command (the ``hermes --run-module`` launcher on a store install, which follows Python pin changes
+            # command (the ``moor --run-module`` launcher on a store install, which follows Python pin changes
             # and picks the current dependency generation at every run; this interpreter elsewhere), in this
             # home, first once the screen could be due (nothing is idle at start). The screen outlives updates,
             # so the inherited PYTHONPATH generation is never pinned, and on a store install neither is this
             # interpreter.
-            "HERMES_BD_IDLE_CMD": shlex.join(installation_command(
+            "MOOR_BD_IDLE_CMD": shlex.join(installation_command(
                 Path(__file__).resolve().parents[2], module="tools.bot_desktop.idle_watch")),
-            "HERMES_BD_HOME": str(get_hermes_home()),
-            "HERMES_BD_IDLE_FIRST_DELAY": str(next_check_in(idle_stop_seconds(), 0.0)),
+            "MOOR_BD_HOME": str(get_moor_home()),
+            "MOOR_BD_IDLE_FIRST_DELAY": str(next_check_in(idle_stop_seconds(), 0.0)),
         })
         from tools.bot_desktop.browser import dock_exec_line, dock_launch
         if (browser := dock_launch()) is not None:
             # The bare executable (the launcher checks it exists) and the ready-made, spec-quoted Exec= line.
-            child_env["HERMES_BD_BROWSER_EXEC"] = browser[0]
-            child_env["HERMES_BD_BROWSER_EXEC_LINE"] = dock_exec_line(*browser)
+            child_env["MOOR_BD_BROWSER_EXEC"] = browser[0]
+            child_env["MOOR_BD_BROWSER_EXEC_LINE"] = dock_exec_line(*browser)
         # A new file per start: the log is a diagnostic for THIS launch, and nothing rotates it otherwise. Not
         # truncated in place: the old screen's idle check (in a session of its own) may still hold the old file
         # open, and its late write would land in this one behind a run of NUL bytes.

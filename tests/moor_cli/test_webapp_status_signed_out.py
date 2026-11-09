@@ -3,22 +3,22 @@
 ``/api/status`` is public (``PUBLIC_API_PATHS``): the native-app login probe and uptime checks read
 it without a session. A Webapp on a wildcard bind is reachable by everyone on the network, so its
 profile names, install id and host figures wait for sign-in. The standalone dashboard keeps its
-public body (Hermes Cloud lists profiles from it without a session, #60585).
+public body (Moor Cloud lists profiles from it without a session, #60585).
 """
 from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
 
-import hermes_cli.web_server_gateway as _web_server_gateway
+import moor_cli.web_server_gateway as _web_server_gateway
 import plugins.dashboard_auth.basic as basic_plugin
-from hermes_cli import web_server
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from hermes_cli.dashboard_auth.routes import _reset_password_rate_limit
+from moor_cli import web_server
+from moor_cli.dashboard_auth import clear_providers, register_provider
+from moor_cli.dashboard_auth.routes import _reset_password_rate_limit
 
 LAN = "http://192.168.50.220:9130"
 IDENTITY = ("profiles", "parked_profiles", "gateway_shared_with", "install_id", "memory", "disk",
-            "nous_session_valid", "active_sessions", "gateway_mode")
+            "moor_session_valid", "active_sessions", "gateway_mode")
 
 
 @pytest.fixture(scope="module")
@@ -30,7 +30,7 @@ def password_hash():
 def wildcard_gate(request, password_hash, monkeypatch):
     """An all-interfaces listener behind the bundled username/password sign-in: the standalone
     dashboard or the gateway's Webapp, with two profiles installed."""
-    monkeypatch.delenv("HERMES_DASHBOARD_PUBLIC_URL", raising=False)
+    monkeypatch.delenv("MOOR_DASHBOARD_PUBLIC_URL", raising=False)
     for key, value in (("bound_host", "0.0.0.0"), ("bound_port", 9130), ("auth_required", True),
                        ("trusted_public_hosts", frozenset())):
         monkeypatch.setattr(web_server.app.state, key, value, raising=False)
@@ -61,7 +61,7 @@ def test_signed_out_webapp_status_carries_no_profile_or_install_identity(wildcar
     assert body["gateway_running"] in (True, False) and body["overall"] in ("ok", "degraded")
     assert body["version"]
     if wildcard_gate == "dashboard":
-        assert body["profiles"] == ["default", "coder"]  # Hermes Cloud's contract (#60585)
+        assert body["profiles"] == ["default", "coder"]  # Moor Cloud's contract (#60585)
         return
     assert [key for key in IDENTITY if key in body] == []
     # ``?profile=`` is no profile-name oracle either: an unknown name answers like a real one.

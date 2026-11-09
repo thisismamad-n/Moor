@@ -16,9 +16,9 @@ import time as _time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from hermes_cli.update_cmd_common import _best_effort
-from hermes_cli.update_host_obligation import PROFILE_MARKER_NAME
-from hermes_cli.update_inventory import _gateway_service_matches_profile
+from moor_cli.update_cmd_common import _best_effort
+from moor_cli.update_host_obligation import PROFILE_MARKER_NAME
+from moor_cli.update_inventory import _gateway_service_matches_profile
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("moor_cli.update_cmd")
@@ -33,20 +33,20 @@ _FRESH_RESTART_SUPERVISORS = frozenset({"systemd", "launchd", "service", "s6"})
 
 _SYSTEMD_SCOPES = (("user", ["systemctl", "--user"]), ("system", ["systemctl"]))
 _LIST_GATEWAY_UNITS = [
-    "list-units", "hermes-gateway*", "hermes-serve*", "hermes-dashboard*",
+    "list-units", "moor-gateway*", "moor-serve*", "moor-dashboard*",
     "--plain", "--no-legend", "--no-pager",
 ]
 
 
 def _write_gateway_update_exit_code(ok: bool) -> None:
-    from hermes_cli.update_cmd import get_hermes_home
-    from hermes_cli.update_receipt import committed_success
+    from moor_cli.update_cmd import get_moor_home
+    from moor_cli.update_receipt import committed_success
     from pm.filesystem import durable_write_bytes
 
     # A run whose receipt already closed as a success is never reported failed (C3, review
     # regression 3): the command boundary's catch-alls call this with False.
     ok = ok or committed_success()
-    path = get_hermes_home() / ".update_exit_code"
+    path = get_moor_home() / ".update_exit_code"
     with suppress(OSError):
         # Atomic: the gateway watcher polls this file and reads an empty one as exit 1.
         durable_write_bytes(path, b"0" if ok else b"1")
@@ -73,10 +73,10 @@ def _write_fleet_restart_pending_marker(*, expected_sha: str = "", runtimes: lis
     if runtimes == []:
         # An explicit empty inventory owes no restart (e.g. Desktop-hosted `serve` with no
         # gateway services). Arming the marker here leaves a breadcrumb nothing can discharge:
-        # a no-gateway host would then fail every later ``hermes update`` (#115311).
+        # a no-gateway host would then fail every later ``moor update`` (#115311).
         return True
-    from hermes_cli.update_cmd import _m
-    from hermes_cli.update_host_obligation import arm_host_obligation
+    from moor_cli.update_cmd import _m
+    from moor_cli.update_host_obligation import arm_host_obligation
     if _m()._pytest_owns_live_checkout(_fleet_restart_pending_marker_path().parent):
         logger.debug("Skipping fleet-restart-pending obligation under pytest (live checkout)")
         return True
@@ -141,7 +141,7 @@ def _current_checkout_sha() -> str | None:
     """Current on-disk checkout HEAD, or None if it cannot be resolved."""
     from moor_cli.update_cmd import _capture_head_sha, _m
     try:
-        from hermes_cli.version_info import read_checkout_sha
+        from moor_cli.version_info import read_checkout_sha
         return read_checkout_sha()
     except Exception:
         return _capture_head_sha(["git"], _m().PROJECT_ROOT)
@@ -700,7 +700,7 @@ def _systemctl_reset_and_restart(manage_cmd: list, svc_name: str, *, scope_cmd: 
     auto-restart can wedge a plain ``restart`` against RestartSec backoff and stay dead."""
     # Property reads need no manage-units privileges: narrow sudoers may permit
     # restart/reset-failed but deny show. Keep the same user/system manager scope.
-    from hermes_cli.update_cmd_fleet_unit_budget import run_unit_job, systemd_restart_timeout
+    from moor_cli.update_cmd_fleet_unit_budget import run_unit_job, systemd_restart_timeout
     scope_cmd = scope_cmd if scope_cmd is not None else manage_cmd
     timeout = systemd_restart_timeout(scope_cmd, svc_name)
     _systemctl(manage_cmd + ["reset-failed", svc_name], timeout=10)
@@ -715,8 +715,8 @@ def _systemd_unit_owned_by_update(scope_cmd: list, svc_name: str) -> bool:
     listed, not because it ran the updated code. Foreign or unreadable ownership prints a notice
     and leaves the unit alone; it is not a failed restart.
     """
-    from hermes_cli.update_fleet_scope import announce_skipped_runtime, systemd_unit_hermes_home, home_in_update_scope
-    home = systemd_unit_hermes_home(scope_cmd, svc_name)
+    from moor_cli.update_fleet_scope import announce_skipped_runtime, systemd_unit_moor_home, home_in_update_scope
+    home = systemd_unit_moor_home(scope_cmd, svc_name)
     if home is not None and home_in_update_scope(home):
         return True
     announce_skipped_runtime("systemd unit", svc_name, home)
@@ -726,7 +726,7 @@ def _systemd_unit_owned_by_update(scope_cmd: list, svc_name: str) -> bool:
 def _scoped_manual_gateway_pids(pids, *, keep=(), quiet: bool = False) -> list[int]:
     """*pids* whose live home this update owns (plus *keep*, PIDs already mapped to this
     install's profile PID files); every other gateway process is named and left running."""
-    from hermes_cli.update_fleet_scope import announce_skipped_runtime, partition_gateway_pids_by_scope
+    from moor_cli.update_fleet_scope import announce_skipped_runtime, partition_gateway_pids_by_scope
     keep = set(keep)
     owned, foreign = partition_gateway_pids_by_scope([pid for pid in pids if pid not in keep])
     if not quiet:
@@ -736,26 +736,26 @@ def _scoped_manual_gateway_pids(pids, *, keep=(), quiet: bool = False) -> list[i
 
 
 def _is_serve_or_dashboard_unit(unit: str) -> bool:
-    """``hermes-serve*``/``hermes-dashboard*`` (``.service``) by the same exact-or-hyphenated shape."""
+    """``moor-serve*``/``moor-dashboard*`` (``.service``) by the same exact-or-hyphenated shape."""
     return (
-        unit == "hermes-serve.service"
-        or unit.startswith("hermes-serve-")
-        # #125297: ``hermes-dashboard*`` units are systemd-supervised dashboard backends — the
+        unit == "moor-serve.service"
+        or unit.startswith("moor-serve-")
+        # #125297: ``moor-dashboard*`` units are systemd-supervised dashboard backends — the
         # same fleet this pass restarts. Leaving them out meant a successful update reported
         # the dashboard ``deferred`` (still on pre-update code) while nothing ever restarted it.
-        or unit == "hermes-dashboard.service"
-        or unit.startswith("hermes-dashboard-")
+        or unit == "moor-dashboard.service"
+        or unit.startswith("moor-dashboard-")
     )
 
 
-def _is_hermes_gateway_unit(unit: str) -> bool:
-    """Exact base unit or hyphenated profile family only: ``startswith("hermes-serve")``
-    would accept ``hermes-server.service``."""
+def _is_moor_gateway_unit(unit: str) -> bool:
+    """Exact base unit or hyphenated profile family only: ``startswith("moor-serve")``
+    would accept ``moor-server.service``."""
     return (
         # list-units is already pattern-filtered, but keep the name gate so a stray non-gateway/serve line
         # cannot enter the restart path. See #83595.
-        unit == "hermes-gateway.service"
-        or unit.startswith("hermes-gateway-")
+        unit == "moor-gateway.service"
+        or unit.startswith("moor-gateway-")
         or _is_serve_or_dashboard_unit(unit)
     )
 
@@ -930,7 +930,7 @@ def _restart_macos_launchd_gateways(
         if listing.returncode != 0:
             failed_or_stale_units.append("launchd (listing failed)")
             return
-    from hermes_cli.update_cmd_posix_pause import already_restarted
+    from moor_cli.update_cmd_posix_pause import already_restarted
     current_label = get_launchd_label()
     resumed = already_restarted()["labels"]  # paused for the update, restarted on the new code
     _restarted, _failed = ([], []) if current_label in resumed else _restart_launchd_gateway_after_update(
@@ -966,7 +966,7 @@ def _restart_macos_launchd_gateways(
             graceful_ok = False
             if old_pid is not None and old_pid > 0:
                 print(f"  → {label}: draining (up to {drain_budget:.0f}s)...")
-                from hermes_cli.update_cmd_drain_report import drain_progress_reporter
+                from moor_cli.update_cmd_drain_report import drain_progress_reporter
                 graceful_ok = _graceful_restart_via_sigusr1(
                     old_pid, drain_timeout=drain_budget,
                     on_progress=drain_progress_reporter(_gateway_home_for_pid(old_pid), budget_s=drain_budget))
@@ -1025,7 +1025,7 @@ _DESKTOP_SERVE_SKIP_REASON = (
 # survivors reported by _surviving_pre_update_serve_runtimes.
 _SERVE_SKIP_REASON = (
     "no per-profile relaunch command reaches a serve/dashboard runtime; recovered by the fresh"
-    " systemd unit pass when a hermes-serve*/hermes-dashboard* unit owns it, else left running for explicit"
+    " systemd unit pass when a moor-serve*/moor-dashboard* unit owns it, else left running for explicit"
     " operator restart"
 )
 # A launchd-owned backend (#116503): the fresh child has no per-label kickstart for serve/dashboard
@@ -1066,7 +1066,7 @@ def _gateway_recovery_partition(plan, *, skip_profiles: set[str] | None = None) 
                     continue
                 reason = _MANUAL_GATEWAY_SKIP_REASON
             elif kind in ("serve", "dashboard"):
-                from hermes_cli.update_inventory import CLIENT_OWNED_SERVE_SUPERVISORS
+                from moor_cli.update_inventory import CLIENT_OWNED_SERVE_SUPERVISORS
 
                 if supervisor in CLIENT_OWNED_SERVE_SUPERVISORS:
                     reason = _DESKTOP_SERVE_SKIP_REASON
@@ -1143,7 +1143,7 @@ def _drain_or_signal_gateway_for_update(
         _escalate_wedged_gateway(pid)
         return True
     print(f"  → {label}: draining (up to {drain_budget:.0f}s)...")
-    from hermes_cli.update_cmd_drain_report import drain_progress_reporter
+    from moor_cli.update_cmd_drain_report import drain_progress_reporter
     return _graceful_restart_via_sigusr1(
         pid, drain_timeout=drain_budget,
         on_progress=drain_progress_reporter(_gateway_home_for_pid(pid), budget_s=drain_budget))
@@ -1268,7 +1268,7 @@ def _restart_one_systemd_gateway_unit(
         _main_pid, drain_budget, svc_name, self_restart_pending=self_restart_pending)
 
     if _graceful_ok:
-        from hermes_cli.update_cmd_fleet_unit_budget import run_unit_job, service_restart_sec, systemd_restart_timeout
+        from moor_cli.update_cmd_fleet_unit_budget import run_unit_job, service_restart_sec, systemd_restart_timeout
         # ``Restart=always`` respawns only after RestartSec (60s in our unit; dead time for a
         # voluntary restart). ``reset-failed`` + ``start`` skips it (~1-3s); if RestartSec already
         # elapsed, ``start`` is a no-op and we fall through to the poll. Needs manage-units
@@ -1400,7 +1400,7 @@ def _restart_systemd_gateway_units(
             "together with: moor gateway migrate"
         )
 
-    from hermes_cli.update_cmd_posix_pause import already_restarted
+    from moor_cli.update_cmd_posix_pause import already_restarted
     for key in keys:
         scope, scope_cmd, svc_name = targets[key]
         if key in already_restarted()["units"]:  # paused for the update, restarted on the new code
@@ -1504,7 +1504,7 @@ def _restart_manual_gateways(out: _GatewayRestartOutcome, _drain_budget) -> None
         _wait_for_gateway_exit,
     )
     # Exclude just-restarted service PIDs so we don't kill what systemd/launchd spawned.
-    from hermes_cli.update_cmd_posix_pause import already_restarted
+    from moor_cli.update_cmd_posix_pause import already_restarted
     # Plus the gateways this update paused and already restarted on the new code.
     service_pids = _get_service_pids(all_profiles=True) | already_restarted()["pids"]
     manual_pids = find_gateway_pids(exclude_pids=service_pids, all_profiles=True)
@@ -1691,10 +1691,10 @@ def _restart_gateway_fleet_after_update(_pre_update_plan, gateway_mode: bool):
     Never raises: a phase abort runs fresh-child recovery and fails closed unless
     every planned gateway is verifiably covered.
     """
-    from hermes_cli.update_cmd import _m
-    from hermes_cli.update_stage import publish_stage
+    from moor_cli.update_cmd import _m
+    from moor_cli.update_stage import publish_stage
 
-    publish_stage("Restarting Hermes services")  # also after a failed build: the code is committed
+    publish_stage("Restarting Moor services")  # also after a failed build: the code is committed
     # All bookkeeping is declared before the try so abort recovery and fleet reconciliation
     # can read it even if the phase raises early. ``pre_restart_gateway_pids`` stays empty
     # until we are about to stop/drain, so an early exception has nothing to fail closed on,
@@ -1718,7 +1718,7 @@ def _restart_gateway_fleet_after_update(_pre_update_plan, gateway_mode: bool):
     try:
         # Every gateway helper the phase needs is imported up front so a broken gateway
         # module aborts into recovery BEFORE any unit is touched.
-        from hermes_cli.gateway import (
+        from moor_cli.gateway import (
             is_macos,
             find_gateway_pids,
             find_profile_gateway_processes,

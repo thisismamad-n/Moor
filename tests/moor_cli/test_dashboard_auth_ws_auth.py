@@ -29,7 +29,7 @@ from moor_cli.dashboard_auth.ws_tickets import (
     internal_ws_credential,
     mint_ticket,
 )
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider, _sign
+from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider, _sign
 
 
 # ---------------------------------------------------------------------------
@@ -136,7 +136,7 @@ class TestWsTicketEndpoint:
             encoding="utf-8",
         )
         monkeypatch.setattr(web_server, "WEB_DIST", dist)
-        monkeypatch.delenv("HERMES_SERVE_HEADLESS", raising=False)
+        monkeypatch.delenv("MOOR_SERVE_HEADLESS", raising=False)
         monkeypatch.setattr(web_server.app.state, "auth_required", True, raising=False)
         application = FastAPI()
         application.state.auth_required = True
@@ -145,8 +145,8 @@ class TestWsTicketEndpoint:
         response = TestClient(application).get("/")
 
         assert response.status_code == 200
-        assert "window.__HERMES_AUTH_REQUIRED__=true" in response.text
-        assert "__HERMES_SESSION_TOKEN__" not in response.text
+        assert "window.__MOOR_AUTH_REQUIRED__=true" in response.text
+        assert "__MOOR_SESSION_TOKEN__" not in response.text
 
     def test_unauthenticated_returns_401_or_redirect(self, gated_app):
         r = gated_app.post("/api/auth/ws-ticket", follow_redirects=False)
@@ -247,20 +247,20 @@ class TestWsAuthOkLoopback:
         )
         ws_one = _fake_ws(query={}, path="/api/ws", protocols=protocols)
         assert _web_server_chat._ws_auth_ok(ws_one) is True
-        assert ws_one._hermes_auth_identity == {"user_id": "legacy-token-owner", "provider": "session-token"}
-        assert ws_one._hermes_ws_subprotocol == _web_server_chat._GATEWAY_WS_PROTOCOL
+        assert ws_one._moor_auth_identity == {"user_id": "legacy-token-owner", "provider": "session-token"}
+        assert ws_one._moor_ws_subprotocol == _web_server_chat._GATEWAY_WS_PROTOCOL
         assert _web_server_chat._ws_auth_ok(_fake_ws(query={}, path="/api/ws", protocols=protocols)) is False
-        screen = mint_ticket(user_id="display:v", provider="bot-desktop", extra={"hermes_home": "/srv/hermes"})
+        screen = mint_ticket(user_id="display:v", provider="bot-desktop", extra={"moor_home": "/srv/moor"})
         assert _web_server_chat._ws_auth_ok(_fake_ws(query={"ticket": screen}, path="/api/ws")) is False
 
 
     @pytest.mark.parametrize("surface", ["dashboard", "serve"])
     def test_off_the_webapp_the_loopback_gate_takes_only_the_token_as_on_main(
             self, loopback_app, monkeypatch, surface):
-        """The standalone dashboard and ``hermes serve`` mint no socket tickets, so their loopback
+        """The standalone dashboard and ``moor serve`` mint no socket tickets, so their loopback
         gate judges ``?token=`` alone, as on main: a ticket opens nothing there and is not spent, and
         one riding beside the session token does not refuse it."""
-        from hermes_cli.dashboard_auth.ws_tickets import consume_ticket
+        from moor_cli.dashboard_auth.ws_tickets import consume_ticket
 
         monkeypatch.setattr(web_server.app.state, "ui_surface", surface, raising=False)
         ticket = mint_ticket(user_id="legacy-token-owner", provider="session-token")
@@ -361,7 +361,7 @@ class TestWsAuthOkGated:
     @pytest.mark.parametrize("surface", ["dashboard", "serve"])
     def test_off_the_webapp_internal_credential_opens_every_socket_as_on_main(
             self, gated_app, monkeypatch, surface):
-        """The standalone dashboard and ``hermes serve`` accept the server's own credential on every
+        """The standalone dashboard and ``moor serve`` accept the server's own credential on every
         socket their gate judges, plugin sockets included, as on main."""
         monkeypatch.setattr(web_server.app.state, "ui_surface", surface, raising=False)
         credential = internal_ws_credential()
@@ -384,7 +384,7 @@ class TestWsAuthOkGated:
         })
         ws = _fake_ws(query={"token": access_token}, path="/api/ws")
         assert _web_server_chat._ws_auth_ok(ws) is True
-        assert ws._hermes_auth_identity == {
+        assert ws._moor_auth_identity == {
             "user_id": "remote-desktop-user",
             "provider": "stub",
         }
@@ -419,8 +419,8 @@ class TestWsAuthOkGated:
 
     def test_session_token_audit_logs(self, gated_app, tmp_path, monkeypatch):
         """Accept and reject of a session token both audit."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        from hermes_cli.dashboard_auth import audit as audit_mod
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+        from moor_cli.dashboard_auth import audit as audit_mod
 
         if hasattr(audit_mod, "_LOGGER"):
             monkeypatch.setattr(audit_mod, "_LOGGER", None, raising=False)

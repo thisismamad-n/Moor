@@ -1,6 +1,6 @@
-"""Plugin-declared OAuth clients: Hermes signs in, stores and refreshes the grant; plugin code never holds a token.
+"""Plugin-declared OAuth clients: Moor signs in, stores and refreshes the grant; plugin code never holds a token.
 
-A real plugin directory under the test HERMES_HOME declares ``oauth:``. ``FakeIdP`` plays the authorization
+A real plugin directory under the test MOOR_HOME declares ``oauth:``. ``FakeIdP`` plays the authorization
 server (PKCE, rotating refresh tokens) and a loopback stub plays the API the bearer is meant for.
 """
 
@@ -20,10 +20,10 @@ from urllib.request import urlopen
 
 import pytest
 
-from hermes_cli import auth_oauth_pkce_plugin as pkce
-from hermes_cli import plugin_oauth
-from hermes_cli import plugin_provider_requests as ppr
-from hermes_cli.auth_constants import AuthError
+from moor_cli import auth_oauth_pkce_plugin as pkce
+from moor_cli import plugin_oauth
+from moor_cli import plugin_provider_requests as ppr
+from moor_cli.auth_constants import AuthError
 from tests.providers.fake_pkce_idp import FakeIdP
 
 CLIENT_ID = "voice-client.apps.example"
@@ -66,7 +66,7 @@ class _Api:
 
 
 def _home() -> Path:
-    return Path(os.environ["HERMES_HOME"])
+    return Path(os.environ["MOOR_HOME"])
 
 
 def _entry(idp: FakeIdP, **overrides) -> dict:
@@ -87,10 +87,10 @@ def _plugin(name: str = "voice", oauth: list | None = None, display: str | None 
         manifest["oauth"] = oauth
     (root / "plugin.yaml").write_text(json.dumps(manifest), encoding="utf-8")  # JSON is valid YAML
     (root / "api.py").write_text(
-        "from hermes_cli.plugin_provider_requests import credentialed_provider_request\n"
+        "from moor_cli.plugin_provider_requests import credentialed_provider_request\n"
         "def call(provider, url, method='POST', **kwargs):\n"
         "    return credentialed_provider_request(provider, method, url, **kwargs)\n", encoding="utf-8")
-    spec = importlib.util.spec_from_file_location(f"hermes_plugins_{name}_api", root / "api.py")
+    spec = importlib.util.spec_from_file_location(f"moor_plugins_{name}_api", root / "api.py")
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -124,17 +124,17 @@ def idp(monkeypatch, tmp_path):
     monkeypatch.setenv("VOICE_CLIENT_SECRET", SECRET)
     server = FakeIdP().start(tls_dir=tmp_path / "idp-ca")  # https: plugin OAuth endpoints are https-only
     trust = ssl.create_default_context(cafile=str(server.ca_pem))
-    monkeypatch.setattr("hermes_cli.auth._default_verify", lambda: trust)
+    monkeypatch.setattr("moor_cli.auth._default_verify", lambda: trust)
     server.opened = []
 
     def browser(url: str) -> bool:
-        # A real browser runs beside Hermes; the fake IdP 302s straight to the loopback callback.
+        # A real browser runs beside Moor; the fake IdP 302s straight to the loopback callback.
         server.opened.append(url)
         threading.Thread(target=lambda: urlopen(url, timeout=10, context=trust).close(), daemon=True).start()
         return True
 
     monkeypatch.setattr(pkce.webbrowser, "open", browser)
-    monkeypatch.setattr("hermes_cli.auth_device_flow._can_open_graphical_browser", lambda: True)
+    monkeypatch.setattr("moor_cli.auth_device_flow._can_open_graphical_browser", lambda: True)
     yield server
     server.stop()
 
@@ -157,7 +157,7 @@ def _signed_in(idp: FakeIdP, **entry_overrides):
 
 
 def test_sign_in_stores_the_grant_then_status_refresh_and_logout(idp, capsys):
-    from hermes_cli import auth_commands
+    from moor_cli import auth_commands
 
     _plugin(oauth=[_entry(idp)])
     args = SimpleNamespace(provider=KEY, no_browser=False, timeout=None)
@@ -221,7 +221,7 @@ def test_undeclared_id_another_plugins_grant_and_non_plugin_callers_are_refused(
     with pytest.raises(ValueError, match="google"):
         _plugin("bare").call("google", allowed.url)
     twin = _plugin("twin", oauth=[_entry(idp)])  # the same declaration, but no grant of its own
-    with pytest.raises(ppr.ProviderNotSignedIn, match="hermes auth add twin:google"):
+    with pytest.raises(ppr.ProviderNotSignedIn, match="moor auth add twin:google"):
         twin.call("google", allowed.url)
     with pytest.raises(PermissionError, match="installed plugin"):
         ppr.credentialed_provider_request("google", "GET", allowed.url)
@@ -243,7 +243,7 @@ def test_own_oauth_id_wins_over_a_core_provider_of_the_same_name(idp, api, monke
 def test_not_signed_in_names_the_command_and_sends_nothing(idp, api):
     allowed, _ = api
     plugin = _plugin(oauth=[_entry(idp)])
-    with pytest.raises(ppr.ProviderNotSignedIn, match="hermes auth add voice:google"):
+    with pytest.raises(ppr.ProviderNotSignedIn, match="moor auth add voice:google"):
         plugin.call("google", allowed.url)
     assert allowed.seen == [] and idp.token_requests == []
 
@@ -310,7 +310,7 @@ def test_two_threads_with_an_expiring_token_refresh_once(idp, api):
 
 
 def test_live_token_is_sent_while_another_thread_holds_the_auth_lock(idp, api):
-    from hermes_cli.auth import _auth_store_lock
+    from moor_cli.auth import _auth_store_lock
 
     allowed, _ = api
     plugin = _signed_in(idp)
@@ -406,7 +406,7 @@ def test_partial_consent_saves_nothing_and_names_what_is_missing(idp):
 def test_grant_belongs_to_one_profile(idp, api, monkeypatch, tmp_path):
     allowed, _ = api
     _signed_in(idp)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "other-profile"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "other-profile"))
     with pytest.raises(ppr.ProviderNotSignedIn):
         _plugin(oauth=[_entry(idp)]).call("google", allowed.url)
     assert allowed.seen == []
@@ -434,20 +434,20 @@ def test_custom_prefix_never_routes_to_a_plugin_grant(idp):
 
 
 def test_other_auth_store_writes_keep_the_plugin_grant(idp):
-    from hermes_cli.auth import _save_active_provider_state
+    from moor_cli.auth import _save_active_provider_state
 
     _signed_in(idp)
     before = _grant()
-    _save_active_provider_state("nous", {"access_token": "unrelated"})
+    _save_active_provider_state("moor", {"access_token": "unrelated"})
     assert _grant() == before
 
 
 def test_install_notice_and_repin_delta_name_the_oauth_entry(idp, tmp_path):
-    from hermes_cli.plugins_cmd_catalog import plugin_surface, surface_delta, surface_delta_lines
+    from moor_cli.plugins_cmd_catalog import plugin_surface, surface_delta, surface_delta_lines
 
     manifest = {"name": "voice", "oauth": [_entry(idp)]}
     notice = ppr.requires_auth_notice(manifest)
-    assert "google" in notice and "api.example.com" in notice and "hermes auth add voice:google" in notice
+    assert "google" in notice and "api.example.com" in notice and "moor auth add voice:google" in notice
 
     widened = {"name": "voice", "oauth": [_entry(idp, hosts=["api.example.com", "collect.example.net"])]}
     lines = surface_delta_lines(surface_delta(plugin_surface(manifest, tmp_path), plugin_surface(widened, tmp_path)))
@@ -466,7 +466,7 @@ def test_the_notice_command_finds_a_plugin_whose_name_differs_from_its_directory
     allowed, _ = api
     plugin = _plugin("voice-dir", oauth=[_entry(idp)], display="gemini-voice")
     manifest = json.loads((_home() / "plugins" / "voice-dir" / "plugin.yaml").read_text(encoding="utf-8-sig"))
-    assert "hermes auth add gemini-voice:google" in ppr.requires_auth_notice(manifest)
+    assert "moor auth add gemini-voice:google" in ppr.requires_auth_notice(manifest)
 
     assert _auth("add", "gemini-voice:google") is True
     assert _grant("voice-dir:google")["refresh_token"] in idp.refresh_tokens
@@ -546,7 +546,7 @@ def test_revoked_grant_keeps_no_tokens_and_uninstall_drops_the_grant(idp, api):
         plugin.call("google", allowed.url)
     assert set(_grant()) == {"dead", "fingerprint"}
 
-    from hermes_cli.plugins_cmd_remove import _remove_user_plugin
+    from moor_cli.plugins_cmd_remove import _remove_user_plugin
 
     # Broken manifest after sign-in: logout still removes the grant.
     assert _auth("add") is True and _grant()["access_token"]
@@ -565,7 +565,7 @@ def test_revoked_grant_keeps_no_tokens_and_uninstall_drops_the_grant(idp, api):
 
 def test_sign_in_is_refused_where_nobody_can_answer_the_browser(idp, monkeypatch):
     _plugin(oauth=[_entry(idp)])
-    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.setenv("MOOR_CRON_SESSION", "1")
     with pytest.raises(SystemExit, match="your own terminal"):
         _auth("add")
     assert idp.token_requests == [] and idp.opened == []

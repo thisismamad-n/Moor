@@ -29,7 +29,7 @@
       "values": {
         "model": {
           "default": "hermes-4-8b",
-          "provider": "nous"
+          "provider": "moor"
         }
       },
       "locks": []
@@ -44,7 +44,7 @@
     "effective": {
       "model": {
         "default": "hermes-4-405b",
-        "provider": "nous"
+        "provider": "moor"
       }
     },
     "provenance": {

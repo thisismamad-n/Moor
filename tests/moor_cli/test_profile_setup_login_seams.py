@@ -1,11 +1,11 @@
 """Provider-profile setup/sign-in seams (``providers.base`` L6 block) through the real routes.
 
 A model-provider plugin installed in ONE profile's home declares an in-app device-code login, an
-Accounts card and a ``hermes model`` step; core drives them with no provider-specific code:
+Accounts card and a ``moor model`` step; core drives them with no provider-specific code:
   * ``/api/providers/oauth`` lists the card as ``device_code`` for that profile only;
   * ``/start`` + ``/poll`` run the profile's start/poll hooks and save inside that profile's scope;
   * a cancel before approval never saves;
-  * ``hermes model`` dispatch and the effort picker consult the profile.
+  * ``moor model`` dispatch and the effort picker consult the profile.
 """
 
 from __future__ import annotations
@@ -18,11 +18,11 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from hermes_cli.web_server import _SESSION_TOKEN, app
+from moor_cli.web_server import _SESSION_TOKEN, app
 from tests.waiting import wait_until
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-moor-session-Token": _SESSION_TOKEN}
 NAME = "acme-device"
 
 _PLUGIN_SOURCE = '''
@@ -40,9 +40,9 @@ def start():
             "expires_in": 60, "interval": 1, "state": {"polls": 0}}
 
 def poll(state):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     polls = state["polls"] + 1
-    _log("poll", polls=polls, home=str(get_hermes_home()))
+    _log("poll", polls=polls, home=str(get_moor_home()))
     if polls < int(os.environ.get("ACME_APPROVE_AT", "2")):
         return {"status": "pending", "state": {"polls": polls}}
     if os.environ.get("ACME_DENY"):
@@ -50,8 +50,8 @@ def poll(state):
     return {"status": "approved", "credential": "acme-secret"}
 
 def save(credential):
-    from hermes_constants import get_hermes_home
-    _log("save", home=str(get_hermes_home()), credential=credential)
+    from moor_constants import get_moor_home
+    _log("save", home=str(get_moor_home()), credential=credential)
 
 def flow(config, current_model, args):
     _log("flow", current_model=current_model)
@@ -68,14 +68,14 @@ register_provider(ProviderProfile(
 def _rediscover() -> None:
     import providers as _pkg
     _pkg._discovered = False
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_moor_user_provider")]:
         del sys.modules[mod]
 
 
 @pytest.fixture
 def acme(tmp_path, monkeypatch):
     """Install the fixture plugin into profile ``coder`` only; return (coder home, log reader)."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     coder = root / "profiles" / "coder"
     plugin_dir = coder / "plugins" / "model-providers" / NAME
     plugin_dir.mkdir(parents=True)
@@ -84,7 +84,7 @@ def acme(tmp_path, monkeypatch):
         f"name: {NAME}\nkind: model-provider\nversion: 0.0.1\ndescription: device login seam fixture\n")
     (plugin_dir / "__init__.py").write_text(_PLUGIN_SOURCE)
     log = tmp_path / "acme.jsonl"
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setenv("ACME_DEVICE_LOG", str(log))
     _rediscover()
 
@@ -171,12 +171,12 @@ def test_provider_without_device_login_cannot_start_one(acme):
     assert client.post("/api/providers/oauth/no-such-provider/start", headers=HEADERS).status_code == 400
 
 
-def test_hermes_model_dispatch_and_effort_picker_consult_the_profile(acme, monkeypatch):
+def test_moor_model_dispatch_and_effort_picker_consult_the_profile(acme, monkeypatch):
     coder, events = acme
-    monkeypatch.setenv("HERMES_HOME", str(coder))
+    monkeypatch.setenv("MOOR_HOME", str(coder))
     _rediscover()
-    from hermes_cli.main_provider_setup import _main_model_reasoning_efforts
-    from hermes_cli.model_setup_flows import _profile_model_setup_flow
+    from moor_cli.main_provider_setup import _main_model_reasoning_efforts
+    from moor_cli.model_setup_flows import _profile_model_setup_flow
 
     flow = _profile_model_setup_flow(NAME)
     assert flow is not None

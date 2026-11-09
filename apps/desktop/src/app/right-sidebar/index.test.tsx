@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { $activeTreeGroup, $layoutTree } from '@/components/pane-shell/tree/store'
-import type { HermesReadDirResult } from '@/global'
+import type { MoorReadDirResult } from '@/global'
 import { $connection, $selectedStoredSessionId, $sessions, $workspaceCwdOwner, setCurrentCwd } from '@/store/session'
 import { $sessionTiles } from '@/store/session-states'
 
@@ -10,13 +10,13 @@ import { resetProjectTreeState } from './files/use-project-tree'
 
 import { RightSidebarPane } from './index'
 
-const readDir = vi.fn<(path: string) => Promise<HermesReadDirResult>>()
+const readDir = vi.fn<(path: string) => Promise<MoorReadDirResult>>()
 const repoStatus = vi.fn<(cwd: string) => Promise<null>>()
 
 function installBridge() {
   ;(
-    window as unknown as { hermesDesktop: { git: { repoStatus: typeof repoStatus }; readDir: typeof readDir } }
-  ).hermesDesktop = {
+    window as unknown as { moorDesktop: { git: { repoStatus: typeof repoStatus }; readDir: typeof readDir } }
+  ).moorDesktop = {
     git: { repoStatus },
     readDir
   }

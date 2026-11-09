@@ -20,7 +20,7 @@ def _run_owned_job(job, tmp_path):
     """Run through the production owner bridge: cron turns execute inside the gateway owner."""
     from gateway.session_contract import SessionRef
     from gateway.session_cron import current_execution, execute
-    from hermes_state_registry import acquire, release
+    from moor_state_registry import acquire, release
 
     ref = SessionRef("test-profile", "cron-owner-session")
     admission_id = "cron-owner-admission"
@@ -72,8 +72,8 @@ def _run(job, tmp_path):
     with patch("run_agent.AIAgent") as agent_cls, \
          patch("cron.scheduler._moor_home", tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+         patch("moor_cli.env_loader.load_moor_dotenv"), \
+         patch("moor_cli.env_loader.reset_secret_source_cache"), \
          patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
          patch("moor_cli.runtime_provider.resolve_runtime_provider", return_value=dict(_RUNTIME)):
         agent_cls.return_value.run_conversation.return_value = {"final_response": "ok"}

@@ -314,7 +314,7 @@ def _transcribe_local_command(
             from tools.transcription_whisper_cpp import ensure_whisper_cpp_models, whisper_cpp_command
             if command_template == whisper_cpp_command():
                 ensure_whisper_cpp_models(normalized_model)
-        with tempfile.TemporaryDirectory(prefix="hermes-local-stt-") as output_dir:
+        with tempfile.TemporaryDirectory(prefix="moor-local-stt-") as output_dir:
             prepared_input, prep_error = _prepare_local_audio(file_path, output_dir)
             if prep_error:
                 return _error_result(prep_error)

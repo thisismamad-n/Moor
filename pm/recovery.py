@@ -52,7 +52,7 @@ def validate_environment(python: Path | list[str], *, env: dict, cwd: Path) -> N
 
 def repair_dependencies(project_root: Path) -> None:
     """Restore this installation's recorded set; never repair a foreign tree."""
-    from hermes_cli.venv_sync import collect_superseded_generations
+    from moor_cli.venv_sync import collect_superseded_generations
     from pm.client import sync_venv
     from pm.paths import repo_root
 

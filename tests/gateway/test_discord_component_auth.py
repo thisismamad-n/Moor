@@ -109,7 +109,7 @@ def test_snapshot_user_is_confirmed_with_the_live_check(snapshot, verdict, expec
 
 @pytest.mark.asyncio
 async def test_approval_buttons_follow_a_revoke_made_after_connect():
-    # `hermes pairing revoke` in another process rewrites .env and the pairing store, never the
+    # `moor pairing revoke` in another process rewrites .env and the pairing store, never the
     # adapter's snapshot; the card's buttons must follow the gateway's per-call check instead.
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="***"))
     adapter._allowed_user_ids = {"11111"}

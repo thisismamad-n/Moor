@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from hermes_platform.host import facts
+from moor_platform.host import facts
 
 NvidiaPlatform = Literal["rtx_spark", "dgx_spark", "discrete"]
 

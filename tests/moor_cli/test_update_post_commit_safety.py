@@ -21,8 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _child_env(**values: str) -> dict[str, str]:
-    """A fresh env for a child of THIS interpreter: same dependency path, no hermes state."""
-    env = {key: value for key, value in os.environ.items() if not key.startswith(("HERMES_", "PYTEST_"))}
+    """A fresh env for a child of THIS interpreter: same dependency path, no moor state."""
+    env = {key: value for key, value in os.environ.items() if not key.startswith(("MOOR_", "PYTEST_"))}
     # The test runner may provide dependencies through sys.path rather than site-packages.
     env["PYTHONPATH"] = os.pathsep.join(path for path in sys.path if path)
     env.update(values)
@@ -44,20 +44,20 @@ _CHILD = textwrap.dedent('''
     if mode.startswith("sqlite"):
         # The selected interpreter is the shim: its SQLite probe is the runtime-safety fact.
         sys.executable = os.environ["PROBE_SHIM"]
-    import hermes_yaml as yaml
-    from hermes_cli.config import DEFAULT_CONFIG, ensure_hermes_home
-    home = Path(os.environ["HERMES_HOME"])
+    import moor_yaml as yaml
+    from moor_cli.config import DEFAULT_CONFIG, ensure_moor_home
+    home = Path(os.environ["MOOR_HOME"])
     home.mkdir(parents=True, exist_ok=True)
     # The process's first config read secures the home (0700) once. Do it now, as a real process
     # has by the time it runs the update tail: config-ro's later chmod must stay in force.
-    ensure_hermes_home()
+    ensure_moor_home()
     (home / "config.yaml").write_text(yaml.safe_dump({
         "_config_version": DEFAULT_CONFIG["_config_version"] - 1,
         "telemetry": {"shared_metrics": {"enabled": False}},
         "updates": {"refresh_cua_driver": False}}))
     # Service boundaries: record instead of touching the host's gateways/dashboards.
-    from hermes_cli import gateway_migrate, update_cmd, update_cmd_fleet as fleet
-    from hermes_cli import update_cmd_fleet_verify as verify, update_cmd_maint as maint
+    from moor_cli import gateway_migrate, update_cmd, update_cmd_fleet as fleet
+    from moor_cli import update_cmd_fleet_verify as verify, update_cmd_maint as maint
     entered = cell / "migration-entered"
     gateway_migrate.maybe_auto_migrate_after_update = lambda: entered.write_text("entered")
     real_restart = update_cmd._restart_gateway_fleet_after_update
@@ -68,7 +68,7 @@ _CHILD = textwrap.dedent('''
     update_cmd._surviving_pre_update_serve_runtimes = lambda plan: []
     maint._refresh_dashboard_after_update = lambda **kwargs: None
     # A detached git writer would outlive the test in its deleted tmp checkout.
-    from hermes_cli import git_commit_graph
+    from moor_cli import git_commit_graph
     git_commit_graph.spawn_commit_graph_refresh = lambda root: False
     verify._print_legacy_units_warning = lambda: None
     verify._collect_fleet_snapshot = lambda *args: []
@@ -81,14 +81,14 @@ _CHILD = textwrap.dedent('''
             marker.read_text() if marker.exists() else "absent")
     if mode in ("ipc-failed-unit", "ipc-abort"):
         # The real restart phase; only the host's service manager and process table are replaced.
-        from hermes_cli import gateway as gateway_module
+        from moor_cli import gateway as gateway_module
         update_cmd._restart_gateway_fleet_after_update = real_restart
         fleet._restart_manual_gateways = lambda out, budget: None
         fleet._force_kill_stuck_gateways = lambda pids: None
         if mode == "ipc-failed-unit":
             gateway_module.find_gateway_pids = lambda **kwargs: []
             fleet._restart_systemd_gateway_units = lambda restarted, failed, *rest: failed.append(
-                "hermes-gateway-probe.service")
+                "moor-gateway-probe.service")
         else:
             def unavailable(*args, **kwargs):
                 raise RuntimeError("systemctl unavailable")
@@ -97,20 +97,20 @@ _CHILD = textwrap.dedent('''
             update_cmd._recover_gateway_restart_after_abort = lambda plan, **kwargs: {}
     if mode == "ipc-windows":
         # The Windows service manager refuses the paused gateway's restart.
-        from hermes_cli import main as hermes_main
+        from moor_cli import main as moor_main
         def scm(token):
             if token and token.get("resume_needed"):
-                raise RuntimeError("Could not restart Windows gateway service(s): HermesGatewayProbe")
-        hermes_main._resume_windows_gateways_after_update = scm
+                raise RuntimeError("Could not restart Windows gateway service(s): MoorGatewayProbe")
+        moor_main._resume_windows_gateways_after_update = scm
         update_cmd._resume_windows_gateways_after_update = scm
-        windows_resume = {"resume_needed": True, "services": ["HermesGatewayProbe"],
-                          "service_profiles": {"HermesGatewayProbe": "probe"}}
+        windows_resume = {"resume_needed": True, "services": ["MoorGatewayProbe"],
+                          "service_profiles": {"MoorGatewayProbe": "probe"}}
     if mode == "profile-sync":
         def profile_sync():
             raise SystemExit("profile skill sync exited 3")
         maint._sync_profiles_after_update = profile_sync
-    from hermes_cli import update_receipt
-    from hermes_cli.venv_sync import arm_completion, completion_pending_path
+    from moor_cli import update_receipt
+    from moor_cli.venv_sync import arm_completion, completion_pending_path
     arm_completion(source)
     update_receipt.begin_update_receipt()
     receipt = copy.deepcopy(update_receipt._current.get().data)
@@ -128,7 +128,7 @@ _CHILD = textwrap.dedent('''
         import shutil
         shutil.rmtree(update_receipt._receipt_dir())
         update_receipt._receipt_dir().write_text("not a directory")
-    from hermes_cli.update_completion import _finish, _settle_after_commit
+    from moor_cli.update_completion import _finish, _settle_after_commit
     try:
         if mode == "receipts-blocked-settle":
             code = _settle_after_commit(request, cell / "result.json", "dependencies", "dependency sync refused")
@@ -154,16 +154,16 @@ _CHILD = textwrap.dedent('''
 
 def _run_completion(tmp_path: Path, mode: str, *, sqlite: str | None = None) -> dict:
     cell = tmp_path / "cell"
-    root_home = cell / "home" / ".hermes"
+    root_home = cell / "home" / ".moor"
     # A named profile: receipts stay in the (writable) root home while the profile home refuses.
     profile = root_home / "profiles" / "probe"
     for name in ("logs/update_receipts", "skills", "cache", "profiles/probe"):
         (root_home / name).mkdir(parents=True, exist_ok=True)
-    env = _child_env(HOME=str(cell / "home"), HERMES_HOME=str(profile), HERMES_DISABLE_LAZY_INSTALLS="1",
-                     HERMES_RUNTIME_DIR=str(tmp_path / "store"), PYTHONDONTWRITEBYTECODE="1",
+    env = _child_env(HOME=str(cell / "home"), MOOR_HOME=str(profile), MOOR_DISABLE_LAZY_INSTALLS="1",
+                     MOOR_RUNTIME_DIR=str(tmp_path / "store"), PYTHONDONTWRITEBYTECODE="1",
                      XDG_CONFIG_HOME=str(cell / "home/.config"), XDG_CACHE_HOME=str(cell / "home/.cache"),
                      XDG_STATE_HOME=str(cell / "home/.local/state"),
-                     HERMES_GATEWAY_LOCK_DIR=str(cell / "home/.local/state/hermes/gateway-locks"))
+                     MOOR_GATEWAY_LOCK_DIR=str(cell / "home/.local/state/moor/gateway-locks"))
     if sqlite is not None:
         payload = json.dumps({"base_prefix": sys.base_prefix, "executable": sys.executable,
                               "python_version": list(sys.version_info[:3]),
@@ -289,8 +289,8 @@ _ZIP_PARENT = textwrap.dedent('''
     sys.path.insert(0, root_checkout)
     cell = Path(cell)
     calls = cell / "parent-resume-calls.jsonl"
-    from hermes_cli import main as hermes_main, update_cmd, update_inventory, update_receipt
-    hermes_main.PROJECT_ROOT = cell / "source"
+    from moor_cli import main as moor_main, update_cmd, update_inventory, update_receipt
+    moor_main.PROJECT_ROOT = cell / "source"
     receipts = update_receipt._receipt_dir()
     receipts.mkdir(parents=True, exist_ok=True)
     os.environ["PROBE_RECEIPTS"] = str(receipts)
@@ -299,19 +299,19 @@ _ZIP_PARENT = textwrap.dedent('''
     def no_inventory():
         raise RuntimeError("the host's runtime inventory is not part of this probe")
     update_inventory.collect_runtime_inventory = no_inventory
-    hermes_main._update_preflight_handled = lambda args: False
-    hermes_main._install_hangup_protection = lambda **kwargs: None
-    hermes_main._finalize_update_output = lambda state: None
-    hermes_main._run_pre_update_backup = lambda args: None
-    token = {"resume_needed": True, "profiles": {}, "unmapped": [], "services": ["HermesGatewayProbe"],
-             "service_profiles": {"HermesGatewayProbe": "probe"}}
-    hermes_main._pause_windows_gateways_for_update = lambda: token
+    moor_main._update_preflight_handled = lambda args: False
+    moor_main._install_hangup_protection = lambda **kwargs: None
+    moor_main._finalize_update_output = lambda state: None
+    moor_main._run_pre_update_backup = lambda args: None
+    token = {"resume_needed": True, "profiles": {}, "unmapped": [], "services": ["MoorGatewayProbe"],
+             "service_profiles": {"MoorGatewayProbe": "probe"}}
+    moor_main._pause_windows_gateways_for_update = lambda: token
     def scm(resume_token):
         with calls.open("a") as handle:
             handle.write(json.dumps(bool(resume_token and resume_token.get("resume_needed"))) + "\\n")
         if resume_token and resume_token.get("resume_needed"):
-            raise RuntimeError("Could not restart Windows gateway service(s): HermesGatewayProbe")
-    hermes_main._resume_windows_gateways_after_update = scm
+            raise RuntimeError("Could not restart Windows gateway service(s): MoorGatewayProbe")
+    moor_main._resume_windows_gateways_after_update = scm
     update_cmd._prepare_git_command = lambda **_: (True, None, False)
     def via_zip(args, *, had_desktop_app_before_update, target_sha=None, completion_request=None, **kwargs):
         completion_request["expected_sha"] = target_sha
@@ -321,7 +321,7 @@ _ZIP_PARENT = textwrap.dedent('''
     class Args(SimpleNamespace):
         def __getattr__(self, name):
             return None
-    hermes_main.cmd_update(Args(gateway=True, branch="main", yes=True))
+    moor_main.cmd_update(Args(gateway=True, branch="main", yes=True))
 ''')
 
 
@@ -330,13 +330,13 @@ def test_zip_update_never_replays_a_refused_resume_after_the_commit_point(tmp_pa
     """The child already tried the resume and recorded the follow-up: the parent's finally and its
     atexit net must not run it again, and a restart error must not become exit 1 / "/update failed"."""
     cell = tmp_path / "cell"
-    home = cell / "home" / ".hermes"
+    home = cell / "home" / ".moor"
     (home / "logs/update_receipts").mkdir(parents=True)
-    completion = cell / "source" / "hermes_cli" / "update_completion.py"
+    completion = cell / "source" / "moor_cli" / "update_completion.py"
     completion.parent.mkdir(parents=True)
     completion.write_text(_REFUSED_RESUME_COMPLETION, encoding="utf-8")
-    env = _child_env(HOME=str(cell / "home"), HERMES_HOME=str(home), HERMES_DISABLE_LAZY_INSTALLS="1",
-                     HERMES_RUNTIME_DIR=str(tmp_path / "store"), PYTHONDONTWRITEBYTECODE="1",
+    env = _child_env(HOME=str(cell / "home"), MOOR_HOME=str(home), MOOR_DISABLE_LAZY_INSTALLS="1",
+                     MOOR_RUNTIME_DIR=str(tmp_path / "store"), PYTHONDONTWRITEBYTECODE="1",
                      XDG_CONFIG_HOME=str(cell / "home/.config"), XDG_CACHE_HOME=str(cell / "home/.cache"),
                      XDG_STATE_HOME=str(cell / "home/.local/state"))
     driver = tmp_path / "zip_parent.py"
@@ -357,7 +357,7 @@ _RECEIPT_CHILD = textwrap.dedent('''
     import json, sys
     root_checkout, action = sys.argv[1:3]
     sys.path.insert(0, root_checkout)
-    from hermes_cli import update_receipt as ur
+    from moor_cli import update_receipt as ur
     if action == "seed":
         ur.begin_update_receipt()
         ur.record_fact("plan", {"runtimes": [json.loads(sys.argv[3])]})
@@ -372,13 +372,13 @@ _RECEIPT_CHILD = textwrap.dedent('''
 
 @pytest.mark.platforms("posix")
 def test_old_schema_handoff_receipt_keeps_the_previous_runs_manual_serve_debt(tmp_path):
-    from hermes_cli.process_identity import _process_create_time
+    from moor_cli.process_identity import _process_create_time
 
-    home = tmp_path / "home" / ".hermes"
+    home = tmp_path / "home" / ".moor"
     home.mkdir(parents=True)
     # The durable reminder store is obstructed, so the receipt is the only record of the debt.
     (home / "serve_restart_pending").write_text("not a directory\n", encoding="utf-8")
-    env = _child_env(HOME=str(tmp_path / "home"), HERMES_HOME=str(home), PYTHONDONTWRITEBYTECODE="1")
+    env = _child_env(HOME=str(tmp_path / "home"), MOOR_HOME=str(home), PYTHONDONTWRITEBYTECODE="1")
     child = tmp_path / "receipt_child.py"
     child.write_text(_RECEIPT_CHILD, encoding="utf-8")
     serve = subprocess.Popen([sys.executable, "-I", "-c", "import time; print('ready', flush=True); time.sleep(120)"],

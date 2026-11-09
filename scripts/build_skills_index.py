@@ -1,5 +1,5 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
-"""Build the Hermes Skills Index — a centralized JSON catalog of all skills.
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-moor-env" python3 "$0" "$@"'
+"""Build the Moor Skills Index — a centralized JSON catalog of all skills.
 
 This script crawls every skill source (skills.sh, GitHub taps, official,
 clawhub, lobehub) and writes a JSON index with resolved

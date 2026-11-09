@@ -6,10 +6,10 @@ stamped (boot used to skip it as below the support floor) or first stamped by an
 never reaches that step, so the move happens at its first stamp instead, exactly once.
 """
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
-from hermes_cli.config_defaults import DEFAULT_CONFIG
+from moor_cli.config_defaults import DEFAULT_CONFIG
 
 _AB_ENV = ("AGENT_BROWSER_EXECUTABLE_PATH", "AGENT_BROWSER_PROFILE", "AGENT_BROWSER_ARGS",
            "AGENT_BROWSER_HEADED", "AGENT_BROWSER_ENGINE")
@@ -27,23 +27,23 @@ def _clean_env(monkeypatch):
 
 
 def _home(tmp_path, monkeypatch, config_text):
-    """A real HERMES_HOME holding the legacy .env and *config_text* (None: no config.yaml)."""
+    """A real MOOR_HOME holding the legacy .env and *config_text* (None: no config.yaml)."""
     home = tmp_path / "home"
     home.mkdir()
     (home / ".env").write_text(_LEGACY, encoding="utf-8")
     if config_text is not None:
         (home / "config.yaml").write_text(config_text, encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     return home
 
 
 def _boot():
-    from hermes_cli import post_update
+    from moor_cli import post_update
     return post_update.step_migrate_config()
 
 
 def _first_save():
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     save_config(load_config())
 
 
@@ -81,7 +81,7 @@ def test_a_save_before_any_migration_keeps_the_legacy_browser_settings(tmp_path,
 
 
 def test_explicit_migration_recovers_a_home_without_config(tmp_path, monkeypatch):
-    from hermes_cli.config import migrate_config
+    from moor_cli.config import migrate_config
 
     home = _home(tmp_path, monkeypatch, None)
     migrate_config(interactive=False, quiet=True)
@@ -92,7 +92,7 @@ def test_explicit_migration_recovers_a_home_without_config(tmp_path, monkeypatch
 def test_the_retained_env_is_converted_once_never_over_later_edits(tmp_path, monkeypatch):
     """.env keeps the AGENT_BROWSER_* lines; the user's later choice must still win for good, even the
     defaults (``engine: auto``, ``headed: false``) that the v52 step lets the env override."""
-    from hermes_cli.config import load_config, migrate_config, save_config
+    from moor_cli.config import load_config, migrate_config, save_config
 
     _home(tmp_path, monkeypatch, None)
     _boot()

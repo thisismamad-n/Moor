@@ -245,7 +245,7 @@ class TestEmittedCommandsSatisfyCliContract:
 
     @staticmethod
     def _namespace(source: Path, **overrides) -> argparse.Namespace:
-        """The namespace hermes main() produces for `sessions recover`.
+        """The namespace moor main() produces for `sessions recover`.
 
         Mirrors the registrations in moor_cli/main.py (sessions_recover
         subparser): --source, --output, --inspect-only, --work-dir,

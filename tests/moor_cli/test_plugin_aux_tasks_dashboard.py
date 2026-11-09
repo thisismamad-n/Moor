@@ -1,13 +1,13 @@
 """Plugin-registered auxiliary tasks reach the dashboard/Desktop Models settings.
 
-``PluginContext.register_auxiliary_task`` already puts a plugin task in the ``hermes model``
+``PluginContext.register_auxiliary_task`` already puts a plugin task in the ``moor model``
 picker (``main_provider_setup._all_aux_tasks``), but the REST surface behind the Desktop
 Settings → Models page enumerated only the built-in ``_AUX_TASK_SLOTS``: ``GET
 /api/model/auxiliary`` never listed the task, ``POST /api/model/set`` rejected it with
 ``unknown auxiliary task``, ``__reset__`` skipped it and the stale-pin nudge ignored it.
 
 These tests load real plugins from temp homes through ``PluginManager`` discovery (no fake
-registry) and cover the profile seam: one ``hermes serve`` process, two profiles with their own
+registry) and cover the profile seam: one ``moor serve`` process, two profiles with their own
 plugins and their own config. Regression for #40880 / #129189.
 """
 
@@ -19,15 +19,15 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-import hermes_cli.plugins as plugins_mod
+import moor_cli.plugins as plugins_mod
 from agent.auxiliary_client import _get_auxiliary_task_config
-from hermes_cli.plugins import PluginManager
-from hermes_cli.web_server_config import (
+from moor_cli.plugins import PluginManager
+from moor_cli.web_server_config import (
     _AUX_TASK_SLOTS, _apply_aux_assignment_sync, _apply_model_assignment_sync, _aux_task_slots,
     _stale_aux_pins,
 )
-from hermes_cli.web_server_profiles import _profile_scope
-from hermes_cli.web_routers.models import get_auxiliary_models
+from moor_cli.web_server_profiles import _profile_scope
+from moor_cli.web_routers.models import get_auxiliary_models
 
 
 def _write_plugin(home: Path, name: str, register_call: str) -> None:
@@ -58,12 +58,12 @@ _ALPHA = ("register_auxiliary_task('alpha_task', display_name='Alpha side model'
 def two_profile_homes(tmp_path, monkeypatch):
     """Process home ``a`` (plugins side + alpha) and named profile ``b`` (plugin side only), each
     with its own ``auxiliary.compression`` model."""
-    home_a = tmp_path / ".hermes"
+    home_a = tmp_path / ".moor"
     home_b = home_a / "profiles" / "b"
     _write_home(home_a, {"side": _SIDE, "alpha_plugin": _ALPHA}, "vendor/model-a")
     _write_home(home_b, {"side": _SIDE}, "vendor/model-b")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home_a))
+    monkeypatch.setenv("MOOR_HOME", str(home_a))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: tmp_path / "empty-bundled")
     monkeypatch.setattr(PluginManager, "_scan_entry_points", lambda self: [])
     plugins_mod._reset_plugin_managers_for_tests()
@@ -100,8 +100,8 @@ def test_listing_is_per_profile_and_carries_inheritance(two_profile_homes):
 def test_pin_persists_per_profile_and_is_honored_by_resolution(two_profile_homes):
     home_a, _home_b = two_profile_homes
     with _profile_scope("b"):
-        _apply_model_assignment_sync("auxiliary", "nous", "hermes-4", "side_task", "", "")
-    assert _rows("b")["side_task"]["provider"] == "nous"
+        _apply_model_assignment_sync("auxiliary", "moor", "hermes-4", "side_task", "", "")
+    assert _rows("b")["side_task"]["provider"] == "moor"
     assert "side_task" not in (home_a / "config.yaml").read_text()
     assert (_resolved_model("b"), _resolved_model(None)) == ("hermes-4", "vendor/model-a")
 
@@ -118,7 +118,7 @@ def test_pin_persists_per_profile_and_is_honored_by_resolution(two_profile_homes
 
 def test_assignment_reset_and_stale_pins_cover_plugin_tasks(two_profile_homes, monkeypatch):
     saved: dict = {}
-    monkeypatch.setattr("hermes_cli.config.save_config", lambda cfg: saved.update(cfg))
+    monkeypatch.setattr("moor_cli.config.save_config", lambda cfg: saved.update(cfg))
     cfg: dict = {"auxiliary": {}}
 
     out = _apply_aux_assignment_sync(cfg, "openrouter", "fast-model", "alpha_task", "", "")
@@ -127,11 +127,11 @@ def test_assignment_reset_and_stale_pins_cover_plugin_tasks(two_profile_homes, m
     assert saved["auxiliary"]["alpha_task"]["model"] == "fast-model"
 
     # A pin on a plugin task is a stale pin like any other when main moves elsewhere.
-    assert {"task": "alpha_task", "provider": "openrouter", "model": "fast-model"} in _stale_aux_pins(cfg, "nous")
+    assert {"task": "alpha_task", "provider": "openrouter", "model": "fast-model"} in _stale_aux_pins(cfg, "moor")
 
     # Empty task = broadcast; it must reach the plugin slot too.
-    _apply_aux_assignment_sync(cfg, "nous", "hermes-4", "", "", "")
-    assert cfg["auxiliary"]["alpha_task"]["provider"] == "nous"
+    _apply_aux_assignment_sync(cfg, "moor", "hermes-4", "", "", "")
+    assert cfg["auxiliary"]["alpha_task"]["provider"] == "moor"
 
     _apply_aux_assignment_sync(cfg, "", "", "__reset__", "", "")
     assert cfg["auxiliary"]["alpha_task"] == {"provider": "auto", "model": ""}
@@ -148,7 +148,7 @@ def test_plugin_discovery_failure_leaves_builtins_working(two_profile_homes, mon
     def _boom():
         raise RuntimeError("plugin scan exploded")
 
-    # Patch where production reads: the resolver imports the name from hermes_cli.plugins at call time.
+    # Patch where production reads: the resolver imports the name from moor_cli.plugins at call time.
     monkeypatch.setattr(plugins_mod, "get_plugin_auxiliary_tasks", _boom)
     assert _aux_task_slots() == _AUX_TASK_SLOTS
     tasks = [row["task"] for row in get_auxiliary_models(profile=None)["tasks"]]

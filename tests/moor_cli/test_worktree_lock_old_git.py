@@ -1,7 +1,7 @@
 """Worktree lock state without ``git worktree list --porcelain -z`` (git < 2.36, e.g. Ubuntu 22.04).
 
 The pruner read every lock through ``list -z``; on an older git that fails and the fail-safe
-``"live"`` answer kept every ``.worktrees`` checkout forever ("in use by a running hermes session").
+``"live"`` answer kept every ``.worktrees`` checkout forever ("in use by a running moor session").
 """
 import os
 import shutil
@@ -10,8 +10,8 @@ import sys
 
 import pytest
 
-from hermes_cli import worktree_ops
-from tests.hermes_cli import test_worktree
+from moor_cli import worktree_ops
+from tests.moor_cli import test_worktree
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX git shim")
@@ -31,9 +31,9 @@ def test_stale_worktrees_are_reaped_on_git_without_list_z(tmp_path, monkeypatch)
         'case " $* " in *" worktree list "*" -z "*) echo "error: unknown switch \\`z\'" >&2; exit 129;; esac\n'
         f'exec "{real_git}" "$@"\n')
     (shim / "git").chmod(0o755)
-    dead = test_worktree.TestWorktreeLockReaping._mk(cli, git_repo, "hermes-dead", pid=999999)
-    unlocked = test_worktree.TestWorktreeLockReaping._mk(cli, git_repo, "hermes-nolock")
-    live = test_worktree.TestWorktreeLockReaping._mk(cli, git_repo, "hermes-live", pid=os.getpid())
+    dead = test_worktree.TestWorktreeLockReaping._mk(cli, git_repo, "moor-dead", pid=999999)
+    unlocked = test_worktree.TestWorktreeLockReaping._mk(cli, git_repo, "moor-nolock")
+    live = test_worktree.TestWorktreeLockReaping._mk(cli, git_repo, "moor-live", pid=os.getpid())
     monkeypatch.setenv("PATH", f"{shim}:{os.environ['PATH']}")
     assert subprocess.run(["git", "worktree", "list", "--porcelain", "-z"], cwd=git_repo,
                           capture_output=True, check=False).returncode == 129

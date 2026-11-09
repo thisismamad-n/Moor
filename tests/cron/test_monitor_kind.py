@@ -29,9 +29,9 @@ import pytest
 
 
 @pytest.fixture
-def hermes_env(tmp_path, monkeypatch, cron_owner):
-    """Isolate HERMES_HOME for each test so jobs/scripts/snapshots don't leak."""
-    home = tmp_path / ".hermes"
+def moor_env(tmp_path, monkeypatch, cron_owner):
+    """Isolate MOOR_HOME for each test so jobs/scripts/snapshots don't leak."""
+    home = tmp_path / ".moor"
     home.mkdir()
     (home / "scripts").mkdir()
     (home / "cron").mkdir()
@@ -283,14 +283,14 @@ def test_bidi_monitor_output_is_sanitized_before_agent(moor_env, monkeypatch):
     assert "Alice Work" in observed["prompts"][0]
 
 
-def test_monitor_script_uses_configured_interpreter(hermes_env, monkeypatch):
+def test_monitor_script_uses_configured_interpreter(moor_env, monkeypatch):
     """A monitor script uses the same job-level interpreter as `script`."""
     import stat
 
     from cron.jobs import create_job
     from cron.scheduler import run_job
 
-    wrapper = hermes_env / "venv" / "bin" / "python3"
+    wrapper = moor_env / "venv" / "bin" / "python3"
     wrapper.parent.mkdir(parents=True)
     wrapper.write_text(
         f"#!{sys.executable}\n"
@@ -302,7 +302,7 @@ def test_monitor_script_uses_configured_interpreter(hermes_env, monkeypatch):
     )
     wrapper.chmod(wrapper.stat().st_mode | stat.S_IXUSR)
     _write_script(
-        hermes_env,
+        moor_env,
         "mon.py",
         'import os\nprint(os.environ.get("CRON_MONITOR_WRAPPER_USED", "0"))\n',
     )
@@ -323,7 +323,7 @@ def test_monitor_script_uses_configured_interpreter(hermes_env, monkeypatch):
     assert "1" in observed["prompts"][0]
 
 
-def test_unchanged_output_suppresses_agent_run(hermes_env, monkeypatch):
+def test_unchanged_output_suppresses_agent_run(moor_env, monkeypatch):
     from cron.jobs import get_job
     from cron.scheduler import SILENT_MARKER, run_job
 

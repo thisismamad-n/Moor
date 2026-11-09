@@ -331,9 +331,9 @@ def _custom_stored_key_error(bu: str) -> Optional[str]:
     the operator or the provider registry names; pool and ``model.key_env`` keys already match
     their configured URL exactly."""
     from agent.secret_scope import get_secret_str
-    from hermes_cli import runtime_provider as rp
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_constants import OPENROUTER_BASE_URL
+    from moor_cli import runtime_provider as rp
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_constants import OPENROUTER_BASE_URL
     from utils import base_url_origin
 
     custom_why = (
@@ -380,7 +380,7 @@ def _validate_cron_base_url(
             has_named_custom_provider,
             resolve_requested_provider,
             _get_named_custom_provider)
-        from hermes_cli.auth import PROVIDER_REGISTRY
+        from moor_cli.auth import PROVIDER_REGISTRY
     except Exception:
         return f"Unable to validate base_url override for provider {prov!r}; refused."
 

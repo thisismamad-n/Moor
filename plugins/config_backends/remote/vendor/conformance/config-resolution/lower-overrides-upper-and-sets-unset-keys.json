@@ -63,7 +63,7 @@
       "by": "agent",
       "op": "set",
       "path": "model.provider",
-      "value": "nous",
+      "value": "moor",
       "expect": {
         "result": "accept"
       }

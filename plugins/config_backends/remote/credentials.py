@@ -1,6 +1,6 @@
 """The plane credential (design §4.4 step 2, D26, D31, D32).
 
-Cloud: the Nous access token from the profile's ``auth.json`` (``resolve_nous_access_token``).
+Cloud: the Moor access token from the profile's ``auth.json`` (``resolve_moor_access_token``).
 On-prem: an IdP workload token from the OAuth2 client-credentials grant, configured by
 ``GATEWAY_RELAY_IDP_*`` values in ``.env``. Never from config.yaml (the config is what this token
 fetches) and never from a secret source: :data:`PLANE_CREDENTIAL_ENV_NAMES` lists every env name
@@ -23,11 +23,11 @@ _IDP_KEYS = ("token_url", "client_id", "client_secret", "scope")
 
 PLANE_CREDENTIAL_ENV_NAMES = frozenset({
     # which backend, which plane, which agent record
-    "HERMES_CONFIG_BACKEND", "HERMES_CONFIG_REMOTE_URL", "HERMES_CONFIG_INSTANCE_ID",
+    "MOOR_CONFIG_BACKEND", "MOOR_CONFIG_REMOTE_URL", "MOOR_CONFIG_INSTANCE_ID",
     # on-prem workload identity
     *(IDP_ENV_PREFIX + k.upper() for k in _IDP_KEYS),
     # Cloud: where auth.json lives and where its refresh token is sent
-    "HERMES_SHARED_AUTH_DIR", "HERMES_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL",
+    "MOOR_SHARED_AUTH_DIR", "MOOR_PORTAL_BASE_URL", "MOOR_PORTAL_BASE_URL",
 })
 
 _HTTP_TIMEOUT_S = 15.0
@@ -51,31 +51,31 @@ def _idp_env() -> dict[str, str]:
 
 
 def credential_kind() -> str:
-    return "idp" if _idp_env()["token_url"] else "nous"
+    return "idp" if _idp_env()["token_url"] else "moor"
 
 
 def plane_token(home: Path) -> str:
     """A fresh bearer for ``home``'s requests (re-resolved per request, contract §10.2)."""
-    return _idp_token() if credential_kind() == "idp" else _nous_token(home)
+    return _idp_token() if credential_kind() == "idp" else _moor_token(home)
 
 
-def _nous_token(home: Path) -> str:
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+def _moor_token(home: Path) -> str:
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     try:
-        from hermes_cli.auth import resolve_nous_access_token
+        from moor_cli.auth import resolve_moor_access_token
     except Exception as exc:
-        raise PlaneCredentialError(f"cannot load the Nous auth module: {exc}", retryable=False) from exc
-    token = set_hermes_home_override(home)  # auth.json is per profile home
+        raise PlaneCredentialError(f"cannot load the Moor auth module: {exc}", retryable=False) from exc
+    token = set_moor_home_override(home)  # auth.json is per profile home
     try:
-        return resolve_nous_access_token()
+        return resolve_moor_access_token()
     except Exception as exc:
         # A missing login or a revoked session needs a human; a refresh that hit the network can retry.
-        fatal = bool(getattr(exc, "relogin_required", False)) or getattr(exc, "code", None) == "nous_auth_missing"
+        fatal = bool(getattr(exc, "relogin_required", False)) or getattr(exc, "code", None) == "moor_auth_missing"
         raise PlaneCredentialError(
-            f"no Nous access token for {home} (auth.json): {exc}", retryable=not fatal) from exc
+            f"no Moor access token for {home} (auth.json): {exc}", retryable=not fatal) from exc
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _idp_token() -> str:

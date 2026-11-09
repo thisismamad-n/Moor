@@ -84,7 +84,7 @@ describe('mediaExternalUrl', () => {
   // #93508 item 5: the browser-hosted Desktop's session token grants host shells. Its gateway files
   // save through the ticketed bridge, so no URL built here may carry that token.
   it('never puts the browser-hosted Desktop session token into a URL', () => {
-    document.documentElement.dataset.hermesDesktopHost = 'browser'
+    document.documentElement.dataset.moorDesktopHost = 'browser'
     $connection.set({ mode: 'remote', baseUrl: 'http://127.0.0.1:9119', token: 'SECRET' } as never)
 
     try {
@@ -92,7 +92,7 @@ describe('mediaExternalUrl', () => {
         expect(mediaExternalUrl(path)).not.toContain('SECRET')
       }
     } finally {
-      document.documentElement.removeAttribute('data-hermes-desktop-host')
+      document.documentElement.removeAttribute('data-moor-desktop-host')
     }
   })
 
@@ -139,7 +139,7 @@ describe('mediaGatewayStreamUrl', () => {
       'file://nas/share/video%20clip.mp4'
     ]) {
       const url = new URL(mediaGatewayStreamUrl(path))
-      expect(url.protocol).toBe('hermes-media:')
+      expect(url.protocol).toBe('moor-media:')
       expect(url.hostname).toBe('remote')
       expect.soft(decodeURIComponent(url.pathname.slice(1)), path).toBe(path)
     }
@@ -228,7 +228,7 @@ describe('resolveMediaDisplaySrc', () => {
   it('reads Windows file URLs from the local desktop shell by their native path', async () => {
     const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,bG9jYWw=')
 
-    vi.stubGlobal('window', { hermesDesktop: { readFileDataUrl } })
+    vi.stubGlobal('window', { moorDesktop: { readFileDataUrl } })
     $connection.set({ mode: 'local' } as never)
 
     await resolveMediaDisplaySrc('file:///C:/Users/me/a%20b.png')
@@ -237,7 +237,7 @@ describe('resolveMediaDisplaySrc', () => {
   })
 
   it('reads an owner-pinned Windows file URL through the gateway by its native path', async () => {
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { moorDesktop: { api } })
     $connection.set({ mode: 'remote' } as never)
 
     await resolveMediaDisplaySrc('file:///C:/Users/me/a%20b.png', { connectionId: 'win-gw', profile: 'work' })
@@ -281,7 +281,7 @@ describe('resolveMediaPlaybackSrc', () => {
       'moor-media://stream/C%3A%5Crenders%5Cdemo.mp4'
     )
     await expect(resolveMediaPlaybackSrc('file:///C:/renders/demo.mp4')).resolves.toBe(
-      'hermes-media://stream/C%3A%5Crenders%5Cdemo.mp4'
+      'moor-media://stream/C%3A%5Crenders%5Cdemo.mp4'
     )
   })
 })
@@ -327,7 +327,7 @@ describe('gatewayImageProxyDataUrl (#74564)', () => {
 
   beforeEach(() => {
     api.mockClear()
-    vi.stubGlobal('window', { hermesDesktop: { api } })
+    vi.stubGlobal('window', { moorDesktop: { api } })
     $connection.set({ mode: 'remote' } as never)
   })
 

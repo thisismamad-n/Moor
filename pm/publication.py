@@ -62,7 +62,7 @@ def validate_manifest(source: Path) -> dict:
 
 class PluginSelection:
     def __init__(self, selection: dict):
-        from hermes_yaml import roundtrip_yaml
+        from moor_yaml import roundtrip_yaml
         from pm.plugin_eviction import settle_record
 
         self.configs = selection_snapshot()

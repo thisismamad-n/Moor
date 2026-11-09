@@ -113,7 +113,7 @@ class TestSaveUrlImage:
 
         assert path.exists()
         assert path.read_bytes() == PNG_1PX
-        # Durable generated-media dir: under HERMES_HOME but OUTSIDE the swept
+        # Durable generated-media dir: under MOOR_HOME but OUTSIDE the swept
         # inbound caches — gateway cleanup must never delete the only copy of a
         # generated deliverable (#126445).
         assert os.path.join("cache", "generated", "images") in str(path)

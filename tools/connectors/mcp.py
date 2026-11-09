@@ -44,13 +44,13 @@ NO_CARD_NOTE = (
 
 
 def _catalog_names() -> list[str]:
-    from hermes_cli.mcp_catalog import list_catalog
+    from moor_cli.mcp_catalog import list_catalog
 
     return sorted(e.name for e in list_catalog())
 
 
 def _configured_names() -> list[str]:
-    from hermes_cli.mcp_catalog import installed_servers
+    from moor_cli.mcp_catalog import installed_servers
 
     return sorted(installed_servers())
 
@@ -126,7 +126,7 @@ class _CatalogBackend:
     def start_install_oauth(self, name: str, env: dict[str, str]) -> Any:
         """Install an OAuth entry through the card's flow. The configuration is built in memory and
         lands, together with the setup values, only when ``initialize`` accepts the token."""
-        from hermes_cli.mcp_catalog import card_install_config, is_installed, record_mcp_install
+        from moor_cli.mcp_catalog import card_install_config, is_installed, record_mcp_install
         from tools.connectors import mcp_oauth
 
         fresh = not is_installed(name)
@@ -151,7 +151,7 @@ class _CatalogBackend:
         """Probe the entry's in-memory configuration with ephemeral credentials; save both only
         after the server answered. A failure writes nothing, so a failed reinstall keeps the
         previous configuration. A first install is recorded once as an extension install."""
-        from hermes_cli.mcp_catalog import recorded_catalog_install
+        from moor_cli.mcp_catalog import recorded_catalog_install
 
         with recorded_catalog_install(name):
             return self._install(name, env)
@@ -218,7 +218,7 @@ def _check_declared(name: str, entry: Any, env: dict[str, str]) -> None:
 
 
 def _save_env(env: dict[str, str]) -> None:
-    from hermes_cli.config import save_env_value
+    from moor_cli.config import save_env_value
 
     for key, value in env.items():
         if value:

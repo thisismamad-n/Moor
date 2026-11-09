@@ -51,7 +51,7 @@ _ABANDONED_LOADERS_LOCK = threading.Lock()
 _PLUGIN_HOST_CREATE_LOCK = threading.Lock()
 # PluginContexts of the outermost deadline-bounded load; set only inside its worker.
 _IN_PLUGIN_LOAD: contextvars.ContextVar[Optional[list[PluginContext]]] = contextvars.ContextVar(
-    "hermes_plugin_load_scope", default=None,
+    "moor_plugin_load_scope", default=None,
 )
 
 
@@ -233,7 +233,7 @@ def missing_python_dependencies(manifest: Any) -> list[str]:
 
 
 def _declared_requirements(manifest: Any) -> tuple[str, ...]:
-    """What PM installs into Hermes's environment for this plugin: its declaration read the way
+    """What PM installs into Moor's environment for this plugin: its declaration read the way
     admission reads it (``pm.plugin_declarations.read_python_declaration`` — an authored
     ``pyproject.toml`` first, then ``python_dependencies`` / ``pip_dependencies``; nothing for a
     ``python_runtime: external`` sidecar). A plugin with no directory (an entry point) has only its
@@ -266,7 +266,7 @@ def installed_in_selected_environment(requirements: list[str]) -> bool:
     """Whether every one of *requirements* is in the dependency environment PM currently selects.
 
     Activation is a boot decision (``pm.environments.activate_dependencies``): a gateway or dashboard
-    that was running when ``hermes plugins enable`` committed a new generation keeps the old one. A
+    that was running when ``moor plugins enable`` committed a new generation keeps the old one. A
     requirement it cannot import that the selected generation carries therefore needs a restart, not
     a repair. False when unknown."""
     try:
@@ -351,15 +351,15 @@ class PluginLoaderMixin:
         retries the import. A failed load disposes its lease (the registry forgets the platform), so without
         this a load that raised or overran its deadline at startup stays down until a forced re-discovery
         (#126356). True when a loader was re-armed."""
-        from hermes_cli.plugins_discovery import _get_disabled_plugins, _get_enabled_plugins, gate_manifest
-        from hermes_cli.plugins_manifest import requires_hermes_error
+        from moor_cli.plugins_discovery import _get_disabled_plugins, _get_enabled_plugins, gate_manifest
+        from moor_cli.plugins_manifest import requires_moor_error
         with self._discovery_lock, _plugin_home_scope(self.home_path):
             failed = next((p.manifest for p in self._plugins.values()
                            if p.error and not p.enabled and p.manifest.kind == "platform"
                            and self._platform_name_from_manifest(p.manifest) == platform_name), None)
-            # Re-gate: a placeholder (disabled, not enabled, catalog-removed) or a requires_hermes mismatch
+            # Re-gate: a placeholder (disabled, not enabled, catalog-removed) or a requires_moor mismatch
             # carries the same error-set shape as a failed load but must never be imported.
-            if failed is None or requires_hermes_error(failed) or gate_manifest(
+            if failed is None or requires_moor_error(failed) or gate_manifest(
                     failed, _get_disabled_plugins(), _get_enabled_plugins()).action not in ("defer", "load"):
                 return False
             with _ABANDONED_LOADERS_LOCK:  # its hung import is still running: another retry only leaks a thread
@@ -505,8 +505,8 @@ class PluginLoaderMixin:
         if installed_in_selected_environment(missing):
             logger.warning(
                 "Plugin %s's Python dependencies were installed after this process started: %s. "
-                "A running process never switches dependency environments; restart Hermes "
-                "(hermes gateway restart for the gateway) to load them.",
+                "A running process never switches dependency environments; restart Moor "
+                "(moor gateway restart for the gateway) to load them.",
                 key, ", ".join(missing),
             )
         else:
@@ -654,7 +654,7 @@ class PluginLoaderMixin:
 
     def _runs_in_plugin_host(self, manifest: PluginManifest) -> bool:
         """``plugins.isolation: host`` sends every non-bundled Python plugin to the profile's host."""
-        from hermes_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
+        from moor_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
         return manifest.source != "bundled" and isolation_mode() == ISOLATION_HOST
 
     def _plugin_host(self) -> Any:
@@ -663,7 +663,7 @@ class PluginLoaderMixin:
         failed creation stores nothing, and the next caller tries again."""
         host = getattr(self, "_plugin_host_instance", None)
         if host is None:
-            from hermes_cli.plugin_host import PluginHost
+            from moor_cli.plugin_host import PluginHost
             with _PLUGIN_HOST_CREATE_LOCK:
                 host = getattr(self, "_plugin_host_instance", None)
                 if host is None:
@@ -722,7 +722,7 @@ class PluginLoaderMixin:
         try:
             from moor_cli.agent_plugins import load_agent_plugin
             package = load_agent_plugin(
-                Path(manifest.path), get_hermes_home() / "plugin-data" / manifest.data_namespace)
+                Path(manifest.path), get_moor_home() / "plugin-data" / manifest.data_namespace)
             ctx = PluginContext(manifest, self)
             for diagnostic in package.diagnostics:
                 logger.warning("Agent Plugin '%s' [%s]: %s", lookup_key, diagnostic.scope, diagnostic.message)

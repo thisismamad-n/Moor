@@ -53,7 +53,7 @@ const { stampSecondaryProfileOwner } = await import('./session-event-provenance'
 const { $selectedStoredSessionId, $sessions, setActiveSessionId } = await import('@/store/session')
 
 function installDesktop(): void {
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+  ;(window as unknown as { moorDesktop: unknown }).moorDesktop = {
     getConnection: vi.fn(async (profile?: string) => ({
       authMode: 'token',
       profile: profile || 'default',

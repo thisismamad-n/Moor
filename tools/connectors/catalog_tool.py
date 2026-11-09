@@ -148,19 +148,19 @@ def install(items: list[dict[str, str]], *, session_id: Optional[str], tool_call
 def search(query: str, kind: Optional[str], *, installer: Any = None) -> dict[str, Any]:
     """Runs on the tool call's thread, in this chat's profile scope, so ``installed`` is this
     chat's profile's."""
-    from hermes_constants import get_hermes_home, profile_name_for_home
+    from moor_constants import get_moor_home, profile_name_for_home
 
     rows: list[dict[str, Any]] = []
     if kind in (None, "plugin"):
         rows += _plugin_rows(query)
     if kind in (None, "skill") and query.strip():
         rows += _skill_rows(query)
-    return {"results": rows, "installed_in": profile_name_for_home(get_hermes_home())}
+    return {"results": rows, "installed_in": profile_name_for_home(get_moor_home())}
 
 
 def _plugin_rows(query: str) -> list[dict[str, Any]]:
-    from hermes_cli.plugin_catalog import filter_entries, load_catalog_live
-    from hermes_cli.plugins_cmd import PluginOperationError, _read_install_metadata
+    from moor_cli.plugin_catalog import filter_entries, load_catalog_live
+    from moor_cli.plugins_cmd import PluginOperationError, _read_install_metadata
     from tools.connectors.catalog import _display
 
     try:

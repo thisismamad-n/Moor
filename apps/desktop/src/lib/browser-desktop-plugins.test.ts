@@ -7,9 +7,9 @@ import { clearWebappSession, seedWebappSession } from '@/test/webapp-session'
 import { installBrowserDesktopBridge } from './browser-desktop-bridge'
 import { createBrowserDesktopPluginsBridge } from './browser-desktop-plugins'
 
-// The server half (hermes_cli/web_routers/desktop_plugins.py) is pinned in
-// tests/hermes_cli/test_webapp_desktop_plugins.py; this is the server's answer for one plugin.
-const ROOT = 'C:\\Users\\me\\.hermes\\desktop-plugins'
+// The server half (moor_cli/web_routers/desktop_plugins.py) is pinned in
+// tests/moor_cli/test_webapp_desktop_plugins.py; this is the server's answer for one plugin.
+const ROOT = 'C:\\Users\\me\\.moor\\desktop-plugins'
 const FOLDER = `${ROOT}\\notes`
 
 const SERVER: Record<string, unknown> = {
@@ -29,8 +29,8 @@ const SERVER: Record<string, unknown> = {
 
 afterEach(() => {
   clearWebappSession()
-  Reflect.deleteProperty(window, 'hermesDesktop')
-  document.documentElement.removeAttribute('data-hermes-desktop-host')
+  Reflect.deleteProperty(window, 'moorDesktop')
+  document.documentElement.removeAttribute('data-moor-desktop-host')
   delete (globalThis as { __notesRegister?: unknown }).__notesRegister
   vi.unstubAllGlobals()
   vi.restoreAllMocks()

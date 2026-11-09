@@ -13,8 +13,8 @@ from tests.waiting import async_wait_until
 
 
 def test_restore_refuses_live_authority_without_changing_data(tmp_path):
-    from hermes_cli.backup import create_quick_snapshot
-    from hermes_cli.update_cmd_maint import _restore_state_db_from_snapshot
+    from moor_cli.backup import create_quick_snapshot
+    from moor_cli.update_cmd_maint import _restore_state_db_from_snapshot
 
     root = Path(__file__).resolve().parents[2]
     home, user = tmp_path / 'state', tmp_path / 'user'
@@ -33,7 +33,7 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
         'platform_toolsets': {'cli': []},
     }))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), MOOR_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     def rows():
@@ -47,7 +47,7 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
             await rpc(ws, 'prompt.submit', session_id=session, input_id='warm', text='WARM')
             await async_wait_until(lambda: dict(rows()).get('warm') == 'terminal', timeout=30, interval=.05,
                                    what='the warm turn to settle')
-            snapshot = create_quick_snapshot(hermes_home=home)
+            snapshot = create_quick_snapshot(moor_home=home)
             assert snapshot, snapshot
             await rpc(ws, 'prompt.submit', session_id=session, input_id='started', text='BLOCK_STARTED')
             assert await asyncio.to_thread(peer.blocked.wait, 25)
@@ -90,9 +90,9 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
 
 
 def test_corrupt_epoch_refuses_profile_sweep_with_separate_recovery(tmp_path, monkeypatch, capsys):
-    from hermes_cli import backup, update_cmd
-    from hermes_cli.session_recovery import recover_session_database
-    from hermes_state import SessionDB
+    from moor_cli import backup, update_cmd
+    from moor_cli.session_recovery import recover_session_database
+    from moor_state import SessionDB
 
     homes = [tmp_path / 'default', tmp_path / 'sibling']
     originals = {}
@@ -102,18 +102,18 @@ def test_corrupt_epoch_refuses_profile_sweep_with_separate_recovery(tmp_path, mo
         with SessionDB(db_path=home / 'state.db') as db:
             db.create_session('retained', 'cli')
             db.append_message('retained', 'user', 'snapshot transcript')
-        snapshot = backup.create_quick_snapshot(hermes_home=home)
+        snapshot = backup.create_quick_snapshot(moor_home=home)
         snapshots[home] = home / 'state-snapshots' / snapshot / 'state.db'
         (home / 'state.db').write_bytes(b'unreadable canonical runtime epoch')
         originals[home] = (home / 'state.db').read_bytes(), snapshots[home].read_bytes()
-    monkeypatch.setattr(update_cmd, 'get_hermes_home', lambda: homes[0])
+    monkeypatch.setattr(update_cmd, 'get_moor_home', lambda: homes[0])
     monkeypatch.setattr(backup, '_sibling_profile_homes', lambda home: [('work', homes[1])])
     update_cmd._verify_and_restore_state_dbs_post_update()
     output = capsys.readouterr().out
     for home in homes:
         assert ((home / 'state.db').read_bytes(), snapshots[home].read_bytes()) == originals[home]
     assert 'Auto-restored' not in output
-    assert 'separate' in output and 'hermes sessions recover' in output
+    assert 'separate' in output and 'moor sessions recover' in output
     assert 'restored copy also failed integrity' not in output
     for home in homes:
         report = recover_session_database(snapshots[home], home / 'recovered.db')
@@ -127,8 +127,8 @@ def test_update_restore_excludes_startup_until_publication(tmp_path, monkeypatch
     import subprocess
     import sys
     from gateway.runtime_ownership import ProfileOwnership
-    from hermes_cli import backup
-    from hermes_cli.update_cmd_maint import _restore_state_db_from_snapshot
+    from moor_cli import backup
+    from moor_cli.update_cmd_maint import _restore_state_db_from_snapshot
 
     home = tmp_path / 'state'
     home.mkdir()
@@ -150,7 +150,7 @@ def test_update_restore_excludes_startup_until_publication(tmp_path, monkeypatch
 
     # Pause only the actual database publication, with maintenance already held.
     arrived, release = threading.Event(), threading.Event()
-    from hermes_cli import backup_restore
+    from moor_cli import backup_restore
     publish = backup_restore._restore_db_pages
     def barrier(*args):
         arrived.set()
@@ -164,7 +164,7 @@ def test_update_restore_excludes_startup_until_publication(tmp_path, monkeypatch
         assert arrived.wait(20)
         root = Path(__file__).resolve().parents[2]
         env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-        env.update(HOME=str(tmp_path / 'user'), HERMES_HOME=str(home), PYTHONPATH=str(root))
+        env.update(HOME=str(tmp_path / 'user'), MOOR_HOME=str(home), PYTHONPATH=str(root))
         contender = subprocess.run([sys.executable, '-c',
             "import logging, runpy; logging.basicConfig(level=logging.INFO); runpy.run_module('gateway.run', run_name='__main__')"],
             cwd=root, env=env, stdin=subprocess.DEVNULL, capture_output=True,

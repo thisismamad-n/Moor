@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import type { ComponentProps, ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { Streamdown } = await import('streamdown')
   const { en } = await import('@/i18n/en')
   const { relativeTime } = await import('@/lib/time')

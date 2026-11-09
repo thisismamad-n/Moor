@@ -10,16 +10,16 @@ import zipfile
 
 import pytest
 
-from hermes_cli import main, update_cmd, update_cmd_fleet as fleet, update_cmd_maint as maint
-from hermes_cli import update_cmd_fleet_verify as fleet_verify, update_cmd_zip, update_receipt
-from hermes_cli.config_defaults import DEFAULT_CONFIG
-from hermes_cli.update_inventory import RuntimeRecord, UpdatePlan
-import hermes_yaml
+from moor_cli import main, update_cmd, update_cmd_fleet as fleet, update_cmd_maint as maint
+from moor_cli import update_cmd_fleet_verify as fleet_verify, update_cmd_zip, update_receipt
+from moor_cli.config_defaults import DEFAULT_CONFIG
+from moor_cli.update_inventory import RuntimeRecord, UpdatePlan
+import moor_yaml
 
 
 def _swap_leftovers(root):
     """Staging/backup siblings and the journal; the swap lock is a stable sidecar that stays (one inode)."""
-    return [p for p in root.glob("*.hermes-update-*") if p.name != ".hermes-update-zip-swap.lock"]
+    return [p for p in root.glob("*.moor-update-*") if p.name != ".moor-update-zip-swap.lock"]
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def zip_update(tmp_path, monkeypatch, isolated_source_completion):
         out.writestr("moor-agent-main/payload.txt", "new")
         for name in ("new-entry/data", "tools/code.py", "apps/desktop/source.js",
                      "venv/keep", "node_modules/keep", ".env"):
-            out.writestr("hermes-agent-main/" + name, "new")
+            out.writestr("moor-agent-main/" + name, "new")
         out.comment = b"8192da90e0afb20010a1c2f5da83db305d05ac5a"  # git archive's commit identity
     # Only redirect transport: extraction, staging, dirty recheck and swap run.
     monkeypatch.setattr("urllib.request.urlretrieve", lambda url, dst: urlretrieve(archive.as_uri(), dst))
@@ -87,14 +87,14 @@ def zip_update(tmp_path, monkeypatch, isolated_source_completion):
     monkeypatch.setattr("moor_cli.macos_tcc_anchor.ensure_tcc_anchor", lambda: None)
     monkeypatch.setattr(maint, "_print_post_update_notices_and_self_heals", lambda: None)
     monkeypatch.setattr(maint, "_print_bundled_skills_sync_report", lambda: None)
-    monkeypatch.setattr("hermes_cli.profiles.seed_profile_skills", lambda *a, **kw: {})
+    monkeypatch.setattr("moor_cli.profiles.seed_profile_skills", lambda *a, **kw: {})
     monkeypatch.setattr(update_cmd, "_reload_config_modules", lambda: None)
     monkeypatch.setattr(update_cmd, "_post_update_sqlite_runtime_status", lambda: (True, None))
     monkeypatch.setattr(fleet_verify, "_print_legacy_units_warning", lambda: None)
     monkeypatch.setattr(maint, "_refresh_dashboard_after_update", lambda **kwargs: None)
     monkeypatch.setattr(update_cmd, "_surviving_pre_update_serve_runtimes", lambda plan: [])
     monkeypatch.setattr(fleet_verify, "_collect_fleet_snapshot", lambda *args: [])
-    monkeypatch.setattr("hermes_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
+    monkeypatch.setattr("moor_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
 
     def resume(received):
         assert received is token
@@ -211,7 +211,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
     if failure in {"swap", "late-swap"}:
         def failing_nth_swap(move):  # root files swap by os.replace, directories by os.rename
             def fail_second_swap(src, dst):
-                if str(src).endswith(".hermes-update-staging"):
+                if str(src).endswith(".moor-update-staging"):
                     installed.append(dst)
                     if len(installed) == (5 if failure == "late-swap" else 2):
                         raise OSError("locked replacement")
@@ -240,7 +240,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
         assert (state.root / "payload.txt").read_text() == "old"
     if failure != "preparation":
         assert {p.relative_to(state.root): p.read_bytes() for p in state.root.rglob("*")
-                if p.is_file() and p.name != ".hermes-update-zip-swap.lock"} == original_tree
+                if p.is_file() and p.name != ".moor-update-zip-swap.lock"} == original_tree
     assert state.events == ["resume"]
     assert state.token["resume_needed"] is False
     assert {profile: (profile / "config.yaml").read_bytes() for profile in before} == before
@@ -272,7 +272,7 @@ def test_zip_build_failure_after_swap_is_a_followup(zip_update, monkeypatch, rou
     def fail_build(*args, **kwargs):
         assert (state.root / "payload.txt").read_text() == "new"
         raise pm.InstallError("venv", "preparation stopped")
-    monkeypatch.setattr("hermes_cli.source_build.build_update_products", fail_build)
+    monkeypatch.setattr("moor_cli.source_build.build_update_products", fail_build)
     update_cmd._cmd_update_impl(SimpleNamespace(branch="main", yes=True), gateway_mode=True)
     assert (state.root / "payload.txt").read_text() == "new"
     receipt = json.loads((state.active / "logs/update_receipts/latest.json").read_text())
@@ -289,8 +289,8 @@ def test_zip_dependency_sync_failure_after_swap_is_a_followup(zip_update, monkey
     # exit 0, a ``dependencies`` follow-up, the tail obligation armed, nothing of the tail run.
     import pm
     import pm.client
-    from hermes_cli import update_completion
-    from hermes_cli.venv_sync import completion_pending_path
+    from moor_cli import update_completion
+    from moor_cli.venv_sync import completion_pending_path
 
     state = zip_update
     monkeypatch.setattr(update_cmd, "_prepare_git_command", lambda **_: (route == "direct", ["git"], False))
@@ -377,7 +377,7 @@ def test_zip_recovers_crashed_backup_before_failed_copy_and_retry(zip_update, mo
     witness = target / "code.py" if entry == "tools" else target
     assert witness.read_text(encoding="utf-8") == ("retained" if entry == "tools" else "old")
     # Nothing journaled the leftover copy: it is kept aside, never deleted (F78).
-    kept = root / (leftover.name + ".hermes-update-kept")
+    kept = root / (leftover.name + ".moor-update-kept")
     assert _swap_leftovers(root) == [kept] and kept.read_text(encoding="utf-8") == "interrupted copy"
     kept.unlink()
     update_cmd_zip._download_and_swap_zip("main", "local fixture")
@@ -421,19 +421,19 @@ def test_venv_layout_explicit_and_native(tmp_path, windows, folder, executable):
 @pytest.mark.platforms("macos")
 @pytest.mark.parametrize(("mechanism", "rebuilt"), [("self", True), ("electron-updater", False)])
 def test_installed_app_without_a_checkout_build_is_still_rebuilt(zip_update, monkeypatch, tmp_path, mechanism, rebuilt):
-    """#52339: an installed Hermes.app only ``hermes update`` refreshes needs a Desktop build even
+    """#52339: an installed Moor.app only ``moor update`` refreshes needs a Desktop build even
     when release/ is gone, or it never gets newer. A self-updating release is not ours to rebuild."""
-    installed = tmp_path / "Applications" / "Hermes.app"
+    installed = tmp_path / "Applications" / "Moor.app"
     (installed / "Contents" / "Resources").mkdir(parents=True)
     (installed / "Contents" / "Resources" / "install-stamp.json").write_text(
         json.dumps({"updateMechanism": mechanism}), encoding="utf-8")
-    monkeypatch.setattr("hermes_cli.gui_uninstall.packaged_gui_app_paths", lambda: [installed])
-    # The checkout under the default Hermes home is the one an installed app runs.
+    monkeypatch.setattr("moor_cli.gui_uninstall.packaged_gui_app_paths", lambda: [installed])
+    # The checkout under the default Moor home is the one an installed app runs.
     (tmp_path / "default-home").mkdir()
-    (tmp_path / "default-home" / "hermes-agent").symlink_to(zip_update.root)
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda **kw: tmp_path / "default-home")
+    (tmp_path / "default-home" / "moor-agent").symlink_to(zip_update.root)
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda **kw: tmp_path / "default-home")
     built = []
-    monkeypatch.setattr("hermes_cli.source_build.build_update_products",
+    monkeypatch.setattr("moor_cli.source_build.build_update_products",
                         lambda selected, *, desktop: built.append(desktop))
     monkeypatch.setattr(update_cmd, "_prepare_git_command", lambda **_: (True, ["git"], False))
     monkeypatch.setattr(main, "_warn_orphaned_update_autostashes", lambda *args: None)
@@ -446,7 +446,7 @@ def test_installed_app_without_a_checkout_build_is_still_rebuilt(zip_update, mon
 def test_unpinned_zip_update_owes_the_restart_for_the_archive_commit(tmp_path, monkeypatch):
     """A branch ZIP (no target SHA) still names its commit: GitHub archives carry it as the ZIP comment
     (``git archive``). The restart debt and the completion are armed for that commit, never for ''."""
-    from hermes_cli import update_cmd_commit
+    from moor_cli import update_cmd_commit
 
     sha = "8192da90e0afb20010a1c2f5da83db305d05ac5a"
     root = tmp_path / "checkout"
@@ -454,7 +454,7 @@ def test_unpinned_zip_update_owes_the_restart_for_the_archive_commit(tmp_path, m
     (root / "payload.txt").write_text("old", encoding="utf-8")
     archive = tmp_path / "source.zip"
     with zipfile.ZipFile(archive, "w") as out:
-        out.writestr("hermes-agent-main/payload.txt", "new")
+        out.writestr("moor-agent-main/payload.txt", "new")
         out.comment = sha.encode()
     monkeypatch.setattr("urllib.request.urlretrieve", lambda url, dst: urlretrieve(archive.as_uri(), dst))
     monkeypatch.setattr(main, "PROJECT_ROOT", root)
@@ -474,14 +474,14 @@ def test_a_zip_that_does_not_name_its_commit_is_refused_before_the_swap(tmp_path
     """S4: the installed identity must come from the downloaded bytes (``git archive``'s ZIP comment).
     No comment, a malformed one, or one naming another commit than the pinned target: no live rename,
     no obligation armed, never an empty durable SHA."""
-    from hermes_cli import update_cmd_commit
+    from moor_cli import update_cmd_commit
 
     root = tmp_path / "checkout"
     root.mkdir()
     (root / "payload.txt").write_text("old", encoding="utf-8")
     archive = tmp_path / "source.zip"
     with zipfile.ZipFile(archive, "w") as out:
-        out.writestr("hermes-agent-main/payload.txt", "new")
+        out.writestr("moor-agent-main/payload.txt", "new")
         out.comment = comment
     monkeypatch.setattr("urllib.request.urlretrieve", lambda url, dst: urlretrieve(archive.as_uri(), dst))
     monkeypatch.setattr(main, "PROJECT_ROOT", root)

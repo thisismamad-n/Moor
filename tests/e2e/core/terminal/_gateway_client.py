@@ -104,9 +104,9 @@ class Backend:
         self.clients: list[WSClient] = []
 
     def start(self, *, timeout: float = 90.0) -> Backend:
-        operator_root = (Path(_operator_home()) / ".hermes").resolve()
-        assert operator_root not in (self.hermes_home.resolve(), *self.hermes_home.resolve().parents), (
-            f"sandbox {self.hermes_home} sits inside the operator's Hermes home {operator_root}")
+        operator_root = (Path(_operator_home()) / ".moor").resolve()
+        assert operator_root not in (self.moor_home.resolve(), *self.moor_home.resolve().parents), (
+            f"sandbox {self.moor_home} sits inside the operator's Moor home {operator_root}")
         self.llm.start()
         write_moor_home(self.moor_home, self.llm.base_url, extra_config=self.extra_config)
         self._stdout = open(self.root / "serve.stdout.log", "wb")

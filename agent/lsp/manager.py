@@ -68,7 +68,7 @@ def parse_trusted_workspaces(value: Any) -> list[str]:
     if (roots := _path_list(value)) is None:
         eventlog.event_log.warning(
             "lsp.trusted_workspaces must be a list of directories, e.g. ['~/code/my-app'] (got %s); only the "
-            "workspaces you launched Hermes or opened a session in are trusted until the key is fixed",
+            "workspaces you launched Moor or opened a session in are trusted until the key is fixed",
             type(value).__name__)
     return roots or []
 
@@ -192,7 +192,7 @@ class LSPService:
 
     @classmethod
     def create_from_config(cls) -> Optional[LSPService]:
-        """Build a service from ``hermes_cli.config``; ``None`` if config can't load."""
+        """Build a service from ``moor_cli.config``; ``None`` if config can't load."""
         try:
             from moor_cli.config import load_config_readonly
             cfg = load_config_readonly()
@@ -498,7 +498,7 @@ class LSPService:
         clear_cache()
 
     def get_status(self) -> dict[str, Any]:
-        """Return a snapshot of the service for ``hermes lsp status``."""
+        """Return a snapshot of the service for ``moor lsp status``."""
         with self._state_lock:
             clients = [
                 {"server_id": c.server_id, "workspace_root": c.workspace_root,

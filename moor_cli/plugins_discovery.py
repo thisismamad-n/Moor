@@ -42,7 +42,7 @@ _FOREIGN_HARNESS_MANIFEST_DIRS = frozenset({
 # ``register()`` (threads, DB handles) for a profile the operator took out of the host (#123386).
 # A contextvar, not an env flag: it must not leak to other threads or outlive the read.
 _discovery_suppressed: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "hermes_plugin_discovery_suppressed", default=False)
+    "moor_plugin_discovery_suppressed", default=False)
 
 
 @contextlib.contextmanager
@@ -191,7 +191,7 @@ def collect_directory_manifests() -> list[PluginManifest]:
     """Read directory manifests in full-discovery order (bundled top-level, bundled/platforms, user, opt-in
     project) without loading or mutating anything, so startup probes share the exact precedence/containment
     rules of the real discovery sweep."""
-    from hermes_cli import plugins as _origin  # patched names resolve through the origin
+    from moor_cli import plugins as _origin  # patched names resolve through the origin
     manifests: list[PluginManifest] = []
 
     def _scan(label: str, directory: Path, source: str, skip_names: Optional[set[str]] = None) -> None:
@@ -207,7 +207,7 @@ def collect_directory_manifests() -> list[PluginManifest]:
     logger.debug("Scanning bundled plugins: %s", repo_plugins)
     _scan("bundled (top-level)", repo_plugins, "bundled",
           {"memory", "context_engine", "model-providers", "cron_providers", "computer_use", "config_backends"})
-    user_dir = get_hermes_home() / "plugins"
+    user_dir = get_moor_home() / "plugins"
     logger.debug("Scanning user plugins: %s", user_dir)
     _scan("user", user_dir, "user")
     if _origin._env_enabled("MOOR_ENABLE_PROJECT_PLUGINS"):
@@ -224,7 +224,7 @@ def resolve_manifest_winners(manifests: list[PluginManifest]) -> dict[str, Plugi
     ``~/.moor/plugins/<name>`` is the documented way to override a bundled plugin, and is logged. A flat
     user/project manifest that claims a bundled key from a *differently named* directory is an impostor, not
     an override (``impostor_dir/plugin.yaml`` with ``name: kanban``): it is skipped with a warning so
-    ``hermes plugins enable kanban`` never activates unrelated code under the bundled name."""
+    ``moor plugins enable kanban`` never activates unrelated code under the bundled name."""
     winners: dict[str, PluginManifest] = {}
     for manifest in manifests:
         key = manifest_key(manifest)
@@ -273,7 +273,7 @@ def gate_manifest(
     category-owned kinds (exclusive / model-provider), bundled auto-loads (backend now, platform deferred),
     then ``plugins.enabled`` opt-in (path-derived key or legacy bare name)."""
     lookup_key = manifest_key(manifest)
-    from hermes_cli.left_core_migration import legacy_plugin_keys
+    from moor_cli.left_core_migration import legacy_plugin_keys
     # A bundled key that left core (``observability/langfuse``) keeps selecting its catalog plugin.
     names = {lookup_key, manifest.name, *legacy_plugin_keys(lookup_key)}
 
@@ -283,7 +283,7 @@ def gate_manifest(
     # Relay lifecycle is core-owned; an old plugin copy would compete for its registries.
     if names & LEGACY_RELAY_PLUGIN_KEYS:
         error = (
-            "removed — Relay lifecycle is owned by Hermes core; configure a standard user or system Relay "
+            "removed — Relay lifecycle is owned by Moor core; configure a standard user or system Relay "
             f"plugins.toml, or use {RELAY_PLUGINS_CONFIG_ENV} for an explicit user-file override"
         )
         return _placeholder(error, logging.WARNING, "Refusing to load removed Moor Relay plugin '%s'; %s", error)

@@ -12,8 +12,8 @@ from pathlib import Path
 import pytest
 
 from agent import models_dev
-import hermes_cli.models_catalog_static as static
-import hermes_cli.models_pricing as pricing
+import moor_cli.models_catalog_static as static
+import moor_cli.models_pricing as pricing
 
 
 def test_xai_floor_reuses_the_process_models_dev_copy_without_network(monkeypatch):
@@ -39,10 +39,10 @@ from agent import models_dev
 parses = []
 real = models_dev._load_disk_cache
 models_dev._load_disk_cache = lambda: parses.append(1) or real()
-import hermes_cli.models  # the import every gateway/CLI process pays
-from hermes_cli.models_catalog_static import _PROVIDER_MODELS
+import moor_cli.models  # the import every gateway/CLI process pays
+from moor_cli.models_catalog_static import _PROVIDER_MODELS
 at_import = len(parses)
-_PROVIDER_MODELS.get("nous")
+_PROVIDER_MODELS.get("moor")
 after_other_row = len(parses)
 copied = dict(_PROVIDER_MODELS)
 json.dump({"at_import": at_import, "after_other_row": after_other_row, "copy_xai": copied["xai"],
@@ -53,13 +53,13 @@ json.dump({"at_import": at_import, "after_other_row": after_other_row, "copy_xai
 
 
 def test_models_dev_is_parsed_on_first_xai_read_not_at_import(tmp_path):
-    home = tmp_path / "hermes"
+    home = tmp_path / "moor"
     home.mkdir()
     (home / "models_dev_cache.json").write_text(json.dumps(
         {"xai": {"id": "xai", "models": {"grok-disk-only": {}}}, "openai": {"id": "openai", "models": {"gpt-x": {}}}}))
     repo = Path(__file__).resolve().parents[2]
-    env = {k: v for k, v in os.environ.items() if not k.startswith("HERMES_")}
-    env.update(HERMES_HOME=str(home), HOME=str(tmp_path), PYTHONPATH=str(repo))
+    env = {k: v for k, v in os.environ.items() if not k.startswith("MOOR_")}
+    env.update(MOOR_HOME=str(home), HOME=str(tmp_path), PYTHONPATH=str(repo))
     out = subprocess.run([sys.executable, "-c", _LAZY_PROBE], check=False, cwd=repo, env=env, capture_output=True, text=True, timeout=120)
     assert out.returncode == 0, out.stderr[-2000:]
     got = json.loads(out.stdout.strip().splitlines()[-1])

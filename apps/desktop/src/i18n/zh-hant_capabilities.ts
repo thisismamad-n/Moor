@@ -16,7 +16,7 @@ export const zhHantCapabilities = {
         pickerTitle: (name: string) => `為 ${name} 選擇資料夾`,
         pickerButton: '允許存取',
         refusedProtected: (name: string) =>
-          `${name} 不能使用該資料夾：其中包含 Hermes 的設定、金鑰或外掛資料。請選擇不包含它們的資料夾。`,
+          `${name} 不能使用該資料夾：其中包含 Moor 的設定、金鑰或外掛資料。請選擇不包含它們的資料夾。`,
         loadFailed: (name: string) => `無法載入與 ${name} 共用的資料夾。`
       }
     },
@@ -85,7 +85,7 @@ export const zhHantCapabilities = {
     unlockedHint: '鎖定後，代理程式將無法變更此技能。你仍可自行編輯。',
     archive: '封存',
     skillArchivedTitle: '技能已封存',
-    skillArchivedMessage: '可透過 hermes curator restore 還原。',
+    skillArchivedMessage: '可透過 moor curator restore 還原。',
     officialCatalog: '可安裝',
     officialPill: '官方'
   },
@@ -103,7 +103,7 @@ export const zhHantCapabilities = {
     loadFailed: '無法載入記憶圖譜',
     loading: '載入中…',
     emptyTitle: '尚無學習內容',
-    emptyDesc: '當 Hermes 為你的工作建立技能與記憶時，會顯示在這裡。'
+    emptyDesc: '當 Moor 為你的工作建立技能與記憶時，會顯示在這裡。'
   },
 
   agents: {

@@ -140,7 +140,7 @@ class ReasoningParamsMixin:
 
     def _reasoning_endpoint_profile(self):
         """The profile claiming this endpoint (``providers.profile_for_host``) that gates its reasoning, or None.
-        Endpoints core gates itself (Nous Portal, Vercel AI Gateway, LM Studio, Ollama Cloud, OpenRouter) keep
+        Endpoints core gates itself (Moor Portal, Vercel AI Gateway, LM Studio, Ollama Cloud, OpenRouter) keep
         core's gate even when a plugin claims their host for metadata or auxiliary routing."""
         url = self._base_url_lower
         if ((self.provider or "").strip().lower() == "lmstudio" or self._is_openrouter_url()
@@ -211,8 +211,8 @@ class ReasoningParamsMixin:
             # Log the class, never the config value or exception traceback.
             logging.getLogger("run_agent").warning(
                 "Agent configuration for model.reasoning_echo could not be loaded (%s); "
-                "using the default reasoning echo setting. Check the active Hermes Python "
-                "environment and dependencies; run 'hermes config check' after "
+                "using the default reasoning echo setting. Check the active Moor Python "
+                "environment and dependencies; run 'moor config check' after "
                 "configuration imports work again.",
                 type(exc).__name__,
             )

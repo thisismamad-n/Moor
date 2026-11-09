@@ -157,7 +157,7 @@ def _find_provider(providers: list, provider_name: str):
 def _catalog_install_hint(provider_name: str):
     """The install command for a catalog memory provider that resolves nowhere, else None."""
     from plugins.memory import find_provider_dir
-    from hermes_cli.memory_provider_migration import catalog_install_hint
+    from moor_cli.memory_provider_migration import catalog_install_hint
     if not provider_name or find_provider_dir(provider_name) is not None:
         return None
     return catalog_install_hint(provider_name, category="memory")
@@ -185,7 +185,7 @@ def cmd_setup_provider(provider_name: str) -> None:
         if install:
             print(f"  It is a catalog plugin that is not installed. Install it with: {install}\n")
         else:
-            print("  Run 'hermes memory setup' to see available providers.\n")
+            print("  Run 'moor memory setup' to see available providers.\n")
         return
     name, _, provider = match
 
@@ -433,7 +433,7 @@ def cmd_status(args) -> None:
             if install:
                 print(f"  Install it with: {install}")
             else:
-                print(f"  Install the '{provider_name}' memory plugin to ~/.hermes/plugins/")
+                print(f"  Install the '{provider_name}' memory plugin to ~/.moor/plugins/")
 
     if providers:
         print("\n  Installed plugins:")

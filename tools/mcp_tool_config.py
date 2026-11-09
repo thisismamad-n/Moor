@@ -14,7 +14,7 @@ import sys
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
-from hermes_cli.stderr_timestamp import stamp_line, timestamp
+from moor_cli.stderr_timestamp import stamp_line, timestamp
 from tools.mcp_tool_common import _env_ref_name, _prepend_path
 
 logger = logging.getLogger("tools.mcp_tool")
@@ -108,7 +108,7 @@ class _StderrTee:
 
 def _write_stderr_log_header(server_name: str) -> None:
     """Session marker so operators can find each server's output in the shared log; it leads with the
-    same stamp as every server line (``_StderrTee``) so ``hermes logs mcp --since`` can filter it."""
+    same stamp as every server line (``_StderrTee``) so ``moor logs mcp --since`` can filter it."""
     fh = _get_mcp_stderr_log()
     try:
         fh.write(f"\n{timestamp()} ===== starting MCP server '{server_name}' =====\n")
@@ -256,7 +256,7 @@ def _which_with_config_pathext(command: str, path_arg, env: dict):
     return None
 
 
-# Bare MCP launchers Hermes ships through PM, keyed to the package that provides them.
+# Bare MCP launchers Moor ships through PM, keyed to the package that provides them.
 _MANAGED_LAUNCHERS = {"npx": "npm", "npm": "npm", "node": "npm", "uv": "uv", "uvx": "uv"}
 
 
@@ -275,17 +275,17 @@ def _managed_launcher(command: str) -> Optional[tuple[str, list[str]]]:
         launcher = pm.uv_launcher(command)
         dirs = [str(launcher.parent)] if launcher is not None else []
     else:
-        from hermes_constants import with_hermes_node_path
+        from moor_constants import with_moor_node_path
 
-        dirs = [d for d in with_hermes_node_path({"PATH": ""})["PATH"].split(os.pathsep) if d]
+        dirs = [d for d in with_moor_node_path({"PATH": ""})["PATH"].split(os.pathsep) if d]
     executable = shutil.which(command, path=os.pathsep.join(dirs)) if dirs else None
     if executable is None:
-        raise RuntimeError(f"Hermes-managed {command} is not installed; run `hermes pm install {package}`")
+        raise RuntimeError(f"moor-managed {command} is not installed; run `moor pm install {package}`")
     return executable, dirs
 
 
 def _outside_package(launcher: str, managed: str, dirs: list[str]) -> tuple[str, list[str]]:
-    """Hermes's npm/node *launcher* and toolchain *dirs*, swapped for PM's copies outside a
+    """Moor's npm/node *launcher* and toolchain *dirs*, swapped for PM's copies outside a
     sealed Windows payload (``pm.user_facing.copies``). npm starts each package bin through
     cmd.exe, and cmd.exe cannot start the packaged ``node.exe``."""
     from pm.user_facing import copies
@@ -293,14 +293,14 @@ def _outside_package(launcher: str, managed: str, dirs: list[str]) -> tuple[str,
     moved = copies(dirs)
     if moved == dirs:
         return managed, dirs
-    # Plain which(): Hermes's own copy dirs hold one real node.exe/npx.cmd, so the parent's
+    # Plain which(): Moor's own copy dirs hold one real node.exe/npx.cmd, so the parent's
     # PATHEXT is the right question (unlike a user server's config env, see _which_with_config_pathext).
     return shutil.which(launcher, path=os.pathsep.join(moved)) or managed, moved
 
 
-def _is_hermes_managed_bin_dir(directory: str) -> bool:
-    """True for the bin dirs Hermes' bootstrap prepends to this process's PATH: anything
-    under the active hermes home (the sealed payload's venv, ``<home>/bin``, PM store
+def _is_moor_managed_bin_dir(directory: str) -> bool:
+    """True for the bin dirs Moor' bootstrap prepends to this process's PATH: anything
+    under the active moor home (the sealed payload's venv, ``<home>/bin``, PM store
     runtimes) plus the running interpreter's own bin dir (a repo checkout's venv)."""
     try:
         resolved = Path(directory).resolve()
@@ -308,9 +308,9 @@ def _is_hermes_managed_bin_dir(directory: str) -> bool:
         return False
     if resolved == Path(sys.executable).resolve().parent:
         return True
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     try:
-        home = Path(get_hermes_home()).resolve()
+        home = Path(get_moor_home()).resolve()
     except Exception:
         return False
     return resolved == home / "bin" or home in resolved.parents
@@ -340,7 +340,7 @@ def _pathext_suffixes(env: Optional[dict] = None, *, windows: Optional[bool] = N
 
 def _first_user_which_hit(command: str, path_arg: Optional[str],
                           env: Optional[dict] = None, *, windows: Optional[bool] = None) -> Optional[str]:
-    """First PATH hit for *command* OUTSIDE Hermes-managed bin dirs, or ``None``.
+    """First PATH hit for *command* OUTSIDE moor-managed bin dirs, or ``None``.
 
     ``shutil.which`` stops at the first hit, and bootstrap prepends the managed runtime's
     bin dir, so a bare ``python3`` resolves to the bundled interpreter — which lacks the
@@ -354,7 +354,7 @@ def _first_user_which_hit(command: str, path_arg: Optional[str],
     else:
         names = [command + ext for ext in exts]
     for directory in str(path_arg or "").split(os.pathsep):
-        if not directory or _is_hermes_managed_bin_dir(directory):
+        if not directory or _is_moor_managed_bin_dir(directory):
             continue
         for name in names:
             candidate = os.path.join(directory, name)
@@ -366,7 +366,7 @@ def _first_user_which_hit(command: str, path_arg: Optional[str],
 def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
     """Resolve a stdio command against the exact subprocess env (bare launchers under a filtered PATH).
 
-    Bare ``npx``/``npm``/``node``/``uv``/``uvx`` resolve to Hermes's PM-managed copies with their
+    Bare ``npx``/``npm``/``node``/``uv``/``uvx`` resolve to Moor's PM-managed copies with their
     toolchain dirs first on the child PATH, never the user's (an absolute ``command:`` stays the
     user's choice). Anything else resolves on the child env's PATH only: ``shutil.which`` with
     ``path=None`` silently falls back to the PARENT's ``os.environ["PATH"]``, letting a command
@@ -393,7 +393,7 @@ def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
             which_hit = _which_with_config_pathext(resolved_command, path_arg, resolved_env)
         # A bare command keeps the USER's PATH semantics: bootstrap prepends the managed
         # runtime's bin dir to this process's PATH, so the first hit for a bare ``python3``
-        # is Hermes' bundled interpreter, which lacks the user's packages and dies on import
+        # is Moor' bundled interpreter, which lacks the user's packages and dies on import
         # (#125300). Step past managed dirs to the user's own hit; the explicit launcher
         # family keeps the managed-first resolution (that is the point of
         # ``_launcher_fallback``), and a managed-only PATH keeps the managed hit.
@@ -489,7 +489,7 @@ def _packaged_npx_entry(command: str, args: list) -> Optional[tuple]:
     Windows payload's own npx, else None.
 
     That npx starts the package bin through cmd.exe, and cmd.exe cannot start the packaged
-    ``node.exe`` (``pm.user_facing``). Hermes gets here only without a host Node and without
+    ``node.exe`` (``pm.user_facing``). Moor gets here only without a host Node and without
     a copy that PM may make. The payload's Python CAN start the packaged ``node.exe``, so the
     package is installed with npm's own script and the bin's script runs on that node.
     Install scripts stay off, because npm runs them through cmd.exe too. None keeps plain
@@ -521,9 +521,9 @@ def _packaged_npx_entry(command: str, args: list) -> Optional[tuple]:
     scope, _, bare = spec.rpartition("/") if spec.startswith("@") else ("", "", spec)
     base, _, version = bare.partition("@")
     name = (f"{scope}/" if scope else "") + base
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    prefix = Path(get_hermes_home()) / "cache" / "mcp-npx" / hashlib.sha256(spec.encode()).hexdigest()[:16]
+    prefix = Path(get_moor_home()) / "cache" / "mcp-npx" / hashlib.sha256(spec.encode()).hexdigest()[:16]
     manifest = prefix / "node_modules" / name / "package.json"
     exact = re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.+-]+)?", version) is not None
     if not (exact and manifest.is_file()):

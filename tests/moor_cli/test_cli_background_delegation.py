@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import cli as cli_module
-from tests.hermes_cli.test_cli_approval_ui import _make_background_cli_stub
+from tests.moor_cli.test_cli_approval_ui import _make_background_cli_stub
 
 
 def test_background_task_delegation_runs_inline(monkeypatch):

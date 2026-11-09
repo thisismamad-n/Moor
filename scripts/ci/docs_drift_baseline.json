@@ -100,7 +100,7 @@
   "monitoring.gateway_health_export.resource_attributes.service.name",
   "monitoring.gateway_health_export.warning_error_events_enabled",
   "monitoring.install_id",
-  "nous.guest",
+  "moor.guest",
   "paste_collapse_char_threshold",
   "paste_collapse_threshold",
   "paste_collapse_threshold_fallback",

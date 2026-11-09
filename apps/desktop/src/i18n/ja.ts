@@ -119,10 +119,10 @@ export const jaOverrides = {
     copyDetailFailed: '通知の詳細をコピーできませんでした',
     backendOutOfDateTitle: 'バックエンドが古いです',
     backendOutOfDateMessage:
-      'Hermes バックエンドがこのデスクトップビルドより古く、正常に動作しない場合があります。更新して揃えてください。',
+      'Moor バックエンドがこのデスクトップビルドより古く、正常に動作しない場合があります。更新して揃えてください。',
     desktopOutOfDateTitle: 'アプリが古いです',
     desktopOutOfDateMessage:
-      'この Hermes アプリは接続先のバックエンドより古く、正常に動作しない場合があります。アプリを更新して揃えてください。',
+      'この Moor アプリは接続先のバックエンドより古く、正常に動作しない場合があります。アプリを更新して揃えてください。',
     updateDesktopApp: 'アプリを更新',
     installMethodUnsupportedTitle: 'サポート対象外のインストール方法',
     updateMoor: 'Moor を更新',
@@ -183,8 +183,8 @@ export const jaOverrides = {
       rejectAction: '拒否',
       inputTitle: '入力が必要です',
       inputTitleNamed: session => `入力が必要です — ${session}`,
-      inputBody: 'Hermes が応答を待っています。',
-      turnDoneTitle: 'Hermes が完了しました',
+      inputBody: 'Moor が応答を待っています。',
+      turnDoneTitle: 'Moor が完了しました',
       turnDoneBody: 'メッセージが完了しました。',
       turnErrorTitle: 'ターンが失敗しました',
       backgroundDoneTitle: 'バックグラウンドタスクが完了しました',
@@ -247,11 +247,11 @@ export const jaOverrides = {
 
   settings: {
     memoryLayers: jaMemoryLayers,
-    // Window plans (Nous subscription with included usage). Other billing strings: overlay-gaps.json.
+    // Window plans (Moor subscription with included usage). Other billing strings: overlay-gaps.json.
     billing: {
       keepGoingOnCredits: {
         title: 'クレジットで続行',
-        description: '含まれる利用量を使い切ったらクレジットを使います。オフ: Hermes はリセットを待ちます。',
+        description: '含まれる利用量を使い切ったらクレジットを使います。オフ: Moor はリセットを待ちます。',
         approveInBrowser: '変更するにはブラウザでリモート支出を承認してください。承認するとすぐに適用されます。',
         openAgain: 'もう一度開く',
         cancel: 'キャンセル',
@@ -1101,9 +1101,9 @@ export const jaOverrides = {
       sshErrPlatform:
         'サポートされていないリモートプラットフォームです。Moor Desktop の SSH モードは Linux、macOS、Windows のリモートホストに対応しています。',
       sshErrTimeout: 'SSH 接続がタイムアウトしました。ホストが到達不能、またはスリープ中の可能性があります。',
-      sshErrUpdateRequired: 'Desktop SSH で接続する前に、リモートホストの Hermes を更新してください。',
+      sshErrUpdateRequired: 'Desktop SSH で接続する前に、リモートホストの Moor を更新してください。',
       sshErrInteractiveAuth:
-        'Tailscale SSH では対話的なブラウザー確認が必要です。ターミナルで `ssh <host> true` を実行して確認を完了し、再試行してください。Hermes は SSH を非対話的に実行します。',
+        'Tailscale SSH では対話的なブラウザー確認が必要です。ターミナルで `ssh <host> true` を実行して確認を完了し、再試行してください。Moor は SSH を非対話的に実行します。',
       sshErrUnknown: 'SSH 接続に失敗しました。'
     },
     keys: {
@@ -1788,7 +1788,7 @@ export const jaOverrides = {
     failedImport: 'プロファイルのインポートに失敗しました',
     failedExport: 'プロファイルのエクスポートに失敗しました',
     exportNeedsHost: name =>
-      `ブラウザーではプロファイルのアーカイブを保存できません。Hermes ホストで次を実行してください: hermes profile export ${name}`,
+      `ブラウザーではプロファイルのアーカイブを保存できません。Moor ホストで次を実行してください: moor profile export ${name}`,
     allProfiles: 'すべてのプロファイル',
     showAllProfiles: 'すべてのプロファイルを表示',
     notServedHere: 'ここでは提供されていません',
@@ -1798,8 +1798,8 @@ export const jaOverrides = {
     manageProfiles: 'プロファイルを管理…',
     fleet: {
       localDevice:
-        'このデバイス（ローカルバックエンド — Hermes が無ければインストールし、あれば新しいセッションを開きます）',
-      installDeviceTitle: 'このデバイスに Hermes をインストールしますか？',
+        'このデバイス（ローカルバックエンド — Moor が無ければインストールし、あれば新しいセッションを開きます）',
+      installDeviceTitle: 'このデバイスに Moor をインストールしますか？',
       installDeviceDesc:
         'Moor をローカルにインストールしてから、このコンピュータで新しいセッションを開きます。確認するまでインストールは始まりません。',
       installDeviceConfirm: 'ローカルにインストール',
@@ -2638,9 +2638,9 @@ export const jaOverrides = {
   },
 
   updates: {
-    discontinuedTitle: 'このHermesビルドはサポートされていません',
+    discontinuedTitle: 'このMoorビルドはサポートされていません',
     discontinuedBody:
-      'このHermesビルドはサポートが終了し、動作しなくなる可能性があります。アンインストールしてください。データはディスクに残ります。',
+      'このMoorビルドはサポートが終了し、動作しなくなる可能性があります。アンインストールしてください。データはディスクに残ります。',
     channels: { stable: '安定版', canary: '先行版' },
     bundleSwapPending: '再起動して更新を完了',
     bundleSwapPendingDesc:
@@ -2686,10 +2686,10 @@ export const jaOverrides = {
     manualTitle: 'ターミナルから更新',
     manualUnavailableTitle: 'ここからは更新できません',
     manualBody:
-      'Hermes をコマンドラインからインストールしたため、更新もそこで実行されます。これをターミナルに貼り付けてください:',
+      'Moor をコマンドラインからインストールしたため、更新もそこで実行されます。これをターミナルに貼り付けてください:',
     manualBodyBackend:
-      'Hermes バックエンドはこのアプリの外部で管理されています。ホストするサーバーで次のコマンドを実行してください:',
-    manualPickedUp: 'Hermes は次回起動時に新しいバージョンを読み込みます。',
+      'Moor バックエンドはこのアプリの外部で管理されています。ホストするサーバーで次のコマンドを実行してください:',
+    manualPickedUp: 'Moor は次回起動時に新しいバージョンを読み込みます。',
     manualPickedUpBackend: 'バックエンドは更新完了後に新しいバージョンを読み込みます。',
     guiSkewTitle: 'デスクトップアプリを更新してください',
     guiSkewBody:
@@ -3338,7 +3338,7 @@ export const jaOverrides = {
         },
         timeout: {
           title: provider => `${provider} に接続できません`,
-          body: provider => `Hermes は ${provider} に接続できませんでした。接続を確認してから再試行してください。`
+          body: provider => `Moor は ${provider} に接続できませんでした。接続を確認してから再試行してください。`
         },
         ssl_cert_verification: {
           title: provider => `${provider} との接続を検証できません`,
@@ -3773,8 +3773,8 @@ export const jaOverrides = {
   },
   freeTier: {
     offer: {
-      heading: 'Hermes を使い続ける',
-      body: '現在は無料枠をご利用中です。Hermes を使い続けると、いずれ上限に達します。無料の Nous アカウントでサインインすると、より多くの利用枠が使えます。',
+      heading: 'Moor を使い続ける',
+      body: '現在は無料枠をご利用中です。Moor を使い続けると、いずれ上限に達します。無料の Moor アカウントでサインインすると、より多くの利用枠が使えます。',
       signIn: 'サインイン',
       notNow: '今はしない'
     }

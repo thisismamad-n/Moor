@@ -1,4 +1,4 @@
-"""Messaging-platform setup wizards (Telegram, webhooks) and the ``hermes setup
+"""Messaging-platform setup wizards (Telegram, webhooks) and the ``moor setup
 gateway`` flow. setup.py re-exports the public names, and tests monkeypatch prompt/print/env
 helpers on moor_cli.setup, so those are imported lazily per function."""
 
@@ -315,8 +315,8 @@ def setup_gateway(config: dict):
         _warn_missing_home_channels()
 
     # Offer optional persistence even with no messaging platforms: cron can run alone.
-    from hermes_cli.gateway import _is_service_running, supports_systemd_services
-    from hermes_cli.gateway_setup_service import ensure_gateway_service
+    from moor_cli.gateway import _is_service_running, supports_systemd_services
+    from moor_cli.gateway_setup_service import ensure_gateway_service
     supports_systemd = supports_systemd_services()
     print()
     if _is_service_running():

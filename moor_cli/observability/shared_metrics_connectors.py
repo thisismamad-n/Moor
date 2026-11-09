@@ -67,7 +67,7 @@ class ConnectorSessionState:
     described: set[str] = field(default_factory=set)
 
     def observe(self, event: dict[str, Any]) -> dict[str, str] | None:
-        """Update the chain after a counted call; the ``hermes.connector_chain.count`` fields for an entry."""
+        """Update the chain after a counted call; the ``moor.connector_chain.count`` fields for an entry."""
         name = event.get("tool_name")
         if name == "tool_search":
             self.searches_since_execute += 1

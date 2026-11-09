@@ -108,7 +108,7 @@ export interface MoorSkin {
   tool_prefix?: string
   help_header?: string
   /** Raw CSS injected as a scoped <style> tag on theme apply.
-   *  Persists across updates because it lives in ~/.hermes/skins/,
+   *  Persists across updates because it lives in ~/.moor/skins/,
    *  not inside app.asar.  Clipped to 32 KiB by the Python normaliser. */
   customCSS?: string
 }

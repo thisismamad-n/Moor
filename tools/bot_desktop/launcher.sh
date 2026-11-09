@@ -282,10 +282,10 @@ xset -display "$DISPLAY" s off -dpms s noblank 2>/dev/null || true
 # install's command for it, shell-quoted (the launcher's pid is appended); skipped when it passed none (the
 # sandbox-hosted screen, whose sandbox lifetime bounds it).
 WATCH_PID=
-if [[ -n "${HERMES_BD_IDLE_CMD:-}" ]]; then
+if [[ -n "${MOOR_BD_IDLE_CMD:-}" ]]; then
   # A start is use: stamp it now, or an activity file left by an earlier screen could make the first check
   # stop this one before runtime.py stamps it.
-  touch "$(dirname "$HERMES_BD_ENV_FILE")/activity"
+  touch "$(dirname "$MOOR_BD_ENV_FILE")/activity"
   # The TERM trap ends this loop at once when the screen goes down (stop()'s group signal or the EXIT trap
   # below). Both the check and the sleep run in the background and are waited on, because `wait` is
   # interruptible: a `$(check)` would defer the trap until the check returns, while a check that is itself
@@ -299,8 +299,8 @@ if [[ -n "${HERMES_BD_IDLE_CMD:-}" ]]; then
     set +e
     sleeper=
     trap 'kill $sleeper 2>/dev/null; exit 0' TERM
-    out="$(dirname "$HERMES_BD_ENV_FILE")/idle-watch.out"
-    delay="${HERMES_BD_IDLE_FIRST_DELAY:-300}"
+    out="$(dirname "$MOOR_BD_ENV_FILE")/idle-watch.out"
+    delay="${MOOR_BD_IDLE_FIRST_DELAY:-300}"
     while :; do
       [[ "$delay" =~ ^[0-9]+$ ]] || delay=300
       sleep "$delay" & sleeper=$!
@@ -308,8 +308,8 @@ if [[ -n "${HERMES_BD_IDLE_CMD:-}" ]]; then
       wait "$sleeper" || (( $? > 128 )) || { echo "idle self-stop: sleep failed; off for this screen" >&2; exit 0; }
       sleeper=
       kill -0 "$$" 2>/dev/null || exit 0
-      eval "set -- $HERMES_BD_IDLE_CMD"
-      HERMES_HOME="$HERMES_BD_HOME" "$@" "$$" >"$out" &
+      eval "set -- $MOOR_BD_IDLE_CMD"
+      MOOR_HOME="$MOOR_BD_HOME" "$@" "$$" >"$out" &
       if wait "$!"; then delay=$(<"$out"); else delay=300; fi  # broken check: retry slowly
       [[ -n "$delay" ]] || exit 0  # it stopped the screen
     done

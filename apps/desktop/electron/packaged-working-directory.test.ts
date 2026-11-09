@@ -33,21 +33,21 @@ function killPid(pid: number | undefined): void {
 
 // The decision itself, on every CI host (the host is data); the live EBUSY proof below needs Windows.
 test('a packaged Windows app leaves a CWD inside its install folder and keeps one outside it', () => {
-  const app = { platform: 'win32', isPackaged: true, execPath: 'C:\\Hermes\\win-unpacked\\Hermes.exe' } as const
+  const app = { platform: 'win32', isPackaged: true, execPath: 'C:\\Moor\\win-unpacked\\Moor.exe' } as const
   const home = 'C:\\Users\\ada'
 
   const target = (cwd: string, facts: Partial<Parameters<typeof packagedWorkingDirectoryTarget>[0]> = {}) =>
     packagedWorkingDirectoryTarget({ ...app, cwd, homedir: home, ...facts })
 
-  assert.equal(target('C:\\Hermes\\win-unpacked'), home, 'the install folder (shortcut "Start in")')
-  assert.equal(target('c:\\hermes\\WIN-UNPACKED\\resources'), home, 'below it, any case')
-  assert.equal(target('C:\\Hermes'), null, 'the parent folder is a workspace, not the app tree')
+  assert.equal(target('C:\\Moor\\win-unpacked'), home, 'the install folder (shortcut "Start in")')
+  assert.equal(target('c:\\moor\\WIN-UNPACKED\\resources'), home, 'below it, any case')
+  assert.equal(target('C:\\Moor'), null, 'the parent folder is a workspace, not the app tree')
   assert.equal(target('D:\\work\\repo'), null, 'a workspace on another drive')
-  assert.equal(target('C:\\Hermes\\win-unpacked-old'), null, 'a sibling that shares a name prefix')
-  assert.equal(target('C:\\Hermes\\win-unpacked', { isPackaged: false }), null, 'dev runs keep their CWD')
+  assert.equal(target('C:\\Moor\\win-unpacked-old'), null, 'a sibling that shares a name prefix')
+  assert.equal(target('C:\\Moor\\win-unpacked', { isPackaged: false }), null, 'dev runs keep their CWD')
 
   for (const platform of ['linux', 'darwin'] as const) {
-    assert.equal(target('/opt/Hermes', { platform, execPath: '/opt/Hermes/hermes' }), null, platform)
+    assert.equal(target('/opt/Moor', { platform, execPath: '/opt/Moor/moor' }), null, platform)
   }
 })
 
@@ -57,8 +57,8 @@ test('a home folder that cannot be entered leaves the CWD and does not crash sta
   const facts = {
     platform: 'win32',
     isPackaged: true,
-    execPath: 'C:\\Hermes\\win-unpacked\\Hermes.exe',
-    cwd: 'C:\\Hermes\\win-unpacked',
+    execPath: 'C:\\Moor\\win-unpacked\\Moor.exe',
+    cwd: 'C:\\Moor\\win-unpacked',
     homedir: 'H:\\offline-roaming-profile'
   } as const
 
@@ -75,7 +75,7 @@ test('a home folder that cannot be entered leaves the CWD and does not crash sta
 test.skipIf(process.platform !== 'win32')(
   'packaged startup releases the install CWD before main can pass it to resident helpers',
   async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'hermes-entry-cwd-'))
+    const root = await mkdtemp(path.join(os.tmpdir(), 'moor-entry-cwd-'))
     const install = path.join(root, 'win-unpacked')
     const workspace = path.join(root, 'workspace')
     await mkdir(install)
@@ -95,8 +95,8 @@ test.skipIf(process.platform !== 'win32')(
           platform: 'node',
           format: 'esm',
           define: {
-            'process.execPath': JSON.stringify(path.join(install, 'Hermes.exe')),
-            'process.env.HERMES_DESKTOP_IS_PACKAGED': 'undefined'
+            'process.execPath': JSON.stringify(path.join(install, 'Moor.exe')),
+            'process.env.MOOR_DESKTOP_IS_PACKAGED': 'undefined'
           },
           plugins: [
             {

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_constants import reset_moor_home_override, set_moor_home_override
 
 
 def _plugin(home: Path, name: str, url: str, env: tuple, aliases: tuple) -> None:
@@ -32,8 +32,8 @@ def _plugin(home: Path, name: str, url: str, env: tuple, aliases: tuple) -> None
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
     import providers
-    from hermes_cli import auth_plugin_providers as app
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli import auth_plugin_providers as app
+    from moor_cli.auth import PROVIDER_REGISTRY
 
     a, b, c = (tmp_path / n for n in "abc")
     _plugin(a, "acme-scope", "https://a.invalid/v1", ("ACME_SCOPE_A_KEY",), ("acs",))
@@ -41,7 +41,7 @@ def homes(tmp_path, monkeypatch):
     _plugin(b, "acme-scope", "https://b.invalid/v1", ("ACME_SCOPE_B_KEY",), ())
     _plugin(b, "zeta-scope", "https://z.invalid/v1", ("ZETA_SCOPE_KEY",), ("acs",))
     c.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(c))
+    monkeypatch.setenv("MOOR_HOME", str(c))
     monkeypatch.setattr(providers, "_REGISTRY", dict(providers._REGISTRY))
     monkeypatch.setattr(providers, "_ALIASES", dict(providers._ALIASES))
     monkeypatch.setattr(providers, "_PROVIDER_LIST_CACHE", None)
@@ -51,16 +51,16 @@ def homes(tmp_path, monkeypatch):
     yield a, b, c
     PROVIDER_REGISTRY.clear()
     PROVIDER_REGISTRY.update(rows)
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_moor_user_provider")]:
         del sys.modules[mod]
 
 
 def _view(home: Path):
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.auth_plugin_providers import registry_lookup
-    from hermes_cli.models import normalize_provider
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.auth_plugin_providers import registry_lookup
+    from moor_cli.models import normalize_provider
 
-    token = set_hermes_home_override(home)
+    token = set_moor_home_override(home)
     try:
         acme = registry_lookup("acme-scope")
         alias = PROVIDER_REGISTRY.get("acs")
@@ -68,7 +68,7 @@ def _view(home: Path):
                 alias.id if alias else None, normalize_provider("acs"),
                 PROVIDER_REGISTRY["deepseek"].inference_base_url)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def test_each_home_reads_its_own_provider_rows_and_aliases(homes):

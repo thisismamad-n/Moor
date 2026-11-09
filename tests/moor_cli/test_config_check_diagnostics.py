@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-import hermes_cli.config as config_mod
-import hermes_cli.plugins as plugins_mod
-from hermes_cli.config import DEFAULT_CONFIG, _cmd_config_check, _warn_invalid_platform_toolsets
+import moor_cli.config as config_mod
+import moor_cli.plugins as plugins_mod
+from moor_cli.config import DEFAULT_CONFIG, _cmd_config_check, _warn_invalid_platform_toolsets
 
 
 def _write_home(home: Path, body: str, env: str = "") -> Path:
@@ -16,7 +16,7 @@ def _write_home(home: Path, body: str, env: str = "") -> Path:
 
 
 def _check(home: Path, monkeypatch, capsys) -> str:
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     _cmd_config_check(None)
     return capsys.readouterr().out
 
@@ -28,8 +28,8 @@ def test_config_check_and_migrate_agree_on_stale_platform_toolsets(tmp_path, mon
     stale = _write_home(
         tmp_path / "stale",
         "platform_toolsets:\n"
-        "  cli: [hermes-cli, messaging, linear, mcp-linear, mcp-portable, mcp-ghost, ghost]\n"
-        "  teams: [hermes-teams]\n"
+        "  cli: [moor-cli, messaging, linear, mcp-linear, mcp-portable, mcp-ghost, ghost]\n"
+        "  teams: [moor-teams]\n"
         "mcp_servers:\n"
         "  linear:\n"
         "    command: linear-mcp\n"
@@ -39,11 +39,11 @@ def test_config_check_and_migrate_agree_on_stale_platform_toolsets(tmp_path, mon
         "  cli: [ghost]\n",
     )
     # A malformed mcp_servers section must not crash the check.
-    clean = _write_home(tmp_path / "clean", "platform_toolsets:\n  cli: [hermes-cli]\nmcp_servers: [a]\n")
+    clean = _write_home(tmp_path / "clean", "platform_toolsets:\n  cli: [moor-cli]\nmcp_servers: [a]\n")
 
     for home, expected in ((stale, {"messaging", "ghost", "mcp-ghost"}), (clean, set()), (stale, {"messaging", "ghost", "mcp-ghost"})):
         output = _check(home, monkeypatch, capsys)
-        for name in ("messaging", "ghost", "mcp-ghost", "linear", "mcp-linear", "mcp-portable", "hermes-teams"):
+        for name in ("messaging", "ghost", "mcp-ghost", "linear", "mcp-linear", "mcp-portable", "moor-teams"):
             assert (f"unknown toolset '{name}'" in output) is (name in expected), (home.name, name)
 
         results = {"warnings": []}
@@ -74,5 +74,5 @@ def test_config_check_reports_disabled_platform_only_when_runtime_disables_it(tm
         output = _check(home, monkeypatch, capsys)
         assert ("platform plugin 'platforms/fakechat' is disabled" in output) is reported, home.name
         if reported:
-            assert "hermes plugins enable platforms/fakechat" in output
+            assert "moor plugins enable platforms/fakechat" in output
         assert "synthetic-test-token" not in output

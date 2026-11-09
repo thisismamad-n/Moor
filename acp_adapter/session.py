@@ -161,7 +161,7 @@ class SessionManager:
 
     def __init__(self, agent_factory=None, db=None):
         """``agent_factory``: AIAgent-like factory (tests); default builds a real AIAgent from
-        the runtime provider config. ``db``: SessionDB; default lazily opens ``~/.hermes/state.db``."""
+        the runtime provider config. ``db``: SessionDB; default lazily opens ``~/.moor/state.db``."""
         self._sessions: dict[str, SessionState] = {}
         self._lock = threading.Lock()
         # Serializes DB restores: session construction runs off the event loop, so two
@@ -247,7 +247,7 @@ class SessionManager:
         from acp_adapter.catalog import read_catalog_rows
         from pathlib import Path
 
-        path = Path(self._db_instance.db_path) if self._db_instance is not None else get_hermes_home() / "state.db"
+        path = Path(self._db_instance.db_path) if self._db_instance is not None else get_moor_home() / "state.db"
         return read_catalog_rows(path)
 
     def update_cwd(self, session_id: str, cwd: str) -> Optional[SessionState]:
@@ -281,7 +281,7 @@ class SessionManager:
         this process is the session end: the client that drove the
         conversation is gone. Without this writer, source='acp' rows keep
         ``ended_at`` NULL forever and the ended-session guard shared by
-        prune/archive (``hermes_state_maintenance``) can never reach them.
+        prune/archive (``moor_state_maintenance``) can never reach them.
         A later load/resume reopens the row (see ``_restore``), the same
         contract the TUI gateway's resume path uses. Best-effort: teardown
         must never raise. Returns the number of sessions ended.

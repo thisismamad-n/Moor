@@ -41,8 +41,8 @@ from agent.memory_provider import PRE_COMPRESS_CHECKPOINT_API_VERSION
 from agent.model_metadata import estimate_messages_tokens_rough, estimate_request_tokens_rough
 from agent.session_activity import ActivityProvenance, normalize_activity_provenance
 from agent.usage_anchor import set_usage_anchor
-from hermes_state_ids import new_session_id as mint_session_id
-from hermes_state_pidns import holder_namespace_token
+from moor_state_ids import new_session_id as mint_session_id
+from moor_state_pidns import holder_namespace_token
 from agent.conversation_compression_watermark import held_archive_watermark
 
 logger = logging.getLogger(__name__)
@@ -1682,7 +1682,7 @@ def recover_rotated_compression_session(agent: Any) -> Optional[list[dict[str, A
 
 
 def _compression_lock_holder(agent: Any) -> str:
-    """Build a unique lock holder id: ``pid[:pidns]:tid:agent-instance:uuid`` (pidns: see ``hermes_state_pidns``).
+    """Build a unique lock holder id: ``pid[:pidns]:tid:agent-instance:uuid`` (pidns: see ``moor_state_pidns``).
     pid+tid tell crashed holders apart; instance id and per-acquire uuid disambiguate co-resident/pooled agents."""
     return f"pid={os.getpid()}{holder_namespace_token()}:tid={threading.get_ident()}:agent={id(agent):x}:nonce={uuid.uuid4().hex[:8]}"
 
@@ -2466,7 +2466,7 @@ _PENDING_CONTEXT_ENGINE_NOTIFICATION = "_pending_context_engine_compression_noti
 def _hand_off_metrics_segment(old_session_id: str, new_session_id: str) -> None:
     """Shared metrics count one conversation across the rotation (a no-op when collection is off)."""
     with _swallow('shared-metrics segment hand-off failed', exc_info=True):
-        from hermes_cli.observability.relay_shared_metrics import rotate_segment
+        from moor_cli.observability.relay_shared_metrics import rotate_segment
         rotate_segment(old_session_id, new_session_id)
 
 
@@ -3612,7 +3612,7 @@ def _commit_compaction(
             with _hold_attempt_telemetry(agent.context_compressor):
                 agent.commit_memory_session(original_messages)
             from agent.context_compressor import PROACTIVE_PRUNE_REARM_MODEL_CONFIG_KEY, stamp_db_persisted_markers
-            from hermes_cli.partial_compress import rejoin_compressed_head_and_tail
+            from moor_cli.partial_compress import rejoin_compressed_head_and_tail
             if in_place:
                 # In-place compaction: same session_id; soft-archive old turns (active=0, still
                 # searchable) + insert `compressed` atomically; no pre-flush (tail already in).
@@ -3929,7 +3929,7 @@ def _begin_compression_attempt(
     }
     with contextlib.suppress(Exception):
         agent._compression_attempt_id = attempt_id
-        from hermes_cli.observability.shared_metrics_events import begin_compression_attempt
+        from moor_cli.observability.shared_metrics_events import begin_compression_attempt
 
         begin_compression_attempt(trigger, approx_tokens or getattr(agent.context_compressor, "last_prompt_tokens", None))
     return _Attempt(snapshot, generation, started_at, seed)

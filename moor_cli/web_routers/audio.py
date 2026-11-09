@@ -17,14 +17,14 @@ import os
 import urllib.parse
 import urllib.request
 from fastapi import APIRouter
-from hermes_cli.dashboard_auth.native_http import grant_home_scope
-from hermes_cli.web_routers._common import http_failure
-from hermes_cli.web_deps import late
-from hermes_cli.web_server_chat import _ws_auth_ok, _ws_request_is_allowed
-from hermes_cli.web_server_gateway import _read_dashboard_json_response, _split_text_for_speak_stream
-from hermes_cli.web_session_sockets import SPEAK_STREAM_SOCKET, TRANSCRIBE_STREAM_SOCKET
+from moor_cli.dashboard_auth.native_http import grant_home_scope
+from moor_cli.web_routers._common import http_failure
+from moor_cli.web_deps import late
+from moor_cli.web_server_chat import _ws_auth_ok, _ws_request_is_allowed
+from moor_cli.web_server_gateway import _read_dashboard_json_response, _split_text_for_speak_stream
+from moor_cli.web_session_sockets import SPEAK_STREAM_SOCKET, TRANSCRIBE_STREAM_SOCKET
 from fastapi import HTTPException, WebSocket, WebSocketDisconnect
-from hermes_cli.web_models import (
+from moor_cli.web_models import (
     AudioTranscriptionRequest,
     STTLeaseRequest,
     TTSSpeakRequest,
@@ -534,10 +534,10 @@ async def transcribe_stream_ws(ws: WebSocket) -> None:
     if not _ws_request_is_allowed(ws):
         await ws.close(code=4403)
         return
-    await ws.accept(subprotocol=getattr(ws, "_hermes_ws_subprotocol", None))
+    await ws.accept(subprotocol=getattr(ws, "_moor_ws_subprotocol", None))
 
     profile = (ws.query_params.get("profile") or "").strip() or None
-    grant = getattr(ws, "_hermes_native_grant", None)
+    grant = getattr(ws, "_moor_native_grant", None)
     loop = asyncio.get_running_loop()
     partials: asyncio.Queue = asyncio.Queue()
 
@@ -626,14 +626,14 @@ async def speak_stream_ws(ws: WebSocket) -> None:
     if not _ws_request_is_allowed(ws):
         await ws.close(code=4403)
         return
-    await ws.accept(subprotocol=getattr(ws, "_hermes_ws_subprotocol", None))
+    await ws.accept(subprotocol=getattr(ws, "_moor_ws_subprotocol", None))
 
     # Profile via query param, like /api/pty and /api/console: the provider
     # chain + API keys must resolve from the requesting profile's config, not
     # the dashboard's own — at resolve time AND in the synthesis thread. A
     # native grant's home owns the implicit selector (its explicit ones match it).
     profile = (ws.query_params.get("profile") or "").strip() or None
-    grant = getattr(ws, "_hermes_native_grant", None)
+    grant = getattr(ws, "_moor_native_grant", None)
 
     loop = asyncio.get_running_loop()
 

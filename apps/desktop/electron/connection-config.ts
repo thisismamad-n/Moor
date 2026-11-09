@@ -38,9 +38,9 @@ import { readStatusCode } from './api-transport'
 import { sharesHostBackend } from './host-backend-singleton'
 import { profileCollectionRoute, profileRouteSuffix } from './profile-routes'
 
-const AT_COOKIE_VARIANTS = ['__Host-hermes_session_at', '__Secure-hermes_session_at', 'hermes_session_at']
-const RT_COOKIE_VARIANTS = ['__Host-hermes_session_rt', '__Secure-hermes_session_rt', 'hermes_session_rt']
-// A gateway's Webapp follows each name with its gateway (`hermes_session_at_<16 hex digits>`), since
+const AT_COOKIE_VARIANTS = ['__Host-moor_session_at', '__Secure-moor_session_at', 'moor_session_at']
+const RT_COOKIE_VARIANTS = ['__Host-moor_session_rt', '__Secure-moor_session_rt', 'moor_session_rt']
+// A gateway's Webapp follows each name with its gateway (`moor_session_at_<16 hex digits>`), since
 // cookies are not scoped to a port; the dashboard keeps the bare names.
 const GATEWAY_COOKIE_SUFFIX = /_[0-9a-f]{16}$/
 
@@ -136,7 +136,7 @@ export function gatewayTicketTransportMessage(error: unknown): string {
 
   if (['ETIMEDOUT', 'ETIMEOUT', 'ENETUNREACH', 'EHOSTUNREACH', 'EAI_AGAIN', 'ENOTFOUND'].includes(code)) {
     return (
-      'Could not reach the remote Hermes gateway while refreshing its WebSocket ticket: ' +
+      'Could not reach the remote Moor gateway while refreshing its WebSocket ticket: ' +
       'the connection timed out or the host could not be resolved. ' +
       'Check your network/VPN path and the gateway URL, then reconnect.'
     )
@@ -144,13 +144,13 @@ export function gatewayTicketTransportMessage(error: unknown): string {
 
   if (code === 'ECONNREFUSED') {
     return (
-      'Could not reach the remote Hermes gateway while refreshing its WebSocket ticket: ' +
+      'Could not reach the remote Moor gateway while refreshing its WebSocket ticket: ' +
       'the connection was refused. The gateway process is likely down or listening on another port. ' +
       'Start the gateway (or fix its URL), then reconnect.'
     )
   }
 
-  return 'Could not reach the remote Hermes gateway while refreshing its WebSocket ticket. Try reconnecting.'
+  return 'Could not reach the remote Moor gateway while refreshing its WebSocket ticket. Try reconnecting.'
 }
 
 function gatewayTicketFailure(error, authMessage, transportMessage) {
@@ -613,7 +613,7 @@ function profileRemoteOverride(config, profile) {
 }
 
 // Validate a remote profile mapping the same way the SSH path does (a valid
-// Hermes profile identifier, never a reserved alias). Invalid/blank → no
+// Moor profile identifier, never a reserved alias). Invalid/blank → no
 // mapping, so callers fall back to the historical same-name behavior.
 function normalizeRemoteProfileName(value) {
   const remoteProfile = String(value || '').trim()

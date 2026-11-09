@@ -56,7 +56,7 @@ dependencies = [
   "ruamel.yaml==0.18.16; python_version >= '3.14'",
   # 0.18.16 only pulls in its C parser below 3.14, so every 3.14 install parsed YAML
   # (plugin manifests, config) in pure Python: ~5 s of gateway startup on 1 vCPU.
-  # Declared where clib ships a cp314 wheel; elsewhere hermes_yaml falls back to pure.
+  # Declared where clib ships a cp314 wheel; elsewhere moor_yaml falls back to pure.
   "ruamel.yaml.clib==0.2.15; python_version >= '3.14' and platform_python_implementation == 'CPython' and (sys_platform == 'darwin' or (sys_platform == 'linux' and platform_machine in 'x86_64 aarch64 i686') or (sys_platform == 'win32' and platform_machine in 'AMD64 x86'))",
   "requests==2.34.2; python_version >= '3.14'",  # CVE-2026-25645
   "jinja2==3.1.6; python_version >= '3.14'",
@@ -235,7 +235,7 @@ uvloop = [
 # OpenRouter or other aggregators).
 anthropic = ["anthropic==0.125.0"] # CVE-2026-34450, CVE-2026-34452
 # Web search backends — each only loaded when the user picks it as their
-# search provider (configured via `hermes tools` or config.yaml).
+# search provider (configured via `moor tools` or config.yaml).
 exa = ["exa-py==2.26.0"]
 firecrawl = ["firecrawl-py==4.53.2"]
 parallel-web = ["parallel-web==0.6.0"]
@@ -300,7 +300,7 @@ matrix = [
 # here to keep the dependency local to wecom_callback's threat model.
 wecom = ["defusedxml==0.7.1"]
 # Opt-in OS-keychain storage for the local credential vault key (vault.key_storage: keychain).
-# Lazy-installed by `hermes vault key migrate --to keychain`, so NOT in [all].
+# Lazy-installed by `moor vault key migrate --to keychain`, so NOT in [all].
 keychain = ["keyring==25.7.0"]
 tts-premium = ["elevenlabs==1.59.0"]
 voice = [
@@ -385,7 +385,7 @@ documents = [
   "pypdf==6.21.2",
 ]
 # PDF text extraction and rasterization for skills/productivity/pdf. Only in
-# the skills' side environment (`hermes pm environment documents --extra
+# the skills' side environment (`moor pm environment documents --extra
 # documents --extra documents-pdf`), never baked: ~17 MB of pdfminer/pdfium.
 documents-pdf = [
   "pdfplumber==0.11.10",
@@ -466,20 +466,20 @@ azure-identity = ["azure-identity==1.26.0"]
 termux = [
   # Baseline Android / Termux path for reliable fresh installs.
   "python-telegram-bot[webhooks]==22.8",
-  "hermes-agent[cron]",
-  "hermes-agent[mcp]",
-  "hermes-agent[acp]",
+  "moor-agent[cron]",
+  "moor-agent[mcp]",
+  "moor-agent[acp]",
 ]
 termux-all = [
   # Best-effort "install all" profile for Termux. Same policy as [all]:
   # only includes extras that are not prepared on demand by PM.
   # Backends like telegram/slack/dingtalk/feishu lazy-install at
   # first use, so they're no longer eager-installed here.
-  "hermes-agent[termux]",
-  "hermes-agent[google]",
-  "hermes-agent[sms]",
-  "hermes-agent[web]",
-  "hermes-agent[pty]",
+  "moor-agent[termux]",
+  "moor-agent[google]",
+  "moor-agent[sms]",
+  "moor-agent[web]",
+  "moor-agent[pty]",
 ]
 dingtalk = [
   "dingtalk-stream==0.24.3",
@@ -543,15 +543,15 @@ all = [
   # [all], `uv sync --locked` on Windows tried to build it from sdist
   # and failed on `make`. Lazy-install routes that build to first use,
   # where the user is expected to have a toolchain available.
-  "hermes-agent[cron]",
-  "hermes-agent[pty]",
-  "hermes-agent[mcp]",
-  "hermes-agent[uvloop]",
-  "hermes-agent[sms]",
-  "hermes-agent[acp]",
-  "hermes-agent[google]",
-  "hermes-agent[web]",
-  "hermes-agent[youtube]",
+  "moor-agent[cron]",
+  "moor-agent[pty]",
+  "moor-agent[mcp]",
+  "moor-agent[uvloop]",
+  "moor-agent[sms]",
+  "moor-agent[acp]",
+  "moor-agent[google]",
+  "moor-agent[web]",
+  "moor-agent[youtube]",
 ]
 
 [dependency-groups]
@@ -667,8 +667,8 @@ override-dependencies = [
   # Remove this line when misaki drops it or a 3.14-capable release fits.
   "spacy-curated-transformers; sys_platform == 'never'",
 ]
-# Release-age check: Hermes's dependencies must be at least 3 days old when Hermes
-# locks them. It runs where uv.lock is resolved (`hermes pm lock`, and CI's lock
+# Release-age check: Moor's dependencies must be at least 3 days old when Moor
+# locks them. It runs where uv.lock is resolved (`moor pm lock`, and CI's lock
 # check), never on users' machines: PM installs from this vetted lock and drops the
 # cutoff from what it generates (pm/workspace.py::_trust_core_lock), because many
 # package mirrors publish no upload times and uv rejects a file it cannot date

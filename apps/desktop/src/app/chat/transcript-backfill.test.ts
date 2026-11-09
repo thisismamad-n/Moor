@@ -13,12 +13,12 @@ import {
   unhideOpeningUserRows
 } from './transcript-backfill'
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getOlderSessionMessages: vi.fn(),
   getSessionMessages: vi.fn()
 }))
 
-const { getOlderSessionMessages, getSessionMessages } = await import('@/hermes')
+const { getOlderSessionMessages, getSessionMessages } = await import('@/moor')
 
 const chat = (id: string, rowId?: number): ChatMessage => ({
   id,

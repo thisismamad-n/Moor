@@ -25,8 +25,8 @@ from agent.credential_pool import (  # custom_provider_pool_key_candidates is re
 from agent.secret_scope import get_secret_str
 from moor_cli.auth import (  # resolve_external_process_provider_credentials is read via origin by runtime_provider_backends
     ACTUAL_LOCAL_NOAUTH_PLACEHOLDER, AuthError, DEFAULT_CODEX_BASE_URL, DEFAULT_QWEN_BASE_URL, DEFAULT_XAI_OAUTH_BASE_URL,
-    PROVIDER_REGISTRY, _agent_key_is_usable, _nous_inference_env_override, _qwen_base_url, format_auth_error, resolve_provider,
-    resolve_nous_runtime_credentials, resolve_codex_runtime_credentials, resolve_xai_oauth_runtime_credentials,
+    PROVIDER_REGISTRY, _agent_key_is_usable, _moor_inference_env_override, _qwen_base_url, format_auth_error, resolve_provider,
+    resolve_moor_runtime_credentials, resolve_codex_runtime_credentials, resolve_xai_oauth_runtime_credentials,
     resolve_qwen_runtime_credentials, resolve_api_key_provider_credentials,
     resolve_external_process_provider_credentials,
     has_usable_secret, is_actual_local_base_url, looks_like_openrouter_key, normalize_actual_base_url,
@@ -471,8 +471,8 @@ def _moor_min_key_ttl() -> int:
     return max(60, env_int("MOOR_MOOR_MIN_KEY_TTL_SECONDS", 1800))
 
 
-def _resolve_nous_creds() -> dict[str, Any]:
-    return resolve_nous_runtime_credentials(timeout_seconds=float(get_secret_str("HERMES_NOUS_TIMEOUT_SECONDS", "15")))
+def _resolve_moor_creds() -> dict[str, Any]:
+    return resolve_moor_runtime_credentials(timeout_seconds=float(get_secret_str("MOOR_MOOR_TIMEOUT_SECONDS", "15")))
 
 
 def _finalize_base_url(provider: str, api_mode: str, base_url: str) -> str:
@@ -547,13 +547,13 @@ def resolve_requested_provider(requested: Optional[str] = None) -> str:
         return cfg_provider.strip().lower()
     from agent.session_client_env import bound_client_env
     client = bound_client_env()  # a local session's turn: its client's export, never the daemon's
-    requested = client.get("HERMES_INFERENCE_PROVIDER", "") if client is not None else get_secret_str("HERMES_INFERENCE_PROVIDER", "")
+    requested = client.get("MOOR_INFERENCE_PROVIDER", "") if client is not None else get_secret_str("MOOR_INFERENCE_PROVIDER", "")
     return requested.strip().lower() or "auto"
 
 
 # ── extracted collaborators (re-exported; see module docstring) ────────────────────────────
 
-from hermes_cli.runtime_provider_custom import (
+from moor_cli.runtime_provider_custom import (
     _LLAMACPP_ALIASES, _apply_custom_provider_extras, _custom_provider_request_overrides, _filter_capabilities, _find_custom_identity,
     _get_named_custom_provider, _lift_common_custom_fields, _lift_extra_headers,
     _lift_model_capabilities, _normalize_base_url_for_match, _normalize_custom_provider_name, _resolve_named_custom_runtime,
@@ -561,7 +561,7 @@ from hermes_cli.runtime_provider_custom import (
     find_custom_provider_identity,
     find_custom_provider_identity_by_model, has_named_custom_provider, is_routable_provider,
 )
-from hermes_cli.runtime_provider_backends import (
+from moor_cli.runtime_provider_backends import (
     _is_external_process_provider, _resolve_azure_foundry_runtime, _resolve_bedrock_runtime,
     _resolve_external_process_runtime, _resolve_openrouter_runtime,
 )
@@ -608,8 +608,8 @@ def _pool_entry_mode_and_url(provider, entry, model_cfg, effective_model, base_u
         return api_mode, base_url or (default_url() if callable(default_url) else default_url)
     if provider == "anthropic":
         return "anthropic_messages", _anthropic_cfg_base_url(model_cfg) or base_url or _ANTHROPIC_DEFAULT_BASE_URL
-    if provider == "nous":
-        return nous_api_mode(effective_model), (_nous_inference_env_override() or "") or base_url
+    if provider == "moor":
+        return moor_api_mode(effective_model), (_moor_inference_env_override() or "") or base_url
     if _per_model_profile(provider) is not None:
         api_mode = _profile_runtime_api_mode(provider, model_cfg, getattr(entry, "runtime_api_key", ""),
                                              target_model=effective_model)
@@ -691,8 +691,8 @@ def _resolve_from_pool(provider: str, requested_provider: str, model_cfg: dict[s
     if entry is None:
         return None
     pool_api_key = _pool_entry_api_key(entry)
-    if provider == "nous":
-        entry, pool_api_key = _refresh_nous_pool_entry(pool, entry, pool_api_key)
+    if provider == "moor":
+        entry, pool_api_key = _refresh_moor_pool_entry(pool, entry, pool_api_key)
     else:
         from providers import get_provider_profile
         if (profile := get_provider_profile(provider)) is not None:
@@ -738,10 +738,10 @@ def _explicit_qwen(requested_provider, model_cfg, api_key, explicit_base_url, ta
                     requested_provider=requested_provider)
 
 
-def _explicit_nous(requested_provider, model_cfg, api_key, explicit_base_url, target_model):
-    state = auth_mod.get_provider_auth_state("nous") or {}
-    base_url = (explicit_base_url or _nous_inference_env_override()
-                or str(state.get("inference_base_url") or auth_mod.DEFAULT_NOUS_INFERENCE_URL).strip().rstrip("/"))
+def _explicit_moor(requested_provider, model_cfg, api_key, explicit_base_url, target_model):
+    state = auth_mod.get_provider_auth_state("moor") or {}
+    base_url = (explicit_base_url or _moor_inference_env_override()
+                or str(state.get("inference_base_url") or auth_mod.DEFAULT_MOOR_INFERENCE_URL).strip().rstrip("/"))
     # The agent_key compatibility field is used for inference only when it holds a NAS invoke JWT;
     # raw OAuth access_token fallback is handled by resolve_moor_runtime_credentials().
     api_key = api_key or (str(state.get("agent_key") or "").strip() if _agent_key_is_usable(state, _moor_min_key_ttl()) else "")
@@ -787,7 +787,7 @@ def _explicit_api_key_provider(provider, pconfig, requested_provider, model_cfg,
 # Providers with a dedicated explicit-credential builder; everything else goes through the
 # registry ``api_key`` path (or None when the provider takes no explicit creds).
 _EXPLICIT_RESOLVERS: dict[str, Callable[..., dict[str, Any]]] = {
-    "anthropic": _explicit_anthropic, "openai-codex": _explicit_codex, "nous": _explicit_nous, "qwen-oauth": _explicit_qwen,
+    "anthropic": _explicit_anthropic, "openai-codex": _explicit_codex, "moor": _explicit_moor, "qwen-oauth": _explicit_qwen,
     "azure-foundry": lambda rq, mc, key, url, tm: _resolve_azure_foundry_runtime(requested_provider=rq, model_cfg=mc,
                                                                                  explicit_api_key=key, explicit_base_url=url),
 }
@@ -827,9 +827,9 @@ class _OAuthRuntimeSpec:
 # ``resolve`` entries are late-bound lambdas so tests can monkeypatch the module-level
 # ``resolve_*_runtime_credentials`` names.
 _OAUTH_RUNTIME_PROVIDERS: dict[str, _OAuthRuntimeSpec] = {
-    "nous": _OAuthRuntimeSpec(_resolve_nous_creds, nous_api_mode, "portal", "expires_at",
-                              "Auto-detected Nous provider but credentials failed"),
-    "openai-codex": _OAuthRuntimeSpec(lambda: resolve_codex_runtime_credentials(), "codex_responses", "hermes-auth-store",
+    "moor": _OAuthRuntimeSpec(_resolve_moor_creds, moor_api_mode, "portal", "expires_at",
+                              "Auto-detected Moor provider but credentials failed"),
+    "openai-codex": _OAuthRuntimeSpec(lambda: resolve_codex_runtime_credentials(), "codex_responses", "moor-auth-store",
                                       "last_refresh", "Auto-detected Codex provider but credentials failed"),
     "xai-oauth": _OAuthRuntimeSpec(lambda: resolve_xai_oauth_runtime_credentials(), "codex_responses", "moor-auth-store",
                                    "last_refresh", "Auto-detected xAI OAuth provider but credentials failed", DEFAULT_XAI_OAUTH_BASE_URL),
@@ -900,7 +900,7 @@ def _api_key_provider_runtime(provider, pconfig, requested_provider, model_cfg, 
     # An explicitly selected API-key provider is authoritative: an empty key would defer failure
     # to the first request and make a later fallback look like a silent provider switch.
     if not has_usable_secret(creds.get("api_key")):
-        from hermes_cli.runtime_readiness import missing_credentials_suffix
+        from moor_cli.runtime_readiness import missing_credentials_suffix
         hint = (f" Set {', '.join(pconfig.api_key_env_vars)}." if pconfig.api_key_env_vars else "") + missing_credentials_suffix(provider)
         raise AuthError(f"No usable credentials found for provider '{provider}'.{hint}", provider=provider, code="missing_api_key")
     # Honour model.base_url when the configured provider matches (e.g. api.minimaxi.com China endpoint).
@@ -1068,7 +1068,7 @@ def resolve_runtime_provider(*, requested: Optional[str] = None, explicit_api_ke
     target_model overrides model_cfg["default"] when computing provider-specific api_mode (e.g.
     OpenCode Zen/Go where different models route through different API surfaces)."""
     requested_provider = resolve_requested_provider(requested)
-    from hermes_cli.left_core_migration import recover_for_provider
+    from moor_cli.left_core_migration import recover_for_provider
     recover_for_provider(requested_provider)  # a provider whose plugin left core: install it before resolving
     _raise_if_provider_disabled(requested_provider)
     # Same alias expansion the auxiliary client applies, so ``provider: openai`` means one thing on

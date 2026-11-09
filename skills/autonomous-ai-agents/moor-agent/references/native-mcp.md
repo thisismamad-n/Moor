@@ -330,7 +330,7 @@ mcp_servers:
       log_level: "info"       # audit verbosity
 ```
 
-Servers can also include `tools` in sampling requests for multi-turn tool-augmented workflows. The `max_tool_rounds` config prevents infinite tool loops. Hermes does not advertise the extended `sampling.tools` client capability unless `expose_client_tools: true` is set, because some strict MCP servers reject unknown sampling sub-capabilities during initialization. Most servers only need normal sampling; enable `expose_client_tools` only for servers that explicitly support sampling tool callbacks. Per-server audit metrics (requests, errors, tokens, tool use count) are tracked via `get_mcp_status()`.
+Servers can also include `tools` in sampling requests for multi-turn tool-augmented workflows. The `max_tool_rounds` config prevents infinite tool loops. Moor does not advertise the extended `sampling.tools` client capability unless `expose_client_tools: true` is set, because some strict MCP servers reject unknown sampling sub-capabilities during initialization. Most servers only need normal sampling; enable `expose_client_tools` only for servers that explicitly support sampling tool callbacks. Per-server audit metrics (requests, errors, tokens, tool use count) are tracked via `get_mcp_status()`.
 
 Disable sampling for untrusted servers with `sampling: { enabled: false }`.
 

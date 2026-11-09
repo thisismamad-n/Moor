@@ -270,7 +270,7 @@ def backend_and_session(tmp_path, monkeypatch):
 
 
 def _evaluate_with_done_judge(mgr):
-    with patch("hermes_cli.goals.judge_goal", return_value=("done", "all good", False, None, False)) as judge:
+    with patch("moor_cli.goals.judge_goal", return_value=("done", "all good", False, None, False)) as judge:
         return mgr.evaluate_after_turn("ready"), judge
 
 
@@ -298,7 +298,7 @@ def test_missing_session_workspace_pauses_instead_of_running_elsewhere(backend_a
     mgr.add_gate("sh check.sh")
     unbind = bind(missing)
     try:
-        with patch("hermes_cli.goals.run_gate") as run:
+        with patch("moor_cli.goals.run_gate") as run:
             decision, judge = _evaluate_with_done_judge(mgr)
     finally:
         unbind()

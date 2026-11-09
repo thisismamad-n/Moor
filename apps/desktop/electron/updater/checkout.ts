@@ -43,7 +43,7 @@ export interface CheckoutStrategyDeps {
     root: string,
     opts: { force?: boolean; setChannel?: 'main' | 'stable' }
   ) => Promise<SourceUpdate | null>
-  hermesHome: string
+  moorHome: string
   isWindows: boolean
   isMac: boolean
   defaultUpdateBranch: string
@@ -139,7 +139,7 @@ export interface CheckoutStrategy extends UpdaterStrategy {
 }
 
 /**
- * The Windows script hand-off's environment. Its `hermes update` runs under the run the
+ * The Windows script hand-off's environment. Its `moor update` runs under the run the
  * close-holder consent is bound to: an id this Desktop inherited from the hand-off that
  * relaunched it names the previous run, under which that consent never matches (#101789).
  * Async and awaiting the shared env builder, which becomes async when it resolves the system
@@ -147,19 +147,19 @@ export interface CheckoutStrategy extends UpdaterStrategy {
  */
 async function windowsHandoffEnvironment(
   updateRoot: string,
-  hermesHome: string,
+  moorHome: string,
   updateStartedAt: number,
   runId: string | null
 ): Promise<NodeJS.ProcessEnv> {
   const env: NodeJS.ProcessEnv = {
-    ...(await sourceUpdateEnvironment(updateRoot, hermesHome)),
-    HERMES_UPDATE_STARTED_AT: String(updateStartedAt)
+    ...(await sourceUpdateEnvironment(updateRoot, moorHome)),
+    MOOR_UPDATE_STARTED_AT: String(updateStartedAt)
   }
 
-  delete env.HERMES_UPDATE_CORRELATION_ID
+  delete env.MOOR_UPDATE_CORRELATION_ID
 
   if (runId) {
-    env.HERMES_UPDATE_CORRELATION_ID = runId
+    env.MOOR_UPDATE_CORRELATION_ID = runId
   }
 
   return env
@@ -169,7 +169,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
   function markerHelper(op: MarkerHelperOp, runId: string | null): Promise<MarkerHelperVerdict> {
     return (deps.markerHelper ?? runMarkerHelper)(op, {
       updateRoot: deps.resolveUpdateRoot(),
-      hermesHome: deps.hermesHome,
+      moorHome: deps.moorHome,
       desktopPid: process.pid,
       runId,
       isWindows: deps.isWindows
@@ -225,7 +225,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     const runId = makeHandoffRunId()
 
     for (let attempt = 0; attempt < 2; attempt++) {
-      const bridge = await claimBridgeMarker(deps.hermesHome, { startedAt: updateStartedAt, runId })
+      const bridge = await claimBridgeMarker(deps.moorHome, { startedAt: updateStartedAt, runId })
 
       if (bridge.ok) {
         return { plan: { protocol, runId, startedAt: updateStartedAt } }
@@ -256,7 +256,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     }
 
     return refuse(
-      'The updater could not take the update lock, so nothing was changed. Hermes keeps running on the previous version — try the update again.',
+      'The updater could not take the update lock, so nothing was changed. Moor keeps running on the previous version — try the update again.',
       'updater-spawn-failed'
     )
   }
@@ -272,7 +272,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     let failure: string | null = outcome.ok ? null : describeUpdaterHandoffFailure(outcome)
 
     if (!failure) {
-      const claim = await waitForHandoffClaim(deps.hermesHome, process.pid, {
+      const claim = await waitForHandoffClaim(deps.moorHome, process.pid, {
         timeoutMs: Math.max(0, (deps.handoffClaimTimeoutMs ?? HANDOFF_CLAIM_TIMEOUT_MS) - (Date.now() - startedAtMs)),
         ...(plan.runId ? { runId: plan.runId } : { startedAt: plan.startedAt })
       })
@@ -284,7 +284,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       }
 
       failure =
-        'The updater did not start, so nothing was changed. Hermes keeps running on the previous version — try the update again.\n\n' +
+        'The updater did not start, so nothing was changed. Moor keeps running on the previous version — try the update again.\n\n' +
         `Details: the hand-off script never took the update lock within ${Math.round((deps.handoffClaimTimeoutMs ?? HANDOFF_CLAIM_TIMEOUT_MS) / 1000)} s.`
     }
 
@@ -306,7 +306,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       // Not withdrawn means the bridge may still be there, and the daemon
       // (setsid, out of killHandoffTree's reach) adopts it whenever it starts.
       // Reporting "did not start" and restarting the backend would then run
-      // `hermes update` beside it. Quit instead: the next boot's update gate
+      // `moor update` beside it. Quit instead: the next boot's update gate
       // judges the bridge or the script's claim under the script's lock.
       if (!WITHDRAW_SETTLED_VERDICTS.has(verdict.kind)) {
         deps.rememberLog(
@@ -365,9 +365,9 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
    */
   async function spawnStagedUpdater(updater, updaterArgs: string[], updateRoot: string) {
     const child = spawnUpdaterProcess(updater, updaterArgs, {
-      cwd: deps.hermesHome,
+      cwd: deps.moorHome,
       env: {
-        ...(await sourceUpdateEnvironment(updateRoot, deps.hermesHome, deps.rememberLog))
+        ...(await sourceUpdateEnvironment(updateRoot, deps.moorHome, deps.rememberLog))
       },
       detached: true,
       stdio: 'ignore'
@@ -381,11 +381,11 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     // waitForUpdateToFinish() gate sees a live update and parks instead.
     // The marker names the updater's pid AND creation time (v2): the updater
     // adopts it as its own claim, so no age ceiling applies to a slow update
-    // and the `hermes update` it runs can add its delegate line.
+    // and the `moor update` it runs can add its delegate line.
     //
     // SKIPPED for pre-#74782 staged updaters: those have no self-PID
     // exclusion, so they read this very marker as a foreign live owner and
-    // abort with "Another Hermes update is already running (PID <itself>)" —
+    // abort with "Another Moor update is already running (PID <itself>)" —
     // an unbreakable loop, because the update that would replace the stale
     // binary is the one being refused. Losing the anti-respawn hardening is
     // strictly better than never updating again, and the updater still writes
@@ -393,7 +393,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     // Exclusive create only (A7 rule 3): over any existing marker the
     // pre-write is skipped and the staged updater claims for itself.
     if (Number.isInteger(child.pid) && stagedUpdaterSupportsPrewrittenMarker(updater)) {
-      const prewrite = await writeUpdateMarker(deps.hermesHome, child.pid)
+      const prewrite = await writeUpdateMarker(deps.moorHome, child.pid)
 
       if (!prewrite.ok) {
         deps.rememberLog(`[updates] skipping marker pre-write: ${describeSkippedPrewrite(prewrite)}`)
@@ -508,7 +508,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       deps.rememberLog('[updates] no staged updater; using repo hand-off script for CLI install')
     }
 
-    const handoffConflict = await updateHandoffConflict(deps.hermesHome)
+    const handoffConflict = await updateHandoffConflict(deps.moorHome)
 
     if (handoffConflict) {
       // A different updater already owns the marker — most often a previous
@@ -577,7 +577,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       const planned = await planHandoff(scriptHandoff.scriptPath, updateStartedAt)
 
       if ('refusal' in planned) {
-        deps.startHermes().catch(() => {})
+        deps.startMoor().catch(() => {})
 
         return planned.refusal
       }
@@ -615,8 +615,8 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       const wrapped = wrapHandoffForDetachedConsole(scriptHandoff, wrappedArgs)
 
       child = spawnUpdaterProcess(wrapped.command, wrapped.args, {
-        cwd: deps.hermesHome,
-        env: await windowsHandoffEnvironment(updateRoot, deps.hermesHome, updateStartedAt, plan.runId),
+        cwd: deps.moorHome,
+        env: await windowsHandoffEnvironment(updateRoot, deps.moorHome, updateStartedAt, plan.runId),
         // Never `true` here: DETACHED_PROCESS leaves the wrapper console-less, so
         // `start /b` hands PowerShell a new VISIBLE console whose QuickEdit
         // selection can freeze the hand-off before relaunch (#103222).
@@ -649,7 +649,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
 
     if (failure) {
       deps.emitUpdateProgress({ stage: 'error', message: failure, percent: null })
-      deps.startHermes().catch(() => {})
+      deps.startMoor().catch(() => {})
 
       return { ok: false, error: 'updater-spawn-failed', message: failure }
     }
@@ -679,7 +679,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       return { ok: true, manual: true, command: manualCommand, moorRoot: updateRoot }
     }
 
-    const handoffConflict = await updateHandoffConflict(deps.hermesHome)
+    const handoffConflict = await updateHandoffConflict(deps.moorHome)
 
     if (handoffConflict) {
       // Same hazard as the Windows path (#75778): a live foreign updater
@@ -753,8 +753,8 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     const child = spawnUpdaterProcess(handoff.command, args, {
       cwd: deps.moorHome,
       env: {
-        ...(await sourceUpdateEnvironment(updateRoot, deps.hermesHome, deps.rememberLog)),
-        HERMES_UPDATE_STARTED_AT: String(updateStartedAt)
+        ...(await sourceUpdateEnvironment(updateRoot, deps.moorHome, deps.rememberLog)),
+        MOOR_UPDATE_STARTED_AT: String(updateStartedAt)
       },
       detached: true,
       stdio: 'ignore'

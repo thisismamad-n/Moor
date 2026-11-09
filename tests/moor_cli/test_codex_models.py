@@ -39,7 +39,7 @@ def test_codex_catalog_never_offers_chatgpt_rejected_pro_slugs(monkeypatch, tmp_
     # synthesis rule; none of what it adds may be -pro.
     templates = list(dict.fromkeys(t for _, ts in _FORWARD_COMPAT_TEMPLATE_MODELS for t in ts))
     monkeypatch.setattr(
-        "hermes_cli.codex_models._fetch_models_from_api", lambda access_token, **_kw: templates
+        "moor_cli.codex_models._fetch_models_from_api", lambda access_token, **_kw: templates
     )
     live = get_codex_model_ids(access_token="codex-access-token")
     assert {synthetic for synthetic, _ in _FORWARD_COMPAT_TEMPLATE_MODELS} <= set(live)
@@ -77,7 +77,7 @@ def test_picker_never_synthesizes_900k_for_pro_or_unknown_slugs():
 
 
 def test_catalog_identity_stays_stable_for_rotation_but_changes_with_route(monkeypatch):
-    from hermes_cli import auth, codex_models
+    from moor_cli import auth, codex_models
     import agent.credential_pool as pool
 
     credentials = {"api_key": "first-token", "base_url": "https://first.example/codex/"}
@@ -193,7 +193,7 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
 
     monkeypatch.setattr("moor_cli.auth._login_openai_codex", _fake_login)
     monkeypatch.setattr(
-        "hermes_cli.codex_models.get_codex_model_ids",
+        "moor_cli.codex_models.get_codex_model_ids",
         lambda access_token=None, **_kw: ["gpt-5.4", "gpt-5.5"],
     )
     monkeypatch.setattr(
@@ -343,11 +343,11 @@ def test_catalog_requests_ask_as_the_newest_client(monkeypatch):
 
 
 def test_gateway_key_is_never_sent_to_the_direct_catalog(monkeypatch):
-    """A ``HERMES_CODEX_BASE_URL`` gateway's key is not a ChatGPT token; the picker must not
+    """A ``MOOR_CODEX_BASE_URL`` gateway's key is not a ChatGPT token; the picker must not
     send it to chatgpt.com (a service it does not belong to, #121486). Discovery declines
     and falls back to the offline sources instead of firing a doomed request."""
     import sys
-    from hermes_cli import codex_models
+    from moor_cli import codex_models
 
     calls = {"n": 0}
 
@@ -361,17 +361,17 @@ def test_gateway_key_is_never_sent_to_the_direct_catalog(monkeypatch):
 
 
 def test_picker_catalog_honours_the_custom_codex_base(monkeypatch):
-    """With ``HERMES_CODEX_BASE_URL`` set, the picker's live discovery probes the gateway's
+    """With ``MOOR_CODEX_BASE_URL`` set, the picker's live discovery probes the gateway's
     own ``/models``, not the hard-coded chatgpt.com host (#121486)."""
     import sys
     from urllib.parse import urlparse
 
-    from hermes_cli import codex_models
+    from moor_cli import codex_models
 
     seen_urls = []
     get = _gated_codex_catalog(seen_urls)
     monkeypatch.setitem(sys.modules, "httpx", type("_FakeHttpx", (), {"get": staticmethod(get)}))
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://codex-gw.example/backend-api/codex")
+    monkeypatch.setenv("MOOR_CODEX_BASE_URL", "https://codex-gw.example/backend-api/codex")
 
     assert "gpt-6-sol" in codex_models._fetch_models_from_api(access_token=_codex_jwt("acct"))
     assert seen_urls, "discovery must still run for a JWT credential"

@@ -1,4 +1,4 @@
-import { fileUrlToNativePath } from '@hermes/shared'
+import { fileUrlToNativePath } from '@moor/shared'
 import DOMPurify from 'dompurify'
 
 import {

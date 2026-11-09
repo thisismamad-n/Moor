@@ -25,7 +25,7 @@ const DEFAULT_PORT_ANNOUNCE_TIMEOUT_MS = 90_000
 const MIN_PORT_ANNOUNCE_TIMEOUT_MS = 45_000
 
 // While the backend prints venv_sync's source-update completion banners it is
-// finishing an owed update tail BEFORE `hermes serve` starts, and that tail
+// finishing an owed update tail BEFORE `moor serve` starts, and that tail
 // legitimately runs minutes (dependency sync alone measured at ~19-22 min,
 // #122206) — far past the 90s cold-start budget, which is sized for imports
 // and AV scans, not repairs. Killing the child mid-repair and respawning it
@@ -99,7 +99,7 @@ function waitForDashboardPort(
     let buf = ''
     let done = false
     // #122206: the child is finishing an owed source-update completion
-    // (venv_sync banners) before `hermes serve` starts. While that repair is
+    // (venv_sync banners) before `moor serve` starts. While that repair is
     // visibly in progress the 90s deadline is re-armed, up to the total cap,
     // instead of killing a healthy repair mid-run.
     const startedAt = realNow()
@@ -120,7 +120,7 @@ function waitForDashboardPort(
           cleanup()
           reject(
             new Error(
-              `Timed out waiting for Hermes backend port announcement (${timeoutMs}ms)${deadline ? ' while an update completion was in progress' : ''}`
+              `Timed out waiting for Moor backend port announcement (${timeoutMs}ms)${deadline ? ' while an update completion was in progress' : ''}`
             )
           )
         },
@@ -157,7 +157,7 @@ function waitForDashboardPort(
         }
 
         // venv_sync's banner is the signal that an owed source-update tail is
-        // running ahead of `hermes serve` (#122206): re-arm the deadline so a
+        // running ahead of `moor serve` (#122206): re-arm the deadline so a
         // healthy multi-minute repair is not killed and re-run per boot.
         if (SOURCE_COMPLETION_BANNER_RE.test(line)) {
           completionInProgress = true

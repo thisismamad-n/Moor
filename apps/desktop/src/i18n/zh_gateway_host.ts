@@ -4,12 +4,12 @@ import type { GatewayHostTranslations } from './types_gateway_host'
 export const zhGatewayHost: GatewayHostTranslations = {
   unavailableTitle: '网关设置不可用',
   unavailableDesc: '桌面 IPC 桥未暴露网关设置。',
-  webappHostTitle: 'Hermes 主机',
+  webappHostTitle: 'Moor 主机',
   webappHostDesc:
-    'Webapp 始终使用提供它的 Hermes 主机。如需切换网关、登录 Hermes Cloud 或管理已保存的连接，请使用 Hermes Desktop 应用。',
+    'Webapp 始终使用提供它的 Moor 主机。如需切换网关、登录 Moor Cloud 或管理已保存的连接，请使用 Moor Desktop 应用。',
   webAccess: {
     title: '网页访问',
-    intro: '用手机或其他电脑，以你的 Nous 账户登录并打开这台电脑上的 Hermes。登录的人可以在这台电脑上运行命令。',
+    intro: '用手机或其他电脑，以你的 Moor 账户登录并打开这台电脑上的 Moor。登录的人可以在这台电脑上运行命令。',
     failed: '无法更改网页访问',
     running: '运行中',
     stopped: '已停止',
@@ -17,8 +17,8 @@ export const zhGatewayHost: GatewayHostTranslations = {
     stopping: '正在停止',
     restartNeeded: '需要重启',
     unavailable: '不可用',
-    notRunningDetail: '启动后即可从其他设备打开 Hermes。',
-    needsNous: '请先在“提供商”中登录你的 Nous 账户。',
+    notRunningDetail: '启动后即可从其他设备打开 Moor。',
+    needsMoor: '请先在“提供商”中登录你的 Moor 账户。',
     runningLan: '在同一网络中的设备上打开此地址。',
     runningPublic: '通过你的网址提供服务。',
     runningLocal: '只有这台电脑可以打开。要从其他设备打开，请先停止，再重新启动。',

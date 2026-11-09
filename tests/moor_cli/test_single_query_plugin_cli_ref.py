@@ -1,4 +1,4 @@
-"""``hermes chat -q``/``-Q`` runs leave this process's plugin manager alone.
+"""``moor chat -q``/``-Q`` runs leave this process's plugin manager alone.
 
 On main they set ``PluginManager._cli_ref`` so a plugin tool dispatched from a one-shot turn got a
 ``parent_agent`` (#67597). The turn and its plugin tools now run in the gateway, and the CLI loads

@@ -277,7 +277,7 @@ def test_update_builds_selected_products_after_one_union_preparation(source_prod
 
 @pytest.mark.platforms("linux")
 def test_update_recompiles_only_products_whose_inputs_changed(source_products):
-    from hermes_cli.source_build import build_update_products
+    from moor_cli.source_build import build_update_products
 
     root, _ = source_products
 
@@ -299,7 +299,7 @@ def test_update_recompiles_only_products_whose_inputs_changed(source_products):
 @pytest.mark.platforms("linux")
 @pytest.mark.parametrize("step", ["tui", "web", "desktop"])
 def test_update_failure_raises_without_retries_or_replacing_live_app(source_products, step):
-    from hermes_cli.source_build import ProductBuildError, build_update_products
+    from moor_cli.source_build import ProductBuildError, build_update_products
 
     root, acquired = source_products
     app = root / "apps/desktop/release/linux-unpacked/moor"
@@ -318,7 +318,7 @@ def test_update_failure_raises_without_retries_or_replacing_live_app(source_prod
     if step == "desktop":
         # A failed desktop build never replaces the live app nor stamps it.
         assert app.read_text() == "previous app"
-        assert not (Path(os.environ["HERMES_HOME"]) / "desktop-build-stamp.json").exists()
+        assert not (Path(os.environ["MOOR_HOME"]) / "desktop-build-stamp.json").exists()
 
 
 @pytest.mark.platforms("linux")
@@ -326,8 +326,8 @@ def test_update_failure_raises_without_retries_or_replacing_live_app(source_prod
 def test_unbuilt_desktop_is_named_on_one_whole_line(source_products, monkeypatch, capsys, failure):
     # The Desktop hand-off keys on this line: the receipt follow-up is truncated and leads with
     # whichever product failed first, and an npm acquisition failure used to escape un-named.
-    import hermes_cli.main_install_repair as install_repair
-    from hermes_cli.source_build import ProductBuildError, build_update_products
+    import moor_cli.main_install_repair as install_repair
+    from moor_cli.source_build import ProductBuildError, build_update_products
 
     root, _ = source_products
 
@@ -354,7 +354,7 @@ def test_unbuilt_desktop_is_named_on_one_whole_line(source_products, monkeypatch
 def test_desktop_dependency_failure_still_builds_the_tui_and_web_ui(source_products, capsys):
     # A host whose compiler rejects a Desktop-only native addon (node-pty on g++ 9) used to lose
     # every frontend with it: the union npm ci failed and nothing was built.
-    from hermes_cli.source_build import ProductBuildError, build_update_products
+    from moor_cli.source_build import ProductBuildError, build_update_products
 
     root, _ = source_products
     manifest = root / "apps/desktop/package.json"
@@ -366,7 +366,7 @@ def test_desktop_dependency_failure_still_builds_the_tui_and_web_ui(source_produ
     assert not (root / "node_modules/apps-desktop").exists()
     out = capsys.readouterr().out
     assert "Desktop app build owed: desktop dependencies failed" in out
-    assert "hermes uninstall --gui" in out
+    assert "moor uninstall --gui" in out
 
 
 @pytest.mark.platforms("linux")
@@ -380,15 +380,15 @@ def test_module_cli_builds_the_requested_products(source_products, desktop, monk
     monkeypatch.delitem(sys.modules, "moor_cli.source_build", raising=False)
     runpy.run_module("moor_cli.source_build", run_name="__main__")
     assert acquired == ["npm"]
-    assert (root / "hermes_cli/web_dist/index.html").is_file()
-    assert (root / "apps/desktop/release/linux-unpacked/hermes").exists() == desktop
+    assert (root / "moor_cli/web_dist/index.html").is_file()
+    assert (root / "apps/desktop/release/linux-unpacked/moor").exists() == desktop
 
 
 @pytest.mark.platforms("posix")
 def test_packaged_desktop_is_reused_only_while_it_names_head(tmp_path, monkeypatch):
     """The update skips the desktop build only when the shipped app's baked commit is HEAD
     and its receipt is current; a moved HEAD or an unreadable stamp means build."""
-    from hermes_cli import main_desktop
+    from moor_cli import main_desktop
 
     root = tmp_path / "checkout"
     root.mkdir()
@@ -396,7 +396,7 @@ def test_packaged_desktop_is_reused_only_while_it_names_head(tmp_path, monkeypat
     subprocess.run([*git[:3], "init", "-q"], check=True)
     subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "one"], check=True)
     desktop_dir = root / "apps/desktop"
-    exe = desktop_dir / "release/app/Hermes"
+    exe = desktop_dir / "release/app/Moor"
     monkeypatch.setattr(main_desktop, "_desktop_packaged_executable", lambda _d: exe)
     resources = main_desktop._packaged_resources_dir(desktop_dir)
     (resources / "app.asar.unpacked/dist").mkdir(parents=True)
@@ -422,14 +422,14 @@ def test_packaged_desktop_is_reused_only_while_it_names_head(tmp_path, monkeypat
 
 @pytest.mark.parametrize("enabled", [False, True])
 def test_update_rebuilds_the_webapp_bundle_a_home_serves(tmp_path, monkeypatch, enabled):
-    """``hermes update`` rebuilds ``apps/desktop/dist-webapp``, with the function ``hermes webapp``
+    """``moor update`` rebuilds ``apps/desktop/dist-webapp``, with the function ``moor webapp``
     uses, when any home sharing this install has ``webapp.enabled``: that home's gateway serves the
     bundle as built, so an old one would talk to the updated backend. Otherwise it is left alone."""
-    import hermes_cli.left_core_migration as left_core
-    import hermes_cli.main_install_repair as install_repair
-    import hermes_cli.memory_provider_migration as memory_migration
-    from hermes_cli import update_stage, webapp
-    from hermes_cli.source_build import build_update_products
+    import moor_cli.left_core_migration as left_core
+    import moor_cli.main_install_repair as install_repair
+    import moor_cli.memory_provider_migration as memory_migration
+    from moor_cli import update_stage, webapp
+    from moor_cli.source_build import build_update_products
     from pm import plugins_state
 
     root = tmp_path / "checkout"
@@ -455,16 +455,16 @@ def test_update_rebuilds_the_webapp_bundle_a_home_serves(tmp_path, monkeypatch, 
 
 @pytest.mark.parametrize("built", [True, False])
 def test_a_failed_webapp_rebuild_in_update_marks_the_served_bundle_out_of_date(tmp_path, monkeypatch, capsys, built):
-    """When ``hermes update`` cannot rebuild the Webapp bundle a home serves, the previous bundle
+    """When ``moor update`` cannot rebuild the Webapp bundle a home serves, the previous bundle
     stays on disk but is marked out of date: its gateway reports the Webapp unavailable and says to
-    run ``hermes webapp`` (which rebuilds it) instead of serving it against the updated backend. The
+    run ``moor webapp`` (which rebuilds it) instead of serving it against the updated backend. The
     update still reports the failure. With no bundle built there is nothing to mark."""
-    import hermes_cli.left_core_migration as left_core
-    import hermes_cli.main_install_repair as install_repair
-    import hermes_cli.memory_provider_migration as memory_migration
+    import moor_cli.left_core_migration as left_core
+    import moor_cli.main_install_repair as install_repair
+    import moor_cli.memory_provider_migration as memory_migration
     from gateway.webapp_listener import NOT_BUILT, bundle_missing_reason
-    from hermes_cli import update_stage, webapp
-    from hermes_cli.source_build import ProductBuildError, build_update_products
+    from moor_cli import update_stage, webapp
+    from moor_cli.source_build import ProductBuildError, build_update_products
     from pm import plugins_state
 
     root = tmp_path / "checkout"
@@ -493,9 +493,9 @@ def test_a_failed_webapp_rebuild_in_update_marks_the_served_bundle_out_of_date(t
         build_update_products(root, desktop=False)
 
     reason = bundle_missing_reason(dist)
-    assert reason is not None and reason.startswith(NOT_BUILT) and "hermes webapp" in reason
+    assert reason is not None and reason.startswith(NOT_BUILT) and "moor webapp" in reason
     if built:
         assert (dist / "index.html").read_text(encoding="utf-8") == "<!doctype html>"
-        assert "hermes webapp" in capsys.readouterr().out
+        assert "moor webapp" in capsys.readouterr().out
     else:
         assert sorted(root.rglob("*")) == before

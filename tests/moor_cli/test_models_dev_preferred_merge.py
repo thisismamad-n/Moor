@@ -142,7 +142,7 @@ class TestProviderModelIdsPreferred:
 
 
 def test_setup_menu_merge_leads_with_curated_in_full():
-    from hermes_cli.model_setup_flows_common import _models_dev_merged
+    from moor_cli.model_setup_flows_common import _models_dev_merged
     with patch("agent.models_dev.list_agentic_models", return_value=["a/x", "b/Y", "c/z"]):
         assert _models_dev_merged("nvidia", ["B/y", "d/w"]) == ["b/Y", "d/w", "a/x", "c/z"]
         assert _models_dev_merged("opencode-zen", ["B/y", "d/w"]) == ["a/x", "b/Y", "c/z", "d/w"]

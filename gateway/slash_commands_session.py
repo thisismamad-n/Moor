@@ -115,10 +115,10 @@ def _strip_resume_name(parts: list[str]) -> str:
 async def discard_lost_turns(authority, session_id) -> str:
     """Messaging ``/discard`` (#134889 GW-10): acknowledge every ``unknown`` (lost-in-restart) turn
     of this chat's FIFO through the owner's fenced ``resolve_unknown``, the path Desktop's Discard,
-    the TUI queue and ``hermes sessions discard`` use. Never replays the input; the saved
+    the TUI queue and ``moor sessions discard`` use. Never replays the input; the saved
     followers run once it commits."""
     from gateway.session_contract import SessionRef
-    from hermes_state_runtime import RuntimeStoreError, list_session_admissions
+    from moor_state_runtime import RuntimeStoreError, list_session_admissions
     rows = await asyncio.to_thread(list_session_admissions, authority.db, session_id=session_id)
     lost = [row for row in rows if row['status'] == 'unknown']
     if not lost:
@@ -513,8 +513,8 @@ class GatewaySessionCommandsMixin:
         transcript changed since the read refuses both."""
         from gateway import session_retry_admission as retry_admission
         from gateway.session_ingress_context import carry_callback
-        from hermes_state_rewind import RewindTargetUnavailableError
-        from hermes_state_runtime import RuntimeStoreError
+        from moor_state_rewind import RewindTargetUnavailableError
+        from moor_state_runtime import RuntimeStoreError
         session_id = session_entry.session_id
         if composite:
             # The carrier-aware rewind, planned on the same snapshot: archive the carrier, keep its scaffold.
@@ -533,7 +533,7 @@ class GatewaySessionCommandsMixin:
             resend_text = plan.live_text
 
             def write(conn):
-                from hermes_state_mutation_transcript import rewind_in_transaction
+                from moor_state_mutation_transcript import rewind_in_transaction
                 rewind_in_transaction(db, conn, session_id, plan.target_row_id, preserve_compaction_handoff=True,
                                       expected_active_ids=plan.expected_active_ids,
                                       expected_target_content=plan.expected_target_content)
@@ -593,8 +593,8 @@ class GatewaySessionCommandsMixin:
         authority = active_authority(self)
         if authority is None:
             return None
-        import hermes_state_runtime
-        from hermes_state_runtime import RuntimeStoreError
+        import moor_state_runtime
+        from moor_state_runtime import RuntimeStoreError
         try:
             authority._require_admission_open()
         except RuntimeStoreError:
@@ -602,9 +602,9 @@ class GatewaySessionCommandsMixin:
         entry = self.session_store.lookup_by_session_key(self._session_key_for_source(source))
         if entry is None:
             return None
-        rows = hermes_state_runtime.list_session_admissions(
+        rows = moor_state_runtime.list_session_admissions(
             authority.db, session_id=authority.logical_owner(entry.session_id))
-        if sum(row["status"] == "queued" for row in rows) >= hermes_state_runtime.ADMISSION_QUEUE_MAX:
+        if sum(row["status"] == "queued" for row in rows) >= moor_state_runtime.ADMISSION_QUEUE_MAX:
             from gateway.session_ingress import QUEUE_FULL_REPLY
             return QUEUE_FULL_REPLY
         return None
@@ -612,12 +612,12 @@ class GatewaySessionCommandsMixin:
     def _record_model_friction(self, signal: str, source, session_id: str, turns: int = 1) -> None:
         """Slash dispatch does not install the routed profile's scope, so a multiplexed runner
         names the owning home explicitly."""
-        from hermes_cli.observability.shared_metrics_model import record_model_friction
+        from moor_cli.observability.shared_metrics_model import record_model_friction
         home = None
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
             with contextlib.suppress(Exception):
                 home = self._resolve_profile_home_for_source(source)
-        record_model_friction(signal, session_id=session_id, hermes_home=home, turns=turns)
+        record_model_friction(signal, session_id=session_id, moor_home=home, turns=turns)
 
     async def _handle_undo_command(self, event: MessageEvent) -> str:
         """Handle /undo [N] — back up N user turns (default 1), soft-deleting the truncated rows and
@@ -895,7 +895,7 @@ class GatewaySessionCommandsMixin:
     async def _handle_save_command(self, event: MessageEvent) -> str:
         """Handle /save — export the current session and send it as a document."""
         import tempfile
-        from hermes_cli.session_export import (
+        from moor_cli.session_export import (
             SAVE_USAGE, default_save_filename, load_save_snapshot, normalize_save_format, render_session_for_save)
 
         parts = event.get_command_args().split()
@@ -917,7 +917,7 @@ class GatewaySessionCommandsMixin:
         # Never trust path separators from chat input; the filename is only echoed to the platform.
         filename = parts[1] if len(parts) > 1 else default_save_filename(session_id, fmt)
         filename = os.path.basename(filename) or default_save_filename(session_id, fmt)
-        from hermes_state import SessionExportTooLargeError
+        from moor_state import SessionExportTooLargeError
         try:
             # One off-loop hop for the cap check + read; the helper is shared with the CLI and TUI /save.
             export_data = await asyncio.to_thread(load_save_snapshot, self._session_db._db, session_id, fmt)

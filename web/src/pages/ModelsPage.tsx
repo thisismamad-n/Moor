@@ -965,7 +965,7 @@ function ModelSettingsPanel({
   const [pendingReloadModel, setPendingReloadModel] = useState<string | null>(
     null,
   );
-  // Nous window plans, Large model: the backend's switch warning (never a confirm).
+  // Moor window plans, Large model: the backend's switch warning (never a confirm).
   const [switchNotice, setSwitchNotice] = useState<string | null>(null);
 
   const mainProv = aux?.main.provider ?? "";

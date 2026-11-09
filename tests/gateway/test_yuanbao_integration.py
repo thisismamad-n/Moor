@@ -124,7 +124,7 @@ class TestGatewayRunnerRegistration:
         try:
             runner, _ = self._make_minimal_runner(gw_config)
             # Yuanbao is a bundled platform plugin: the registry learns it through discovery.
-            from hermes_cli.plugins import discover_plugins
+            from moor_cli.plugins import discover_plugins
             discover_plugins()
             # websockets 在测试环境可能未安装，mock 掉 WEBSOCKETS_AVAILABLE
             with patch("plugins.platforms.yuanbao.adapter.WEBSOCKETS_AVAILABLE", True):

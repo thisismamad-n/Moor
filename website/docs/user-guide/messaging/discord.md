@@ -106,7 +106,7 @@ Any knob at `0` disables the whole WebSocket liveness probe. Values that fail to
 `websocket_event_max_silence_seconds` is the exception: it guards a single dimension (event dispatch), so `0` opts out of **that check only** — ready/ACK/latency keep guarding. A socket can stay ESTABLISHED and keep ACKing heartbeats while delivering zero Gateway events; heartbeat ACKs are frames without an event type, so no transport-side check can see that state. The default (4 hours) matches the outage window operators have observed in the field; a quiet guild can legitimately go hours without a single Gateway event, so keep this bound generous unless you know your traffic.
 
 :::tip[Shortcut: let the wizard do Steps 5–7]
-Create the application and copy the bot token (Steps 1–4), then run `hermes gateway setup` and pick **Discord**. Hermes checks the token with Discord, tells you if **Message Content Intent** is off (with a link straight to the toggle), prints a ready-made invite link for your server, and allowlists you as the bot's owner — no Developer Mode needed.
+Create the application and copy the bot token (Steps 1–4), then run `moor gateway setup` and pick **Discord**. Moor checks the token with Discord, tells you if **Message Content Intent** is off (with a link straight to the toggle), prints a ready-made invite link for your server, and allowlists you as the bot's owner — no Developer Mode needed.
 :::
 
 ## Step 1: Create a Discord Application
@@ -136,7 +136,7 @@ If you prefer to keep your bot private (Public Bot = OFF), you **must** use the 
 
 ## Step 3: Enable Privileged Gateway Intents
 
-This is the most critical step in the entire setup. Hermes always asks Discord for message content, so if **Message Content Intent** is off, Discord **refuses the bot's connection** and the bot never comes online.
+This is the most critical step in the entire setup. Moor always asks Discord for message content, so if **Message Content Intent** is off, Discord **refuses the bot's connection** and the bot never comes online.
 
 On the **Bot** page, scroll down to **Privileged Gateway Intents**. You'll see three toggles:
 
@@ -224,7 +224,7 @@ These are the minimum permissions your bot needs:
 |-------|-------------------|-----------------|
 | Minimal | `117760` | View Channels, Send Messages, Embed Links, Attach Files, Read Message History |
 | Recommended | `309237763136` | All of the above plus Create Public Threads, Send Messages in Threads, Add Reactions |
-| Full (what `hermes gateway setup` prints) | `309240908864` | Recommended plus Connect and Speak (voice channels) |
+| Full (what `moor gateway setup` prints) | `309240908864` | Recommended plus Connect and Speak (voice channels) |
 
 Existing installations do not gain newly requested permissions automatically.
 If you used an older Recommended URL, re-invite the bot with the URL above to
@@ -778,7 +778,7 @@ When the agent calls the `clarify` tool — to ask which approach you prefer, ge
 
 Click a numbered button to answer, or click **Other** to type a free-form response (the next message you send in that channel becomes the answer). Open-ended `clarify` calls (no preset choices) skip the buttons and just capture your next message.
 
-The buttons disable themselves once a choice is made so duplicate clicks don't double-resolve the prompt. Configure the response timeout via `agent.clarify_timeout` in `~/.hermes/config.yaml` (default `3600` seconds; `0` or less = unlimited). If you don't respond within the timeout, the agent unblocks with `"outcome": "timed_out"` and adapts rather than hanging. Reply `skip` to skip a question.
+The buttons disable themselves once a choice is made so duplicate clicks don't double-resolve the prompt. Configure the response timeout via `agent.clarify_timeout` in `~/.moor/config.yaml` (default `3600` seconds; `0` or less = unlimited). If you don't respond within the timeout, the agent unblocks with `"outcome": "timed_out"` and adapts rather than hanging. Reply `skip` to skip a question.
 
 ### Prompt layout
 

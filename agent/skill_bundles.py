@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import moor_yaml as yaml
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_write_text
 from agent.skill_commands import command_snapshot, diff_command_snapshots, resolve_slash_key, slugify_skill_name as _slugify
 

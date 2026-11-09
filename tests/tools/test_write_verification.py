@@ -41,7 +41,7 @@ class TestWriteVerification:
         assert b"\r\n" in f.read_bytes()
 
     def test_hash_mismatch_is_hard_error(self, workdir, monkeypatch):
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")  # the shell sha256sum transport
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")  # the shell sha256sum transport
         f = workdir / "bad.txt"
         import tools.file_operations as fo
         real_sha = fo.hashlib.sha256
@@ -65,7 +65,7 @@ class TestWriteVerification:
 
     def test_verification_failure_never_breaks_write(self, workdir, monkeypatch):
         # sha256sum unavailable/failing -> verified omitted, write still ok.
-        monkeypatch.setenv("HERMES_NATIVE_FILE_READ", "0")  # the shell sha256sum transport
+        monkeypatch.setenv("MOOR_NATIVE_FILE_READ", "0")  # the shell sha256sum transport
         f = workdir / "ok.txt"
         import tools.file_operations as fo
 

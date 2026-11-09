@@ -1,7 +1,7 @@
 """``GET /api/health`` ``commit`` contract (review G4).
 
 The public health probe reports the backend's BOOT ``commit`` so an attaching client can refuse a
-backend whose boot commit differs from its checkout: a ``serve`` that outlived ``hermes update``
+backend whose boot commit differs from its checkout: a ``serve`` that outlived ``moor update``
 is never re-adopted. The field must always be present
 (``null`` off git) and must come from ``get_version_info().commit``.
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli.version_info import VersionInfo
+from moor_cli.version_info import VersionInfo
 
 
 def _info(commit: str | None) -> VersionInfo:
@@ -22,8 +22,8 @@ def _info(commit: str | None) -> VersionInfo:
 def test_health_reports_the_boot_commit_from_version_info(monkeypatch, commit):
     from starlette.testclient import TestClient
 
-    from hermes_cli.web_routers import status
-    import hermes_cli.web_server as ws
+    from moor_cli.web_routers import status
+    import moor_cli.web_server as ws
 
     monkeypatch.setattr(status, "get_version_info", lambda: _info(commit))
 

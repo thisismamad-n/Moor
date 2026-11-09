@@ -18,14 +18,14 @@ from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, FrozenSet, List, Optional
 from urllib.parse import urlparse
-from hermes_cli.auth_codex import _pool_entries
-from hermes_cli.auth_constants import (
-    _decode_jwt_claims, AUTH_LOCK_TIMEOUT_SECONDS, AuthError, DEFAULT_NOUS_CLIENT_ID,
-    DEFAULT_NOUS_INFERENCE_URL, DEFAULT_NOUS_PORTAL_URL, DEFAULT_NOUS_SCOPE, DEFAULT_NOUS_WELCOME_URL,
-    DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS, NOUS_AUTH_PATH_INVOKE_JWT, NOUS_BILLING_MANAGE_SCOPE,
-    NOUS_DEVICE_CODE_SOURCE, NOUS_INFERENCE_INVOKE_SCOPE, NOUS_INVOKE_JWT_MIN_TTL_SECONDS,
-    WELCOME_CLAIM_FLAG, _nous_err, httpx)
-from hermes_cli.guest_handoff import drain, note_replacement, result_lines
+from moor_cli.auth_codex import _pool_entries
+from moor_cli.auth_constants import (
+    _decode_jwt_claims, AUTH_LOCK_TIMEOUT_SECONDS, AuthError, DEFAULT_MOOR_CLIENT_ID,
+    DEFAULT_MOOR_INFERENCE_URL, DEFAULT_MOOR_PORTAL_URL, DEFAULT_MOOR_SCOPE, DEFAULT_MOOR_WELCOME_URL,
+    DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS, MOOR_AUTH_PATH_INVOKE_JWT, MOOR_BILLING_MANAGE_SCOPE,
+    MOOR_DEVICE_CODE_SOURCE, MOOR_INFERENCE_INVOKE_SCOPE, MOOR_INVOKE_JWT_MIN_TTL_SECONDS,
+    WELCOME_CLAIM_FLAG, _moor_err, httpx)
+from moor_cli.guest_handoff import drain, note_replacement, result_lines
 
 if TYPE_CHECKING:  # annotation-only; the runtime import would be a cycle
     from moor_cli.auth import ProviderConfig
@@ -71,12 +71,12 @@ def _iso_after(now: datetime, ttl_seconds: int) -> str:
     return datetime.fromtimestamp(now.timestamp() + ttl_seconds, tz=UTC).isoformat()
 
 
-# Nous agent-key slots; a fresh login persists them as None, quarantine strips them.
-_NOUS_EMPTY_AGENT_KEY_FIELDS: dict[str, Any] = {
+# Moor agent-key slots; a fresh login persists them as None, quarantine strips them.
+_MOOR_EMPTY_AGENT_KEY_FIELDS: dict[str, Any] = {
     "agent_key": None, "agent_key_id": None, "agent_key_expires_at": None,
     "agent_key_expires_in": None, "agent_key_reused": None, "agent_key_obtained_at": None}
 
-_NOUS_STALE_PORTAL_HOSTS: frozenset[str] = frozenset({"api.nousresearch.com"})
+_MOOR_STALE_PORTAL_HOSTS: frozenset[str] = frozenset({"api.nousresearch.com"})
 
 
 def _portal_entitlement_message(capability: str) -> str:
@@ -94,9 +94,9 @@ def _format_moor_entitlement_auth_error(error: AuthError) -> str:
     return f"{error} Check credits or billing in Moor Portal, then retry."
 
 
-def _migrate_stale_nous_portal_url(providers: dict[str, Any]) -> None:
-    nous = providers.get("nous")
-    if not isinstance(nous, dict):
+def _migrate_stale_moor_portal_url(providers: dict[str, Any]) -> None:
+    moor = providers.get("moor")
+    if not isinstance(moor, dict):
         return
     stored = (moor.get("portal_base_url") or "").strip()
     if stored and urlparse(stored).hostname in _MOOR_STALE_PORTAL_HOSTS:
@@ -109,7 +109,7 @@ def _migrate_stale_nous_portal_url(providers: dict[str, Any]) -> None:
 # else would leak. Consulted only for URLs from the NETWORK side (Portal refresh responses);
 # the MOOR_INFERENCE_BASE_URL env override bypasses it (documented dev/staging escape hatch, the
 # user set it themselves).
-_ALLOWED_NOUS_INFERENCE_HOSTS: frozenset[str] = frozenset({
+_ALLOWED_MOOR_INFERENCE_HOSTS: frozenset[str] = frozenset({
     "inference-api.nousresearch.com",
     # Free-tier (anonymous) host: serves the single ``moor/welcome`` model.
     "welcome-api.nousresearch.com"})
@@ -213,22 +213,22 @@ def _moor_portal_env_override() -> Optional[str]:
     return _optional_base_url(_scoped_operator_override("MOOR_PORTAL_BASE_URL", "MOOR_PORTAL_BASE_URL"))
 
 
-def _nous_portal_base_url(state: dict[str, Any]) -> str:
-    """HERMES_PORTAL_BASE_URL / NOUS_PORTAL_BASE_URL is the trusted operator override and wins
+def _moor_portal_base_url(state: dict[str, Any]) -> str:
+    """MOOR_PORTAL_BASE_URL / MOOR_PORTAL_BASE_URL is the trusted operator override and wins
     OUTRIGHT, bypassing the host allowlist (which exists to reject an untrusted network-provided
     value, not one the operator configured). Otherwise the stored/default value, allowlist-gated."""
-    env_portal_override = _nous_portal_env_override()
+    env_portal_override = _moor_portal_env_override()
     if env_portal_override:
         return env_portal_override.rstrip("/")
-    from hermes_cli.auth import _NOUS_PORTAL_ALLOWED_HOSTS, _optional_base_url
-    portal_base_url = _optional_base_url(state.get("portal_base_url")) or DEFAULT_NOUS_PORTAL_URL
+    from moor_cli.auth import _MOOR_PORTAL_ALLOWED_HOSTS, _optional_base_url
+    portal_base_url = _optional_base_url(state.get("portal_base_url")) or DEFAULT_MOOR_PORTAL_URL
     portal_base_url = portal_base_url.rstrip("/")
     host = urlparse(portal_base_url).hostname
-    if host and host not in _NOUS_PORTAL_ALLOWED_HOSTS:
+    if host and host not in _MOOR_PORTAL_ALLOWED_HOSTS:
         logger.warning(
             "auth: ignoring invalid portal_base_url %r (host %r not in allowlist), using default",
             portal_base_url, host)
-        return DEFAULT_NOUS_PORTAL_URL
+        return DEFAULT_MOOR_PORTAL_URL
     return portal_base_url
 
 
@@ -271,13 +271,13 @@ def _moor_invoke_jwt_is_usable(
 
 
 def _state_invoke_jwt_status(state: dict[str, Any], token: Any) -> Optional[str]:
-    """``_nous_invoke_jwt_status`` for *token* using *state*'s scope / expires_at (patchable)."""
-    from hermes_cli.auth import _nous_invoke_jwt_status
-    return _nous_invoke_jwt_status(
+    """``_moor_invoke_jwt_status`` for *token* using *state*'s scope / expires_at (patchable)."""
+    from moor_cli.auth import _moor_invoke_jwt_status
+    return _moor_invoke_jwt_status(
         token, scope=state.get("scope"), expires_at=state.get("expires_at"))
 
 
-def _assert_nous_inference_jwt_usable(state: dict[str, Any], *, access_token: Any = None) -> None:
+def _assert_moor_inference_jwt_usable(state: dict[str, Any], *, access_token: Any = None) -> None:
     token = state.get("access_token") if access_token is None else access_token
     reason = _state_invoke_jwt_status(state, token)
     if reason is not None:
@@ -302,9 +302,9 @@ def _moor_jwt_expires_at(token: Any, fallback_expires_at: Any = None) -> Optiona
     return fallback_expires_at if isinstance(fallback_expires_at, str) else None
 
 
-def _set_nous_agent_key_from_invoke_jwt(
+def _set_moor_agent_key_from_invoke_jwt(
     state: dict[str, Any], *, obtained_at: Optional[str] = None) -> None:
-    from hermes_cli.auth import _nonempty_str
+    from moor_cli.auth import _nonempty_str
     access_token = state.get("access_token")
     if not _nonempty_str(access_token):
         return
@@ -312,7 +312,7 @@ def _set_nous_agent_key_from_invoke_jwt(
     if not obtained_at:
         reuse = state.get("agent_key") == access_token and _nonempty_str(existing_obtained_at)
         obtained_at = existing_obtained_at if reuse else datetime.now(UTC).isoformat()
-    expires_at = _nous_jwt_expires_at(access_token, state.get("expires_at"))
+    expires_at = _moor_jwt_expires_at(access_token, state.get("expires_at"))
     expires_in = _remaining_ttl(expires_at, state.get("expires_in"))
     if expires_at:
         state["expires_at"] = expires_at
@@ -322,9 +322,9 @@ def _set_nous_agent_key_from_invoke_jwt(
         agent_key_expires_in=expires_in, agent_key_reused=False, agent_key_obtained_at=obtained_at)
 
 
-def _select_nous_invoke_jwt(
+def _select_moor_invoke_jwt(
     state: dict[str, Any], *, access_token: Any = None, sequence_id: Optional[str] = None) -> None:
-    from hermes_cli.auth import _nonempty_str
+    from moor_cli.auth import _nonempty_str
     if _nonempty_str(access_token):
         state["access_token"] = access_token
     _set_moor_agent_key_from_invoke_jwt(state)
@@ -339,8 +339,8 @@ def _select_nous_invoke_jwt(
 _MOOR_EFFECTIVE_STATE_IGNORED_KEYS = frozenset({"expires_in", "agent_key_expires_in"})
 
 
-def _nous_effective_provider_state(state: dict[str, Any]) -> dict[str, Any]:
-    return {k: v for k, v in state.items() if k not in _NOUS_EFFECTIVE_STATE_IGNORED_KEYS}
+def _moor_effective_provider_state(state: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in state.items() if k not in _MOOR_EFFECTIVE_STATE_IGNORED_KEYS}
 
 
 MOOR_SHARED_STORE_FILENAME = "moor_auth.json"
@@ -395,8 +395,8 @@ def _moor_shared_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
         yield  # No MOOR_HOME yet (pre-setup): fall through without locking.
         return
     with _file_lock(
-        lock_path, _nous_shared_lock_holder, timeout_seconds,
-        f"Timed out waiting for shared Nous auth lock ({lock_path})"):
+        lock_path, _moor_shared_lock_holder, timeout_seconds,
+        f"Timed out waiting for shared Moor auth lock ({lock_path})"):
         yield
 
 
@@ -414,12 +414,12 @@ _MOOR_SHARED_STATE_KEYS = (
 _SHARED_RENEWAL_KEY = "renewal"
 
 
-def _merge_shared_nous_oauth_state(state: dict[str, Any]) -> bool:
-    """Copy fresher shared OAuth tokens into a profile-local Nous state."""
-    from hermes_cli.auth import _nonempty_str, _parse_iso_timestamp, _read_shared_nous_state
-    shared = _read_shared_nous_state() or {}
+def _merge_shared_moor_oauth_state(state: dict[str, Any]) -> bool:
+    """Copy fresher shared OAuth tokens into a profile-local Moor state."""
+    from moor_cli.auth import _nonempty_str, _parse_iso_timestamp, _read_shared_moor_state
+    shared = _read_shared_moor_state() or {}
     renewed = shared.get(_SHARED_RENEWAL_KEY)
-    if isinstance(renewed, dict) and _nous_identity(renewed) == _nous_identity(state):
+    if isinstance(renewed, dict) and _moor_identity(renewed) == _moor_identity(state):
         shared = renewed
     shared_refresh = shared.get("refresh_token")
     if not _nonempty_str(shared_refresh):
@@ -436,7 +436,7 @@ def _merge_shared_nous_oauth_state(state: dict[str, Any]) -> bool:
     return True
 
 
-def _nous_shared_shape(src: dict[str, Any]) -> dict[str, Any]:
+def _moor_shared_shape(src: dict[str, Any]) -> dict[str, Any]:
     """The defaulted OAuth core (tokens + routing + expiry) shared across profiles."""
     return {
         "access_token": src.get("access_token"), "refresh_token": src.get("refresh_token"),
@@ -454,22 +454,22 @@ def _nous_shared_shape(src: dict[str, Any]) -> dict[str, Any]:
            if src.get(k) not in (None, "")}}
 
 
-def _nous_identity(state: dict[str, Any]) -> tuple[str, Any]:
-    """Who a Nous state is: the guest's ``anon_`` credential, else the account's JWT subject (which,
+def _moor_identity(state: dict[str, Any]) -> tuple[str, Any]:
+    """Who a Moor state is: the guest's ``anon_`` credential, else the account's JWT subject (which,
     unlike the refresh token, survives a refresh)."""
-    from hermes_cli.anon_auth import is_guest_state
+    from moor_cli.anon_auth import is_guest_state
     if is_guest_state(state):
         return "guest", state.get("anon_token")
     return "account", _decode_jwt_claims(state.get("access_token")).get("sub")
 
 
-def _write_shared_nous_state(state: dict[str, Any], *, renewal: bool) -> None:
-    """Persist a minimal copy of the Nous OAuth state to the shared store.
+def _write_shared_moor_state(state: dict[str, Any], *, renewal: bool) -> None:
+    """Persist a minimal copy of the Moor OAuth state to the shared store.
 
     The store holds one identity, which profiles adopt or import. Only a sign-in (or a mint) changes
     it, so only a sign-in can replace a guest there. A *renewal* (a token refresh) of another
     identity is kept beside it under ``renewal``: siblings on that account read their next
-    single-use refresh token from there (``_merge_shared_nous_oauth_state``).
+    single-use refresh token from there (``_merge_shared_moor_oauth_state``).
     Best-effort: failures are logged and swallowed; per-profile auth.json stays the source of truth.
     """
     from moor_cli.auth import _nonempty_str, _save_private_json
@@ -480,15 +480,15 @@ def _write_shared_nous_state(state: dict[str, Any], *, renewal: bool) -> None:
     if not is_guest and not (_nonempty_str(refresh_token) and _nonempty_str(state.get("access_token"))):
         return
     shared = {
-        "_schema": 1, **_nous_shared_shape(state),
+        "_schema": 1, **_moor_shared_shape(state),
         "updated_at": datetime.now(UTC).isoformat()}
     try:
-        with _nous_shared_store_lock():
-            path = _nous_shared_store_path()
-            held = _read_shared_nous_state()
-            same = held is not None and _nous_identity(held) == _nous_identity(state)
+        with _moor_shared_store_lock():
+            path = _moor_shared_store_path()
+            held = _read_shared_moor_state()
+            same = held is not None and _moor_identity(held) == _moor_identity(state)
             if renewal and held is not None and not same:
-                shared = {**held, _SHARED_RENEWAL_KEY: _nous_shared_shape(state)}
+                shared = {**held, _SHARED_RENEWAL_KEY: _moor_shared_shape(state)}
             else:
                 note_replacement(held, state)
                 if same and _SHARED_RENEWAL_KEY in held:
@@ -501,8 +501,8 @@ def _write_shared_nous_state(state: dict[str, Any], *, renewal: bool) -> None:
         logger.debug("Failed to write shared Moor auth store: %s", exc)
 
 
-def _read_shared_nous_state() -> Optional[dict[str, Any]]:
-    """Shared Nous OAuth state when present and well-formed, else None.
+def _read_shared_moor_state() -> Optional[dict[str, Any]]:
+    """Shared Moor OAuth state when present and well-formed, else None.
 
     None (missing / unreadable / malformed / lacking tokens) means "fall through to device-code".
     """
@@ -542,7 +542,7 @@ def _quarantine_forensics(state: dict[str, Any], error: AuthError, reason: str) 
     12-char SHA-256 prefix correlates to NAS's refreshTokenHash without leaking the secret;
     provenance is client_id + agent_key_id (Moor state has no session_id).
     """
-    from hermes_cli.auth import _auth_file_path
+    from moor_cli.auth import _auth_file_path
     forensic: dict[str, Any] = {
         "reason": reason, "error_code": error.code, "client_id": state.get("client_id"),
         "agent_key_id": state.get("agent_key_id"),
@@ -573,7 +573,7 @@ def _quarantine_forensics(state: dict[str, Any], error: AuthError, reason: str) 
     return forensic
 
 
-def _quarantine_nous_oauth_state(state: dict[str, Any], error: AuthError, *, reason: str) -> None:
+def _quarantine_moor_oauth_state(state: dict[str, Any], error: AuthError, *, reason: str) -> None:
     """Keep routing metadata but remove dead OAuth material so it is not replayed.
 
     Only for terminal errors (``*_refresh_failed`` = HTTP 400/401/403 invalid_grant / revoked /
@@ -595,10 +595,10 @@ def _quarantine_nous_oauth_state(state: dict[str, Any], error: AuthError, *, rea
     invalidate_moor_auth_status_cache()
 
 
-def _quarantine_nous_pool_entries(
+def _quarantine_moor_pool_entries(
     auth_store: dict[str, Any], error: AuthError, *, reason: str) -> bool:
-    """Remove singleton-seeded Nous pool entries that contain dead OAuth state."""
-    entries = _pool_entries(auth_store, "nous")
+    """Remove singleton-seeded Moor pool entries that contain dead OAuth state."""
+    entries = _pool_entries(auth_store, "moor")
     if entries is None:
         return False
     singleton_sources = {MOOR_DEVICE_CODE_SOURCE, f"manual:{MOOR_DEVICE_CODE_SOURCE}"}
@@ -611,8 +611,8 @@ def _quarantine_nous_pool_entries(
     return removed
 
 
-def _try_import_shared_nous_state(*, timeout_seconds: float = 15.0) -> Optional[dict[str, Any]]:
-    """Rehydrate Nous OAuth state from the shared store via a forced refresh.
+def _try_import_shared_moor_state(*, timeout_seconds: float = 15.0) -> Optional[dict[str, Any]]:
+    """Rehydrate Moor OAuth state from the shared store via a forced refresh.
 
     Returns auth_state ready for ``persist_moor_credentials()``; None on any failure (expired
     token, portal unreachable) so the caller falls through to device-code.
@@ -625,14 +625,14 @@ def _try_import_shared_nous_state(*, timeout_seconds: float = 15.0) -> Optional[
             shared = _read_shared_moor_state()
             if not shared:
                 return None
-            # Full state dict so refresh_nous_oauth_from_state has every field it needs.
+            # Full state dict so refresh_moor_oauth_from_state has every field it needs.
             state: dict[str, Any] = {
-                **_nous_shared_shape(shared), "agent_key": None, "agent_key_expires_at": None,
+                **_moor_shared_shape(shared), "agent_key": None, "agent_key_expires_at": None,
                 "tls": {"insecure": False, "ca_bundle": None}}
             refreshed = refresh_moor_oauth_from_state(
                 state, timeout_seconds=timeout_seconds, force_refresh=True,
-                on_state_update=lambda updated, _reason: _write_shared_nous_state(updated, renewal=True))
-            _write_shared_nous_state(refreshed, renewal=True)
+                on_state_update=lambda updated, _reason: _write_shared_moor_state(updated, renewal=True))
+            _write_shared_moor_state(refreshed, renewal=True)
     except Exception as exc:
         is_auth = isinstance(exc, AuthError)
         _oauth_trace(
@@ -708,7 +708,7 @@ def _refresh_access_token(
     raise _moor_err(description, code, relogin=relogin)
 
 
-def _refresh_nous_or_quarantine(
+def _refresh_moor_or_quarantine(
     *, client: httpx.Client, auth_store: dict[str, Any], state: dict[str, Any],
     portal_base_url: str, client_id: str, refresh_token: str, reason: str,
     persist: Callable[[], None]) -> dict[str, Any]:
@@ -726,7 +726,7 @@ def _refresh_nous_or_quarantine(
         raise
 
 
-def _apply_nous_refreshed_tokens(
+def _apply_moor_refreshed_tokens(
     state: dict[str, Any], refreshed: dict[str, Any], refresh_token: str, *,
     inference_base_url: Optional[str] = None) -> None:
     """Write a successful Moor token-refresh payload into *state* (tokens + expiry fields).
@@ -734,7 +734,7 @@ def _apply_nous_refreshed_tokens(
     *inference_base_url*, when given, is the healed network-provenance URL to persist alongside
     the rotated tokens (key order in auth.json is preserved from the original login shape).
     """
-    from hermes_cli.auth import _coerce_ttl_seconds
+    from moor_cli.auth import _coerce_ttl_seconds
     now = datetime.now(UTC)
     access_ttl = _coerce_ttl_seconds(refreshed.get("expires_in"))
     state["access_token"] = refreshed["access_token"]
@@ -748,7 +748,7 @@ def _apply_nous_refreshed_tokens(
     state["expires_at"] = _iso_after(now, access_ttl)
 
 
-def _healed_nous_inference_url(refreshed: dict[str, Any]) -> str:
+def _healed_moor_inference_url(refreshed: dict[str, Any]) -> str:
     """Validated network-provenance inference URL from a refresh payload, healed to the default.
 
     A Portal URL rejected by the allowlist resets to the production default instead of leaving a
@@ -776,9 +776,9 @@ def _model_priority(mid: str) -> tuple:
 def fetch_moor_models(
     *, inference_base_url: str, api_key: str, timeout_seconds: float = 15.0,
     verify: bool | str = True) -> list[str]:
-    """Fetch available model IDs from the Nous inference API."""
-    from hermes_cli.auth import _nonempty_str
-    with _nous_http_client(timeout_seconds, verify) as client:
+    """Fetch available model IDs from the Moor inference API."""
+    from moor_cli.auth import _nonempty_str
+    with _moor_http_client(timeout_seconds, verify) as client:
         response = client.get(
             f"{inference_base_url.rstrip('/')}/models",
             headers={"Authorization": f"Bearer {api_key}"})
@@ -804,7 +804,7 @@ def fetch_moor_models(
 
 
 def _agent_key_is_usable(state: dict[str, Any], min_ttl_seconds: int) -> bool:
-    from hermes_cli.auth import _nonempty_str
+    from moor_cli.auth import _nonempty_str
     key = state.get("agent_key")
     return _nonempty_str(key) and _moor_invoke_jwt_is_usable(
         key, scope=state.get("scope"), expires_at=state.get("agent_key_expires_at"),
@@ -819,7 +819,7 @@ def refresh_moor_oauth_pure(
     timeout_seconds: float = 15.0, insecure: Optional[bool] = None, ca_bundle: Optional[str] = None,
     force_refresh: bool = False,
     on_state_update: Optional[Callable[[dict[str, Any], str], None]] = None) -> dict[str, Any]:
-    """Refresh Nous OAuth state without mutating auth.json directly.
+    """Refresh Moor OAuth state without mutating auth.json directly.
 
     ``on_state_update`` fires after a successful access-token refresh so callers owning persistent
     state can save the rotated refresh token before later validation can fail.
@@ -836,13 +836,13 @@ def refresh_moor_oauth_pure(
         on_state_update=on_state_update)
 
 
-def refresh_nous_oauth_from_state(
+def refresh_moor_oauth_from_state(
     src: dict[str, Any], *, timeout_seconds: float = 15.0, force_refresh: bool = False,
     on_state_update: Optional[Callable[[dict[str, Any], str], None]] = None) -> dict[str, Any]:
-    """Refresh Nous OAuth from a state dict (defaults filled in) without mutating auth.json."""
-    from hermes_cli.auth import (
-        _assert_nous_inference_jwt_usable, _refresh_access_token, _resolve_verify,
-        _select_nous_invoke_jwt)
+    """Refresh Moor OAuth from a state dict (defaults filled in) without mutating auth.json."""
+    from moor_cli.auth import (
+        _assert_moor_inference_jwt_usable, _refresh_access_token, _resolve_verify,
+        _select_moor_invoke_jwt)
     tls = src.get("tls") or {}
     insecure, ca_bundle = tls.get("insecure"), tls.get("ca_bundle")
     state: dict[str, Any] = {
@@ -881,8 +881,8 @@ def refresh_nous_oauth_from_state(
     return state
 
 
-def persist_nous_credentials(creds: dict[str, Any], *, label: Optional[str] = None):
-    """Persist Nous OAuth credentials as the singleton provider state.
+def persist_moor_credentials(creds: dict[str, Any], *, label: Optional[str] = None):
+    """Persist Moor OAuth credentials as the singleton provider state.
 
     Moor credentials are read from ``providers.moor`` (401 recovery, pool seeding) AND
     ``credential_pool.moor`` (runtime ``pool.select()``); a pool-only write broke expiry recovery.
@@ -895,10 +895,10 @@ def persist_nous_credentials(creds: dict[str, Any], *, label: Optional[str] = No
     state = dict(creds)
     if label and str(label).strip():
         state["label"] = str(label).strip()
-    _save_active_provider_state("nous", state)
-    _write_shared_nous_state(state, renewal=False)
-    pool = load_pool("nous")
-    return next((e for e in pool.entries() if e.source == NOUS_DEVICE_CODE_SOURCE), None)
+    _save_active_provider_state("moor", state)
+    _write_shared_moor_state(state, renewal=False)
+    pool = load_pool("moor")
+    return next((e for e in pool.entries() if e.source == MOOR_DEVICE_CODE_SOURCE), None)
 
 
 def _sync_moor_pool_from_auth_store() -> None:
@@ -910,7 +910,7 @@ def _sync_moor_pool_from_auth_store() -> None:
         logger.debug("Failed to sync Moor credential pool from auth store: %s", exc)
 
 
-def _nous_effective_routing(state: dict[str, Any]) -> tuple[str, str, str, str]:
+def _moor_effective_routing(state: dict[str, Any]) -> tuple[str, str, str, str]:
     """``(portal_url, stored_inference_url, effective_inference_url, client_id)`` from *state*.
 
     The stored inference URL is re-validated network-provenance (persisted); the effective one
@@ -992,7 +992,7 @@ class _MoorRuntimeResolve:
             access_token_fp=_token_fingerprint(state.get("access_token")))
         self._persisted_state = dict(state)
         self.persisted_any = True
-        _write_shared_nous_state(state, renewal=True)
+        _write_shared_moor_state(state, renewal=True)
 
     def shared_lock(self):
         return _moor_shared_store_lock(timeout_seconds=_shared_lock_timeout(self.timeout_seconds))
@@ -1096,23 +1096,23 @@ def resolve_moor_runtime_credentials(
     *, timeout_seconds: float = 15.0, insecure: Optional[bool] = None,
     ca_bundle: Optional[str] = None, force_refresh: bool = False,
     stale_access_token: Optional[str] = None) -> dict[str, Any]:
-    """Resolve Nous inference credentials for runtime use (refreshing under the auth-store lock).
+    """Resolve Moor inference credentials for runtime use (refreshing under the auth-store lock).
 
     A guest whose ``anon_`` credential NAS no longer knows (reaped or claimed) is retired and never
     replaced here: the welcome trial is claimed once per OS user, so that user goes on to sign-in or
     provider setup.
     """
-    from hermes_cli.anon_auth import AnonCredentialDead, clear_dead_guest
-    from hermes_cli.anon_challenge import run_with_challenge
+    from moor_cli.anon_auth import AnonCredentialDead, clear_dead_guest
+    from moor_cli.anon_challenge import run_with_challenge
     try:
         # A free-tier exchange may be answered with a browser challenge; it is worked here, after
         # the exchange's locks have unwound, and the exchange is then run once more.
-        return run_with_challenge(lambda: _resolve_nous_runtime_credentials(
+        return run_with_challenge(lambda: _resolve_moor_runtime_credentials(
             timeout_seconds=timeout_seconds, insecure=insecure, ca_bundle=ca_bundle,
             force_refresh=force_refresh, stale_access_token=stale_access_token))
     except AnonCredentialDead as dead_exc:
-        from hermes_cli.auth import get_provider_auth_state
-        dead = get_provider_auth_state("nous") or {}
+        from moor_cli.auth import get_provider_auth_state
+        dead = get_provider_auth_state("moor") or {}
         clear_dead_guest(str(dead_exc.code or "anon_credential_dead"), dead_token=dead.get("anon_token"))
         raise
 
@@ -1121,7 +1121,7 @@ def _resolve_moor_runtime_credentials(
     *, timeout_seconds: float = 15.0, insecure: Optional[bool] = None,
     ca_bundle: Optional[str] = None, force_refresh: bool = False,
     stale_access_token: Optional[str] = None) -> dict[str, Any]:
-    """Resolve Nous inference credentials for runtime use (refreshing under the auth-store lock).
+    """Resolve Moor inference credentials for runtime use (refreshing under the auth-store lock).
 
     ``stale_access_token`` is the bearer that just failed upstream (401): with ``force_refresh``,
     the refresh POST is skipped if the store (re-read under the lock) already holds a *different*
@@ -1133,12 +1133,12 @@ def _resolve_moor_runtime_credentials(
         _tls_state_from_verify)
     with _provider_state_transaction("moor") as (auth_store, state, state_source_path):
         if not state:
-            raise _nous_err("Hermes is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
-        from hermes_cli.anon_auth import guest_without_free_tier
+            raise _moor_err("Moor is not logged into Moor Portal.", "moor_auth_missing", relogin=True)
+        from moor_cli.anon_auth import guest_without_free_tier
         if guest_without_free_tier(state):
             # Not terminal (no relogin): the identity stays for connectors.
-            raise _nous_err("Hermes is not logged into Nous Portal.", "nous_auth_missing")
-        run = _NousRuntimeResolve(
+            raise _moor_err("Moor is not logged into Moor Portal.", "moor_auth_missing")
+        run = _MoorRuntimeResolve(
             auth_store, state, state_source_path, force_refresh=force_refresh,
             stale_access_token=stale_access_token, timeout_seconds=timeout_seconds)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
@@ -1175,14 +1175,14 @@ def _resolve_moor_runtime_credentials(
         "state_path": str(state_source_path or _auth_file_path())}
 
 
-def _empty_nous_auth_status() -> dict[str, Any]:
+def _empty_moor_auth_status() -> dict[str, Any]:
     return {
         "logged_in": False, "portal_base_url": None, "inference_base_url": None,
         "access_expires_at": None, "agent_key_expires_at": None, "has_refresh_token": False,
         "inference_credential_present": False, "credential_source": None}
 
 
-def _snapshot_nous_pool_status() -> dict[str, Any]:
+def _snapshot_moor_pool_status() -> dict[str, Any]:
     """Best-effort status from the credential pool.
 
     Fallback only: the auth-store provider state is the runtime source of truth because it is what
@@ -1191,7 +1191,7 @@ def _snapshot_nous_pool_status() -> dict[str, Any]:
     from moor_cli.auth import _parse_iso_timestamp
     try:
         from agent.credential_pool import load_pool
-        pool = load_pool("nous")
+        pool = load_pool("moor")
         # A guest's row is not a Portal login: without its trial stamp in auth.json it runs nothing.
         entries = [e for e in pool.entries() if getattr(e, "auth_method", None) != "anonymous"] if (
             pool and pool.has_credentials()) else []
@@ -1224,10 +1224,10 @@ def _snapshot_nous_pool_status() -> dict[str, Any]:
         return _empty_moor_auth_status()
 
 
-def _nous_status_from_state(
+def _moor_status_from_state(
     state: dict[str, Any], *, logged_in: bool, source: str) -> dict[str, Any]:
-    """Auth-store-backed Nous status snapshot (shared by the live and refresh-free variants)."""
-    from hermes_cli.anon_auth import is_guest_state
+    """Auth-store-backed Moor status snapshot (shared by the live and refresh-free variants)."""
+    from moor_cli.anon_auth import is_guest_state
     access_token = state.get("access_token")
     account_tier = state.get("account_tier")
     return {
@@ -1243,21 +1243,21 @@ def _nous_status_from_state(
         "free_tier": is_guest_state(state)}
 
 
-def _compute_nous_auth_status() -> dict[str, Any]:
-    """Uncached implementation of get_nous_auth_status(). See that function."""
-    from hermes_cli.anon_auth import guest_without_free_tier
-    from hermes_cli.auth import get_provider_auth_state, resolve_nous_runtime_credentials
-    state = get_provider_auth_state("nous")
+def _compute_moor_auth_status() -> dict[str, Any]:
+    """Uncached implementation of get_moor_auth_status(). See that function."""
+    from moor_cli.anon_auth import guest_without_free_tier
+    from moor_cli.auth import get_provider_auth_state, resolve_moor_runtime_credentials
+    state = get_provider_auth_state("moor")
     if not state or guest_without_free_tier(state):
-        return _snapshot_nous_pool_status()
-    base_status = _nous_status_from_state(
+        return _snapshot_moor_pool_status()
+    base_status = _moor_status_from_state(
         state, logged_in=bool(state.get("access_token")), source="auth_store")
     try:
         # A status paint must not park on (or open a browser for) a free-tier challenge.
-        from hermes_cli.anon_challenge import background_caller
+        from moor_cli.anon_challenge import background_caller
         with background_caller():
-            creds = resolve_nous_runtime_credentials()
-        refreshed_state = get_provider_auth_state("nous") or state
+            creds = resolve_moor_runtime_credentials()
+        refreshed_state = get_provider_auth_state("moor") or state
         base_status.update({
             "logged_in": True,
             "portal_base_url": (
@@ -1294,21 +1294,21 @@ def _terminal_quarantine_marker(state: dict[str, Any]) -> Optional[dict[str, Any
     return None
 
 
-def get_nous_auth_status_local() -> dict[str, Any]:
-    """Refresh-free Nous auth snapshot for read-only display surfaces.
+def get_moor_auth_status_local() -> dict[str, Any]:
+    """Refresh-free Moor auth snapshot for read-only display surfaces.
 
     NEVER calls ``resolve_moor_runtime_credentials()`` (no refresh POST / single-use token spent);
     ``logged_in`` = usable invoke JWT, or a refresh token not terminally quarantined — not proof
     the server still accepts it.
     """
-    from hermes_cli.anon_auth import guest_without_free_tier
-    from hermes_cli.auth import get_provider_auth_state
+    from moor_cli.anon_auth import guest_without_free_tier
+    from moor_cli.auth import get_provider_auth_state
     try:
         state = get_provider_auth_state("moor")
     except Exception:
         state = None
     if not state or guest_without_free_tier(state):
-        return _snapshot_nous_pool_status()
+        return _snapshot_moor_pool_status()
     jwt_reason = _state_invoke_jwt_status(state, state.get("access_token"))
     last_err = _terminal_quarantine_marker(state)
     logged_in = (jwt_reason is None) or (bool(state.get("refresh_token")) and last_err is None)
@@ -1408,8 +1408,8 @@ def _moor_device_code_login(
     client_id: Optional[str] = None, scope: Optional[str] = None, open_browser: bool = True,
     timeout_seconds: float = 15.0, insecure: bool = False, ca_bundle: Optional[str] = None,
     on_verification: Optional[Callable[[str, str], None]] = None) -> dict[str, Any]:
-    """Run the Nous device-code flow and return full OAuth state without persisting."""
-    from hermes_cli.auth import (
+    """Run the Moor device-code flow and return full OAuth state without persisting."""
+    from moor_cli.auth import (
         PROVIDER_REGISTRY, _coerce_ttl_seconds, _is_remote_session, _optional_base_url,
         _poll_for_token, _print_device_code_instructions, _request_device_code,
         _tls_state_from_verify, format_auth_error, refresh_moor_oauth_from_state)
@@ -1481,11 +1481,11 @@ def _moor_device_code_login(
         raise
 
 
-def _mirror_nous_state_best_effort(auth_state: dict[str, Any]) -> None:
-    """Mirror to the shared store + reseed the pool, swallowing all errors (same as _login_nous)."""
-    from hermes_cli.auth import _sync_nous_pool_from_auth_store, _write_shared_nous_state
+def _mirror_moor_state_best_effort(auth_state: dict[str, Any]) -> None:
+    """Mirror to the shared store + reseed the pool, swallowing all errors (same as _login_moor)."""
+    from moor_cli.auth import _sync_moor_pool_from_auth_store, _write_shared_moor_state
     with suppress(Exception):
-        _write_shared_nous_state(auth_state, renewal=False)
+        _write_shared_moor_state(auth_state, renewal=False)
     with suppress(Exception):
         _sync_moor_pool_from_auth_store()
 
@@ -1515,25 +1515,25 @@ def step_up_moor_billing_scope(
         inference_base_url=prior.get("inference_base_url") or None,
         client_id=prior.get("client_id") or pconfig.client_id, scope=" ".join(requested),
         open_browser=open_browser, timeout_seconds=timeout_seconds, on_verification=on_verification)
-    _save_active_provider_state("nous", auth_state)
-    _mirror_nous_state_best_effort(auth_state)
+    _save_active_provider_state("moor", auth_state)
+    _mirror_moor_state_best_effort(auth_state)
     drain()  # a step-up that replaced the free tier hands its apps over
     # Every caller replays the refused billing action next: drop the billing client's 30s token cache
     # here (not per caller) so that replay sends the new token, not the pre-approval one (403 again).
     try:
-        from hermes_cli.nous_billing import invalidate_cached_token
+        from moor_cli.moor_billing import invalidate_cached_token
         invalidate_cached_token()
     except Exception:
         logger.debug("Billing token cache invalidation failed", exc_info=True)
-    from hermes_cli.anon_auth import settle_after_upgrade
+    from moor_cli.anon_auth import settle_after_upgrade
     settle_after_upgrade(auth_state)  # a step-up that replaced the free tier moves its config too
     granted = auth_state.get("scope")
     return isinstance(granted, str) and MOOR_BILLING_MANAGE_SCOPE in granted.split()
 
 
-def _pick_nous_model_after_login(
+def _pick_moor_model_after_login(
     auth_state: dict[str, Any], inference_base_url: str) -> Optional[str]:
-    """Fetch the curated Nous model list (tier/policy-filtered) and run the interactive picker.
+    """Fetch the curated Moor model list (tier/policy-filtered) and run the interactive picker.
 
     Returns the selected model id, or None when the user skipped / nothing was selectable.
     Raises on any fetch failure so the caller can print the "Login succeeded, but..." notice.
@@ -1541,12 +1541,12 @@ def _pick_nous_model_after_login(
     from moor_cli.auth import _prompt_model_selection
     runtime_key = auth_state.get("agent_key") or auth_state.get("access_token")
     if not isinstance(runtime_key, str) or not runtime_key:
-        raise _nous_err("No runtime API key available to fetch models", "invalid_token")
-    from hermes_cli.models import (
-        get_curated_nous_model_ids,
-        check_nous_free_tier,
-        partition_nous_models_by_tier,
-        union_with_nous_on_sale_models,
+        raise _moor_err("No runtime API key available to fetch models", "invalid_token")
+    from moor_cli.models import (
+        get_curated_moor_model_ids,
+        check_moor_free_tier,
+        partition_moor_models_by_tier,
+        union_with_moor_on_sale_models,
         union_with_portal_free_recommendations,
         union_with_portal_paid_recommendations,
     )
@@ -1577,8 +1577,8 @@ def _pick_nous_model_after_login(
             else union_with_portal_paid_recommendations)
         model_ids, pricing = union(model_ids, pricing, _portal)
         if not free_tier:
-            # Paid users also see every model on sale right now (same rule as `hermes model`).
-            model_ids = union_with_nous_on_sale_models(model_ids, pricing)
+            # Paid users also see every model on sale right now (same rule as `moor model`).
+            model_ids = union_with_moor_on_sale_models(model_ids, pricing)
         _before_policy = model_ids
         model_ids = restrict_to_moor_policy(model_ids, _policy_allowed, rescue_empty=True)
         _policy_narrowed = model_ids != _before_policy
@@ -1590,8 +1590,8 @@ def _pick_nous_model_after_login(
         _policy_notice = moor_policy_notice(removed=_policy_narrowed)
         if _policy_notice:
             print(_policy_notice)
-        from hermes_cli.model_picker_usage import featured_first, nous_picker_usage
-        _usage = nous_picker_usage(warm=True)
+        from moor_cli.model_picker_usage import featured_first, moor_picker_usage
+        _usage = moor_picker_usage(warm=True)
         # Window plans: every model is usable; the plan's featured picks lead the list.
         if _usage is not None:
             model_ids = featured_first(model_ids, _usage.featured_model_ids)
@@ -1600,7 +1600,7 @@ def _pick_nous_model_after_login(
             "use \"Enter custom model name\" for others.")
         return _prompt_model_selection(
             model_ids, pricing=pricing, unavailable_models=unavailable_models, portal_url=_portal,
-            unavailable_message=unavailable_message, confirm_provider="nous",
+            unavailable_message=unavailable_message, confirm_provider="moor",
             confirm_base_url=inference_base_url, confirm_api_key=runtime_key,
             usage=_usage)
     if unavailable_models:
@@ -1612,8 +1612,8 @@ def _pick_nous_model_after_login(
     return None
 
 
-def _offer_shared_nous_import(timeout_seconds: float) -> Optional[dict[str, Any]]:
-    """Codex-style auto-import: offer to rehydrate a Nous credential from another profile.
+def _offer_shared_moor_import(timeout_seconds: float) -> Optional[dict[str, Any]]:
+    """Codex-style auto-import: offer to rehydrate a Moor credential from another profile.
 
     Checks the shared store before launching a fresh device-code flow. Returns the refreshed
     auth state when the user accepted and the import succeeded, else None.
@@ -1681,10 +1681,10 @@ def _login_moor(args, pconfig: ProviderConfig) -> None:
             prior_active_provider = _load_auth_store().get("active_provider")
         saved_to = _save_active_provider_state("moor", auth_state)
         # Mirror to the shared store so other profiles can one-tap import (best-effort inside).
-        _write_shared_nous_state(auth_state, renewal=False)
+        _write_shared_moor_state(auth_state, renewal=False)
         handoff = drain()  # a replaced free tier hands its apps over once both saves land
-        _sync_nous_pool_from_auth_store()
-        from hermes_cli.anon_auth import settle_after_upgrade
+        _sync_moor_pool_from_auth_store()
+        from moor_cli.anon_auth import settle_after_upgrade
         settle_after_upgrade(auth_state)  # a config left on the free tier's route moves to the account
         print()
         print("Login successful!")
@@ -1711,10 +1711,10 @@ def _login_moor(args, pconfig: ProviderConfig) -> None:
             "moor", inference_base_url, default_model=selected_model)
         _save_model_choice(selected_model)
         print(f"Default model set to: {selected_model}")
-        from hermes_cli.model_picker_usage import large_model_notice
-        if _notice := large_model_notice(selected_model, "nous"):
+        from moor_cli.model_picker_usage import large_model_notice
+        if _notice := large_model_notice(selected_model, "moor"):
             print(f"  ⚠ {_notice}")  # window plans only (a Large mark exists only on their catalog)
-        print(f"  Config updated: {config_path} (model.provider=nous)")
+        print(f"  Config updated: {config_path} (model.provider=moor)")
     except KeyboardInterrupt:
         print("\nLogin cancelled.")
         raise SystemExit(130)

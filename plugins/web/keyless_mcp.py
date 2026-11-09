@@ -90,7 +90,7 @@ def _search(vendor: str, rows: Callable[[], list[dict[str, Any]]], catch: Any = 
 
 
 def _per_url(urls: list[str], fetch: Callable[[str], dict[str, Any]], vendor: str, catch: Any = Exception, hint: bool = False) -> list[dict[str, Any]]:
-    """Per-URL extract loop: a ``catch`` failure becomes an error entry (``hint`` adds the ``hermes tools`` hint)."""
+    """Per-URL extract loop: a ``catch`` failure becomes an error entry (``hint`` adds the ``moor tools`` hint)."""
     def _one(url: str) -> dict[str, Any]:
         try:
             return fetch(url)

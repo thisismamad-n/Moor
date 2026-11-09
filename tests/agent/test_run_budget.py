@@ -36,9 +36,9 @@ def _write_config(tmp_path: Path, body: str) -> None:
 def _make_agent(tmp_path, monkeypatch, config_body: str = "", **overrides):
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
-    monkeypatch.delenv("HERMES_API_CALL_STALE_TIMEOUT", raising=False)
-    monkeypatch.delenv("HERMES_STREAM_STALE_TIMEOUT", raising=False)
-    monkeypatch.delenv("HERMES_LOCAL_STREAM_STALE_TIMEOUT", raising=False)
+    monkeypatch.delenv("MOOR_API_CALL_STALE_TIMEOUT", raising=False)
+    monkeypatch.delenv("MOOR_STREAM_STALE_TIMEOUT", raising=False)
+    monkeypatch.delenv("MOOR_LOCAL_STREAM_STALE_TIMEOUT", raising=False)
     _write_config(tmp_path, config_body)
 
     from run_agent import AIAgent
@@ -193,7 +193,7 @@ def test_cloud_stream_budget_preserves_explicit_deadlines(
         run_budget_seconds=900,
     )
     if env_value is not None:
-        monkeypatch.setenv("HERMES_STREAM_STALE_TIMEOUT", env_value)
+        monkeypatch.setenv("MOOR_STREAM_STALE_TIMEOUT", env_value)
     monkeypatch.setattr(helpers.time, "time", lambda: 1000.0)
     agent._run_budget_started_at = 1000.0 - 800
     payload = {"model": agent.model, "messages": [{"role": "user", "content": "hi"}]}
@@ -372,5 +372,5 @@ def test_gemini_long_decode_scales_implicit_stale_timeout_by_hops(monkeypatch, t
     assert agent._compute_non_stream_stale_timeout(payload) == 600.0
     long_decode = {**payload, "extra_body": {"max_output_tokens": 262_144}}
     assert agent._compute_non_stream_stale_timeout(long_decode) == 600.0 * 8
-    monkeypatch.setenv("HERMES_API_CALL_STALE_TIMEOUT", "120")
+    monkeypatch.setenv("MOOR_API_CALL_STALE_TIMEOUT", "120")
     assert agent._compute_non_stream_stale_timeout(long_decode) == 120.0

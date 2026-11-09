@@ -6,8 +6,8 @@ import zipfile
 
 import pytest
 
-from hermes_cli import update_cmd_zip
-from hermes_cli.webapp import webapp_dist_dir
+from moor_cli import update_cmd_zip
+from moor_cli.webapp import webapp_dist_dir
 
 
 def _git(root, *args):
@@ -48,7 +48,7 @@ def test_clean_webapp_output_is_admitted_but_dirty_source_still_refuses(clean_in
 
 
 def test_local_zip_grafts_both_renderers_and_preswap_guard_keeps_dirty_source(clean_install, tmp_path, monkeypatch):
-    from hermes_cli import main
+    from moor_cli import main
 
     root = clean_install
     monkeypatch.setattr(main, "PROJECT_ROOT", root)
@@ -56,13 +56,13 @@ def test_local_zip_grafts_both_renderers_and_preswap_guard_keeps_dirty_source(cl
     original = source.read_bytes()
     outputs = {path: path.read_bytes() for path in (
         root / "apps/desktop/dist/index.html", webapp_dist_dir(root) / "index.html")}
-    extracted = tmp_path / "hermes-agent-main"
+    extracted = tmp_path / "moor-agent-main"
     new_source = extracted / "apps/desktop/package.json"
     new_source.parent.mkdir(parents=True)
     new_source.write_bytes(b'{"name":"updated-source"}\n')
     archive = tmp_path / "source.zip"
     with zipfile.ZipFile(archive, "w") as handle:
-        handle.write(new_source, "hermes-agent-main/apps/desktop/package.json")
+        handle.write(new_source, "moor-agent-main/apps/desktop/package.json")
         handle.comment = b"8192da90e0afb20010a1c2f5da83db305d05ac5a"  # git archive's commit identity
 
     # A failed pre-swap check leaves the live source and both outputs untouched.
@@ -72,7 +72,7 @@ def test_local_zip_grafts_both_renderers_and_preswap_guard_keeps_dirty_source(cl
     assert exc.value.code == 1
     assert source.read_bytes() == original + b"\n"
     assert all(path.read_bytes() == data for path, data in outputs.items())
-    assert not (root / "apps.hermes-update-staging").exists()
+    assert not (root / "apps.moor-update-staging").exists()
     source.write_bytes(original)
 
     # Exercise grafting separately so a missing artifact cannot hide behind a guard refusal.
@@ -85,5 +85,5 @@ def test_local_zip_grafts_both_renderers_and_preswap_guard_keeps_dirty_source(cl
     update_cmd_zip._download_and_swap_zip("main", archive.as_uri())
     assert source.read_bytes() == new_source.read_bytes()
     assert all(path.read_bytes() == data for path, data in outputs.items())
-    assert not (root / "apps.hermes-update-staging").exists()
-    assert not (root / "apps.hermes-update-old").exists()
+    assert not (root / "apps.moor-update-staging").exists()
+    assert not (root / "apps.moor-update-old").exists()

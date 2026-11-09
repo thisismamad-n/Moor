@@ -44,9 +44,9 @@ DISCORD_AUTO_THREAD SLACK_HOME_CHANNEL SLACK_HOME_CHANNEL_NAME SLACK_ALLOWED_USE
 WHATSAPP_ENABLED WHATSAPP_MODE WHATSAPP_ALLOWED_USERS SIGNAL_HTTP_URL SIGNAL_ACCOUNT
 SIGNAL_ALLOWED_USERS SIGNAL_GROUP_ALLOWED_USERS SIGNAL_HOME_CHANNEL SIGNAL_HOME_CHANNEL_NAME
 SIGNAL_IGNORE_STORIES HASS_TOKEN HASS_URL EMAIL_ADDRESS EMAIL_PASSWORD EMAIL_IMAP_HOST
-EMAIL_SMTP_HOST EMAIL_HOME_ADDRESS EMAIL_HOME_ADDRESS_NAME HERMES_DASHBOARD_SESSION_TOKEN
-HERMES_DASHBOARD_BASIC_AUTH_PASSWORD HERMES_DASHBOARD_BASIC_AUTH_SECRET HERMES_DASHBOARD_DRAIN_SECRET
-HERMES_DASHBOARD_OIDC_CLIENT_SECRET HERMES_ANON_API_SECRET HERMES_MEET_REALTIME_KEY
+EMAIL_SMTP_HOST EMAIL_HOME_ADDRESS EMAIL_HOME_ADDRESS_NAME MOOR_DASHBOARD_SESSION_TOKEN
+MOOR_DASHBOARD_BASIC_AUTH_PASSWORD MOOR_DASHBOARD_BASIC_AUTH_SECRET MOOR_DASHBOARD_DRAIN_SECRET
+MOOR_DASHBOARD_OIDC_CLIENT_SECRET MOOR_ANON_API_SECRET MOOR_MEET_REALTIME_KEY
 GATEWAY_ALLOWED_USERS GATEWAY_ALLOW_ALL_USERS GH_TOKEN GITHUB_APP_ID
 GITHUB_APP_PRIVATE_KEY_PATH GITHUB_APP_INSTALLATION_ID MODAL_TOKEN_ID MODAL_TOKEN_SECRET
 DAYTONA_API_KEY VERCEL_OIDC_TOKEN VERCEL_TOKEN VERCEL_PROJECT_ID VERCEL_TEAM_ID GATEWAY_RELAY_ID
@@ -102,7 +102,7 @@ YUANBAO_APP_SECRET FEISHU_ENCRYPT_KEY FEISHU_VERIFICATION_TOKEN TELEGRAM_WEBHOOK
 PHOTON_SIDECAR_TOKEN A2A_PUSH_SECRET TEAMS_GRAPH_ACCESS_TOKEN QQ_STT_API_KEY
 MSGRAPH_WEBHOOK_CLIENT_STATE MSGRAPH_CLIENT_SECRET
 """.split()
-# The user's own credentials that merely start with a platform name. Hermes never reads them, so
+# The user's own credentials that merely start with a platform name. Moor never reads them, so
 # they reach the terminal like any other variable, and passthrough can forward them.
 OPERATOR_SECRETS = ["MY_APP_KEY", "DEPLOY_WEBHOOK_SECRET", "SLACK_USER_TOKEN", "LOCAL_LLM_API_KEY",
                     "GATEWAY_API_KEY"]
@@ -113,15 +113,15 @@ def test_adapter_and_provider_profile_secrets_never_reach_children(child_env, mo
     from providers import list_providers
     from tools.env_passthrough import is_env_passthrough, register_env_passthrough
     secrets = set(ADAPTER_SECRETS)
-    # child_env's HERMES_HOME has no provider plugins, so these are the bundled profiles.
+    # child_env's MOOR_HOME has no provider plugins, so these are the bundled profiles.
     secrets.update(name for profile in list_providers() for name in (profile.env_vars or ()))
-    secrets.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Hermes inference
+    secrets.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Moor inference
     for name in [*secrets, *OPERATOR_SECRETS]:
         monkeypatch.setenv(name, "fake-" + name)
     factories = {
         "foreground": lambda: local._make_run_env({}),
         "background": lambda: local._sanitize_subprocess_env(dict(os.environ)),
-        "nonterminal": local.hermes_subprocess_env,
+        "nonterminal": local.moor_subprocess_env,
     }
     observed = observe_child(factories[builder](), sorted(secrets | set(OPERATOR_SECRETS)))
     assert observed == {**dict.fromkeys(secrets), **{k: "fake-" + k for k in OPERATOR_SECRETS}}
@@ -143,7 +143,7 @@ def test_user_platform_plugin_secrets_belong_to_their_own_profile(child_env, mon
     """A profile's user-installed platform plugin declares secrets for that profile only: bound to
     it, the name is stripped from every child and refused for passthrough; bound to a sibling
     profile, the sibling's own same-named value is its user variable and reaches its children."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     from tools.env_passthrough import is_env_passthrough, register_env_passthrough
     a, b = child_env / "profiles" / "a", child_env / "profiles" / "b"
     _user_platform_plugin(a, "chatx", "CHATX_SIGNING_SECRET")
@@ -152,28 +152,28 @@ def test_user_platform_plugin_secrets_belong_to_their_own_profile(child_env, mon
     register_env_passthrough(["CHATX_SIGNING_SECRET"])
     seen = {}
     for home in (a, b):
-        token = set_hermes_home_override(home)
+        token = set_moor_home_override(home)
         try:
             seen[home.name] = (
-                "CHATX_SIGNING_SECRET" in local.hermes_subprocess_env(inherit_credentials=True),
+                "CHATX_SIGNING_SECRET" in local.moor_subprocess_env(inherit_credentials=True),
                 "CHATX_SIGNING_SECRET" in local._make_run_env({}),
                 is_env_passthrough("CHATX_SIGNING_SECRET"))
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
     assert seen == {"a": (False, False, False), "b": (True, True, True)}
     # An in-place manifest edit (no directory mtime change) takes effect on the next spawn.
     manifest = a / "plugins" / "platforms" / "chatx" / "plugin.yaml"
     manifest.write_text(manifest.read_text(encoding="utf-8") + "  - name: CHATX_WEBHOOK_KEY\n", encoding="utf-8")
     os.utime(manifest, ns=(manifest.stat().st_atime_ns, manifest.stat().st_mtime_ns + 10**9))
     monkeypatch.setenv("CHATX_WEBHOOK_KEY", "fake-value")
-    token = set_hermes_home_override(a)
+    token = set_moor_home_override(a)
     try:
-        assert "CHATX_WEBHOOK_KEY" not in local.hermes_subprocess_env(inherit_credentials=True)
+        assert "CHATX_WEBHOOK_KEY" not in local.moor_subprocess_env(inherit_credentials=True)
         # Removing the plugin releases its names.
         manifest.unlink()
-        assert "CHATX_WEBHOOK_KEY" in local.hermes_subprocess_env(inherit_credentials=True)
+        assert "CHATX_WEBHOOK_KEY" in local.moor_subprocess_env(inherit_credentials=True)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 @pytest.mark.skipif(os.name == "nt" or os.geteuid() == 0,  # windows-footgun: ok — short-circuits on nt
@@ -182,7 +182,7 @@ def test_user_platform_plugin_secrets_belong_to_their_own_profile(child_env, mon
 def test_a_failed_rescan_keeps_the_denials_it_already_knew(child_env, monkeypatch, layout):
     """healthy -> unreadable -> recovered: a plugin the scan cannot read right now still declared
     its secret a moment ago, and the value may already be in the process or profile overlay."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     home = child_env / "profiles" / "a"
     if layout == "platforms":
         _user_platform_plugin(home, "chatx", "CHATX_SIGNING_SECRET")
@@ -196,10 +196,10 @@ def test_a_failed_rescan_keeps_the_denials_it_already_knew(child_env, monkeypatc
             encoding="utf-8")
         locked = plugin_dir / "plugin.yaml"  # unreadable flat manifest: skipped, the scan is partial
     monkeypatch.setenv("CHATX_SIGNING_SECRET", "fake-value")
-    token = set_hermes_home_override(home)
+    token = set_moor_home_override(home)
     try:
         def stripped():
-            return "CHATX_SIGNING_SECRET" not in local.hermes_subprocess_env(inherit_credentials=True)
+            return "CHATX_SIGNING_SECRET" not in local.moor_subprocess_env(inherit_credentials=True)
         assert stripped()
         locked.chmod(0)
         try:
@@ -209,14 +209,14 @@ def test_a_failed_rescan_keeps_the_denials_it_already_knew(child_env, monkeypatc
             locked.chmod(0o755 if layout == "platforms" else 0o644)
         assert stripped()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def test_a_partial_scan_is_rescanned_on_the_next_spawn(child_env, monkeypatch):
     """A manifest read that fails once (same file signature afterwards) must not pin the partial
     result: the next spawn reads it and strips the secret."""
     import builtins
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     home = child_env / "profiles" / "a"
     plugin_dir = home / "plugins" / "chatx"
     plugin_dir.mkdir(parents=True)
@@ -234,18 +234,18 @@ def test_a_partial_scan_is_rescanned_on_the_next_spawn(child_env, monkeypatch):
 
     monkeypatch.setattr(builtins, "open", flaky_open)
     monkeypatch.setenv("CHATX_SIGNING_SECRET", "fake-value")
-    token = set_hermes_home_override(home)
+    token = set_moor_home_override(home)
     try:
-        local.hermes_subprocess_env(inherit_credentials=True)
+        local.moor_subprocess_env(inherit_credentials=True)
         assert not failures  # the failed read happened
-        assert "CHATX_SIGNING_SECRET" not in local.hermes_subprocess_env(inherit_credentials=True)
+        assert "CHATX_SIGNING_SECRET" not in local.moor_subprocess_env(inherit_credentials=True)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 @pytest.mark.platforms("posix")  # symlinks
 def test_a_symlinked_home_alias_shares_its_profiles_plugin_declarations(child_env, monkeypatch):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     from tools.environments import local_env_policy as policy
     home = child_env / "profiles" / "a"
     _user_platform_plugin(home, "chatx", "CHATX_SIGNING_SECRET")
@@ -254,11 +254,11 @@ def test_a_symlinked_home_alias_shares_its_profiles_plugin_declarations(child_en
     monkeypatch.setenv("CHATX_SIGNING_SECRET", "fake-value")
     sizes = []
     for bound in (home, alias):
-        token = set_hermes_home_override(bound)
+        token = set_moor_home_override(bound)
         try:
-            assert "CHATX_SIGNING_SECRET" not in local.hermes_subprocess_env(inherit_credentials=True)
+            assert "CHATX_SIGNING_SECRET" not in local.moor_subprocess_env(inherit_credentials=True)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
         sizes.append(len(policy._HOME_ADAPTER_SECRET_CACHE))
     assert sizes[0] == sizes[1]
 
@@ -268,7 +268,7 @@ def test_a_symlinked_home_alias_shares_its_profiles_plugin_declarations(child_en
 def test_unreadable_platform_manifest_fails_closed(tmp_path):
     """A manifest that cannot be read might declare secrets, so the policy scan raises rather than
     returning a set without them. A malformed one declares nothing and is skipped."""
-    from hermes_cli.config import platform_manifest_secret_envs
+    from moor_cli.config import platform_manifest_secret_envs
     _user_platform_plugin(tmp_path, "chatx", "CHATX_SIGNING_SECRET")
     broken = tmp_path / "plugins" / "platforms" / "broken"
     broken.mkdir()
@@ -307,7 +307,7 @@ def test_unreadable_platform_manifest_fails_closed(tmp_path):
 def test_manifest_scan_follows_plugin_discovery_and_sees_mtime_preserving_edits(tmp_path):
     """A __dunder__ dir is never a plugin, so it declares nothing; a rewrite that keeps the
     manifest's size and mtime (cp -p, rsync -t) still changes the stamp."""
-    from hermes_cli.config import platform_manifest_secret_envs, platform_manifest_stamp
+    from moor_cli.config import platform_manifest_secret_envs, platform_manifest_stamp
     _user_platform_plugin(tmp_path, "__cache__", "CACHED_SIGNING_SECRET")
     _user_platform_plugin(tmp_path, "chatx", "CHATX_SIGNING_SECRET")
     assert platform_manifest_secret_envs(tmp_path) == {"CHATX_SIGNING_SECRET"}
@@ -324,7 +324,7 @@ def test_unreadable_bundled_manifest_fails_the_policy_instead_of_dropping_it(mon
     """The import-time read keeps the bundled secret set only when every bundled manifest was
     read; otherwise the policy's strict re-read raises rather than building without them."""
     import builtins
-    import hermes_cli.config as cfg
+    import moor_cli.config as cfg
     target = next(path for _name, path, _kind, _st in cfg._platform_manifest_paths(source="bundled") if path)
     real_open = builtins.open
 
@@ -346,7 +346,7 @@ def test_inheriting_child_gets_provider_keys_but_never_adapter_secrets(child_env
     granted = ["OPENAI_API_KEY", "NOUS_API_KEY", *OPERATOR_SECRETS]
     for name in [*ADAPTER_SECRETS, *granted]:
         monkeypatch.setenv(name, "fake-" + name)
-    observed = observe_child(local.hermes_subprocess_env(inherit_credentials=True),
+    observed = observe_child(local.moor_subprocess_env(inherit_credentials=True),
                              sorted([*ADAPTER_SECRETS, *granted]))
     assert observed == {**dict.fromkeys(ADAPTER_SECRETS), **{k: "fake-" + k for k in granted}}
 
@@ -354,7 +354,7 @@ def test_inheriting_child_gets_provider_keys_but_never_adapter_secrets(child_env
 def test_runtime_adapter_secret_follows_the_bound_profiles_registry(child_env, monkeypatch):
     from gateway.platform_registry import PlatformEntry, platform_registry
     from tools.env_passthrough import is_env_passthrough, register_env_passthrough
-    home_a, home_b = child_env / "hermes", child_env / "profile-b"
+    home_a, home_b = child_env / "moor", child_env / "profile-b"
     home_a.mkdir(exist_ok=True)
     home_b.mkdir()
     name = "ACME_CHAT_SIGNING_SECRET"  # declared by a user adapter; no OPTIONAL_ENV_VARS entry
@@ -366,15 +366,15 @@ def test_runtime_adapter_secret_follows_the_bound_profiles_registry(child_env, m
                                              check_fn=lambda: True, required_env=[name]), scope=scope_a)
 
     def child_sees():
-        return observe_child(local.hermes_subprocess_env(), [name, "MY_APP_KEY"])
+        return observe_child(local.moor_subprocess_env(), [name, "MY_APP_KEY"])
 
     try:
         assert child_sees() == {name: None, "MY_APP_KEY": "operator"}
         register_env_passthrough([name])
         assert not is_env_passthrough(name)
-        monkeypatch.setenv("HERMES_HOME", str(home_b))  # B has no such adapter: operator-owned
+        monkeypatch.setenv("MOOR_HOME", str(home_b))  # B has no such adapter: operator-owned
         assert child_sees() == {name: "fake-secret", "MY_APP_KEY": "operator"}
-        monkeypatch.setenv("HERMES_HOME", str(home_a))
+        monkeypatch.setenv("MOOR_HOME", str(home_a))
         assert child_sees() == {name: None, "MY_APP_KEY": "operator"}
     finally:
         platform_registry.unregister("acme-chat", scope=scope_a)
@@ -394,7 +394,7 @@ def test_passthrough_accepted_before_an_adapter_owns_the_name_stops_forwarding_i
     if declared_by == "skill":
         register_env_passthrough(names)
     else:
-        home = child_env / "hermes"
+        home = child_env / "moor"
         home.mkdir(exist_ok=True)
         (home / "config.yaml").write_text("terminal:\n  env_passthrough: [{}]\n".format(", ".join(names)), encoding="utf-8")
     builders = [lambda: local._make_run_env({}), lambda: local._sanitize_subprocess_env(dict(os.environ)),
@@ -667,7 +667,7 @@ def test_sealed_payload_venv_is_runtime_provenance_without_facts(tmp_path, monke
     monkeypatch.setattr("pm.environments.install_state_dir", lambda repo: tmp_path / "payload/state")
     monkeypatch.setattr("pm.environments.payload_venv", lambda repo: shipped)
     monkeypatch.setattr(local, "_in_venv", False)
-    monkeypatch.setattr(local, "_hermes_site_packages", None)
+    monkeypatch.setattr(local, "_moor_site_packages", None)
     user_site = tmp_path / "user-site"
     result = local._sanitize_subprocess_env(
         {"PYTHONPATH": os.pathsep.join([str(site_packages(shipped)), str(user_site)])})
@@ -686,7 +686,7 @@ def test_payload_venv_that_is_not_real_is_not_provenance(tmp_path, monkeypatch, 
 
     monkeypatch.setattr("pm.environments.install_state_dir", lambda repo: tmp_path / "payload/state")
     monkeypatch.setattr("pm.environments.payload_venv", payload_venv)
-    monkeypatch.setattr(local, "_hermes_repo_root_aliases", ())
+    monkeypatch.setattr(local, "_moor_repo_root_aliases", ())
     from tools.environments.local_pythonpath import _validated_runtime_venv
 
     assert _validated_runtime_venv({}) is None
@@ -1611,7 +1611,7 @@ class TestSanePathIncludesHomebrew:
         from tools.environments.local import _make_run_env
         # Keep the real home vars: the adapter-secret lookup resolves the profile home.
         windows_env = {"Path": r"C:\Windows\System32;C:\Program Files\Git\bin",
-                       **{k: os.environ[k] for k in ("USERPROFILE", "HOMEDRIVE", "HOMEPATH", "HERMES_HOME")
+                       **{k: os.environ[k] for k in ("USERPROFILE", "HOMEDRIVE", "HOMEPATH", "MOOR_HOME")
                           if k in os.environ}}
         monkeypatch.setattr(local_mod, "_git_bash_bin_dirs", list)
         with patch.object(local_mod.os, "environ", windows_env):

@@ -1,4 +1,4 @@
-"""Billing and subscription handlers for the interactive CLI (mixed into ``HermesCLI``).
+"""Billing and subscription handlers for the interactive CLI (mixed into ``MoorCLI``).
 cli.py symbols are imported LAZILY inside methods — never at module load (import cycle).
 
 User-facing copy is looked up through ``agent.i18n.t`` at call time (never at import — the
@@ -105,7 +105,7 @@ def _cancel_sub_choices() -> list[tuple[str, str, str]]:
 
 # Keep going on credits: window plans only (the portal sends the setting only there).
 def _keep_going_row() -> tuple[str, str, str]:
-    return ("hermes", t("cli.billing.keep_going_choice"), t("cli.billing.keep_going_desc"))
+    return ("moor", t("cli.billing.keep_going_choice"), t("cli.billing.keep_going_desc"))
 
 
 def _keep_going_agree_choices() -> list[tuple[str, str, str]]:
@@ -279,8 +279,8 @@ class CLIBillingMixin:
                 _cprint(ln)
             if head or tail:
                 return True
-        from agent.account_usage import nous_credits_lines
-        lines = nous_credits_lines(
+        from agent.account_usage import moor_credits_lines
+        lines = moor_credits_lines(
             credits_state=getattr(getattr(self, "agent", None), "_credits_state", None),
         )
         if not lines:
@@ -291,7 +291,7 @@ class CLIBillingMixin:
         return True
 
     def _print_usage_cta(self) -> None:
-        """The `/usage` call-to-action; mirrors the TUI's ``USAGE_CTA``. Nous-account only."""
+        """The `/usage` call-to-action; mirrors the TUI's ``USAGE_CTA``. Moor-account only."""
         self._dim(t("cli.billing.usage_cta"))
 
     # ── /subscription — view plan + change it (CLI surface) ──
@@ -492,7 +492,7 @@ class CLIBillingMixin:
         """Preview → effect → confirm+apply. ``allow_stepup=False`` (post-grant replay) never re-prompts a step-up."""
         from cli import _cprint, _b, _d
         from agent.subscription_view import is_upgrade, subscription_change_preview_from_payload, subscription_manage_url
-        from hermes_cli.nous_billing import BillingError, BillingScopeRequired, post_subscription_preview
+        from moor_cli.moor_billing import BillingError, BillingScopeRequired, post_subscription_preview
         self._dim(t("cli.subscription.checking_change"))
         try:
             payload = post_subscription_preview(subscription_type_id=tier_id)
@@ -754,14 +754,14 @@ class CLIBillingMixin:
         print(f"  {_RULE}")
         # No "Allow Remote Spending" item — discovered at pay time. "Add funds" charges the org's
         # portal-saved card (server-held; no card ref leaves the client).
-        # "hermes" only on window plans (the portal sends the setting only there).
+        # "moor" only on window plans (the portal sends the setting only there).
         choices = _topup_menu_choices()
         if state.keep_going_on_credits is not None:
             choices.insert(2, _keep_going_row())  # after Auto-reload
         action = {
             "buy": self._billing_buy_flow,
             "auto": self._billing_auto_reload_flow,
-            "hermes": self._billing_keep_going_on_credits_flow,
+            "moor": self._billing_keep_going_on_credits_flow,
             "limit": self._billing_limit_screen,
             "portal": self._billing_open_portal}.get(self._modal_choice(t("cli.billing.topup_title"), "", choices))
         if action:
@@ -1079,11 +1079,11 @@ class CLIBillingMixin:
 
     def _billing_patch_auto_top_up(self, state, **kwargs) -> bool:
         """PATCH auto-top-up; scope denials → step-up, other errors → renderer. True on success."""
-        from hermes_cli.nous_billing import patch_auto_top_up
+        from moor_cli.moor_billing import patch_auto_top_up
         return self._billing_patch(state, patch_auto_top_up, **kwargs)
 
     def _billing_patch(self, state, call, **kwargs) -> bool:
-        from hermes_cli.nous_billing import BillingError, BillingScopeRequired
+        from moor_cli.moor_billing import BillingError, BillingScopeRequired
         try:
             call(**kwargs)
         except BillingScopeRequired:
@@ -1116,7 +1116,7 @@ class CLIBillingMixin:
     def _billing_set_keep_going(self, state, turn_on: bool, *, allow_stepup: bool) -> None:
         """PATCH the setting. A scope denial runs the step-up, then sends the same change ONCE (no card or
         org Remote Spending check: the setting is not a charge, and turning it off must always work)."""
-        from hermes_cli.nous_billing import BillingError, BillingScopeRequired, patch_keep_going_on_credits
+        from moor_cli.moor_billing import BillingError, BillingScopeRequired, patch_keep_going_on_credits
         try:
             patch_keep_going_on_credits(enabled=turn_on)
         except BillingScopeRequired as exc:

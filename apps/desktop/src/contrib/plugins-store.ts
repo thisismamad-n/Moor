@@ -20,7 +20,7 @@ export interface PluginRecord {
   status: PluginStatus
   /** One-liner from the plugin's own metadata (what it adds). */
   description?: string
-  /** Sensitive doors the plugin declared (`HermesPlugin.capabilities`). */
+  /** Sensitive doors the plugin declared (`MoorPlugin.capabilities`). */
   capabilities?: string[]
   /** Load/registration failure message (status 'error'). */
   error?: string

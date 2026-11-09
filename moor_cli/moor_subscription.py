@@ -111,10 +111,10 @@ class MoorFeatureState:
 @dataclass(frozen=True)
 class MoorSubscriptionFeatures:
     subscribed: bool
-    nous_auth_present: bool
-    provider_is_nous: bool
-    features: dict[str, NousFeatureState]
-    account_info: Optional[NousPortalAccountInfo] = None
+    moor_auth_present: bool
+    provider_is_moor: bool
+    features: dict[str, MoorFeatureState]
+    account_info: Optional[MoorPortalAccountInfo] = None
 
     def __getattr__(self, name: str) -> MoorFeatureState:  # ``features.web`` -> per-key state
         if name in _FEATURE_ORDER:
@@ -139,8 +139,8 @@ def _ensure_section(config: dict[str, object], key: str) -> dict[str, object]:
     return value
 
 
-def _select_nous(config: dict[str, object], key: str, model: Optional[str] = None) -> None:
-    """Store the managed ``nous`` selection in the ``key`` section (field per _GATEWAY_SECTION_FIELDS)."""
+def _select_moor(config: dict[str, object], key: str, model: Optional[str] = None) -> None:
+    """Store the managed ``moor`` selection in the ``key`` section (field per _GATEWAY_SECTION_FIELDS)."""
     section_key, field = _GATEWAY_SECTION_FIELDS[key]
     section = _ensure_section(config, section_key)
     section[field] = "moor"
@@ -153,8 +153,8 @@ def _norm(value: object, default: str = "") -> str:
     return str(value or default).strip().lower()
 
 
-def _provider_is_nous(config: dict[str, object]) -> bool:
-    return _norm(_section(config, "model").get("provider")) == "nous"
+def _provider_is_moor(config: dict[str, object]) -> bool:
+    return _norm(_section(config, "model").get("provider")) == "moor"
 
 
 def _toolset_enabled(config: dict[str, object], toolset_key: str) -> bool:
@@ -199,7 +199,7 @@ def _local_browser_runnable(browser_cfg: dict[str, object]) -> bool:
         return False
     if str(browser_cfg.get("engine") or "auto").strip().lower() == "lightpanda":
         return True
-    from hermes_cli.browser_runtime import chromium_executable
+    from moor_cli.browser_runtime import chromium_executable
 
     return chromium_executable() is not None
 
@@ -257,7 +257,7 @@ def _state(key: str, **fields) -> MoorFeatureState:
     return MoorFeatureState(key, spec.label, spec.included_by_default, **fields)
 
 
-def _web_feature(web_cfg: dict[str, object], tool_enabled: bool, managed: bool, web_gw: bool, direct_firecrawl: bool) -> NousFeatureState:
+def _web_feature(web_cfg: dict[str, object], tool_enabled: bool, managed: bool, web_gw: bool, direct_firecrawl: bool) -> MoorFeatureState:
     # Per-capability overrides decide the active search/extract backend independently of web.backend.
     backend, search_backend, extract_backend = (_norm(web_cfg.get(k)) for k in ("backend", "search_backend", "extract_backend"))
     # The "moor" selection is serviced by Firecrawl — normalize so downstream vendor checks hold.
@@ -274,7 +274,7 @@ def _web_feature(web_cfg: dict[str, object], tool_enabled: bool, managed: bool, 
         "searxng": _any_env("SEARXNG_URL"),
     }
     web_managed = managed and (
-        (backend == "firecrawl" and not direct_firecrawl) or "nous" in {search_backend, extract_backend})
+        (backend == "firecrawl" and not direct_firecrawl) or "moor" in {search_backend, extract_backend})
     active = web_managed or direct.get(backend) or direct.get(search_backend) or (extract_backend in ("tavily", "perplexity") and direct[extract_backend])
     return _state(
         "web", available=bool(managed or any(direct.values())), active=bool(tool_enabled and active),
@@ -285,17 +285,17 @@ def _web_feature(web_cfg: dict[str, object], tool_enabled: bool, managed: bool, 
 
 
 def managed_image_partner(config: dict[str, object]) -> Optional[str]:
-    """Partner the image request is dispatched to (``"FAL"``, ``"Krea"`` or ``"Nous Portal"``);
+    """Partner the image request is dispatched to (``"FAL"``, ``"Krea"`` or ``"Moor Portal"``);
     ``None`` when a direct vendor owns it. Reads the stored values the way the runtime dispatcher
     does, so the label and the route cannot disagree."""
     from tools.image_generation_managed import FAL, KREA, PORTAL, managed_route
 
     section = _section(config, "image_gen")
-    return {FAL: "FAL", KREA: "Krea", PORTAL: "Nous Portal"}.get(
+    return {FAL: "FAL", KREA: "Krea", PORTAL: "Moor Portal"}.get(
         managed_route(section.get("provider"), section.get("model")))
 
 
-def _fal_feature(key: str, tool_enabled: bool, direct: bool, managed: bool, selected: Optional[str]) -> NousFeatureState:
+def _fal_feature(key: str, tool_enabled: bool, direct: bool, managed: bool, selected: Optional[str]) -> MoorFeatureState:
     # image_gen / video_gen: same FAL_KEY, independently gated managed availability.
     fal_managed = tool_enabled and managed and not direct
     if selected not in (None, "moor") or (selected is None and direct):
@@ -317,7 +317,7 @@ def _audio_provider(cfg: dict[str, object], default: str, gw: bool) -> str:
 def _audio_features(
     tts_cfg: dict[str, object], stt_cfg: dict[str, object], tts_tool_enabled: bool,
     managed: dict[str, bool], selected: dict[str, Optional[str]], use_gateway: dict[str, bool],
-) -> tuple[NousFeatureState, NousFeatureState]:
+) -> tuple[MoorFeatureState, MoorFeatureState]:
     tts_gw, stt_gw = use_gateway["tts"], use_gateway["stt"]
     # STT default is "local" (faster-whisper, needs a pip install); Moor subscribers are routed to the
     # managed audio gateway by apply_moor_managed_defaults. The "moor" selection is serviced by OpenAI
@@ -355,7 +355,7 @@ def _audio_features(
 
 def _browser_feature(
     browser_cfg: dict[str, object], tool_enabled: bool, managed: bool, browser_gw: bool, direct_firecrawl: bool,
-) -> NousFeatureState:
+) -> MoorFeatureState:
     """Resolve browser availability using the same precedence as runtime."""
     explicit = "cloud_provider" in browser_cfg
     provider = normalize_browser_cloud_provider(browser_cfg.get("cloud_provider") if explicit else None)
@@ -387,7 +387,7 @@ def _browser_feature(
     )
 
 
-def _modal_feature(terminal_cfg: dict[str, object], tool_enabled: bool, managed: bool, managed_tools_flag: bool) -> NousFeatureState:
+def _modal_feature(terminal_cfg: dict[str, object], tool_enabled: bool, managed: bool, managed_tools_flag: bool) -> MoorFeatureState:
     terminal_backend = _norm(terminal_cfg.get("backend"), "local")
     modal_mode = normalize_modal_mode(terminal_cfg.get("modal_mode"))
     direct_modal = has_direct_modal_credentials()
@@ -410,7 +410,7 @@ def _modal_feature(terminal_cfg: dict[str, object], tool_enabled: bool, managed:
     )
 
 
-def get_nous_subscription_features(config: Optional[dict[str, object]] = None, *, force_fresh: bool = False) -> NousSubscriptionFeatures:
+def get_moor_subscription_features(config: Optional[dict[str, object]] = None, *, force_fresh: bool = False) -> MoorSubscriptionFeatures:
     if config is None:
         config = load_config() or {}
     provider_is_moor = _provider_is_moor(config)
@@ -475,8 +475,8 @@ def _krea_image_default(config: dict[str, object], account_info) -> Optional[str
     return MANAGED_IMAGE_DEFAULT_KREA_MODEL
 
 
-def apply_nous_managed_defaults(config: dict[str, object], *, enabled_toolsets: Optional[Iterable[str]] = None, force_fresh: bool = False) -> set[str]:
-    features = get_nous_subscription_features(config, force_fresh=force_fresh)
+def apply_moor_managed_defaults(config: dict[str, object], *, enabled_toolsets: Optional[Iterable[str]] = None, force_fresh: bool = False) -> set[str]:
+    features = get_moor_subscription_features(config, force_fresh=force_fresh)
     account_info = features.account_info
     if not (account_info and account_info.logged_in and account_info.tool_gateway_entitled and features.provider_is_moor):
         return set()
@@ -504,7 +504,7 @@ def apply_nous_managed_defaults(config: dict[str, object], *, enabled_toolsets: 
             model = None
             if key == "image_gen" and not features.features[key].explicit_configured:
                 model = _krea_image_default(config, account_info)
-            _select_nous(config, key, model=model)
+            _select_moor(config, key, model=model)
             changed.add(key)
     return changed
 
@@ -572,7 +572,7 @@ def apply_gateway_defaults(config: dict[str, object], tool_keys: list[str], acco
         _ensure_section(config, key)
     changed = [key for key in _ALL_GATEWAY_KEYS if key in tool_keys]  # table order: config key order
     for key in changed:
-        _select_nous(config, key, model=_krea_image_default(config, account_info) if key == "image_gen" else None)
+        _select_moor(config, key, model=_krea_image_default(config, account_info) if key == "image_gen" else None)
     return set(changed)
 
 
@@ -672,7 +672,7 @@ def _run_moor_portal_login_only(*, capability: str) -> bool:
     """Run the Moor Portal device-code OAuth and persist credentials only (no model selection, no
     provider switch, no Tool Gateway bulk prompt). ``False`` if the user declined or the flow failed."""
     try:
-        from hermes_cli import auth
+        from moor_cli import auth
     except Exception as exc:  # pragma: no cover - defensive
         print(f"  Could not start Moor Portal login: {exc}")
         return False
@@ -691,15 +691,15 @@ def _run_moor_portal_login_only(*, capability: str) -> bool:
             prior_active_provider = auth._load_auth_store().get("active_provider")
         auth_state = None
         # Interrupting the import question defaults to importing.
-        from hermes_cli.anon_auth import is_guest_state
+        from moor_cli.anon_auth import is_guest_state
 
-        shared = auth._read_shared_nous_state()
-        if shared and not is_guest_state(shared) and _confirm("  Found existing Nous OAuth credentials. Import them? [Y/n]: ") is not False:
-            auth_state = auth._try_import_shared_nous_state(timeout_seconds=15.0)
+        shared = auth._read_shared_moor_state()
+        if shared and not is_guest_state(shared) and _confirm("  Found existing Moor OAuth credentials. Import them? [Y/n]: ") is not False:
+            auth_state = auth._try_import_shared_moor_state(timeout_seconds=15.0)
         if auth_state is None:
-            auth_state = auth._nous_device_code_login()
-        from hermes_cli.anon_auth import settle_after_upgrade
-        from hermes_cli.guest_handoff import drain, result_lines
+            auth_state = auth._moor_device_code_login()
+        from moor_cli.anon_auth import settle_after_upgrade
+        from moor_cli.guest_handoff import drain, result_lines
         with auth._auth_store_lock():
             auth_store = auth._load_auth_store()
             auth._save_provider_state(auth_store, "moor", auth_state)
@@ -708,11 +708,11 @@ def _run_moor_portal_login_only(*, capability: str) -> bool:
             else:
                 auth_store.pop("active_provider", None)
             auth._save_auth_store(auth_store)
-        auth._write_shared_nous_state(auth_state, renewal=False)
+        auth._write_shared_moor_state(auth_state, renewal=False)
         handoff = drain()  # a replaced free tier hands its apps over once both saves land
-        auth._sync_nous_pool_from_auth_store()
+        auth._sync_moor_pool_from_auth_store()
         settle_after_upgrade(auth_state)  # a config left on the free tier's route moves to the account
-        print("  Nous Portal login successful.")
+        print("  Moor Portal login successful.")
         for line in (line for view in handoff for line in result_lines(view)):
             print(f"  {line}")
         return True

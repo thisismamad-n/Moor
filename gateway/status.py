@@ -20,15 +20,15 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any, Callable, Iterable, NamedTuple, Optional
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 from gateway.status_inline_source import (
     command_line_runs_inline_source,
     inline_bootstrap_argv,
     inline_source_flag_index,
 )
-from hermes_constants import _get_platform_default_hermes_home, get_hermes_home, get_process_hermes_home
-from hermes_cli._subprocess_compat import pid_exists_stdlib
+from moor_constants import _get_platform_default_moor_home, get_moor_home, get_process_moor_home
+from moor_cli._subprocess_compat import pid_exists_stdlib
 from gateway.status_lock_dir import unusable_lock_dir, unusable_lock_dir_recovered
 from utils import atomic_json_write
 
@@ -208,7 +208,7 @@ def record_start_and_check_storm(
     """Record this start; :class:`StormInfo` when > ``max_starts`` landed in ``window_s``.
     Best-effort: a broken ``gateway-starts.log`` ledger is logged and swallowed, never fatal."""
     try:
-        path = get_hermes_home() / "gateway-starts.log"
+        path = get_moor_home() / "gateway-starts.log"
         make_user_dir(path.parent, parents=True, exist_ok=True)
         now = datetime.now(UTC).timestamp()
         existing: list[float] = []
@@ -498,7 +498,7 @@ def _get_process_start_time(pid: int) -> Optional[int]:
     # process_birth: macOS's clock-step-stable kernel start (#140580); unchanged with no step.
     try:
         import psutil  # type: ignore
-        from hermes_cli.process_identity import process_birth
+        from moor_cli.process_identity import process_birth
         return round(process_birth(psutil.Process(pid)) * 100)
     except Exception:
         return None
@@ -556,11 +556,11 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
     if not tokens:
         return None
     basenames = [t.rsplit("/", 1)[-1] for t in tokens]
-    # ``python -c <src> … -m hermes_cli.main gateway run``: the trailing argv belongs to the program
+    # ``python -c <src> … -m moor_cli.main gateway run``: the trailing argv belongs to the program
     # the inline source will spawn later, not to this process (#107002). Case-preserving tokens:
     # the operand-taking ``-X``/``-W``/``-Q`` must not be conflated with ``-q``/``-b``.
     if command_line_runs_inline_source(cased_tokens):
-        # …unless the source is a Hermes bootstrap running the entry point in THIS process (store
+        # …unless the source is a Moor bootstrap running the entry point in THIS process (store
         # launcher, launcher script, venv_sync re-entry): then its argv is this process's (#124318).
         cased_tokens = inline_bootstrap_argv(cased_tokens)
         if cased_tokens is None:
@@ -579,13 +579,13 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
         return "run"
     if any(tokens[i] == "-m" and tokens[i + 1] == "gateway.run" for i in range(len(tokens) - 1)):
         return "run"
-    # Atomic Hermes' bundled desktop runner shares HERMES_HOME with the CLI; without this,
+    # Atomic Moor' bundled desktop runner shares MOOR_HOME with the CLI; without this,
     # `gateway run --replace` does not recognise it as a running gateway, skips the
     # terminate-and-scoped-lock-handoff path, and collides with its still-held scoped locks
     # (e.g. the Discord bot-token lock). See #22418.
     if any(b == "desktop-gateway.py" for b in basenames):
         return "run"
-    if any(b in ("hermes-gateway", "hermes-gateway.exe") for b in basenames):
+    if any(b in ("moor-gateway", "moor-gateway.exe") for b in basenames):
         return "run"
     joined = " ".join(tokens)
     if "moor_cli.main" not in joined and "moor_cli/main.py" not in joined and not any(
@@ -616,7 +616,7 @@ def gateway_spawn_intent_subcommand(command: str | None) -> str | None:
     …``: the trailing argv is the inline program's data, not that process's own identity (#107002).
     Callers that inspect a command line as SPAWN INTENT — "if I launch this, does a gateway runtime
     eventually appear?" — need the opposite answer, because
-    ``gateway._spawn_gateway_restart_watcher`` hides a real ``… -m hermes_cli.main gateway run``
+    ``gateway._spawn_gateway_restart_watcher`` hides a real ``… -m moor_cli.main gateway run``
     behind exactly that wrapper. ``tests/_fixtures/live_system_guard.py`` is the canonical caller.
 
     Still no substring matching: the wrapper is peeled token-wise and each remaining suffix is
@@ -724,10 +724,10 @@ def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
     if profile_name is not None and profile_name != "default":
         if profile_flag_value(command) == profile_name.lower():
             return True
-        return command_line_names_hermes_home(command_lc, home_lc)
+        return command_line_names_moor_home(command_lc, home_lc)
     # Default profile: accept unless argv names ANOTHER profile (any spelling the CLI pre-parser
     # accepts, ``--profile=ops`` included -- a substring test let that gateway pass as the default's)
-    # or a conflicting explicit HERMES_HOME= (its absence is not disqualifying -- HERMES_HOME usually
+    # or a conflicting explicit MOOR_HOME= (its absence is not disqualifying -- MOOR_HOME usually
     # arrives via the env). ``--profile default`` names this profile: a hand-written launchd plist
     # mirrors the named-profile service shape, and rejecting it reported a live default gateway
     # as stopped (#100817).
@@ -773,14 +773,14 @@ def _record_matches_live_gateway_pid(
 def _record_argv() -> list[str]:
     """``sys.argv`` with the inline-source placeholder replaced by the entry point this process runs.
 
-    The published launcher script (``_launchers._launcher_script``: the POSIX ``bin/hermes`` shell
-    launcher and the Windows ``.cmd``) imports ``hermes_cli.main`` inside ``python -I -c <script>``,
+    The published launcher script (``_launchers._launcher_script``: the POSIX ``bin/moor`` shell
+    launcher and the Windows ``.cmd``) imports ``moor_cli.main`` inside ``python -I -c <script>``,
     so ``sys.argv`` is ``["-c", "gateway", "run"]`` — a record the argv matcher can never accept
     once the live command line is unreadable (Windows/EACCES fallback in
     ``_record_matches_live_gateway_pid``). Recording the module path follows runpy's ``alter_sys``
     convention, which is what the ``--run-module`` and store-launcher forms already persist."""
     argv = list(sys.argv)
-    entry = sys.modules.get("hermes_cli.main")
+    entry = sys.modules.get("moor_cli.main")
     if argv[:1] == ["-c"] and getattr(entry, "__file__", None):
         argv[0] = entry.__file__
     return argv
@@ -985,7 +985,7 @@ def acquire_gateway_runtime_lock() -> bool:
     """Reserve the launch profile without unlinking inaccessible lock inodes."""
     from gateway.runtime_ownership import process_ownership, OwnershipConflict
     try:
-        process_ownership.reserve([_get_process_hermes_home()])
+        process_ownership.reserve([_get_process_moor_home()])
     except (OwnershipConflict, OSError):
         return False
     _clear_running_pid_cache()
@@ -999,7 +999,7 @@ def release_gateway_runtime_lock() -> None:
 
 def owns_gateway_runtime_lock() -> bool:
     from gateway.runtime_ownership import process_ownership
-    return process_ownership.owns(_get_process_hermes_home())
+    return process_ownership.owns(_get_process_moor_home())
 
 def _probe_lock_file(handle) -> bool:
     """True when another process holds the lock (a won probe is released); closes ``handle``."""
@@ -1315,7 +1315,7 @@ def multiplexer_liveness_for_profile(profile_dir: Path) -> Optional[tuple[int, d
     topology = host_gateway_topology()
     # The multiplexer's record lives in the home that LAUNCHED it; a named-hosted multiplexer leaves
     # a possibly stale standalone record at the default root, which must not be projected.
-    launch_home = get_default_hermes_root()
+    launch_home = get_default_moor_root()
     if topology is not None and topology.serves(name):
         pid: Optional[int] = topology.pid
         launch_home = topology.home or launch_home
@@ -1919,7 +1919,7 @@ def _update_pause_on_disk() -> bool:
     record directory cannot be listed. Only then does a consume need the pause lock and a checkpoint,
     and only then can accepted-stop evidence beside a request still be owed: with none, every pause
     was settled by recovery or the updater (or never made: every non-Windows host)."""
-    from hermes_cli import update_pause_record
+    from moor_cli import update_pause_record
     record = update_pause_record.record_path()
     try:
         with os.scandir(record.parent) as entries:
@@ -1934,7 +1934,7 @@ def _update_pause_on_disk() -> bool:
 def _checkpoint_planned_stop(path: Path, record: dict[str, Any]) -> None:
     """``on_consume``, decided after the request was read: an update writes its record before its
     request, so a pause that appeared since the consumer first looked is checkpointed too."""
-    from hermes_cli import update_pause_record
+    from moor_cli import update_pause_record
     if _update_pause_on_disk():
         with update_pause_record._mutex(_PLANNED_STOP_MUTEX_WAIT_S):
             update_pause_record.mark_stop_consumed(path, record)
@@ -1942,7 +1942,7 @@ def _checkpoint_planned_stop(path: Path, record: dict[str, Any]) -> None:
 
 def consume_planned_stop_marker_for_self() -> bool:
     """Return True when the current process is being intentionally stopped."""
-    from hermes_cli import update_pause_record
+    from moor_cli import update_pause_record
     path = _get_planned_stop_marker_path()
     try:
         paused = _update_pause_on_disk()

@@ -131,7 +131,7 @@ def _has_openai_audio_backend() -> bool:
 
 
 def _is_local_stt_provider(provider: str, stt_config: dict[str, Any]) -> bool:
-    """Whether *provider* is exempt from Hermes's remote upload cap."""
+    """Whether *provider* is exempt from Moor's remote upload cap."""
     return (provider or "").lower().strip() in {"local", "local_command"}
 
 
@@ -448,7 +448,7 @@ def _transcribe_prepared_audio(
     with ExitStack() as cleanup:
         # Never overwrite a neighboring WAV or leave converted voice notes behind.
         if remote and Path(file_path).suffix.lower() == ".caf":
-            work_dir = cleanup.enter_context(TemporaryDirectory(prefix="hermes-caf-", ignore_cleanup_errors=True))
+            work_dir = cleanup.enter_context(TemporaryDirectory(prefix="moor-caf-", ignore_cleanup_errors=True))
             file_path = _convert_caf_to_wav(file_path, work_dir)
             if not file_path:
                 return _error_result("CAF audio could not be converted to WAV.")

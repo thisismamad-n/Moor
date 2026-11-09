@@ -4,10 +4,10 @@ import logging
 import os
 import sys
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
-from hermes_cli import plugins as plugins_mod
+from moor_cli import plugins as plugins_mod
 
 TWO_PROFILE_PLUGIN = '''
 import os
@@ -31,14 +31,14 @@ register_provider(Local(name="mixlocal", base_url="acp://mixlocal"))
 def test_create_client_profile_loads_in_process_and_its_sibling_stays_hosted(tmp_path, monkeypatch, caplog):
     import providers
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     plugin_dir = home / "plugins" / "model-providers" / "mixpair"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text("name: mixpair\nkind: model-provider\n", encoding="utf-8")
     (plugin_dir / "__init__.py").write_text(TWO_PROFILE_PLUGIN, encoding="utf-8")
     (home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"isolation": "host"}}), encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     with caplog.at_level(logging.WARNING, logger="providers"):
         hosted = providers.get_provider_profile("mixhosted")
@@ -48,7 +48,7 @@ def test_create_client_profile_loads_in_process_and_its_sibling_stays_hosted(tmp
         assert local.create_client()["pid"] == os.getpid()
         assert hosted.build_extra_body(session_id="s")["pid"] != os.getpid()
         # The in-process import registered ONLY the profile that needs it.
-        assert type(hosted).__module__ == "hermes_cli.plugin_host_profiles"
+        assert type(hosted).__module__ == "moor_cli.plugin_host_profiles"
         notices = [r.getMessage() for r in caplog.records if "mixlocal" in r.getMessage()]
         assert len(notices) == 1 and "create_client" in notices[0]
         assert not any("mixhosted" in r.getMessage() for r in caplog.records)
@@ -66,14 +66,14 @@ def test_a_rescan_keeps_the_hosted_plugin_it_already_loaded(tmp_path, monkeypatc
     is not imported again (no second warning, the same hosted profile object)."""
     import providers
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     plugin_dir = home / "plugins" / "model-providers" / "mixpair"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text("name: mixpair\nkind: model-provider\n", encoding="utf-8")
     (plugin_dir / "__init__.py").write_text(TWO_PROFILE_PLUGIN, encoding="utf-8")
     (home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"isolation": "host"}}), encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     try:
         with caplog.at_level(logging.WARNING, logger="providers"):

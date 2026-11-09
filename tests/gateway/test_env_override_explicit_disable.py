@@ -150,8 +150,8 @@ def test_explicit_disable_with_env_credentials_warns_once(platform, tmp_path, mo
 
 @pytest.mark.usefixtures("_fresh_warn_dedup")
 def test_no_warning_when_yaml_has_no_opinion_or_is_enabled(tmp_path, monkeypatch, caplog):
-    hermes_home = _isolate(monkeypatch, tmp_path, {**CRED_ENV["weixin"], **CRED_ENV["qqbot"]})
-    (hermes_home / "config.yaml").write_text(
+    moor_home = _isolate(monkeypatch, tmp_path, {**CRED_ENV["weixin"], **CRED_ENV["qqbot"]})
+    (moor_home / "config.yaml").write_text(
         "platforms:\n  qqbot:\n    enabled: true\n", encoding="utf-8"
     )
 

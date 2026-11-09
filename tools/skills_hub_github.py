@@ -139,7 +139,7 @@ class GitHubAuth:
     def _try_gh_cli(self) -> Optional[str]:
         # Shared with git clones: strips GH_TOKEN/GITHUB_TOKEN, which gh would otherwise echo back
         # instead of its keyring login (the dead .env token would come back as the "gh" credential).
-        from hermes_cli.git_credentials import _gh_cli_token
+        from moor_cli.git_credentials import _gh_cli_token
         return _gh_cli_token()
 
     def _try_github_app(self) -> Optional[str]:

@@ -9,12 +9,12 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_cli.observability.relay_shared_metrics as relay
-import hermes_cli.observability.shared_metrics_install as install
-import hermes_cli.observability.shared_metrics_startup as startup
+import moor_cli.observability.relay_shared_metrics as relay
+import moor_cli.observability.shared_metrics_install as install
+import moor_cli.observability.shared_metrics_startup as startup
 from tui_gateway import server
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_platform.host import facts
+from moor_cli.observability import shared_metrics_contract as contract
+from moor_platform.host import facts
 
 
 @pytest.fixture
@@ -78,7 +78,7 @@ def test_background_ready_record_does_not_block_and_still_lands(marks, monkeypat
 
 def test_kanban_worker_one_shot_is_not_a_cli_startup(marks, monkeypatch):
     monkeypatch.setattr(startup, "process_started_at", lambda: time.time())
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_1")
+    monkeypatch.setenv("MOOR_KANBAN_TASK", "t_1")
 
     startup.record_cli_one_shot_ready()
 
@@ -91,13 +91,13 @@ def _rpc(params: dict) -> dict:
 
 
 def test_rpc_takes_the_declared_surface_else_env_detection(marks, monkeypatch):
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+    monkeypatch.delenv("MOOR_DESKTOP", raising=False)
+    monkeypatch.delenv("MOOR_DESKTOP_TERMINAL", raising=False)
 
-    # A Desktop attached to a URL/cloud backend: no HERMES_DESKTOP here, the client says who it is.
+    # A Desktop attached to a URL/cloud backend: no MOOR_DESKTOP here, the client says who it is.
     assert _rpc({"elapsed_ms": 2500, "surface": "desktop_attach", "launch_id": "a"})["result"] == {"ok": True}
     assert _rpc({"elapsed_ms": 700, "launch_id": "b"})["result"] == {"ok": True}
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
+    monkeypatch.setenv("MOOR_DESKTOP", "1")
     assert _rpc({"elapsed_ms": 12_000, "launch_id": "c"})["result"] == {"ok": True}
     assert _rpc({"elapsed_ms": -5, "surface": "tui", "launch_id": "d"})["result"] == {"ok": True}
 
@@ -127,7 +127,7 @@ def test_rpc_counts_each_client_launch_once_per_backend_process(marks):
 
 def test_in_place_relaunch_is_not_a_startup_but_its_children_are(marks, monkeypatch):
     """``sessions browse`` -> resume execs in place: same PID, so process start covers the picker."""
-    from hermes_cli import relaunch as relaunch_mod
+    from moor_cli import relaunch as relaunch_mod
 
     monkeypatch.setenv(startup.RELAUNCHED_PID_ENV, "")  # restored after relaunch() stamps it
     monkeypatch.setattr(relaunch_mod.sys, "platform", "linux")
@@ -246,7 +246,7 @@ def test_version_age_unknown_without_a_commit_date(monkeypatch):
 
 
 def _write_update_cache(home, root, *, behind, head, ts):
-    from hermes_cli.update_channel import install_id
+    from moor_cli.update_channel import install_id
 
     path = home / "source-checks" / f"{install_id(root)}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -296,7 +296,7 @@ def test_source_checkout_channel_follows_its_branch_never_its_remote(tmp_path, m
 
 @pytest.mark.parametrize(("tag", "channel"), [("v0.13.0", "stable"), ("v0.13.0+canary.20260927T120000Z", "main")])
 def test_packaged_build_channel_is_its_baked_channel_not_its_branch(tmp_path, monkeypatch, tag, channel):
-    from hermes_cli.update_channel import is_canary_tag
+    from moor_cli.update_channel import is_canary_tag
 
     if channel == "main":
         assert is_canary_tag(tag)
@@ -332,7 +332,7 @@ def test_local_model_use_sees_a_bare_auxiliary_endpoint(aux, used):
 
 @pytest.mark.parametrize(("base_url", "used"), [("http://127.0.0.1:8080/v1", "yes"), ("https://llm.example.com/v1", "no")])
 def test_local_model_use_resolves_a_named_provider_used_by_bare_name(monkeypatch, base_url, used):
-    import hermes_cli.runtime_provider as rp
+    import moor_cli.runtime_provider as rp
 
     config = {"model": {"provider": "home-llama", "default": "q"},
               "providers": {"home-llama": {"base_url": base_url, "api_key": "k"}}}

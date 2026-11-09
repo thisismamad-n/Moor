@@ -126,8 +126,8 @@ def test_build_models_payload_returns_expected_shape():
     }
     with (
         _list_auth_returning(rows),
-        patch("hermes_cli.config.read_raw_config", return_value=raw_config),
-        patch("hermes_cli.config.load_config", return_value=raw_config),
+        patch("moor_cli.config.read_raw_config", return_value=raw_config),
+        patch("moor_cli.config.load_config", return_value=raw_config),
     ):
         payload = build_models_payload(ctx)
     assert set(payload.keys()) == {"providers", "model", "provider"}
@@ -151,8 +151,8 @@ def test_build_models_payload_hides_moa_without_raw_preset():
     synthesized = {"moa": {"presets": {"default": {"enabled": True}}}}
     with (
         _list_auth_returning(rows),
-        patch("hermes_cli.config.read_raw_config", return_value={}),
-        patch("hermes_cli.config.load_config", return_value=synthesized),
+        patch("moor_cli.config.read_raw_config", return_value={}),
+        patch("moor_cli.config.load_config", return_value=synthesized),
     ):
         payload = build_models_payload(ctx)
     assert [r["slug"] for r in payload["providers"]] == ["openrouter"]
@@ -180,7 +180,7 @@ def test_include_unconfigured_appends_canonical_skeletons():
     # All canonical providers other than openrouter should appear as
     # skeleton rows. MoA is virtual/opt-in and excluded from unconfigured;
     # so is a pre-release provider the user has not signed into.
-    from hermes_cli.models_catalog_static import listed_canonical_providers
+    from moor_cli.models_catalog_static import listed_canonical_providers
 
     seen_slugs = {r["slug"] for r in payload["providers"]}
     for entry in listed_canonical_providers():
@@ -425,7 +425,7 @@ def test_canonical_order_with_unconfigured_preserves_full_universe():
     custom rows trailing. MoA is excluded from unconfigured skeletons
     (virtual, opt-in only — issue #63353).
     """
-    from hermes_cli.models import CANONICAL_PROVIDERS
+    from moor_cli.models import CANONICAL_PROVIDERS
 
     rows = [
         {"slug": "custom:Ollama", "name": "Ollama", "models": [],
@@ -446,7 +446,7 @@ def test_canonical_order_with_unconfigured_preserves_full_universe():
     # Custom row trails all visible canonical rows. MoA is virtual/opt-in
     # so it is excluded from the unconfigured skeleton set, and so is an
     # unlisted pre-release provider.
-    from hermes_cli.models_catalog_static import listed_canonical_providers
+    from moor_cli.models_catalog_static import listed_canonical_providers
     visible_canonical_count = sum(
         1 for e in listed_canonical_providers() if e.slug != "moa"
     )
@@ -803,17 +803,17 @@ def test_picker_metadata_uses_one_config_read_for_real_models_dev_lookups(tmp_pa
 def test_apply_limits_skips_window_plan_rows():
     """A window plan says its limits in ``plan_usage``; the credential-cooldown chip would add a second,
     unrelated reset time, so ``_apply_limits`` leaves that row alone. Other pooled rows keep it."""
-    from hermes_cli import inventory
+    from moor_cli import inventory
 
     class _Pool:
         def limit_state(self, models):
             return {"scope": "account", "resets_at": 1_800_000_000}
 
     rows = [
-        {"slug": "nous", "models": ["a/b"], "plan_usage": {"kind": "usage_window"}},
+        {"slug": "moor", "models": ["a/b"], "plan_usage": {"kind": "usage_window"}},
         {"slug": "example", "models": ["a/b"]},
     ]
-    with patch("hermes_cli.auth.read_credential_pool", return_value={"nous": [{}], "example": [{}]}), \
+    with patch("moor_cli.auth.read_credential_pool", return_value={"moor": [{}], "example": [{}]}), \
             patch("agent.credential_pool.load_pool", return_value=_Pool()):
         inventory._apply_limits(rows)
     assert "limit" not in rows[0]

@@ -80,14 +80,14 @@ def pinned_env(tmp_path, monkeypatch):
     stale top-level config.yaml copy of the channel."""
     import json
 
-    import hermes_cli.config as cfg
-    from hermes_cli import managed_scope
+    import moor_cli.config as cfg
+    from moor_cli import managed_scope
 
     home, managed = tmp_path / "home", tmp_path / "managed"
     home.mkdir()
     managed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     (managed / ".env").write_text(
         f"DEEPSEEK_API_KEY={ADMIN_KEY}\nTELEGRAM_HOME_CHANNEL=111\n", encoding="utf-8")
     (home / ".env").write_text(
@@ -121,13 +121,13 @@ def _assert_user_stores_untouched(home, before):
 def test_api_env_write_of_locked_key_is_refused_and_writes_nothing(pinned_env, monkeypatch, method, lock, refusal):
     from fastapi.testclient import TestClient
 
-    from hermes_cli.web_server import _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_TOKEN, app
 
     if lock == "install":
-        monkeypatch.setenv("HERMES_MANAGED", "nixos")
+        monkeypatch.setenv("MOOR_MANAGED", "nixos")
     home, before = pinned_env
     body = {"key": "DEEPSEEK_API_KEY", **({"value": NEW_KEY} if method == "PUT" else {})}
-    resp = TestClient(app).request(method, "/api/env", json=body, headers={"X-Hermes-Session-Token": _SESSION_TOKEN})
+    resp = TestClient(app).request(method, "/api/env", json=body, headers={"X-moor-session-Token": _SESSION_TOKEN})
     assert resp.status_code == 400
     assert refusal in resp.json()["detail"]
     _assert_user_stores_untouched(home, before)
@@ -141,14 +141,14 @@ def anthropic_homes(tmp_path, monkeypatch):
     """A user home whose auth.json holds a manually added anthropic key, and an empty managed dir."""
     import json
 
-    import hermes_cli.config as cfg
-    from hermes_cli import managed_scope
+    import moor_cli.config as cfg
+    from moor_cli import managed_scope
 
     home, managed = tmp_path / "home", tmp_path / "managed"
     home.mkdir()
     managed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     for name in _ANTHROPIC_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
     (home / "auth.json").write_text(json.dumps({"credential_pool": {"anthropic": [{
@@ -174,7 +174,7 @@ def test_disconnect_on_a_package_managed_install_still_clears_the_auth_store(ant
     import json
 
     home, _managed, _reload = anthropic_homes
-    monkeypatch.setenv("HERMES_MANAGED", "nixos")
+    monkeypatch.setenv("MOOR_MANAGED", "nixos")
     resp = _disconnect("anthropic")
     assert resp.get("result", {}).get("disconnected") is True, resp
     assert "anthropic" not in json.loads((home / "auth.json").read_text(encoding="utf-8"))["credential_pool"]

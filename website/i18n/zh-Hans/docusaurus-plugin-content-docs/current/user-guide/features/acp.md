@@ -86,8 +86,8 @@ moor acp --setup-browser --yes     # 非交互式接受下载
 
 具体操作：
 
-- 通过包管理器安装 Hermes 固定版本的 Chromium（`chromium` 包）；不涉及 Node.js 或 npm
-- 当 `browser_exec` 首次需要浏览器时，Hermes 会自行启动该 Chromium
+- 通过包管理器安装 Moor 固定版本的 Chromium（`chromium` 包）；不涉及 Node.js 或 npm
+- 当 `browser_exec` 首次需要浏览器时，Moor 会自行启动该 Chromium
 
 该引导过程是幂等的——重复运行速度很快，已完成的步骤会被跳过。
 

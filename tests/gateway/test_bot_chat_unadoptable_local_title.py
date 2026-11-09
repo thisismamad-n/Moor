@@ -11,11 +11,11 @@ from pathlib import Path
 
 import pytest
 
-from hermes_state_runtime import RuntimeStoreError
+from moor_state_runtime import RuntimeStoreError
 
 from tests.gateway import test_peer_dm_bot_chat_headless as _headless_gateway
 
-# The headless gateway fixture: one real authority over a SessionDB in a temp HERMES_HOME.
+# The headless gateway fixture: one real authority over a SessionDB in a temp MOOR_HOME.
 headless = _headless_gateway.headless
 _local_owner = _headless_gateway._local_owner
 
@@ -64,7 +64,7 @@ async def test_an_unadoptable_local_bot_chat_is_moved_aside_and_the_delivery_lan
 
 @pytest.mark.parametrize('source, stamp, route', [
     ('tui', 'github:alice', None),
-    ('tui', 'nous:alice@example.com', None),
+    ('tui', 'moor:alice@example.com', None),
     ('cli', 'basic:alice', 'agent:main:tui:dm:stale'),  # owner login, but a stale route prevents adoption
     ('tui', 'github:alice', 'agent:main:tui:dm:stale'),  # a crash's route column, never bound
     ('tui', 'uid:1001', None),                           # another OS user, not this host's identity

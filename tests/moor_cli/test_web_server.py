@@ -21,17 +21,17 @@ from moor_cli.config import (
     OPTIONAL_ENV_VARS,
 )
 import gateway.status as _gw_status
-import hermes_cli.config as _cfg_mod
-import hermes_cli.web_routers.chat_ws as _rt_chat_ws
-import hermes_cli.web_server_chat as _web_server_chat
-import hermes_cli.web_server_config as _web_server_config
-import hermes_cli.web_server_dashboard as _web_server_dashboard
-import hermes_cli.web_server_files as _web_server_files
-import hermes_cli.web_server_gateway as _web_server_gateway
-import hermes_cli.web_server_lifecycle as _web_server_lifecycle
-import hermes_cli.web_server_memory as _web_server_memory
-import hermes_cli.web_server_messaging as _web_server_messaging
-import hermes_cli.web_server_sessions as _web_server_sessions
+import moor_cli.config as _cfg_mod
+import moor_cli.web_routers.chat_ws as _rt_chat_ws
+import moor_cli.web_server_chat as _web_server_chat
+import moor_cli.web_server_config as _web_server_config
+import moor_cli.web_server_dashboard as _web_server_dashboard
+import moor_cli.web_server_files as _web_server_files
+import moor_cli.web_server_gateway as _web_server_gateway
+import moor_cli.web_server_lifecycle as _web_server_lifecycle
+import moor_cli.web_server_memory as _web_server_memory
+import moor_cli.web_server_messaging as _web_server_messaging
+import moor_cli.web_server_sessions as _web_server_sessions
 from datetime import UTC
 
 
@@ -196,16 +196,16 @@ class TestRedactKey:
 
 
     def test_session_token_resolution_preserves_loaded_app_auth(self, monkeypatch):
-        import hermes_cli.web_server as ws
-        import hermes_cli.web_server_session_token as st
+        import moor_cli.web_server as ws
+        import moor_cli.web_server_session_token as st
         from starlette.testclient import TestClient
 
         original_app = ws.app
         original_header_name = ws._SESSION_HEADER_NAME
         original_token = ws._SESSION_TOKEN
-        monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "desktop-seeded-token")
+        monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "desktop-seeded-token")
         assert st.resolve_session_token() == "desktop-seeded-token"
-        monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
+        monkeypatch.delenv("MOOR_DASHBOARD_SESSION_TOKEN", raising=False)
         with patch.object(st.secrets, "token_urlsafe", return_value="generated-token"):
             assert st.resolve_session_token() == "generated-token"
 
@@ -223,14 +223,14 @@ class TestRedactKey:
 
 
 @pytest.fixture
-def mutation_owner(monkeypatch, _isolate_hermes_home):
+def mutation_owner(monkeypatch, _isolate_moor_home):
     from gateway.session_authority import SessionAuthority
-    from hermes_constants import get_hermes_home
-    from hermes_cli.web_server import app
-    from hermes_state import SessionDB
-    from hermes_state_runtime import begin_runtime_epoch
+    from moor_constants import get_moor_home
+    from moor_cli.web_server import app
+    from moor_state import SessionDB
+    from moor_state_runtime import begin_runtime_epoch
 
-    home = get_hermes_home()
+    home = get_moor_home()
     db = SessionDB(db_path=home / 'state.db')
     authority = SessionAuthority(SimpleNamespace(_draining=False), profile_id=str(home),
         instance_id='test-owner', db=db, epoch=begin_runtime_epoch(db, instance_id='test-owner'))
@@ -343,10 +343,10 @@ class TestWebServerEndpoints:
 
 
     def test_get_sessions_leaves_auto_archive_to_owner(self):
-        from hermes_cli import web_server
-        from hermes_cli.config import load_config, save_config
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
+        from moor_cli import web_server
+        from moor_cli.config import load_config, save_config
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
 
         db_path = get_moor_home() / "state.db"
         seed = SessionDB(db_path=db_path)
@@ -393,14 +393,14 @@ class TestWebServerEndpoints:
             verify.close()
 
     def test_get_sessions_missing_store_is_unavailable_without_creation(self):
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
-        before = set(get_hermes_home().glob("state.db*"))
+        before = set(get_moor_home().glob("state.db*"))
         response = self.client.get("/api/sessions?limit=50&offset=0")
 
         assert response.status_code == 503
         assert "not initialized" in response.json()["detail"]
-        assert set(get_hermes_home().glob("state.db*")) == before
+        assert set(get_moor_home().glob("state.db*")) == before
 
     def test_startup_eager_reconcile_is_read_only_on_a_healthy_store(self, monkeypatch):
         """A current-schema store gets NO writable open from the dashboard (#107688).
@@ -438,14 +438,14 @@ class TestWebServerEndpoints:
         def boom(*args, **kwargs):
             raise sqlite3_module.OperationalError("database is locked")
 
-        monkeypatch.setattr(hermes_state, "SessionDB", boom)
+        monkeypatch.setattr(moor_state, "SessionDB", boom)
         # Must swallow — reads report unavailable until owner recovery.
         _web_server_lifecycle._eager_reconcile_own_session_db()
 
     def test_failed_schema_probes_never_escalate_reads(self, monkeypatch):
         from fastapi import HTTPException
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
 
         db_path = get_moor_home() / "state.db"
         seed = SessionDB(db_path=db_path)
@@ -486,7 +486,7 @@ class TestWebServerEndpoints:
         assert opens == [True]
 
     def test_decode_error_never_triggers_writable_heal(self, tmp_path, monkeypatch):
-        import hermes_state
+        import moor_state
         from fastapi import HTTPException
 
         db_path = tmp_path / "state.db"
@@ -497,13 +497,13 @@ class TestWebServerEndpoints:
             opens.append(kwargs.get("read_only", False))
             raise UnicodeDecodeError("utf-8", b"\x81", 0, 1, "invalid start byte")
 
-        monkeypatch.setattr(hermes_state, "SessionDB", corrupt_open)
+        monkeypatch.setattr(moor_state, "SessionDB", corrupt_open)
         with pytest.raises(HTTPException, match="corrupt"):
             _web_server_sessions._open_session_db_at_path(db_path, read_only=True)
         assert opens == [True]
 
     def test_get_sessions_zero_byte_store_is_not_quarantined(self):
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         db_path = get_moor_home() / "state.db"
         db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -539,8 +539,8 @@ class TestWebServerEndpoints:
         DIFFERENT profile's gateway as this profile's, which hides a real
         outage behind a false "connected" (issue #71211).
         """
-        from hermes_cli import web_server
-        from hermes_cli import profiles as profiles_mod
+        from moor_cli import web_server
+        from moor_cli import profiles as profiles_mod
 
         worker_home = profiles_mod.get_profile_dir("worker")
         worker_home.mkdir(parents=True)
@@ -680,8 +680,8 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         """Dashboard dependency setup publishes through PM, never direct pip."""
         import subprocess as _subprocess
 
-        from hermes_cli import web_server
-        from hermes_cli import memory_setup
+        from moor_cli import web_server
+        from moor_cli import memory_setup
 
         prepared = []
         monkeypatch.setattr(
@@ -709,7 +709,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         data = resp.json()
         pip_rows = [row for row in data["results"] if row["kind"] == "pip"]
         assert pip_rows and pip_rows[0]["status"] == "installed"
-        assert pip_rows[0]["command"] == "hermes pm install"
+        assert pip_rows[0]["command"] == "moor pm install"
         assert prepared == ["flatprov"]
 
 
@@ -795,15 +795,15 @@ def register(ctx):
     ctx.register_memory_provider(HostProv())
 """
     _HOSTPROV_CLIENT = """
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 
 def resolve_active_host():
-    return "hermes"
+    return "moor"
 
 
 def resolve_config_path():
-    return get_hermes_home() / "hostprov.json"
+    return get_moor_home() / "hostprov.json"
 
 
 def _host_block(cfg, host):
@@ -850,19 +850,19 @@ CONFIG_SCHEMA = ProviderConfigSchema(
 """
 
     def _install_hostprov(self):
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
-        plugin_dir = get_hermes_home() / "plugins" / "hostprov"
+        plugin_dir = get_moor_home() / "plugins" / "hostprov"
         plugin_dir.mkdir(parents=True, exist_ok=True)
         for module, source in (("__init__", self._HOSTPROV_INIT), ("client", self._HOSTPROV_CLIENT),
                                ("oauth", self._HOSTPROV_OAUTH), ("config_schema", self._HOSTPROV_SCHEMA)):
             (plugin_dir / f"{module}.py").write_text(source, encoding="utf-8")
-        config_path = get_hermes_home() / "hostprov.json"
+        config_path = get_moor_home() / "hostprov.json"
         config_path.write_text("{}", encoding="utf-8")
         return config_path
 
     def test_put_host_block_writes_host_block_root_and_secret(self):
-        from hermes_cli.config import load_config, load_env
+        from moor_cli.config import load_config, load_env
 
         config_path = self._install_hostprov()
         resp = self.client.put(
@@ -917,7 +917,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
     def test_put_host_block_never_replaces_an_unparseable_config(self, corrupt):
         # The router reads the provider's config strictly: a file that exists but does not parse must
         # not be replaced by this host's block alone (that would wipe every other host's keys).
-        from hermes_cli.config import load_config
+        from moor_cli.config import load_config
 
         config_path = self._install_hostprov()
         before = "{not json" if corrupt else json.dumps({"hosts": {"other": {"apiKey": "keep-me"}}})
@@ -934,7 +934,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         assert resp.status_code == 200
         cfg = json.loads(config_path.read_text(encoding="utf-8"))
         assert cfg["hosts"]["other"]["apiKey"] == "keep-me"
-        assert cfg["hosts"]["hermes"]["workspace"] == "myws"
+        assert cfg["hosts"]["moor"]["workspace"] == "myws"
 
 
     # ── GET /api/media (remote image display) ───────────────────────────
@@ -954,7 +954,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
 
 
     def test_media_proxy_requires_auth(self):
-        from hermes_cli.web_server import _SESSION_HEADER_NAME
+        from moor_cli.web_server import _SESSION_HEADER_NAME
 
         resp = self.client.get(
             "/api/media/proxy",
@@ -998,7 +998,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
                 assert url == "https://v3.fal.media/media/abc123"
                 return _Resp()
 
-        import hermes_cli.web_routers.files as files_router
+        import moor_cli.web_routers.files as files_router
 
         monkeypatch.setattr(files_router, "_require_token", lambda request: None, raising=False)
         # The route imports httpx locally; patch the module it resolves from.
@@ -1051,7 +1051,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
 
 
     def test_import_sessions_endpoint_imports_exported_json(self, mutation_owner):
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         payload = {
             "id": "imported-web-session",
@@ -1224,8 +1224,8 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         assert check_data["can_apply"] is False
         assert check_data["update_command"] == data["update_command"]
 
-    def test_update_hermes_spawns_with_action_id(self, monkeypatch):
-        from hermes_cli import web_server
+    def test_update_moor_spawns_with_action_id(self, monkeypatch):
+        from moor_cli import web_server
 
         class Proc:
             pid = 12345
@@ -1326,7 +1326,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         from moor_cli import free_tier_bootstrap as fb
 
         fb.reset_for_tests()
-        monkeypatch.setattr("hermes_cli.model_cost_guard.expensive_model_warning", lambda *_a, **_k: None)
+        monkeypatch.setattr("moor_cli.model_cost_guard.expensive_model_warning", lambda *_a, **_k: None)
         monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda *_a, **_kw: False)
         broadcasts = []
         monkeypatch.setattr(fb, "_broadcast", broadcasts.append)
@@ -1800,7 +1800,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
 
 
     def test_custom_endpoint_rejects_malformed_url_without_changing_saved_state(self):
-        from hermes_cli.config import get_config_path, get_env_path
+        from moor_cli.config import get_config_path, get_env_path
 
         assert self.client.post("/api/providers/custom-endpoints", json={
             "id": "proxy", "name": "Proxy", "base_url": "https://llm.example.com/v1",
@@ -2178,14 +2178,14 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         providers forked a keyless entry and left the legacy row, so the next
         request 401s (#126589).
         """
-        from hermes_cli.config import load_config, save_config, save_env_value
+        from moor_cli.config import load_config, save_config, save_env_value
 
-        save_env_value("HERMES_CUSTOM_127_0_0_1_8001_API_KEY", "secret-value")
+        save_env_value("MOOR_CUSTOM_127_0_0_1_8001_API_KEY", "secret-value")
         cfg = load_config()
         cfg["custom_providers"] = [{
             "name": "Qwen Local",
             "base_url": "http://127.0.0.1:8001/v1",
-            "key_env": "HERMES_CUSTOM_127_0_0_1_8001_API_KEY",
+            "key_env": "MOOR_CUSTOM_127_0_0_1_8001_API_KEY",
             "model": "qwen",
             "api_mode": "chat_completions",
         }]
@@ -2205,11 +2205,11 @@ CONFIG_SCHEMA = ProviderConfigSchema(
 
         cfg = load_config()
         assert cfg.get("custom_providers") == []
-        assert cfg["providers"]["qwen-local"]["key_env"] == "HERMES_CUSTOM_127_0_0_1_8001_API_KEY"
+        assert cfg["providers"]["qwen-local"]["key_env"] == "MOOR_CUSTOM_127_0_0_1_8001_API_KEY"
         rows = {e["id"]: e for e in self.client.get("/api/providers/custom-endpoints").json()["endpoints"]}
         assert rows["qwen-local"]["source"] == "providers"
         assert rows["qwen-local"]["has_api_key"] is True
-        assert rows["qwen-local"]["api_key_preview"] == "${HERMES_CUSTOM_127_0_0_1_8001_API_KEY}"
+        assert rows["qwen-local"]["api_key_preview"] == "${MOOR_CUSTOM_127_0_0_1_8001_API_KEY}"
 
     def test_legacy_custom_providers_entries_get_a_row_and_can_be_deleted(self):
         """A post-migration ``custom_providers:`` list entry is still routed by the
@@ -2309,7 +2309,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
     def test_profiles_sessions_pages_past_500_rows(self):
         """The aggregate route must not strand rows after its old 500-row
         per-profile source cap (issue #88438)."""
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB()
         try:
@@ -2624,9 +2624,9 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         assert calls == [(500, 0, True), (500, 500, True)]
     def test_pick_silent_default_model_empty_list_returns_empty_string(self):
         """Empty model list must return \"\" so the caller degrades gracefully."""
-        from hermes_cli.models import pick_silent_default_model
+        from moor_cli.models import pick_silent_default_model
 
-        assert pick_silent_default_model([], "nous") == ""
+        assert pick_silent_default_model([], "moor") == ""
         assert pick_silent_default_model([], "") == ""
         assert pick_silent_default_model([], "openrouter") == ""
 
@@ -2634,7 +2634,7 @@ CONFIG_SCHEMA = ProviderConfigSchema(
         """Unit coverage for the frontier-tier predicate used by the cost-safe
         silent policy. Anchored on the claude- prefix so community/distill
         slugs whose lowercase form merely contains opus are rejected."""
-        from hermes_cli.models import _is_anthropic_frontier_tier
+        from moor_cli.models import _is_anthropic_frontier_tier
 
         # Opus + Fable, dash + dot, vendor-prefixed, colon-suffixed.
         assert _is_anthropic_frontier_tier("claude-opus-4-8") is True
@@ -3012,8 +3012,8 @@ class TestNewEndpoints:
         never-installed KittenTTS/Piper. The endpoint now reports the honest
         state so keyless ≠ ready.
         """
-        from hermes_cli import tools_config
-        from hermes_cli.nous_account import NousPortalAccountInfo
+        from moor_cli import tools_config
+        from moor_cli.moor_account import MoorPortalAccountInfo
 
         # Logged out of Moor Portal → managed subscription rows need sign-in.
         monkeypatch.setattr(
@@ -3023,7 +3023,7 @@ class TestNewEndpoints:
             ),
         )
         # No xAI credentials → the Grok OAuth-backed row needs sign-in.
-        from hermes_cli import tools_config_post_setup
+        from moor_cli import tools_config_post_setup
 
         monkeypatch.setattr(tools_config, "_xai_credentials_present", lambda: False)
         # Local TTS engines not installed → their rows need setup.
@@ -3209,7 +3209,7 @@ class TestNewEndpoints:
         from datetime import datetime
         from zoneinfo import ZoneInfo
 
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB()
         try:
@@ -3264,7 +3264,7 @@ class TestDesktopLoopbackAuthExemption:
     """``_desktop_loopback_auth_exempt`` decides the #96490 exemption."""
 
     def test_exempt_with_desktop_env_and_session_token_on_loopback(self, monkeypatch):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         monkeypatch.setenv("MOOR_DESKTOP", "1")
         monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "desktop-minted")
@@ -3272,7 +3272,7 @@ class TestDesktopLoopbackAuthExemption:
         assert web_server._desktop_loopback_auth_exempt("::1") is True
 
     def test_exempt_via_ssh_spawn_credentials_without_env_token(self, monkeypatch):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         monkeypatch.setenv("MOOR_DESKTOP", "1")
         monkeypatch.delenv("MOOR_DASHBOARD_SESSION_TOKEN", raising=False)
@@ -3284,14 +3284,14 @@ class TestDesktopLoopbackAuthExemption:
         )
 
     def test_not_exempt_without_desktop_env(self, monkeypatch):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         monkeypatch.delenv("MOOR_DESKTOP", raising=False)
         monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "tok")
         assert web_server._desktop_loopback_auth_exempt("127.0.0.1") is False
 
     def test_not_exempt_without_any_credential(self, monkeypatch):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         # MOOR_DESKTOP=1 alone is not enough: a plain serve with the env var
         # exported must stay gated.
@@ -3300,7 +3300,7 @@ class TestDesktopLoopbackAuthExemption:
         assert web_server._desktop_loopback_auth_exempt("127.0.0.1") is False
 
     def test_not_exempt_on_non_loopback_bind(self, monkeypatch):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         monkeypatch.setenv("MOOR_DESKTOP", "1")
         monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "tok")
@@ -3308,7 +3308,7 @@ class TestDesktopLoopbackAuthExemption:
         assert web_server._desktop_loopback_auth_exempt("192.168.1.10") is False
 
     def test_public_url_engages_gate_for_non_desktop_loopback(self, monkeypatch):
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         # Sanity: the base behaviour is untouched — a non-Desktop loopback
         # serve with a public_url configured stays ticket-gated.
@@ -3328,9 +3328,9 @@ class TestDesktopHostRendezvousIsolation:
         import io
         import urllib.request
         from gateway import host_rendezvous as hr
-        from hermes_cli import web_server
-        from hermes_cli.main_dashboard import _host_backend_attachment
-        from hermes_cli.plugins_activation import notify_serve_backend
+        from moor_cli import web_server
+        from moor_cli.main_dashboard import _host_backend_attachment
+        from moor_cli.plugins_activation import notify_serve_backend
 
         monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         monkeypatch.setenv("MOOR_DESKTOP", "1")
@@ -3369,7 +3369,7 @@ class TestDesktopHostRendezvousIsolation:
         """The Desktop exclusion must not alter standalone dashboard discovery — including a
         supervised service whose shell merely inherited MOOR_DESKTOP=1 without the token."""
         from gateway import host_rendezvous as hr
-        from hermes_cli import web_server
+        from moor_cli import web_server
 
         monkeypatch.setenv("MOOR_DESKTOP", "1")
         monkeypatch.delenv("MOOR_DASHBOARD_SESSION_TOKEN", raising=False)
@@ -3407,7 +3407,7 @@ class TestOrphanedOwnerReclaim:
             updated_at="2026-09-24T00:00:00+00:00")
 
     def _owner_entry(self, pid=555, create_time=55.0, spawner_pid=700, spawner_create=7.0):
-        from hermes_cli import process_identity as pi
+        from moor_cli import process_identity as pi
         from pathlib import Path as _Path
 
         return {
@@ -3425,10 +3425,10 @@ class TestOrphanedOwnerReclaim:
         """
         import types
         from gateway import host_rendezvous as hr
-        from hermes_cli import web_server
-        from hermes_cli import process_identity as pi
+        from moor_cli import web_server
+        from moor_cli import process_identity as pi
 
-        monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+        monkeypatch.setenv("MOOR_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
         monkeypatch.setattr(web_server, "is_desktop_owned_backend", lambda: False)
         claims = iter([hr.HostLockOutcome.HELD_BY_OTHER, hr.HostLockOutcome.ACQUIRED])
         claimed, published = [], []
@@ -3486,7 +3486,7 @@ class TestOrphanedOwnerReclaim:
 
     def test_unprovable_owner_is_untouched(self, monkeypatch, tmp_path):
         """Null spawner whose parent is alive: unprovable means never touch."""
-        from hermes_cli import dashboard_procs
+        from moor_cli import dashboard_procs
 
         entry = self._owner_entry(spawner_pid=None, spawner_create=None)
         monkeypatch.setattr(dashboard_procs, "_process_ppid", lambda pid: 1234)
@@ -4260,7 +4260,7 @@ class TestDeleteSessionEndpoint:
         self.auth_client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
 
     def _seed(self, ids):
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB()
         try:
@@ -4270,7 +4270,7 @@ class TestDeleteSessionEndpoint:
             db.close()
 
     def _exists(self, sid) -> bool:
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB()
         try:
@@ -4304,10 +4304,10 @@ class TestDeleteSessionEndpoint:
     def test_delete_existing_session_scrubs_row_and_disk(self, mutation_owner):
         # The canonical delete retires rows; the endpoint must also remove the secret-bearing
         # session_<id>.json snapshots and request dumps the CLI delete path removes (#60207).
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         self._seed(["disk-scrub"])
-        sessions_dir = get_hermes_home() / "sessions"
+        sessions_dir = get_moor_home() / "sessions"
         sessions_dir.mkdir(parents=True, exist_ok=True)
         for name, body in (
             ("session_disk-scrub.json", '{"messages": [{"content": "secret-token"}]}'),
@@ -4331,10 +4331,10 @@ class TestDeleteSessionEndpoint:
     def test_delete_named_profile_session_scrubs_profile_disk(self, monkeypatch):
         from types import SimpleNamespace
         from gateway.session_authority import SessionAuthority
-        from hermes_cli import profiles as profiles_mod
-        from hermes_cli.web_server import app
-        from hermes_state import SessionDB
-        from hermes_state_runtime import begin_runtime_epoch
+        from moor_cli import profiles as profiles_mod
+        from moor_cli.web_server import app
+        from moor_state import SessionDB
+        from moor_state_runtime import begin_runtime_epoch
 
         profile_home = profiles_mod.get_profile_dir("worker")
         profile_home.mkdir(parents=True)
@@ -4372,7 +4372,7 @@ class TestDeleteSessionEndpoint:
         else:
             assert mutation_owner.db.try_acquire_compression_lock(sid, "foreign-compressor")
         from starlette.testclient import TestClient
-        from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+        from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
         client = TestClient(app, raise_server_exceptions=False)
         client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
         self.auth_client = client
@@ -4553,10 +4553,10 @@ class TestDeleteEmptySessionsEndpoint:
     def test_delete_removes_on_disk_files_of_deleted_sessions_only(self):
         """Deleting an empty session also removes its files in ``sessions/``.
         A kept session's files stay."""
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
 
         self._seed()
-        sessions_dir = get_hermes_home() / "sessions"
+        sessions_dir = get_moor_home() / "sessions"
         sessions_dir.mkdir(parents=True, exist_ok=True)
         deleted_files = [sessions_dir / "session_empty1.json", sessions_dir / "request_dump_empty2_1.json"]
         kept_file = sessions_dir / "session_hasmsg.json"
@@ -5539,7 +5539,7 @@ class TestSessionPatchUnread:
     read/unread, and GET /api/sessions surfaces the derived flag."""
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home, mutation_owner):
+    def _setup_test_client(self, monkeypatch, _isolate_moor_home, mutation_owner):
         try:
             from starlette.testclient import TestClient
         except ImportError:

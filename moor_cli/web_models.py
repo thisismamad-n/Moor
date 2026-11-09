@@ -467,8 +467,8 @@ class ProfileCreate(BaseModel):
     # Profile-builder additions, applied best-effort AFTER the profile dir exists (a hiccup never 500s).
     mcp_servers: list[MCPServerCreate] = []
     keep_skills: list[str] = []  # skills to KEEP: non-empty = replace semantics (unlisted seeded ones disabled)
-    # Installed async via `hermes -p <name> skills install` (skills_hub.SKILLS_DIR is import-time-bound,
-    # so HERMES_HOME can't redirect it); PIDs go back for the UI to poll.
+    # Installed async via `moor -p <name> skills install` (skills_hub.SKILLS_DIR is import-time-bound,
+    # so MOOR_HOME can't redirect it); PIDs go back for the UI to poll.
     hub_skills: list[str] = []
 
 class ProfileRename(BaseModel):
@@ -476,7 +476,7 @@ class ProfileRename(BaseModel):
 
 class ProfileExport(BaseModel):
     extra_files: dict[str, str] = {}  # extra root-level files, filename → text
-    output: str = ""  # archive path; empty → a staging path under HERMES_HOME
+    output: str = ""  # archive path; empty → a staging path under MOOR_HOME
 
 class ProfileImport(BaseModel):
     archive: str  # profile .tar.gz on the backend's filesystem

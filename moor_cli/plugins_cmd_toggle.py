@@ -119,7 +119,7 @@ def cmd_toggle() -> None:
 def _effective_plugin_selection(entries, enabled: set, disabled: set) -> set:
     """Row indices ticked on open: the load-time rule, not list membership — bundled platforms,
     backends and model providers are active without a ``plugins.enabled`` entry."""
-    from hermes_cli.plugins_cmd_listing import _entry_status
+    from moor_cli.plugins_cmd_listing import _entry_status
     active = _pc()._category_active_names()
     return {i for i, entry in enumerate(entries) if _entry_status(entry, enabled, disabled, active) == "enabled"}
 
@@ -129,7 +129,7 @@ def _persist_plugin_selection(plugin_keys, chosen, disabled, initial, *, expecte
 
     Untouched rows are never persisted, so a never-ticked row is not mistaken for an explicit untick
     and list entries for plugins the picker didn't show survive. Canonical key only, with every alias
-    purged from the opposing list like ``hermes plugins enable/disable`` (#40190).
+    purged from the opposing list like ``moor plugins enable/disable`` (#40190).
     """
     turned_on = [plugin_keys[i] for i in sorted(chosen - initial)]
     turned_off = [plugin_keys[i] for i in sorted(initial - chosen)]

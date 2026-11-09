@@ -19,7 +19,7 @@ from agent.secret_scope import set_multiplex_active
 from moor_constants import reset_moor_home_override, set_moor_home_override
 
 _PROBE = ("import json,os;print(json.dumps({k:os.environ.get(k) for k in "
-          "('HERMES_HOME','A_MARKER','B_MARKER','TERMINAL_ENV','HERMES_MODEL','FIRECRAWL_API_KEY',"
+          "('MOOR_HOME','A_MARKER','B_MARKER','TERMINAL_ENV','MOOR_MODEL','FIRECRAWL_API_KEY',"
           "'BROWSER_USE_API_KEY')}))")
 
 
@@ -29,11 +29,11 @@ def mux_homes(tmp_path, monkeypatch):
     a = tmp_path / ".moor"
     b = a / "profiles" / "b"
     b.mkdir(parents=True)
-    (a / ".env").write_text("A_MARKER=a\nHERMES_MODEL=a-model\nTERMINAL_ENV=docker\nFIRECRAWL_API_KEY=a-fc\n"
+    (a / ".env").write_text("A_MARKER=a\nMOOR_MODEL=a-model\nTERMINAL_ENV=docker\nFIRECRAWL_API_KEY=a-fc\n"
                             "BROWSER_USE_API_KEY=a-bu\n", encoding="utf-8")
     (b / ".env").write_text("B_MARKER=b\nFIRECRAWL_API_KEY=b-fc\nBROWSER_USE_API_KEY=b-bu\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(a))
-    for key, val in (("A_MARKER", "a"), ("HERMES_MODEL", "a-model"), ("TERMINAL_ENV", "docker"),
+    monkeypatch.setenv("MOOR_HOME", str(a))
+    for key, val in (("A_MARKER", "a"), ("MOOR_MODEL", "a-model"), ("TERMINAL_ENV", "docker"),
                      ("FIRECRAWL_API_KEY", "a-fc"), ("BROWSER_USE_API_KEY", "a-bu")):
         monkeypatch.setenv(key, val)
     monkeypatch.delenv("B_MARKER", raising=False)
@@ -73,7 +73,7 @@ def test_slash_worker_child_runs_in_the_served_profiles_env(mux_homes, monkeypat
 
     with monkeypatch.context() as m:  # restored before the probe child spawns through the real Popen
         m.setattr(server, "spawn_owned", lambda argv, purpose, **kw: _Popen(argv, **kw))
-        token = set_hermes_home_override(str(b))
+        token = set_moor_home_override(str(b))
         try:
             server._SlashWorker("sess", "", profile_home=str(b))
         finally:

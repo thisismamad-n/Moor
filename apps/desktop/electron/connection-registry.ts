@@ -1712,7 +1712,7 @@ export function reconcileRegistryDrift(
       //
       // Known by target is not enough, though: the router tags the live
       // window by the FULL route identity (matchingConnectionId also compares
-      // keyPath, remoteHermesPath and remoteProfile). A v1 route carrying a
+      // keyPath, remoteMoorPath and remoteProfile). A v1 route carrying a
       // keyPath the registered entry never had resolves to no connectionId,
       // the renderer treats the untagged window as the unscoped local backend
       // ("This device") and the roster force-spawns a phantom local child.
@@ -1725,7 +1725,7 @@ export function reconcileRegistryDrift(
       const { host: _host, user: _user, port: _port, ...identityFields } = sshFields
       const aligned: RegistryConnection = { ...registered }
       delete aligned.keyPath
-      delete aligned.remoteHermesPath
+      delete aligned.remoteMoorPath
       delete aligned.remoteProfile
       Object.assign(aligned, identityFields)
 

@@ -306,7 +306,7 @@ export function isCompressionBusyError(error: unknown): boolean {
 }
 
 /** prompt.submit refused because this principal's submission id on this session is ALREADY admitted
- *  with another payload (hermes_state_runtime.ADMITTED_REQUEST_CONFLICT): the send was delivered.
+ *  with another payload (moor_state_runtime.ADMITTED_REQUEST_CONFLICT): the send was delivered.
  *  Every other `admission_conflict` (route, binding, lineage) names no such field and stays an error. */
 export function isAdmittedSubmissionConflict(error: unknown): boolean {
   const data = error instanceof JsonRpcGatewayError ? (error.data as { field?: unknown; reason?: unknown } | undefined) : null
@@ -524,7 +524,7 @@ export function imageFilenameFromPath(filePath: string): string {
 export async function readImageForRemoteAttach(
   filePath: string
 ): Promise<{ contentBase64: string; filename: string } | null> {
-  const dataUrl = await window.hermesDesktop?.readFileDataUrl(filePath)
+  const dataUrl = await window.moorDesktop?.readFileDataUrl(filePath)
 
   if (isReadFileErrorResult(dataUrl)) {
     return null

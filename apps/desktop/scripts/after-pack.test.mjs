@@ -30,11 +30,11 @@ async function seedPackagedMain(context) {
   await mkdir(path.join(`${asarPath}.unpacked`, 'dist'), { recursive: true })
   await writeFile(
     path.join(`${asarPath}.unpacked`, 'dist', 'electron-main.mjs'),
-    'const re = /HERMES_(?:BACKEND|DASHBOARD)_READY[^\\n]*port=(\\d+)/m\n'
+    'const re = /MOOR_(?:BACKEND|DASHBOARD)_READY[^\\n]*port=(\\d+)/m\n'
   )
 }
 
-function context(appOutDir, productFilename = 'Hermes Preview') {
+function context(appOutDir, productFilename = 'Moor Preview') {
   // Use electron-builder's real bundle path resolution, including branding.
   const packager = Object.assign(Object.create(PlatformPackager.prototype), {
     platform: Platform.MAC,
@@ -73,7 +73,7 @@ it('restores app localizations from the filtered framework without copying local
 it('puts the full-resolution .icns back after electron-builder packaged the layered icon', async () => {
   // With `mac.icon` pointing at the Icon Composer package, electron-builder
   // bundles actool's 256px fallback as icon.icns; macOS <= 15 shows that file.
-  const root = await mkdtemp(path.join(os.tmpdir(), 'hermes-mac-icon-'))
+  const root = await mkdtemp(path.join(os.tmpdir(), 'moor-mac-icon-'))
   try {
     const ctx = context(root)
     await seedPackagedMain(ctx)
@@ -103,7 +103,7 @@ it('leaves Linux alone and reports a missing framework without failing packaging
     await seedPackagedMain(ctx)
     await configuredHook(ctx)
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('macOS locale markers were not restored'))
-    expect((await readdir(root)).sort()).toEqual(['Hermes Preview.app', 'resources'])
+    expect((await readdir(root)).sort()).toEqual(['Moor Preview.app', 'resources'])
     expect(await readdir(ctx.packager.getResourcesDir(root))).toContain('icon.icns')
   } finally {
     warn.mockRestore()

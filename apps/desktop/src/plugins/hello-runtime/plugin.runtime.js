@@ -3,13 +3,13 @@
  * raw text (`?raw`) and goes through the real runtime pipeline (specifier
  * rewrite -> SDK/react shim blobs -> blob import -> register). Plain ESM js
  * with `jsx()` calls — exactly what an agent (or a compiler) writes into
- * `~/.hermes/desktop-plugins/<name>/plugin.js`.
+ * `~/.moor/desktop-plugins/<name>/plugin.js`.
  *
  * It also shows the Settings ▸ Plugins contract: one settings page with two
  * sub-pages (`ctx.registerSettingsPage`), persisted with `ctx.storage`.
  */
 
-import { atom, cn, host, ListRow, SegmentedControl, Tip, ToggleRow, useValue } from '@hermes/plugin-sdk'
+import { atom, cn, host, ListRow, SegmentedControl, Tip, ToggleRow, useValue } from '@moor/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 const DEFAULTS = { label: 'word', showChip: true }

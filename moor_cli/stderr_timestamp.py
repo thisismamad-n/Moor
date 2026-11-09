@@ -27,7 +27,7 @@ _STDOUT_DRAIN_TIMEOUT_S = 5.0
 
 
 def timestamp() -> str:
-    """Local time in logging.Formatter's default ``%(asctime)s`` shape, which ``hermes logs --since`` parses."""
+    """Local time in logging.Formatter's default ``%(asctime)s`` shape, which ``moor logs --since`` parses."""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
 
 
@@ -56,7 +56,7 @@ def _copy_stderr_with_timestamps(stderr: BinaryIO, log_path: Path) -> None:
 
 def _copy_stdout_with_timestamps(stdout: BinaryIO) -> None:
     # fd 1 is the caller's target (launchd appends it to gateway.log, the logging handler's
-    # file), so lines keep their destination and gain the stamp `hermes logs --since` needs.
+    # file), so lines keep their destination and gain the stamp `moor logs --since` needs.
     with open(1, "w", encoding="utf-8", buffering=1, closefd=False) as out:
         for raw_line in iter(stdout.readline, b""):
             _write_timestamped_line(out, raw_line.decode("utf-8", errors="replace"))

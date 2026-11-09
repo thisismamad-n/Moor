@@ -24,12 +24,12 @@ from gateway.status import (
     retained_gateway_state,
     runtime_status_heartbeat_age_s, runtime_status_is_stale)
 from gateway.status_served import local_liveness_pid
-from hermes_cli import __release_date__
-from hermes_cli.config import get_config_path, get_env_path
-from hermes_cli.version_info import get_version_info
-from hermes_constants import get_process_hermes_home, profile_name_for_home
-from hermes_cli.web_models import CuratorPause, LearningNodeRef, LearningNodeEdit, DebugShareRequest
-from hermes_cli.web_routers._common import config_scoped_to_thread, destructive_profile, scoped_to_thread
+from moor_cli import __release_date__
+from moor_cli.config import get_config_path, get_env_path
+from moor_cli.version_info import get_version_info
+from moor_constants import get_process_moor_home, profile_name_for_home
+from moor_cli.web_models import CuratorPause, LearningNodeRef, LearningNodeEdit, DebugShareRequest
+from moor_cli.web_routers._common import config_scoped_to_thread, destructive_profile, scoped_to_thread
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -57,7 +57,7 @@ get_install_id = late("get_install_id")
 get_running_pid_cached = late("get_running_pid_cached", "gateway.status")
 get_runtime_status_running_pid = late("get_runtime_status_running_pid", "gateway.status")
 served_profile_runtime = late("served_profile_runtime", "gateway.status_served")
-load_config = late("load_config", "hermes_cli.config")
+load_config = late("load_config", "moor_cli.config")
 read_runtime_status = late("read_runtime_status", "gateway.status")
 _open_session_db_for_profile = late("_open_session_db_for_profile", "moor_cli.web_server_sessions")
 
@@ -122,7 +122,7 @@ async def get_health():
 
     ``commit`` is the code this process BOOTED from (``get_version_info`` is cached at
     ``web_server`` import): Desktop refuses to attach to a backend whose commit differs from
-    its checkout, so a serve that outlived ``hermes update`` is never re-adopted.
+    its checkout, so a serve that outlived ``moor update`` is never re-adopted.
     """
     info = get_version_info()
     return {"ok": True, "version": info.base_version, "displayVersion": info.display_version,
@@ -313,13 +313,13 @@ async def _resolve_gateway_status(profile_dir: Optional[Path], health_url) -> di
     runtime = local_runtime
     if runtime is None and remote_health_body and remote_health_body.get("gateway_state"):
         runtime = remote_health_body
-    # Unscoped, the profile is the process's own home (a pooled ``hermes --profile X serve``).
-    own_home = profile_dir or get_process_hermes_home()
+    # Unscoped, the profile is the process's own home (a pooled ``moor --profile X serve``).
+    own_home = profile_dir or get_process_moor_home()
     if liveness.runtime is not None:
         # Served by the multiplexer: its record is this profile's runtime, with the profile's own
         # adapters under ``<profile>:<platform>`` re-keyed to the standalone shape.
         # Fold on the profile NAME, never ``profile_dir.name``: ``?profile=default`` resolves the
-        # root itself, whose basename (``.hermes``) matched nothing and read as a named id (#123088).
+        # root itself, whose basename (``.moor``) matched nothing and read as a named id (#123088).
         served_name = profile_name_for_home(own_home)
         runtime = {**liveness.runtime,
                    "platforms": profile_platforms_from_multiplexer(liveness.runtime, served_name or "")}
@@ -392,7 +392,7 @@ def _auth_gate_status() -> dict[str, Any]:
     auth_providers: list[str] = []
     auth_flows: list[str] = []
     try:
-        from hermes_cli.dashboard_auth import (
+        from moor_cli.dashboard_auth import (
             list_interactive_providers as _list_interactive_providers,
             list_providers as _list_providers)
         auth_providers = [p.name for p in _list_providers()]
@@ -481,14 +481,14 @@ def _status_local_reads() -> dict[str, Any]:
     current_ver, latest_ver = check_config_version()
     return {"version": get_version_info().base_version, "config_version": current_ver,
             "latest_config_version": latest_ver,
-            "can_update_hermes": not _dashboard_local_update_managed_externally(),
-            "nous_session_valid": _nous_session_validity()}
+            "can_update_moor": not _dashboard_local_update_managed_externally(),
+            "moor_session_valid": _moor_session_validity()}
 
 
 def _fts_rebuild_status() -> Optional[dict[str, Any]]:
     """Deferred FTS rebuild progress of this home's state.db (read-only open), or None."""
-    from hermes_state import SessionDB as _SDB
-    from hermes_constants import get_hermes_home as _ghh
+    from moor_state import SessionDB as _SDB
+    from moor_constants import get_moor_home as _ghh
     _db_path = _ghh() / "state.db"
     if not _db_path.exists():
         return None
@@ -502,7 +502,7 @@ def _fts_rebuild_status() -> Optional[dict[str, Any]]:
 #: What the gateway's Webapp answers a caller who has not signed in: liveness, version and the
 #: sign-in shape (the native-app login probe and uptime checks read nothing else). Profile names,
 #: the install id and host figures wait for sign-in, since a Webapp on a wildcard bind is reachable
-#: by everyone on the network. The standalone dashboard keeps its public body: Hermes Cloud reads
+#: by everyone on the network. The standalone dashboard keeps its public body: Moor Cloud reads
 #: the profile list there without a session (#60585).
 _WEBAPP_SIGNED_OUT_STATUS_KEYS = frozenset({
     "version", "release_date", "gateway_running", "gateway_state", "overall", "components",
@@ -512,13 +512,13 @@ _WEBAPP_SIGNED_OUT_STATUS_KEYS = frozenset({
 async def _webapp_caller_signed_out(request: Request) -> bool:
     """True when this request reached the gateway's Webapp behind its sign-in gate with no
     session the gate would accept. ``/api/status`` is public, so the gate never verified one."""
-    from hermes_cli.web_server import _require_token
-    from hermes_cli.web_server_surface import surface
+    from moor_cli.web_server import _require_token
+    from moor_cli.web_server_surface import surface
     if request is None or surface(request.app.state) != "webapp" \
             or not getattr(request.app.state, "auth_required", False):
         return False
     if getattr(request.state, "session", None) is None:
-        from hermes_cli.dashboard_auth.middleware import peek_session
+        from moor_cli.dashboard_auth.middleware import peek_session
         request.state.session = await run_in_threadpool(peek_session, request)
     try:
         _require_token(request)
@@ -537,7 +537,7 @@ async def get_status(profile: Optional[str] = None,
     _profile_scope: this handler awaits the remote health probe, and _profile_scope swaps
     process-global skills-module attributes a concurrent request would cross-restore.
     """
-    from hermes_cli.web_server import _GATEWAY_HEALTH_URL
+    from moor_cli.web_server import _GATEWAY_HEALTH_URL
     signed_out = await _webapp_caller_signed_out(request)
     status_scope = None
     # A signed-out caller's ``?profile=`` is ignored: an unknown name's 404 would tell it which exist.
@@ -575,7 +575,7 @@ async def get_status(profile: Optional[str] = None,
         status = {
             "version": local["version"], "release_date": __release_date__,
             "config_version": local["config_version"], "latest_config_version": local["latest_config_version"],
-            "can_update_hermes": local["can_update_hermes"],
+            "can_update_moor": local["can_update_moor"],
             "gateway_running": gateway_running, "gateway_state": gateway_state,
             "gateway_platforms": gateway["gateway_platforms"],
             "gateway_exit_reason": gateway["gateway_exit_reason"],
@@ -592,7 +592,7 @@ async def get_status(profile: Optional[str] = None,
             "gateway_drainable": derive_gateway_drainable(
                 gateway_running=gateway_running, gateway_state=gateway_state),
             "restart_drain_timeout": restart_drain_timeout, "active_sessions": active_sessions,
-            **auth, "nous_session_valid": local["nous_session_valid"]}
+            **auth, "moor_session_valid": local["moor_session_valid"]}
 
         # Stable per-install identity (first call may touch disk). Omitted (not null) when
         # unpersistable so older-client behavior and the no-identity fallback stay identical.
@@ -870,8 +870,8 @@ async def run_debug_share_endpoint(body: DebugShareRequest | None = None,
     """Upload a redacted debug report + full logs and return the paste URLs. Synchronous,
     unlike the other diagnostics actions: the point is the shareable URLs, returned as a
     structured payload the dashboard renders as copyable links."""
-    from hermes_cli.debug import build_debug_share
-    from hermes_cli.debug_redaction import redact_debug_support_text
+    from moor_cli.debug import build_debug_share
+    from moor_cli.debug_redaction import redact_debug_support_text
     req = body or DebugShareRequest()
     try:
         result = await config_scoped_to_thread(profile, lambda: build_debug_share(

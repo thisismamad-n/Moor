@@ -13,10 +13,10 @@ from unittest import mock
 
 import pytest
 
-import hermes_state
-import hermes_state_wal
-import hermes_state_common
-import hermes_state_schema
+import moor_state
+import moor_state_wal
+import moor_state_common
+import moor_state_schema
 from agent.session_activity import ActivityProvenance, build_activity_snapshot
 from moor_state import SessionDB
 from moor_state_common import FTS_SQL, FTS_STORAGE_VERSION, SCHEMA_SQL, SCHEMA_VERSION
@@ -1797,7 +1797,7 @@ class TestSessionTitleIndexRepair:
                 [(*row, sid) for sid, row in seed.items()],
             )
         if broken_rename:
-            monkeypatch.setattr(hermes_state_schema, "next_title_in_lineage", lambda conn, title: title)
+            monkeypatch.setattr(moor_state_schema, "next_title_in_lineage", lambda conn, title: title)
         reopened = SessionDB(db_path=db_path)
         try:
             titles = dict(reopened._conn.execute("SELECT id, title FROM sessions").fetchall())
@@ -5249,12 +5249,12 @@ def test_peer_fallback_reset_boundary_is_profile_fenced(tmp_path, monkeypatch):
     newer session_reset row used to suppress THIS profile's recoverable session.
     The profile's own reset must still fence.
     """
-    import hermes_state
+    import moor_state
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH)
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", moor_state._IMPORT_DEFAULT_DB_PATH)
     store = SessionDB(db_path=root / "state.db")  # owner: default
     try:
         peer = {"user_id": "42", "chat_id": "42", "chat_type": "dm"}

@@ -201,7 +201,7 @@ class TestLifecycle:
         """#75186: for ``provider=custom`` + a configured ``providers.<name>`` entry, the session built by
         ``_ensure_codex_session`` sends ``model`` + ``modelProvider=<name>`` on thread/start and never the
         API key; openai/openai-codex agents send the selected model with codex's own provider."""
-        import hermes_cli.runtime_provider as rp
+        import moor_cli.runtime_provider as rp
         from agent.codex_runtime import _ensure_codex_session
         from agent.transports import codex_app_server_session as sess_mod
         monkeypatch.setattr(rp, "load_config", lambda: {
@@ -227,7 +227,7 @@ class TestLifecycle:
         assert thread_start_params(provider="openai-codex", requested_provider="openai-codex", model="gpt-5.4") == {
             **base, "model": "gpt-5.4"}
         assert thread_start_params(provider="custom", requested_provider="custom", model="gpt-5.4") == {**base, "model": "gpt-5.4"}
-        # ``-900k`` is a Hermes-side alias the backend rejects; codex gets the base slug.
+        # ``-900k`` is a moor-side alias the backend rejects; codex gets the base slug.
         assert thread_start_params(provider="openai-codex", requested_provider="openai-codex",
                                    model="gpt-5.6-sol-900k")["model"] == "gpt-5.6-sol"
         # The OpenAI API-key rung arrives as provider=custom with no codex model_providers id: codex's own
@@ -418,7 +418,7 @@ class TestRunTurn:
         assert params["serviceTier"] == "fast"
 
     def test_service_tier_is_sent_only_when_it_changes(self):
-        """codex's own configured tier is left alone until Hermes selects one; ``/fast off`` afterwards sends
+        """codex's own configured tier is left alone until Moor selects one; ``/fast off`` afterwards sends
         an explicit null to clear it, and an unchanged tier is not re-sent."""
         client = FakeClient()
         for _ in range(4):
@@ -431,9 +431,9 @@ class TestRunTurn:
         assert ["serviceTier" in p for p in sent] == [False, True, False, True]
         assert [p.get("serviceTier") for p in sent if "serviceTier" in p] == ["fast", None]
 
-    def test_resumed_thread_receives_the_hermes_tier_even_when_it_is_null(self):
+    def test_resumed_thread_receives_the_moor_tier_even_when_it_is_null(self):
         """CLI ``/fast`` rebuilds the agent, so ``/fast off`` reaches a resumed thread that may still carry the
-        earlier tier: its first turn sends Hermes' tier, a clearing null included."""
+        earlier tier: its first turn sends Moor' tier, a clearing null included."""
         client = FakeClient()
         client.queue_notification("turn/completed", threadId="t",
                                   turn={"id": "turn-fake-001", "status": "completed", "error": None})

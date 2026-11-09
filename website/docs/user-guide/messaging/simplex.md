@@ -69,7 +69,7 @@ After starting the daemon, open a conversation with your agent contact. The nume
 By default **all contacts are denied**. You must either:
 
 1. Set `SIMPLEX_ALLOWED_USERS` to a comma-separated list of numeric `contactId`s (e.g. `SIMPLEX_ALLOWED_USERS=4,9`), or
-2. Use **DM pairing** — send any message to the bot and it will reply with a pairing code. Enter that code via `hermes pairing approve simplex <CODE>`.
+2. Use **DM pairing** — send any message to the bot and it will reply with a pairing code. Enter that code via `moor pairing approve simplex <CODE>`.
 
 ## Group chats
 

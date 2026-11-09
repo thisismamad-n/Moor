@@ -1,4 +1,4 @@
-"""Approval gate for the default sandbox image change (nikolaik base → hermes-sandbox:desktop).
+"""Approval gate for the default sandbox image change (nikolaik base → moor-sandbox:desktop).
 
 A persisted Docker sandbox is state the user built up; a default flip must not replace it under
 them. ``DockerEnvironment`` keeps a container whose image differs from an UNPINNED default and
@@ -6,7 +6,7 @@ this module is where the user decides: approve (pin the new image; the next term
 recreates the container — ``/root`` and ``/workspace`` are host mounts and carry over, system
 packages get reinstalled, 3.11 venvs need a rebuild) or keep (pin the image the container runs,
 which also ends the notice). Surfaces: the interactive CLI startup offer here, the Screen pane's
-switch action (``display.switchSandboxImage``) and the plain ``hermes config set``. Headless
+switch action (``display.switchSandboxImage``) and the plain ``moor config set``. Headless
 surfaces (gateway, cron) never decide; they keep the sandbox and log.
 
 Modal restores its snapshot and Daytona reuses its labeled sandbox regardless of the configured
@@ -35,7 +35,7 @@ def pending() -> Optional[PendingSwitch]:
     """The switch this profile still has to decide, or None: backend is docker, the image is the
     unpinned default, and a container labeled for this profile runs another image. ``docker`` is
     consulted (one ``ps``); any failure is "nothing pending"."""
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     from tools.environments.docker import _container_identity, _docker_query, find_docker
 
     terminal = (load_config_readonly() or {}).get("terminal") or {}
@@ -48,8 +48,8 @@ def pending() -> Optional[PendingSwitch]:
     if not docker or not target:
         return None
     listing = _docker_query(
-        [docker, "ps", "-a", "--filter", "label=hermes-agent=1",
-         "--filter", f"label=hermes-profile={_container_identity(str(terminal.get('docker_shared_container_key') or ''))}",
+        [docker, "ps", "-a", "--filter", "label=moor-agent=1",
+         "--filter", f"label=moor-profile={_container_identity(str(terminal.get('docker_shared_container_key') or ''))}",
          "--format", "{{.Names}}\t{{.Image}}"],
         timeout=10, fail="sandbox image switch probe failed: %s", nonzero="docker ps exited %s: %s")
     if listing is None:
@@ -71,7 +71,7 @@ def _image_pinned(terminal_cfg: dict) -> bool:
     (a routed profile: recomputed per turn, never the launch profile's ``os.environ``); else the
     launch env, where an operator's ``TERMINAL_DOCKER_IMAGE`` differing from the effective value
     is their choice."""
-    from hermes_cli.config import read_raw_config
+    from moor_cli.config import read_raw_config
     from tools.terminal_scope import get_terminal_scope
     raw = read_raw_config().get("terminal")
     if isinstance(raw, dict) and "docker_image" in raw:
@@ -87,7 +87,7 @@ def decide(switch: PendingSwitch, approve: bool) -> str:
     """Pin ``terminal.docker_image`` to the target (approve) or the current image (keep) and
     re-bridge the live process so a long-running gateway/TUI backend acts on it without a
     restart. Returns the image now pinned."""
-    from hermes_cli.config import apply_terminal_config_to_env, load_config, save_config
+    from moor_cli.config import apply_terminal_config_to_env, load_config, save_config
     image = switch.target_image if approve else switch.current_image
     config = load_config()
     terminal = config.setdefault("terminal", {})
@@ -138,5 +138,5 @@ def offer_interactive(*, cprint, ask=input) -> Optional[bool]:
         decide(switch, approve=False)
         cprint(f"  ✓ terminal.docker_image = {switch.current_image}; unset it in config.yaml to be asked again.")
         return False
-    cprint("  Later. `hermes config set terminal.docker_image <image>` decides it any time.")
+    cprint("  Later. `moor config set terminal.docker_image <image>` decides it any time.")
     return None

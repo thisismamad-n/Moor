@@ -345,7 +345,7 @@ class TestStatusEndpointTopology:
         # ``components.platforms.configured: 0`` while its adapters were up and delivering
         # (#123088).
         from gateway.status import GatewayLiveness
-        import hermes_cli.web_routers.status as status_router
+        import moor_cli.web_routers.status as status_router
 
         record = {
             "gateway_state": "running",
@@ -382,7 +382,7 @@ class TestStatusEndpointTopology:
 
     def test_profile_scoped_status_folds_default_flat_adapters_on_default_root(self, monkeypatch, tmp_path):
         # ?profile=default resolves the DEFAULT ROOT directory itself — the shipped root is
-        # ``~/.hermes``, so the directory's basename (".hermes") is not the profile id. The
+        # ``~/.moor``, so the directory's basename (".moor") is not the profile id. The
         # re-key used to fold on that basename: the multiplexer rung's flat keys never matched
         # (the ``gateway_platforms: {}`` symptom of #123088, one call site over from the fix
         # bare /api/status got), and the basename read as a NAMED profile, so the mirror arm
@@ -390,14 +390,14 @@ class TestStatusEndpointTopology:
         from contextlib import nullcontext
 
         from gateway.status import GatewayLiveness
-        import hermes_cli.web_routers.status as status_router
-        from hermes_cli import web_server_profiles
+        import moor_cli.web_routers.status as status_router
+        from moor_cli import web_server_profiles
 
-        home = tmp_path / ".hermes"  # the shipped default root: basename != profile id
+        home = tmp_path / ".moor"  # the shipped default root: basename != profile id
         home.mkdir()
         # The resolver names a default root by IDENTITY, not basename: only the root the
-        # process resolves (HERMES_HOME here) folds as "default".
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        # process resolves (MOOR_HOME here) folds as "default".
+        monkeypatch.setenv("MOOR_HOME", str(home))
         record = {
             "gateway_state": "running",
             "served_profiles": ["default", "coder"],
@@ -447,8 +447,8 @@ class TestStatusEndpointTopology:
         from contextlib import nullcontext
 
         from gateway.status import GatewayLiveness
-        import hermes_cli.web_routers.status as status_router
-        from hermes_cli import web_server_profiles
+        import moor_cli.web_routers.status as status_router
+        from moor_cli import web_server_profiles
 
         profile = tmp_path / "profiles" / "coder"
         profile.mkdir(parents=True)
@@ -522,9 +522,9 @@ class TestStatusEndpointTopology:
         assert data["gateway_shared_with"] is None
 
     def test_unscoped_status_on_a_served_profiles_own_backend_uses_multiplexer_record(self, monkeypatch, tmp_path):
-        # `hermes -p coder serve` answers plain /api/status (no ?profile=) for its own home. That
+        # `moor -p coder serve` answers plain /api/status (no ?profile=) for its own home. That
         # home's gateway.lock is the multiplexer's too, so the same live record applies.
-        import hermes_cli.web_routers.status as status_router
+        import moor_cli.web_routers.status as status_router
 
         self._scope_to_served_profile(
             monkeypatch, tmp_path,
@@ -537,7 +537,7 @@ class TestStatusEndpointTopology:
                               "coder:telegram": {"state": "connected"}},
             },
         )
-        monkeypatch.setattr(status_router, "get_process_hermes_home", lambda: tmp_path / "profiles" / "coder")
+        monkeypatch.setattr(status_router, "get_process_moor_home", lambda: tmp_path / "profiles" / "coder")
 
         resp = self.client.get("/api/status")
 
@@ -589,7 +589,7 @@ class TestStatusEndpointTopology:
         # A health-probe answer carries the REMOTE container's PID, which can equal an unrelated
         # local host-record PID; only a PID proven on this host may select the local record.
         from gateway.status import GatewayLiveness
-        import hermes_cli.web_routers.status as status_router
+        import moor_cli.web_routers.status as status_router
 
         mux_runtime = {
             "gateway_state": "running", "served_profiles": ["default", "coder"],
@@ -626,8 +626,8 @@ class TestStatusEndpointTopology:
         # multiplexer's record, and the real lookup (host record + default root) resolves to it.
         from gateway import host_topology
         from gateway.status import GatewayLiveness
-        import hermes_cli.web_routers.status as status_router
-        from hermes_constants import get_process_hermes_home
+        import moor_cli.web_routers.status as status_router
+        from moor_constants import get_process_moor_home
 
         monkeypatch.setattr(_gw_status, "read_runtime_status", lambda path=None: record)
         monkeypatch.setattr(_gw_status, "get_runtime_status_running_pid",
@@ -641,7 +641,7 @@ class TestStatusEndpointTopology:
             "profiles": ["default", "reviewer"], "gateway_mode": "multiplex", "gateways": [],
             "profile_platforms": {}})
         # The lookup genuinely succeeds here (no zero-arg PID-probe trap making it raise).
-        assert _gw_status.multiplexer_liveness_for_profile(get_process_hermes_home()) == (4242, record)
+        assert _gw_status.multiplexer_liveness_for_profile(get_process_moor_home()) == (4242, record)
         resp = self.client.get("/api/status")
         assert resp.status_code == 200
         return resp.json()

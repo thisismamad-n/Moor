@@ -28,7 +28,7 @@ use crate::powershell::{pump_child, DRAIN_GRACE};
 
 /// `moor update` exit code meaning "another moor process is holding the
 /// venv shim open / dirty precondition" — see _cmd_update_impl in
-/// hermes_cli/main.py (sys.exit(2)). We surface a targeted message for this.
+/// moor_cli/main.py (sys.exit(2)). We surface a targeted message for this.
 pub(crate) const UPDATE_EXIT_CONCURRENT: i32 = 2;
 
 /// How long to wait for the old desktop process to release files under the
@@ -103,15 +103,15 @@ fn busy_update_message(owner: &MarkerOwner) -> String {
     };
     if owner.held {
         return format!(
-            "Another Hermes update is already running (started {elapsed} ago; its owner \
+            "Another Moor update is already running (started {elapsed} ago; its owner \
              exited but a process it started still holds the checkout). {wait}"
         );
     }
     if owner.pid == 0 {
-        return format!("Another Hermes update is starting right now. {wait}");
+        return format!("Another Moor update is starting right now. {wait}");
     }
     format!(
-        "Another Hermes update is already running (PID {}, started {elapsed} ago). {wait}",
+        "Another Moor update is already running (PID {}, started {elapsed} ago). {wait}",
         owner.pid
     )
 }
@@ -199,9 +199,9 @@ async fn run_update(app: AppHandle) -> Result<()> {
         None,
     );
 
-    // ---- stage 2: hermes update -----------------------------------------
+    // ---- stage 2: moor update -----------------------------------------
     // Update against exactly what the desktop checked against (see
-    // update_target_from_args), never `hermes update`'s own default.
+    // update_target_from_args), never `moor update`'s own default.
     emit_log(
         &app,
         Some("update"),
@@ -768,7 +768,7 @@ fn update_child_env(install_root: &Path) -> Vec<(String, OsString)> {
     envs
 }
 
-/// `hermes update`'s target flags: the channel the desktop checked against
+/// `moor update`'s target flags: the channel the desktop checked against
 /// (`--channel`), else a branch (`--branch`, then the build pin
 /// BUILD_PIN_BRANCH, then `main`). A stable install the desktop checked
 /// against its release must not be updated onto the pinned branch: it would
@@ -1125,7 +1125,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn lock_probe_paths_cover_arm64_linux_build() {
-        let root = Path::new("/x/hermes-agent");
+        let root = Path::new("/x/moor-agent");
         let probes = install_lock_probe_paths(root);
 
         for dir in ["linux-unpacked", "linux-arm64-unpacked"] {

@@ -661,10 +661,10 @@ def test_openai_key_used_when_no_openrouter_key(monkeypatch):
 def test_real_openai_key_is_never_routed_or_sent_to_openrouter(monkeypatch):
     """A non-OpenRouter OPENAI_API_KEY with OPENAI_BASE_URL unset neither auto-selects OpenRouter
     nor becomes the bearer for openrouter.ai; auto-detection lands on openai-api as documented."""
-    from hermes_cli.auth import resolve_provider
-    from hermes_cli.runtime_provider_backends import _resolve_openrouter_runtime
+    from moor_cli.auth import resolve_provider
+    from moor_cli.runtime_provider_backends import _resolve_openrouter_runtime
     monkeypatch.setattr(rp, "_get_model_config", dict)
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"model": {}})
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: {"model": {}})
     monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda *_a, **_kw: False)
     for var in ("OPENAI_BASE_URL", "OPENROUTER_BASE_URL", "OPENROUTER_API_KEY", "CUSTOM_BASE_URL"):
         monkeypatch.delenv(var, raising=False)
@@ -687,7 +687,7 @@ def test_real_openai_key_is_never_routed_or_sent_to_openrouter(monkeypatch):
 def test_openai_key_bound_to_another_host_never_reaches_openrouter(monkeypatch, openai_base_url, expected_key):
     """OPENAI_API_KEY is an OpenRouter fallback only while OPENAI_BASE_URL doesn't bind it elsewhere:
     a bound key follows its exact origin, so the same hostname over http:// or on another port is elsewhere."""
-    from hermes_cli.runtime_provider_backends import _resolve_openrouter_runtime
+    from moor_cli.runtime_provider_backends import _resolve_openrouter_runtime
     monkeypatch.setattr(rp, "_get_model_config", dict)
     monkeypatch.setenv("OPENAI_BASE_URL", openai_base_url)
     monkeypatch.delenv("OPENROUTER_BASE_URL", raising=False)
@@ -701,11 +701,11 @@ def test_openai_key_bound_to_another_host_never_reaches_openrouter(monkeypatch, 
 
 
 def test_openrouter_env_file_key_survives_exhausted_pool(monkeypatch):
-    """A key living only in ~/.hermes/.env must survive an exhausted pool entry.
+    """A key living only in ~/.moor/.env must survive an exhausted pool entry.
 
     Regression test for #117667: with the pool's OPENROUTER_API_KEY entry benched
     (select() -> None), the terminal resolver read os.environ only, so the documented
-    .env location was skipped and `hermes chat --provider openrouter` failed with
+    .env location was skipped and `moor chat --provider openrouter` failed with
     "No API key found" until the key was exported in the shell.
     """
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openrouter")
@@ -720,7 +720,7 @@ def test_openrouter_env_file_key_survives_exhausted_pool(monkeypatch):
     or_env_name = "OPENROUTER_" + "API_KEY"
     monkeypatch.delenv(or_env_name, raising=False)
     monkeypatch.setattr(
-        "hermes_cli.config.load_env", lambda: {or_env_name: "dotenv-or-key"}
+        "moor_cli.config.load_env", lambda: {or_env_name: "dotenv-or-key"}
     )
 
     resolved = rp.resolve_runtime_provider(requested="openrouter")
@@ -749,7 +749,7 @@ def test_openrouter_raw_op_ref_in_dotenv_loses_to_resolved_env(monkeypatch):
     or_env_name = "OPENROUTER_" + "API_KEY"
     monkeypatch.setenv(or_env_name, "resolved-or-key")
     monkeypatch.setattr(
-        "hermes_cli.config.load_env", lambda: {or_env_name: "op://Vault/Item/field"}
+        "moor_cli.config.load_env", lambda: {or_env_name: "op://Vault/Item/field"}
     )
 
     resolved = rp.resolve_runtime_provider(requested="openrouter")
@@ -762,7 +762,7 @@ def test_openai_env_file_key_used_as_fallback_without_openrouter_key(monkeypatch
 
     Covers the second candidate (runtime_provider_backends reads both keys through
     get_env_value_prefer_dotenv): with no OpenRouter key anywhere, a key living only
-    in ~/.hermes/.env still resolves the rung-8 fallback."""
+    in ~/.moor/.env still resolves the rung-8 fallback."""
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openrouter")
     monkeypatch.setattr(rp, "_get_model_config", dict)
     monkeypatch.setattr(
@@ -776,7 +776,7 @@ def test_openai_env_file_key_used_as_fallback_without_openrouter_key(monkeypatch
     monkeypatch.delenv(oa_env_name, raising=False)
     monkeypatch.delenv(or_env_name, raising=False)
     monkeypatch.setattr(
-        "hermes_cli.config.load_env", lambda: {oa_env_name: "sk-or-dotenv-openai-key"}
+        "moor_cli.config.load_env", lambda: {oa_env_name: "sk-or-dotenv-openai-key"}
     )
 
     resolved = rp.resolve_runtime_provider(requested="openrouter")

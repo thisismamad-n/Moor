@@ -73,8 +73,8 @@ def _run_job_patched(job, tmp_path, *, resolve=None, skill_view=None):
     patches = [
         patch("cron.scheduler._moor_home", tmp_path),
         patch("cron.scheduler_delivery._resolve_origin", return_value=None),
-        patch("hermes_cli.env_loader.load_hermes_dotenv"),
-        patch("hermes_cli.env_loader.reset_secret_source_cache"),
+        patch("moor_cli.env_loader.load_moor_dotenv"),
+        patch("moor_cli.env_loader.reset_secret_source_cache"),
         patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]),
     ]
     if resolve is None:
@@ -138,10 +138,10 @@ class TestMissingProviderKeyBlocks:
             cron_jobs.save_jobs([job])
             for _tick in range(2):
                 fresh = next(j for j in cron_jobs.load_jobs() if j["id"] == job["id"])
-                with patch("cron.scheduler._hermes_home", tmp_path), \
+                with patch("cron.scheduler._moor_home", tmp_path), \
                      patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-                     patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-                     patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+                     patch("moor_cli.env_loader.load_moor_dotenv"), \
+                     patch("moor_cli.env_loader.reset_secret_source_cache"), \
                      patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
                      patch("moor_cli.runtime_provider.resolve_runtime_provider",
                            side_effect=_AuthErrorFactory()), \
@@ -270,10 +270,10 @@ class TestOptOut:
             cron_jobs.save_jobs([job])
             for _tick in range(2):
                 fresh = next(j for j in cron_jobs.load_jobs() if j["id"] == job["id"])
-                with patch("cron.scheduler._hermes_home", tmp_path), \
+                with patch("cron.scheduler._moor_home", tmp_path), \
                      patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-                     patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-                     patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+                     patch("moor_cli.env_loader.load_moor_dotenv"), \
+                     patch("moor_cli.env_loader.reset_secret_source_cache"), \
                      patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
                      patch("moor_cli.runtime_provider.resolve_runtime_provider",
                            side_effect=_AuthErrorFactory()), \

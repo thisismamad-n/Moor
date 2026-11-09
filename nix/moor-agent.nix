@@ -2,8 +2,8 @@
 #
 # callPackage auto-wires nixpkgs args; flake inputs are passed explicitly.
 # Users override via:
-#   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
-#   pkgs.hermes-agent.override { extraDependencyGroups = [ "google-meet" ]; }
+#   pkgs.moor-agent.override { extraPythonPackages = [...]; }
+#   pkgs.moor-agent.override { extraDependencyGroups = [ "google-meet" ]; }
 # Both extras add to what the package ships. The shipped groups live in
 # defaultDependencyGroups (set by packages.nix for `full`/`messaging`), so a
 # plain override of the extras never drops them.
@@ -76,7 +76,7 @@ let
       version;
 
   # CLI and Electron consume the same provenance and update owner.
-  installStampFile = writeText "hermes-install-stamp.json" (
+  installStampFile = writeText "moor-install-stamp.json" (
     builtins.toJSON {
       schemaVersion = 2;
       commit = rev;
@@ -95,17 +95,17 @@ let
     }
   );
 
-  mkHermesVenv =
+  mkMoorVenv =
     groups:
     callPackage ./python.nix {
       inherit uv2nix pyproject-nix pyproject-build-systems;
-      pythonSrc = hermesNpmLib.pythonSrc;
+      pythonSrc = moorNpmLib.pythonSrc;
       # Deduplicated so naming a group the variant already ships leaves the
       # venv derivation unchanged.
       dependency-groups = lib.unique ([ "all" ] ++ groups);
     };
 
-  hermesVenv = (mkHermesVenv packageDependencyGroups).venv;
+  moorVenv = (mkMoorVenv packageDependencyGroups).venv;
 
   pmRuntime = callPackage ./pm-runtime.nix {
     inherit uv2nix pyproject-nix pyproject-build-systems;
@@ -116,7 +116,7 @@ let
     inherit (mkMoorVenv [ ]) venv;
   };
 
-  hermesNpmLib = callPackage ./lib.nix {
+  moorNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix pmPackages;
   };
 
@@ -128,9 +128,9 @@ let
     inherit moorNpmLib generatedIcons;
   };
 
-  # The store is read-only, so the Webapp is built here and never by `hermes webapp`.
-  hermesWebapp = callPackage ./webapp.nix {
-    inherit hermesNpmLib;
+  # The store is read-only, so the Webapp is built here and never by `moor webapp`.
+  moorWebapp = callPackage ./webapp.nix {
+    inherit moorNpmLib;
   };
 
   bundledSkills = lib.cleanSourceWith {
@@ -167,11 +167,11 @@ let
     filter = path: _type: !(lib.hasInfix "/__pycache__/" path);
   };
 
-  # Tools come from pm/lock.json, the same builds `hermes pm install`
+  # Tools come from pm/lock.json, the same builds `moor pm install`
   # provisions elsewhere. git and openssh are nixpkgs': the lock pins them for
-  # win32 only. hermesNpmLib.nodejs is the pinned node with the pinned npm.
+  # win32 only. moorNpmLib.nodejs is the pinned node with the pinned npm.
   runtimeDeps = [
-    hermesNpmLib.nodejs
+    moorNpmLib.nodejs
     pmPackages.ripgrep
     pmPackages.ffmpeg
     git
@@ -206,20 +206,20 @@ let
     ];
   };
 
-  agentInputsFile = writeText "hermes-agent-inputs.json" (
+  agentInputsFile = writeText "moor-agent-inputs.json" (
     builtins.toJSON {
       project = "${../pyproject.toml}";
-      code = "${hermesVenv}/${sitePackagesPath}";
-      repo = "share/hermes-agent";
+      code = "${moorVenv}/${sitePackagesPath}";
+      repo = "share/moor-agent";
       placement = "references";
       target = "${if stdenv.hostPlatform.isDarwin then "darwin" else "linux"}-${
         if stdenv.hostPlatform.isAarch64 then "arm64" else "x64"
       }";
-      python = "${hermesVenv}/bin/python3";
-      site_packages = "${hermesVenv}/${sitePackagesPath}";
-      environment = toString hermesVenv;
+      python = "${moorVenv}/bin/python3";
+      site_packages = "${moorVenv}/${sitePackagesPath}";
+      environment = toString moorVenv;
       pm_runtime = toString pmRuntime;
-      command_dir = "${hermesVenv}/bin";
+      command_dir = "${moorVenv}/bin";
       resources = {
         skills = toString bundledSkills;
         optional-skills = toString bundledOptionalSkills;
@@ -228,17 +228,17 @@ let
         optional-mcps = toString bundledOptionalMcps;
       };
       frontends = {
-        tui = "${hermesTui}/lib/hermes-tui";
-        web = toString hermesWeb;
-        webapp = toString hermesWebapp;
+        tui = "${moorTui}/lib/moor-tui";
+        web = toString moorWeb;
+        webapp = toString moorWebapp;
       };
       ref = if dirty then null else rev;
       stamp = toString installStampFile;
       env = {
-        HERMES_NODE = lib.getExe hermesNpmLib.nodejs;
+        MOOR_NODE = lib.getExe moorNpmLib.nodejs;
       }
       // lib.optionalAttrs (rev != null && !dirty) {
-        HERMES_REVISION = rev;
+        MOOR_REVISION = rev;
       };
     }
   );
@@ -313,7 +313,7 @@ stdenv.mkDerivation (finalAttrs: {
       shift 2
       makeWrapper "$source" "$out/$destination" "$@" \
         --suffix PATH : "${runtimePath}" \
-        --set-default HERMES_BIN "$out/bin/hermes"${
+        --set-default MOOR_BIN "$out/bin/moor"${
           lib.optionalString (
             extraPythonPackages != [ ]
           ) " \\\n        --suffix PYTHONPATH : \"${pythonPath}\""
@@ -345,14 +345,14 @@ stdenv.mkDerivation (finalAttrs: {
       # uv2nix builds the editable venv against the nixpkgs interpreter (it
       # cannot build against a tarball one); devVenv re-homes it onto the
       # interpreter pm/lock.json pins.
-      devPython = (mkHermesVenv (packageDependencyGroups ++ [ "dev" ])).editableVenv;
+      devPython = (mkMoorVenv (packageDependencyGroups ++ [ "dev" ])).editableVenv;
       pmPython = pmPackages.python;
 
       # A real venv: pyvenv.cfg's `home` is the pinned interpreter and its
       # site-packages are devPython's, so `.pth` files (the editable checkout)
       # load and nothing depends on the caller's PYTHONPATH. Console scripts
       # are re-shebanged onto it so `pytest` and `python -m pytest` agree.
-      devVenv = runCommand "hermes-agent-dev-venv" { } ''
+      devVenv = runCommand "moor-agent-dev-venv" { } ''
         mkdir -p $out/bin $out/lib/python${python.pythonVersion}
         ln -s ${devPython}/${sitePackagesPath} $out/${sitePackagesPath}
         cat > $out/pyvenv.cfg <<EOF
@@ -391,11 +391,11 @@ stdenv.mkDerivation (finalAttrs: {
     in
     {
       inherit
-        hermesTui
-        hermesWeb
-        hermesWebapp
-        hermesNpmLib
-        hermesVenv
+        moorTui
+        moorWeb
+        moorWebapp
+        moorNpmLib
+        moorVenv
         agentBuilderSrc
         agentInputsFile
         installStampFile
@@ -413,9 +413,9 @@ stdenv.mkDerivation (finalAttrs: {
       # `moor` binary — venv with all deps, bundled skills/plugins,
       # runtime PATH (ripgrep/git/ffmpeg/etc).  No re-implementation
       # of the agent resolution in the desktop wrapper.
-      hermesDesktop = callPackage ./desktop.nix {
+      moorDesktop = callPackage ./desktop.nix {
         inherit
-          hermesNpmLib
+          moorNpmLib
           electron
           installStampFile
           generatedIcons
@@ -425,7 +425,7 @@ stdenv.mkDerivation (finalAttrs: {
       };
 
       devShellHook = ''
-        export HERMES_PYTHON=${devVenv}/bin/python3
+        export MOOR_PYTHON=${devVenv}/bin/python3
         # `uv run --active --no-sync` reuses this venv instead of creating .venv.
         export VIRTUAL_ENV=${devVenv}
       '';

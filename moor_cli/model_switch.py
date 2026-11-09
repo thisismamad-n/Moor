@@ -20,8 +20,8 @@ from moor_cli.model_normalize import normalize_model_for_provider
 from agent.models_dev import (
     ModelCapabilities, ModelInfo, get_model_capabilities, get_model_info, list_provider_models)
 from utils import base_url_host_matches, base_url_hostname, base_url_origin
-# Re-exported: callers/tests patch hermes_cli.model_switch.<name>.
-from hermes_cli.model_switch_providers import list_authenticated_providers
+# Re-exported: callers/tests patch moor_cli.model_switch.<name>.
+from moor_cli.model_switch_providers import list_authenticated_providers
 
 
 logger = logging.getLogger(__name__)
@@ -214,7 +214,7 @@ def _load_direct_aliases(cfg: Optional[dict] = None) -> dict[str, DirectAlias]:
     merged = dict(_BUILTIN_DIRECT_ALIASES)
     try:
         if cfg is None:
-            from hermes_cli.config import load_config
+            from moor_cli.config import load_config
             cfg = load_config()
 
         user_aliases = cfg.get("model_aliases")
@@ -270,7 +270,7 @@ def _direct_alias_source_identity() -> Optional[tuple]:
         path = get_config_path()
     except Exception:
         return None
-    from hermes_cli.config_backend import config_cache_version
+    from moor_cli.config_backend import config_cache_version
     try:
         version = config_cache_version(path)
     except OSError:
@@ -822,7 +822,7 @@ def resolve_alias(raw_input: str, current_provider: str, user_providers: Optiona
     # models.dev catalog merged with static _PROVIDER_MODELS entries it may be missing.
     catalog = list_provider_models(current_provider)
     try:
-        from hermes_cli.models import static_catalog
+        from moor_cli.models import static_catalog
         seen = {m.lower() for m in catalog}
         catalog.extend(m for m in static_catalog(current_provider) if m.lower() not in seen)
     except Exception:
@@ -1073,7 +1073,7 @@ def _ollama_configured_base() -> tuple[dict, str]:
 
 
 def _unknown_provider_message(explicit_provider: str) -> str:
-    from hermes_cli.left_core_migration import provider_install_hint
+    from moor_cli.left_core_migration import provider_install_hint
     if moved := provider_install_hint(explicit_provider):
         return f"Unknown provider '{explicit_provider}'. {moved}"
     msg = (
@@ -1640,7 +1640,7 @@ def _validate_switch(st: _Switch) -> Optional[ModelSwitchResult]:
     st.new_model = _resolve_named_custom_model_id(st.new_model, st.target_provider, st.custom_providers)
     st.new_model = normalize_model_for_provider(st.new_model, st.target_provider)
 
-    from hermes_cli.chat_catalog import is_known_non_chat_model
+    from moor_cli.chat_catalog import is_known_non_chat_model
     if is_known_non_chat_model(st.new_model):
         return st.fail(
             f"`{st.new_model}` is a generation model and cannot be used for chat. "
@@ -1716,11 +1716,11 @@ _PROVIDER_API_MODE_OVERRIDES: dict[str, Any] = {
 
 def model_derived_api_mode(provider: str, model: str, api_key: str = "") -> Optional[str]:
     """api_mode re-derived from the FINAL model for providers that serve several wire formats behind one
-    endpoint (OpenCode Zen/Go and custom providers extending a family slug, Nous, and any provider profile
+    endpoint (OpenCode Zen/Go and custom providers extending a family slug, Moor, and any provider profile
     declaring ``api_mode_for_model``); None when the provider's wire is fixed by its endpoint. A persisted
     api_mode from an earlier model of such a provider is never authoritative — resume paths must call this
     instead of honoring the row (#96066)."""
-    from hermes_cli.models import opencode_provider_family
+    from moor_cli.models import opencode_provider_family
     key = str(provider or "").strip().lower()
     override = _PROVIDER_API_MODE_OVERRIDES.get(opencode_provider_family(key) or key)
     if override is None and key:
@@ -1754,8 +1754,8 @@ def _build_switch_result(st: _Switch) -> ModelSwitchResult:
         is_codex_backend=st.target_provider.strip().lower() == "openai-codex")
     model_info = get_model_info(st.target_provider, st.new_model, allow_network=True)
 
-    warnings = [w for w in (st.validation.get("message"), _check_hermes_model_warning(st.new_model)) if w]
-    from hermes_cli.model_picker_usage import large_model_notice
+    warnings = [w for w in (st.validation.get("message"), _check_moor_model_warning(st.new_model)) if w]
+    from moor_cli.model_picker_usage import large_model_notice
     usage_notice = large_model_notice(st.new_model, st.target_provider, fetch=True) or ""
 
     # Carry the switched provider's request_overrides (custom_providers ``extra_body`` such as
@@ -1843,7 +1843,7 @@ def model_selection_config_updates(result: ModelSwitchResult, current_model_cfg:
 def selection_route_changed(model_cfg: dict, result: ModelSwitchResult) -> bool:
     """Provider or endpoint differs between a ``model:`` block and the switch target. The one
     route-identity test for endpoint-bound credentials (inline keys, ``key_env``, launch keys)."""
-    from hermes_cli.route_identity import normalize_route_base_url
+    from moor_cli.route_identity import normalize_route_base_url
     if str(model_cfg.get("provider") or "").strip().lower() != str(result.target_provider or "").strip().lower():
         return True
     return normalize_route_base_url(model_cfg.get("base_url")) != normalize_route_base_url(result.base_url)
@@ -1878,13 +1878,13 @@ def remote_model_selection_guard(before: Any, after: Any) -> None:
     would land the rest of the route (a new endpoint with the old provider, say) half-applied;
     :func:`persist_model_selection` gets the same all-or-nothing refusal from its one keyed write.
     No-op for the file backend."""
-    from hermes_cli.config_backend import ConfigLockedError, get_config_backend, supports_file_tooling
+    from moor_cli.config_backend import ConfigLockedError, get_config_backend, supports_file_tooling
     if supports_file_tooling():
         return
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     before = before if isinstance(before, dict) else {}
     after = after if isinstance(after, dict) else {}
-    backend, home = get_config_backend(), get_hermes_home()
+    backend, home = get_config_backend(), get_moor_home()
     for key in sorted(set(before) | set(after)):
         if before.get(key, _MISSING) != after.get(key, _MISSING):
             level = backend.locked(home, f"model.{key}")
@@ -1910,8 +1910,8 @@ def persist_model_selection(result: ModelSwitchResult, config_path: Any = None) 
     recomputed against the fresh block. ``_CONFIG_LOCK`` is in-process only: a cross-process
     config lock, once one exists, must wrap the same section."""
     from pathlib import Path
-    from hermes_cli.config import _CONFIG_LOCK, atomic_config_replace, get_config_path, read_user_config_raw
-    from hermes_cli.config_backend import supports_file_tooling, write_config_keys
+    from moor_cli.config import _CONFIG_LOCK, atomic_config_replace, get_config_path, read_user_config_raw
+    from moor_cli.config_backend import supports_file_tooling, write_config_keys
     path = Path(config_path) if config_path else get_config_path()
     planned_from = read_user_config_raw(path).get("model")
     updates = model_selection_config_updates(result, planned_from)
@@ -1922,7 +1922,7 @@ def persist_model_selection(result: ModelSwitchResult, config_path: Any = None) 
         # profile-level unset cannot reach it (contract §5.4): an inherited old-endpoint api_key
         # would stay active at the new endpoint. A key the switch clears and the effective block
         # still holds is therefore masked with null ("no value"); an absent one is just unset.
-        from hermes_cli.config_backend import Changes, write_changes
+        from moor_cli.config_backend import Changes, write_changes
         held = planned_from if isinstance(planned_from, dict) else {}
         masked = _merge_selection_updates(held, updates, mask_cleared=True)
         write_changes(path, Changes(

@@ -44,7 +44,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any, Optional, Sequence
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 from utils import atomic_json_write
 
@@ -102,7 +102,7 @@ class HostRecord:
     home: str = ""
     #: Stable process-start fingerprint. On Linux/WSL this is boot-relative /proc start ticks,
     #: so a wall-clock resync cannot make a live owner look like a recycled PID. Optional for
-    #: records written by older Hermes versions, which still fall back to create_time.
+    #: records written by older Moor versions, which still fall back to create_time.
     #: NOT unique across reboots — pair it with ``boot_epoch``.
     start_time: Optional[int] = None
     #: Instantiation epoch (boot id + PID 1 start). Distinguishes a pre-reboot owner from an

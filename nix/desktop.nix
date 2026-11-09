@@ -32,9 +32,9 @@
 }:
 let
   wrapperEnv = {
-    # set HERMES_DESKTOP_HERMES to the absolute path of the nix-built `hermes`
-    # binary so the deployment override selects our fully wrapped hermes install.
-    HERMES_DESKTOP_HERMES = lib.getExe hermesAgent;
+    # set MOOR_DESKTOP_MOOR to the absolute path of the nix-built `moor`
+    # binary so the deployment override selects our fully wrapped moor install.
+    MOOR_DESKTOP_MOOR = lib.getExe moorAgent;
     ELECTRON_IS_DEV = "0";
   }
   # extraEnv overrides the defaults
@@ -44,7 +44,7 @@ let
     "--add-flags"
     "--enable-features=WaylandWindowDecorations"
     "--add-flags"
-    "${placeholder "out"}/share/hermes-desktop"
+    "${placeholder "out"}/share/moor-desktop"
   ]
   ++ lib.concatLists (
     lib.mapAttrsToList (name: value: [
@@ -107,7 +107,7 @@ let
       # (node-gyp's --disturl path can't run in the sandbox), and is already
       # the --nodedir layout. Same pattern as signal-desktop / github-desktop /
       # session-desktop / rstudio in nixpkgs.
-      ${lib.getExe hermesNpmLib.node-gyp} rebuild \
+      ${lib.getExe moorNpmLib.node-gyp} rebuild \
         --directory=node_modules/node-pty \
         --build-from-source \
         --runtime=electron \
@@ -190,7 +190,7 @@ stdenv.mkDerivation {
       --replace-fail "process.resourcesPath" "'$out/share/moor-desktop'"
 
     # Wrap the nixpkgs electron binary to launch our app.
-    makeWrapper ${lib.getExe electron} $out/bin/hermes-desktop \
+    makeWrapper ${lib.getExe electron} $out/bin/moor-desktop \
       ${lib.escapeShellArgs wrapperArgs}
 
     # XDG launcher entry
@@ -198,9 +198,9 @@ stdenv.mkDerivation {
     install -m 0644 ${generatedIcons}/apps/desktop/assets/icon.png \
       $out/share/icons/hicolor/1024x1024/apps/moor.png
     export PYTHONPATH=$(mktemp -d)
-    cp ${../hermes_cli/linux_desktop_entry.py} "$PYTHONPATH/linux_desktop_entry.py"
-    export DESKTOP_EXEC="$out/bin/hermes-desktop"
-    export DESKTOP_ICON="$out/share/icons/hicolor/1024x1024/apps/hermes.png"
+    cp ${../moor_cli/linux_desktop_entry.py} "$PYTHONPATH/linux_desktop_entry.py"
+    export DESKTOP_EXEC="$out/bin/moor-desktop"
+    export DESKTOP_ICON="$out/share/icons/hicolor/1024x1024/apps/moor.png"
     entry_name=$(python3 -c 'from linux_desktop_entry import DESKTOP_ENTRY_NAME; print(DESKTOP_ENTRY_NAME)')
     python3 -c 'import os; from linux_desktop_entry import render_desktop_entry; print(render_desktop_entry(os.environ["DESKTOP_EXEC"], os.environ["DESKTOP_ICON"]))' > "$out/share/applications/$entry_name"
     runHook postInstall

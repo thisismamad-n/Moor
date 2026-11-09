@@ -13,15 +13,15 @@ from gateway.platforms.base import BasePlatformAdapter
 from gateway.platforms.event import MessageEvent
 from gateway.session import SessionSource
 from gateway.session_ingress_burst import discard_busy_burst, dispatch_busy_burst
-from hermes_cli.observability import relay_shared_metrics as rsm
-from hermes_cli.observability import shared_metrics_busy as busy
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_engagement as engagement
-from hermes_cli.observability import shared_metrics_gateway as smg
-from hermes_cli.observability.shared_metrics import SharedMetricsStore
+from moor_cli.observability import relay_shared_metrics as rsm
+from moor_cli.observability import shared_metrics_busy as busy
+from moor_cli.observability import shared_metrics_contract as contract
+from moor_cli.observability import shared_metrics_engagement as engagement
+from moor_cli.observability import shared_metrics_gateway as smg
+from moor_cli.observability.shared_metrics import SharedMetricsStore
 
 KEY = "agent:main:telegram:dm:42"
-RESOURCE = {"architecture": "x86_64", "hermes_version": "0.0.0", "install_method": "git", "os_family": "linux"}
+RESOURCE = {"architecture": "x86_64", "moor_version": "0.0.0", "install_method": "git", "os_family": "linux"}
 DAY1 = datetime(2026, 9, 27, 9, 0, tzinfo=UTC).timestamp()
 
 
@@ -129,7 +129,7 @@ def test_busy_dispositions_follow_the_busy_resolution_and_collection_off_records
     assert sorted((d["disposition"], d["wait_bucket"]) for _m, d in got) == [
         ("dropped", "never"), ("interrupted", "30s_to_2m"), ("steered", "lt_5s")]
     for metric, data in got:
-        assert metric == "hermes.gateway.busy_arrival.count"
+        assert metric == "moor.gateway.busy_arrival.count"
         assert data["platform"] == "telegram"
         assert contract.counter_dimensions_are_valid(metric, data)
 
@@ -150,7 +150,7 @@ def test_day_row_reports_each_profiles_peak_of_chats_running_at_once(tmp_path, m
     carries its own peak (claimed in the owning profile's scope, not the launch profile's), and a
     row recorded before the field existed still packages."""
     from gateway.run_agent_cache import GatewayAgentCacheMixin
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     monkeypatch.setattr("gateway.run._write_runtime_status_quiet", lambda **_: None)
     monkeypatch.setattr(busy, "_running", {})
@@ -165,11 +165,11 @@ def test_day_row_reports_each_profiles_peak_of_chats_running_at_once(tmp_path, m
 
     def turn_boundary(home, keys):
         running[:] = keys
-        token = set_hermes_home_override(str(home))
+        token = set_moor_home_override(str(home))
         try:
             GatewayAgentCacheMixin._persist_active_agents(runner)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     turn_boundary(a, ["a:1"])
     turn_boundary(a, ["a:1", "a:2"])
@@ -209,11 +209,11 @@ def test_a_busy_message_saved_behind_a_pause_is_not_dropped(rows, monkeypatch, r
     row. When this process later runs that row (a ``session_busy`` pause lifting), it counts as
     ``queued`` with its wait; after a restart the next process runs it and nothing is counted."""
     import gateway.session_authority  # binds the real reader before the patch below
-    import hermes_state_runtime
+    import moor_state_runtime
     from gateway.session_ingress import admit_message
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_state_runtime import RuntimeStoreError
 
-    monkeypatch.setattr(hermes_state_runtime, "get_session_admission",
+    monkeypatch.setattr(moor_state_runtime, "get_session_admission",
                         lambda db, admission_id: {"status": "queued"})
     authority, replies = _PausingAuthority(), []
 
@@ -247,7 +247,7 @@ def test_an_auto_resumed_chat_counts_toward_its_owning_profiles_peak(tmp_path, m
     monkeypatch.setattr(busy, "_peaks", {})
     monkeypatch.setattr(busy, "_now", lambda: DAY1)
     launch, beta = tmp_path / "launch", tmp_path / "beta"
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     runner, _adapter = make_restart_runner()
     runner.session_authorities = []
     runner._resolve_profile_home_for_source = lambda source: beta
@@ -273,16 +273,16 @@ def test_a_held_burst_dropped_by_stop_counts_under_its_own_profile_not_the_chats
     chat's latest turn. A burst held for this profile's bot and dropped by /stop is recorded under
     the profile its routing identity names, so that profile's collection setting decides."""
     from gateway.session_identity import RoutingIdentity
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import get_moor_home, reset_moor_home_override, set_moor_home_override
 
     homes = []
-    monkeypatch.setattr(rsm, "record_process_mark", lambda mark, data: homes.append(str(get_hermes_home())))
+    monkeypatch.setattr(rsm, "record_process_mark", lambda mark, data: homes.append(str(get_moor_home())))
     alpha, beta = tmp_path / "alpha", tmp_path / "beta"
-    token = set_hermes_home_override(str(beta))
+    token = set_moor_home_override(str(beta))
     try:
         smg.start_reply_clock(SessionSource(platform=Platform.DISCORD, chat_id="chan", user_id="9"))
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     source = SessionSource(platform=Platform.DISCORD, chat_id="chan", user_id="7")
     source._identity = RoutingIdentity(transport_profile="alpha", runtime_profile="alpha",
                                        authorization_home=alpha, runtime_home=alpha)
@@ -303,7 +303,7 @@ def test_a_held_burst_dropped_by_stop_counts_under_its_own_profile_not_the_chats
 def test_a_closing_day_keeps_a_peak_reached_just_before_midnight(tmp_path, monkeypatch):
     """A third chat starts at 23:59:30; its first engagement event lands after midnight, and a turn
     boundary after midnight already started the new day. The closed day still reports 3."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     monkeypatch.setattr(busy, "_running", {})
     monkeypatch.setattr(busy, "_peaks", {})
@@ -314,11 +314,11 @@ def test_a_closing_day_keeps_a_peak_reached_just_before_midnight(tmp_path, monke
     home = tmp_path / "a"
 
     def boundary(keys):
-        token = set_hermes_home_override(str(home))
+        token = set_moor_home_override(str(home))
         try:
             busy.observe_running_chats(keys)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     boundary(["c1", "c2"])
     engagement.record(_store(home), RESOURCE, surface="gateway", route=None)
@@ -377,12 +377,12 @@ async def test_a_message_the_adapter_saw_idle_counts_when_it_waits_behind_a_runn
     from gateway.session_contract import SessionRef
     from gateway.session_authority import SessionAuthority
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     runner, authority, source, key = await _real_runner(monkeypatch)
     monkeypatch.setattr(runner, "_effective_busy_input_mode", lambda source: "queue")
     late = MessageEvent(text="C", source=source, message_id="C")
-    with native_callback(runner, late, get_hermes_home()):
+    with native_callback(runner, late, get_moor_home()):
         waiting = asyncio.create_task(runner._handle_message(late))
         for _ in range(200):
             if authority.waiters:
@@ -407,7 +407,7 @@ async def test_a_busy_message_cancelled_before_admission_reads_its_row_counts_as
     finds it terminal ``cancelled``. It never reached the agent: ``dropped`` / ``never``."""
     from gateway.session_ingress import admit_message
     from gateway.session_ingress_context import native_callback
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     runner, authority, source, _key = await _real_runner(monkeypatch)
     follow_up = MessageEvent(text="B", source=source, message_id="B")
@@ -418,12 +418,12 @@ async def test_a_busy_message_cancelled_before_admission_reads_its_row_counts_as
     async def commit_then_stop(event):
         receipt = await commit(event)
         stop = MessageEvent(text="/stop", source=source)
-        with native_callback(runner, stop, get_hermes_home()):
+        with native_callback(runner, stop, get_moor_home()):
             await runner._handle_message(stop)
         return receipt
 
     monkeypatch.setattr(authority, "admit_native", commit_then_stop)
-    with native_callback(runner, follow_up, get_hermes_home()):
+    with native_callback(runner, follow_up, get_moor_home()):
         assert await admit_message(authority, follow_up) is None
     busy.settle_busy_arrival(follow_up)
     assert _busy_rows(rows) == [("dropped", "never")]

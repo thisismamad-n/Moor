@@ -1,6 +1,6 @@
 """Web Access routes: Desktop's Web Access pane turns the gateway-served Webapp on and off here.
 
-Thin HTTP over :mod:`hermes_cli.webapp_access`. Every handler acts on the home of the gateway that
+Thin HTTP over :mod:`moor_cli.webapp_access`. Every handler acts on the home of the gateway that
 serves the requested profile; start and stop write its ``webapp:`` config and restart that gateway,
 which reads the config only when it starts. Start, Stop and Restart run one at a time. Only native
 Desktop on this computer reaches them (:func:`owner_on_this_machine`), never a browser, and only on
@@ -17,17 +17,17 @@ from typing import Any, Callable, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from hermes_cli import webapp_access
-from hermes_cli.web_deps import late
-from hermes_cli.web_routers._common import (
+from moor_cli import webapp_access
+from moor_cli.web_deps import late
+from moor_cli.web_routers._common import (
     _profile_scope,
     config_scoped_to_thread,
     config_write_scope,
     destructive_profile,
 )
 
-_restart_gateway_after = late("_restart_gateway_after", "hermes_cli.web_server_gateway")
-_gateway_restart_failure = late("gateway_restart_failure", "hermes_cli.web_server_gateway")
+_restart_gateway_after = late("_restart_gateway_after", "moor_cli.web_server_gateway")
+_gateway_restart_failure = late("gateway_restart_failure", "moor_cli.web_server_gateway")
 # One Web Access change at a time in this backend (every Desktop window's pane talks to it): a
 # Start, Stop or Restart waits for the one in flight, from its build through the restart request,
 # so the Portal's callback, the config and the gateway all end on the last change asked for.
@@ -44,7 +44,7 @@ def owner_on_this_machine(request: Request) -> None:
     the gateway from another machine (an SSH tunnel), and behind the sign-in gate a cookie or bearer
     login may come from another device."""
     if not getattr(request.state, "native_http_principal", None):
-        raise HTTPException(status_code=403, detail="Web Access can only be changed from the Hermes app on this computer.")
+        raise HTTPException(status_code=403, detail="Web Access can only be changed from the Moor app on this computer.")
 
 
 router = APIRouter(dependencies=[Depends(owner_on_this_machine)])
@@ -58,7 +58,7 @@ class StartBody(BaseModel):
 @contextmanager
 def _gateway_scope(profile: Optional[str], *, config_write: bool):
     """Scope to the home of the gateway serving *profile*; yields that gateway's profile name."""
-    from hermes_constants import profile_name_for_home
+    from moor_constants import profile_name_for_home
 
     with _profile_scope(profile):
         name = profile_name_for_home(webapp_access.gateway_home()) or profile

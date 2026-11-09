@@ -87,8 +87,8 @@ export const debugCommands: SlashCommand[] = [
               t('slashCmd.debug.themeInfo.osc11Background'),
               terminalBackgroundHex() ?? t('slashCmd.debug.themeInfo.noReply')
             ],
-            ['HERMES_TUI_BACKGROUND', process.env.HERMES_TUI_BACKGROUND ?? unset],
-            ['HERMES_TUI_THEME', process.env.HERMES_TUI_THEME ?? unset],
+            ['MOOR_TUI_BACKGROUND', process.env.MOOR_TUI_BACKGROUND ?? unset],
+            ['MOOR_TUI_THEME', process.env.MOOR_TUI_THEME ?? unset],
             ['COLORFGBG', process.env.COLORFGBG ?? unset],
             ['TERM_PROGRAM', process.env.TERM_PROGRAM ?? unset],
             [

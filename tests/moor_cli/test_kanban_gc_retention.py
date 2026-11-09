@@ -161,7 +161,7 @@ def _deferred_reasons(conn, task_id: str) -> list:
 
 
 def test_cmd_gc_keeps_a_scratch_dir_a_live_task_still_uses(board):
-    from hermes_cli import kanban_db_workspace as kbw
+    from moor_cli import kanban_db_workspace as kbw
 
     with kbc.connect_closing() as conn:
         archived, _live, shared = _shared_scratch(conn)
@@ -178,7 +178,7 @@ def test_cmd_gc_keeps_a_scratch_dir_a_live_task_still_uses(board):
 
 def test_cleanup_workspace_keeps_scratch_when_other_boards_cannot_be_listed(board, monkeypatch):
     """A named board's live task uses the dir; if boards cannot be listed, refuse the delete."""
-    from hermes_cli import kanban_db_workspace as kbw
+    from moor_cli import kanban_db_workspace as kbw
 
     kb.create_board("other")
     shared = kb.workspaces_root() / "cross-board"

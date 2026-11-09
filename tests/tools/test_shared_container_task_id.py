@@ -303,14 +303,14 @@ def test_shared_key_ignored_outside_persistent_docker(monkeypatch):
 
 
 def _use_home(monkeypatch, tmp_path, name):
-    """Run as a real home: ``"default"`` = the Hermes root, ``None`` = a home outside the root (which
+    """Run as a real home: ``"default"`` = the Moor root, ``None`` = a home outside the root (which
     is then its own root), anything else = ``<root>/profiles/<name>``."""
-    import hermes_constants
+    import moor_constants
 
-    root = hermes_constants._get_platform_default_hermes_home()  # conftest's per-test native root, any OS
+    root = moor_constants._get_platform_default_moor_home()  # conftest's per-test native root, any OS
     home = root if name == "default" else tmp_path / "elsewhere" if name is None else root / "profiles" / name
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
 
 def test_sessionless_default_profile_stays_default(monkeypatch, tmp_path):
@@ -318,8 +318,8 @@ def test_sessionless_default_profile_stays_default(monkeypatch, tmp_path):
     from gateway.session_context import reset_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_PROFILE", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "default")
     assert terminal_tool._resolve_container_task_id(None) == "default"
@@ -331,8 +331,8 @@ def test_sessionless_named_profile_reuses_profile_container(monkeypatch, tmp_pat
     from gateway.session_context import reset_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "tenant-a")
@@ -345,7 +345,7 @@ def test_explicit_session_profile_wins_over_process_home(monkeypatch, tmp_path):
     from gateway.session_context import clear_session_vars, set_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
     _use_home(monkeypatch, tmp_path, "tenant-a")
     tokens = set_session_vars(session_key="agent:main:desktop:1", profile="work")
     try:
@@ -364,18 +364,18 @@ def test_sessionless_named_profile_ignored_when_not_persistent_docker(monkeypatc
     from gateway.session_context import reset_session_vars
 
     monkeypatch.setenv("TERMINAL_ENV", "local")
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "tenant-a")
     assert terminal_tool._resolve_container_task_id(None) == "default"
 
 
 def test_sessionless_home_outside_the_root_stays_default(monkeypatch, tmp_path):
-    """A home outside the Hermes root is its own root: it keys "default", never profile:custom."""
+    """A home outside the Moor root is its own root: it keys "default", never profile:custom."""
     from gateway.session_context import reset_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, None)
     assert terminal_tool._resolve_container_task_id(None) == "default"
@@ -387,8 +387,8 @@ def test_named_launch_profile_chats_desktop_and_workers_share_one_container(monk
     from gateway.session_context import clear_session_vars, reset_session_vars, set_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "tenant-a")
@@ -449,8 +449,8 @@ def test_a_profile_literally_named_custom_keys_its_own_container(monkeypatch, tm
     from gateway.session_context import clear_session_vars, reset_session_vars, set_session_vars
 
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     reset_session_vars()
     _use_home(monkeypatch, tmp_path, "custom")
@@ -465,21 +465,21 @@ def test_a_profile_literally_named_custom_keys_its_own_container(monkeypatch, tm
 
 @pytest.mark.parametrize("home_parts", [("profiles", "work", "nested"), ("profiles", ".hidden"), ("loose",)])
 def test_a_home_the_tui_stamps_custom_keys_one_container_for_every_path(monkeypatch, tmp_path, home_parts):
-    """Inside the Hermes root but not a ``profiles/<name>`` home, the TUI stamps Desktop sessions
+    """Inside the Moor root but not a ``profiles/<name>`` home, the TUI stamps Desktop sessions
     ``custom``; that home's chats and session-less work key the same container, and it is the file
     panel's first candidate (the one a Save may write to), plain and mounted."""
     from gateway.platforms.docker_media_paths import _docker_sandbox_dir_candidates
     from gateway.session_context import clear_session_vars, reset_session_vars, set_session_vars
     from tools.environments.path_utils import sanitize_task_id_for_path
 
-    import hermes_constants
+    import moor_constants
 
-    home = hermes_constants._get_platform_default_hermes_home().joinpath(*home_parts)
+    home = moor_constants._get_platform_default_moor_home().joinpath(*home_parts)
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     _persistent_docker(monkeypatch)
-    monkeypatch.delenv("HERMES_SESSION_KEY", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_PROFILE", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_KEY", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_PROFILE", raising=False)
     monkeypatch.delenv("TERMINAL_DOCKER_SHARED_CONTAINER_KEY", raising=False)
     monkeypatch.setenv("TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE", "true")
     from tui_gateway.server import _current_profile_name
@@ -513,13 +513,13 @@ def test_home_profile_name_is_cached_per_home_never_across_homes(monkeypatch, tm
 
 
 def test_an_unresolvable_home_keeps_the_shared_default_key(monkeypatch):
-    import hermes_constants
+    import moor_constants
     from gateway.platforms.docker_media_paths import _docker_sandbox_dir_candidates
     from tools.terminal_tool_config import home_profile_name
 
     def _boom():
         raise RuntimeError("no home")
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", _boom)
+    monkeypatch.setattr(moor_constants, "get_moor_home", _boom)
     assert home_profile_name() == "default"
     assert _docker_sandbox_dir_candidates()[0] == "default"

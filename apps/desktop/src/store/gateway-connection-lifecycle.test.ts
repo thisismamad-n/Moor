@@ -779,10 +779,10 @@ describe('secondary stalled-dial budget', () => {
     vi.useFakeTimers()
 
     // What main's ensureLocalGateway / parseGatewayEnsureOutput / assertLocalGatewayEndpoint throw,
-    // as they cross the IPC boundary. Each re-dial spawns another `hermes gateway ensure`.
+    // as they cross the IPC boundary. Each re-dial spawns another `moor gateway ensure`.
     for (const permanent of [
-      "Error invoking remote method 'hermes:connection:get-for': Error: Gateway incompatible (runtime_protocol). Use hermes gateway status for recovery.",
-      'hermes gateway ensure produced no result (exit 2): invalid choice. Update Hermes or check the profile, then retry.',
+      "Error invoking remote method 'moor:connection:get-for': Error: Gateway incompatible (runtime_protocol). Use moor gateway status for recovery.",
+      'moor gateway ensure produced no result (exit 2): invalid choice. Update Moor or check the profile, then retry.',
       'Invalid local gateway endpoint'
     ]) {
       closeSecondaryGateways()
@@ -887,7 +887,7 @@ describe('secondary stalled-dial budget', () => {
     const getConnectionFor = vi
       .fn()
       .mockResolvedValueOnce(descriptorFor('homelab', 'bot-a'))
-      .mockRejectedValueOnce(new Error('Failed to connect to Hermes gateway'))
+      .mockRejectedValueOnce(new Error('Failed to connect to Moor gateway'))
 
     installDesktop({ getConnectionFor })
 

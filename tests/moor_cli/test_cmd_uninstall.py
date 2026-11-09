@@ -4,9 +4,9 @@ from __future__ import annotations
 import argparse
 import pytest
 
-from hermes_cli import main, uninstall
-from hermes_cli.subcommands.uninstall import build_uninstall_parser
-from tests.hermes_cli.test_data_uninstall import layout
+from moor_cli import main, uninstall
+from moor_cli.subcommands.uninstall import build_uninstall_parser
+from tests.moor_cli.test_data_uninstall import layout
 
 
 @pytest.mark.parametrize("entry", ["cli", "module", "cli-dry-run"])

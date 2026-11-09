@@ -1,5 +1,5 @@
 """``reasoning_details`` replay is route-scoped: OpenRouter-format gateways (OpenRouter, Kilo,
-Vercel AI Gateway, Nous Portal) and vendors documenting it read it; strict schemas (Groq,
+Vercel AI Gateway, Moor Portal) and vendors documenting it read it; strict schemas (Groq,
 Mistral, Cerebras, Fireworks direct) 400/422 on the field and never receive it (#70233).
 The Portal "replay budget" behind #118182 does not reproduce; it is back on the list."""
 

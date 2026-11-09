@@ -1,5 +1,5 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
-"""Render the release download tables into <!-- HERMES_BUILDS_TABLE -->, and
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-moor-env" python3 "$0" "$@"'
+"""Render the release download tables into <!-- MOOR_BUILDS_TABLE -->, and
 the same rows as standalone pages in the bucket.
 
 Runs after the build jobs of desktop-bundled-release.yml finish, including

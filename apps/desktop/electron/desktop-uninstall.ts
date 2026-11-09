@@ -96,7 +96,7 @@ export function registerDesktopUninstallIpc({
         : nativeRemovalInstructions(kind, summary.platform, removableAppPath())
     }
   })
-  ipcMain.handle('hermes:uninstall:openAppsSettings', async (): Promise<void> => {
+  ipcMain.handle('moor:uninstall:openAppsSettings', async (): Promise<void> => {
     // The generic openExternal bridge admits web schemes only; this one
     // deep link is fixed here so the renderer cannot pass a URL.
     if (!codeRemovalAllowed && process.platform === 'win32') {
@@ -205,7 +205,7 @@ function nativeRemovalInstructions(kind, platform, appPath = null) {
   if (kind === 'external') {
     // Deleting a package manager's files by hand leaves the package registered with missing files.
     return (
-      'Another package manager installed this Hermes desktop app. ' +
+      'Another package manager installed this Moor desktop app. ' +
       'Uninstall it with that package manager, the same way you installed it.'
     )
   }
@@ -216,7 +216,7 @@ function nativeRemovalInstructions(kind, platform, appPath = null) {
 
   if (platform === 'darwin') {
     // Name the running bundle: channel builds ship under different .app names.
-    const bundle = appPath ? path.posix.basename(String(appPath)) : 'the Hermes app'
+    const bundle = appPath ? path.posix.basename(String(appPath)) : 'the Moor app'
     const folder = appPath ? path.posix.dirname(String(appPath)) : 'Applications'
 
     return `Quit the app and drag ${bundle} from ${folder} to the Trash.`
@@ -262,8 +262,8 @@ function modeRemovesUserData(mode: string) {
  * Resolve the on-disk app bundle/dir to remove for the running desktop app,
  * given the path to the running executable (`process.execPath`) and platform.
  *
- *   macOS:   …/Hermes.app/Contents/MacOS/Hermes  → …/Hermes.app
- *   Windows: …\Hermes\Hermes.exe                 → …\Hermes  (install dir)
+ *   macOS:   …/Moor.app/Contents/MacOS/Moor  → …/Moor.app
+ *   Windows: …\Moor\Moor.exe                 → …\Moor  (install dir)
  *   Linux:   AppImage → APPIMAGE when we run from it; unpacked → the *-unpacked dir
  *
  * Returns null when we can't confidently identify a removable bundle (e.g.

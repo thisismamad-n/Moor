@@ -15,10 +15,10 @@ from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 from typing import Optional
 
-from hermes_cli._subprocess_compat import NO_LAZY_FETCH_ENV, noninteractive_git_env, windows_hide_flags
-from hermes_cli.update_cmd_common import _record_stop
+from moor_cli._subprocess_compat import NO_LAZY_FETCH_ENV, noninteractive_git_env, windows_hide_flags
+from moor_cli.update_cmd_common import _record_stop
 
-logger = logging.getLogger("hermes_cli.update_cmd")  # log-record parity with the origin module
+logger = logging.getLogger("moor_cli.update_cmd")  # log-record parity with the origin module
 
 _ORPHAN_RESCUE_REFS_TO_KEEP = 10
 _ORPHAN_RESCUE_REF_MAX_AGE_DAYS = 30
@@ -44,7 +44,7 @@ def _git_run(git_cmd, args, cwd=None, *, check=False, env=None):
     Windows ANSI code page (#52649). ``check=True`` raises on non-zero exit. The spawn
     always hides its console window (#117781). ``env`` replaces the child's environment.
     """
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     # THE custody policy (R2): stash push / reset --hard keep the update's lock fd, fetch does not.
     return run_git(
@@ -91,7 +91,7 @@ def _prune_orphan_rescue_refs(
     with suppress(OSError):
         stale: set[str] = set()
         for kind in ("orphan", "diverged", "detached"):
-            prefix = f"refs/hermes-update-backups/{kind}-{branch}-"
+            prefix = f"refs/moor-update-backups/{kind}-{branch}-"
             list_result = _git_run(
                 git_cmd, ["for-each-ref", "--format=%(refname)", "--sort=refname", f"{prefix}*"], cwd)
             if list_result.returncode != 0:
@@ -115,11 +115,11 @@ def _park_detached_head(git_cmd, cwd, branch) -> None:
     Such commits belong to no branch: once HEAD moves, only the expiring reflog still reaches them,
     and nothing in the output would name them. When HEAD is detached at a commit no ref contains
     (the autostash's ``refs/stash`` does not count: it is dropped after the update), write
-    ``refs/hermes-update-backups/detached-<branch>-<ts>-<sha12>`` (the divergence rescue refs'
+    ``refs/moor-update-backups/detached-<branch>-<ts>-<sha12>`` (the divergence rescue refs'
     scheme and expiry) and name it. When that write fails, refuse (``sys.exit(1)``) rather than
     orphan the work. Attached HEADs and already-reachable commits are left alone.
     """
-    from hermes_cli.update_cmd import _git_run
+    from moor_cli.update_cmd import _git_run
     if _git_run(git_cmd, ["symbolic-ref", "-q", "HEAD"], cwd).returncode == 0:
         return  # on a branch
     head = _git_run(git_cmd, ["rev-parse", "--verify", "--quiet", "HEAD^{commit}"], cwd)
@@ -131,7 +131,7 @@ def _park_detached_head(git_cmd, cwd, branch) -> None:
     if contains.returncode == 0 and holders:
         return  # already reachable from a branch, tag, remote or backup ref
     stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-    rescue_ref = f"refs/hermes-update-backups/detached-{branch}-{stamp}-{sha[:12]}"
+    rescue_ref = f"refs/moor-update-backups/detached-{branch}-{stamp}-{sha[:12]}"
     if _git_run(git_cmd, ["update-ref", rescue_ref, sha], cwd).returncode != 0:
         print(f"✗ HEAD is detached at {sha[:12]}, which no branch or tag contains, and backing it up "
               f"to {rescue_ref} failed.")
@@ -151,8 +151,8 @@ def _branch_head_label(git_cmd=None, cwd=None) -> str | None:
     """``"<branch> @ <short-sha>"`` for the checkout (``detached`` when not on a branch), or None. Never raises.
 
     Appended to summary lines so a checkout parked on a stale branch is visible."""
-    from hermes_cli.update_cmd import _m
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_cmd import _m
+    from moor_cli.update_custody import run_git
     try:
         cmd = list(git_cmd) if git_cmd else ["git"]
         root = cwd if cwd is not None else _m().PROJECT_ROOT
@@ -389,9 +389,9 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path, *, assume_yes: 
 
     See #97052.
     """
-    from hermes_cli.update_cmd import _count_commits_between, _has_upstream_remote, _no_prompt_git_kwargs, _should_skip_upstream_prompt
-    from hermes_cli.update_cmd_check import tracking_refspec
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_cmd import _count_commits_between, _has_upstream_remote, _no_prompt_git_kwargs, _should_skip_upstream_prompt
+    from moor_cli.update_cmd_check import tracking_refspec
+    from moor_cli.update_custody import run_git
     if not _has_upstream_remote(git_cmd, cwd) and (
         _should_skip_upstream_prompt() or not _offer_upstream_remote(git_cmd, cwd, assume_yes=assume_yes, input_fn=input_fn)
     ):
@@ -423,8 +423,8 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path, *, assume_yes: 
     print(f"\n→ Fork is {upstream_ahead} commit(s) behind upstream\n→ Pulling from upstream...")
     # A tree move like the pull itself: the marker and the owed tail are armed before git writes,
     # and the just-fetched ref is merged (a second `git pull` fetch could move past the marker's target).
-    from hermes_cli import update_cmd_commit as _commit
-    from hermes_cli._early_recovery import interrupted_pull_marker, is_object_id
+    from moor_cli import update_cmd_commit as _commit
+    from moor_cli._early_recovery import interrupted_pull_marker, is_object_id
     pre = _git_stdout(git_cmd, ["rev-parse", "HEAD"], cwd)
     if not is_object_id(pre):
         # The marker's ``pre`` is what a killed move is restored to: never arm ``pre=``.
@@ -433,7 +433,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path, *, assume_yes: 
     target = upstream  # the counted commit is the marker's target and the merge's (m2)
     # Judged BEFORE the move, like the origin target's preflight: the marker goes on git's exit 0,
     # so a broken target must never land on the strength of the caller's later guard (review G1).
-    from hermes_cli.update_cmd import _UPDATE_CRITICAL_FILES
+    from moor_cli.update_cmd import _UPDATE_CRITICAL_FILES
     if broken := _commit.target_syntax_error(git_cmd, cwd, target, _UPDATE_CRITICAL_FILES):
         raise UpstreamTargetBroken(target, *broken)
     refused = _commit.arm_commit_point(git_cmd, cwd, _commit.debt_sha_for_move(pre, target), pre=pre,
@@ -503,11 +503,11 @@ def _damaged_checkout_message(root: Path) -> str:
     would rebuild the default directory and leave a ``--dir`` install broken)."""
     if sys.platform == "win32":
         quoted = "'" + str(root).replace("'", "''") + "'"
-        repair = ("& ([scriptblock]::Create((irm https://hermes-agent.nousresearch.com/install.ps1)))"
+        repair = ("& ([scriptblock]::Create((irm https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.ps1)))"
                   f" -InstallDir {quoted}")
     else:
-        repair = f"curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --dir {shlex.quote(str(root))}"
-    return (f"✗ This Hermes checkout's git data is damaged (git no longer recognizes {root / '.git'}),"
+        repair = f"curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash -s -- --dir {shlex.quote(str(root))}"
+    return (f"✗ This Moor checkout's git data is damaged (git no longer recognizes {root / '.git'}),"
             " so it cannot be updated in place.\n"
             "  Run the installer again to repair it; it moves the damaged checkout aside and keeps"
             f" your config and chats:\n    {repair}")
@@ -577,7 +577,7 @@ def _print_fetch_failure(stderr: str, *, git_cmd=None, root: Optional[Path] = No
 def _probe_fork_bomb(argv: list) -> Optional[bool]:
     """Run ``<argv> --version``; True/False = guard message seen/absent, None = probe itself failed."""
     try:
-        from hermes_cli.update_custody import run_git
+        from moor_cli.update_custody import run_git
 
         result = run_git(argv, ["--version"], timeout=15, **_GIT_TEXT_KW)
     except Exception:
@@ -720,8 +720,8 @@ def _normalize_managed_eol(git_cmd, repo_root, *, checkout_move=None):
     reuses its build-pinned ``install.ps1`` forever — so ``moor update``, which ships with the checkout
     itself, is the only path left that can fix them. See #67730.
     """
-    from hermes_cli.update_cmd_git import _git_run
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_cmd_git import _git_run
+    from moor_cli.update_custody import run_git
     # -c, not config: evaluate the tree as it WOULD look pinned, persisting nothing.
     probe = git_cmd + ["-c", "core.autocrlf=false"]
 

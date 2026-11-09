@@ -26,7 +26,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Optional
 
-from tools.bot_mode_probe import _default_home, _hermes_root, alias_forms
+from tools.bot_mode_probe import _default_home, _moor_root, alias_forms
 from utils import atomic_json_write, unlink_files_older_than
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ DEFAULT_ENVELOPE_TTL_SECONDS = 900  # older envelopes are refused at drain with 
 # settles failed with a transient error, ONE retry under a derived identity (``gateway.session_bot._maybe_retry``).
 TURN_ATTEMPT_TIMEOUT_SECONDS = 600
 TURN_MAX_ATTEMPTS = 2  # first admission + the owner's one transient-failure retry (gateway.session_bot)
-# Mirrors RELAY_DELIVER_TIMEOUT_MS in apps/desktop/src/plugins/hermes-bots/relay-budget.ts; both test suites pin it.
+# Mirrors RELAY_DELIVER_TIMEOUT_MS in apps/desktop/src/plugins/moor-bots/relay-budget.ts; both test suites pin it.
 DESKTOP_DELIVER_SETTLEMENT_MARGIN_SECONDS = 180
 DESKTOP_DELIVER_TIMEOUT_SECONDS = (
     TURN_WAIT_SECONDS_FALLBACK + TURN_ATTEMPT_TIMEOUT_SECONDS * TURN_MAX_ATTEMPTS + DESKTOP_DELIVER_SETTLEMENT_MARGIN_SECONDS
@@ -480,7 +480,7 @@ def waiter_command(root: Path | str, envelope: dict) -> str:
     return shlex.join(argv)
 
 
-def _hermes_cli() -> str:
+def _moor_cli() -> str:
     """Prefer this install's published launcher, then interpreter/PATH fallbacks.
 
     A long-lived caller can still run in an older dependency generation. Its
@@ -490,12 +490,12 @@ def _hermes_cli() -> str:
     """
     # Do not select batch shims: cmd.exe reinterprets otherwise literal argv
     # (for example an ampersand in a query-file path), even with shell=False.
-    name = "hermes.exe" if sys.platform == "win32" else "hermes"
-    published = Path(__file__).resolve().parents[1] / ".hermes" / "bin" / name
+    name = "moor.exe" if sys.platform == "win32" else "moor"
+    published = Path(__file__).resolve().parents[1] / ".moor" / "bin" / name
     if published.is_file():
         return str(published)
     sibling = Path(sys.executable or "").parent / name
-    return str(sibling) if sibling.is_file() else shutil.which("hermes") or "hermes"
+    return str(sibling) if sibling.is_file() else shutil.which("moor") or "moor"
 
 
 class DeliveryAuthor:
@@ -554,19 +554,19 @@ def relaying_principal_author(principal: str) -> dict:
 
 
 def delivery_env(author: Optional[dict], profile_home: str | Path | None = None) -> dict[str, str]:
-    """Environment for one delivery turn's ``hermes -p <profile>`` child. The dispatcher's own
-    HERMES_TURN_AUTHOR is dropped first so a delivery without an author never inherits the author of the turn
+    """Environment for one delivery turn's ``moor -p <profile>`` child. The dispatcher's own
+    MOOR_TURN_AUTHOR is dropped first so a delivery without an author never inherits the author of the turn
     that sent it. Dispatcher session identity (the canonical ``gateway.session_context`` session env names) is
     dropped too: a nested recipient that ``message_agent``s onward must not stamp that grandchild
     notify with the grandparent's key, or the live recipient never resumes. The child runs the target
     profile's Bot Chat turn, so it starts from THAT profile's env (``served_profile_child_env``: launch
     profile ``.env`` / TERMINAL_* residue dropped, target secrets overlaid), never the multiplexer's raw
-    ``os.environ``; ``-p`` alone only pinned HERMES_HOME. ``profile_home`` is the target's home when the
+    ``os.environ``; ``-p`` alone only pinned MOOR_HOME. ``profile_home`` is the target's home when the
     caller knows it (relay RPC, roster); otherwise the active override, and under multiplex the launch
     home."""
     from agent.secret_scope import current_secret_scope, is_multiplex_active
     from agent.turn_author import TURN_AUTHOR_ENV, turn_author_env
-    from hermes_constants import get_hermes_home_override, get_routing_process_hermes_home
+    from moor_constants import get_moor_home_override, get_routing_process_moor_home
     from tools.environments.local import served_profile_child_env
 
     # ``_profile_home`` answers None for the launch profile by design and a relay RPC binds no scope,
@@ -575,9 +575,9 @@ def delivery_env(author: Optional[dict], profile_home: str | Path | None = None)
     # inside ``served_profile_child_env``, so fill it only when both are absent; a single-profile host
     # keeps its pass-through env.
     target_home = profile_home
-    if (not target_home and is_multiplex_active() and not get_hermes_home_override()
+    if (not target_home and is_multiplex_active() and not get_moor_home_override()
             and current_secret_scope() is None):
-        target_home = get_routing_process_hermes_home()
+        target_home = get_routing_process_moor_home()
     env = served_profile_child_env(base=os.environ, target_home=target_home, inherit_credentials=True)
     env.pop(TURN_AUTHOR_ENV, None)
     for name in _delivery_child_session_env_names():

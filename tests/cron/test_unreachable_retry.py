@@ -58,8 +58,8 @@ def test_unreachable_failure_pulls_next_run_earlier_then_ladder_exhausts(
     assert datetime.fromisoformat(j["next_run_at"]) - now > timedelta(hours=1)
 
     pinned = datetime(2026, 9, 18, 12, 1, tzinfo=UTC)
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: pinned)
-    monkeypatch.setattr(ur, "_hermes_now", lambda: pinned)
+    monkeypatch.setattr("cron.jobs._moor_now", lambda: pinned)
+    monkeypatch.setattr(ur, "_moor_now", lambda: pinned)
     weekly = create_job("weekly digest", "0 12 * * 5")
     assert mark_job_run(weekly["id"], False, "ConnectError: dns", model_unreachable=True)
     retry_at = datetime.fromisoformat(get_job(weekly["id"])["next_run_at"])
@@ -138,8 +138,8 @@ def test_ladder_reruns_do_not_spend_extra_repeat_budget(tmp_cron_home, monkeypat
     the final-run notice). Drives the tick's claim hand-off and bookkeeping tail: the claimed
     snapshot's ``next_run_at`` has already moved to the natural slot when the run is recorded."""
     clock = [datetime.now(UTC)]
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: clock[0])
-    monkeypatch.setattr(ur, "_hermes_now", lambda: clock[0])
+    monkeypatch.setattr("cron.jobs._moor_now", lambda: clock[0])
+    monkeypatch.setattr(ur, "_moor_now", lambda: clock[0])
     monkeypatch.setattr(sched, "finish_execution", lambda *_a, **_kw: None)
     runs = []
     monkeypatch.setattr(sched, "run_one_job", lambda job, **_kw: runs.append(job) or True)

@@ -58,7 +58,7 @@ def moor_xai_user_agent() -> str:
         return "moor-agent/unknown"
 
 
-def hermes_xai_default_headers() -> dict[str, str]:
+def moor_xai_default_headers() -> dict[str, str]:
     """Default headers for OpenAI-SDK and raw HTTP clients talking to xAI (replaces the SDK User-Agent)."""
     return {"User-Agent": moor_xai_user_agent()}
 

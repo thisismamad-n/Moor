@@ -71,7 +71,7 @@ test('ticket minting runs the payload python, never the CLI shim', () => {
     storePython: '/p/tools/python',
     repoDir: '/p/repo',
     sitePackages: '/p/venv/site-packages',
-    shim: '/p/bin/hermes'
+    shim: '/p/bin/moor'
   }
 
   const runtime = payloadTicketRuntime(payload)
@@ -98,7 +98,7 @@ test('installIdForRoot matches the Python install id (sha16 of the canonical pat
 
 test('bundled core code precedes the dependencies, as the bin launchers order them', () => {
   assert.equal(
-    payloadPythonPath({ repoDir: 'payload/hermes-agent', sitePackages: 'payload/venv/site-packages' }),
-    ['payload/hermes-agent', 'payload/venv/site-packages'].join(path.delimiter)
+    payloadPythonPath({ repoDir: 'payload/moor-agent', sitePackages: 'payload/venv/site-packages' }),
+    ['payload/moor-agent', 'payload/venv/site-packages'].join(path.delimiter)
   )
 })

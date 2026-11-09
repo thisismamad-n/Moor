@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """unbroker - deterministic CLI helper.
 
-The Hermes agent orchestrates scanning and opt-out submission with native tools
+The Moor agent orchestrates scanning and opt-out submission with native tools
 (`web_extract`, `browser_exec`, email mechanisms). THIS CLI owns the
 deterministic state: config, dossiers + consent, the broker DB, tier planning,
 the ledger + audit log, draft/template rendering, and reports.
@@ -260,7 +260,7 @@ def cmd_cdp(args) -> None:
         _out({"running": True, "endpoint": f"127.0.0.1:{port}",
               "browser": live.get("Browser"),
               "webSocketDebuggerUrl": live.get("webSocketDebuggerUrl"),
-              "note": "a debuggable browser is already listening; attach Hermes's browser (`/browser connect`) to "
+              "note": "a debuggable browser is already listening; attach Moor's browser (`/browser connect`) to "
                       f"127.0.0.1:{port} and make sure the operator's webmail is signed in in THAT browser."})
         return
 
@@ -292,7 +292,7 @@ def cmd_cdp(args) -> None:
     _out({"running": bool(live), "launched_pid": pid, "browser": browser,
           "profile": str(profile), "endpoint": f"127.0.0.1:{port}",
           "webSocketDebuggerUrl": (live or {}).get("webSocketDebuggerUrl"),
-          "next": ([f"attach Hermes's browser (browser_exec) with `/browser connect` to 127.0.0.1:{port} (CDP)",
+          "next": ([f"attach Moor's browser (browser_exec) with `/browser connect` to 127.0.0.1:{port} (CDP)",
                     "in the launched browser, sign into the operator's webmail ONCE (dedicated debug profile)",
                     "then run email/verify flows in browser mode -- they use this logged-in session"]
                    if live else

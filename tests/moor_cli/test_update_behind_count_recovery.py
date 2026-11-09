@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli import source_check
+from moor_cli import source_check
 
 SHA_A = "a" * 40
 SHA_B = "b" * 40

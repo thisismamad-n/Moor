@@ -49,8 +49,8 @@ def two_homes(tmp_path, monkeypatch):
     def stub_pre_tool_call(**_kw):
         from moor_cli.config import load_config_readonly
         entry = ((load_config_readonly().get("plugins") or {}).get("entries") or {}).get("stub") or {}
-        seen.append({"home": get_hermes_home().name, "x": (entry.get("settings") or {}).get("x"),
-                     "bound": get_hermes_home_override() is not None})
+        seen.append({"home": get_moor_home().name, "x": (entry.get("settings") or {}).get("x"),
+                     "bound": get_moor_home_override() is not None})
 
     # Plugin managers are keyed per home: each profile loads its own copy of the plugin.
     from moor_constants import reset_moor_home_override, set_moor_home_override

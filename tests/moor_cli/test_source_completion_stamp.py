@@ -57,7 +57,7 @@ def test_failed_source_completion_does_not_publish_identity(tmp_path, monkeypatc
     def broken_build(root, *, desktop):
         raise RuntimeError("web UI build: npm exited 1")
 
-    monkeypatch.setattr("hermes_cli.source_build.build_update_products", broken_build)
+    monkeypatch.setattr("moor_cli.source_build.build_update_products", broken_build)
     owed: list = []
     assert not complete_source_checkout(root, desktop=False, assume_yes=True, followups=owed)
     # The tail is owed, so the checkout identity is not published.
@@ -78,8 +78,8 @@ def test_unsafe_sqlite_withholds_success_but_not_the_finished_tail(tmp_path, mon
 
 def _sandboxed_marker(tmp_path, monkeypatch):
     """Point every update-lock reader at a marker inside this test's sandbox."""
-    marker = tmp_path / ".hermes-update-in-progress"
-    monkeypatch.setattr("hermes_cli.update_lock.update_marker_path", lambda: marker)
+    marker = tmp_path / ".moor-update-in-progress"
+    monkeypatch.setattr("moor_cli.update_lock.update_marker_path", lambda: marker)
     return marker
 
 
@@ -105,13 +105,13 @@ def test_completion_holds_the_update_lock_during_the_tail(tmp_path, monkeypatch)
     seen = {}
 
     def build(_root, *, desktop):
-        from hermes_cli.update_lock import read_live_update
+        from moor_cli.update_lock import read_live_update
 
         seen["holder"] = read_live_update()
 
-    monkeypatch.setattr("hermes_cli.source_build.build_update_products", build)
-    monkeypatch.setattr("hermes_cli.venv_sync.publish_launchers", lambda root: None)
-    monkeypatch.setattr("hermes_cli.update_cmd_maint._run_post_update_maintenance", lambda **_kwargs: True)
+    monkeypatch.setattr("moor_cli.source_build.build_update_products", build)
+    monkeypatch.setattr("moor_cli.venv_sync.publish_launchers", lambda root: None)
+    monkeypatch.setattr("moor_cli.update_cmd_maint._run_post_update_maintenance", lambda **_kwargs: True)
 
     assert complete_source_checkout(root, desktop=False, assume_yes=True)
 
@@ -138,17 +138,17 @@ def test_completion_runs_under_a_parents_claim_without_releasing_it(tmp_path):
     Real topology: a parent process claims, then runs the tail as its child. The test
     process's own parent can be invisible (a pid-namespaced runner), so it is never used."""
     root = _repo(tmp_path)
-    marker = tmp_path / ".hermes-update-in-progress"
+    marker = tmp_path / ".moor-update-in-progress"
     tail = (
         "import json, sys\n"
         f"sys.path.insert(0, {str(Path(__file__).resolve().parents[2])!r})\n"
         "from pathlib import Path\n"
-        "import hermes_cli.source_build, hermes_cli.update_cmd_maint, hermes_cli.update_lock, hermes_cli.venv_sync\n"
-        "from hermes_cli.source_completion import complete_source_checkout\n"
-        "hermes_cli.venv_sync.publish_launchers = lambda root: None\n"
-        "hermes_cli.source_build.build_update_products = lambda root, *, desktop: None\n"
-        "hermes_cli.update_cmd_maint._run_post_update_maintenance = lambda **_kwargs: True\n"
-        f"hermes_cli.update_lock.update_marker_path = lambda: Path({str(marker)!r})\n"
+        "import moor_cli.source_build, moor_cli.update_cmd_maint, moor_cli.update_lock, moor_cli.venv_sync\n"
+        "from moor_cli.source_completion import complete_source_checkout\n"
+        "moor_cli.venv_sync.publish_launchers = lambda root: None\n"
+        "moor_cli.source_build.build_update_products = lambda root, *, desktop: None\n"
+        "moor_cli.update_cmd_maint._run_post_update_maintenance = lambda **_kwargs: True\n"
+        f"moor_cli.update_lock.update_marker_path = lambda: Path({str(marker)!r})\n"
         f"print(json.dumps(complete_source_checkout(Path({str(root)!r}), desktop=False, assume_yes=True)))\n"
     )
     parent = (
@@ -166,7 +166,7 @@ def test_completion_runs_under_a_parents_claim_without_releasing_it(tmp_path):
 def _verify_bootstrap_receipt(root: Path) -> subprocess.CompletedProcess:
     """The same verifier the Windows install/update E2E runs after an update."""
     script = Path(__file__).resolve().parents[2] / "scripts" / "verify-bootstrap-version-stamp.py"
-    return subprocess.run([sys.executable, "-B", str(script), "--stamp", str(root / ".hermes-bootstrap-complete"),
+    return subprocess.run([sys.executable, "-B", str(script), "--stamp", str(root / ".moor-bootstrap-complete"),
                            "--repo", str(root)], capture_output=True, text=True, encoding="utf-8", check=False)
 
 

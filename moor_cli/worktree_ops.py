@@ -18,15 +18,15 @@ import uuid
 from pathlib import Path
 from typing import Dict, Optional
 
-from hermes_cli._subprocess_compat import noninteractive_git_env
-from hermes_cli.git_commit_graph import (
+from moor_cli._subprocess_compat import noninteractive_git_env
+from moor_cli.git_commit_graph import (
     claim_commit_graph_refresh,
     claim_maintenance_slot,
     common_git_dir,
     refresh_commit_graph,
     run_bounded_git,
 )
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_json_write
 
 logger = logging.getLogger("cli")
@@ -155,7 +155,7 @@ def _maintain_pack_health(repo_root: str) -> None:
             return
         packs = len(list(pack_dir.glob("*.pack")))
         if packs >= _PACK_SPRAWL_THRESHOLD and _claim_repack_slot(git_dir):
-            from hermes_cli.gitlock import clear_stale_tmp_packs
+            from moor_cli.gitlock import clear_stale_tmp_packs
             clear_stale_tmp_packs(git_dir)
             logger.info("git pack sprawl (%d packs) — repacking in background", packs)
             _run_bounded_repack(repo_root)
@@ -178,8 +178,8 @@ def _resolve_worktree_base(repo_root: str, fetch_timeout: float = 5,
     *freshness_window* s, capped at *fetch_timeout*, and never retried: on failure the cached
     remote-tracking ref is used (the pre-push stale-base gate backstops genuine staleness).
     """
-    from hermes_cli._subprocess_compat import noninteractive_git_env
-    from hermes_cli.update_cmd_check import tracking_refspec
+    from moor_cli._subprocess_compat import noninteractive_git_env
+    from moor_cli.update_cmd_check import tracking_refspec
 
     def _run(args, timeout: float = 20):
         return _git(args, repo_root, timeout=timeout, stdin=subprocess.DEVNULL, env=noninteractive_git_env())
@@ -339,7 +339,7 @@ def _worktree_add(repo_root: str, wt_path: Path, branch_name: str, base_ref: str
 
     Every failed attempt is swept with ``_cleanup_failed_worktree_add`` so the retry is not poisoned.
     """
-    from hermes_cli._subprocess_compat import noninteractive_repo_git_env
+    from moor_cli._subprocess_compat import noninteractive_repo_git_env
 
     # The checkout runs repo-named smudge filters too; refuse when they cannot be neutralized.
     env = noninteractive_repo_git_env(repo_root)
@@ -379,7 +379,7 @@ def _setup_worktree(repo_root: str | None = None, sync_base: bool = True,
     """Create an isolated git worktree -> ``{path, branch, repo_root, base}``, or None on failure.
 
     *sync_base* branches from the fetched remote tip (``_resolve_worktree_base``), else local
-    HEAD. *name* replaces the random ``hermes-<id>``; named trees lack the ``hermes-`` prefix so
+    HEAD. *name* replaces the random ``moor-<id>``; named trees lack the ``moor-`` prefix so
     the pruner ages them on its slower schedule. *retain_db* (``-w``, ``--tui -w``) records the tree
     for resume and names the profile store in the lock. A ``--tui -w`` tree outlives its launcher
     while a session there can resume in it; a classic ``-w`` row's cwd is the repo root, so its
@@ -421,16 +421,16 @@ def _setup_worktree(repo_root: str | None = None, sync_base: bool = True,
 
     # Lock so other processes (and `git worktree remove`) see it is in use; fail-soft.
     try:
-        reason = f"hermes pid={os.getpid()}" + (f" db={retain_db}" if retain_db is not None else "")
+        reason = f"moor pid={os.getpid()}" + (f" db={retain_db}" if retain_db is not None else "")
         _git(["worktree", "lock", "--reason", reason, str(wt_path)], repo_root)
         logger.debug("Worktree locked: %s (pid=%s)", wt_path, os.getpid())
     except Exception as e:
         logger.debug("git worktree lock failed (non-fatal): %s", e)
 
-    from hermes_cli.worktree_registry import record_worktree_repo
+    from moor_cli.worktree_registry import record_worktree_repo
     record_worktree_repo(repo_root)
     if retain_db is not None:  # a -w tree: a resume may recreate it once quit removed it (N8)
-        from hermes_cli.tui_worktree_resume import record_tui_worktree
+        from moor_cli.tui_worktree_resume import record_tui_worktree
         record_tui_worktree({"path": str(wt_path), "branch": branch_name, "repo_root": repo_root})
     _cprint(f"\033[32m✓ Worktree created:\033[0m {wt_path}")
     print(f"  Branch: {branch_name}")
@@ -526,7 +526,7 @@ def _worktree_is_dirty(worktree_path: str, repo_root, timeout: int = 10) -> bool
     skip-worktree / assume-unchanged files whose bytes differ from the index count as changes
     (``git status`` trusts both flags).
     """
-    from hermes_cli._subprocess_compat import noninteractive_repo_git_env
+    from moor_cli._subprocess_compat import noninteractive_repo_git_env
     try:
         # Reclaimers run this unattended; status reads the index (core.fsmonitor, clean filters).
         env = noninteractive_repo_git_env(worktree_path)
@@ -538,7 +538,7 @@ def _worktree_is_dirty(worktree_path: str, repo_root, timeout: int = 10) -> bool
             return True
         entries = [e for e in result.stdout.split("\0") if e]
         if not entries:
-            from hermes_cli.worktree_retention import hidden_index_edits
+            from moor_cli.worktree_retention import hidden_index_edits
             return bool(hidden_index_edits(worktree_path))
         if any(not e.startswith("?? ") for e in entries):
             return True
@@ -589,7 +589,7 @@ def _deepen_shallow_repo(repo_root: str, timeout: int = 600) -> bool:
             # The filtered attempt makes the clone partial (git writes the config before fetching,
             # so even when it fails); its old packs need the marker or git 2.53+ crashes every
             # later fetch (#124272). Markers are inert in a clone without a promisor remote.
-            from hermes_cli.gitlock import mark_unmarked_packs_promisor
+            from moor_cli.gitlock import mark_unmarked_packs_promisor
             mark_unmarked_packs_promisor(Path(repo_root))
     except Exception as e:
         logger.debug("Deepening shallow repo failed (non-fatal): %s", e)
@@ -759,11 +759,11 @@ def _worktree_branch_pushed_exact(
         return False
 
 
-# ``hermes pid=<pid>`` (``/worktree new``), ``hermes pid=<pid> db=<state.db>`` (``-w`` / ``--tui -w`` launch)
-# and ``hermes session=<id> db=<state.db>`` (re-lock when the TUI exits). Read raw from the admin
+# ``moor pid=<pid>`` (``/worktree new``), ``moor pid=<pid> db=<state.db>`` (``-w`` / ``--tui -w`` launch)
+# and ``moor session=<id> db=<state.db>`` (re-lock when the TUI exits). Read raw from the admin
 # dir: plain ``list --porcelain`` C-quotes a reason holding a backslash, a quote, a control or a
 # non-ASCII byte (every Windows path), and the ``db=`` path would never parse.
-_HERMES_LOCK_RE = re.compile(r"hermes (?:pid=(\d+)|session=\S+)(?: db=(.+))?", re.DOTALL)
+_MOOR_LOCK_RE = re.compile(r"moor (?:pid=(\d+)|session=\S+)(?: db=(.+))?", re.DOTALL)
 
 
 def _retain_worktree_for_session(repo_root: str, worktree_path: str, session_id: str, db_path) -> bool:
@@ -775,7 +775,7 @@ def _retain_worktree_for_session(repo_root: str, worktree_path: str, session_id:
     """
     _git_quiet(["worktree", "unlock", worktree_path], repo_root, log="worktree unlock before retain failed")
     try:
-        result = _git(["worktree", "lock", "--reason", f"hermes session={session_id} db={db_path}",
+        result = _git(["worktree", "lock", "--reason", f"moor session={session_id} db={db_path}",
                        worktree_path], repo_root)
     except (OSError, subprocess.SubprocessError) as exc:
         logger.debug("worktree retain lock failed for %s: %s", worktree_path, exc)
@@ -797,12 +797,12 @@ def _inside_tree(worktree_path: str):
 
 
 # The gateway's own records that it will still act in a session after its last viewer quits:
-# an active /loop, /heartbeat or /goal (its continuation) row (``hermes_cli.loops`` / ``heartbeat`` /
+# an active /loop, /heartbeat or /goal (its continuation) row (``moor_cli.loops`` / ``heartbeat`` /
 # ``goals``, keyed by the stored session id, status ``active`` when the field is absent), and a row
 # no viewer close ended: Ink's exit detaches with ``tui_shutdown`` and the owner ends the idle row
 # only once no other viewer holds it (``gateway/session_viewer_close.py``).
 _SERVED_TREE_SQL = (
-    "SELECT 1 FROM sessions s WHERE hermes_inside_tree(s.cwd) AND (s.ended_at IS NULL OR EXISTS ("
+    "SELECT 1 FROM sessions s WHERE moor_inside_tree(s.cwd) AND (s.ended_at IS NULL OR EXISTS ("
     "SELECT 1 FROM state_meta m WHERE m.key IN ('loop:'||s.id, 'heartbeat:'||s.id, 'goal:'||s.id) "
     "AND (json_valid(m.value)=0 OR COALESCE(json_extract(m.value,'$.status'),'active')='active'))) LIMIT 1")
 
@@ -823,11 +823,11 @@ def _tree_still_served(db_path: str, worktree_path: str) -> Optional[str]:
         try:
             conn = sqlite3.connect(f"file:{quote(str(path))}?mode=ro", uri=True, timeout=2)
             try:
-                conn.create_function("hermes_inside_tree", 1, _inside_tree(worktree_path), deterministic=True)
+                conn.create_function("moor_inside_tree", 1, _inside_tree(worktree_path), deterministic=True)
                 if conn.execute(_SERVED_TREE_SQL).fetchone():
                     return "session"
                 chats = {row[0] for row in conn.execute(
-                    "SELECT chat_id FROM sessions WHERE hermes_inside_tree(cwd) AND chat_id IS NOT NULL")}
+                    "SELECT chat_id FROM sessions WHERE moor_inside_tree(cwd) AND chat_id IS NOT NULL")}
             finally:
                 conn.close()
         except sqlite3.Error as exc:
@@ -876,9 +876,9 @@ def _retained_tree_is_live(db_path: str, worktree_path: str, *, pending_only: bo
     try:
         conn = sqlite3.connect(f"file:{quote(str(path))}?mode=ro", uri=True, timeout=2)
         try:
-            conn.create_function("hermes_inside_tree", 1, inside, deterministic=True)
+            conn.create_function("moor_inside_tree", 1, inside, deterministic=True)
             row = conn.execute(
-                "SELECT 1 FROM sessions s WHERE hermes_inside_tree(s.cwd) AND ("
+                "SELECT 1 FROM sessions s WHERE moor_inside_tree(s.cwd) AND ("
                 + ("" if pending_only else "s.message_count>0 OR ")
                 + "EXISTS (SELECT 1 FROM session_admissions a WHERE a.target_session_id=s.id "
                 "AND a.status!='terminal')) LIMIT 1").fetchone()
@@ -915,15 +915,15 @@ def _worktree_lock_reason(repo_root: str, worktree_path: str, timeout: int):
 
 def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10):
     """Lock state: ``"live"`` (owning pid runs / a resumable session works in the tree),
-    ``"dead"`` (pid and sessions gone / non-hermes reason), None (unlocked).
+    ``"dead"`` (pid and sessions gone / non-moor reason), None (unlocked).
 
-    A Hermes tree locks with reason ``hermes pid=<pid>``; ``worktree remove --force`` refuses
+    A Moor tree locks with reason ``moor pid=<pid>``; ``worktree remove --force`` refuses
     locked trees, so a crashed session's lock would keep its tree forever. A ``-w`` tree
     also names its profile's ``state.db`` from creation, so a ``--tui -w`` launcher killed with
     its terminal (SIGHUP skips the exit re-lock) still keeps the tree while a resumable session's
     row cwd is inside it. A classic ``-w`` row's cwd is the repo root: its tree is only recorded,
     and a reaped clean one is recreated on resume. Fails SAFE toward "live", including a
-    ``hermes`` reason this version cannot parse.
+    ``moor`` reason this version cannot parse.
     """
     try:
         found, reason = _worktree_lock_reason(repo_root, worktree_path, timeout)
@@ -931,10 +931,10 @@ def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10
         return "live"
     if not found or reason is None:
         return None
-    if not reason.startswith("hermes "):
+    if not reason.startswith("moor "):
         # A foreign lock here is a leftover; the age/dirty/unpushed gates already passed.
         return "dead"
-    lock = _HERMES_LOCK_RE.fullmatch(reason)
+    lock = _MOOR_LOCK_RE.fullmatch(reason)
     if lock is None:
         return "live"
     pid, db_path = lock.groups()
@@ -952,20 +952,20 @@ def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10
     return "dead" if pid is not None else "live"  # a session lock without its store: unverifiable
 
 
-# Trees Hermes names itself (``hermes -w`` sessions, subagent isolation) age on the base tier.
-_AUTO_TREE_PREFIXES = ("hermes-", "subagent-")
+# Trees Moor names itself (``moor -w`` sessions, subagent isolation) age on the base tier.
+_AUTO_TREE_PREFIXES = ("moor-", "subagent-")
 
 
 def prune_tier_hours(name: str, max_age_hours: float) -> float:
-    """Idle hours before a tree may be reclaimed: *max_age_hours* for Hermes-made trees
-    (``hermes-*``, ``subagent-*``), 3x for deliberately named ones."""
+    """Idle hours before a tree may be reclaimed: *max_age_hours* for moor-made trees
+    (``moor-*``, ``subagent-*``), 3x for deliberately named ones."""
     return max_age_hours if name.startswith(_AUTO_TREE_PREFIXES) else max_age_hours * 3
 
 
 def _prune_candidates(worktrees_dir: Path, max_age_hours: int, now: float) -> list:
     """Phase 1, stat-only age filter -> ``[(entry, mtime, force)]`` for trees past their soft cutoff.
 
-    Kanban trees (``t_<hex>``) belong to the kanban gc. Hermes-made trees age on *max_age_hours*,
+    Kanban trees (``t_<hex>``) belong to the kanban gc. moor-made trees age on *max_age_hours*,
     deliberately named trees at 3x (``prune_tier_hours``); *force* marks the hard (3x) tier.
     """
     kanban_re = re.compile(r"^t_[0-9a-f]+$")
@@ -1060,7 +1060,7 @@ def removal_blocked(path: str) -> Optional[tuple[str, str]]:
     """``(keep-action, reason)`` when deleting the clean tree at *path* would lose something no
     branch holds (``worktree_retention.removal_blocker``: a checked-out submodule, an embedded
     repository, a per-worktree ref); unverifiable counts as blocked."""
-    from hermes_cli.worktree_retention import removal_blocker
+    from moor_cli.worktree_retention import removal_blocker
     return removal_blocker(path)
 
 
@@ -1112,7 +1112,7 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
     """Remove stale worktrees and orphaned branches on startup.
 
     Default (``worktrees.archive_dirty: true``): ``worktree_sweep.run_sweep`` — an idle dirty or
-    unpushed tree past its tier is archived to ``refs/hermes/archive/<tree>`` and then removed;
+    unpushed tree past its tier is archived to ``refs/moor/archive/<tree>`` and then removed;
     live trees (lock owner or any process inside) and Kanban trees are never touched.
     ``archive_dirty: false`` (no size budget) runs the classic pass below: dirty trees are never
     removed; unpushed commits are never removed UNLESS patch-equivalent to upstream, the PR is
@@ -1152,7 +1152,7 @@ def _prune_stale_worktree_trees(repo_root: str, max_age_hours: int) -> None:
     if _repo_is_shallow(repo_root):
         _deepen_shallow_repo(repo_root)
 
-    from hermes_cli import worktree_sweep
+    from moor_cli import worktree_sweep
     settings = worktree_sweep.sweep_settings()
     if not worktree_sweep.classic_mode(settings):
         worktree_sweep.run_sweep(repo_root, max_age_hours, settings)
@@ -1185,8 +1185,8 @@ def _warn_worktree_footprint(repo_root: str) -> None:
         count, size_mb = worktrees_summary(repo_root, size_below_count=10)
         if count >= 10 or (size_mb or 0) >= 5120:
             size_txt = f" ({size_mb / 1024:.1f}GB)" if size_mb else ""
-            logger.warning(".worktrees/ holds %d tree(s)%s — run `hermes worktree list` "
-                           "to audit and `hermes worktree prune` to reclaim safely.", count, size_txt)
+            logger.warning(".worktrees/ holds %d tree(s)%s — run `moor worktree list` "
+                           "to audit and `moor worktree prune` to reclaim safely.", count, size_txt)
     except Exception:
         logger.debug("worktree summary failed", exc_info=True)
 

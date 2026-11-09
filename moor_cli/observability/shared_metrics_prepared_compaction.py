@@ -1,7 +1,7 @@
 """Prepared compaction (``compression.prepare_ahead``): adoption and every way a prepared pass is wasted.
 
 The daily snapshot carries ``compression_prepare_ahead`` (``on``/``off``), read with the agent's own
-truthiness, so "active installs with the feature on" needs no join. ``hermes.prepared_compaction.count``
+truthiness, so "active installs with the feature on" needs no join. ``moor.prepared_compaction.count``
 counts each pass and splice outcome from ``agent/prepared_compaction.py`` (and a spliced compaction that
 then failed, from ``agent/conversation_compression_telemetry.py``) over closed sets only: the event, the
 hook that started the pass, a reason code (never the free-text miss reason), the compression failure
@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
-PREPARED_COMPACTION_MARK = PREPARED_COMPACTION_METRIC = "hermes.prepared_compaction.count"
+PREPARED_COMPACTION_MARK = PREPARED_COMPACTION_METRIC = "moor.prepared_compaction.count"
 PREPARED_COMPACTION_EVENTS = frozenset({
     "auto_disabled", "compaction_failed", "discarded", "internal_error", "pass_cancelled", "pass_completed",
     "pass_failed", "pass_started", "skipped_busy", "used",

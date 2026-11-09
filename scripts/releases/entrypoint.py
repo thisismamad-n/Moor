@@ -27,7 +27,7 @@ WORKFLOW = "stable-release.yml"
 # A fetch refspec may hold one ``*``; the parsers filter what the globs over-match.
 _ATTEMPT_GLOBS = ("rc.*", "abandoned-rc.*")
 # Local namespace for the remote's release-line branches, kept apart from the user's own remotes.
-_RELEASE_LINE_PREFIX = "hermes-release"
+_RELEASE_LINE_PREFIX = "moor-release"
 
 
 class ReleaseRefused(RuntimeError):

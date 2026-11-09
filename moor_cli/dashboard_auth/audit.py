@@ -18,11 +18,11 @@ _write_lock = threading.Lock()
 _MAX_FIELD_LENGTH = 256
 _TRUNCATION_MARKER = "...[truncated]"
 
-# Size-based rotation matching hermes_logging's agent.log / errors.log convention
+# Size-based rotation matching moor_logging's agent.log / errors.log convention
 # (maxBytes=5MB, backupCount=3, stdlib RotatingFileHandler ``.1``/``.2``/``.3`` naming).
 # Implemented locally (check-and-rename, stdlib only) rather than importing
-# hermes_logging/_ManagedRotatingFileHandler: that would pull in hermes_constants
-# (and lazily hermes_cli.config) and break this module's import-light guarantee —
+# moor_logging/_ManagedRotatingFileHandler: that would pull in moor_constants
+# (and lazily moor_cli.config) and break this module's import-light guarantee —
 # it is imported by middleware that runs very early in startup.
 _MAX_BYTES = 5 * 1024 * 1024
 _BACKUP_COUNT = 3

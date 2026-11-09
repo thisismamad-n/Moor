@@ -18,7 +18,7 @@ import time
 import uuid
 import weakref
 from abc import ABC, abstractmethod
-from hermes_dir_acl import make_user_dir, unusable_dir_remedy
+from moor_dir_acl import make_user_dir, unusable_dir_remedy
 from gateway.platforms.base_log_safety import safe_url_for_log
 
 from utils import normalize_proxy_url, unlink_files_older_than
@@ -165,7 +165,7 @@ def _reply_anchor_for_event(event) -> str | None:
     thread_id = getattr(source, "thread_id", None)
     raw_message = getattr(event, "raw_message", None)
     if getattr(event, "internal", False) or (platform == "slack" and isinstance(raw_message, dict)
-                                             and raw_message.get("_hermes_no_thread_response")):
+                                             and raw_message.get("_moor_no_thread_response")):
         # A synthetic wake's message_id is its producer identity, not a platform id (Telegram int()s
         # it; #52694). A Slack reaction handoff is a new top-level message, not a thread reply.
         return None
@@ -440,11 +440,11 @@ from gateway.platforms.base_streaming_tts import (
     AudioFormat, StreamingTTSHandle, streaming_tts_should_skip_whole_file, streaming_tts_turn_key)
 from gateway.platforms.event import MessageEvent, MessageType, ProcessingOutcome
 from gateway.warning_notifications import diagnostic_wake_muted
-from hermes_cli.observability.shared_metrics_gateway import records_delivery, stop_reply_clock
-from hermes_cli.home_data_layout import SECRET_CACHE_STORES
+from moor_cli.observability.shared_metrics_gateway import records_delivery, stop_reply_clock
+from moor_cli.home_data_layout import SECRET_CACHE_STORES
 from gateway.session import SessionSource, build_session_key
 from gateway.session_transcript import TranscriptReadError
-from hermes_constants import CONNECTOR_DOWNLOADS_SUBDIR, get_default_hermes_root, get_hermes_dir, get_hermes_home
+from moor_constants import CONNECTOR_DOWNLOADS_SUBDIR, get_default_moor_root, get_moor_dir, get_moor_home
 from agent.provider_media import GENERATED_SUBDIR, MEDIA_CACHE_MAX_AGE_HOURS
 
 if TYPE_CHECKING:
@@ -538,7 +538,7 @@ async def _read_httpx_body_with_limit(response, *, media_type: str) -> bytes:
 
 def _cache_dir_accessors(kind: str, constant_name: str, new_subpath: str, old_name: str):
     """``(get_<kind>_cache_dir, cleanup_<kind>_cache)`` pair. The getter resolves fresh via
-    get_hermes_dir (active profile) unless a test monkeypatched the module constant away from
+    get_moor_dir (active profile) unless a test monkeypatched the module constant away from
     its import-time default, and creates the directory; ``cleanup(max_age_hours=MEDIA_CACHE_MAX_AGE_HOURS)`` deletes
     older files and returns the count."""
     def get_dir() -> Path:
@@ -574,10 +574,10 @@ def _secure_media_cache_dir(cache_dir: Path) -> None:
     Inbound media (photos, voice notes, documents a user sent through a
     messaging platform) is user content, not regenerable cache: the
     umask-derived 0755 these dirs inherited made them readable by every other
-    local account whenever ``HERMES_HOME`` is traversable — the documented
-    ``HERMES_HOME_MODE=0701`` web-server hatch. The mode is passed to ``mkdir``
+    local account whenever ``MOOR_HOME`` is traversable — the documented
+    ``MOOR_HOME_MODE=0701`` web-server hatch. The mode is passed to ``mkdir``
     so it is set at creation, then reconciled by the house policy helper
-    ``hermes_cli.config._secure_dir`` (managed/NixOS installs keep their
+    ``moor_cli.config._secure_dir`` (managed/NixOS installs keep their
     group-share design: these lazily-created dirs are not covered by the
     module's ``systemd.tmpfiles`` rules, so the mode is left to the
     configured umask/setgid). Best-effort: never fails a media write.
@@ -585,7 +585,7 @@ def _secure_media_cache_dir(cache_dir: Path) -> None:
     try:
         managed = False
         try:
-            from hermes_cli.config import is_managed
+            from moor_cli.config import is_managed
 
             managed = bool(is_managed())
         except Exception:  # pragma: no cover - defensive
@@ -595,7 +595,7 @@ def _secure_media_cache_dir(cache_dir: Path) -> None:
             return
         make_user_dir(cache_dir, parents=True, exist_ok=True, mode=0o700)
         try:
-            from hermes_cli.config import _secure_dir
+            from moor_cli.config import _secure_dir
 
             _secure_dir(cache_dir)
         except Exception as exc:  # pragma: no cover - defensive
@@ -793,12 +793,12 @@ _ROOT_CREDENTIAL_PATHS = (
 
 def _profile_cache_roots() -> list[Path]:
     """Per-profile cache roots ``<root>/profiles/<name>/cache/{images,...}`` and every home's connector
-    downloads dir (the static safe roots cover only the launch HERMES_HOME). Enumerated at check
+    downloads dir (the static safe roots cover only the launch MOOR_HOME). Enumerated at check
     time so profiles created after startup count, and allowlisted BEFORE the ``/root`` denylist,
-    which otherwise wins when HERMES_HOME is symlinked under a denied prefix (#31733).
+    which otherwise wins when MOOR_HOME is symlinked under a denied prefix (#31733).
     """
     return [*(p / "cache" / subdir for p in _profile_dirs() for subdir in _MEDIA_DELIVERY_CACHE_SUBDIRS),
-            *(p / CONNECTOR_DOWNLOADS_SUBDIR for p in (get_hermes_home(), *_profile_dirs()))]
+            *(p / CONNECTOR_DOWNLOADS_SUBDIR for p in (get_moor_home(), *_profile_dirs()))]
 
 
 def _profile_dirs() -> list[Path]:
@@ -810,8 +810,8 @@ def _profile_dirs() -> list[Path]:
 
 
 def _credential_home_roots() -> list[Path]:
-    """Every Hermes home whose credential stores the denylist must cover: the ACTIVE home
-    (the per-turn HERMES_HOME override under ``gateway.multiplex_profiles``), the shared root
+    """Every Moor home whose credential stores the denylist must cover: the ACTIVE home
+    (the per-turn MOOR_HOME override under ``gateway.multiplex_profiles``), the shared root
     and every ``<root>/profiles/*``. Enumerated at check time like ``_profile_cache_roots`` on
     the allow side — a denylist frozen at import covers only the launch profile, so a
     ``MEDIA:<root>/profiles/<other>/.env`` emitted in any profile's turn would upload it."""
@@ -972,7 +972,7 @@ def _docker_persistent_active() -> bool:
 
 
 def _cache_dir_container_mounts() -> list[tuple[Path, Path]]:
-    """(host, container) pairs for the auto-mounted Hermes cache dirs (``/root/.hermes/...`` in
+    """(host, container) pairs for the auto-mounted Moor cache dirs (``/root/.moor/...`` in
     MEDIA tags); longer prefixes than the ``/root`` home mount, so longest-prefix match wins."""
     if not _docker_env_active():
         return []
@@ -1002,7 +1002,7 @@ def _translate_docker_container_media_path(
     candidate: Path, session_key: str = "", workspace_key: str = "", *, quiet: bool = False, workspace_cwd: str = "",
 ) -> Optional[Path]:
     """Container-absolute path -> host path via longest-prefix match over ``docker_volumes``, the
-    auto-mounted cache dirs (``/root/.hermes/...``), persistent ``/workspace`` and ``/root``.
+    auto-mounted cache dirs (``/root/.moor/...``), persistent ``/workspace`` and ``/root``.
 
     ``workspace_key`` is the 16-hex digest of one session's host cwd ``workspace_cwd`` (its cwd
     mount). It selects that session's ``<base>:ws:<digest>`` sandbox and is empty for MEDIA delivery.
@@ -2160,7 +2160,7 @@ class BasePlatformAdapter(ABC):
             self._set_fatal_error(
                 "lock_dir_unusable",
                 f"{resource_desc} lock cannot be taken: the gateway lock directory {exc.filename} is not "
-                f"usable by this user (likely created by an elevated Hermes). To repair, "
+                f"usable by this user (likely created by an elevated Moor). To repair, "
                 f"{unusable_dir_remedy(exc.filename)}; the gateway retries on its own.",
                 retryable=True)
             return False
@@ -4432,7 +4432,7 @@ class BasePlatformAdapter(ABC):
         read HERE — stamped on the interrupt event DURING the handler await; an earlier snapshot
         would let stale runs fire a fresher run's callbacks."""
         await run_post_delivery_callback(self.pop_post_delivery_callback(
-            session_key, generation=getattr(interrupt_event, "_hermes_run_generation", None)),
+            session_key, generation=getattr(interrupt_event, "_moor_run_generation", None)),
             _POST_DELIVERY_CALLBACK_TIMEOUT_SECONDS)
 
     def _finish_session_task(self, session_key: str, interrupt_event: asyncio.Event) -> None:
@@ -4567,7 +4567,7 @@ class BasePlatformAdapter(ABC):
             await self._run_processing_hook("on_processing_complete", event, ProcessingOutcome.FAILURE)
             logger.error("[%s] Error handling message: %s", self.name, e, exc_info=True)
             _thread_metadata = (await self._notify_turn_error(event, e)) or _thread_metadata
-            from hermes_cli.config_backend import ConfigBackendUnavailable as _outage  # this turn only
+            from moor_cli.config_backend import ConfigBackendUnavailable as _outage  # this turn only
             if isinstance(e, (SystemExit, KeyboardInterrupt)) and not isinstance(e, _outage):  # rest contained
                 raise
         finally:

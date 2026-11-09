@@ -1,0 +1,17 @@
+name: moor-kame-provider
+repo: https://github.com/Kame696/kame-api-rotation-for-moor
+sha: d89dce1d80b511b874217ea73d445c3c4c32260c
+subdir: moor-kame-provider
+description: "Companion to moor-kame-api-rotation (install both). A model-provider plugin that re-registers Moor' bundled API-key profiles unchanged except for create_client and create_messages_client, which return the rotation plugin's key-rotating client; otherwise None and Moor builds its own. Same endpoints as Moor, no third-party service, no core override."
+maintainer: Kame696
+tier: community
+category: models
+requires_moor: ">=0.21.4"
+version: "1.8.2.9"
+docs_url: https://github.com/Kame696/kame-api-rotation-for-moor/tree/v1.8.2.9/moor-kame-provider#readme
+readme: true
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []

@@ -13,10 +13,10 @@ description: "Moor Agent 工具概览——可用工具、工具集工作方式�
 
 ## 可用工具
 
-Hermes 内置了丰富的工具注册表，涵盖网页搜索、浏览器自动化、终端执行、文件编辑、记忆、委托、RL 训练、消息投递等功能。插件还可以提供更多工具，例如 Home Assistant 设备控制由插件目录中的 `homeassistant` 插件提供。
+Moor 内置了丰富的工具注册表，涵盖网页搜索、浏览器自动化、终端执行、文件编辑、记忆、委托、RL 训练、消息投递等功能。插件还可以提供更多工具，例如 Home Assistant 设备控制由插件目录中的 `homeassistant` 插件提供。
 
 :::note
-**Honcho 跨会话记忆**作为插件目录中的记忆提供者插件提供（`hermes plugins install honcho`），而非内置工具集。参见 [Memory Providers](./memory-providers.md#honcho)。
+**Honcho 跨会话记忆**作为插件目录中的记忆提供者插件提供（`moor plugins install honcho`），而非内置工具集。参见 [Memory Providers](./memory-providers.md#honcho)。
 :::
 
 高层分类：
@@ -26,8 +26,8 @@ Hermes 内置了丰富的工具注册表，涵盖网页搜索、浏览器自动�
 | **Web** | `web_search`, `web_extract` | 搜索网页并提取页面内容。 |
 | **X 搜索** | `x_search` | 通过 xAI 内置的 `x_search` Responses 工具搜索 X（Twitter）帖子和话题——需要 xAI 凭据（SuperGrok OAuth 或 `XAI_API_KEY`）；默认关闭，可通过 `moor tools` → 🐦 X (Twitter) Search 启用。 |
 | **终端与文件** | `terminal`, `process`, `read_file`, `patch` | 执行命令并操作文件。 |
-| **浏览器** | `browser_exec`, `browser_cdp`, `browser_dialog`, `browser_vault` | 浏览器自动化：`browser_exec` 通过 CDP 用 Python 驱动 Chromium（支持截图）。Camofox 浏览器是独立的目录插件（`hermes plugins install camofox`）。 |
-| **媒体** | `vision_analyze`, `image_generate`, `video_generate`, `video_analyze`, `text_to_speech` | 多模态分析与生成。`video_generate` 和 `video_analyze` 需手动启用（通过 `hermes tools` 或 `--toolsets` 添加 `video_gen` / `video` 工具集）。 |
+| **浏览器** | `browser_exec`, `browser_cdp`, `browser_dialog`, `browser_vault` | 浏览器自动化：`browser_exec` 通过 CDP 用 Python 驱动 Chromium（支持截图）。Camofox 浏览器是独立的目录插件（`moor plugins install camofox`）。 |
+| **媒体** | `vision_analyze`, `image_generate`, `video_generate`, `video_analyze`, `text_to_speech` | 多模态分析与生成。`video_generate` 和 `video_analyze` 需手动启用（通过 `moor tools` 或 `--toolsets` 添加 `video_gen` / `video` 工具集）。 |
 | **Agent 编排** | `todo`, `clarify`, `execute_code`, `delegate_task` | 规划、澄清、代码执行及子 Agent 委托。 |
 | **记忆与召回** | `memory`, `session_search` | 持久化记忆与会话搜索。 |
 | **自动化与投递** | `cronjob`, `send_message` | 支持创建/列出/更新/暂停/恢复/运行/删除操作的定时任务，以及出站消息投递。 |

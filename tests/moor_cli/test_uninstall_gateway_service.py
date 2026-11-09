@@ -14,8 +14,8 @@ import platform
 
 import pytest
 
-from hermes_cli import gateway
-from hermes_cli import uninstall
+from moor_cli import gateway
+from moor_cli import uninstall
 
 
 @pytest.fixture

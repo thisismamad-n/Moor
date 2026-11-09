@@ -2,8 +2,8 @@
 
 import pytest
 
-from hermes_cli.session_listing import subagent_listing_scope
-from hermes_state import SessionDB
+from moor_cli.session_listing import subagent_listing_scope
+from moor_state import SessionDB
 
 
 @pytest.fixture

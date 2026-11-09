@@ -13,7 +13,7 @@ from datetime import datetime
 
 import pytest
 
-from hermes_cli.inventory import build_model_options_payload, load_picker_context
+from moor_cli.inventory import build_model_options_payload, load_picker_context
 
 
 def _pool_entry(provider: str, cooldown: str, model: str = "some-model") -> dict:
@@ -22,7 +22,7 @@ def _pool_entry(provider: str, cooldown: str, model: str = "some-model") -> dict
     entry = {
         "id": "e1", "label": "subscription", "priority": 0, "last_status": "ok",
         "auth_type": "oauth" if oauth else "api_key",
-        "source": "manual:hermes_pkce" if oauth else "manual",
+        "source": "manual:moor_pkce" if oauth else "manual",
         "access_token": "sk-ant-oat01-test" if oauth else "test-key-123",
         "refresh_token": "refresh" if oauth else None,
         "expires_at_ms": int((now + 6 * 3600) * 1000),
@@ -37,12 +37,12 @@ def _pool_entry(provider: str, cooldown: str, model: str = "some-model") -> dict
 
 @pytest.fixture
 def pooled_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     # Only the pooled credential under test may authenticate anything.
     (home / "config.yaml").write_text(
-        "model:\n  provider: nous\n  default: test-model\nauth:\n  adopt_external_logins: false\n")
+        "model:\n  provider: moor\n  default: test-model\nauth:\n  adopt_external_logins: false\n")
 
     def write(provider: str, cooldown: str, model: str = "some-model") -> dict:
         entry = _pool_entry(provider, cooldown, model)
@@ -93,16 +93,16 @@ def test_kept_row_says_which_limit_and_when_it_resets(pooled_home, provider):
 
 def test_picker_visibility_keeps_the_full_custom_probe_budget(monkeypatch):
     """Keeping cooldown rows visible must not shorten the current custom endpoint's live probe."""
-    monkeypatch.setattr("hermes_cli.models.cached_provider_model_ids", lambda *_a, **_kw: [])
-    monkeypatch.setattr("hermes_cli.models.provider_model_ids", lambda *_a, **_kw: [])
-    monkeypatch.setattr("hermes_cli.models.fetch_api_models", lambda *_a, **_kw: None)
-    monkeypatch.setattr("hermes_cli.models_local.fetch_ollama_local_models", lambda *_a, **_kw: None)
+    monkeypatch.setattr("moor_cli.models.cached_provider_model_ids", lambda *_a, **_kw: [])
+    monkeypatch.setattr("moor_cli.models.provider_model_ids", lambda *_a, **_kw: [])
+    monkeypatch.setattr("moor_cli.models.fetch_api_models", lambda *_a, **_kw: None)
+    monkeypatch.setattr("moor_cli.models_local.fetch_ollama_local_models", lambda *_a, **_kw: None)
 
     def answers_after_1_5s(_api_key, _api_url, _native, _preserve, headers=None, timeout=5.0,
                            api_mode=None, **_kw):
         return ["slow-discovered-model"] if timeout >= 5.0 else None
 
-    monkeypatch.setattr("hermes_cli.model_switch_providers._fetch_picker_live_models", answers_after_1_5s)
+    monkeypatch.setattr("moor_cli.model_switch_providers._fetch_picker_live_models", answers_after_1_5s)
     ctx = load_picker_context().with_overrides(
         current_provider="custom", current_base_url="http://127.0.0.1:9999/v1", current_model="kept-model")
 

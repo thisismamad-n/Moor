@@ -335,7 +335,7 @@ class TestDockerHostBindApproval:
         """Isolated Docker still bypasses dangerous-command approval."""
         import tools.approval as A
         self._isolate_approval_state(monkeypatch)
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+        monkeypatch.setenv("MOOR_EXEC_ASK", "1")
         res = A.check_all_command_guards("rm -rf /workspace", "docker",
                                          has_host_access=False)
         assert res["approved"] is True
@@ -369,7 +369,7 @@ class TestDockerHostBindApproval:
         """Host-bound Docker dangerous command escalates instead of bypassing."""
         import tools.approval as A
         self._isolate_approval_state(monkeypatch)
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+        monkeypatch.setenv("MOOR_EXEC_ASK", "1")
         res = A.check_all_command_guards("rm -rf /workspace", "docker",
                                          has_host_access=True)
         # Must NOT take the silent container fast-path.

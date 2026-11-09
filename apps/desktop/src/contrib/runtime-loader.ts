@@ -43,7 +43,7 @@ import { notifyError } from '@/store/notifications'
 import { forgetPluginPreviewAccess } from '@/store/plugin-preview-grants'
 
 import { trackGatewayEventDisposers } from './events'
-import { createPluginContext, declaredCapabilities, type HermesPlugin } from './plugin'
+import { createPluginContext, declaredCapabilities, type MoorPlugin } from './plugin'
 import { $pluginRecords, dropPlugin, pluginActive, type PluginKind, publishPlugin } from './plugins-store'
 
 interface LoadOptions {
@@ -821,7 +821,7 @@ async function watchDiskPluginFile(desktop: NonNullable<Window['moorDesktop']>, 
 /** Watch a linked dev package's SOURCE `plugin.js`. Without it the developer
  *  edits their checkout while the app keeps running the copy in
  *  `desktop-plugins/` — the copy is only refreshed on Rescan or restart. */
-async function watchDiskPluginSource(desktop: NonNullable<Window['hermesDesktop']>, record: DiskPlugin): Promise<void> {
+async function watchDiskPluginSource(desktop: NonNullable<Window['moorDesktop']>, record: DiskPlugin): Promise<void> {
   if (!record.sourceFile || record.sourceWatchId) {
     return
   }
@@ -839,7 +839,7 @@ async function watchDiskPluginSource(desktop: NonNullable<Window['hermesDesktop'
  *  reconcile — the one writer of that folder), then reload every copy that
  *  pass replaced and re-bind its watch, which the folder swap orphaned. */
 async function resyncLinkedDiskPlugins(): Promise<void> {
-  const desktop = window.hermesDesktop
+  const desktop = window.moorDesktop
 
   if (!desktop?.reconcileDesktopPlugins) {
     return
@@ -984,7 +984,7 @@ function retireDiskPlugin(file: string, record: DiskPlugin): void {
   }
 
   if (record.sourceWatchId) {
-    void window.hermesDesktop?.stopPreviewFileWatch(record.sourceWatchId)
+    void window.moorDesktop?.stopPreviewFileWatch(record.sourceWatchId)
   }
 
   disk.delete(file)
@@ -1008,7 +1008,7 @@ export async function uninstallDiskPlugin(
   }
 
   const [file, record] = found
-  const remove = removeDesktop ?? window.hermesDesktop?.removeDesktopPlugin
+  const remove = removeDesktop ?? window.moorDesktop?.removeDesktopPlugin
 
   if (!remove) {
     return { ok: false, error: 'this Moor Desktop build cannot remove desktop plugins — delete the folder by hand' }
@@ -1027,7 +1027,7 @@ export async function uninstallDiskPlugin(
   // could not revoke it there any more.
   if (record.id) {
     try {
-      await window.hermesDesktop?.pluginFiles?.revoke(record.id)
+      await window.moorDesktop?.pluginFiles?.revoke(record.id)
     } catch (error) {
       return {
         ok: false,

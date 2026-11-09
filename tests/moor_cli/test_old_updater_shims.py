@@ -91,13 +91,13 @@ from tests.compat.old_updater_support import (
         ("_write_update_incomplete_marker", (), {}),
         ("_reload_updated_runtime_modules", (), {}),
     ] for cached in (False, True)),
-        ("hermes_cli.main_web_build", "_run_with_idle_timeout", (["npm", "ci"], Path("web")), {}, None),
-        ("hermes_cli.main_web_build", "_run_npm_install_deterministic", ("npm", Path("web")), {}, None),
-        ("hermes_cli.main_web_build", "_nixos_build_env", (), {}, None),
-        ("hermes_cli.main", "_reexec_dependency_sync_off_windows_shim", (), {}, None),
-        ("hermes_cli.update_cmd", "get_default_hermes_root", (), {}, None),
-        ("hermes_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {}, None),
-        ("hermes_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {"timeout": 120, "capture_output": False}, None),
+        ("moor_cli.main_web_build", "_run_with_idle_timeout", (["npm", "ci"], Path("web")), {}, None),
+        ("moor_cli.main_web_build", "_run_npm_install_deterministic", ("npm", Path("web")), {}, None),
+        ("moor_cli.main_web_build", "_nixos_build_env", (), {}, None),
+        ("moor_cli.main", "_reexec_dependency_sync_off_windows_shim", (), {}, None),
+        ("moor_cli.update_cmd", "get_default_moor_root", (), {}, None),
+        ("moor_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {}, None),
+        ("moor_cli.tools_config", "_pip_install", (["--quiet", "honcho-ai"],), {"timeout": 120, "capture_output": False}, None),
     ],
 )
 def test_retired_dependency_entrypoints_handoff_without_fallback(module, name, args, kwargs, cached, fresh_child, monkeypatch):
@@ -120,10 +120,10 @@ def test_retired_dependency_entrypoints_handoff_without_fallback(module, name, a
 
 
 @pytest.mark.parametrize("module,name,specs,declares_version", [
-    ("hermes_cli.main", "cmd_update", [], True),
-    ("hermes_cli.update_cmd", "_cmd_update_impl", ["honcho-ai"], True),
+    ("moor_cli.main", "cmd_update", [], True),
+    ("moor_cli.update_cmd", "_cmd_update_impl", ["honcho-ai"], True),
     # 2026-07-26..08-16 updaters predate the pre_update_version local
-    ("hermes_cli.update_cmd", "_cmd_update_impl", [], False),
+    ("moor_cli.update_cmd", "_cmd_update_impl", [], False),
 ])
 def test_lazy_installer_inside_historical_update_hands_off(module, name, specs, declares_version, fresh_child):
     from tools.lazy_deps import install_specs
@@ -151,17 +151,17 @@ def test_current_updater_entrypoints_declare_the_handoff_sentinel():
     import sys
 
     # The sentinel local looks unused; deleting it would make a current
-    # `hermes update` frame hand off to the takeover child mid-run. Assert
+    # `moor update` frame hand off to the takeover child mid-run. Assert
     # against the shipped entrypoints in a fresh interpreter: importing
-    # hermes_cli.main probes the checkout's payload manifest, which the
-    # in-process home-I/O guard refuses for worktrees under ~/.hermes.
+    # moor_cli.main probes the checkout's payload manifest, which the
+    # in-process home-I/O guard refuses for worktrees under ~/.moor.
     code = (
-        "from hermes_cli import main as hermes_main\n"
-        "from hermes_cli import update_cmd\n"
-        "print('_hermes_current_updater_frame' in "
+        "from moor_cli import main as moor_main\n"
+        "from moor_cli import update_cmd\n"
+        "print('_moor_current_updater_frame' in "
         "update_cmd._cmd_update_impl.__code__.co_varnames)\n"
-        "print('_hermes_current_updater_frame' in "
-        "hermes_main.cmd_update.__wrapped__.__code__.co_varnames)\n"
+        "print('_moor_current_updater_frame' in "
+        "moor_main.cmd_update.__wrapped__.__code__.co_varnames)\n"
     )
     out = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, check=True,

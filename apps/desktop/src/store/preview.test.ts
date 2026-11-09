@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { group } from '@/components/pane-shell/tree/model'
 import { $layoutTree, noteActiveTreeGroup } from '@/components/pane-shell/tree/store'
 import { createClientSessionState } from '@/lib/chat-runtime'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { $rightRailActiveTabId, selectRightRailTab } from './layout'
 import {
@@ -301,7 +301,7 @@ describe('preview store', () => {
     expect(closeBrowserPreviewMatchingLiveUrl('https://example.com/dashboard')).toBe(true)
     expect($previewTabs.get()).toHaveLength(0)
     expect($browserPages.get()[tabId]).toBeUndefined()
-    expect(window.localStorage.getItem('hermes.desktop.previewTabs.v2')).toBeNull()
+    expect(window.localStorage.getItem('moor.desktop.previewTabs.v2')).toBeNull()
   })
 
   it('prefers the tab currently showing a URL over one that navigated away from it', () => {
@@ -498,7 +498,7 @@ describe('preview session scoping (#73890)', () => {
 
       prunePreviewTabsForSession('stored-del-x')
 
-      const stored = JSON.parse(window.localStorage.getItem('hermes.desktop.previewTabs.v2') ?? '{}') as Record<
+      const stored = JSON.parse(window.localStorage.getItem('moor.desktop.previewTabs.v2') ?? '{}') as Record<
         string,
         { target: PreviewTarget }[]
       >
@@ -902,7 +902,7 @@ describe('preview session scoping (#73890)', () => {
 
     // A fresh pop-out renderer: no session focus, its view on the default
     // bucket, the tab in another profile's bucket — found by id in storage.
-    window.localStorage.setItem('hermes.desktop.previewTabs.v2', JSON.stringify({ work: $previewTabs.get() }))
+    window.localStorage.setItem('moor.desktop.previewTabs.v2', JSON.stringify({ work: $previewTabs.get() }))
     const fresh = await relaunchedPreviewStore()
 
     expect(fresh.$previewTabs.get()).toHaveLength(0)

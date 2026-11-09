@@ -136,7 +136,7 @@ def test_plugin_sandbox_selects_real_pm_tools_offline(tmp_path: Path) -> None:
     eh = build_home(tmp_path, "http://127.0.0.1:1")
     child = subprocess.run([sys.executable, "-c",
                             "from pm._uv import _toolchain; assert _toolchain(realize=False) is not None"],
-                           env=eh.env({"HERMES_DISABLE_LAZY_INSTALLS": "1"}), cwd=eh.project,
+                           env=eh.env({"MOOR_DISABLE_LAZY_INSTALLS": "1"}), cwd=eh.project,
                            capture_output=True, text=True, timeout=30, check=False)
     assert child.returncode == 0, child.stderr
 
@@ -283,7 +283,7 @@ def name_collision(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
             root / "live.jsonl", eh.tag, MCPE2E_CANARY="CANARY-LIVE")}, name="foo", version="2.0.0")
         backup = write_portable_plugin(eh, "foo.bak-x", {"srv": portable_stdio(
             root / "backup.jsonl", eh.tag, MCPE2E_CANARY="CANARY-BACKUP")}, name="foo", version="1.0.0")
-        listing = subprocess.run(hermes_argv("plugins", "list", "--plain", "--no-bundled"), cwd=eh.project,
+        listing = subprocess.run(moor_argv("plugins", "list", "--plain", "--no-bundled"), cwd=eh.project,
                                  env=eh.env(), capture_output=True, text=True, timeout=120, stdin=subprocess.DEVNULL, check=False)
         assert listing.returncode == 0, listing.stderr[-2000:]
         try:
@@ -331,10 +331,10 @@ def test_same_name_plugin_collision_is_reported(name_collision: dict[str, Any], 
 
 @pytest.mark.parametrize("trust", ["untrusted", None])
 def test_portable_package_trust_request_gates_write_tools_before_the_rpc(tmp_path: Path, trust: str | None) -> None:
-    """A package that marks its server ``trust: untrusted`` (plugin.json Hermes extension) gets the same gate as a
+    """A package that marks its server ``trust: untrusted`` (plugin.json Moor extension) gets the same gate as a
     config.yaml server: a destructive tool is refused BEFORE the RPC in an unattended ``chat -q`` turn, while a
     read-only one still runs. Without the request the destructive call reaches the server (default trust)."""
-    servers_ext = {"com.nousresearch.hermes": {"servers": {"pkg": {"trust": trust}}}} if trust else None
+    servers_ext = {"com.moorinc.moor": {"servers": {"pkg": {"trust": trust}}}} if trust else None
     log = tmp_path / "pkg.jsonl"
     with provider(script((tool_name("pkg", "ro_probe"), {"nonce": "r"}),
                          (tool_name("pkg", "rw_probe"), {"nonce": "w"}))) as srv:

@@ -41,6 +41,12 @@ CASES_TRANSFORM = [
      "run ('moorctl', 'serve') with smoora"),
     ("token = 'HERMESTEXDISPLAY1HERMESTEXEND'",
      "token = 'MOORTEXDISPLAY1MOORTEXEND'"),
+    ("const env = { HERMESPROBE: 'x' }",
+     "const env = { MOORPROBE: 'x' }"),
+    ("path == '%2Fhermes%2Fsessions'",
+     "path == '%2Fmoor%2Fsessions'"),
+    ("Hermesnek kell lennie és hermesből kilépve a Hermesszel és Hermesben",
+     "Moornak kell lennie és moorból kilépve a Moorral és Moorban"),
 ]
 
 CASES_PROTECTED = [
@@ -58,6 +64,8 @@ CASES_PROTECTED = [
     "Hermes 3 and Hermes 4 chat families; FP16_Hermes_4.5",
     "expect(screen.getByText(/ares-3009\\.agents\\.nousresearch\\.com/i)).toBeTruthy()",
     "https://nousresearch.github.io/hermes-agent/docs/oauth/client-metadata.json",
+    "docs_url: https://true402.dev/guides/rug-check-hermes-nousresearch-agent",
+    "repo: https://github.com/true402/hermes-swap-guard",
     "https://nousresearch.github.io/hermes-agent/docs/img/logo.png",
 ]
 

@@ -177,7 +177,7 @@ export function primaryRuntimeConnectionId(connection: Pick<MoorConnection, 'con
  * (which a live switch keeps current, so a reload lands where the user was), else on a cold boot the
  * origin's saved default, is selected on top of the primary instead of becoming it.
  */
-async function openWebappTabProfile(desktop: Window['hermesDesktop'], primary: string, startup: boolean) {
+async function openWebappTabProfile(desktop: Window['moorDesktop'], primary: string, startup: boolean) {
   const profile =
     windowProfileOverride() ??
     (startup && !isPeerInstanceWindow() ? (await desktop.profile?.getDefault?.())?.profile?.trim() : null)
@@ -209,7 +209,7 @@ async function openWebappTabProfile(desktop: Window['hermesDesktop'], primary: s
 // A freshly spawned backend can block its event loop for 15-30s while it
 // connects MCP servers and discovers plugins, so a single initial connect
 // attempt races backend cold-start and loses intermittently — the renderer
-// surfaced "Could not connect to Hermes gateway" even though the backend
+// surfaced "Could not connect to Moor gateway" even though the backend
 // became healthy moments later (#49645). Retry the initial dial, re-minting
 // the WS URL on every attempt (OAuth tickets are single-use), instead of
 // failing the whole boot on the first transport error. Reauth failures
@@ -353,12 +353,12 @@ export function useGatewayBoot({
     // reconnect with backoff, and we nudge a reconnect on the OS/browser
     // signals that fire around wake (power resume, network online, the window
     // becoming visible).
-    let primaryConnection: HermesConnection | null = null
+    let primaryConnection: MoorConnection | null = null
     // Bumped whenever the primary route is recorded, so a reconnect whose
     // lookup started before a boot/connection apply cannot re-own the primary.
     let primaryRouteRevision = 0
 
-    const recordPrimaryConnection = (connection: HermesConnection) => {
+    const recordPrimaryConnection = (connection: MoorConnection) => {
       primaryConnection = connection
       primaryRouteRevision += 1
       setPrimaryGatewayConnection(connection)
@@ -742,7 +742,7 @@ export function useGatewayBoot({
     // session id against the wrong backend — the HUD then falls back to the
     // default profile's last session (#82285). The override wins over the
     // stored preference; absent, behavior is unchanged.
-    async function getWindowBackend(startup = false): Promise<HermesConnection> {
+    async function getWindowBackend(startup = false): Promise<MoorConnection> {
       // Webapp: the tab's own socket, whatever profile the tab opens on (openWebappTabProfile).
       if (hostHas('servingOriginConnection')) {
         return desktop.getConnection()
@@ -767,7 +767,7 @@ export function useGatewayBoot({
     }
 
     async function adoptPrimaryProfile(
-      connection: HermesConnection,
+      connection: MoorConnection,
       selectionRevision: number,
       shouldPublish: () => boolean = () => true,
       startup = false
@@ -1577,7 +1577,7 @@ export function useGatewayBoot({
           // still stall its event loop for seconds on the first WS handshake —
           // a local boot failure is latched non-retryable, so without this
           // retry the one lost race ended the boot in "Could not connect to
-          // Hermes gateway". The first attempt reuses the URL minted at the
+          // Moor gateway". The first attempt reuses the URL minted at the
           // boot boundary above — the mint count stays observable (#93454) —
           // while later attempts re-mint; local token URLs are long-lived, so
           // the re-mint is a cheap no-op.

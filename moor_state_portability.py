@@ -14,15 +14,15 @@ from typing import Any, Dict, List, Optional
 
 from agent.skill_commands import AUTO_LOAD_SCAFFOLD_SQL_LIKE, SKILL_SCAFFOLD_SQL_LIKE
 from utils import safe_json_loads
-from hermes_cli.timefmt import coerce_epoch
-from hermes_state_ids import new_session_id
-from hermes_state_keys import (
+from moor_cli.timefmt import coerce_epoch
+from moor_state_ids import new_session_id
+from moor_state_keys import (
     CRON_PRINCIPAL_ID, CRON_REQUEST_PREFIX, cron_request_range, cron_run_from_request, legacy_cron_run_job,
     prefix_range,
 )
-from hermes_state_local import POLICY_PREFIX
-from hermes_state_common import SCHEMA_SQL, _shape_preview, _sql_preview_raw, _sql_session_last_active
-from hermes_state_messages import _parse_tool_calls, _tool_calls_count
+from moor_state_local import POLICY_PREFIX
+from moor_state_common import SCHEMA_SQL, _shape_preview, _sql_preview_raw, _sql_session_last_active
+from moor_state_messages import _parse_tool_calls, _tool_calls_count
 import itertools
 
 # Pre-split logger identity so log filtering/capture is unchanged.
@@ -810,7 +810,7 @@ class SessionPortabilityMixin:
             return {"ok": False, "imported": 0, "skipped": 0, "detached": 0, "errors": errors}
 
         def _do(conn):
-            from hermes_state_mutation_retirement import retired_in
+            from moor_state_mutation_retirement import retired_in
             # A user-deleted id stays fenced for good: its row restored beside the fence would list
             # fine and refuse every turn, so the import is refused by name and writes nothing.
             ids = [str(item["session"].get("id") or "").strip() for item in normalized]

@@ -13,7 +13,7 @@ import threading
 import time
 from unittest.mock import MagicMock, patch
 
-from cli import HermesCLI
+from cli import MoorCLI
 from agent.i18n import t
 
 

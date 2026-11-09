@@ -1150,7 +1150,7 @@ async def test_expired_approval_click_keeps_the_request():
     adapter._card_action_denied = lambda _from: None
     adapter._invoke_card = lambda body: body
     ctx = MagicMock()
-    ctx.activity.value.action.data = {"hermes_action": "approve_once", "session_key": "s1",
+    ctx.activity.value.action.data = {"moor_action": "approve_once", "session_key": "s1",
                                       "cmd": "rm -rf ./build", "desc": "dangerous deletion"}
     with patch("tools.approval.has_blocking_approval", return_value=False):
         body = await adapter._on_card_action(ctx)

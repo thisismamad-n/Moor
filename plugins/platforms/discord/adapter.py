@@ -3010,7 +3010,7 @@ class DiscordAdapter(DiscordAuthorizationMixin, DiscordMediaMixin, DiscordThread
         return "safe"
 
     def _canonicalize_app_command_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """Reduce command payloads to the semantic fields Hermes manages."""
+        """Reduce command payloads to the semantic fields Moor manages."""
         contexts = payload.get("contexts")
         integration_types = payload.get("integration_types")
         return {
@@ -5058,7 +5058,7 @@ class DiscordAdapter(DiscordAuthorizationMixin, DiscordMediaMixin, DiscordThread
         """Numeric IDs from connect-time username resolution.
         The env mirror of ``_allowed_user_ids`` doesn't survive the per-turn .env hot-reload, so the
         gateway authz layer unions these in. Only IDs resolved from username entries: numeric entries
-        are read live from the reloaded env, so one removed there (``hermes pairing revoke``, a hand
+        are read live from the reloaded env, so one removed there (``moor pairing revoke``, a hand
         edit) must not stay authorized from this connect-time snapshot until restart."""
         return set(self._username_resolved_ids)
 
@@ -5470,7 +5470,7 @@ class DiscordAdapter(DiscordAuthorizationMixin, DiscordMediaMixin, DiscordThread
     def _stamp_auto_thread_name(thread: Any, thread_name: str) -> Any:
         """Remember the placeholder name so the semantic rename can verify it wasn't changed by a human."""
         try:
-            thread._hermes_auto_thread_initial_name = thread_name
+            thread._moor_auto_thread_initial_name = thread_name
         except Exception:
             pass
         return thread
@@ -5545,14 +5545,14 @@ class DiscordAdapter(DiscordAuthorizationMixin, DiscordMediaMixin, DiscordThread
         edit = getattr(thread, "edit", None)
         if edit is None:
             return False
-        # Only the title lane's guarded rename is Hermes's own title (see adapter_thread_titles).
+        # Only the title lane's guarded rename is Moor's own title (see adapter_thread_titles).
         attempt = (
             self._semantic_thread_renames.attempt(str(thread_id_int), only_if_current_name, cleaned)
             if only_if_current_name is not None else nullcontext()
         )
         try:
             with attempt:
-                await edit(name=cleaned, reason="Hermes semantic session title")
+                await edit(name=cleaned, reason="Moor semantic session title")
             logger.info(
                 "[%s] Renamed Discord thread %s from %r to %r",
                 self.name, thread_id, current_name, cleaned,
@@ -6449,7 +6449,7 @@ def _define_discord_view_classes() -> None:
             self._disable_all()
             await self._expire_embed(t("platform.discord.prompt.expired_footer"))
 
-    ExecApprovalView = build_exec_approval_view(discord, _HermesView, unauthorized=_unauthorized)
+    ExecApprovalView = build_exec_approval_view(discord, _MoorView, unauthorized=_unauthorized)
 
     class SlashConfirmView(_MoorView):
         """Approve Once / Always Approve / Cancel for slash-command confirmations (``/reload-mcp``,
@@ -6601,7 +6601,7 @@ def _define_discord_view_classes() -> None:
                 for i in range(0, len(models), _DISCORD_SELECT_MAX_OPTIONS)
             ][: _DISCORD_SELECT_MAX_ROWS - 2]
             placeholder_base = t("platform.discord.picker.model_placeholder", provider=provider.get("name", provider_slug))
-            from hermes_cli.model_picker_usage import picker_row_suffix
+            from moor_cli.model_picker_usage import picker_row_suffix
             for idx, chunk in enumerate(chunks):
                 options = [
                     discord.SelectOption(
@@ -7311,7 +7311,7 @@ _is_connected = _env_is_connected("DISCORD_BOT_TOKEN")
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Moor plugin system."""
     from .adapter_hint import PLATFORM_HINT
     from .send_targets import SEND_ENTRY_KWARGS
     from plugins.platforms.discord.onboarding import interactive_setup

@@ -1,5 +1,5 @@
 """``browser_exec``: drive a real browser through the Browser Use CLI engine (browser-harness,
-https://browser-use.com), Hermes' only core browser tool.
+https://browser-use.com), Moor' only core browser tool.
 
 The harness speaks CDP to whatever ``tools.browser_session`` resolved for the call: an operator
 ``BU_CDP_*`` endpoint, a ``/browser connect`` override, a cloud provider's session, or a local browser
@@ -23,9 +23,9 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
-from hermes_cli.process_identity import (
+from moor_cli.process_identity import (
     own_process_groups, register_child, release_process_group_once_empty, spawn_env, spawned_by_this_process)
-from hermes_constants import get_hermes_home, hermes_home_key
+from moor_constants import get_moor_home, moor_home_key
 from tools.browser_harness_dirs import (daemon_env, daemon_identity, fit_default_socket_dir, harness_pid_file,
                                         namespace_harness_dirs)
 from utils import is_truthy_value
@@ -44,13 +44,13 @@ _SESSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 _PRIVATE_BROWSER_SENTINEL = "_MOOR_BU_PRIVATE_BROWSER"
 # Internal route provenance: this exec resolved to a browser on the Bot Desktop display and must use
 # the same human-control lease fence as the built-in browser tools. Popped before launching the CLI.
-_BOT_DESKTOP_BROWSER_SENTINEL = "_HERMES_BU_BOT_DESKTOP_BROWSER"
+_BOT_DESKTOP_BROWSER_SENTINEL = "_MOOR_BU_BOT_DESKTOP_BROWSER"
 # The note when the consented real profile could not load (the route fell back). Popped before launch.
-_REAL_PROFILE_FALLBACK_SENTINEL = "_HERMES_BU_REAL_PROFILE_FALLBACK"
+_REAL_PROFILE_FALLBACK_SENTINEL = "_MOOR_BU_REAL_PROFILE_FALLBACK"
 # local=True whose real profile could not load: run on the local sidecar browser. Popped before launch.
-_LOCAL_FALLBACK_SENTINEL = "_HERMES_BU_LOCAL_FALLBACK"
+_LOCAL_FALLBACK_SENTINEL = "_MOOR_BU_LOCAL_FALLBACK"
 # Where new/hidden tabs may be brought to the front: a browser_use_shot.ACTIVATE_* mode. Popped before launch.
-_CLOUD_BROWSER_SENTINEL = "_HERMES_BU_CLOUD_BROWSER"
+_CLOUD_BROWSER_SENTINEL = "_MOOR_BU_CLOUD_BROWSER"
 
 # Prepended to the model's code for named sessions on SHARED browsers (a /browser connect CDP override): the
 # harness daemon attaches to the first existing page at startup, so two fresh named daemons can land on the
@@ -184,7 +184,7 @@ def _base_subprocess_env() -> dict:
     from tools.browser_session import build_browser_env
     env = build_browser_env()
     env.update(_harness_credentials())
-    # The harness runs on Hermes's own interpreter, but a bundled Desktop install boots that
+    # The harness runs on Moor's own interpreter, but a bundled Desktop install boots that
     # interpreter with its site dir on PYTHONPATH (no venv to activate), and the harness's daemon
     # re-runs sys.executable. Point PYTHONPATH at the harness's site dir, replacing whatever the
     # agent process inherited, so both the CLI and its daemon import the same packages.
@@ -240,7 +240,7 @@ def _use_gateway(browser_cfg: dict) -> bool:
 
 def is_legacy_browser_use_cloud_config(browser_cfg: dict) -> bool:
     """True for pre-CLI direct-API Browser Use cloud configs: no cloud_provider (or ``browser-use``), not the
-    Nous gateway, and BROWSER_USE_API_KEY set; the CLI then reaches Browser Use cloud natively."""
+    Moor gateway, and BROWSER_USE_API_KEY set; the CLI then reaches Browser Use cloud natively."""
     if not isinstance(browser_cfg, dict):
         return False
     provider = str(browser_cfg.get("cloud_provider") or "").strip().lower()
@@ -250,14 +250,14 @@ def is_legacy_browser_use_cloud_config(browser_cfg: dict) -> bool:
 
 
 def _browser_use_api_key_set() -> bool:
-    """BROWSER_USE_API_KEY for the served profile: the only credential Hermes autospawns BU cloud with.
+    """BROWSER_USE_API_KEY for the served profile: the only credential Moor autospawns BU cloud with.
     Profile-scoped so a multiplexed secondary never inherits the default's cloud mode."""
     from agent.secret_scope import get_secret
     return bool(get_secret("BROWSER_USE_API_KEY", ""))
 
 
 def _harness_site_dir() -> Optional[str]:
-    """The site dir Hermes's interpreter imports ``browser_harness`` from, or None."""
+    """The site dir Moor's interpreter imports ``browser_harness`` from, or None."""
     spec = importlib.util.find_spec("browser_harness")
     if spec is None or not spec.origin:
         return None
@@ -265,7 +265,7 @@ def _harness_site_dir() -> Optional[str]:
 
 
 def _find_cli() -> Optional[list[str]]:
-    """The Browser Use CLI's engine (browser-harness) is a core dependency of Hermes's own venv,
+    """The Browser Use CLI's engine (browser-harness) is a core dependency of Moor's own venv,
     so every install, the Desktop bundle included, runs it on the current interpreter."""
     if _harness_site_dir() is None:
         return None
@@ -386,10 +386,10 @@ def _resolve_local_cdp(env: dict, task_id: Optional[str], session_name: str = ""
 
     if _quiet(using_lightpanda_engine, False):
         fail = lambda e: (f"Lightpanda could not be started: {e} Set browser.engine to auto "
-                          "to use local Chrome, or switch backends via `hermes tools` → Browser Automation.")
+                          "to use local Chrome, or switch backends via `moor tools` → Browser Automation.")
     else:
         fail = lambda e: (f"The local browser could not be started: {e} "
-                          "Run `hermes tools` → Browser Automation to (re)install Chromium, or switch backends.")
+                          "Run `moor tools` → Browser Automation to (re)install Chromium, or switch backends.")
     err = _export_session_cdp(env, _session_info, key, fail, "The local browser session returned no CDP endpoint.")
     if err is None:
         _mark_local_browser(env, session, key)
@@ -403,7 +403,7 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
     Precedence: (1) ``BU_CDP_WS``/``BU_CDP_URL`` already in env (operator override); (2) ``BROWSER_CDP_URL``
     env / ``browser.cdp_url`` (``/browser connect``); (3) a cloud provider via ``browser_session.get_session_info``
     (per-key cache, expiry, reaper, atexit; a provider failure falls back to a local browser);
-    (4) the local engine — ``browser.engine: lightpanda`` or Hermes' packaged Chromium via the launcher
+    (4) the local engine — ``browser.engine: lightpanda`` or Moor' packaged Chromium via the launcher
     (never the harness's own discovery of the user's installed Chrome); (5) BU direct-API configs WITH
     ``BROWSER_USE_API_KEY`` → None (checked before (3)): the CLI reaches BU cloud natively (BU_AUTOSPAWN); a
     keyless ``browser-use`` provider (managed-gateway autodetect, or a selection missing its key) takes (3).
@@ -429,7 +429,7 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
         return _resolve_local_cdp(env, task_id, session_name)
 
     # Browser Use direct-API configs: the CLI talks to BU cloud natively (BU_AUTOSPAWN) — the
-    # legacy provider would create a second, redundant session. Nous-gateway configs (cloud_provider: nous
+    # legacy provider would create a second, redundant session. Moor-gateway configs (cloud_provider: moor
     # from the picker, or the pre-picker use_gateway: true) DO resolve through the provider: the gateway
     # provisions the browser server-side and returns its CDP URL. Without BROWSER_USE_API_KEY the CLI cannot
     # autospawn, and the provider is either the managed gateway (autodetect on a never-configured install) or
@@ -455,9 +455,9 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
     err = _export_session_cdp(
         env, _session_info, key,
         lambda e: (f"Cloud browser provider {provider_name} failed to provide a session: {e}. "
-                   "Fix the provider configuration or switch backends via `hermes tools` → Browser Automation."),
+                   "Fix the provider configuration or switch backends via `moor tools` → Browser Automation."),
         f"Cloud browser provider {provider_name} returned no CDP endpoint, so browser_exec "
-        "cannot drive it. Pick a CDP-capable provider via `hermes tools` → Browser Automation.",
+        "cannot drive it. Pick a CDP-capable provider via `moor tools` → Browser Automation.",
     )
     if session.get("fallback_from_cloud"):
         # The provider failed (rate limit, quota, outage) and the session layer fell back to a LOCAL
@@ -650,7 +650,7 @@ def _published_daemon_pid(env: dict) -> Optional[int]:
 def _own_harness_daemon_until_owned(env: dict) -> Optional[bool]:
     """Periodic check while browser_exec runs: own the daemon as soon as it publishes its pid, then
     stop (False). It also stops once the daemon can never be ours (Windows, a managed worker, a daemon
-    another Hermes started), instead of re-checking every tick for the whole call."""
+    another Moor started), instead of re-checking every tick for the whole call."""
     return None if _own_harness_daemon(env) is None else False
 
 
@@ -671,7 +671,7 @@ def _reload_daemons(daemons) -> None:  # each ``daemon_identity`` daemon, with i
 # Daemon identity (``daemon_identity``: its dirs + BU_NAME) -> process group of the harness daemon this
 # process owns. The harness starts its daemon with start_new_session so it outlives each CLI call (that
 # is how a session persists across browser_exec calls), which also means it outlives a SIGKILLed or
-# OOM-killed Hermes forever (#121095). Its group goes to this process's owner-death supervisor, so it
+# OOM-killed Moor forever (#121095). Its group goes to this process's owner-death supervisor, so it
 # dies with us however we die.
 _owned_daemon_groups: dict[tuple[str, ...], int] = {}
 _owned_daemon_groups_lock = threading.Lock()
@@ -683,12 +683,12 @@ def _own_harness_daemon(env: dict) -> Optional[bool]:
     The harness publishes its daemon pid in its runtime dir (``harness_pid_file``: JSON
     ``{"pid", "started"}`` or a bare pid). The daemon is accepted only while it is this user's live
     ``browser_harness.daemon`` leading its own session and its spawn tag names this process, so a
-    stale or planted pid file, or a daemon another Hermes started, never reaches the supervisor.
+    stale or planted pid file, or a daemon another Moor started, never reaches the supervisor.
     Runs after every browser_exec (and while a long one runs, until the daemon is owned): a pid
     already owned for this daemon costs one file read.
 
     Returns True once the daemon is owned, False when it can never be (Windows, a managed worker, a
-    daemon another Hermes started), None when there is nothing to own yet."""
+    daemon another Moor started), None when there is nothing to own yet."""
     if os.name != "posix":
         return False  # Windows: the harness daemon is outside this process's job; nothing to register.
     from agent.runtime_session_store import is_worker_process
@@ -713,7 +713,7 @@ def _own_harness_daemon(env: dict) -> Optional[bool]:
                 or argv[argv.index("-m") + 1] != "browser_harness.daemon"):
             return None
         if not spawned_by_this_process(pid):
-            return False  # another Hermes on the same BU_NAME started it: that Hermes owns it
+            return False  # another Moor on the same BU_NAME started it: that Moor owns it
     except (OSError, ValueError, IndexError, psutil.Error) as exc:
         logger.debug("browser_exec: no harness daemon to supervise for %s: %s", daemon[-1], exc)
         return None
@@ -791,8 +791,8 @@ def browser_exec(code: str, session: str = "", timeout_s: int = _DEFAULT_TIMEOUT
 
     cmd = _find_cli()
     if not cmd:
-        return tool_error("browser-harness is missing from Hermes's Python environment. "
-                          "Run `hermes update` to re-sync it.")
+        return tool_error("browser-harness is missing from Moor's Python environment. "
+                          "Run `moor update` to re-sync it.")
 
     env = _base_subprocess_env()
     if session:
@@ -838,9 +838,9 @@ def browser_exec(code: str, session: str = "", timeout_s: int = _DEFAULT_TIMEOUT
         _attach_vault_supervisor(env, task_id)
         with _driven_daemons_lock:
             daemon = daemon_identity(env)
-            _driven_daemons[daemon] = hermes_home_key()
+            _driven_daemons[daemon] = moor_home_key()
         # The first call starts the daemon and may run long (navigation, user code): own it as soon as
-        # it publishes its pid, so a Hermes killed mid-call takes it along (the call's end owns it too).
+        # it publishes its pid, so a Moor killed mid-call takes it along (the call's end owns it too).
         from agent.periodic_scheduler import schedule
         owning = schedule(lambda: _own_harness_daemon_until_owned(env), _OWN_DURING_CALL_S)
         try:
@@ -1019,7 +1019,7 @@ _exec_local_engine: contextvars.ContextVar[Optional[str]] = contextvars.ContextV
 
 def _handle_browser_exec(args: dict, **kw):
     """Registry handler; each call counts against the backend that served it (shared metrics, opt-in)."""
-    from hermes_cli.observability.shared_metrics_loop import record_browser_call
+    from moor_cli.observability.shared_metrics_loop import record_browser_call
     from tools.browser_session_cloud import browser_backend_name
     token = _exec_local_engine.set(None)
     try:

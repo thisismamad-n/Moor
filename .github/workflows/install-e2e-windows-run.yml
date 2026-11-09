@@ -106,7 +106,7 @@ permissions:
 
 env:
   # A stable run is on the default branch, so GITHUB_SHA is not the commit under test.
-  HERMES_TESTED_COMMIT: ${{ inputs.commit || github.sha }}
+  MOOR_TESTED_COMMIT: ${{ inputs.commit || github.sha }}
 
 jobs:
   bundled-e2e:
@@ -232,13 +232,13 @@ jobs:
       - name: Install the pseudoconsole runner's dependency
         shell: pwsh
         run: |
-          $uvDir = Get-ChildItem $env:HERMES_RUNTIME_DIR -Filter 'uv-*' -Directory | Select-Object -First 1
-          if (-not $uvDir) { throw "uv not found under $env:HERMES_RUNTIME_DIR" }
-          & (Join-Path $uvDir.FullName 'uv.exe') pip install --system --python $env:HERMES_PYTHON --quiet "pywinpty==3.0.5" "py-spy==0.4.2"
+          $uvDir = Get-ChildItem $env:MOOR_RUNTIME_DIR -Filter 'uv-*' -Directory | Select-Object -First 1
+          if (-not $uvDir) { throw "uv not found under $env:MOOR_RUNTIME_DIR" }
+          & (Join-Path $uvDir.FullName 'uv.exe') pip install --system --python $env:MOOR_PYTHON --quiet "pywinpty==3.0.5" "py-spy==0.4.2"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -c "import winpty; print('pty-run dependency ready')"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & (Join-Path (Split-Path $env:HERMES_PYTHON) 'py-spy.exe') --version
+          & (Join-Path (Split-Path $env:MOOR_PYTHON) 'py-spy.exe') --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       # One recording mechanism on every OS: the composite action verifies
@@ -251,11 +251,11 @@ jobs:
           mode: start
           output: ${{ github.workspace }}\gui-e2e-proof\recording.mkv
 
-      # Product steps below never see setup-pm's HERMES_RUNTIME_DIR or
-      # HERMES_PYTHON: windows-e2e.ps1 drops both on entry, so the installer,
-      # the app, `hermes update` and every chat turn share the leg's one store
-      # (<HERMES_HOME>\tools), as on a user's machine. setup-pm reaches the
-      # driver's own tooling only through HERMES_PYTHON (and PATH for older
+      # Product steps below never see setup-pm's MOOR_RUNTIME_DIR or
+      # MOOR_PYTHON: windows-e2e.ps1 drops both on entry, so the installer,
+      # the app, `moor update` and every chat turn share the leg's one store
+      # (<MOOR_HOME>\tools), as on a user's machine. setup-pm reaches the
+      # driver's own tooling only through MOOR_PYTHON (and PATH for older
       # installers' uv/ripgrep).
       - name: Stage serve repo (main -> ${{ inputs.install-ref }})
         shell: powershell

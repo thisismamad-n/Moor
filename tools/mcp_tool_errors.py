@@ -156,7 +156,7 @@ def _contains_only_cancellation(exc: BaseException) -> bool:
 
 def _auth_error_detail(exc: BaseException) -> str:
     """`` <guidance>`` when *exc* (or its group root) is the SDK's ``OAuthRegistrationError``, else ``""``. The DCR
-    guard in ``HermesMCPOAuthProvider`` raises one naming the next step (pre-register an OAuth client), and the
+    guard in ``MoorMCPOAuthProvider`` raises one naming the next step (pre-register an OAuth client), and the
     generic needs-reauth text alone would hide it from the model (#78190)."""
     try:
         from mcp.client.auth import OAuthRegistrationError

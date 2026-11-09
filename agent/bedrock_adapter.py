@@ -130,7 +130,7 @@ def _require_boto3():
 
 def _new_client(factory: Any, service: str, region: str, read_timeout: Optional[float]):
     """``factory.client(...)`` with botocore's own timeouts (60s read / 60s connect) unless a
-    request timeout is configured. The model-call client makes one attempt per call: Hermes's
+    request timeout is configured. The model-call client makes one attempt per call: Moor's
     retry loop owns retries and backoff (throttles classify as rate_limit there), and botocore's
     default of 5 attempts re-sends a read timeout, so a hung call took ~5x the timeout to fail.
     ``total_max_attempts`` counts the first request; ``max_attempts`` would count retries only."""
@@ -146,13 +146,13 @@ def _cached_client(cache: dict[tuple[str, Optional[float]], Any], service: str, 
     """Get or create a boto3 client per (region, read timeout). Unscoped: the default credential
     chain. Routed profile: one client per (home, service, region, read timeout), built from that
     profile's scoped ``AWS_*`` (falling back to the default chain only for what the profile does not set)."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    from moor_constants import get_moor_home_override, moor_home_key
+    if get_moor_home_override() is None:
         key = (region, read_timeout)
         if key not in cache:
             cache[key] = _new_client(_require_boto3(), service, region, read_timeout)
         return cache[key]
-    home_key = (hermes_home_key(), service, region, read_timeout)
+    home_key = (moor_home_key(), service, region, read_timeout)
     client = _bedrock_clients_by_home.get(home_key)
     if client is None:
         # Scope check first: a cred-less multiplex profile must hit the ambient-chain
@@ -168,7 +168,7 @@ def _get_bedrock_runtime_client(region: str, model: Optional[str] = None):
     request timeout (``providers.bedrock.models.<model>.timeout_seconds`` over
     ``providers.bedrock.request_timeout_seconds``). Resolved per call, so a model switch or a
     fallback to another Bedrock model gets that model's budget, not the one the session started with."""
-    from hermes_cli.timeouts import get_provider_request_timeout
+    from moor_cli.timeouts import get_provider_request_timeout
     return _cached_client(_bedrock_runtime_client_cache, "bedrock-runtime", region,
                           read_timeout=get_provider_request_timeout("bedrock", model))
 
@@ -189,10 +189,10 @@ def reset_client_cache():
 def invalidate_runtime_client(region: str) -> bool:
     """Evict one region's cached ``bedrock-runtime`` clients, every read timeout (stale HTTP pool);
     True if any was evicted."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is not None:
+    from moor_constants import get_moor_home_override, moor_home_key
+    if get_moor_home_override() is not None:
         cache: dict = _bedrock_clients_by_home
-        prefix = (hermes_home_key(), "bedrock-runtime", region)
+        prefix = (moor_home_key(), "bedrock-runtime", region)
     else:
         cache, prefix = _bedrock_runtime_client_cache, (region,)
     stale = [key for key in list(cache) if key[:len(prefix)] == prefix]
@@ -503,7 +503,7 @@ def bind_bedrock_runtime(agent, base_url: str, api_mode: str) -> None:
     agent._is_anthropic_oauth = False
     if api_mode == "anthropic_messages":
         from agent.anthropic_adapter import build_anthropic_bedrock_client
-        from hermes_cli.timeouts import get_provider_request_timeout
+        from moor_cli.timeouts import get_provider_request_timeout
         agent._anthropic_client = build_anthropic_bedrock_client(
             agent._bedrock_region, timeout=get_provider_request_timeout("bedrock", getattr(agent, "model", None)))
     else:

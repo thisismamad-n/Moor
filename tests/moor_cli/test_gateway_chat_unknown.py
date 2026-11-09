@@ -11,7 +11,7 @@ import pytest
 async def test_resume_displays_unknown_and_queue_then_discards_with_refreshed_generation(monkeypatch, capsys):
     from websockets.asyncio.server import serve
 
-    from hermes_cli import gateway_chat
+    from moor_cli import gateway_chat
 
     unknown_id = "admission-unknown-0123456789abcdef0123456789abcdef"
     queued_id = "admission-queued-fedcba9876543210fedcba9876543210"
@@ -61,7 +61,7 @@ async def test_resume_displays_unknown_and_queue_then_discards_with_refreshed_ge
             assert "won't re-run" in output.err.lower()
             # stdout holds the REPL banner only: no transcript or replay is rendered before
             # the operator has chosen what to do with the unknown admission.
-            assert output.out.strip().splitlines() == ["Welcome to Hermes Agent! Type your message or /help for commands."]
+            assert output.out.strip().splitlines() == ["Welcome to Moor Agent! Type your message or /help for commands."]
             assert calls == [
                 ("runtime.describe", {}),
                 ("session.resume", {"session_id": snapshot["stored_session_id"]}),
@@ -73,7 +73,7 @@ async def test_resume_displays_unknown_and_queue_then_discards_with_refreshed_ge
     monkeypatch.setattr("prompt_toolkit.patch_stdout.patch_stdout", nullcontext)
     async with serve(peer, "127.0.0.1", 0) as server:
         port = server.sockets[0].getsockname()[1]
-        monkeypatch.setenv("HERMES_TUI_GATEWAY_URL", f"ws://127.0.0.1:{port}")
+        monkeypatch.setenv("MOOR_TUI_GATEWAY_URL", f"ws://127.0.0.1:{port}")
         assert await asyncio.wait_for(
             gateway_chat.run_gateway_chat(argparse.Namespace(resume=snapshot["stored_session_id"])), 5
         ) == 0

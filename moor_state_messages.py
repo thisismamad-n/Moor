@@ -18,14 +18,14 @@ from agent.message_metadata import (
     CANONICAL_ROW, DATA_USE, DB_ROW_SNAPSHOT, lift_data_use, MESSAGE_UID, TOOL_CALL_UID, TOOL_CALL_UIDS,
     index_tool_call_uids, message_uid_or_none, resolve_tool_call_uid, mint_uid, stamp_message_uid)
 from agent.message_sanitization import _sanitize_surrogates, coalesce_tool_call_id
-from hermes_cli.timefmt import coerce_epoch
-from hermes_state_common import (
+from moor_cli.timefmt import coerce_epoch
+from moor_state_common import (
     _COMPRESSION_LOCK_ROW_SQL, _ENDED_ROW_SQL, _RESET_END_REASONS, _RESET_END_REASONS_SQL, _ended_by_compression,
     _json_or, _legacy_reset_child_sql, _placeholders, _sql_json_extract)
-from hermes_state_compaction_display import later_tool_copy_ids, not_a_later_tool_copy_sql
-from hermes_state_detached_results import SessionDetachedResultsMixin
-from hermes_state_todo import SessionTodoResultMixin
-from hermes_state_identity import (
+from moor_state_compaction_display import later_tool_copy_ids, not_a_later_tool_copy_sql
+from moor_state_detached_results import SessionDetachedResultsMixin
+from moor_state_todo import SessionTodoResultMixin
+from moor_state_identity import (
     _absorbed_uids_json, _restore_identity_columns, _stable_tool_key, _tool_call_uid_map, _tool_call_uid_or_none, _tool_call_uids_json, _uid_list)
 
 logger = logging.getLogger("moor_state")  # caplog tests pin the origin module's name
@@ -750,7 +750,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         """:meth:`replace_messages` inside the caller's write transaction (the gateway ``/retry``
         rewrite commits in its re-send's own admission). ``expected_active_ids`` pins the active set
         the replacement was computed from: a row committed since refuses (``RuntimeError``)."""
-        from hermes_state_errors import CompressionSessionClosedError
+        from moor_state_errors import CompressionSessionClosedError
         if reject_active_turn_lease:
             self._check_transcript_write_guards(
                 conn, session_id, None, reject_active_turn_lease=True, reject_active_compression_lock=True)
@@ -960,7 +960,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
             held_for_cas: Optional[list[dict[str, Any]]] = None) -> int:
         """:meth:`archive_and_compact` on the caller's write transaction (never commits). The owner
         and the worker/canonical-mutation verbs share this one body so they cannot drift."""
-        from hermes_state import SessionCompressionInProgressError
+        from moor_state import SessionCompressionInProgressError
         if lock_holder is not None:
             lock_row = conn.execute(_COMPRESSION_LOCK_ROW_SQL, (session_id,)).fetchone()
             if lock_row is None or lock_row["holder"] != lock_holder or float(lock_row["expires_at"]) <= time.time():
@@ -977,7 +977,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         if held_for_cas:
             mismatches = getattr(self, "held_row_mismatches", None)
             if callable(mismatches) and mismatches(conn, session_id, held_for_cas):
-                from hermes_state_errors import HeldRowRewrittenError
+                from moor_state_errors import HeldRowRewrittenError
                 raise HeldRowRewrittenError(
                     f"a held row of session {session_id} was rewritten in place before the commit")
         proved = self._proved_coverage(conn, session_id, covered_ids, unresolved_held, watermark)
@@ -1578,8 +1578,8 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         mutable payload while the digest still fences a concurrent winner. ``_row_id`` is opt-in (gateway
         reactions); reasoning restored on assistant rows only; ``api_content`` VERBATIM (no sanitize/strip)
         so replay keeps the provider prompt cache byte-stable."""
-        from hermes_state import _strip_background_review_harness, _strip_stale_tool_call_markers
-        # Runtime import avoids the transcript_repair -> hermes_state_messages module cycle.
+        from moor_state import _strip_background_review_harness, _strip_stale_tool_call_markers
+        # Runtime import avoids the transcript_repair -> moor_state_messages module cycle.
         from agent.transcript_repair import transcript_row_snapshot
         # Only the unaddressed live replay gets the digest: row-addressed loaders (include_row_ids) keep the
         # legacy resumed-dict path, whose rewrite never re-writes columns the projection does not decode
@@ -1857,7 +1857,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         ``expected_active_ids`` / ``expected_target_content`` pin the active set and canonical live payload
         in-txn before any mutation (presentation-only metadata changes don't invalidate a rewind). A live turn
         lease refuses; expired/dead holders are reclaimed. ``rewind_count`` always increments."""
-        from hermes_state_mutation_transcript import rewind_in_transaction
+        from moor_state_mutation_transcript import rewind_in_transaction
         def _do(conn):
             target_row, ids, head_id, replacement_id = rewind_in_transaction(
                 self, conn, session_id, target_message_id,
@@ -1956,7 +1956,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         """Permanently clear bare tool-call marker content ("[memory]") left by pre-fix sessions
         (``_rows_to_conversation`` repairs it in memory; this stops the re-scan). Only ``content`` is touched.
         ``backup``: ``VACUUM INTO`` snapshot first (none when nothing changes)."""
-        from hermes_state import _STALE_TOOL_CALL_MARKER_RE
+        from moor_state import _STALE_TOOL_CALL_MARKER_RE
         def _find_affected(conn) -> list[int]:
             cursor = conn.execute("SELECT id, content FROM messages "
                 "WHERE role = 'assistant' AND tool_calls IS NOT NULL AND tool_calls != ''")

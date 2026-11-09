@@ -15,7 +15,7 @@ import time as _time
 import webbrowser
 
 from agent.i18n import t
-from hermes_cli.callbacks import prompt_for_secret
+from moor_cli.callbacks import prompt_for_secret
 from typing import Optional
 
 _TIMED_OUT = object()  # sentinel returned by _poll_modal_queue when the deadline passes
@@ -415,7 +415,7 @@ class CLIModalMixin:
         /help filtered to this surface, plus installed skill commands. Selecting inserts the exact
         command string — never a fuzzy resolution."""
         from cli import _session_skill_commands
-        from hermes_cli.commands import COMMANDS_BY_CATEGORY
+        from moor_cli.commands import COMMANDS_BY_CATEGORY
 
         entries: list[tuple[str, str, str]] = []
         for category, commands in COMMANDS_BY_CATEGORY.items():
@@ -561,8 +561,8 @@ class CLIModalMixin:
         flag = "bell_on_prompt" if prompt else "bell_on_complete"
         if not getattr(self, flag, False) or getattr(self, "_terminal_io_broken", False):
             return
-        from hermes_cli.cli_terminal_mixin import _run_on_app_loop, _write_terminal_sequence
-        from hermes_cli.terminal_notify import notification_sequence, write_tty
+        from moor_cli.cli_terminal_mixin import _run_on_app_loop, _write_terminal_sequence
+        from moor_cli.terminal_notify import notification_sequence, write_tty
         body = context or (t("cli.modal.bell_input_needed") if prompt else t("cli.modal.bell_turn_complete"))
         try:
             seq = "\a" + notification_sequence(
@@ -721,7 +721,7 @@ class CLIModalMixin:
         op_id = state["payload"].get("op_id")
 
         def _run() -> None:
-            from hermes_cli.gateway_client import GatewayClientError
+            from moor_cli.gateway_client import GatewayClientError
             try:
                 getattr(agent, call)(*args)
             except GatewayClientError as exc:  # the gateway refused or was unreachable: say so on the card
@@ -732,7 +732,7 @@ class CLIModalMixin:
                     self._paint_now()
 
         from agent.memory_provider import spawn_context_thread
-        spawn_context_thread(_run, name="hermes-connection-answer").start()
+        spawn_context_thread(_run, name="moor-connection-answer").start()
 
     def _connection_answer(self, *, approve: bool) -> None:
         state = self._connection_state

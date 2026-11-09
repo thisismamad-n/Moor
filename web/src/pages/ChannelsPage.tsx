@@ -926,8 +926,8 @@ export function WhatsAppOnboardingPanel({
         ? "Moor will keep the saved WhatsApp allowlist."
         : "Self-chat mode will allow the linked account automatically when you save."
       : !allowedUsers.trim() && hasSavedAllowedUsers
-        ? "Hermes will keep the saved WhatsApp allowlist."
-        : "If no allowed numbers were entered, Hermes replies with a pairing code. Approve it from the dashboard Pairing page.";
+        ? "Moor will keep the saved WhatsApp allowlist."
+        : "If no allowed numbers were entered, Moor replies with a pairing code. Approve it from the dashboard Pairing page.";
   const pairingBusy = ["starting", "waiting", "applying"].includes(phase);
 
   return (

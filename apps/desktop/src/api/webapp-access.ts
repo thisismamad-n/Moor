@@ -1,6 +1,6 @@
-import { hermesApi, profileScoped } from './client'
+import { moorApi, profileScoped } from './client'
 
-// Web access: turn on the Webapp the gateway on THIS machine serves, for other devices, behind Nous
+// Web access: turn on the Webapp the gateway on THIS machine serves, for other devices, behind Moor
 // sign-in. The backend owns every fact here; the pane renders /status and asks for changes.
 
 export type WebAccessMode = 'lan' | 'public'
@@ -13,7 +13,7 @@ export interface WebAccessStatus {
   lan_address: null | string
   /** Who the configured web app serves; `local` is a loopback bind, reachable from this computer only. */
   mode: 'local' | null | WebAccessMode
-  nous_signed_in: boolean
+  moor_signed_in: boolean
   port: number
   public_url: string
   /** The newest restart of this gateway exited without replacing it; `pid` is the `restart_pid` that
@@ -30,16 +30,16 @@ export interface WebAccessChange extends WebAccessStatus {
   restart_started: boolean
 }
 
-/** Start builds the Webapp bundle first, as `hermes webapp` does; that build waits up to 30 minutes
+/** Start builds the Webapp bundle first, as `moor webapp` does; that build waits up to 30 minutes
  *  for another build of it. */
 const START_REQUEST_TIMEOUT_MS = 35 * 60_000
 
 export function getWebAccessStatus(): Promise<WebAccessStatus> {
-  return hermesApi<WebAccessStatus>({ ...profileScoped(), path: '/api/webapp-access/status' })
+  return moorApi<WebAccessStatus>({ ...profileScoped(), path: '/api/webapp-access/status' })
 }
 
 export function startWebAccess(mode: WebAccessMode, publicUrl?: string): Promise<WebAccessChange> {
-  return hermesApi<WebAccessChange>({
+  return moorApi<WebAccessChange>({
     ...profileScoped(),
     body: { mode, public_url: publicUrl },
     method: 'POST',
@@ -49,10 +49,10 @@ export function startWebAccess(mode: WebAccessMode, publicUrl?: string): Promise
 }
 
 export function stopWebAccess(): Promise<WebAccessChange> {
-  return hermesApi<WebAccessChange>({ ...profileScoped(), method: 'POST', path: '/api/webapp-access/stop' })
+  return moorApi<WebAccessChange>({ ...profileScoped(), method: 'POST', path: '/api/webapp-access/stop' })
 }
 
 /** Restart the gateway onto the saved config, and nothing else. */
 export function restartWebAccess(): Promise<WebAccessChange> {
-  return hermesApi<WebAccessChange>({ ...profileScoped(), method: 'POST', path: '/api/webapp-access/restart' })
+  return moorApi<WebAccessChange>({ ...profileScoped(), method: 'POST', path: '/api/webapp-access/restart' })
 }

@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 const artifact = process.env.NAVIGATION_ARTIFACT_DIR ?? '/home/teknium/.moor/cache/desktop-bugs-74848ed3/navigation-markdown'
 const tag = process.argv[2] ?? 'after'
-// pm's Chromium: PLAYWRIGHT_BROWSERS_PATH (from `hermes pm env`) is where channel 'chromium' finds it.
+// pm's Chromium: PLAYWRIGHT_BROWSERS_PATH (from `moor pm env`) is where channel 'chromium' finds it.
 const browser = await chromium.launch({channel: 'chromium', headless: true, args: ['--no-sandbox']})
 const context = await browser.newContext({permissions: ['clipboard-read', 'clipboard-write']})
 const page = await context.newPage()

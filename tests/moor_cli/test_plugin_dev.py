@@ -158,15 +158,15 @@ def test_doctor_does_not_copy_home_with_a_plugin_checkout(
     """A home with one plugin checkout next to other directories is not a category.
 
     ``_holds_plugin`` used to accept any immediate child manifest, so
-    ``hermes plugins doctor`` from ``$HOME`` resolved to the home and
+    ``moor plugins doctor`` from ``$HOME`` resolved to the home and
     ``copytree`` copied it. A category directory's children are plugins.
     """
     import os
 
-    from hermes_cli import plugin_dev
+    from moor_cli import plugin_dev
 
     home = tmp_path / "fake-home"
-    (home / ".hermes" / "cache" / "scratch").mkdir(parents=True)
+    (home / ".moor" / "cache" / "scratch").mkdir(parents=True)
     plugin = home / "plugin-checkout"
     plugin.mkdir()
     (plugin / "plugin.yaml").write_text("name: checkout\n", encoding="utf-8")
@@ -205,7 +205,7 @@ def test_doctor_stages_only_the_plugin_of_a_category(tmp_path: Path, monkeypatch
     import os
     import shutil
 
-    from hermes_cli import plugin_dev
+    from moor_cli import plugin_dev
 
     category = tmp_path / "tools"
     plugin = category / "minimal"
@@ -236,7 +236,7 @@ def test_doctor_rejects_category_of_several_plugins_before_copying(
     tmp_path: Path, monkeypatch
 ) -> None:
     """Doctor validates one plugin, so copying a whole category first only wastes disk."""
-    from hermes_cli import plugin_dev
+    from moor_cli import plugin_dev
 
     category = tmp_path / "web"
     for name in ("a", "b"):
@@ -258,7 +258,7 @@ def test_doctor_names_plugin_dirs_of_a_target_that_is_not_a_category(
     """The refusal names the plugin inside, so the user knows what to pass instead."""
     import os
 
-    from hermes_cli import plugin_dev
+    from moor_cli import plugin_dev
 
     repo = tmp_path / "repo"
     (repo / "tests").mkdir(parents=True)
@@ -347,7 +347,7 @@ def test_doctor_never_copies_a_plugin_into_its_own_temp_dir(
     import shutil
     import tempfile
 
-    from hermes_cli import plugin_dev
+    from moor_cli import plugin_dev
 
     target = tmp_path / "target"
     plugin = target / "inner" if layout == "category" else target
@@ -417,7 +417,7 @@ def test_doctor_loads_a_model_provider_plugin_from_its_category(tmp_path: Path) 
     """``plugins/model-providers/<name>`` is the runtime layout; the provider loader must get the
     staged plugin directory, not the category around it."""
     import providers
-    from hermes_cli.plugin_dev import doctor_plugin
+    from moor_cli.plugin_dev import doctor_plugin
 
     plugin = tmp_path / "model-providers" / "acme-provider"
     plugin.mkdir(parents=True)

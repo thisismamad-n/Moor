@@ -2,7 +2,7 @@ import {
   buildMoorWebSocketUrl,
   type ModelOptionProvider,
   type ModelOptionsResult,
-} from "@hermes/shared";
+} from "@moor/shared";
 import { createDashboardSessionMutations } from "./session-mutations";
 
 const mutateSessionHttp = createDashboardSessionMutations(fetchJSON);
@@ -369,7 +369,7 @@ export async function buildWsUrl(
 ): Promise<string> {
   const profile = getManagementProfile(); // a plugin socket names it as its REST calls do (PLG-3)
   if (profile && path.startsWith("/api/plugins/") && !params?.profile) params = { ...params, profile };
-  return buildHermesWebSocketUrl({ authParam: await buildWsAuthParam(), basePath: BASE, params, path });
+  return buildMoorWebSocketUrl({ authParam: await buildWsAuthParam(), basePath: BASE, params, path });
 }
 
 /** Build a ``?profile=<name>`` query suffix, or "" when unset.
@@ -1455,7 +1455,7 @@ export const api = {
  * Returned by the dashboard's gated middleware when a valid session cookie
  * is attached, or as a synthetic ``provider=loopback`` identity after token
  * validation in local mode. ``email`` and ``display_name`` are empty strings under the
- * Nous Portal contract V1 (the access token has no email/name claims —
+ * Moor Portal contract V1 (the access token has no email/name claims —
  * see Contract Anchor C4 in the plan). The AuthWidget surfaces a
  * truncated ``user_id`` instead.
  */

@@ -1,4 +1,4 @@
-"""Classic CLI (`hermes`, `hermes chat` -> GatewayAgent) across a ``session.replay_gap``: it re-attaches, shows
+"""Classic CLI (`moor`, `moor chat` -> GatewayAgent) across a ``session.replay_gap``: it re-attaches, shows
 the settled reply once and never leaves a later turn waiting on a retired subscription. A recovery belongs
 to its turn: a session switch, a later turn or Ctrl-C's settle bound ends it before it sends or paints."""
 import asyncio
@@ -8,7 +8,7 @@ import threading
 import pytest
 
 from tests.gateway.fixtures.replay_gap_owner import FINAL, Owner, frame_cap  # frame_cap: autouse
-from tests.hermes_cli.test_gateway_agent import SID, FakeClient, connect_with, frame
+from tests.moor_cli.test_gateway_agent import SID, FakeClient, connect_with, frame
 
 GAP = frame("session.replay_gap", {}, admission=None)
 
@@ -22,8 +22,8 @@ def run_turn(agent, text, timeout):
 
 
 def test_turn_ended_in_the_hole_reports_the_answer_and_the_next_turn_streams(tmp_path):
-    from hermes_cli.gateway_agent import GatewayAgent
-    from hermes_cli.gateway_connection import GatewayConnection
+    from moor_cli.gateway_agent import GatewayAgent
+    from moor_cli.gateway_connection import GatewayConnection
     owners, streamed = [], []
 
     @contextlib.asynccontextmanager
@@ -52,8 +52,8 @@ def test_turn_ended_in_the_hole_reports_the_answer_and_the_next_turn_streams(tmp
 
 @pytest.fixture
 def agents():
-    from hermes_cli.gateway_agent import GatewayAgent
-    from hermes_cli.gateway_connection import GatewayConnection
+    from moor_cli.gateway_agent import GatewayAgent
+    from moor_cli.gateway_connection import GatewayConnection
     made = []
 
     def build(script, **kw):
@@ -90,7 +90,7 @@ def test_idle_gap_reattach_cannot_submit_abandoned_input(agents, monkeypatch, ch
             agent.session_id = "new-session"
             agent.reset_session_state()
         else:
-            monkeypatch.setattr("hermes_cli.gateway_agent.INTERRUPT_SETTLE_SECONDS", 0)
+            monkeypatch.setattr("moor_cli.gateway_agent.INTERRUPT_SETTLE_SECONDS", 0)
             agent.interrupt()
     finally:
         release.set()
@@ -103,7 +103,7 @@ def test_a_turn_past_its_interrupt_settle_bound_still_reads_its_receipt_and_stat
     """Ctrl-C's settle bound ends the turn's wait for frames; the end-of-turn ``prompt.receipt`` and
     cumulative ``session.stats`` reads still run (main made both), since the turn still owns the terminal."""
     agent, client = agents([frame("message.delta", {"text": "partial"}), "wait", "wait", "wait", "wait"])
-    monkeypatch.setattr("hermes_cli.gateway_agent.INTERRUPT_SETTLE_SECONDS", 0)
+    monkeypatch.setattr("moor_cli.gateway_agent.INTERRUPT_SETTLE_SECONDS", 0)
     worker = threading.Thread(target=lambda: agent.run_conversation("q"), daemon=True)
     worker.start()
     try:
@@ -121,7 +121,7 @@ def test_a_turn_past_its_interrupt_settle_bound_still_reads_its_receipt_and_stat
 def test_a_long_streamed_reply_keeps_its_delta_buffers_linear():
     """``turn.shown += text`` on an attribute copied the segment per delta: 200k deltas took ~50 s."""
     import time
-    from hermes_cli.gateway_agent import GatewayAgent, _Turn
+    from moor_cli.gateway_agent import GatewayAgent, _Turn
     agent = GatewayAgent.__new__(GatewayAgent)
     agent.stream_delta_callback, agent._turn = (lambda _text: None), _Turn(SID)
     started = time.monotonic()

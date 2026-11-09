@@ -262,7 +262,7 @@ export function mergeServerMeta(roster: RosterRow[], fetchedAt = 0) {
       continue
     }
 
-    const raw = bot.ui_meta?.['hermes-bots']
+    const raw = bot.ui_meta?.['moor-bots']
     const server = raw && typeof raw === 'object' ? raw : null
     const title = serverReportedTitle(bot, server)
 

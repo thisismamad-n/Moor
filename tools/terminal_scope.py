@@ -87,7 +87,7 @@ def terminal_env(name: str, default: str = "") -> str:
 
 
 def _apply_terminal_mapping(scope: dict[str, str], mapping: dict[str, Any]) -> None:
-    from hermes_cli.config import TERMINAL_CONFIG_ENV_MAP, _terminal_env_value
+    from moor_cli.config import TERMINAL_CONFIG_ENV_MAP, _terminal_env_value
 
     for cfg_key, value in mapping.items():
         # cwd placeholders are resolved per-surface later; not a policy value.
@@ -104,7 +104,7 @@ def _apply_terminal_mapping(scope: dict[str, str], mapping: dict[str, Any]) -> N
 def default_terminal_scope() -> dict[str, str]:
     """Code-default ``TERMINAL_*`` policy: what a profile-bypassing session freezes instead of
     reading ``.env``/``config.yaml``. Total like the profile projection, minus the profile."""
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.config_defaults import DEFAULT_CONFIG
 
     scope: dict[str, str] = {}
     _apply_terminal_mapping(scope, {**_TOOL_LEVEL_DEFAULTS, **(DEFAULT_CONFIG.get("terminal") or {})})
@@ -112,7 +112,7 @@ def default_terminal_scope() -> dict[str, str]:
 
 
 def build_profile_terminal_scope(
-    hermes_home: Any, *, env_overlay: Optional[dict[str, str]] = None) -> dict[str, str]:
+    moor_home: Any, *, env_overlay: Optional[dict[str, str]] = None) -> dict[str, str]:
     """Build the COMPLETE effective ``TERMINAL_*`` policy for a profile home.
 
     Projection: ``DEFAULT_CONFIG['terminal']`` <- profile ``.env`` TERMINAL_* <- *env_overlay*
@@ -128,11 +128,11 @@ def build_profile_terminal_scope(
     closes. It sits where the process env sits in the standalone bridge — explicit YAML keys
     still win (``apply_terminal_config_to_env``).
     """
-    from hermes_cli import managed_scope
-    from hermes_cli.config import _deep_merge
-    from hermes_cli.config_backend import config_exists
+    from moor_cli import managed_scope
+    from moor_cli.config import _deep_merge
+    from moor_cli.config_backend import config_exists
 
-    home = Path(hermes_home)
+    home = Path(moor_home)
     scope = default_terminal_scope()
     default_image = scope.get("TERMINAL_DOCKER_IMAGE")
     env_path = home / ".env"
@@ -171,7 +171,7 @@ def build_profile_terminal_scope(
         raise TerminalPolicyUnavailable(f"cannot resolve terminal config in {home}: {exc}") from exc
     raw_terminal = None
     if has_config:
-        from hermes_cli.config_backend import read_config_doc_readonly
+        from moor_cli.config_backend import read_config_doc_readonly
 
         try:
             # Signature-cached: a scope is rebuilt per routed turn/poll, the file rarely changes.
@@ -217,31 +217,31 @@ def _resolve_scope_cwd_placeholder(scope: dict[str, str]) -> None:
 
 
 def prepare_profile_terminal_scope(
-    hermes_home: Any, *, env_overlay: Optional[dict[str, str]] = None) -> dict[str, str]:
+    moor_home: Any, *, env_overlay: Optional[dict[str, str]] = None) -> dict[str, str]:
     """The scope ``install_profile_terminal_scope`` installs: the profile's policy, or the refusal scope
     when it cannot be resolved. Never raises. Reads the profile files (the managed-scope overlay under the
     current context's home override); the result can be built in a worker and installed on the loop with
     ``install_and_reset_profile_terminal_scope(prepared=...)``."""
     try:
-        return build_profile_terminal_scope(hermes_home, env_overlay=env_overlay)
+        return build_profile_terminal_scope(moor_home, env_overlay=env_overlay)
     except TerminalPolicyUnavailable as exc:
         logger.warning("terminal policy unavailable: %s", exc)
         return TerminalPolicyRefusal(str(exc))
 
 
 def install_profile_terminal_scope(
-    hermes_home: Any, *, env_overlay: Optional[dict[str, str]] = None) -> Token:
+    moor_home: Any, *, env_overlay: Optional[dict[str, str]] = None) -> Token:
     """Build AND install a profile's policy; on failure install the refusal scope. Never raises."""
-    return set_terminal_scope(prepare_profile_terminal_scope(hermes_home, env_overlay=env_overlay))
+    return set_terminal_scope(prepare_profile_terminal_scope(moor_home, env_overlay=env_overlay))
 
 
 @contextmanager
 def install_and_reset_profile_terminal_scope(
-    hermes_home: Any, *, prepared: Optional[dict[str, str]] = None) -> Iterator[None]:
+    moor_home: Any, *, prepared: Optional[dict[str, str]] = None) -> Iterator[None]:
     """Install the profile's terminal policy for a bounded turn/fire. Never raises. *prepared* is a
     ``prepare_profile_terminal_scope`` result built earlier (off the loop); without it the policy is
     built here."""
-    token = set_terminal_scope(prepared) if prepared is not None else install_profile_terminal_scope(hermes_home)
+    token = set_terminal_scope(prepared) if prepared is not None else install_profile_terminal_scope(moor_home)
     try:
         yield
     finally:

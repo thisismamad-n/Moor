@@ -15,9 +15,9 @@ from moor_cli.web_routers._common import (
     REDACTED_CREDENTIAL_WRITE_DETAIL, http_failure, is_redacted_credential_preview,
     redacted_credential_preview, scoped_to_thread,
 )
-from hermes_cli.config_backend import refusing_locked_omissions
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_config import (
+from moor_cli.config_backend import refusing_locked_omissions
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_config import (
     _apply_main_model_assignment, _denormalize_config_from_web, drop_model_key, _normalize_config_for_web, _schema_with_dynamic_provider_options,
     _validated_main_model_selection,
 )
@@ -178,7 +178,7 @@ def _catalog_provider_env_metadata() -> dict:
 
     Returns ``{env_var: {provider, provider_label, description, url, is_password,
     advanced}}`` for every API-key provider in the unified ``provider_catalog()``
-    (the ``hermes model`` universe). When multiple providers intentionally share
+    (the ``moor model`` universe). When multiple providers intentionally share
     one env var, ``provider_profiles`` preserves every provider identity while
     the legacy singular fields keep describing the first provider. Hand
     ``OPTIONAL_ENV_VARS`` prose is layered on top in the endpoint; this only
@@ -341,9 +341,9 @@ async def set_env_var(body: EnvVarUpdate, profile: Optional[str] = None):
 
 def _save_env_credential(key: str, value: str, provider_setup: bool = False) -> Any:
     """Save under the request's profile scope; a new provider API key also counts as a provider setup."""
-    from hermes_cli.config import load_env
-    from hermes_cli.credential_lifecycle import save_provider_env_credential
-    from hermes_cli.observability.shared_metrics_setup import record_api_key_saved, web_setup_surface
+    from moor_cli.config import load_env
+    from moor_cli.credential_lifecycle import save_provider_env_credential
+    from moor_cli.observability.shared_metrics_setup import record_api_key_saved, web_setup_surface
 
     previous = load_env().get(key)
     result = save_provider_env_credential(key, value)
@@ -603,7 +603,7 @@ def _write_custom_endpoint(cfg: dict[str, Any], body: CustomEndpointUpdate) -> t
         # Settings saves the row the list rendered. A legacy custom_providers
         # entry is not in providers, so resolving only there forked a keyless
         # twin and left the list row (and its key_env) behind.
-        from hermes_cli.config_providers import _custom_provider_entry_to_provider_config
+        from moor_cli.config_providers import _custom_provider_entry_to_provider_config
 
         legacy = _pop_legacy_custom_provider(cfg, endpoint_id)
         converted = (
@@ -761,8 +761,8 @@ def upsert_custom_endpoint(body: CustomEndpointUpdate, profile: Optional[str] = 
             with refusing_locked_omissions(*_ROUTE_SECTIONS) if body.make_default else contextlib.nullcontext():
                 save_config(cfg)
             response = _custom_endpoint_response(cfg)
-            from hermes_constants import get_hermes_home
-            home = get_hermes_home()
+            from moor_constants import get_moor_home
+            home = get_moor_home()
         if created:  # editing an endpoint that exists sets nothing new up
             _record_custom_endpoint_setup(home)
         response["ok"] = True
@@ -772,9 +772,9 @@ def upsert_custom_endpoint(body: CustomEndpointUpdate, profile: Optional[str] = 
 
 def _record_custom_endpoint_setup(home: Any) -> None:
     """Counted after the config lock is released (a cold metrics runtime must not stall writers)."""
-    from hermes_cli.observability.shared_metrics_setup import record_provider_setup_done, web_setup_surface
+    from moor_cli.observability.shared_metrics_setup import record_provider_setup_done, web_setup_surface
 
-    record_provider_setup_done(web_setup_surface(), "custom", hermes_home=home, background=True)
+    record_provider_setup_done(web_setup_surface(), "custom", moor_home=home, background=True)
 
 
 @router.post("/api/providers/custom-endpoints/{endpoint_id}/activate")
@@ -1081,7 +1081,7 @@ async def remove_env_var(body: EnvVarDelete, profile: Optional[str] = None):
     # model-cache rows, and value-matched config.yaml api_key mirrors.
     # OAuth/device-code/manual pool entries for the same provider are preserved.
     with _env_write_errors("DELETE /api/env failed"):
-        from hermes_cli.credential_lifecycle import remove_provider_env_credential
+        from moor_cli.credential_lifecycle import remove_provider_env_credential
 
         result = await scoped_to_thread(
             body.profile or profile, lambda: remove_provider_env_credential(body.key)

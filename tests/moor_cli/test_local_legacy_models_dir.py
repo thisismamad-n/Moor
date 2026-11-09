@@ -1,6 +1,6 @@
 """Models staged under the old per-profile ``<profile home>/models`` layout are moved into the
 machine-scoped ``<root>/models`` so they keep loading."""
-from hermes_cli.local_runtime import bootstrap
+from moor_cli.local_runtime import bootstrap
 
 
 def _profile(root, name, *, identity=True):
@@ -12,7 +12,7 @@ def _profile(root, name, *, identity=True):
 
 
 def test_legacy_models_move_into_the_machine_dir_without_clobbering(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     new_dir = bootstrap.models_dir()
     new_dir.mkdir(parents=True)
     (new_dir / "shared.gguf").write_bytes(b"current")
@@ -40,10 +40,10 @@ def test_legacy_models_move_into_the_machine_dir_without_clobbering(tmp_path, mo
 
 
 def test_boot_and_status_both_adopt_legacy_models(tmp_path, monkeypatch):
-    from hermes_cli.local_runtime import binaries
-    from hermes_cli.web_routers import local_models as lm
+    from moor_cli.local_runtime import binaries
+    from moor_cli.web_routers import local_models as lm
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(binaries, "installed_engine", lambda backend="auto": None)
     work = _profile(tmp_path, "work")
 

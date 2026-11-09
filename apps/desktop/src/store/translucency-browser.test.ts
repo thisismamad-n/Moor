@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const desktopWindow = window as unknown as { hermesDesktop?: Partial<Window['hermesDesktop']> }
+const desktopWindow = window as unknown as { moorDesktop?: Partial<Window['moorDesktop']> }
 
 // The bridge reports native capability as a fact, so no host OS is faked.
 async function loadTranslucency(host: 'browser' | 'electron') {
-  document.documentElement.dataset.hermesDesktopHost = host
-  desktopWindow.hermesDesktop = { glassSupported: true, translucencySupported: true }
+  document.documentElement.dataset.moorDesktopHost = host
+  desktopWindow.moorDesktop = { glassSupported: true, translucencySupported: true }
   vi.resetModules()
 
   return import('@/store/translucency')
@@ -15,11 +15,11 @@ async function loadTranslucency(host: 'browser' | 'electron') {
 describe('browser translucency capability', () => {
   beforeEach(() => {
     localStorage.clear()
-    document.documentElement.removeAttribute('data-hermes-desktop-host')
+    document.documentElement.removeAttribute('data-moor-desktop-host')
   })
 
   afterEach(() => {
-    Reflect.deleteProperty(desktopWindow, 'hermesDesktop')
+    Reflect.deleteProperty(desktopWindow, 'moorDesktop')
     vi.restoreAllMocks()
     vi.resetModules()
   })

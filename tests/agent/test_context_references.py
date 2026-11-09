@@ -471,12 +471,12 @@ _SSH_WORKSPACE = "/srv/repos"  # the SSH host's workspace root; absent on the ga
 
 
 def _stage_outside_workspace(tmp_path: Path, monkeypatch, name: str, subdir: str = "attachments") -> Path:
-    """Stage *name* under a HERMES_HOME that lives outside the workspace (SSH topology)."""
-    hermes_home = tmp_path / "gateway-data"  # /opt/data inside the gateway container
-    (hermes_home / subdir).mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    """Stage *name* under a MOOR_HOME that lives outside the workspace (SSH topology)."""
+    moor_home = tmp_path / "gateway-data"  # /opt/data inside the gateway container
+    (moor_home / subdir).mkdir(parents=True)
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     monkeypatch.setenv("TERMINAL_ENV", "ssh")
-    return hermes_home / subdir / name
+    return moor_home / subdir / name
 
 
 def test_ssh_backend_staged_text_attachment_still_expands(tmp_path: Path, monkeypatch):
@@ -501,7 +501,7 @@ def test_ssh_backend_staged_text_attachment_still_expands(tmp_path: Path, monkey
 
 def test_ssh_backend_staged_binary_attachment_points_at_the_synced_remote_path(tmp_path: Path, monkeypatch):
     """Binaries stay on disk: the ref must render the path the ssh backend resolves (the
-    file-sync mirrors the staging dirs to ``~/.hermes`` on the remote)."""
+    file-sync mirrors the staging dirs to ``~/.moor`` on the remote)."""
     from agent.context_references import preprocess_context_references
 
     payload = _stage_outside_workspace(tmp_path, monkeypatch, "archive.zip")
@@ -516,14 +516,14 @@ def test_ssh_backend_staged_binary_attachment_points_at_the_synced_remote_path(t
 
     assert result.expanded
     assert "binary file, not inlined" in result.message
-    assert "~/.hermes/attachments/archive.zip" in result.message
+    assert "~/.moor/attachments/archive.zip" in result.message
 
 
 def test_ref_outside_workspace_and_staging_dirs_is_still_refused(tmp_path: Path, monkeypatch):
     """Staging dirs are the only widening: any other path outside the workspace stays blocked."""
     from agent.context_references import preprocess_context_references
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "gateway-data"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "gateway-data"))
     monkeypatch.setenv("TERMINAL_ENV", "ssh")
     secret = tmp_path / "elsewhere" / "notes.txt"
     secret.parent.mkdir(parents=True)
@@ -557,7 +557,7 @@ def test_local_backend_staged_attachment_keeps_the_host_path(tmp_path: Path, mon
 
     assert result.expanded
     assert "binary file, not inlined" in result.message
-    assert "~/.hermes/attachments/" not in result.message
+    assert "~/.moor/attachments/" not in result.message
 
 
 
@@ -612,8 +612,8 @@ async def test_blocks_canonical_read_denylist_credential_stores(tmp_path: Path, 
     project_env.write_text("DB_PASSWORD=ENV-SECRET\n", encoding="utf-8")
 
     result = await preprocess_context_references_async(
-        "inspect @file:.hermes/auth.json and @file:.hermes/.anthropic_oauth.json "
-        "and @file:.hermes/mcp-tokens/github.json and @file:project/.env "
+        "inspect @file:.moor/auth.json and @file:.moor/.anthropic_oauth.json "
+        "and @file:.moor/mcp-tokens/github.json and @file:project/.env "
         "and @file:.config/gcloud/application_default_credentials.json",
         cwd=tmp_path,
         allowed_root=tmp_path,

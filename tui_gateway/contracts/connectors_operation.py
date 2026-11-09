@@ -13,7 +13,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from hermes_cli.plugin_install_phase import InstallPhase
+from moor_cli.plugin_install_phase import InstallPhase
 
 from .base import Params, Payload, Result, WireEnum
 from .common import ConnectorOwner, ProfileParams
@@ -152,8 +152,8 @@ class ConnectionOperationTarget(Payload):
     sha: str | None = None
     subdir: str | None = None
     scan: CatalogScan | None = None
-    # The Hermes version range the plugin needs; its env vars ride in ``required_env``.
-    requires_hermes: str | None = None
+    # The Moor version range the plugin needs; its env vars ride in ``required_env``.
+    requires_moor: str | None = None
     has_desktop_half: bool | None = None
     # The profile the row installs into; absent when the chat's home is no named profile.
     target_profile: str | None = None

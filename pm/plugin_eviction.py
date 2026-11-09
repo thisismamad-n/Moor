@@ -191,7 +191,7 @@ class PluginEviction:
 
     def __init__(self, entries: list[Entry], reasons: dict[Path, str], rejoined: list[Entry] = (), *,
                  tried: dict[Path, str] | None = None, configs=None):
-        from hermes_yaml import roundtrip_yaml
+        from moor_yaml import roundtrip_yaml
         from pm.publication import selection_snapshot
 
         # The snapshot the update decided from: a user edit since then refuses publication.
@@ -403,14 +403,14 @@ def _outcome_notices(entries: list[Entry], recorded: dict[Entry, dict], reasons:
         key = plugin_dir.resolve()
         if key in reasons:
             notices.append(f"Disabled plugin '{name}' in {plugins_dir.parent}: {reasons[key]}; {_RETRY} and turns it "
-                           f"back on once it fits, or run `hermes plugins enable {name}` sooner")
+                           f"back on once it fits, or run `moor plugins enable {name}` sooner")
         elif key in waiting:
             notices.append(f"Left plugin '{name}' in {plugins_dir.parent} out of this update: {waiting[key]}; "
-                           "it stays enabled and rejoins once Hermes reports a version it accepts")
+                           "it stays enabled and rejoins once Moor reports a version it accepts")
     for entry, record in recorded.items():
         plugins_dir, name, plugin_dir = entry
         if entry in joined:
-            notices.append(f"Turned plugin '{name}' in {plugins_dir.parent} back on: it fits this Hermes again")
+            notices.append(f"Turned plugin '{name}' in {plugins_dir.parent} back on: it fits this Moor again")
             continue
         why = reasons.get(plugin_dir.resolve()) or waiting.get(plugin_dir.resolve()) or record.get("reason") or "unknown"
         notices.append(f"Plugin '{name}' in {plugins_dir.parent} is still disabled: {why}; {_RETRY}")

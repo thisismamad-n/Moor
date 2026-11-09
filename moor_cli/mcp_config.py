@@ -14,7 +14,7 @@ from moor_cli.config import (
     save_config,
     get_env_value,
     save_env_value,
-    get_hermes_home,
+    get_moor_home,
 )
 from moor_cli.colors import Colors, color
 from moor_constants import display_moor_home
@@ -659,7 +659,7 @@ def cmd_mcp_add(args):
     def _record(saved: bool, failure_class: str = "config_rejected") -> None:
         # A save only fails on a suspicious configuration (_save_mcp_server returns False).
         if fresh:
-            from hermes_cli.mcp_catalog import record_mcp_install
+            from moor_cli.mcp_catalog import record_mcp_install
 
             record_mcp_install("url" if url else "local", None, "success" if saved else "failed",
                                failure_class=None if saved else failure_class)
@@ -694,7 +694,7 @@ def cmd_mcp_add(args):
             saved = _save_mcp_server(name, server_config)
             if saved:
                 _success(f"Saved '{name}' to config (disabled)")
-                _info("Fix the issue, then: hermes mcp test " + name)
+                _info("Fix the issue, then: moor mcp test " + name)
         _record(saved, probe_failure_class(exc))
         return
 
@@ -798,7 +798,7 @@ def probe_failure_class(exc: BaseException) -> str:
     """Extension-install class for a failed MCP probe, from the exception TYPE (the same tests
     :func:`_probe_failure_next_step` uses), never its message. Never raises: an exception whose own
     attribute hooks raise reads ``connect_failed`` instead of replacing the user's error."""
-    from hermes_cli.observability.shared_metrics_fields import tagged_failure_class
+    from moor_cli.observability.shared_metrics_fields import tagged_failure_class
 
     if tagged := tagged_failure_class(exc):
         return tagged
@@ -824,9 +824,9 @@ def _probe_failure_next_step(name: str, exc: BaseException) -> str:
     from tools.mcp_tool_node_abi import NodeAbiMismatchError
     root = _unwrap_exception_group(exc)
     if _is_auth_error(root) or getattr(getattr(root, "response", None), "status_code", None) in (401, 403):
-        return f"The server rejected the sign-in. Run: hermes mcp login {name}"
+        return f"The server rejected the sign-in. Run: moor mcp login {name}"
     if isinstance(root, NodeAbiMismatchError):
-        return f"After rebuilding it under Hermes's Node as above, run: hermes mcp test {name}"
+        return f"After rebuilding it under Moor's Node as above, run: moor mcp test {name}"
     if "missing executable" in _format_connect_error(exc):
         return (f"Install that command, or set mcp_servers.{name}.command in {display_moor_home()}/config.yaml "
                 "to its full path.")
@@ -1121,18 +1121,18 @@ def cmd_mcp_configure(args):
 
 
 _MCP_USAGE = (
-    "hermes mcp                                    Open the catalog picker (default)",
-    "hermes mcp catalog                            List Nous-approved MCPs",
-    "hermes mcp install <name>                     Install a catalog MCP",
-    "hermes mcp add <name> --url <endpoint>        Add a custom MCP server",
-    "hermes mcp add <name> --command <cmd>         Add a stdio server",
-    "hermes mcp add <name> --preset <preset>       Add from a known preset",
-    "hermes mcp remove <name>                      Remove a server",
-    "hermes mcp list                               List configured servers",
-    "hermes mcp test <name>                        Test connection",
-    "hermes mcp configure <name>                   Toggle tools",
-    "hermes mcp login <name>                       Re-authenticate OAuth",
-    "hermes mcp reauth <name> | --all              Re-auth one or all OAuth servers",
+    "moor mcp                                    Open the catalog picker (default)",
+    "moor mcp catalog                            List Moor-approved MCPs",
+    "moor mcp install <name>                     Install a catalog MCP",
+    "moor mcp add <name> --url <endpoint>        Add a custom MCP server",
+    "moor mcp add <name> --command <cmd>         Add a stdio server",
+    "moor mcp add <name> --preset <preset>       Add from a known preset",
+    "moor mcp remove <name>                      Remove a server",
+    "moor mcp list                               List configured servers",
+    "moor mcp test <name>                        Test connection",
+    "moor mcp configure <name>                   Toggle tools",
+    "moor mcp login <name>                       Re-authenticate OAuth",
+    "moor mcp reauth <name> | --all              Re-auth one or all OAuth servers",
 )
 
 

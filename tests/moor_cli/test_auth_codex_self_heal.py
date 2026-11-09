@@ -16,9 +16,9 @@ import time
 
 import pytest
 
-from hermes_cli import auth
-from hermes_cli import auth_codex
-from hermes_cli.auth import AuthError, _refresh_codex_auth_tokens, resolve_codex_runtime_credentials
+from moor_cli import auth
+from moor_cli import auth_codex
+from moor_cli.auth import AuthError, _refresh_codex_auth_tokens, resolve_codex_runtime_credentials
 
 STALE = {"access_token": "stale-access", "refresh_token": "stale-refresh"}
 
@@ -124,7 +124,7 @@ def test_opt_out_never_adopts_codex_cli_login(tmp_path, monkeypatch):
     def _rejected(*_a, **_k):
         raise AuthError("bad", provider="openai-codex", code="invalid_grant", relogin_required=True)
 
-    # _refresh_codex_auth_tokens imports it from the hermes_cli.auth facade at call time: patch both, or
+    # _refresh_codex_auth_tokens imports it from the moor_cli.auth facade at call time: patch both, or
     # the test reaches the real token endpoint and asserts on whatever it answers.
     monkeypatch.setattr(auth, "refresh_codex_oauth_pure", _rejected)
     monkeypatch.setattr(auth_codex, "refresh_codex_oauth_pure", _rejected)

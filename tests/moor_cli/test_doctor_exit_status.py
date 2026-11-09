@@ -12,9 +12,9 @@ import pytest
     ([], ["remaining repair"], 1, True, 1),
 ])
 def test_doctor_command_reports_remaining_findings(monkeypatch, capsys, issues, manual, fixed, fix, expected):
-    from hermes_cli import doctor
-    from hermes_cli.main import cmd_doctor
-    from hermes_cli.doctor_report import Finding
+    from moor_cli import doctor
+    from moor_cli.main import cmd_doctor
+    from moor_cli.doctor_report import Finding
 
     def check(should_fix):
         assert should_fix is fix

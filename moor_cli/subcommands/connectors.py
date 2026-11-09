@@ -1,15 +1,15 @@
-"""``hermes connectors`` subcommand parser."""
+"""``moor connectors`` subcommand parser."""
 
 from __future__ import annotations
 
 
 def build_connectors_parser(subparsers) -> None:
     """Attach the ``connectors`` subcommand to ``subparsers``."""
-    from hermes_cli.connectors_cmd import cmd_connectors
+    from moor_cli.connectors_cmd import cmd_connectors
 
     parser = subparsers.add_parser(
         "connectors", help="Manage hosted app connectors and their accounts",
-        description="List, connect, rename and remove the app accounts Hermes uses through Nous Portal.")
+        description="List, connect, rename and remove the app accounts Moor uses through Moor Portal.")
     actions = parser.add_subparsers(dest="connectors_action")
 
     actions.add_parser("list", aliases=["ls"], help="Show every connector and whether it is connected")

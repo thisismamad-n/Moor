@@ -32,7 +32,7 @@ class TestBrowserSecretExfil:
     def test_cloud_browser_allows_credential_named_query_param(self, monkeypatch):
         """Magic links / OAuth callbacks / signed assets carry ``?token=``-style params and must
         reach a cloud browser too: the browser is where the agent signs in, and it already sees the
-        session's cookies and typed passwords. Only Hermes-secret-shaped values stay blocked."""
+        session's cookies and typed passwords. Only moor-secret-shaped values stay blocked."""
         from tools import browser_use_cli
         from tools.browser_url_policy import evaluate_url_safety
 

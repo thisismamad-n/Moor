@@ -277,7 +277,7 @@ def _apply_managed_extra(authored: dict, managed: dict, platforms_data: dict) ->
     sets under ``platforms.<plat>.extra`` stays authored."""
     if not managed:
         return {}
-    from hermes_cli.config import _deep_merge
+    from moor_cli.config import _deep_merge
 
     managed_platforms = merge_platform_sections(managed, managed.get("gateway"), {})
     hook_pins = {}
@@ -493,7 +493,7 @@ def read_yaml_layers(home: Path) -> dict:
     (``gateway.relay.relay_explicitly_disabled``) reads through here so it cannot disagree with
     ``load_gateway_config()`` on which files count.
     """
-    from hermes_cli.config_backend import config_exists, read_config_doc
+    from moor_cli.config_backend import config_exists, read_config_doc
 
     config_path = Path(home) / "config.yaml"
     yaml_cfg: dict = {}
@@ -544,7 +544,7 @@ def load_yaml_layer(home: Path, gw_data: dict) -> None:
     # "Authored" is config.yaml only: a scratch merge leaves out the legacy gateway.json extra
     # already in ``platforms_data``, which stays the base layer every config.yaml key overrides.
     authored = snapshot_authored_extra(merge_platform_sections(yaml_cfg, gateway_section, {}))
-    from hermes_cli import managed_scope
+    from moor_cli import managed_scope
     managed_extra = _apply_managed_extra(authored, managed_scope.apply_managed_overlay({}), platforms_data)
     warned: set = set()  # one warning per conflicting (platform, key) across both copy sites
     bridge_platform_shared_keys(
@@ -557,9 +557,9 @@ def load_yaml_layer(home: Path, gw_data: dict) -> None:
 def load_gateway_config_file(gateway_config_file: str):
     """``gateway --config <file>``: a ``GatewayConfig`` from an explicit local YAML file. Refused
     when the config backend has no file tooling (Remote Config: config comes only from the plane)."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
     from gateway.config import GatewayConfig
-    from hermes_cli.config_backend import require_file_tooling
+    from moor_cli.config_backend import require_file_tooling
     require_file_tooling("gateway --config <file>")
     with open(gateway_config_file, encoding="utf-8-sig") as f:
         return GatewayConfig.from_dict(yaml.safe_load(f) or {})

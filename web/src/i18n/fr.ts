@@ -97,13 +97,13 @@ export const fr: Translations = {
     activeProvider: "Fournisseur de mémoire actif",
     noProvider: "aucun — intégré uniquement",
     builtinLayer: "Couche intégrée",
-    builtinNote: "MEMORY.md et USER.md sont la mémoire propre de Hermes, indépendante de tout fournisseur externe. Les deux sont chargés dans les sessions par défaut ; les options de configuration (memory.memory_enabled / memory.user_profile_enabled) désactivent chacun. Un fournisseur s'y ajoute ; il ne les remplace jamais.",
+    builtinNote: "MEMORY.md et USER.md sont la mémoire propre de Moor, indépendante de tout fournisseur externe. Les deux sont chargés dans les sessions par défaut ; les options de configuration (memory.memory_enabled / memory.user_profile_enabled) désactivent chacun. Un fournisseur s'y ajoute ; il ne les remplace jamais.",
   },
 
   status: {
     actionFailed: "Action échouée",
     actionFinished: "Terminé",
-    actionFinishedOwed: "Mis à jour, mais encore en attente (relancez `hermes update` pour terminer)",
+    actionFinishedOwed: "Mis à jour, mais encore en attente (relancez `moor update` pour terminer)",
     actions: "Actions",
     agent: "Agent",
     activeSessions: "Sessions actives",

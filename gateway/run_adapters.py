@@ -30,7 +30,7 @@ from gateway.platforms.helpers import carry_inbound_dedup, hand_over_held_inboun
 from gateway.restart import is_global_startup_conflict
 from gateway.run_shutdown import _log_suppressed
 from gateway.session import SessionSource
-from hermes_cli.observability.shared_metrics_gateway import record_platform_connect, record_platform_disconnect
+from moor_cli.observability.shared_metrics_gateway import record_platform_connect, record_platform_disconnect
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, Optional
 
@@ -46,7 +46,7 @@ _MAX_PLUGIN_LOAD_REARMS = 3  # per queued platform: transient load failures heal
 
 def _adapter_unavailable_message(platform: Platform, *, retrying: bool = True) -> str:
     """Actionable ``adapter_unavailable`` status text, shared by startup and the reconnect watcher so
-    ``hermes status`` keeps the plugin/deps/credentials hint after the first retry."""
+    ``moor status`` keeps the plugin/deps/credentials hint after the first retry."""
     message = (
         f"No adapter available for enabled {platform.value}; check the plugin, dependencies, and credentials."
     )
@@ -288,7 +288,7 @@ class GatewayAdapterLifecycleMixin:
     def _on_all_adapters_down(self) -> str:
         """Normalized ``GatewayConfig.on_all_adapters_down``: ``"exit"`` (default — a supervising
         service manager restarts the process) or ``"stay_alive"`` (launchers with no supervisor,
-        e.g. the desktop app's direct ``hermes serve`` child, where a failure exit only severs the
+        e.g. the desktop app's direct ``moor serve`` child, where a failure exit only severs the
         UI's websockets and drops in-flight assistant messages; #118080)."""
         value = getattr(getattr(self, "config", None), "on_all_adapters_down", None)
         return value if value in ON_ALL_ADAPTERS_DOWN_POLICIES else "exit"
@@ -829,7 +829,7 @@ class GatewayAdapterLifecycleMixin:
                     self._drop_from_reconnect_queue(platform, "adapter creation returned None")
                     return
                 # Unregistered plugin: keep it queued and re-arm a failed load (capped) for the next tick.
-                from hermes_cli.plugins import get_plugin_manager
+                from moor_cli.plugins import get_plugin_manager
                 rearms = info.get("load_rearms", 0)
                 # Off the loop: the re-arm takes the manager's discovery lock, which a sweep or deferred load holds.
                 if rearms < _MAX_PLUGIN_LOAD_REARMS and await self._run_in_executor_with_context(
@@ -1149,13 +1149,13 @@ class GatewayAdapterLifecycleMixin:
         owner_home = None
         if owner == "default":
             try:
-                from hermes_constants import get_default_hermes_root
-                owner_home = get_default_hermes_root()
+                from moor_constants import get_default_moor_root
+                owner_home = get_default_moor_root()
             except Exception:
                 owner_home = None
         else:
             try:
-                from hermes_cli.profiles import get_profile_dir
+                from moor_cli.profiles import get_profile_dir
                 owner_home = get_profile_dir(owner)
             except Exception:
                 owner_home = None
@@ -1205,7 +1205,7 @@ class GatewayAdapterLifecycleMixin:
 
     def _note_unserved_secondary_platform(self, profile_name: str, platform: Platform) -> None:
         """Report unpaired WhatsApp or secondary-only Relay. Log the reason and remedy and stamp a
-        ``<profile>:<platform>`` status entry so ``hermes gateway status --profile X`` and the
+        ``<profile>:<platform>`` status entry so ``moor gateway status --profile X`` and the
         dashboard show *why* the channel is dead instead of nothing at all."""
         noted = getattr(self, "_unserved_secondary_platforms", None)
         if noted is None:
@@ -1215,7 +1215,7 @@ class GatewayAdapterLifecycleMixin:
         noted.add((profile_name, platform))
         pv = platform.value
         if platform is Platform.WHATSAPP:
-            message = f"WhatsApp is not paired; pair it: hermes -p {profile_name} whatsapp"
+            message = f"WhatsApp is not paired; pair it: moor -p {profile_name} whatsapp"
             logger.info("[MULTIPLEX] Profile '%s': %s", profile_name, message)
             self._update_platform_runtime_status(
                 f"{profile_name}:{pv}", platform_state="disabled",
@@ -1634,7 +1634,7 @@ class GatewayAdapterLifecycleMixin:
         profile_map.pop(platform, None)
         # The notification may arrive outside the profile's scope: the row is that profile's.
         if (profile_home := self._routed_profile_home(profile_name)) is not UNRESOLVED_PROFILE_HOME:
-            record_platform_disconnect(adapter, hermes_home=profile_home)
+            record_platform_disconnect(adapter, moor_home=profile_home)
         await self._safe_adapter_disconnect(adapter, platform)
         if not self._running:
             return
@@ -1764,8 +1764,8 @@ class GatewayAdapterLifecycleMixin:
     def _make_default_profile_message_handler(self):
         """Scope primary-adapter messages to their routed multiplex profile. Authorization stays
         with the transport profile (a routed profile may have no credential/allowlist)."""
-        from gateway.run import _async_profile_runtime_scope, get_hermes_home
-        default_home = Path(get_hermes_home())
+        from gateway.run import _async_profile_runtime_scope, get_moor_home
+        default_home = Path(get_moor_home())
         from gateway.session_ingress_context import register_transport_home
         register_transport_home(self, None, default_home)
 
@@ -1959,8 +1959,8 @@ class GatewayAdapterLifecycleMixin:
         back to os.environ (the default profile's env) and denies the secondary's own allowlisted
         callers (#120639).
         """
-        from gateway.run import get_hermes_home
-        transport_home = Path(get_hermes_home()) if self._multiplex_on() and profile_name is None else None
+        from gateway.run import get_moor_home
+        transport_home = Path(get_moor_home()) if self._multiplex_on() and profile_name is None else None
         # Resolved once; the scope is entered per call so an ``.env`` allowlist edit reaches the next
         # tap, matching the message path's per-message re-read.
         profile_home = self._routed_profile_home(profile_name) if profile_name else None

@@ -522,7 +522,7 @@ function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean
           sshUser: state.sshUser.trim(),
           sshPort: state.sshPort,
           sshKeyPath: state.sshKeyPath.trim(),
-          sshRemoteHermesPath: state.sshRemoteHermesPath.trim(),
+          sshRemoteMoorPath: state.sshRemoteMoorPath.trim(),
           // A blank clears an existing remote-profile mapping.
           sshRemoteProfile: state.sshRemoteProfile.trim()
         }),

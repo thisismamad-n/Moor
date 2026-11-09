@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import threading
 
-from hermes_cli.gateway_client import GatewayClientError
+from moor_cli.gateway_client import GatewayClientError
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def _catalog(cli, connection, session):
     """``(commands.catalog, epoch)`` for the open gateway session, so its skills come from the session's
     folder (its trusted project skills), not the gateway's. A gateway older than this CLI refuses the
     ``session_id`` (``invalid_params``): it is asked again without it, as before."""
-    from hermes_cli.gateway_client import GatewayRPCError
+    from moor_cli.gateway_client import GatewayRPCError
     if session and getattr(cli, "_gateway_session_open", False):
         try:
             return connection.call_tagged("commands.catalog", session_id=session)
@@ -106,7 +106,7 @@ def skills(cli, *, notes=False):
     """``{"/key": {name, description}}`` of the session's skill commands from the gateway's catalog
     (``notes``: its one-line notice instead, e.g. skills a built-in command shadows), or None off the
     gateway. A failed read is printed once per input and lists none; nothing is scanned here."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return None
@@ -136,7 +136,7 @@ def run_skill(cli, base_cmd, rest):
     """``/skill ...`` on the gateway session: the gateway resolves and loads the skill (its plugin
     skills and stacked skills too) and returns the message, which is queued as main queued it; True
     when answered there (False off the gateway: main's local load)."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return False
@@ -159,7 +159,7 @@ def toolsets(cli):
     """``([(key, label, description)], {portable MCP server})`` the gateway's plugins provide for this
     profile (``plugins.list``), or None off the gateway (this process's own registry applies). An older
     gateway or a failed read gives none, never a local scan. Read once per gateway life."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return None
@@ -182,7 +182,7 @@ def toolsets(cli):
 def names(cli):
     """``{name: description}`` of the gateway's plugin commands for completion, or None off the
     gateway. A failed read degrades quietly to none; dispatch uses :func:`lookup`."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return None
@@ -199,7 +199,7 @@ def lookup(cli, name):
     """Whether ``/name`` is one of the gateway's plugin commands; None off the gateway. A name the
     cached list lacks re-reads it once. A failed read is not evidence the name is no plugin: it is
     printed and :class:`CatalogUnavailable` raised, so no skill, bundle or expansion stands in."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return None
@@ -219,11 +219,11 @@ def call_unbounded(cli, connection, name, command):
     and interrupts never queue behind it (GatewayConnection.call_until). Ctrl+C stops waiting: the stopped
     line is printed and :data:`STOPPED` returned (a KeyboardInterrupt still propagates after it)."""
     from cli import _cprint
-    from hermes_cli.gateway_connection import CallStopped
+    from moor_cli.gateway_connection import CallStopped
     wake = cli._gateway_command_wait = threading.Event()  # set by Ctrl+C (cli_tui_mixin)
     from agent.memory_provider import spawn_context_thread
     answering: list = []  # the clarify request id the panel is answering, while it is open
-    spawn_context_thread(_answer_choices, args=(cli, connection, wake, answering), name="hermes-command-choices").start()
+    spawn_context_thread(_answer_choices, args=(cli, connection, wake, answering), name="moor-command-choices").start()
     try:
         return connection.call_until("slash.exec", wake, session_id=cli.session_id, command=command)
     except (CallStopped, KeyboardInterrupt) as exc:
@@ -242,7 +242,7 @@ def _answer_choices(cli, connection, wake, answering):
     (``ctx.ask_choice``, ``gateway/plugin_command_choice.py``) with the CLI's clarify panel. No turn
     pump reads the session's frames between turns, so they are taken here; every other frame stays
     queued, in order, for the turn that owns it."""
-    from hermes_cli.gateway_agent import clarify_reply
+    from moor_cli.gateway_agent import clarify_reply
     events, state = connection.events, connection.state(cli.session_id)
 
     def withdrawn(payload):
@@ -273,14 +273,14 @@ def _answer_choices(cli, connection, wake, answering):
 def run(cli, name, arg):
     """True when the gateway answered ``/name arg`` (the local handler must not run); :data:`GONE`
     when it no longer has that plugin command and a fresh catalog read agrees (a plugin reload, e.g.
-    ``hermes plugins disable``, dropped it in this session and gateway life, which no cache boundary
+    ``moor plugins disable``, dropped it in this session and gateway life, which no cache boundary
     sees): nothing ran, and the caller dispatches the name again (bundle, skill, prefix)."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return False
     from cli import _cprint
-    from hermes_cli.gateway_client import GatewayRPCError
+    from moor_cli.gateway_client import GatewayRPCError
     # No answer deadline: main's CLI waited for the handler, which may wait minutes (ctx.call_mcp).
     try:
         reply = call_unbounded(cli, connection, name, name + (" " + arg if arg else ""))
@@ -319,7 +319,7 @@ def _dropped(cli, connection, name):
 def report_gone(name, *known):
     """Print that ``/name`` is no longer a plugin command, unless one of the built-in commands or a
     ``known`` skill or bundle name starts with it (then prefix expansion decides); True when printed."""
-    from hermes_cli.commands import COMMANDS
+    from moor_cli.commands import COMMANDS
     if any(key.startswith("/" + name) for group in (COMMANDS, *known) for key in group):
         return False
     from cli import _cprint
@@ -334,7 +334,7 @@ def observe(cli, name, arg, *, runs=True):
     gateway replies before any plugin runs. One older than this CLI (no such method) gets one printed
     line, and is not asked again on that connection life: local commands then reach no ``pre_command``
     observer, and this process still fires none itself."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return False
@@ -343,7 +343,7 @@ def observe(cli, name, arg, *, runs=True):
     epoch = getattr(connection, "epoch", None)
     if getattr(cli, "_observe_unsupported", None) == (connection, epoch):
         return True
-    from hermes_cli.gateway_client import GatewayRPCError
+    from moor_cli.gateway_client import GatewayRPCError
     try:
         connection.call("command.observe", session_id=cli.session_id, name=name, arg=arg)
     except GatewayRPCError as exc:
@@ -366,12 +366,12 @@ def loaded(cli):
     ``/plugins``, or None off the gateway. A gateway without ``plugins.list`` on this socket (older
     than this CLI) or one that can't answer gets one printed line and ``{}``: the listing then shows
     no load details, and this process never loads plugins to fill them in."""
-    from hermes_cli.gateway_side import connection_for
+    from moor_cli.gateway_side import connection_for
     connection = connection_for(cli)
     if connection is None:
         return None
     from cli import _cprint
-    from hermes_cli.gateway_client import GatewayRPCError
+    from moor_cli.gateway_client import GatewayRPCError
     try:
         rows = (connection.call("plugins.list") or {}).get("plugins") or []
     except GatewayRPCError as exc:

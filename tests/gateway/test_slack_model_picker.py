@@ -659,7 +659,7 @@ class TestSlackModelPickerGatewayIntegration:
         )
 
         import gateway.run as gateway_run
-        monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+        monkeypatch.setattr(gateway_run, "_moor_home", moor_home)
         monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
         monkeypatch.setattr(
             "moor_cli.model_switch_providers.list_picker_providers",
@@ -710,7 +710,7 @@ class TestSlackModelPickerGatewayIntegration:
         )
 
         import gateway.run as gateway_run
-        monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+        monkeypatch.setattr(gateway_run, "_moor_home", moor_home)
         monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
         monkeypatch.setattr(
             "moor_cli.model_switch_providers.list_authenticated_providers",

@@ -16,14 +16,14 @@ from functools import partial
 from typing import Any, Callable, Collection, Dict, List, Optional, Tuple
 
 from agent.skill_commands import describe_skill_invocation
-from hermes_state_errors import is_malformed_db_error
-from hermes_state_common import (
+from moor_state_errors import is_malformed_db_error
+from moor_state_common import (
     FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS,
     FTS_TRIGRAM_EXCLUDED_SOURCES, FTS_TRIGRAM_SQL,
     MAX_FTS5_QUERY_CHARS, SCHEMA_VERSION, _FTS_CJK_TRIGGERS,
     escape_like as _escape_like, fts_rebuild_admission, fts_trigram_session_sql, routed_sessions_setting,
 )
-from hermes_state_fts import fts_layout_current, fts_layout_drift
+from moor_state_fts import fts_layout_current, fts_layout_drift
 
 # Pre-split logger identity so log filtering/capture is unchanged.
 logger = logging.getLogger("moor_state")
@@ -752,7 +752,7 @@ class SessionSearchMixin:
     def _optimize_drive(self, step: Callable[[], bool], info: Optional[Callable[[], dict[str, Any]]],
                         emit: Callable[[dict[str, Any]], None], watch: _HolderWatch) -> None:
         """Run *step* to completion, emitting ``info()`` (plus ``paced``) after every chunk. Back to
-        back while no other process holds state.db (see the chunk engine note in hermes_state_fts);
+        back while no other process holds state.db (see the chunk engine note in moor_state_fts);
         while *watch* sees a holder, the duty cycle (short chunks + a pause) keeps its writes moving.
         Chunk size adapts to its measured cost; a step may restart it (teardown on each new table)."""
         self._fts_chunk_rows = self._FTS_REBUILD_CHUNK_ROWS
@@ -1526,7 +1526,7 @@ class SessionSearchMixin:
                         if is_malformed_db_error(exc):
                             logger.error(
                                 "FTS rebuild failed with a corruption-class error for %s: %s; "
-                                "run 'hermes sessions repair' (or 'hermes doctor --fix') to rebuild the index offline",
+                                "run 'moor sessions repair' (or 'moor doctor --fix') to rebuild the index offline",
                                 tbl, exc)
                         else:
                             logger.warning("FTS rebuild failed for %s: %s", tbl, exc)

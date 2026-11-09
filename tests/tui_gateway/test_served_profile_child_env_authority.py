@@ -29,11 +29,11 @@ def homes(tmp_path, monkeypatch):
     a = tmp_path / ".moor"
     b = a / "profiles" / "b"
     b.mkdir(parents=True)
-    (a / ".env").write_text("A_MARKER=a\nHERMES_MODEL=a-model\nFIRECRAWL_API_KEY=a-fc\nBROWSER_USE_API_KEY=a-bu\n",
+    (a / ".env").write_text("A_MARKER=a\nMOOR_MODEL=a-model\nFIRECRAWL_API_KEY=a-fc\nBROWSER_USE_API_KEY=a-bu\n",
                             encoding="utf-8")
     (b / ".env").write_text("B_MARKER=b\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(a))
-    for key, val in (("A_MARKER", "a"), ("HERMES_MODEL", "a-model"), ("FIRECRAWL_API_KEY", "a-fc"),
+    monkeypatch.setenv("MOOR_HOME", str(a))
+    for key, val in (("A_MARKER", "a"), ("MOOR_MODEL", "a-model"), ("FIRECRAWL_API_KEY", "a-fc"),
                      ("BROWSER_USE_API_KEY", "a-bu"), ("OPENAI_API_KEY", "sk-ambient-launch-only")):
         monkeypatch.setenv(key, val)
     monkeypatch.delenv("B_MARKER", raising=False)
@@ -62,28 +62,28 @@ def test_ambient_only_launch_credential_never_reaches_a_routed_child(homes):
 
 
 def test_routed_home_with_multiplex_flag_off_gets_no_launch_residue(homes, monkeypatch):
-    """Desktop/dashboard topology: B served via the HERMES_HOME override only. The slash-worker /
+    """Desktop/dashboard topology: B served via the MOOR_HOME override only. The slash-worker /
     helper child sees B's env, the browser child env carries no provider key for either profile, and the
     browser_exec harness resolves B's (absent) credential as no credential."""
     from tools.browser_session import build_browser_env
     from tools.browser_use_cli import _harness_credentials
 
     _a, b = homes
-    token = set_hermes_home_override(str(b))
+    token = set_moor_home_override(str(b))
     try:
         env = served_profile_child_env(inherit_credentials=True)
-        assert env["HERMES_HOME"] == str(b) and env["B_MARKER"] == "b"
-        assert "A_MARKER" not in env and "HERMES_MODEL" not in env and "OPENAI_API_KEY" not in env
+        assert env["MOOR_HOME"] == str(b) and env["B_MARKER"] == "b"
+        assert "A_MARKER" not in env and "MOOR_MODEL" not in env and "OPENAI_API_KEY" not in env
         browser_env = build_browser_env()
-        assert "FIRECRAWL_API_KEY" not in browser_env and browser_env["HERMES_HOME"] == str(b)
+        assert "FIRECRAWL_API_KEY" not in browser_env and browser_env["MOOR_HOME"] == str(b)
         assert _harness_credentials() == {}
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     # Control: the launch profile's browser env is credential-free too, its harness keeps its own key, and
     # its other children keep their settings.
     assert "FIRECRAWL_API_KEY" not in build_browser_env()
     assert _harness_credentials() == {"BROWSER_USE_API_KEY": "a-bu"}
-    assert served_profile_child_env(inherit_credentials=True)["HERMES_MODEL"] == "a-model"
+    assert served_profile_child_env(inherit_credentials=True)["MOOR_MODEL"] == "a-model"
 
 
 def test_real_child_observes_only_the_routed_profile(homes):
@@ -92,12 +92,12 @@ def test_real_child_observes_only_the_routed_profile(homes):
     import subprocess
 
     _a, b = homes
-    token = set_hermes_home_override(str(b))
+    token = set_moor_home_override(str(b))
     try:
         env = served_profile_child_env(inherit_credentials=True)
     finally:
-        reset_hermes_home_override(token)
-    probe = "import json,os;print(json.dumps({k:os.environ.get(k) for k in ('HERMES_HOME','A_MARKER','B_MARKER','OPENAI_API_KEY')}))"
+        reset_moor_home_override(token)
+    probe = "import json,os;print(json.dumps({k:os.environ.get(k) for k in ('MOOR_HOME','A_MARKER','B_MARKER','OPENAI_API_KEY')}))"
     out = subprocess.run([sys.executable, "-c", probe], env=env, capture_output=True, text=True, encoding="utf-8", timeout=60, check=False)
     seen = json.loads(out.stdout.strip().splitlines()[-1])
     assert seen == {"MOOR_HOME": str(b), "A_MARKER": None, "B_MARKER": "b", "OPENAI_API_KEY": None}

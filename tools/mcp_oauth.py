@@ -286,7 +286,7 @@ def _cached_client_info(storage: "MoorTokenStorage | None") -> dict | None:
     return info if isinstance(info, dict) else None
 
 
-def _cached_redirect(storage: "HermesTokenStorage | None") -> tuple[str | None, int | None]:
+def _cached_redirect(storage: "MoorTokenStorage | None") -> tuple[str | None, int | None]:
     """``(https proxy URI, loopback callback port)`` from the cached client registration (None when
     absent): a DCR ``client_id`` is bound to its registered redirect URI, so a new random port under
     it gets ``redirect_uri does not match any registered URIs``."""
@@ -982,7 +982,7 @@ def _pick_cimd_port() -> int | None:
     return _assigned_cimd_ports[0] if _assigned_cimd_ports else None
 
 
-def _server_declined_cimd(storage: HermesTokenStorage | None) -> bool:
+def _server_declined_cimd(storage: MoorTokenStorage | None) -> bool:
     """True when cached metadata shows this server doesn't advertise CIMD. The SDK decides CIMD vs DCR
     in its 401 branch — after Moor must fix the redirect URI — so cached metadata closes the gap;
     only a genuinely unknown server pays the optimistic pin."""
@@ -993,7 +993,7 @@ def _server_declined_cimd(storage: HermesTokenStorage | None) -> bool:
     return metadata is not None and getattr(metadata, "client_id_metadata_document_supported", None) is not True
 
 
-def _maybe_use_cimd(cfg: dict, storage: HermesTokenStorage | None = None) -> tuple[str, int] | None:
+def _maybe_use_cimd(cfg: dict, storage: MoorTokenStorage | None = None) -> tuple[str, int] | None:
     """``(client_id URL, pinned callback port)``, or None to use DCR. Each ineligibility case means the
     redirect URI is not one the document declares, the client identity is already settled, or the
     server is known not to want a document — a metadata URL would be rejected."""
@@ -1047,7 +1047,7 @@ def login_connect_timeout(config: dict) -> float:
                _seconds(oauth_cfg.get("timeout"), 300.0) + 15.0)
 
 
-def _configure_callback_port(cfg: dict, storage: HermesTokenStorage | None = None) -> int:
+def _configure_callback_port(cfg: dict, storage: MoorTokenStorage | None = None) -> int:
     """Resolve the callback port into ``cfg['_resolved_port']`` (0 = non-loopback URI). Precedence:
     dashboard flow / cached https redirect URI → CIMD pinned port (sets ``cfg['_cimd_url']``) →
     ``oauth.redirect_port`` → cached registration port → fresh ephemeral port (the only parked one).
@@ -1158,7 +1158,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
 
 
 def _invalidate_tokens_on_client_change(
-    storage: HermesTokenStorage, new_client_id: str, new_client_secret: str | None) -> None:
+    storage: MoorTokenStorage, new_client_id: str, new_client_secret: str | None) -> None:
     """Drop cached tokens when the configured client identity changes: tokens minted under the old
     ``client_id`` fail refresh with ``invalid_client``, and pre-registered clients are exempt from
     auto-poison, so stale tokens would wedge every request until a manual wipe. Compares on-disk
@@ -1187,7 +1187,7 @@ def _invalidate_tokens_on_client_change(
             storage._server_name, old_client_id, new_client_id, storage._server_name)
 
 
-def _maybe_preregister_client(storage: HermesTokenStorage, cfg: dict, client_metadata: "OAuthClientMetadata") -> None:
+def _maybe_preregister_client(storage: MoorTokenStorage, cfg: dict, client_metadata: "OAuthClientMetadata") -> None:
     """If cfg has a pre-registered client_id, persist it to storage."""
     client_id = cfg.get("client_id")
     if not client_id:
@@ -1223,7 +1223,7 @@ def humanize_oauth_registration_error(
             f"'{server_name}' does not support automatic client registration — the registration request returned "
             "404 (typical for Google's hosted Gmail/Drive MCP servers and other providers without RFC 7591 dynamic "
             "client registration). Create an OAuth client for this provider and add it under config.yaml as "
-            f"`oauth: {{client_id: ..., client_secret: ...}}`, then re-run:\n  hermes mcp login {server_name}")
+            f"`oauth: {{client_id: ..., client_secret: ...}}`, then re-run:\n  moor mcp login {server_name}")
     looks_like_registration = ("403" in msg or "forbidden" in lowered) and (
         any(k in lowered for k in ("regist", "dcr", "dynamic client"))
         or lowered.strip() in {"forbidden", "403 forbidden", "http 403: forbidden"}
@@ -1263,7 +1263,7 @@ def build_oauth_auth(server_name: str, server_url: str, oauth_config: dict | Non
     if MoorOAuthClientProvider is None:
         from tools.mcp_oauth_provider import MoorProviderMixin
 
-        HermesOAuthClientProvider = type("HermesOAuthClientProvider", (HermesProviderMixin, _sdk_class("OAuthClientProvider")), {
-            "__doc__": "SDK provider plus Hermes' token-endpoint fixes (see ``HermesProviderMixin``).",
-            "__module__": __name__, "_hermes_logger": logger})
-    return HermesOAuthClientProvider(server_url=server_url, **kwargs)
+        MoorOAuthClientProvider = type("MoorOAuthClientProvider", (MoorProviderMixin, _sdk_class("OAuthClientProvider")), {
+            "__doc__": "SDK provider plus Moor' token-endpoint fixes (see ``MoorProviderMixin``).",
+            "__module__": __name__, "_moor_logger": logger})
+    return MoorOAuthClientProvider(server_url=server_url, **kwargs)

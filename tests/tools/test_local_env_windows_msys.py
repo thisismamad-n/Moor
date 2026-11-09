@@ -333,7 +333,7 @@ class TestWrapCommandWindowsNativeCwd:
         assert r"C:\Users\Alexander\AppData" not in script
 
 
-def test_git_bash_dirs_stay_first_when_hermes_tools_move_behind_the_users(monkeypatch):
+def test_git_bash_dirs_stay_first_when_moor_tools_move_behind_the_users(monkeypatch):
     """Git Bash's coreutils are store dirs too, but bash must find them before System32's."""
     import pm.install
     from tools.environments import local as local_mod

@@ -55,7 +55,7 @@ def two_profiles(tmp_path, monkeypatch):
     for toolset in ("mcp-x", "mcp-s"):
         for tool_name in list(registry.get_tool_names_for_toolset(toolset)):
             for home in homes.values():
-                registry.deregister(tool_name, scope=hermes_home_key(home))
+                registry.deregister(tool_name, scope=moor_home_key(home))
     for token in reversed(tokens):
         reset_moor_home_override(token)
     for n in ledgers:
@@ -121,7 +121,7 @@ def test_same_named_server_with_other_credentials_is_a_separate_connection(two_p
     # stdio identity still resolves in ITS OWN scope, so an equal value shares the owner's child.
     import sys
     from agent import secret_scope
-    from hermes_cli import env_loader
+    from moor_cli import env_loader
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", True)
     monkeypatch.setattr(env_loader, "_SECRET_SOURCES", {"FIXTURE_TOKEN": "op"})
     for profile in ("a", "b"):

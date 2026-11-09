@@ -386,7 +386,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert t("cli.session.recent_header") in output
-        assert "Checking Running Hermes Agent" in output
+        assert "Checking Running Moor Agent" in output
 
 
 
@@ -417,7 +417,7 @@ class TestHistoryDisplay:
 
         assert "Unknown command" not in output
         assert t("cli.session.recent_header") in output
-        assert "Checking Running Hermes Agent" in output
+        assert "Checking Running Moor Agent" in output
         assert "20260401_201329_d85961" in output
 
 
@@ -762,7 +762,7 @@ class TestPluginToolsetStartupValidation:
     """Plugin toolsets are only known where plugins load (the gateway), so the CLI's toolset init
     neither probes plugins nor judges names (#71650, PLG-7): the gateway refuses an unknown picked
     name at session.create and reports a stale profile one with the session
-    (tests/hermes_cli/test_cli_profile_toolsets.py)."""
+    (tests/moor_cli/test_cli_profile_toolsets.py)."""
 
     def test_init_probes_no_plugins_and_keeps_the_list(self, monkeypatch):
         import cli as _cli_mod
@@ -772,7 +772,7 @@ class TestPluginToolsetStartupValidation:
         stub._console_print = printed.append
         monkeypatch.setattr(_cli_mod, "CLI_CONFIG", {"agent": {}})
         for name in ("get_plugin_toolset_keys_nowait", "discover_plugins", "get_plugin_manager"):
-            monkeypatch.setattr(f"hermes_cli.plugins.{name}", lambda *_a: pytest.fail("probed plugins"))
+            monkeypatch.setattr(f"moor_cli.plugins.{name}", lambda *_a: pytest.fail("probed plugins"))
         stub._init_toolsets(["terminal", "voice_stack", "voice_stak"])
         assert printed == []
         assert stub.enabled_toolsets == ["terminal", "voice_stack", "voice_stak"]

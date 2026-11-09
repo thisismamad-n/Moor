@@ -437,7 +437,7 @@ _CONTEXT_ARGS = {
 def run_bot() -> int:
     cfg = _config_from_env()
     if not _is_safe_meet_url(cfg.url):
-        sys.stderr.write("google_meet bot: refusing to launch — HERMES_MEET_URL must be a "
+        sys.stderr.write("google_meet bot: refusing to launch — MOOR_MEET_URL must be a "
                          f"meet.google.com URL. got: {cfg.url!r}\n")
         return 2
     if cfg.out_dir is None:

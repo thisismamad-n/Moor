@@ -159,8 +159,8 @@ def test_unreadable_config_serves_one_cached_fallback_until_it_reads(home, monke
     once, not per call: ~250x slower loads before), and the first load once the file opens again
     reads the real file even though its signature never changed."""
     import builtins
-    from hermes_cli import config_backend, config_backups
-    from hermes_cli.config_read_errors import FailedConfigRead
+    from moor_cli import config_backend, config_backups
+    from moor_cli.config_read_errors import FailedConfigRead
     path = home / "config.yaml"
     _fresh_process(home, _CONFIG)
     load_config()  # leaves the `good` backup a fresh process falls back to

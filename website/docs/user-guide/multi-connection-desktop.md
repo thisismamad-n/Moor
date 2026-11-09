@@ -4,8 +4,8 @@ sidebar_position: 5
 
 # Connecting Desktop to Many Moor Instances
 
-Register every Hermes backend you own — the local runtime, remote gateways on
-your LAN or VPS, SSH hosts, and Hermes Cloud instances — in one desktop app,
+Register every Moor backend you own — the local runtime, remote gateways on
+your LAN or VPS, SSH hosts, and Moor Cloud instances — in one desktop app,
 and use the agents on all of them side by side. Every registered gateway is
 connected all the time: Desktop dials each one when it starts, keeps its
 connection open, and redials it if it drops, so there is no switching cost and
@@ -185,7 +185,7 @@ The union roster is what multi-gateway surfaces (and the built-in
   stays connected: its default profile holds one open connection for the life
   of the window and is redialed every 30 seconds while it is down. An
   unreachable gateway reports per-row instead of breaking the roster. With a
-  remote primary, **This device** is kept connected too when Hermes is
+  remote primary, **This device** is kept connected too when Moor is
   installed here, so its local gateway starts with Desktop. Terminals and
   running work on a gateway keep going when you pick another one.
 - Opening an agent dials **its own gateway** — chats, sessions, and memory
@@ -196,11 +196,11 @@ Each `(connection, profile)` pair gets its own socket, and Desktop caches the
 gateway descriptor it dialed so the next open joins the same connection —
 background agents keep streaming while you look at another gateway. Desktop
 never spawns or reaps a *remote* gateway; each one owns its own lifetime. For a
-**local** profile, the first open runs `hermes gateway ensure`, which attaches
+**local** profile, the first open runs `moor gateway ensure`, which attaches
 to that profile's running gateway or, when there is none, installs and starts a
 persistent per-profile gateway (a systemd/launchd service where one exists,
 otherwise a detached daemon). That gateway keeps running after you close the
-app — it has no idle shutdown — until you stop it with `hermes gateway stop`.
+app — it has no idle shutdown — until you stop it with `moor gateway stop`.
 
 Approval buttons route back to the session's owning backend, not whichever
 profile is currently selected. For a local secondary profile, Desktop can use
@@ -244,7 +244,7 @@ that live on one gateway.
   square offers **Open**, **Color**, **Rename**, **Edit SOUL.md** and
   **Delete**, all executed on the square's own gateway; the delete
   confirmation names the machine. Picking **This device** asks for
-  confirmation only when Hermes is not installed on this computer yet.
+  confirmation only when Moor is not installed on this computer yet.
 - A gateway the last enumeration could not reach keeps its squares, marked
   with an amber dot on its glyph — a sleeping box is still yours. Two
   registrations of one backend collapse to a single group. Past thirteen
@@ -377,7 +377,7 @@ multi-gateway roster is the reference consumer.
 - **A remote gateway is missing from the roster** — its backend is down or
   unreachable; the roster lists it under gateways with the error, and Desktop
   keeps redialing it in the background.
-- **"Update Hermes Desktop to chat with agents on other connections"** — the
+- **"Update Moor Desktop to chat with agents on other connections"** — the
   app predates the multi-connection stack; update the desktop app itself.
 - **Duplicate device names** — not possible; names are enforced unique at
   save time. If a migrated name collided, it was suffixed (`Homelab 2`).

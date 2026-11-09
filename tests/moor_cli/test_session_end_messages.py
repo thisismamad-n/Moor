@@ -16,8 +16,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 import cli as cli_mod  # module-level, like sibling CLI tests: importing cli runs bootstrap
-from hermes_cli import plugins
-from hermes_cli.plugins import PluginManager
+from moor_cli import plugins
+from moor_cli.plugins import PluginManager
 
 DIGEST = "Session digest: 3 files touched"
 
@@ -39,7 +39,7 @@ def finalize_hook(monkeypatch):
 
 
 def test_session_end_messages_accepts_str_and_message_dict_only():
-    from hermes_cli.lifecycle import session_end_messages
+    from moor_cli.lifecycle import session_end_messages
 
     assert session_end_messages(["  hi  ", {"message": "there"}, {"context": "x"}, {"message": 3}, "", None, 7]) == [
         "hi", "there"]
@@ -49,7 +49,7 @@ def test_session_end_messages_accepts_str_and_message_dict_only():
 
 
 def test_cli_new_prints_finalize_message(finalize_hook, capsys):
-    cli = cli_mod.HermesCLI()
+    cli = cli_mod.MoorCLI()
     cli.agent = MagicMock()
     cli.agent.session_id = "old-session"
 
@@ -67,7 +67,7 @@ def test_cli_exit_prints_finalize_message_after_screen_clear(finalize_hook, caps
     monkeypatch.setattr(cli_mod, "_session_end_messages", [])
 
     cli_mod._run_cleanup()
-    obj = cli_mod.HermesCLI()
+    obj = cli_mod.MoorCLI()
     obj.conversation_history = []
     obj._print_exit_summary(clear_screen=False)
 

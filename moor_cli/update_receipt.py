@@ -7,9 +7,9 @@ Two additive capabilities, both designed so a failure inside them can never
 break an update (every public entry point is exception-swallowing):
 
 1. **Update receipt** — a machine-readable JSON record of what one
-   ``hermes update`` run discovered, did, skipped (and why), written to
-   the ROOT home's ``logs/update_receipts/`` (``get_default_hermes_root()``,
-   never a sticky profile's ``HERMES_HOME``). Silent-failure classes this
+   ``moor update`` run discovered, did, skipped (and why), written to
+   the ROOT home's ``logs/update_receipts/`` (``get_default_moor_root()``,
+   never a sticky profile's ``MOOR_HOME``). Silent-failure classes this
    makes visible: #88848 (helper died after "success" printed), #74973
    (restart silently skipped), #85753 (restart phase never ran), #81193
    (desktop shows failure for a successful update).
@@ -135,10 +135,10 @@ def _str_records(entries: Any, keys: tuple[str, ...], *, pid: bool = False) -> l
 def _launcher_correlation_id() -> Optional[str]:
     """Correlation id handed in by an external launcher, or None.
 
-    Desktop's managed SSH update exports ``HERMES_UPDATE_CORRELATION_ID`` and
+    Desktop's managed SSH update exports ``MOOR_UPDATE_CORRELATION_ID`` and
     only accepts a receipt whose ``correlation_id`` equals it. This is separate
     from ``update_id``, which stays the CLI's own id for pm sync receipts."""
-    return os.environ.get("HERMES_UPDATE_CORRELATION_ID", "").strip() or None
+    return os.environ.get("MOOR_UPDATE_CORRELATION_ID", "").strip() or None
 
 
 class UpdateReceipt:
@@ -159,7 +159,7 @@ class UpdateReceipt:
         self.data["correlation_id"] = _launcher_correlation_id()
         # The dashboard action that spawned this run: the receipt store is root-wide, so the
         # action-status route certifies an outcome only from a receipt naming ITS action.
-        self.data["action_id"] = os.environ.get("HERMES_ACTION_ID", "").strip() or None
+        self.data["action_id"] = os.environ.get("MOOR_ACTION_ID", "").strip() or None
 
     def step(self, name: str, ok: bool, detail: str = "") -> None:
         self.data["steps"].append({"name": name, "ok": bool(ok), "detail": detail, "at": _utc_now_iso()})
@@ -231,25 +231,25 @@ def _receipt_dir() -> Path:
     # writable from the refused/failed paths where config loading itself may be what broke
     # (#112465, #112558). The ROOT home, never a sticky profile's: an update mutates the
     # checkout every profile shares, and the Desktop and the hand-off scripts read the root.
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
 
-    return get_default_hermes_root() / "logs" / "update_receipts"
+    return get_default_moor_root() / "logs" / "update_receipts"
 
 
 def _receipt_dirs() -> list[Path]:
     """The root store, then the profile's own when a named profile makes them differ. ``pm/``
-    writes its sync receipts to ``get_hermes_home()`` and receipts from before the root move live
-    there too, so readers take both and writers mirror ``latest.json`` into it (``hermes -p <name>
+    writes its sync receipts to ``get_moor_home()`` and receipts from before the root move live
+    there too, so readers take both and writers mirror ``latest.json`` into it (``moor -p <name>
     pm status`` reads only that one)."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    root, profile = _receipt_dir(), get_hermes_home() / "logs" / "update_receipts"
+    root, profile = _receipt_dir(), get_moor_home() / "logs" / "update_receipts"
     return [root] if profile.resolve() == root.resolve() else [root, profile]
 
 
 def _write_latest(payload: bytes) -> None:
     """Replace ``latest.json`` in every store a reader of this home consults."""
-    from hermes_cli.runtime_state import _atomic_bytes
+    from moor_cli.runtime_state import _atomic_bytes
 
     for directory in _receipt_dirs():
         directory.mkdir(parents=True, exist_ok=True)
@@ -282,7 +282,7 @@ def read_run_record(update_id: str) -> Optional[tuple[Path, dict[str, Any]]]:
 def _persist_running(data: dict[str, Any]) -> None:
     """Write the open run to disk: a killed update still leaves its own record. Never raises."""
     with suppress(Exception):
-        from hermes_cli.runtime_state import _atomic_bytes
+        from moor_cli.runtime_state import _atomic_bytes
 
         directory = _receipt_dir()
         directory.mkdir(parents=True, exist_ok=True)
@@ -292,7 +292,7 @@ def _persist_running(data: dict[str, Any]) -> None:
         stored = read_run_record(str(data.get("update_id")))
         if stored is not None and stored[1].get("finished_at"):
             return
-        from hermes_cli.process_identity import _process_create_time
+        from moor_cli.process_identity import _process_create_time
 
         payload = (json.dumps({**data, "writer_pid": os.getpid(),
                                "writer_create_time": _process_create_time(os.getpid())},
@@ -302,7 +302,7 @@ def _persist_running(data: dict[str, Any]) -> None:
 
 
 def _owner_alive(record: dict[str, Any]) -> bool:
-    from hermes_cli.process_identity import _pid_alive_matches
+    from moor_cli.process_identity import _pid_alive_matches
 
     identities = {}
     for key, time_key in (("pid", "pid_create_time"), ("writer_pid", "writer_create_time")):
@@ -326,7 +326,7 @@ def reconcile_interrupted_runs() -> list[dict[str, Any]]:
     """
     interrupted: list[dict[str, Any]] = []
     with suppress(Exception):
-        from hermes_cli.runtime_state import _atomic_bytes
+        from moor_cli.runtime_state import _atomic_bytes
 
         directory = _receipt_dir()
         latest = read_latest_receipt() or {}
@@ -366,7 +366,7 @@ def begin_update_receipt(*, previous: dict | None = None, correlation_id: str | 
         # A handoff receipt from an older interpreter may predate the field.
         receipt.data["correlation_id"] = receipt.data.get("correlation_id") or _launcher_correlation_id()
         with suppress(Exception):
-            from hermes_cli.process_identity import _process_create_time
+            from moor_cli.process_identity import _process_create_time
 
             receipt.data.setdefault("pid_create_time", _process_create_time(receipt.data["pid"]))
         if not previous:
@@ -380,7 +380,7 @@ def begin_update_receipt(*, previous: dict | None = None, correlation_id: str | 
                 rows = list((prior.get("plan") or {}).get("runtimes") or [])
                 rows += list(prior.get("pending_manual_serves") or [])
                 rows += list(prior.get("carried_manual_serves") or [])  # a run killed before finalize
-                from hermes_cli.update_serve_obligations import is_reminder_row
+                from moor_cli.update_serve_obligations import is_reminder_row
 
                 receipt.data["carried_manual_serves"] = [row for row in rows if is_reminder_row(row)]
     except Exception as exc:  # pragma: no cover - defensive
@@ -413,12 +413,12 @@ def record_build_stage(followups) -> None:
     record_stage("build", "failed" if any(step in BUILD_FOLLOWUPS for step, _ in followups) else "success")
 
 
-def record_followup(step: str, reason: str, *, retry: str = "the next launch or `hermes update` retries it") -> None:
+def record_followup(step: str, reason: str, *, retry: str = "the next launch or `moor update` retries it") -> None:
     """A post-commit step failed: print ⚠, keep the run a success, and say what is still owed.
 
     The code already committed, so the update does not fail; the step's own obligation (the
     source tail, the fleet restart, the launch-time bytecode sweep) stays armed and the next
-    launch or ``hermes update`` retries it. Never raises. The printed line is a protocol: the
+    launch or ``moor update`` retries it. Never raises. The printed line is a protocol: the
     Desktop hand-offs (scripts/desktop-update/posix.sh, windows.ps1) parse ``Update follow-up
     '<step>' did not finish:`` to report every owed step, so keep it one whole line.
     """
@@ -438,7 +438,7 @@ def record_user_action(step: str, reason: str) -> None:
 
     Unlike a follow-up nothing retries it (a stash whose restore conflicted stays parked until the
     user re-applies it), so the run can never be a plain success: it finalizes ``partial`` and
-    ``hermes update`` exits 1, as #122557 established for an unrestored autostash.
+    ``moor update`` exits 1, as #122557 established for an unrestored autostash.
     """
     _record("fact", f"update user action {step}", "user_action", {"step": step, "reason": " ".join(str(reason).split())[:500]})
     persist_running_receipt()
@@ -453,7 +453,7 @@ def amend_terminal_followup(update_id: str, step: str, reason: str) -> None:
     record.setdefault("followups", []).append({"step": step, "reason": reason, "at": _utc_now_iso()})
     payload = (json.dumps(record, indent=2, default=str) + "\n").encode("utf-8")
     with suppress(Exception):  # an unwritable store: the printed follow-up line still names it
-        from hermes_cli.runtime_state import _atomic_bytes
+        from moor_cli.runtime_state import _atomic_bytes
 
         _atomic_bytes(path, payload)
         if (read_latest_receipt() or {}).get("update_id") == update_id:
@@ -537,7 +537,7 @@ _GIT_FILE_PERMISSION = re.compile(r"Permission denied(?! *\()|\bEACCES\b")
 def git_error_stop_class(exc: BaseException) -> Optional[str]:
     """The closed stop token for a git ``CalledProcessError`` that is about to end the run, or None.
 
-    Reads only the failed argv and fixed git/Hermes phrases in its output, never stores either.
+    Reads only the failed argv and fixed git/Moor phrases in its output, never stores either.
     """
     if not isinstance(exc, subprocess.CalledProcessError):
         return None
@@ -573,18 +573,18 @@ def _started_by_handoff_partner() -> str | None:
     ours" (update_cmd._record_update_initiator, which runs under the lock) would call every
     refusal Desktop-started. The claim is ours only when it names us as its delegate (the posix and
     Windows hand-offs write that line before the update runs) or names our hand-off partner on
-    line 1 or the delegate line (``HERMES_UPDATE_HANDOFF_PID``, the Tauri updater; our parent, a
+    line 1 or the delegate line (``MOOR_UPDATE_HANDOFF_PID``, the Tauri updater; our parent, a
     launcher between the hand-off and us). The marker is read raw: no liveness probe and no
     cleanup (those are lock policy, not a metrics side effect).
     """
-    from hermes_cli.update_lock import _handoff_pid, _parse_marker, update_marker_path
+    from moor_cli.update_lock import _handoff_pid, _parse_marker, update_marker_path
 
     marker = _parse_marker(update_marker_path().read_bytes())
     if marker.started_at is None:
         return None
     pid = os.getpid()
     # Our parent too: on Windows the hand-off names the exact process it created (suspended), and
-    # hermes_bootstrap's relaunch (or the legacy .cmd's cmd.exe) makes the updater its child.
+    # moor_bootstrap's relaunch (or the legacy .cmd's cmd.exe) makes the updater its child.
     if marker.delegate_pid in (pid, os.getppid()):
         return "delegate"
     partners = {_handoff_pid(), os.getppid()} - {None, 0, 1, pid}
@@ -616,7 +616,7 @@ def record_stop_without_receipt(reason: str, outcome: str) -> None:
                 # The Desktop checked the marker, handed this run off and quit; its result dialog
                 # reports the refusal as a failed update, so the row must not read a benign one.
                 data["outcome"] = "failed"
-        from hermes_cli.observability.shared_metrics_update import record_update_receipt
+        from moor_cli.observability.shared_metrics_update import record_update_receipt
 
         record_update_receipt(data)
 
@@ -657,7 +657,7 @@ def finalize_update_receipt(outcome: str, fleet: list | None = None, stop_reason
         # Manual serve restart obligations outlive one receipt rotation: carry the previous
         # receipt's still-pending rows forward so the startup warning survives (see
         # update_serve_obligations).
-        from hermes_cli.update_serve_obligations import retain_receipt_manual_serves
+        from moor_cli.update_serve_obligations import retain_receipt_manual_serves
         if "carried_manual_serves" in receipt.data:
             prior = {"pending_manual_serves": receipt.data.pop("carried_manual_serves") or []}
         else:  # a receipt begun before the running record existed
@@ -718,7 +718,7 @@ def finalize_update_receipt(outcome: str, fleet: list | None = None, stop_reason
 def _collection_enabled_now() -> Optional[bool]:
     """Shared-metrics consent via the ALREADY-LOADED config module (never an import: this interpreter
     predates the checkout swap). None when it cannot tell (not loaded, unreadable config)."""
-    reader = getattr(sys.modules.get("hermes_cli.config"), "read_raw_config_readonly", None)
+    reader = getattr(sys.modules.get("moor_cli.config"), "read_raw_config_readonly", None)
     if reader is None:
         return None
     try:
@@ -733,7 +733,7 @@ def _collection_enabled_now() -> Optional[bool]:
 
 
 #: The leading label of a stop reason the parked copy may keep, exactly what the classifier reads:
-#: an exception type name (plus its errno token) or one of the fixed phrases Hermes writes
+#: an exception type name (plus its errno token) or one of the fixed phrases Moor writes
 #: (shared_metrics_update._STOP_REASON_PREFIX_CLASSES); never the message after it.
 _PARKED_REASON_LABEL = re.compile(
     r"(?:[A-Z][A-Za-z0-9_]{0,63}:(?: \[(?:Errno|WinError) \d+\])?"
@@ -787,11 +787,11 @@ def _consent_reader_importable() -> bool:
 
     False in the bare ``-I -S`` bootstrap interpreter that finalizes an update whose dependency
     preparation failed (update_completion._settle_after_commit): it has the new tree but no
-    third-party packages, so ``hermes_cli.config`` dies on ``ruamel``. Only asked of an interpreter
+    third-party packages, so ``moor_cli.config`` dies on ``ruamel``. Only asked of an interpreter
     that runs the new tree (never the pre-pull one, which must import nothing); the recorder's
     pre-gate imports the same module next, so a working interpreter loads nothing extra."""
     try:
-        import hermes_cli.config
+        import moor_cli.config
     except ImportError:  # ruamel and every other third-party package are missing here
         return False
     return True
@@ -804,10 +804,10 @@ def _bare_collection_enabled() -> Optional[bool]:
     enabled = _collection_enabled_now()
     if enabled is not None:
         return enabled
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     try:
-        (get_hermes_home() / "config.yaml").stat()  # config-reader: ok — bare interpreter has no config stack; presence probe only
+        (get_moor_home() / "config.yaml").stat()  # config-reader: ok — bare interpreter has no config stack; presence probe only
     except FileNotFoundError:
         return False
     except OSError:
@@ -816,13 +816,13 @@ def _bare_collection_enabled() -> Optional[bool]:
 
 
 def _park_metric_receipt(data: dict[str, Any], enabled: Optional[bool]) -> None:
-    """Keep the bounded fields for the next Hermes start (stdlib only): ``report_pending_updates``
+    """Keep the bounded fields for the next Moor start (stdlib only): ``report_pending_updates``
     records them when collection is on, ``begin_process`` purges them when it is off. Collection
     known off: park nothing and purge what an earlier run parked."""
-    from hermes_constants import get_hermes_home
-    from hermes_cli.runtime_state import _atomic_bytes
+    from moor_constants import get_moor_home
+    from moor_cli.runtime_state import _atomic_bytes
 
-    pending = get_hermes_home() / "telemetry" / "shared_metrics" / "pending_updates"  # = PENDING_DIRNAME
+    pending = get_moor_home() / "telemetry" / "shared_metrics" / "pending_updates"  # = PENDING_DIRNAME
     if enabled is False:
         import shutil
 
@@ -833,7 +833,7 @@ def _park_metric_receipt(data: dict[str, Any], enabled: Optional[bool]) -> None:
 
 
 def _publish_shared_metrics(data: dict[str, Any]) -> None:
-    """hermes.update.run/stage from this FINAL receipt; must never fail or slow the update.
+    """moor.update.run/stage from this FINAL receipt; must never fail or slow the update.
 
     Rows are emitted only by an interpreter that can read consent with the real config reader.
     Any other interpreter parks the bounded fields instead, and the next normal start applies the
@@ -850,7 +850,7 @@ def _publish_shared_metrics(data: dict[str, Any]) -> None:
             # it can neither read consent nor emit. Park, unless consent is knowably off.
             _park_metric_receipt(data, _bare_collection_enabled())
             return
-        from hermes_cli.observability.shared_metrics_update import record_update_receipt
+        from moor_cli.observability.shared_metrics_update import record_update_receipt
 
         record_update_receipt(data)
 
@@ -926,7 +926,7 @@ def finalize_interrupted_update_receipt(stop_reason: str, *, exit_code: int = 13
     along (the completion child persisted stages this process never saw).
     """
     print("⚠ Interrupted after the code was updated: the new code is in place; its remaining steps are owed "
-          "and the next launch or `hermes update` finishes them.", flush=True)
+          "and the next launch or `moor update` finishes them.", flush=True)
     if _current.get() is None:
         return None
     closed = resume_run_record()
@@ -1294,7 +1294,7 @@ def print_fleet_version_matrix(fleet: list[dict[str, Any]]) -> bool:
     if RESTART_PENDING_STATE in states:
         print()
         print("  ℹ A restart-pending gateway has not yet been verified on the new code;")
-        print("    check after this update exits with `hermes gateway status`.")
+        print("    check after this update exits with `moor gateway status`.")
     stale_or_down = sum(1 for entry in fleet if entry.get("state") in ("stale", "down"))
     if stale_or_down:
         print()
@@ -1307,6 +1307,6 @@ def print_fleet_version_matrix(fleet: list[dict[str, Any]]) -> bool:
         print()
         print(
             f"⚠ Gateway restart still owed: {stale_or_down} gateway(s) still running the old code (or stopped).")
-        print("  Run `hermes gateway restart` (or `hermes -p <profile> gateway restart` for a named")
-        print("  profile), then `hermes gateway status` to confirm.")
+        print("  Run `moor gateway restart` (or `moor -p <profile> gateway restart` for a named")
+        print("  profile), then `moor gateway status` to confirm.")
     return stale_or_down > 0

@@ -9,8 +9,8 @@ different provider depending on the network, and disagreed with the credential r
 
 import pytest
 
-from hermes_cli.auth import resolve_provider
-from hermes_cli.providers import resolve_provider_full
+from moor_cli.auth import resolve_provider
+from moor_cli.providers import resolve_provider_full
 
 
 def _entry(key: str, api: str) -> dict:
@@ -67,14 +67,14 @@ def home_with_meta_plugin(tmp_path, monkeypatch):
     import sys
 
     import providers
-    from hermes_cli import auth_plugin_providers as app
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_cli import auth_plugin_providers as app
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     plugin = tmp_path / "plugins" / "model-providers" / "my-meta"
     plugin.mkdir(parents=True)
     (plugin / "__init__.py").write_text(_HOME_PLUGIN, encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(providers, "_REGISTRY", dict(providers._REGISTRY))
     monkeypatch.setattr(providers, "_ALIASES", dict(providers._ALIASES))
     monkeypatch.setattr(providers, "_PROVIDER_LIST_CACHE", None)
@@ -82,12 +82,12 @@ def home_with_meta_plugin(tmp_path, monkeypatch):
     monkeypatch.setattr(providers, "_PLUGIN_DIR_STAMP_TTL_SECONDS", 0.0)
     monkeypatch.setattr(app, "PLUGIN_MIRRORED_PROVIDERS", set(app.PLUGIN_MIRRORED_PROVIDERS))
     rows = list(dict.items(PROVIDER_REGISTRY))
-    token = set_hermes_home_override(tmp_path)
+    token = set_moor_home_override(tmp_path)
     yield
-    reset_hermes_home_override(token)
+    reset_moor_home_override(token)
     PROVIDER_REGISTRY.clear()
     PROVIDER_REGISTRY.update(rows)
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_moor_user_provider")]:
         del sys.modules[mod]
 
 

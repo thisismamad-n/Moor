@@ -6,8 +6,8 @@ from moor_cli.proxy.adapters.base import UpstreamAdapter
 from moor_cli.proxy.adapters.moor_portal import MoorPortalAdapter
 from moor_cli.proxy.adapters.xai import XAIGrokAdapter
 
-# Keyed by the ``hermes proxy start --provider <name>`` value.
-ADAPTERS: dict[str, type[UpstreamAdapter]] = {"nous": NousPortalAdapter, "xai": XAIGrokAdapter}
+# Keyed by the ``moor proxy start --provider <name>`` value.
+ADAPTERS: dict[str, type[UpstreamAdapter]] = {"moor": MoorPortalAdapter, "xai": XAIGrokAdapter}
 
 
 def get_adapter(name: str) -> UpstreamAdapter:

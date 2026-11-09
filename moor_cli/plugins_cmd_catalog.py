@@ -18,7 +18,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from hermes_cli.plugin_catalog import (
+from moor_cli.plugin_catalog import (
     CATALOG_TIERS, PluginCatalogEntry, RemovedEntry, cached_removed_entries, entry_capability_summary, filter_entries,
     find_removed, get_live_catalog_entry, load_catalog_live, match_removed, resolved_removed_entries,
     _NAME_RE, _normalize_repo,
@@ -48,7 +48,7 @@ def raise_if_removed(*candidates: str) -> None:
             if removed.date:
                 detail += f" (removed {removed.date})"
             raise PluginOperationError(
-                f"Plugin '{removed.name}' was removed from the Hermes plugin catalog and is blocked from "
+                f"Plugin '{removed.name}' was removed from the Moor plugin catalog and is blocked from "
                 f"installation: {detail}", failure_class="removed_from_catalog")
 
 
@@ -139,7 +139,7 @@ def _adopt_legacy_sidecar(plugin_dir: Path, record: dict) -> Optional[dict]:
     return _write_catalog_block(plugin_dir, record, block)
 
 
-# Archived Nous handoff repos of providers that left core -> the catalog entry that superseded them: a URL
+# Archived Moor handoff repos of providers that left core -> the catalog entry that superseded them: a URL
 # install of one is adopted as that entry, so `update` re-pins it instead of pulling the archive forever.
 _HANDOFF_REPOS = {"github.com/nousresearch/hermes-plugin-holographic": "holographic"}
 
@@ -204,14 +204,14 @@ def catalog_install_record(plugin_dir) -> Optional[dict]:
 
 
 LOGIN_BACKEND_TIERS = frozenset({"official", "verified"})
-LOGIN_BACKEND_RULE = ("password-manager login backends are accepted only from plugins bundled with Hermes or "
-                      "installed from the Hermes plugin catalog at tier verified or official (published by the "
-                      "password-manager vendor itself or by Nous)")
-_NON_CATALOG_SOURCES = {"project": "a project .hermes/plugins directory", "entrypoint": "a pip entry point"}
+LOGIN_BACKEND_RULE = ("password-manager login backends are accepted only from plugins bundled with Moor or "
+                      "installed from the Moor plugin catalog at tier verified or official (published by the "
+                      "password-manager vendor itself or by Moor)")
+_NON_CATALOG_SOURCES = {"project": "a project .moor/plugins directory", "entrypoint": "a pip entry point"}
 
 
 BROWSER_PAGE_BACKEND_RULE = ("browser page backends (which carry browser_vault fill scripts) are accepted only from "
-                             "plugins bundled with Hermes or installed from the Hermes plugin catalog at tier "
+                             "plugins bundled with Moor or installed from the Moor plugin catalog at tier "
                              "verified or official")
 
 
@@ -225,8 +225,8 @@ def login_backend_provenance_error(manifest, rule: str = LOGIN_BACKEND_RULE) -> 
     """Why *manifest*'s plugin may not register a login backend, or "" when it may.
 
     Read from the installer-owned ``.install-metadata.json`` record of the CURRENT home's plugins dir, never
-    from the tree (a repo can commit a ``.hermes-catalog.json``). No config key relaxes it. This decides
-    which plugins Hermes offers the seam to; code already running in-process is not sandboxed by it."""
+    from the tree (a repo can commit a ``.moor-catalog.json``). No config key relaxes it. This decides
+    which plugins Moor offers the seam to; code already running in-process is not sandboxed by it."""
     if manifest.source == "bundled":
         return ""
     if manifest.source in _NON_CATALOG_SOURCES:
@@ -234,7 +234,7 @@ def login_backend_provenance_error(manifest, rule: str = LOGIN_BACKEND_RULE) -> 
     record = _install_record(Path(manifest.path)) if manifest.source == "user" and manifest.path else None
     block = (record or {}).get("catalog")
     if not isinstance(block, dict) or not block.get("name"):
-        return (f"{rule}; this plugin was not installed from the Hermes plugin catalog "
+        return (f"{rule}; this plugin was not installed from the Moor plugin catalog "
                 "(a local directory or Git URL install)")
     if record.get("allow_removed"):
         return f"{rule}; this plugin was installed with --allow-removed"
@@ -293,26 +293,26 @@ def _refuse_unsupported_catalog_platform(entry: PluginCatalogEntry) -> None:
         )
 
 
-def catalog_hermes_error(entry: PluginCatalogEntry) -> Optional[str]:
-    """``<name> needs Hermes <spec>; this is <version>.`` when the entry's ``requires_hermes`` rejects the
-    running Hermes, else ``None``. The verdict IS the plugin.yaml gate's
-    (:func:`~hermes_cli.plugins_manifest.requires_hermes_error`): same version source, same comparison, so
+def catalog_moor_error(entry: PluginCatalogEntry) -> Optional[str]:
+    """``<name> needs Moor <spec>; this is <version>.`` when the entry's ``requires_moor`` rejects the
+    running Moor, else ``None``. The verdict IS the plugin.yaml gate's
+    (:func:`~moor_cli.plugins_manifest.requires_moor_error`): same version source, same comparison, so
     a dev checkout or canary build is judged the same by both, and an unknown version never blocks."""
-    from hermes_cli.plugins_manifest import requires_hermes_error, running_hermes_version
-    if not requires_hermes_error({"requires_hermes": entry.requires_hermes}):
+    from moor_cli.plugins_manifest import requires_moor_error, running_moor_version
+    if not requires_moor_error({"requires_moor": entry.requires_moor}):
         return None
-    return f"{entry.name} needs Hermes {entry.requires_hermes}; this is {running_hermes_version()}."
+    return f"{entry.name} needs Moor {entry.requires_moor}; this is {running_moor_version()}."
 
 
 def refuse_incompatible_catalog_entry(entry: PluginCatalogEntry) -> None:
     """``PluginOperationError`` when the catalog says *entry* cannot run here: a platform it does not list,
-    or a ``requires_hermes`` the running version fails. Every install by catalog name passes through here."""
-    from hermes_cli.config import recommended_update_command
-    from hermes_cli.plugins_cmd import PluginOperationError
+    or a ``requires_moor`` the running version fails. Every install by catalog name passes through here."""
+    from moor_cli.config import recommended_update_command
+    from moor_cli.plugins_cmd import PluginOperationError
     _refuse_unsupported_catalog_platform(entry)
-    reason = catalog_hermes_error(entry)
+    reason = catalog_moor_error(entry)
     if reason:
-        raise PluginOperationError(f"{reason} Update Hermes (`{recommended_update_command()}`) and install again.",
+        raise PluginOperationError(f"{reason} Update Moor (`{recommended_update_command()}`) and install again.",
                                    failure_class="incompatible")
 
 
@@ -324,7 +324,7 @@ def install_catalog_entry(entry: PluginCatalogEntry, *, force: bool, ref: Option
     install-metadata record at the sha ACTUALLY checked out (a ``--ref`` install is not at the reviewed
     pin, so ``update_available`` must say so). *inspected_sha*: the commit an install dialog showed; the
     checkout must be that commit. Returns the core's ``(target, manifest, installed_name)``."""
-    from hermes_cli.plugins_cmd import _install_plugin_core
+    from moor_cli.plugins_cmd import _install_plugin_core
     if not allow_removed:
         raise_if_removed(entry.name, entry.repo)
     refuse_incompatible_catalog_entry(entry)
@@ -400,7 +400,7 @@ def _revision_owned_without_git(rel: Path) -> bool:
 def _local_changes(target: Path) -> tuple[Optional[list[str]], list[str]]:
     """``(untracked_or_ignored, modified_tracked)`` in a git checkout. The first item is ``None``
     when git cannot classify the installed tree (notably subdirectory installs, which carry no ``.git``)."""
-    from hermes_cli.plugins_cmd import PluginOperationError, _resolve_git_executable, _run_plugin_git
+    from moor_cli.plugins_cmd import PluginOperationError, _resolve_git_executable, _run_plugin_git
     git_exe = _resolve_git_executable()
     if not (target / ".git").exists():
         return None, []
@@ -448,7 +448,7 @@ def _carry_user_files(old: Path, new: Path, local: Optional[list[str]]) -> list[
     install artefacts: they are neither carried nor inspected, so links inside them never stop an update.
     Returns the carried paths (POSIX, relative to the tree) so a later scan block can name them.
     """
-    from hermes_cli.plugins_cmd import PluginOperationError
+    from moor_cli.plugins_cmd import PluginOperationError
     from tools.plugin_guard import EXCLUDED_DIRS
 
     keep = {Path(rel) for rel in local or ()}
@@ -571,8 +571,8 @@ _SURFACE_LABELS = {"capabilities": "host capabilities", "tools": "tools", "hooks
 
 def plugin_surface(manifest: dict, tree: Path) -> dict[str, set]:
     """What an installed tree exposes: declared host capabilities, tools, hooks, Python deps, Desktop half."""
-    from hermes_cli.plugin_oauth import oauth_surface
-    from hermes_cli.plugins_cmd import _declared_capabilities_from_manifest
+    from moor_cli.plugin_oauth import oauth_surface
+    from moor_cli.plugins_cmd import _declared_capabilities_from_manifest
     manifest = manifest or {}
 
     def _list(key: str, *alts: str) -> set:
@@ -593,7 +593,7 @@ def plugin_surface(manifest: dict, tree: Path) -> dict[str, set]:
 
 def _desktop_surface(tree: Path) -> set:
     """The desktop entry the tree ships, by the installers' own layout rule (root or ``desktop/``)."""
-    from hermes_cli.desktop_plugin_halves import desktop_source
+    from moor_cli.desktop_plugin_halves import desktop_source
     source = desktop_source(tree)
     return {(source / "plugin.js").relative_to(tree).as_posix()} if source else set()
 
@@ -668,14 +668,14 @@ def repin_catalog_plugin(
     refuse_if_installed_removed(catalog_name, target)
     if at_catalog_pin(sidecar, entry.sha):
         return RepinResult(entry.sha, False, target.name, [])
-    held = catalog_hermes_error(entry)
+    held = catalog_moor_error(entry)
     if held:
-        # The pin moved past what this Hermes can run: keep the installed tree, name the way forward.
-        from hermes_cli.config import recommended_update_command
+        # The pin moved past what this Moor can run: keep the installed tree, name the way forward.
+        from moor_cli.config import recommended_update_command
         raise PluginOperationError(
             f"Update of {catalog_name} to {entry.sha[:8]} not applied: {held} {catalog_name} stays at "
             f"{str(sidecar.get('sha') or '')[:8] or 'its installed version'}; the update is available after "
-            f"you update Hermes (`{recommended_update_command()}`).", failure_class="incompatible")
+            f"you update Moor (`{recommended_update_command()}`).", failure_class="incompatible")
 
     local, modified = _local_changes(target)
     old_sha8 = str(sidecar.get("sha") or "old")[:8]
@@ -699,7 +699,7 @@ def repin_catalog_plugin(
     # Outside the plugins dir: the discovery scanners recurse into every subdirectory there.
     backup = _plugins_dir().parent / "plugins-backup" / f"{target.name}-{old_sha8}"
     _stash_local_files(target, modified, backup)
-    from hermes_cli.plugins_transaction import update_plugin
+    from moor_cli.plugins_transaction import update_plugin
 
     update_plugin(
         target,
@@ -750,7 +750,7 @@ def repin_catalog_plugin(
 def cmd_update_catalog(name: str, target: Path, sidecar: dict, console, *, interactive: bool = True) -> bool:
     """Re-pin a catalog install, printing progress; True when the pin moved. Refusals raise
     :class:`RepinConsentRequired` / ``PluginOperationError`` with nothing changed (the caller reports them)."""
-    from hermes_cli.plugins_cmd import (
+    from moor_cli.plugins_cmd import (
         _ask_yes, _declared_capabilities_from_manifest, _is_tty, _read_manifest, _run_capability_consent)
     console.print(f"[dim]Checking catalog pin for {name}...[/dim]")
 
@@ -782,7 +782,7 @@ def cmd_update_catalog(name: str, target: Path, sidecar: dict, console, *, inter
                 else:
                     console.print(
                         f"[yellow]Plugin {result.installed_name} has new capabilities; review them with "
-                        f"`hermes plugins capabilities {result.installed_name}`.[/yellow]")
+                        f"`moor plugins capabilities {result.installed_name}`.[/yellow]")
     return result.changed
 
 
@@ -805,15 +805,15 @@ def pin_label(entry: PluginCatalogEntry) -> str:
 
 
 def _render_entries(entries: list[PluginCatalogEntry], console) -> None:
-    from hermes_cli.plugins_cmd import _table
+    from moor_cli.plugins_cmd import _table
     table = _table(((("Name", "bold")), ("Category", None), ("Tier", None), ("Description", None),
-                    ("Pinned", "dim"), ("Capabilities", "dim")), title="Hermes Plugin Catalog (curated)")
+                    ("Pinned", "dim"), ("Capabilities", "dim")), title="Moor Plugin Catalog (curated)")
     rank = {name: i for i, name in enumerate(CATALOG_TIERS)}
     style = {"official": "cyan", "verified": "green", "community": "magenta"}
     for e in sorted(entries, key=lambda e: (e.category, rank.get(e.tier, len(rank)), e.name)):
         tier = f"[{style.get(e.tier, 'magenta')}]{e.tier}[/{style.get(e.tier, 'magenta')}]"
         desc = e.description if len(e.description) <= 60 else e.description[:57] + "..."
-        name = e.name + (f"\n[yellow]needs Hermes {e.requires_hermes}[/yellow]" if catalog_hermes_error(e) else "")
+        name = e.name + (f"\n[yellow]needs Moor {e.requires_moor}[/yellow]" if catalog_moor_error(e) else "")
         table.add_row(name, e.category, tier, desc, pin_label(e), _capability_counts(e))
     console.print()
     console.print(table)
@@ -827,7 +827,7 @@ def cmd_search(term: str = "", *, json_output: bool = False) -> None:
     matches = filter_entries(load_catalog_live(), term)
     if json_output:
         print(json.dumps({"query": term, "results": [
-            {**e.to_dict(), "needs_newer_hermes": catalog_hermes_error(e)} for e in matches]}, indent=2))
+            {**e.to_dict(), "needs_newer_moor": catalog_moor_error(e)} for e in matches]}, indent=2))
         return
     console = _console()
     if not matches:
@@ -868,20 +868,20 @@ def cmd_info(name: str) -> None:
         console.print(f"[red bold]✗ REMOVED from catalog: {removed.reason or 'no reason recorded'}"
                       f"{f' ({removed.date})' if removed.date else ''}[/red bold]")
         console.print()
-    held = catalog_hermes_error(entry)
+    held = catalog_moor_error(entry)
     if held:
-        from hermes_cli.config import recommended_update_command
-        console.print(f"[yellow]⚠ {held} Update Hermes (`{recommended_update_command()}`) to install it.[/yellow]")
+        from moor_cli.config import recommended_update_command
+        console.print(f"[yellow]⚠ {held} Update Moor (`{recommended_update_command()}`) to install it.[/yellow]")
         console.print()
-    console.print(f"[dim]Install:[/dim]     hermes plugins install {entry.name}")
+    console.print(f"[dim]Install:[/dim]     moor plugins install {entry.name}")
     console.print()
 
 
 def cmd_validate(path: str, as_json: bool = False, install_deps: bool = False) -> None:
     """Catalog-admission validation of a plugin directory (the CI gate); exits 0/1. *install_deps*
     installs the declared Python deps first so the capability probe imports what an install would."""
-    from hermes_cli.plugin_validate import validate_plugin_dir
-    from hermes_cli.plugins_cmd import _console
+    from moor_cli.plugin_validate import validate_plugin_dir
+    from moor_cli.plugins_cmd import _console
     probe = None
     if install_deps:
         import pm
@@ -909,7 +909,7 @@ def cmd_validate(path: str, as_json: bool = False, install_deps: bool = False) -
     for warning in report.warnings:
         console.print(f"[yellow]⚠ {warning}[/yellow]")
     if report.isolation:
-        from hermes_cli.plugin_isolation_audit import IsolationReport
+        from moor_cli.plugin_isolation_audit import IsolationReport
         iso = IsolationReport(report.isolation["verdict"], report.isolation["reasons"], report.isolation["notes"])
         console.print(f"{'[green]◆[/green]' if iso.host_ready else '[dim]◇[/dim]'} Isolation [dim]— {iso.summary()}[/dim]")
         for note in iso.notes:

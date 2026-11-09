@@ -288,9 +288,9 @@ class TestCaptureLogSnapshotRedaction:
         assert _REDACT_FIXTURE_TOKEN not in (snaps["agent"].full_text or "")
 
     def test_redacts_complete_log_lines_before_applying_byte_limits(
-        self, hermes_home_with_secret
+        self, moor_home_with_secret
     ):
-        from hermes_cli.debug import _capture_log_snapshot
+        from moor_cli.debug import _capture_log_snapshot
 
         max_bytes = 512
         raw_window = 8192
@@ -311,7 +311,7 @@ class TestCaptureLogSnapshotRedaction:
             start = boundary - len("accessToken=")
             payload[start:start + len(marker)] = marker
 
-        (hermes_home_with_secret / "logs" / "agent.log").write_bytes(payload)
+        (moor_home_with_secret / "logs" / "agent.log").write_bytes(payload)
 
         snap = _capture_log_snapshot("agent", tail_lines=1, max_bytes=max_bytes)
 
@@ -448,13 +448,13 @@ class TestRunDebugShareRedaction:
                 "raw token leaked into upload-bound content"
             )
 
-    def test_fallback_provider_key_never_reaches_upload_bound_content(self, hermes_home_with_secret):
-        """``hermes dump`` quotes ``fallback_providers`` from config.yaml; neither the CLI share
+    def test_fallback_provider_key_never_reaches_upload_bound_content(self, moor_home_with_secret):
+        """``moor dump`` quotes ``fallback_providers`` from config.yaml; neither the CLI share
         bundle nor the gateway /debug report may carry a fallback entry's api_key."""
-        from hermes_cli.debug import _capture_dump, collect_debug_report, collect_share_bundle
+        from moor_cli.debug import _capture_dump, collect_debug_report, collect_share_bundle
 
         fallback_key = "fbk-opaque-0123456789abcdefghij"
-        (hermes_home_with_secret / "config.yaml").write_text(
+        (moor_home_with_secret / "config.yaml").write_text(
             "fallback_providers:\n"
             "  - provider: custom\n"
             "    model: backup-model\n"
@@ -472,18 +472,18 @@ class TestRunDebugShareRedaction:
         ("'opaque***Fallback0123456789'", "opaque***Fallback0123456789"),  # looks pre-masked
         ("{value: nestedOpaque0123456789abcdef}", "nestedOpaque0123456789abcdef"),
     ])
-    def test_fallback_api_key_masked_whatever_its_yaml_shape(self, hermes_home_with_secret, yaml_value, secret):
+    def test_fallback_api_key_masked_whatever_its_yaml_shape(self, moor_home_with_secret, yaml_value, secret):
         """The runtime ``str()``s any ``api_key`` value (fallback_config.resolve_entry_api_key), so the
         dump masks the field itself rather than relying on text redaction to recognise the value."""
-        from hermes_cli.debug import _capture_dump, collect_debug_report, collect_share_bundle
+        from moor_cli.debug import _capture_dump, collect_debug_report, collect_share_bundle
 
-        (hermes_home_with_secret / "config.yaml").write_text(
+        (moor_home_with_secret / "config.yaml").write_text(
             "fallback_providers:\n"
             "  - provider: custom\n"
             "    model: backup-model\n"
             f"    api_key: {yaml_value}\n", encoding="utf-8")
 
-        texts = [_capture_dump(redact=False),  # `hermes dump` stdout, as printed
+        texts = [_capture_dump(redact=False),  # `moor dump` stdout, as printed
                  *collect_share_bundle(log_lines=20).values(),
                  collect_debug_report(log_lines=20, dump_text=_capture_dump())]
 
@@ -497,12 +497,12 @@ class TestRunDebugShareRedaction:
         ("password", "98127364509812736450", "98127364509812736450"),
         ("clientApiKey", "'opaque***CamelKey0123456789'", "opaque***CamelKey0123456789"),
     ])
-    def test_fallback_secret_fields_masked_by_repo_policy(self, hermes_home_with_secret, field, yaml_value, secret):
+    def test_fallback_secret_fields_masked_by_repo_policy(self, moor_home_with_secret, field, yaml_value, secret):
         """Every field ``agent.redact`` treats as a credential is masked by field, not only ``api_key``;
         env-var names and token budgets stay readable."""
-        from hermes_cli.debug import _capture_dump, collect_debug_report, run_debug_share
+        from moor_cli.debug import _capture_dump, collect_debug_report, run_debug_share
 
-        (hermes_home_with_secret / "config.yaml").write_text(
+        (moor_home_with_secret / "config.yaml").write_text(
             "fallback_providers:\n"
             "  - provider: custom\n"
             "    model: backup-model\n"
@@ -512,17 +512,17 @@ class TestRunDebugShareRedaction:
             f"    {field}: {yaml_value}\n", encoding="utf-8")
 
         uploaded: list[str] = []
-        args = MagicMock(lines=20, expire=1, local=False, nous=False, no_redact=False)
-        with patch("hermes_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
-             patch("hermes_cli.debug._schedule_auto_delete"), \
-             patch("hermes_cli.debug.upload_to_pastebin",
+        args = MagicMock(lines=20, expire=1, local=False, moor=False, no_redact=False)
+        with patch("moor_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
+             patch("moor_cli.debug._schedule_auto_delete"), \
+             patch("moor_cli.debug.upload_to_pastebin",
                    side_effect=lambda content, expiry_days=1: uploaded.append(content) or "https://paste.rs/x"):
             run_debug_share(args)  # what actually reaches the paste service
 
         assert any("backup-model" in text for text in uploaded)  # the dump really reached the sink
         assert not [text for text in uploaded if secret in text]  # checked first: the sink alone catches a leak
 
-        texts = [_capture_dump(redact=False),  # `hermes dump` stdout, as printed
+        texts = [_capture_dump(redact=False),  # `moor dump` stdout, as printed
                  collect_debug_report(log_lines=20, dump_text=_capture_dump())]
 
         assert all(s in texts[0] for s in ("backup-model", "BACKUP_KEY_ENV_NAME", "BACKUP_API_KEY_ENV_NAME", "4321"))
@@ -536,20 +536,20 @@ class TestRunDebugShareRedaction:
         "https://backup.example/v1?sv=2024-11-04&sig={s}",
         "https://backup.example/v1#access_token={s}&view=public",
     ])
-    def test_fallback_base_url_credential_never_reaches_upload_bound_content(self, hermes_home_with_secret, base_url):
+    def test_fallback_base_url_credential_never_reaches_upload_bound_content(self, moor_home_with_secret, base_url):
         """A fallback ``base_url`` can carry its credential in the URL (userinfo, query, fragment). The
-        dump is config made to be pasted, so ``hermes dump`` itself and every upload of it get strict
+        dump is config made to be pasted, so ``moor dump`` itself and every upload of it get strict
         URL-credential redaction, not the log policy."""
-        from hermes_cli.debug import _capture_dump, collect_debug_report, collect_share_bundle
+        from moor_cli.debug import _capture_dump, collect_debug_report, collect_share_bundle
 
         secret = "urlCredOpaque0123456789abcdef"
-        (hermes_home_with_secret / "config.yaml").write_text(
+        (moor_home_with_secret / "config.yaml").write_text(
             "fallback_providers:\n"
             "  - provider: custom\n"
             "    model: backup-model\n"
             f"    base_url: '{base_url.format(s=secret)}'\n", encoding="utf-8")
 
-        texts = [_capture_dump(redact=False),  # `hermes dump` stdout, as printed
+        texts = [_capture_dump(redact=False),  # `moor dump` stdout, as printed
                  *collect_share_bundle(log_lines=20).values(),
                  collect_debug_report(log_lines=20, dump_text=_capture_dump())]
 
@@ -558,7 +558,7 @@ class TestRunDebugShareRedaction:
 
     def test_capture_dump_is_independent_strict_redaction_boundary(self):
         """A future dump formatting mistake cannot leak through debug upload paths."""
-        from hermes_cli.debug import _capture_dump
+        from moor_cli.debug import _capture_dump
 
         raw_key = "opaqueBoundaryKeyABC123456789"
         raw_password = "boundaryPasswordABC123456789"
@@ -571,7 +571,7 @@ class TestRunDebugShareRedaction:
                 + "@example.test/v1?X-Amz-Signature=" + raw_signature + "'}"
             )
 
-        with patch("hermes_cli.dump.run_dump", side_effect=leaky_dump):
+        with patch("moor_cli.dump.run_dump", side_effect=leaky_dump):
             safe = _capture_dump()
             raw = _capture_dump(redact=False)
 
@@ -812,12 +812,12 @@ class TestSweepExpiredPastes:
         assert remaining == 1
         assert len(_load_pending()) == 1
 
-    def test_share_scheduled_during_sweep_deletes_is_kept(self, hermes_home):
+    def test_share_scheduled_during_sweep_deletes_is_kept(self, moor_home):
         """A paste scheduled while the sweep waits on network DELETEs must survive its save."""
         import threading
         import time
 
-        from hermes_cli.debug import _load_pending, _save_pending, _schedule_auto_delete, _sweep_expired_pastes
+        from moor_cli.debug import _load_pending, _save_pending, _schedule_auto_delete, _sweep_expired_pastes
 
         _save_pending([{"url": "https://paste.rs/old", "expire_at": time.time() - 100}])
         in_delete = threading.Event()
@@ -829,7 +829,7 @@ class TestSweepExpiredPastes:
             return True
 
         result = []
-        with patch("hermes_cli.debug.delete_paste", side_effect=blocking_delete):
+        with patch("moor_cli.debug.delete_paste", side_effect=blocking_delete):
             sweeper = threading.Thread(target=lambda: result.append(_sweep_expired_pastes()))
             sweeper.start()
             assert in_delete.wait(10)
@@ -930,19 +930,19 @@ class TestCollectShareBundle:
         # With redaction it must be scrubbed everywhere.
         assert secret not in "\n".join(redacted.values())
 
-    def test_redaction_masks_url_credentials(self, hermes_home):
+    def test_redaction_masks_url_credentials(self, moor_home):
         """Log-time redaction leaves ``?token=`` and ``user:pass@`` in URLs for tool flows;
         the upload must not carry them."""
-        from hermes_cli.debug import collect_share_bundle
+        from moor_cli.debug import collect_share_bundle
 
         query_token = "Q7fK2mZp9RtX4vLb8NcW1yHs"
         password = "Pw7Kq2Lm9Xs4Vb"
-        (hermes_home / "logs" / "agent.log").write_text(
+        (moor_home / "logs" / "agent.log").write_text(
             "2026-09-29 01:00:00 INFO plugins.web.firecrawl.provider: Firecrawl scraping: "
             f"https://files.example.com/export.csv?token={query_token}&page=2\n"
             f"2026-09-29 01:00:01 INFO agent: using proxy http://alice:{password}@10.0.0.5:3128\n"
         )
-        with patch("hermes_cli.dump.run_dump"):
+        with patch("moor_cli.dump.run_dump"):
             bundle = "\n".join(collect_share_bundle(log_lines=50, redact=True).values())
 
         assert query_token not in bundle

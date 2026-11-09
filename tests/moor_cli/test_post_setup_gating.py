@@ -83,7 +83,7 @@ class TestBrowserBackendPromptThroughLoader:
     """The browser gate must hold through the real config loader.
 
     `load_config()` merges ``DEFAULT_CONFIG``; a selection key the defaults filled in would suppress the
-    picker everywhere. These pin the behaviour against the merged dict a real ``hermes tools`` run feeds
+    picker everywhere. These pin the behaviour against the merged dict a real ``moor tools`` run feeds
     the gate.
     """
 
@@ -100,9 +100,9 @@ class TestBrowserBackendPromptThroughLoader:
         assert tools_config._toolset_needs_configuration_prompt("browser", config) is True
 
     def test_explicit_cloud_provider_skips_prompt(self, monkeypatch, tmp_path):
-        from hermes_cli import tools_config
-        from hermes_cli.config import load_config
+        from moor_cli import tools_config
+        from moor_cli.config import load_config
 
-        monkeypatch.setenv("HERMES_HOME", str(self._home(tmp_path, "browser:\n  cloud_provider: browser-use\n")))
+        monkeypatch.setenv("MOOR_HOME", str(self._home(tmp_path, "browser:\n  cloud_provider: browser-use\n")))
         config = load_config()
         assert tools_config._toolset_needs_configuration_prompt("browser", config) is False

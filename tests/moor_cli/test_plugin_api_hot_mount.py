@@ -5,14 +5,14 @@ import json
 
 import pytest
 
-from hermes_cli import web_server
+from moor_cli import web_server
 
 
 @pytest.fixture
-def client(_isolate_hermes_home):
+def client(_isolate_moor_home):
     from starlette.testclient import TestClient
 
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
 
     original_routes = list(app.router.routes)
     web_server._dashboard_plugins_cache = None
@@ -33,23 +33,23 @@ def _install_late_plugin(home, *, enabled: bool) -> None:
         "from fastapi import APIRouter\nrouter = APIRouter()\n"
         "@router.get('/ping')\nasync def ping():\n    return {'pong': True}\n"
     )
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     cfg = load_config()
     cfg.setdefault("plugins", {})["enabled"] = ["late-probe"] if enabled else []
     save_config(cfg)
 
 
 def test_plugin_enabled_after_startup_serves_without_restart(client):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     assert client.get("/api/plugins/late-probe/ping").status_code == 404
-    _install_late_plugin(get_hermes_home(), enabled=True)
+    _install_late_plugin(get_moor_home(), enabled=True)
 
     first = client.get("/api/plugins/late-probe/ping", follow_redirects=False)
     assert (first.status_code, first.json()) == (200, {"pong": True})
     assert client.get("/api/plugins/late-probe/missing").status_code == 404
 
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
     cfg = load_config()
     cfg["plugins"]["enabled"], cfg["plugins"]["disabled"] = [], ["late-probe"]
     save_config(cfg)
@@ -57,9 +57,9 @@ def test_plugin_enabled_after_startup_serves_without_restart(client):
 
 
 def test_installed_but_not_enabled_plugin_is_never_imported(client):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    _install_late_plugin(get_hermes_home(), enabled=False)
-    (get_hermes_home() / "plugins" / "late-probe" / "dashboard" / "plugin_api.py").write_text(
+    _install_late_plugin(get_moor_home(), enabled=False)
+    (get_moor_home() / "plugins" / "late-probe" / "dashboard" / "plugin_api.py").write_text(
         "raise SystemExit('imported a not-enabled plugin')\n")
     assert client.get("/api/plugins/late-probe/ping").status_code == 404

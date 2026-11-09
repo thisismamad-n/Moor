@@ -97,7 +97,7 @@ def sign_in_failure_lines(
     exc: BaseException, *, service_host: str = "portal.nousresearch.com", retry_command: str = "moor portal",
 ) -> list:
     """Lines to print when a device-code / browser sign-in fails for any non-timeout reason."""
-    from hermes_cli.observability.shared_metrics_setup import note_sign_in_failure
+    from moor_cli.observability.shared_metrics_setup import note_sign_in_failure
 
     note_sign_in_failure(exc)
     if isinstance(exc, SignInCopyError):
@@ -140,20 +140,20 @@ def provider_setup_failure_lines(exc: BaseException, *, retry_command: str = "mo
 def unknown_provider_hint(provider_name: str) -> str:
     """Hint for an ``Unknown provider`` error from the resolver: the install line of a provider that left
     core for a plugin, the replacement for a removed provider, else the config issues that cause it."""
-    from hermes_cli.left_core_migration import provider_install_hint
+    from moor_cli.left_core_migration import provider_install_hint
     if moved := provider_install_hint(provider_name):
         return moved
     if str(provider_name or "").strip().lower() in {"opencode-free", "free", "opencode_free"}:
         return ("OpenCode discontinued anonymous free-tier access outside its own client "
                 "(relay 403s FreeTierError), so the keyless 'opencode-free' provider was removed. "
                 "Switch to 'opencode-zen' (pay-as-you-go, OPENCODE_ZEN_API_KEY) or 'opencode-go' "
-                "($10/mo subscription, OPENCODE_GO_API_KEY) via 'hermes model'.")
+                "($10/mo subscription, OPENCODE_GO_API_KEY) via 'moor model'.")
     try:
-        from hermes_cli.config import validate_config_structure
+        from moor_cli.config import validate_config_structure
         issues = validate_config_structure()
         if not issues:
             return ""
-        lines = ["Config issue detected — run 'hermes doctor' for full diagnostics:"]
+        lines = ["Config issue detected — run 'moor doctor' for full diagnostics:"]
         for ci in issues:
             lines.append(f"  [{'ERROR' if ci.severity == 'error' else 'WARNING'}] {ci.message}")
             if ci.hint and ci.hint.splitlines()[0]:

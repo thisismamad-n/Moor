@@ -32,7 +32,7 @@ const { openBotCanonicalChat, onEvent } = vi.hoisted(() => ({
 
 const listeners: Array<(event: { payload?: unknown }) => void> = []
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { atom } = await import('nanostores')
 
   const stub: unknown = new Proxy(function stubbed() {}, {

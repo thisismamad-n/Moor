@@ -395,7 +395,7 @@ def test_suppress_platform_ver_console_stubs_syscmd_ver(monkeypatch):
 def test_gitlock_git_spawns_hide_console_window(monkeypatch, tmp_path):
     """gitlock read-only git probes never flash: stdout-lines queries, the
     cat-file batch pair, the rev-list repair probe and the tag fetch."""
-    from hermes_cli import gitlock
+    from moor_cli import gitlock
 
     captured = []
 
@@ -425,7 +425,7 @@ def test_gitlock_git_spawns_hide_console_window(monkeypatch, tmp_path):
 
 def test_gitlock_tasklist_probe_hides_console_window(monkeypatch):
     """The stale-lock tasklist guard flashes on its own under pythonw."""
-    from hermes_cli import gitlock
+    from moor_cli import gitlock
 
     captured = []
 
@@ -445,7 +445,7 @@ def test_gitlock_tasklist_probe_hides_console_window(monkeypatch):
 
 def test_gitlock_tag_fetch_hides_console_window(monkeypatch, tmp_path):
     """The full-commit-graph fetch (update pipeline) hides its window."""
-    from hermes_cli import gitlock
+    from moor_cli import gitlock
 
     captured = []
 
@@ -468,7 +468,7 @@ def test_gitlock_tag_fetch_hides_console_window(monkeypatch, tmp_path):
 
 def test_gateway_scheduled_task_state_hides_powershell_window(monkeypatch):
     """Task Scheduler COM probe spawns powershell.exe during backend startup."""
-    from hermes_cli import gateway
+    from moor_cli import gateway
 
     captured = []
 
@@ -481,7 +481,7 @@ def test_gateway_scheduled_task_state_hides_powershell_window(monkeypatch):
     monkeypatch.setattr(gateway.subprocess, "run", fake_run)
     monkeypatch.setattr(gateway.shutil, "which", lambda name: r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.EXE")
 
-    assert gateway._windows_scheduled_task_state("hermes-gateway") == "Ready"
+    assert gateway._windows_scheduled_task_state("moor-gateway") == "Ready"
     assert len(captured) == 1, captured
     cmd, kwargs = captured[0]
     assert cmd[0].lower().endswith("powershell.exe"), cmd
@@ -490,7 +490,7 @@ def test_gateway_scheduled_task_state_hides_powershell_window(monkeypatch):
 
 def test_update_git_run_hides_console_window(monkeypatch, tmp_path):
     """The central update git runner (26 call sites) hides its window."""
-    from hermes_cli import update_cmd
+    from moor_cli import update_cmd
 
     captured = []
 
@@ -512,7 +512,7 @@ def test_update_git_run_hides_console_window(monkeypatch, tmp_path):
 def test_no_prompt_git_kwargs_hide_console_window(monkeypatch):
     """Network git kwargs (fetch/pull behind them) carry the hide flags too,
     so the upstream-sync fetch/pull spawns never flash."""
-    from hermes_cli import update_cmd
+    from moor_cli import update_cmd
 
     _patch_hide_flags(monkeypatch)
     kwargs = update_cmd._no_prompt_git_kwargs()
@@ -522,7 +522,7 @@ def test_no_prompt_git_kwargs_hide_console_window(monkeypatch):
 
 def test_update_git_plumbing_spawns_hide_console_window(monkeypatch, tmp_path):
     """rev-parse label, fork-bomb probe and EOL-normalization git spawns."""
-    from hermes_cli import update_cmd_git
+    from moor_cli import update_cmd_git
 
     captured = []
 
@@ -549,7 +549,7 @@ def test_update_git_plumbing_spawns_hide_console_window(monkeypatch, tmp_path):
 def test_safe_directory_git_config_probes_hide_console_window(monkeypatch):
     """safe.directory replay (two git config children per internal git call)
     never flashes."""
-    from hermes_cli import _subprocess_compat
+    from moor_cli import _subprocess_compat
 
     captured = []
 
@@ -580,8 +580,8 @@ def test_safe_directory_git_config_probes_hide_console_window(monkeypatch):
 def test_cached_nvidia_gpu_query_hides_console_window_and_caches(monkeypatch):
     """One hidden nvidia-smi spawn serves the budget probe, the endpoint and
     the vendor detector within the TTL; the second caller must not spawn."""
-    from hermes_cli.local_runtime import bootstrap, hardware
-    from hermes_cli.web_routers import local_models
+    from moor_cli.local_runtime import bootstrap, hardware
+    from moor_cli.web_routers import local_models
 
     captured = []
 
@@ -609,7 +609,7 @@ def test_cached_nvidia_gpu_query_hides_console_window_and_caches(monkeypatch):
 
 def test_cached_nvidia_gpu_query_failure_is_cached(monkeypatch):
     """A missing/failed smi must not re-spawn per poll either."""
-    from hermes_cli.local_runtime import hardware
+    from moor_cli.local_runtime import hardware
 
     captured = []
 

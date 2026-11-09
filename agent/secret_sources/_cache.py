@@ -106,7 +106,7 @@ K = TypeVar("K")
 class DiskCache(Generic[K]):
     """Best-effort, profile-aware on-disk cache for fetched secret values.
 
-    One JSON object per backend at ``<hermes_home>/<basename>``::
+    One JSON object per backend at ``<moor_home>/<basename>``::
 
         {"key": "<serialized cache key>", "secrets": {...}, "fetched_at": 1.0}
 

@@ -34,8 +34,8 @@ _KNOWN_MANIFEST_FIELDS: set[str] = {
     "kind", "hooks", "label", "optional_env", "platforms", "external_dependencies",
     "pip_dependencies", "provides_browser_providers", "provides_web_providers",
     "manifest_version", "api_version", "requires_plugins", "python_dependencies", "config_schema",
-    "license", "homepage", "tags", "capabilities", "emits", "listens", "hermes", "depends",
-    "requires_hermes", "python_runtime", "provides_locales", "requires_auth", "oauth", "config_keys",
+    "license", "homepage", "tags", "capabilities", "emits", "listens", "moor", "depends",
+    "requires_moor", "python_runtime", "provides_locales", "requires_auth", "oauth", "config_keys",
 }
 
 # Highest manifest schema version this Moor understands.
@@ -414,8 +414,8 @@ class PluginManifest:
     # ``{endonym, rtl}`` from the mapping form of a ``provides_locales`` entry.
     provides_locales: list[str] = field(default_factory=list)
     locale_metadata: dict[str, dict[str, Any]] = field(default_factory=dict)
-    # Dotted paths in Hermes' own config sections the plugin reads (``memory.retaindb``), so
-    # ``hermes config get/set`` recognizes them while the plugin is active (hermes_cli/config_runtime_keys.py).
+    # Dotted paths in Moor' own config sections the plugin reads (``memory.retaindb``), so
+    # ``moor config get/set`` recognizes them while the plugin is active (moor_cli/config_runtime_keys.py).
     config_keys: list[str] = field(default_factory=list)
 
 
@@ -499,9 +499,9 @@ def version_satisfies(spec: str, current: str) -> bool:
     return True
 
 
-def requires_hermes_error(manifest: PluginManifest | Mapping[str, Any]) -> Optional[str]:
-    """Load-blocking reason when the manifest's ``requires_hermes`` rejects the running version."""
-    spec = manifest.get("requires_hermes", "") if isinstance(manifest, Mapping) else manifest.requires_hermes
+def requires_moor_error(manifest: PluginManifest | Mapping[str, Any]) -> Optional[str]:
+    """Load-blocking reason when the manifest's ``requires_moor`` rejects the running version."""
+    spec = manifest.get("requires_moor", "") if isinstance(manifest, Mapping) else manifest.requires_moor
     if not spec:
         return None
     current = running_moor_version()
@@ -512,7 +512,7 @@ def requires_hermes_error(manifest: PluginManifest | Mapping[str, Any]) -> Optio
 
 def portable_plugin_manifest(child: Path, source: str, prefix: str) -> PluginManifest:
     """Build the manifest for a portable Agent Plugin directory (``plugin.json``); diagnostics warn."""
-    from hermes_cli.agent_plugins import manifest_config_schema, manifest_hermes_extension, read_agent_plugin_manifest
+    from moor_cli.agent_plugins import manifest_config_schema, manifest_moor_extension, read_agent_plugin_manifest
     data, diagnostics = read_agent_plugin_manifest(child)
     for diagnostic in diagnostics:
         logger.warning("Agent Plugin '%s': %s", child, diagnostic.message)
@@ -522,7 +522,7 @@ def portable_plugin_manifest(child: Path, source: str, prefix: str) -> PluginMan
         author=_display_author(data.get("author", "")), source=source, path=str(child), key=key,
         portable=True, data_namespace=_portable_data_namespace(key),
         config_schema=_config_schema_entries(key, manifest_config_schema(data)),
-        config_keys=manifest_config_keys(manifest_hermes_extension(data), key),
+        config_keys=manifest_config_keys(manifest_moor_extension(data), key),
     )
 
 

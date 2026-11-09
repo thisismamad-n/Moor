@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli import auth
-from hermes_cli import auth_nous
-from hermes_cli.auth import (
-    NOUS_BILLING_MANAGE_SCOPE,
-    nous_token_has_billing_scope,
-    step_up_nous_billing_scope,
+from moor_cli import auth
+from moor_cli import auth_moor
+from moor_cli.auth import (
+    MOOR_BILLING_MANAGE_SCOPE,
+    moor_token_has_billing_scope,
+    step_up_moor_billing_scope,
 )
 
 
@@ -101,15 +101,15 @@ def test_step_up_requests_billing_scope_and_reuses_prior_urls(monkeypatch, _stub
 def test_step_up_drops_the_billing_token_cache(monkeypatch, _stub_persist):
     """The refused action is replayed right after the grant; a still-cached pre-grant token would 403 again
     (desktop showed "Remote Spending needs approval" straight after approving)."""
-    from hermes_cli import nous_billing
+    from moor_cli import moor_billing
     monkeypatch.setattr(auth, "get_provider_auth_state", lambda p: {"scope": "inference:invoke"})
     fake_login = lambda **kw: {"scope": "inference:invoke billing:manage", "access_token": "new"}
-    monkeypatch.setattr(auth, "_nous_device_code_login", fake_login)
-    monkeypatch.setattr(auth_nous, "_nous_device_code_login", fake_login)
-    nous_billing._token_cache["home"] = (0.0, "old-unscoped", "https://portal")
+    monkeypatch.setattr(auth, "_moor_device_code_login", fake_login)
+    monkeypatch.setattr(auth_moor, "_moor_device_code_login", fake_login)
+    moor_billing._token_cache["home"] = (0.0, "old-unscoped", "https://portal")
 
-    assert step_up_nous_billing_scope() is True
-    assert nous_billing._token_cache == {}
+    assert step_up_moor_billing_scope() is True
+    assert moor_billing._token_cache == {}
 
 
 # ---------------------------------------------------------------------------

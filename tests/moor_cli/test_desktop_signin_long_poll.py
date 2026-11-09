@@ -1,10 +1,10 @@
 """The desktop's sign-in and handoff reads are long-polls.
 
 ``GET /api/providers/oauth/{provider}/poll/{session}?wait=`` holds the request until the sign-in
-leaves ``pending``; ``GET /api/providers/oauth/nous/handoff?since=&wait=`` holds it until the free
+leaves ``pending``; ``GET /api/providers/oauth/moor/handoff?since=&wait=`` holds it until the free
 tier's handoff record changes. Both carry the handoff as fields (``guest_handoff.wire_status``) so
 the desktop can name the apps that moved and the ones to reconnect. Driven through the real FastAPI
-routes against the fake portal ``hermes auth upgrade`` is tested with.
+routes against the fake portal ``moor auth upgrade`` is tested with.
 """
 
 from __future__ import annotations
@@ -12,18 +12,18 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from hermes_cli import anon_auth, guest_handoff
-from hermes_cli.web_server import _SESSION_TOKEN, app
-from tests.hermes_cli.test_anon_upgrade import EMAIL, free_account, portal
+from moor_cli import anon_auth, guest_handoff
+from moor_cli.web_server import _SESSION_TOKEN, app
+from tests.moor_cli.test_anon_upgrade import EMAIL, free_account, portal
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-moor-session-Token": _SESSION_TOKEN}
 
 __all__ = ["free_account", "portal"]  # fixtures imported from the CLI test module
 
 
 def _poll(session_id: str, wait: float) -> dict:
-    resp = client.get(f"/api/providers/oauth/nous/poll/{session_id}", params={"wait": wait}, headers=HEADERS)
+    resp = client.get(f"/api/providers/oauth/moor/poll/{session_id}", params={"wait": wait}, headers=HEADERS)
     assert resp.status_code == 200, resp.text
     return resp.json()
 
@@ -32,7 +32,7 @@ def test_one_long_poll_returns_the_finished_sign_in_with_the_handoff_as_fields(p
     anon_auth.ensure_portal_identity(explicit=True)
     portal.claim_reply["connectors"] = {"kind": "moved", "moved_toolkits": ["gmail"], "dropped_toolkits": ["slack"]}
 
-    start = client.post("/api/providers/oauth/nous/start", headers=HEADERS).json()
+    start = client.post("/api/providers/oauth/moor/start", headers=HEADERS).json()
     body = _poll(start["session_id"], wait=25)
 
     assert body["status"] == "approved"
@@ -46,7 +46,7 @@ def test_one_long_poll_returns_the_finished_sign_in_with_the_handoff_as_fields(p
 
 
 def test_a_sign_in_that_replaced_no_free_tier_reports_no_handoff(portal, free_account):
-    start = client.post("/api/providers/oauth/nous/start", headers=HEADERS).json()
+    start = client.post("/api/providers/oauth/moor/start", headers=HEADERS).json()
     body = _poll(start["session_id"], wait=25)
     assert body["status"] == "approved"
     assert body["handoff_status"] is None and body["handoff"] == []
@@ -58,7 +58,7 @@ def test_a_move_no_attempt_reached_still_reports_the_waiting_record(portal, free
     anon_auth.ensure_portal_identity(explicit=True)
     monkeypatch.setattr(guest_handoff, "_run_one", lambda *a, **kw: None)
 
-    start = client.post("/api/providers/oauth/nous/start", headers=HEADERS).json()
+    start = client.post("/api/providers/oauth/moor/start", headers=HEADERS).json()
     body = _poll(start["session_id"], wait=25)
 
     assert body["status"] == "approved"
@@ -70,7 +70,7 @@ def test_a_move_no_attempt_reached_still_reports_the_waiting_record(portal, free
 def test_a_long_poll_answers_pending_once_its_wait_runs_out(portal):
     anon_auth.ensure_portal_identity(explicit=True)
     portal.token_pending = True
-    start = client.post("/api/providers/oauth/nous/start", headers=HEADERS).json()
+    start = client.post("/api/providers/oauth/moor/start", headers=HEADERS).json()
     try:
         assert _poll(start["session_id"], wait=0.3)["status"] == "pending"
     finally:
@@ -78,14 +78,14 @@ def test_a_long_poll_answers_pending_once_its_wait_runs_out(portal):
 
 
 def _handoff(**params) -> dict:
-    resp = client.get("/api/providers/oauth/nous/handoff", params=params, headers=HEADERS)
+    resp = client.get("/api/providers/oauth/moor/handoff", params=params, headers=HEADERS)
     assert resp.status_code == 200, resp.text
     return resp.json()
 
 
 def test_the_handoff_route_reads_the_record_the_sign_in_left(portal, free_account):
     anon_auth.ensure_portal_identity(explicit=True)
-    start = client.post("/api/providers/oauth/nous/start", headers=HEADERS).json()
+    start = client.post("/api/providers/oauth/moor/start", headers=HEADERS).json()
     signed_in = _poll(start["session_id"], wait=25)["handoff_status"]
 
     status = _handoff()
@@ -118,7 +118,7 @@ def test_the_handoff_long_poll_returns_the_unchanged_record_after_its_wait(monke
 
 
 def test_the_handoff_route_needs_the_session_token():
-    assert client.get("/api/providers/oauth/nous/handoff").status_code == 401
+    assert client.get("/api/providers/oauth/moor/handoff").status_code == 401
 
 
 @pytest.mark.parametrize("since", [None, "anything"])

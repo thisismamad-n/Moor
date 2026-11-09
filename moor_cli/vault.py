@@ -6,8 +6,8 @@ Subcommands:
   visible metadata and prompted normally.
 - ``moor vault list``  metadata — labels, kinds, identifiers, origins,
   handles. Passwords are never shown.
-- ``hermes vault rm``    remove an item by handle/id.
-- ``hermes vault key``   where the vault key lives; ``key migrate --to keychain|file`` moves it.
+- ``moor vault rm``    remove an item by handle/id.
+- ``moor vault key``   where the vault key lives; ``key migrate --to keychain|file`` moves it.
 
 The vault backs the password-blind browser autofill tools
 (``browser_vault`` list / fill): the agent sees handles
@@ -166,7 +166,7 @@ def _cmd_sources(args) -> None:
         if name in enabled:
             status = "[green]detected[/] · the agent asks you to unlock it when it needs a login"
         elif is_installed(name):
-            status = f"[dim]turned off[/] (`hermes vault sources --enable {name}` to use it)"
+            status = f"[dim]turned off[/] (`moor vault sources --enable {name}` to use it)"
         else:
             status = "[dim]not installed[/]"
         c.print(f"  {cls.display_name:<10} {status}")
@@ -203,7 +203,7 @@ def _cmd_key(args) -> None:
             c.print(f"[green]Vault key moved to the OS keychain[/] ({vault_keychain.backend_label()}); "
                     "vault.key was removed after the keychain copy decrypted the vault.")
             c.print("[dim]Backups of this profile now hold the encrypted vault without its key; "
-                    "`hermes vault key migrate --to file` before moving the profile to another machine.[/]")
+                    "`moor vault key migrate --to file` before moving the profile to another machine.[/]")
         else:
             where = store.key_location()
             c.print(f"[green]Vault key moved to[/] {where.get('path')} (0600).")
@@ -239,7 +239,7 @@ def _ensure_keychain_extra(c) -> bool:
 
 
 def _set_key_storage(value: str) -> None:
-    from hermes_cli.config import _ensure_dict, load_config, save_config
+    from moor_cli.config import _ensure_dict, load_config, save_config
 
     cfg = load_config()
     _ensure_dict(cfg, "vault")["key_storage"] = value

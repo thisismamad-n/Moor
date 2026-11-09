@@ -9,10 +9,10 @@ import time
 
 import pytest
 
-from hermes_state import SessionDB
-import hermes_state_runtime as rt
-from hermes_state_local import POLICY_PREFIX
-from tests.hermes_state.test_target_advance_fence import _local_session, _mutate
+from moor_state import SessionDB
+import moor_state_runtime as rt
+from moor_state_local import POLICY_PREFIX
+from tests.moor_state.test_target_advance_fence import _local_session, _mutate
 
 OPERATIONS = {
     'single': lambda db, s0, s1: db.delete_session(s1, exclude_active_write_guards=True),

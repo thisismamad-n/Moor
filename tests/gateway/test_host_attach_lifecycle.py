@@ -300,14 +300,14 @@ def test_the_default_profile_arriving_second_starts_beside_a_standalone_named_ow
 
 
 def test_another_tenants_host_gateway_never_yields_attach_or_the_lock_refusal(tmp_path, monkeypatch, owner_pid):
-    """#121352: two Hermes roots on one host (one OS user) each expose a profile named ``default``.
+    """#121352: two Moor roots on one host (one OS user) each expose a profile named ``default``.
     Tenant A's live multiplexer serves A's ``default`` + ``coder``; tenant B's ``default`` must START,
     not ATTACH (exit 0 with nothing running), and losing the per-OS-user host lock to A must not
     refuse 75 (a race B can never win, so its gateway would never start)."""
-    root_a, root_b = tmp_path / "hermes-a", tmp_path / "hermes-b"
+    root_a, root_b = tmp_path / "moor-a", tmp_path / "moor-b"
     _publish(owner_pid, root_a, ("default", "coder"))
     _answer_identify(monkeypatch, owner_pid, root_a, ["default", "coder"])
-    monkeypatch.setattr(gateway_run, "get_hermes_home", lambda: root_b)
+    monkeypatch.setattr(gateway_run, "get_moor_home", lambda: root_b)
 
     assert host_attach.host_gateway_serving("default") is not None  # A's record is live and names default
     assert host_attach.decide(root_b).outcome == host_attach.START

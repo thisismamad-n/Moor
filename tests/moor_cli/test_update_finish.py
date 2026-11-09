@@ -151,14 +151,14 @@ def completion(tmp_path, monkeypatch):
                     original(module)
                     # Install only service/machine boundaries after REAL CLI
                     # startup; all dependencies must be available by now.
-                    from hermes_cli import update_cmd as update
-                    from hermes_cli import update_cmd_maint as maint
-                    from hermes_cli import update_cmd_fleet as fleet
-                    from hermes_cli import update_cmd_fleet_verify as fleet_verify
-                    from hermes_cli import gateway_migrate
-                    from hermes_cli import macos_tcc_anchor
-                    from hermes_cli import source_build
-                    from hermes_cli.update_inventory import UpdatePlan, RuntimeRecord
+                    from moor_cli import update_cmd as update
+                    from moor_cli import update_cmd_maint as maint
+                    from moor_cli import update_cmd_fleet as fleet
+                    from moor_cli import update_cmd_fleet_verify as fleet_verify
+                    from moor_cli import gateway_migrate
+                    from moor_cli import macos_tcc_anchor
+                    from moor_cli import source_build
+                    from moor_cli.update_inventory import UpdatePlan, RuntimeRecord
                     from pm.package import Runner
                     import pm
                     import os
@@ -197,7 +197,7 @@ def completion(tmp_path, monkeypatch):
                     maint._print_post_update_notices_and_self_heals = lambda: None
                     maint._sync_profiles_after_update = lambda: None
                     # A detached git writer would outlive the test in its deleted tmp checkout.
-                    from hermes_cli import git_commit_graph
+                    from moor_cli import git_commit_graph
                     git_commit_graph.spawn_commit_graph_refresh = lambda root: False
                     maint._print_bundled_skills_sync_report = lambda: None
                     fleet_verify._print_legacy_units_warning = lambda: None
@@ -232,10 +232,10 @@ def completion(tmp_path, monkeypatch):
                     update._resume_windows_gateways_and_merge_outcome = resume
                     if fault == 'scm':
                         # The Windows service manager refuses the paused gateway's restart.
-                        from hermes_cli import update_cmd_windows
+                        from moor_cli import update_cmd_windows
                         def scm(token):
                             if token and token.get('resume_needed'):
-                                raise RuntimeError('Could not restart Windows gateway service(s): HermesGatewayProbe')
+                                raise RuntimeError('Could not restart Windows gateway service(s): MoorGatewayProbe')
                         module._resume_windows_gateways_after_update = scm
                         update_cmd_windows._resume_windows_gateways_after_update = scm
                 spec.loader.exec_module = execute
@@ -247,7 +247,7 @@ def completion(tmp_path, monkeypatch):
     def run(fault=""):
         return subprocess.run([str(python), "-I", "-B", str(runner), str(context), str(result), fault],
                               cwd=tmp_path, env=env, capture_output=True, text=True, timeout=90, check=False)
-    return source, home / ".hermes", request, context, result, run
+    return source, home / ".moor", request, context, result, run
 
 
 @pytest.mark.platforms("posix")
@@ -299,8 +299,8 @@ def test_refused_gateway_resume_after_commit_is_a_followup_not_exit_1(completion
     # file (the fixture's placeholder falls back to the clock and can split them across a second).
     request["receipt"]["started_at"] = "2026-10-04T12:00:00+00:00"
     request["windows_resume"] = {"resume_needed": True, "profiles": {}, "unmapped": [],
-                                 "services": ["HermesGatewayProbe"],
-                                 "service_profiles": {"HermesGatewayProbe": "default"}}
+                                 "services": ["MoorGatewayProbe"],
+                                 "service_profiles": {"MoorGatewayProbe": "default"}}
     context.write_text(json.dumps(request), encoding="utf-8")
     child = run("scm")
     assert child.returncode == 0, child.stdout + child.stderr
@@ -481,9 +481,9 @@ def test_real_compiler_failure_is_owed_build_and_completion_continues(completion
     """Contract C3 for the historical takeover child: the code is committed, so a failed product
     build is an owed ``build`` follow-up, never a failed update. Maintenance (config migration)
     and the fleet restart still run, the exit is 0, and the tail stays pending until it builds."""
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
-    from hermes_cli.venv_sync import completion_pending_path
-    import hermes_yaml
+    from moor_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.venv_sync import completion_pending_path
+    import moor_yaml
 
     source, home, request, context, result, run = completion
     _npm_graph(source)
@@ -495,9 +495,9 @@ def test_real_compiler_failure_is_owed_build_and_completion_continues(completion
     assert "TypeScript build failed" in child.stdout + child.stderr
     assert (source / "npm-python.json").is_file()
     assert (source / "ui-tui/dist/entry.js").is_file()
-    assert not (source / "hermes_cli/web_dist/index.html").exists()
+    assert not (source / "moor_cli/web_dist/index.html").exists()
     # Maintenance and the fleet restart were not skipped by the build failure.
-    config = hermes_yaml.safe_load((home / "config.yaml").read_text())
+    config = moor_yaml.safe_load((home / "config.yaml").read_text())
     assert config["_config_version"] == DEFAULT_CONFIG["_config_version"]
     assert config["model"]["default"] == "retained-model"
     assert (source / "restarted-plan.json").is_file()

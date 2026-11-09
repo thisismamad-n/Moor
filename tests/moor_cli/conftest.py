@@ -60,15 +60,15 @@ def _suppress_concurrent_moor_gate(request, monkeypatch):
 def _private_repo_checkout_lock(monkeypatch, tmp_path_factory):
     """``cmd_update`` locks the checkout it runs from: in tests, this repository, whose git
     common dir every parallel test process (and, from a linked worktree, the live install's
-    ``hermes update``) shares. Give each test its own lock file for THIS repo; lock tests on
+    ``moor update``) shares. Give each test its own lock file for THIS repo; lock tests on
     fixture checkouts are unaffected."""
     from pathlib import Path
 
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
 
     repo = Path(update_lock.__file__).resolve().parents[1]
     real = update_lock.checkout_lock_path
-    private = tmp_path_factory.mktemp("checkout-lock") / "hermes-update.lock"
+    private = tmp_path_factory.mktemp("checkout-lock") / "moor-update.lock"
 
     def checkout_lock_path(install_root=None):
         root = Path(install_root) if install_root else repo
@@ -106,7 +106,7 @@ def _source_channels_resolve_locally(request, monkeypatch):
 def _no_detached_commit_graph_writer(monkeypatch):
     """The update's maintenance starts a detached ``git commit-graph write`` on the checkout it ran
     from: in a test, this repository or a tmp copy deleted under it. In-process runs never spawn it."""
-    from hermes_cli import git_commit_graph
+    from moor_cli import git_commit_graph
 
     monkeypatch.setattr(git_commit_graph, "spawn_commit_graph_refresh", lambda root: False)
 

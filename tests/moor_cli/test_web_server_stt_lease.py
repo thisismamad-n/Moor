@@ -16,11 +16,11 @@ import pytest
 
 
 @pytest.fixture
-def isolated_profiles(tmp_path, monkeypatch, _isolate_hermes_home):
-    from hermes_constants import get_hermes_home
-    from hermes_cli import profiles
+def isolated_profiles(tmp_path, monkeypatch, _isolate_moor_home):
+    from moor_constants import get_moor_home
+    from moor_cli import profiles
 
-    default_home = get_hermes_home()
+    default_home = get_moor_home()
     profiles_root = default_home / "profiles"
     worker_home = profiles_root / "worker_beta"
     for home in (default_home, worker_home):
@@ -28,7 +28,7 @@ def isolated_profiles(tmp_path, monkeypatch, _isolate_hermes_home):
         (home / "config.yaml").write_text("{}\n", encoding="utf-8")
     (worker_home / ".env").write_text("", encoding="utf-8")
 
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: default_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
     return {"default": default_home, "worker_beta": worker_home}
 
@@ -40,11 +40,11 @@ def client(monkeypatch, isolated_profiles):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import hermes_state
-    from hermes_constants import get_hermes_home
-    from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    import moor_state
+    from moor_constants import get_moor_home
+    from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", get_moor_home() / "state.db")
     c = TestClient(app)
     c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return c

@@ -260,7 +260,7 @@ _LOGIN_CONTROL_INSPECTION_JS_TEMPLATE = """(() => {
       if (e.shadowRoot) walk(e.shadowRoot);
     }
   })(document);
-  elements.forEach((element, index) => element.setAttribute("data-hermes-vault-slot", nonce + ":" + index));
+  elements.forEach((element, index) => element.setAttribute("data-moor-vault-slot", nonce + ":" + index));
   const out = elements.flatMap((element, index) => {
     if (element.disabled || element.readOnly) return [];
     if (["hidden", "submit", "button", "reset", "file", "image", "checkbox", "radio"].includes(element.type)) return [];
@@ -329,7 +329,7 @@ _FILL_JS_TEMPLATE = """(() => {
   let filled = 0;
   const norm = (t) => String(t || "").trim().toLowerCase();
   for (const f of fills) {
-    const el = find('[data-hermes-vault-slot="' + nonce + ':' + f.index + '"]')[0];
+    const el = find('[data-moor-vault-slot="' + nonce + ':' + f.index + '"]')[0];
     if (!el || (f.token === "current-password" && el.type !== "password")) continue;
     try {
       if (el.tagName === "SELECT") {
@@ -348,6 +348,6 @@ _FILL_JS_TEMPLATE = """(() => {
       if (el.value.length > 0) filled += 1;
     } catch (e) { /* skip */ }
   }
-  find("[data-hermes-vault-slot]").forEach((n) => n.removeAttribute("data-hermes-vault-slot"));
+  find("[data-moor-vault-slot]").forEach((n) => n.removeAttribute("data-moor-vault-slot"));
   return JSON.stringify({ filled });
 })()"""

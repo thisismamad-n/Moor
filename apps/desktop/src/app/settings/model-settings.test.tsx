@@ -367,7 +367,7 @@ describe('ModelSettings', () => {
 
   it('renders plugin-registered auxiliary tasks after the built-ins with the server label (#40880)', async () => {
     getAuxiliaryModels.mockResolvedValueOnce({
-      main: { provider: 'nous', model: 'hermes-4' },
+      main: { provider: 'moor', model: 'hermes-4' },
       tasks: [
         { task: 'vision', provider: 'auto', model: '', base_url: '' },
         {
@@ -396,7 +396,7 @@ describe('ModelSettings', () => {
 
   it('shows an unpinned inheriting plugin task as following its base, and offers Follow once pinned', async () => {
     getAuxiliaryModels.mockResolvedValueOnce({
-      main: { provider: 'nous', model: 'hermes-4' },
+      main: { provider: 'moor', model: 'hermes-4' },
       tasks: [
         { task: 'compression', provider: 'openrouter', model: 'vendor/fast', base_url: '' },
         {
@@ -412,14 +412,14 @@ describe('ModelSettings', () => {
         },
         {
           task: 'pinned_task',
-          provider: 'nous',
+          provider: 'moor',
           model: 'hermes-4',
           base_url: '',
           label: 'Pinned side',
           hint: 'pinned',
           plugin: 'side',
           inherit_from: 'compression',
-          effective: { provider: 'nous', model: 'hermes-4', base_url: '' }
+          effective: { provider: 'moor', model: 'hermes-4', base_url: '' }
         }
       ]
     })
@@ -501,7 +501,7 @@ describe('ModelSettings', () => {
     await waitFor(() => expect(screen.getByText('Model metadata request timed out')).toBeTruthy())
     // The main-model selector still resolves from the config-backed auxiliary
     // read, so the page is interactive, not just an error shell.
-    await waitFor(() => expect(screen.getAllByRole('combobox')[0].textContent).toContain('Nous'))
+    await waitFor(() => expect(screen.getAllByRole('combobox')[0].textContent).toContain('Moor'))
   })
 
   it('carries the user-defined endpoint when an aux slot is set to a local main model', async () => {
@@ -543,7 +543,7 @@ describe('ModelSettings', () => {
     clearNotifications()
     setModelAssignment.mockResolvedValueOnce({
       ok: true,
-      provider: 'nous',
+      provider: 'moor',
       model: 'hermes-4',
       gateway_tools: [],
       stale_aux: []
@@ -678,7 +678,7 @@ describe('ModelSettings provider switch', () => {
   it('clears the selected model when the user switches provider', async () => {
     getGlobalModelOptions.mockResolvedValue({
       providers: [
-        { name: 'Nous', slug: 'nous', models: ['hermes-4'], authenticated: true },
+        { name: 'Moor', slug: 'moor', models: ['hermes-4'], authenticated: true },
         {
           name: 'Custom endpoint',
           slug: 'custom:lab',
@@ -709,7 +709,7 @@ describe('ModelSettings provider switch', () => {
   it('probes an empty custom provider with a refresh-scoped options fetch on switch', async () => {
     getGlobalModelOptions.mockResolvedValue({
       providers: [
-        { name: 'Nous', slug: 'nous', models: ['hermes-4'], authenticated: true },
+        { name: 'Moor', slug: 'moor', models: ['hermes-4'], authenticated: true },
         {
           name: 'Lab',
           slug: 'custom:lab',
@@ -728,7 +728,7 @@ describe('ModelSettings provider switch', () => {
     // The refresh-scoped fetch repopulates the empty provider's models.
     getGlobalModelOptions.mockResolvedValueOnce({
       providers: [
-        { name: 'Nous', slug: 'nous', models: ['hermes-4'], authenticated: true },
+        { name: 'Moor', slug: 'moor', models: ['hermes-4'], authenticated: true },
         {
           name: 'Lab',
           slug: 'custom:lab',
@@ -968,7 +968,7 @@ describe('ModelSettings stale-aux banner dismissal', () => {
   })
 
   const staleAux = {
-    main: { provider: 'nous', model: 'hermes-4' },
+    main: { provider: 'moor', model: 'hermes-4' },
     tasks: [{ task: 'vision', provider: 'alibaba', model: 'qwen3.6-flash', base_url: '' }]
   }
 
@@ -1004,7 +1004,7 @@ describe('ModelSettings stale-aux banner dismissal', () => {
       provider: 'openrouter',
       model: 'anthropic/claude-opus-4.7',
       gateway_tools: [],
-      stale_aux: [{ task: 'compression', provider: 'nous', model: 'hermes-4' }]
+      stale_aux: [{ task: 'compression', provider: 'moor', model: 'hermes-4' }]
     })
 
     renderModelSettings()

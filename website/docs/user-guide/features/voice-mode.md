@@ -188,12 +188,12 @@ stt:
 
 | Provider | Live endpoint | Notes |
 |---|---|---|
-| `openai` | Realtime transcription session | Needs your own `OPENAI_API_KEY`; the Nous-managed audio gateway serves file transcription only |
+| `openai` | Realtime transcription session | Needs your own `OPENAI_API_KEY`; the Moor-managed audio gateway serves file transcription only |
 | `xai` | `wss://api.x.ai/v1/stt` | Needs `XAI_API_KEY` (the Grok OAuth login is not used for live STT) |
 | `elevenlabs` | Scribe v2 realtime | `ELEVENLABS_API_KEY` |
 | plugin | `TranscriptionProvider.streaming_capable` | Plugins opt in with `open_stream_session()` |
 
-Live transcription covers CLI and TUI voice mode and Desktop dictation. Local whisper, Groq, Mistral and DeepInfra keep using the file path. If a live session can't open, or fails mid-recording, Hermes transcribes the recording as usual, so turning this on never loses a take.
+Live transcription covers CLI and TUI voice mode and Desktop dictation. Local whisper, Groq, Mistral and DeepInfra keep using the file path. If a live session can't open, or fails mid-recording, Moor transcribes the recording as usual, so turning this on never loses a take.
 
 ### Streaming TTS
 
@@ -243,7 +243,7 @@ Not supported in this mode: the Moor-managed audio proxy (direct key only), the 
 
 ### Voice chat model
 
-Spoken turns can run on a different (usually faster) model than the one you type to. Set the `voice_chat` auxiliary slot, in Settings → Models → Auxiliary models on Desktop, in `hermes model` → Auxiliary models, or in config.yaml:
+Spoken turns can run on a different (usually faster) model than the one you type to. Set the `voice_chat` auxiliary slot, in Settings → Models → Auxiliary models on Desktop, in `moor model` → Auxiliary models, or in config.yaml:
 
 ```yaml
 auxiliary:
@@ -512,7 +512,7 @@ stt:
   provider: "local"                  # "local" (free) | "groq" | "openai" | "mistral" | "xai" | "elevenlabs" | "deepinfra"
   local:
     model: "base"                    # tiny, base, small, medium, large-v3, turbo
-    language: ""                     # optional ISO-639-1 hint; blank = use HERMES_LOCAL_STT_LANGUAGE if set, else auto-detect
+    language: ""                     # optional ISO-639-1 hint; blank = use MOOR_LOCAL_STT_LANGUAGE if set, else auto-detect
   groq:
     language: ""                     # optional ISO-639-1 hint; blank = use MOOR_LOCAL_STT_LANGUAGE if set, else auto-detect
   # model: "whisper-1"              # Legacy: used when provider is not set
@@ -583,7 +583,7 @@ Provider priority (automatic fallback): **local** > **groq** > **openai**
 
 ### Long recordings and upload limits
 
-Cloud providers cap a single request: OpenAI and Groq accept 25 MB, Mistral 500 MB (60 minutes), xAI 500 MB and ElevenLabs just under 5 GB. Some OpenAI models also have a practical length limit per request: about 7.5 minutes for `gpt-4o-transcribe` and `gpt-4o-mini-transcribe` (their 2,000-token output ceiling) and 10 minutes for `whisper-1` (so each request finishes inside the default 60 s timeout). When a voice note, audio attachment or voice-mode recording is over the active provider's limit, Hermes first re-encodes it to compact 16 kHz mono AAC, which fits most recordings into one request. If it is still too large, Hermes splits it at pauses, transcribes the pieces in order and joins the text. Local providers have no upload limit and are never split. ffmpeg is required for both steps.
+Cloud providers cap a single request: OpenAI and Groq accept 25 MB, Mistral 500 MB (60 minutes), xAI 500 MB and ElevenLabs just under 5 GB. Some OpenAI models also have a practical length limit per request: about 7.5 minutes for `gpt-4o-transcribe` and `gpt-4o-mini-transcribe` (their 2,000-token output ceiling) and 10 minutes for `whisper-1` (so each request finishes inside the default 60 s timeout). When a voice note, audio attachment or voice-mode recording is over the active provider's limit, Moor first re-encodes it to compact 16 kHz mono AAC, which fits most recordings into one request. If it is still too large, Moor splits it at pauses, transcribes the pieces in order and joins the text. Local providers have no upload limit and are never split. ffmpeg is required for both steps.
 
 ### TTS Provider Comparison
 

@@ -1,14 +1,14 @@
-"""``hermes config`` / ``hermes config show``: the read-only configuration summary.
+"""``moor config`` / ``moor config show``: the read-only configuration summary.
 
-Split out of ``hermes_cli.config``; config names are read through the module at call time
-(``_cfg.<name>``) so ``hermes_cli.config.<name>`` patch seams hold.
+Split out of ``moor_cli.config``; config names are read through the module at call time
+(``_cfg.<name>``) so ``moor_cli.config.<name>`` patch seams hold.
 """
 
 from typing import Any, Dict
 
-from hermes_cli import config as _cfg
-from hermes_cli import managed_scope
-from hermes_cli.colors import Colors, color
+from moor_cli import config as _cfg
+from moor_cli import managed_scope
+from moor_cli.colors import Colors, color
 
 
 def _section(title: str) -> None:
@@ -50,22 +50,22 @@ def _show_model_section(config: dict[str, Any]) -> None:
     print(f"  Model:        {_cfg.redact_config_value(config.get('model', 'not set'))}")
     cfg_max_turns = config.get('agent', {}).get('max_turns', _cfg.DEFAULT_CONFIG['agent']['max_turns'])
     print(f"  Max turns:    {cfg_max_turns}")
-    # Read the .env FILE directly so a stale HERMES_MAX_ITERATIONS ghost is caught even when the
+    # Read the .env FILE directly so a stale MOOR_MAX_ITERATIONS ghost is caught even when the
     # gateway bridge already overrode os.environ.
     try:
-        env_ghost = _cfg.load_env().get("HERMES_MAX_ITERATIONS")
+        env_ghost = _cfg.load_env().get("MOOR_MAX_ITERATIONS")
     except Exception:
         env_ghost = None
     if env_ghost is not None and str(env_ghost).strip() != str(cfg_max_turns).strip():
-        print(color(f"                ⚠ .env has stale HERMES_MAX_ITERATIONS={env_ghost} "
-                    f"(run 'hermes doctor --fix' to remove)", Colors.YELLOW))
+        print(color(f"                ⚠ .env has stale MOOR_MAX_ITERATIONS={env_ghost} "
+                    f"(run 'moor doctor --fix' to remove)", Colors.YELLOW))
 
 
 def _show_display_section(config: dict[str, Any]) -> None:
     _section("Display")
     display = config.get('display', {})
     try:
-        from hermes_cli.personality import active_personality_name
+        from moor_cli.personality import active_personality_name
         active_personality = active_personality_name(config) or 'none'
     except Exception:
         active_personality = display.get('personality') or 'none'
@@ -88,7 +88,7 @@ def _show_terminal_section(config: dict[str, Any]) -> None:
     print(f"  Timeout:      {terminal.get('timeout', 60)}s")
 
     configured = lambda *names: 'configured' if all(_cfg.get_env_value(n) for n in names) else '(not set)'
-    from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_img, DEFAULT_VERCEL_IMAGE as _DEFAULT_VERCEL_IMAGE
+    from moor_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_img, DEFAULT_VERCEL_IMAGE as _DEFAULT_VERCEL_IMAGE
     backend_lines = {
         'docker': lambda: [f"  Docker image: {terminal.get('docker_image', default_img)}"],
         'modal': lambda: [
@@ -169,7 +169,7 @@ def show_config():
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│              ☤ Hermes Configuration                    │", Colors.CYAN))
+    print(color("│              ☤ Moor Configuration                    │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
     _show_managed_banner()
 
@@ -181,7 +181,7 @@ def show_config():
     _section("API Keys")
     for env_key, name in _SHOW_CONFIG_API_KEYS:
         print(f"  {name:<14} {_cfg.redact_key(_cfg.get_env_value(env_key))}")
-    from hermes_cli.auth import get_anthropic_key
+    from moor_cli.auth import get_anthropic_key
     print(f"  {'Anthropic':<14} {_cfg.redact_key(get_anthropic_key())}")
 
     _show_model_section(config)
@@ -204,7 +204,7 @@ def show_config():
 
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  hermes config edit     # Edit config file", Colors.DIM))
-    print(color("  hermes config set <key> <value>", Colors.DIM))
-    print(color("  hermes setup           # Run setup wizard", Colors.DIM))
+    print(color("  moor config edit     # Edit config file", Colors.DIM))
+    print(color("  moor config set <key> <value>", Colors.DIM))
+    print(color("  moor setup           # Run setup wizard", Colors.DIM))
     print()

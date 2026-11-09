@@ -167,8 +167,8 @@ class GatewayGoalsMixin:
         from agent.estop import check_paused
 
         if check_paused("heartbeat", logger):
-            return  # `hermes pause`: leave the tick unclaimed so it fires after `hermes resume`
-        from hermes_cli.heartbeat import HeartbeatManager
+            return  # `moor pause`: leave the tick unclaimed so it fires after `moor resume`
+        from moor_cli.heartbeat import HeartbeatManager
 
         mgr = HeartbeatManager(session_id=session_id)
         if not mgr.has_heartbeat():
@@ -492,7 +492,7 @@ class GatewayGoalsMixin:
         from agent.estop import check_paused
 
         # Loop wakeups are injected as internal events, which bypass the inbound estop gate; without
-        # this a `hermes pause` would still start agent turns. Not claiming the tick keeps it due.
+        # this a `moor pause` would still start agent turns. Not claiming the tick keeps it due.
         if check_paused("loop", logger):
             return
         # fire_tick()/complete_tick() are writes (BEGIN IMMEDIATE) taking the SessionDB writer lock; a slow

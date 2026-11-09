@@ -3,8 +3,8 @@ Host validation, the auth-gate decision and the native WebSocket ticket subproto
 
 Import-light on purpose (no FastAPI): ``gateway.run_api`` serves the native session WebSocket
 without importing the dashboard app (about 690 routes, ~0.6 s), and must apply the same
-DNS-rebinding Host check and gate decision. ``hermes_cli.web_server`` and
-``hermes_cli.web_server_chat`` re-export these names, so ``web_server.<name>`` keeps working.
+DNS-rebinding Host check and gate decision. ``moor_cli.web_server`` and
+``moor_cli.web_server_chat`` re-export these names, so ``web_server.<name>`` keeps working.
 """
 
 import os
@@ -32,7 +32,7 @@ def _dashboard_public_hosts() -> frozenset[str]:
     One source of truth for OAuth redirects, Host and WS Origin validation.
     Malformed or unset values fail closed as an empty set.
     """
-    from hermes_cli.dashboard_auth.prefix import resolve_public_url
+    from moor_cli.dashboard_auth.prefix import resolve_public_url
 
     return public_url_hosts(resolve_public_url())
 
@@ -135,13 +135,13 @@ def _desktop_loopback_auth_exempt(
     per-spawn session token the gate's WS path refuses — Desktop could not boot.
     The public dashboard is a separate non-loopback process that stays gated, so
     this never opens the public surface. Requires ALL of: loopback bind,
-    ``HERMES_DESKTOP=1``, and an operator-minted credential (env token, SSH
+    ``MOOR_DESKTOP=1``, and an operator-minted credential (env token, SSH
     session token, or owner nonce).
     """
     return (
         host in _LOOPBACK_HOST_VALUES
-        and os.environ.get("HERMES_DESKTOP") == "1"
-        and bool(os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN") or ssh_session_token or ssh_owner_nonce)
+        and os.environ.get("MOOR_DESKTOP") == "1"
+        and bool(os.environ.get("MOOR_DASHBOARD_SESSION_TOKEN") or ssh_session_token or ssh_owner_nonce)
     )
 
 
@@ -153,8 +153,8 @@ def listener_auth_required(host: str, trusted_public_hosts: frozenset[str]) -> b
     return should_require_auth(host) or public_hosts_engage_gate(trusted_public_hosts)
 
 
-_GATEWAY_WS_PROTOCOL = "hermes-gateway-v1"
-_GATEWAY_WS_TICKET_PROTOCOL_PREFIX = "hermes-gateway-ticket."
+_GATEWAY_WS_PROTOCOL = "moor-gateway-v1"
+_GATEWAY_WS_TICKET_PROTOCOL_PREFIX = "moor-gateway-ticket."
 
 
 def _gateway_ws_ticket_from_subprotocol(ws) -> tuple[str, str]:

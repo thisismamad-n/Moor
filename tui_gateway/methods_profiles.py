@@ -39,7 +39,7 @@ def _lazy(module, name):
 
 
 def _pin_profile_model(profile_dir, provider, model, base_url="") -> None:
-    _lazy("hermes_cli.web_routers.profiles", "_write_profile_model")(
+    _lazy("moor_cli.web_routers.profiles", "_write_profile_model")(
         profile_dir, provider, model, base_url=base_url)
 
 
@@ -59,14 +59,14 @@ def _best_effort(fn) -> bool:
     return _try(lambda: (fn(), True)[1], False)
 
 
-def _hermes_home_scope(path):
+def _moor_home_scope(path):
     """Bind ``path``'s full runtime scope (home + secrets + terminal) for the block — the same
     composition ``@_profile_scoped`` binds. Home alone is half-bound: under multi-profile hosting
     every credential read raised ``UnscopedSecretError``, which a best-effort ``_try`` turned into
     a plausible wrong answer (the toolset snapshot's ``XAI_API_KEY`` probe → "every toolset off",
     #120726). The launch home maps to None so it keeps its frozen launch env (systemd / ``op run``
     keys). No external-source hydration: these bodies read and write config, never call a provider."""
-    launch = Path(path).resolve() == Path(_hermes_home).resolve()
+    launch = Path(path).resolve() == Path(_moor_home).resolve()
     return _session_profile_runtime_scope({"profile_home": None if launch else str(path)}, hydrate_secrets=False)
 
 
@@ -299,7 +299,7 @@ def _(rid, params: dict) -> dict:
     # bot_mode_protocol: this backend injects the Bot Mode teammate-messaging protocol into every
     # session, so clients must not append it to SOUL.md. install_id (same value as /api/status)
     # lets a multi-connection client prove WHICH machine answered a routed list.
-    from hermes_cli.install_identity import get_install_id
+    from moor_cli.install_identity import get_install_id
     return _ok(rid, {"profiles": out, "bot_mode_protocol": True, "install_id": _try(lambda: get_install_id() or "", "")})
 
 
@@ -485,7 +485,7 @@ def _mirror_voice_sections(path) -> bool:
     """Copy stt/tts/voice sections from the launch profile (a fresh profile has only ``model``,
     so voice fell back to defaults); True if written."""
     try:
-        from hermes_cli.config import read_user_config_raw, save_config
+        from moor_cli.config import read_user_config_raw, save_config
         # Launch file RAW too: the loaded config has ${VAR} refs expanded, and the new profile
         # must get the ref (resolved against its own .env), never the launch profile's secret.
         src_cfg = read_user_config_raw()
@@ -523,11 +523,11 @@ def _inherit_launch_model(path) -> bool:
     # written BEFORE the pin: the pin validates the pick inside the new profile, and an empty profile
     # rejects a provider it has not been told about ("Unknown provider").
     # Seeded from the RAW launch file so a ${VAR} api_key travels as the ref, not its value.
-    seed = _lazy("hermes_cli.profile_model_seed", "launch_model_seed")(read_user_config_raw())
+    seed = _lazy("moor_cli.profile_model_seed", "launch_model_seed")(read_user_config_raw())
     if seed.get("providers") or seed.get("custom_providers"):
-        from hermes_cli.config import save_config
-        merge = _lazy("hermes_cli.profile_model_seed", "merge_endpoint_seed")
-        with _hermes_home_scope(path):
+        from moor_cli.config import save_config
+        merge = _lazy("moor_cli.profile_model_seed", "merge_endpoint_seed")
+        with _moor_home_scope(path):
             save_config(merge(read_user_config_raw(), seed))
     # Bare ``custom``/``local`` carries its endpoint into validation (the new profile's config names
     # none); other providers ignore it. Validation needs the expanded URL, the profile keeps the
@@ -536,8 +536,8 @@ def _inherit_launch_model(path) -> bool:
                        str(model_cfg.get("base_url") or ""))
     raw_url = ((read_user_config_raw() or {}).get("model") or {}).get("base_url")
     if isinstance(raw_url, str) and "${" in raw_url:
-        from hermes_cli.config import save_config
-        with _hermes_home_scope(path):
+        from moor_cli.config import save_config
+        with _moor_home_scope(path):
             cfg = read_user_config_raw() or {}
             if isinstance(cfg.get("model"), dict) and cfg["model"].get("base_url") == model_cfg.get("base_url"):
                 cfg["model"]["base_url"] = raw_url
@@ -598,7 +598,7 @@ def _describe_toolsets(cfg):
 
 
 def _bots_title(ui_meta: dict):
-    bots = ui_meta.get("hermes-bots")
+    bots = ui_meta.get("moor-bots")
     return bots.get("title") if isinstance(bots, dict) else None
 
 
@@ -649,9 +649,9 @@ def _configure_ui_meta(profile_dir, params, applied) -> None:
                 # A client writing another machine's bot title lands here; the Desktop's
                 # `[bot-meta win=…]` desktop.log line at the same time names the window.
                 logging.getLogger(__name__).info(
-                    "ui_meta hermes-bots title for profile %s: %r -> %r (revision %s)",
+                    "ui_meta moor-bots title for profile %s: %r -> %r (revision %s)",
                     params.get("name") or profile_dir.name, old_title, _bots_title(current),
-                    revisions.get("hermes-bots"))
+                    revisions.get("moor-bots"))
     except Exception:
         applied["ui_meta"] = False
 
@@ -728,7 +728,7 @@ def _configure_cfg_sections(profile_dir, params, applied) -> None:
     launch_mcp = {}
     if want_mcp:  # launch catalog read BEFORE the home override flips config resolution
         # RAW: a copied entry keeps its ${VAR} refs instead of the launch profile's expanded secrets.
-        load_launch = _lazy("hermes_cli.config", "read_user_config_raw")
+        load_launch = _lazy("moor_cli.config", "read_user_config_raw")
         launch_mcp = _try(lambda: (load_launch() or {}).get("mcp_servers"), {})
         launch_mcp = launch_mcp if isinstance(launch_mcp, dict) else {}
     with _moor_home_scope(profile_dir):
@@ -769,7 +769,7 @@ def _landed(cfg: dict, path: tuple, key=lambda v: v) -> bool:
     Under Remote Config a bulk save omits a locked key (with a stderr note) instead of raising, so
     an editor that reported success after the save would acknowledge an edit the plane refused.
     Compared on the user layer as read back (the effective doc in remote mode), absent == absent."""
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
 
     def at(doc):
         node = doc

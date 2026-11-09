@@ -11,7 +11,7 @@ export const enNotices = {
   butterbar: {
     goTo: (index, total) => `Show notice ${index} of ${total}`,
     legal: {
-      before: 'Use of Hermes Agent is subject to our ',
+      before: 'Use of Moor Agent is subject to our ',
       terms: 'Terms of Service',
       between: ' and ',
       privacy: 'Privacy Policy',
@@ -33,14 +33,14 @@ export const enNotices = {
     desktopCommands: enDesktopCommands
   },
   keepAwakeOffer: {
-    title: 'Your computer slept while Hermes was working',
+    title: 'Your computer slept while Moor was working',
     message:
-      'Hermes can keep your computer awake while a task runs. The screen still turns off, and on battery your computer may still sleep.',
+      'Moor can keep your computer awake while a task runs. The screen still turns off, and on battery your computer may still sleep.',
     action: 'Keep awake while working'
   },
   connectorOffer: {
     heading: 'Keep your connected apps',
-    body: 'Sign in with a free Nous account to keep the apps you connected, like Gmail or Slack, on your account.'
+    body: 'Sign in with a free Moor account to keep the apps you connected, like Gmail or Slack, on your account.'
   }
 } satisfies Pick<
   Translations,

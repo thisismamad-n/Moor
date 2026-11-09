@@ -13,9 +13,9 @@ from types import SimpleNamespace
 import psutil
 import pytest
 
-from hermes_cli.process_identity import worker_birth
-from hermes_state import SessionDB
-from hermes_state_runtime import RuntimeStoreError, begin_runtime_epoch, register_worker_execution
+from moor_cli.process_identity import worker_birth
+from moor_state import SessionDB
+from moor_state_runtime import RuntimeStoreError, begin_runtime_epoch, register_worker_execution
 from gateway.session_contract import SessionRef
 from gateway.session_worker import _claim
 from tools.async_delegation import _initialize_schema

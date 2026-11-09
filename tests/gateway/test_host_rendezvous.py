@@ -187,7 +187,7 @@ def test_live_legacy_owner_survives_a_clock_step_past_its_create_time(host_dir):
 
     from gateway.status import get_process_start_time
 
-    env = {**os.environ, "HERMES_HOME": str(host_dir / "home"), "HERMES_GATEWAY_LOCK_DIR": str(host_dir / "locks")}
+    env = {**os.environ, "MOOR_HOME": str(host_dir / "home"), "MOOR_GATEWAY_LOCK_DIR": str(host_dir / "locks")}
     child = subprocess.Popen(
         [sys.executable, "-c", _CHILD.format(tree=_tree())], env=env, cwd=_tree(),
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -334,7 +334,7 @@ def test_relative_xdg_state_home_is_ignored(monkeypatch, tmp_path):
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
 
     assert status._get_lock_dir().is_absolute()
-    assert status._get_lock_dir() == tmp_path / ".local" / "state" / "hermes" / status._LOCKS_DIRNAME
+    assert status._get_lock_dir() == tmp_path / ".local" / "state" / "moor" / status._LOCKS_DIRNAME
 
 
 def _gateway_record(*, pid: int, create_time, start_time, home: str) -> hr.HostRecord:
@@ -484,7 +484,7 @@ def test_another_process_holding_the_host_lock_is_observed_and_its_exit_frees_th
     sleeper = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     holder = subprocess.Popen(
         [sys.executable, "-u", "-c", _HOLDER_CHILD.format(tree=tree)], cwd=tree,
-        env={**os.environ, "HERMES_GATEWAY_LOCK_DIR": str(host_dir / "locks")},
+        env={**os.environ, "MOOR_GATEWAY_LOCK_DIR": str(host_dir / "locks")},
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         assert holder.stdout.readline().strip() == "held"
@@ -536,13 +536,13 @@ def test_restart_cleanup_never_deletes_a_gateway_that_claimed_the_lock_mid_clean
     the host lock. A gateway holding the lock must always have its record and token on disk.
     """
     from gateway.status import get_process_start_time
-    from hermes_cli.gateway_host_record import _discard_dead_host_record
+    from moor_cli.gateway_host_record import _discard_dead_host_record
 
     tree = _tree()
     sleeper = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     claimer = subprocess.Popen(
         [sys.executable, "-u", "-c", _CLAIMER_CHILD.format(tree=tree)], cwd=tree,
-        env={**os.environ, "HERMES_GATEWAY_LOCK_DIR": str(host_dir / "locks")},
+        env={**os.environ, "MOOR_GATEWAY_LOCK_DIR": str(host_dir / "locks")},
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         assert claimer.stdout.readline().strip() == "ready"

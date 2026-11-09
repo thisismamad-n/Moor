@@ -831,8 +831,8 @@ export default {
 
               // Same resolver as the cached path — renamed bots (display_name
               // / ui_meta title) stay taggable when the roster cache is cold.
-              // The same handle claim the pane applies: a real 'hermes'
-              // profile keeps @hermes, so the default must not answer it too.
+              // The same handle claim the pane applies: a real 'moor'
+              // profile keeps @moor, so the default must not answer it too.
               mentionedBots = resolveRosterMentions(text, claimDefaultHandles(res?.profiles ?? []), live).map(bot => ({
                 ...bot,
                 remoteSource: false
@@ -863,12 +863,12 @@ export default {
             // local path a bare profile name or 'moor'. botHandle() prefers
             // the row's source-qualified UI alias ('default-vera'), which
             // neither resolver accepts — annotate the canonical form instead.
-            // The default's canonical form is 'hermes' only while no real
-            // 'hermes' profile holds it; then it is 'default' itself.
+            // The default's canonical form is 'moor' only while no real
+            // 'moor' profile holds it; then it is 'default' itself.
             const target =
               bot.remoteSource && bot.connectionId
                 ? `${bot.name}@${bot.connectionId}`
-                : botHandle(bot.name, { hermesHandleTaken: bot.hermesHandleTaken })
+                : botHandle(bot.name, { moorHandleTaken: bot.moorHandleTaken })
 
             // Local rows get the same annotation whenever their UI alias
             // ('default-this-device') differs from the resolvable handle —

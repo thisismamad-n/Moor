@@ -23,7 +23,7 @@ async function cachedCompilerPass(command: string) {
   // without node_modules (its dependencies live in the private workspace).
   return withCompilerCache(await babel({ cwd: __dirname, presets: [compilerPreset()] }), {
     command,
-    cacheRoot: path.join(__dirname, 'node_modules/.cache/hermes-react-compiler'),
+    cacheRoot: path.join(__dirname, 'node_modules/.cache/moor-react-compiler'),
     base: __dirname,
     toolchain: [path.resolve(__dirname, '../../package-lock.json'), fileURLToPath(import.meta.url)]
   })

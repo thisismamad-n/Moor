@@ -160,9 +160,9 @@ class AcmeProfile(ProviderProfile):
 | `models_url` | Explicit models endpoint (else `{base_url}/models`) | `""` |
 | `auth_type` | `api_key` \| `oauth_device_code` \| `oauth_external` \| `external_process` \| `aws_sdk` \| plugin-defined | `"api_key"` |
 | `supports_streaming` | `None` keeps transport defaults, `True` opts a process client into streaming, `False` disables it | `None` |
-| `supports_health_check` | `False`: `hermes doctor` skips the `/models` probe | `True` |
+| `supports_health_check` | `False`: `moor doctor` skips the `/models` probe | `True` |
 | `supports_model_listing` | `False`: `fetch_models()` returns `None` without a network call | `True` |
-| `auth_handler` | Provider-owned `hermes auth add\|status\|logout\|refresh <name>`; truthy return = handled | `None` |
+| `auth_handler` | Provider-owned `moor auth add\|status\|logout\|refresh <name>`; truthy return = handled | `None` |
 | `refresh_credential` | Rotates a pooled OAuth row and returns the rotated fields | `None` |
 | `classify_api_error` | Error classification for this provider's failures, before the built-in pipeline | `None` |
 | `supports_vision` | API accepts images inside tool-result messages | `False` |
@@ -187,7 +187,7 @@ class AcmeProfile(ProviderProfile):
 | `start_device_login` | In-app device-code sign-in: returns `{user_code, verification_url, expires_in, interval, state}` | `None` |
 | `poll_device_login` | One poll of that login: `{status, interval?, credential?, message?}` | `None` |
 | `save_device_login` | Persists the approved credential (core calls it in the session's profile scope) | `None` |
-| `model_setup_flow` | The provider's own `hermes model` step (credential prompt, catalog, persist) | `None` (generic flow for `auth_type`) |
+| `model_setup_flow` | The provider's own `moor model` step (credential prompt, catalog, persist) | `None` (generic flow for `auth_type`) |
 | `setup_reasoning_efforts` | Effort levels the setup picker offers for a model; `()` = no reasoning control | `None` (generic ladder) |
 | `fetch_account_usage()` | `/usage` snapshot when no built-in usage fetcher owns the provider | `None` |
 | `resolve_aux_model()` | Live cheap-model id for auxiliary tasks; cached, never raises | `""` (use `default_aux_model`) |
@@ -221,7 +221,7 @@ class AcmeProfile(ProviderProfile):
 | `runtime_base_url()` | Base URL derived from the credential | `None` (env or default) |
 | `prepare_pool_entry()` | Turns the selected pool row's secret into the runtime key | the secret as-is |
 | `seed_pool_credentials(suppressed_sources, explicitly_configured)` | Pool rows `{source, access_token, base_url, label}` the provider seeds itself, skipping sources in `suppressed_sources` | `None` (generic env seeding) |
-| `remove_credential_source()` | `hermes auth remove`: `(sources_to_suppress, hints)` | `None` (generic removal) |
+| `remove_credential_source()` | `moor auth remove`: `(sources_to_suppress, hints)` | `None` (generic removal) |
 | `refresh_runtime_credentials()` | Re-mints `(api_key, base_url)` on `unauthorized` \| `stale` \| `auxiliary_unauthorized`; error path only | `None` |
 | `is_stale_credential_error()` | A non-auth error really means the credential went stale (pure) | `False` |
 | `credential_refresh_notice()` | Status line after a successful runtime refresh | `""` (generic wording) |
@@ -248,7 +248,7 @@ class AcmeProfile(ProviderProfile):
 | `picker_group` | `(group_id, label, description)`: folds same-group rows in interactive pickers | `()` |
 | `catalog_aliases` | `aliases` also normalize in the model catalog | `False` |
 | `aggregator` | Catalog re-exposes many vendors' models | `False` |
-| `provider_overlay` | HermesOverlay fields for the models.dev-keyed definition | `{}` |
+| `provider_overlay` | MoorOverlay fields for the models.dev-keyed definition | `{}` |
 | `overlay_aliases` | Extra names normalizing to the `provider_overlay` definition | `()` |
 | `registry_auth_type` | Auth-registry row `auth_type` when credential resolution differs from the setup flow | `""` (`auth_type`) |
 | `base_url_env_var` | Env var overriding `base_url` on the registry row when not in `env_vars` | `""` |
@@ -306,7 +306,7 @@ register_provider(ProviderProfile(
 |---|---|---|
 | `api_key` | 单个环境变量携带静态 API key | 大多数提供商 |
 | `oauth_device_code` | 设备码 OAuth 流程 | — |
-| `oauth_external` | 用户在其他地方登录，token 存入 `auth.json` | Anthropic OAuth、MiniMax OAuth、Qwen Portal、Nous Portal |
+| `oauth_external` | 用户在其他地方登录，token 存入 `auth.json` | Anthropic OAuth、MiniMax OAuth、Qwen Portal、Moor Portal |
 | *插件自定义* | 其他任意值：登录与刷新由提供商自行负责（`auth_handler`、`refresh_credential` 及凭据 hook）；若认证注册表行不同，用 `registry_auth_type` 指定 | 例如 [`github-copilot` labs 插件](https://github.com/NousResearch/hermes-labs-plugins/tree/main/github-copilot) 中的 `copilot` |
 | `aws_sdk` | AWS SDK 凭据链（IAM role、profile、env） | 仅 `bedrock` 插件 |
 | `external_process` | 认证由 agent 启动的子进程处理 | 树外 ACP 插件（例如 `github-copilot` labs 插件中的 `copilot-acp`） |

@@ -264,7 +264,7 @@ class TestSlashCommandSessionIsolation:
         "Running /x" promise."""
         adapter.config.extra.update(extra)
         ack = AsyncMock()
-        await adapter._handle_hermes_command(ack, {
+        await adapter._handle_moor_command(ack, {
             "command": "/status", "text": "hello", "user_id": "U123", "channel_id": channel_id,
             "team_id": "T123"})
 

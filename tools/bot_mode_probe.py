@@ -67,15 +67,15 @@ def _profile_name(home: Path) -> str:
 
 def _handle(name: str, names: Collection[str]) -> str:
     """The @handle a local profile answers to; ``names`` are the roster's folder ids. The default
-    profile is @hermes only while no real profile holds that name: a pre-reservation
-    ``profiles/hermes`` keeps @hermes, and the default answers to @default."""
-    return "hermes" if name == "default" and "hermes" not in names else name
+    profile is @moor only while no real profile holds that name: a pre-reservation
+    ``profiles/moor`` keeps @moor, and the default answers to @default."""
+    return "moor" if name == "default" and "moor" not in names else name
 
 
 def _profile_for_handle(handle: str, names: Collection[str]) -> str:
-    """The folder id a bare @handle names on this install: @hermes is the default profile's alias
-    only while no real profile holds that name (a pre-reservation ``profiles/hermes`` keeps it)."""
-    return "default" if handle == "hermes" and "hermes" not in names else handle
+    """The folder id a bare @handle names on this install: @moor is the default profile's alias
+    only while no real profile holds that name (a pre-reservation ``profiles/moor`` keeps it)."""
+    return "default" if handle == "moor" and "moor" not in names else handle
 
 
 def _roster(root: Path) -> list[tuple[str, Path]]:
@@ -178,8 +178,8 @@ def _friendly_names(profile_dir: Path) -> tuple[str, str]:
 
 def _display_name(name: str, profile_dir: Path, names: Collection[str]) -> str:
     """Human-facing sender name, in the Desktop's ``botFriendlyNames`` order: Bot Mode title,
-    then profile.yaml ``display_name`` (``hermes profile rename``), else the @handle — the
-    renamed primary signs as ``Maia (@hermes)``, not ``hermes (@hermes)`` (#89720)."""
+    then profile.yaml ``display_name`` (``moor profile rename``), else the @handle — the
+    renamed primary signs as ``Maia (@moor)``, not ``moor (@moor)`` (#89720)."""
     return next((n for n in _friendly_names(profile_dir) if n), None) or _handle(name, names)
 
 
@@ -218,7 +218,7 @@ def _peers(root: Path) -> list[str]:
     """Registered peer gateway names (``moor peer``) from config.yaml, read
     directly (no config-loader import; the section is absent on most installs). Never raises."""
     def _names() -> list[str]:
-        from hermes_cli.config_backend import read_config_doc_readonly
+        from moor_cli.config_backend import read_config_doc_readonly
         doc = read_config_doc_readonly(root / "config.yaml")
         peers = doc.get("bot_peers") if isinstance(doc, dict) else None
         return sorted(str(n) for n in peers if str(n).strip()) if isinstance(peers, dict) else []
@@ -240,8 +240,8 @@ def local_taken_forms(home: Path) -> set[str]:
     """Bare forms this install's own profiles answer to: folder ids, @handles and friendly-name
     slugs. A remote row must not be offered under any of them, since local resolution wins
     (``_resolve_local_name`` accepts the folder id ``default`` even while the default shows as
-    @hermes). Read from the install root, so a named profile's home sees its siblings too."""
-    root = _hermes_root(home)
+    @moor). Read from the install root, so a named profile's home sees its siblings too."""
+    root = _moor_root(home)
     names = [name for name, _d in _roster(root)]
     return set(names) | {_handle(name, names) for name in names} | set(local_alias_map(root))
 
@@ -389,8 +389,8 @@ def capability_fingerprint(home: str | os.PathLike | None = None) -> str:
         # Canonical loader (managed overlay + env expansion + normalization),
         # scoped to the bot's home via the override the loaders already honor.
         from agent.skill_utils import parse_config_string_list
-        from hermes_cli.config import load_config_readonly
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_cli.config import load_config_readonly
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         token = set_moor_home_override(str(resolved))
         try:
@@ -403,7 +403,7 @@ def capability_fingerprint(home: str | os.PathLike | None = None) -> str:
         surface["disabled_skills"] = sorted(str(s).lower() for s in (skills_cfg.get("disabled") or []))
         # The live selection is platform_toolsets.<platform> minus agent.disabled_toolsets;
         # tools.enabled_toolsets is written by no surface, so watching it left Bot Chats
-        # blind to `hermes tools enable/disable` (#124211). Raw slices: an edit that leaves
+        # blind to `moor tools enable/disable` (#124211). Raw slices: an edit that leaves
         # the effective selection unchanged costs one spurious rebuild at most.
         agent_cfg = cfg.get("agent") if isinstance(cfg.get("agent"), dict) else {}
         surface["platform_toolsets"] = json.dumps(cfg.get("platform_toolsets") or {}, sort_keys=True, default=str)

@@ -1,10 +1,10 @@
-import { hermesApi, sessionFileOwnerScope } from '@/api/client'
+import { moorApi, sessionFileOwnerScope } from '@/api/client'
 import type {
-  HermesConnection,
-  HermesReadDirResult,
-  HermesReadFileErrorResult,
-  HermesReadFileTextResult,
-  HermesSelectPathsOptions
+  MoorConnection,
+  MoorReadDirResult,
+  MoorReadFileErrorResult,
+  MoorReadFileTextResult,
+  MoorSelectPathsOptions
 } from '@/global'
 import { translateNow } from '@/i18n'
 import { hostHas } from '@/lib/host-capabilities'
@@ -92,7 +92,7 @@ function bridge() {
 }
 
 function remoteFsApi<T>(path: string, body?: Record<string, unknown>, owner = fsRoute().owner): Promise<T> {
-  return hermesApi<T>(body ? { ...owner, body, method: 'POST', path } : { ...owner, path })
+  return moorApi<T>(body ? { ...owner, body, method: 'POST', path } : { ...owner, path })
 }
 
 /** True when a bridge read returned the main process's structured "file is not
@@ -101,11 +101,11 @@ function remoteFsApi<T>(path: string, body?: Record<string, unknown>, owner = fs
  *  not spam Electron's console with a stack trace per probe). Callers that
  *  already try/catch their read get the same behavior as a rejection: throw
  *  with the original message. */
-export function isReadFileErrorResult(value: unknown): value is HermesReadFileErrorResult {
+export function isReadFileErrorResult(value: unknown): value is MoorReadFileErrorResult {
   return !!value && typeof value === 'object' && (value as { ok?: unknown }).ok === false
 }
 
-function throwForReadErrorResult(result: HermesReadFileErrorResult): never {
+function throwForReadErrorResult(result: MoorReadFileErrorResult): never {
   throw new DesktopFileMissingError(result)
 }
 
@@ -116,7 +116,7 @@ function throwForReadErrorResult(result: HermesReadFileErrorResult): never {
 export class DesktopFileMissingError extends Error {
   readonly code: string
 
-  constructor(result: HermesReadFileErrorResult) {
+  constructor(result: MoorReadFileErrorResult) {
     super(result.message || `File read failed: ${result.error}`)
     this.name = 'DesktopFileMissingError'
     this.code = result.error
@@ -134,7 +134,7 @@ export async function readDesktopDir(path: string): Promise<MoorReadDirResult> {
 export async function readDesktopFileText(
   path: string,
   scope?: DesktopFsSessionScope
-): Promise<HermesReadFileTextResult> {
+): Promise<MoorReadFileTextResult> {
   if (!isDesktopFsRemoteMode()) {
     const result = await bridge().readFileText(path)
 
@@ -147,7 +147,7 @@ export async function readDesktopFileText(
 
   const route = fsRoute(scope)
 
-  return remoteFsApi<HermesReadFileTextResult>(fsPath('read-text', path, route.sessionId), undefined, route.owner)
+  return remoteFsApi<MoorReadFileTextResult>(fsPath('read-text', path, route.sessionId), undefined, route.owner)
 }
 
 // Save UTF-8 text back to a file. Local writes go through the hardened Electron

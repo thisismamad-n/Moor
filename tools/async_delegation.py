@@ -121,16 +121,16 @@ def _connect() -> sqlite3.Connection:
     from agent.runtime_session_store import WorkerPersistenceError, is_worker_process
     if is_worker_process():
         raise WorkerPersistenceError('worker_delegation_ledger_unavailable')
-    from hermes_cli.sqlite_util import open_db
-    # Same state.db as hermes_state.SessionDB -- reuse its owner-only (0600)
+    from moor_cli.sqlite_util import open_db
+    # Same state.db as moor_state.SessionDB -- reuse its owner-only (0600)
     # hardening so this writer doesn't create/leave the file (and its WAL
-    # sidecars) at the process umask. See hermes_state._secure_state_db_files.
-    from hermes_constants import mkdir_under_hermes_home
-    from hermes_state import _secure_state_db_files
+    # sidecars) at the process umask. See moor_state._secure_state_db_files.
+    from moor_constants import mkdir_under_moor_home
+    from moor_state import _secure_state_db_files
 
     path = _db_path()
     # A late replay or writer must not resurrect a removed named profile (#123265).
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_moor_home(path.parent)
     _secure_state_db_files(path, create_main=True)
     # wal=False: SessionDB owns state.db's journal mode (_initialize_schema applies the barriers).
     conn = open_db(path, db_label="state.db (async_delegation)", busy_timeout_ms=10_000,
@@ -167,7 +167,7 @@ def _capture_routing_origin() -> dict[str, Any]:
     Best-effort: empty values are omitted."""
     try:
         from gateway.session_context import get_session_env
-        return {k: v for k in _ROUTING_KEYS if (v := get_session_env(f"HERMES_SESSION_{k.upper()}", ""))}
+        return {k: v for k in _ROUTING_KEYS if (v := get_session_env(f"MOOR_SESSION_{k.upper()}", ""))}
     except Exception:
         return {}
 
@@ -511,7 +511,7 @@ def sweep_orphaned_completions(target_queue, *, now: Optional[float] = None) -> 
         return 0  # never create a ledger just to sweep it
     recover_abandoned_delegations()
     now = time.time() if now is None else now
-    home = hermes_home_key(get_hermes_home())
+    home = moor_home_key(get_moor_home())
     from tools.process_registry import process_registry
     live = _queued_completion_ids(target_queue, process_registry.completion_queue)
     with _orphan_lock:
@@ -902,7 +902,7 @@ def _batch_status(combined: dict[str, Any]) -> str:
 
 
 def _dispatch(**kwargs) -> dict[str, Any]:
-    from hermes_cli.backend_retirement import retirement
+    from moor_cli.backend_retirement import retirement
 
     with retirement.work() as admitted:
         if not admitted:

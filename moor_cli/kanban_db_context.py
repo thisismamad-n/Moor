@@ -2,7 +2,7 @@
 worker reads about its task (header, attachments, prior attempts, parent handoffs, role
 history, comments).
 
-Split out of ``hermes_cli.kanban_db``; origin-resident helpers are reached late-bound via
+Split out of ``moor_cli.kanban_db``; origin-resident helpers are reached late-bound via
 ``_kb`` so monkeypatching ``kanban_db.<name>`` keeps working.
 """
 
@@ -14,10 +14,10 @@ import sqlite3
 import time
 from typing import TYPE_CHECKING, Any, Optional
 
-import hermes_cli.kanban_db as _kb
+import moor_cli.kanban_db as _kb
 
 if TYPE_CHECKING:
-    from hermes_cli.kanban_db import Attachment, Comment, Task
+    from moor_cli.kanban_db import Attachment, Comment, Task
 
 # build_worker_context() caps, sized for a ~100k-char prompt with headroom.
 _CTX_MAX_PRIOR_ATTEMPTS = 10      # most recent N prior runs shown in full
@@ -219,8 +219,8 @@ def _ctx_role_history(lines: list[str], conn: sqlite3.Connection, task: Task, no
 
 def _ctx_comments(lines: list[str], comments: list[Comment], now: int) -> None:
     """Newest ``_CTX_MAX_COMMENTS`` comments. The explicit "comment from
-    worker" framing stops an operator-controlled HERMES_PROFILE like
-    "hermes-system" being read as a system directive above an
+    worker" framing stops an operator-controlled MOOR_PROFILE like
+    "moor-system" being read as a system directive above an
     attacker-influenceable body (defense-in-depth)."""
     shown, omitted_note = _ctx_tail(comments, _CTX_MAX_COMMENTS, "comment")
     if not shown:
@@ -229,8 +229,8 @@ def _ctx_comments(lines: list[str], comments: list[Comment], now: int) -> None:
     if omitted_note:
         lines.append(omitted_note)
     for c in shown:
-        # Render author with explicit "comment from worker" framing so operator-controlled HERMES_PROFILE
-        # values like "hermes-system" or "operator" can't be misread by the next worker as a system
+        # Render author with explicit "comment from worker" framing so operator-controlled MOOR_PROFILE
+        # values like "moor-system" or "operator" can't be misread by the next worker as a system
         # directive above the (attacker-influenceable) comment body. Defense-in-depth — the LLM-controlled
         # author-forgery surface was already closed in #22435. See #22452.
         safe_author = (c.author or "").replace("`", "")

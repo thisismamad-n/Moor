@@ -359,8 +359,8 @@ def install_pack_plugins(
         _run_capability_consent,
         _set_plugin_enabled,
     )
-    from hermes_cli.plugins_admission import AdmissionRefused
-    from hermes_cli.plugins_cmd_install import recorded_install
+    from moor_cli.plugins_admission import AdmissionRefused
+    from moor_cli.plugins_cmd_install import recorded_install
     results: list[PackInstallResult] = []
 
     def _fail(display: str, error: str) -> None:
@@ -450,7 +450,7 @@ def _sanitized_entry_config(plugin_id: str) -> dict[str, Any]:
     return _strip_forbidden_keys(entry)
 
 
-def export_pack(*, enabled_only: bool = False, pack_name: str = "my-hermes-pack") -> tuple[str, list[str]]:
+def export_pack(*, enabled_only: bool = False, pack_name: str = "my-moor-pack") -> tuple[str, list[str]]:
     """Build pack YAML from the current install; returns ``(yaml_text, warnings)``. Plugins with
     unknown Git provenance (no install metadata) become warnings + YAML comments, never entries."""
     import moor_yaml as yaml

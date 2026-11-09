@@ -14,15 +14,15 @@ from moor_cli.moor_subscription import (
 from moor_cli.platforms import PLATFORMS as _PLATFORMS_REGISTRY
 from moor_cli.toolset_scope import (
     _TOOLSET_PLATFORM_RESTRICTIONS, toolset_allowed_for_platform as _toolset_allowed_for_platform)
-from hermes_cli.toolset_validation import parse_platform_toolsets_value
-# Re-exports: keep ``hermes_cli.tools_config.X`` callers and test patch targets resolving.
-from hermes_cli.tools_config_cua import (
+from moor_cli.toolset_validation import parse_platform_toolsets_value
+# Re-exports: keep ``moor_cli.tools_config.X`` callers and test patch targets resolving.
+from moor_cli.tools_config_cua import (
     _post_setup_no_window_flags, _cua_driver_cmd, _cua_version_summary, _resolved_cua_driver_cmd, _cua_driver_env,
     _cua_driver_contract_status, _cua_driver_install_ready)
-from hermes_cli.tools_config_post_setup import (
+from moor_cli.tools_config_post_setup import (
     _ensure_browser_use_cli, _run_post_setup, valid_post_setup_keys, run_post_setup_command, _POST_SETUP_INSTALLED,
     _post_setup_already_installed, _module_installed, _POST_SETUP_READY)
-from hermes_cli.tools_config_providers import (
+from moor_cli.tools_config_providers import (
     _plugin_image_gen_providers, _plugin_video_gen_providers, _plugin_web_search_providers, _plugin_browser_providers,
     _plugin_tts_providers, web_provider_capabilities, _visible_providers, provider_readiness_status,
     _toolset_needs_configuration_prompt, _configure_tool_category, _web_tier_matches, _is_provider_active,
@@ -31,7 +31,7 @@ from hermes_cli.tools_config_providers import (
     _select_plugin_image_gen_provider, _select_plugin_video_gen_provider, STT_MODEL_CATALOG, _configure_stt_model,
     _write_provider_config, apply_provider_selection, _configure_provider, _reconfigure_provider,
     _configure_vision_backend, _configure_vision_provider_model, _configure_simple_requirements)
-from hermes_cli.tools_config_mcp import (
+from moor_cli.tools_config_mcp import (
     _configure_mcp_tools_interactive, _apply_toolset_change, _apply_mcp_change, tools_disable_enable_command)
 
 
@@ -104,7 +104,7 @@ def gui_toolset_label(label: str) -> str:
     return text
 
 
-# OFF by default for new installs (still in _HERMES_CORE_TOOLS; the checklist won't pre-select them). x_search
+# OFF by default for new installs (still in _MOOR_CORE_TOOLS; the checklist won't pre-select them). x_search
 # auto-enables when xAI creds exist; its check_fn still gates the schema. ``spotify`` and ``a2a`` are plugin
 # toolsets (catalog / bundled plugin) that stay opt-in once installed.
 _DEFAULT_OFF_TOOLSETS = {"spotify", "discord", "discord_admin", "video", "video_gen", "x_search", "a2a", "kanban"}
@@ -157,7 +157,7 @@ def _get_effective_configurable_toolsets():
     try:
         projected = _projected_plugin_toolsets()
         if projected is None:
-            from hermes_cli.plugins import discover_plugins, get_plugin_toolsets
+            from moor_cli.plugins import discover_plugins, get_plugin_toolsets
             discover_plugins()  # idempotent — ensures plugins are loaded
         for entry in projected[0] if projected is not None else get_plugin_toolsets():
             if entry[0] not in seen:
@@ -182,7 +182,7 @@ def _get_plugin_toolset_keys() -> set:
 
 
 def _checklist_toolset_keys(platform: str) -> set[str]:
-    """Toolset keys the ``hermes tools`` checklist offers for ``platform`` (mirrors ``_prompt_toolset_checklist``);
+    """Toolset keys the ``moor tools`` checklist offers for ``platform`` (mirrors ``_prompt_toolset_checklist``);
     read-time-resolved toolsets (recovered composites, MCP names) are NOT here."""
     return {
         ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()
@@ -301,9 +301,9 @@ TOOL_CATEGORIES = {
         # FAL, Krea and Portal gateways, whose union catalog is `imagegen_backend: "moor"`; the stored model id
         # picks the gateway at run time (tools/image_generation_managed.py).
         "providers": [
-            _row("Nous Subscription", "subscription",
-                 "Managed image generation (FAL, Krea 3 and Krea 2, Nous Portal models) billed to your subscription", **_NOUS,
-                 managed_nous_feature="image_gen", override_env_vars=["FAL_KEY"], imagegen_backend="nous"),
+            _row("Moor Subscription", "subscription",
+                 "Managed image generation (FAL, Krea 3 and Krea 2, Moor Portal models) billed to your subscription", **_MOOR,
+                 managed_moor_feature="image_gen", override_env_vars=["FAL_KEY"], imagegen_backend="moor"),
         ],
     },
     "video_gen": {
@@ -336,18 +336,18 @@ TOOL_CATEGORIES = {
         "name": "Browser Automation", "icon": "🌐",
         # Cloud provider rows (Browserbase, Browser Use, Firecrawl) come from plugins.browser.<vendor> via
         # _plugin_browser_providers(); only non-provider setup-flow rows live here. "Local Browser" MUST stay
-        # first so a fresh install's Enter lands on the free local backend (index 0), never on the paid Nous row.
+        # first so a fresh install's Enter lands on the free local backend (index 0), never on the paid Moor row.
         # Lightpanda is local too (cloud_provider: local, browser.engine: lightpanda — browser_exec spawns
         # ``lightpanda serve``; no Chromium).
         "providers": [
             _row("Local Browser", "★ recommended · free", "Headless Chromium, no API key needed", browser_provider="local",
                  browser_engine="auto", post_setup="chromium"),
-            _row("Lightpanda", "free · local · no Chromium", "Zig headless browser spawned by Hermes, text-only (no screenshots)",
+            _row("Lightpanda", "free · local · no Chromium", "Zig headless browser spawned by Moor, text-only (no screenshots)",
                  browser_provider="local", browser_engine="lightpanda", post_setup="lightpanda"),
             # Browser Use hosts its own Chromium, so the local-Chromium install and readiness gate must not
             # apply (with "chromium" this row read "needs setup" forever on machines without a local build).
-            _row("Nous Subscription (Browser Use cloud)", "subscription", "Managed Browser Use billed to your subscription",
-                 browser_provider="browser-use", **_NOUS, managed_nous_feature="browser",
+            _row("Moor Subscription (Browser Use cloud)", "subscription", "Managed Browser Use billed to your subscription",
+                 browser_provider="browser-use", **_MOOR, managed_moor_feature="browser",
                  override_env_vars=["BROWSER_USE_API_KEY"], post_setup="browserbase"),
         ],
     },
@@ -413,7 +413,7 @@ def enabled_mcp_server_names(config: dict) -> set[str]:
     try:
         projected = _projected_plugin_toolsets()
         if projected is None:
-            from hermes_cli.plugins import get_portable_mcp_server_names_nowait
+            from moor_cli.plugins import get_portable_mcp_server_names_nowait
         portable = projected[1] if projected is not None else get_portable_mcp_server_names_nowait()
         names |= portable - set(mcp_servers)  # native config wins on a name collision (mirrors _load_mcp_config)
     except Exception:
@@ -489,7 +489,7 @@ def _explicit_toolsets(
     toolset_names: list[str], explicit_known_keys: set[str], config: dict, platform: str,
     explicitly_configured: bool) -> set[str]:
     """Enabled set when the saved list names configurable/plugin keys directly (subset inference over
-    ``hermes-cli`` would re-enable disabled toolsets). A mixed list (``[hermes-cli, discord]``) still expands the
+    ``moor-cli`` would re-enable disabled toolsets). A mixed list (``[moor-cli, discord]``) still expands the
     composite; _DEFAULT_OFF_TOOLSETS applies to that implicit expansion only."""
     from toolsets import resolve_toolset, TOOLSETS
 
@@ -582,15 +582,15 @@ def _get_platform_tools(config: dict, platform: str, *, include_default_mcp_serv
     # YAML may parse bare numeric names (``12306:``) as int; normalise so sorted() never mixes types.
     toolset_names = [str(ts) for ts in toolset_names]
 
-    # Expand legacy toolset aliases.  Older Hermes versions and clients used
-    # bare ``"hermes"`` as a composite toolset covering both the CLI and the
-    # API-server surface.  Modern code expects ``"hermes-cli"`` (and
-    # ``"hermes-api-server"`` for the HTTP endpoint), so configs persisted
+    # Expand legacy toolset aliases.  Older Moor versions and clients used
+    # bare ``"moor"`` as a composite toolset covering both the CLI and the
+    # API-server surface.  Modern code expects ``"moor-cli"`` (and
+    # ``"moor-api-server"`` for the HTTP endpoint), so configs persisted
     # by those older versions still carry the legacy name; without expansion
-    # ``resolve_toolset("hermes")`` returns ``[]`` — all tools silently
+    # ``resolve_toolset("moor")`` returns ``[]`` — all tools silently
     # disappear.
     _LEGACY_TOOLSET_ALIASES: dict = {
-        "hermes": ("hermes-cli", "hermes-api-server"),
+        "moor": ("moor-cli", "moor-api-server"),
     }
     expanded: list = []
     for name in toolset_names:
@@ -682,7 +682,7 @@ def toolsets_partially_stripped(config: dict, enabled_toolsets: set[str]) -> dic
     that ``agent.disabled_toolsets`` cuts down without removing (``web`` minus ``web_search`` via ``search``,
     #134593). ``_prune_toolsets_stripped_by_disabled`` keeps such a toolset "enabled" because some of its
     tools survive, so inspection surfaces need this to say which ones did not. The hint offers
-    ``hermes tools enable`` only when that save clears every entry (``_save_platform_tools`` coverage)."""
+    ``moor tools enable`` only when that save clears every entry (``_save_platform_tools`` coverage)."""
     from agent.skill_utils import parse_config_string_list
     from model_tools import _apply_toolset_selection
     from toolsets import resolve_toolset, validate_toolset
@@ -700,7 +700,7 @@ def toolsets_partially_stripped(config: dict, enabled_toolsets: set[str]) -> dic
         if by:
             entries = sorted(by)
             clears = all(_disabled_entry_tools(e) <= tools for e in entries)
-            hint = (f"run `hermes tools enable {name}` to restore" if clears
+            hint = (f"run `moor tools enable {name}` to restore" if clears
                     else f"remove {', '.join(entries)} from agent.disabled_toolsets to restore")
             report[name] = (sorted(set().union(*by.values())), entries, hint)
     return report
@@ -754,15 +754,15 @@ def _merge_mcp_servers(
 
 
 def _warn_all_invalid_platform_toolsets(platform: str, explicit: list, config: dict) -> None:
-    """Warn once when an explicit platform list has only invalid names (``hermes`` for ``hermes-cli`` → no
+    """Warn once when an explicit platform list has only invalid names (``moor`` for ``moor-cli`` → no
     native tools), at session tool resolution rather than only in update/doctor. Names are judged the way
-    ``hermes config check`` judges them, and a known platform's own ``hermes-<platform>`` bundle always
+    ``moor config check`` judges them, and a known platform's own ``moor-<platform>`` bundle always
     counts (``is_known_platform_bundle``): a plugin platform has no sessions to leave toolless until its
     plugin loads, and once it loads the registry resolves the bundle.
     The own-bundle and registered-toolset checks run first because this is reached on every schema build
     (the kanban gate resolves every saved platform row) and on bypass launches that must not read profile
     plugin state; the resolver's manifest scan and plugin lookup run only for names those cannot place."""
-    from hermes_cli.toolset_validation import is_known_platform_bundle, saved_toolset_resolver
+    from moor_cli.toolset_validation import is_known_platform_bundle, saved_toolset_resolver
     from toolsets import validate_toolset
 
     if platform in _warned_invalid_platform_toolsets:
@@ -839,7 +839,7 @@ def _provider_env_ready(provider: dict) -> bool:
 
 
 def _toolset_has_keys(
-    ts_key: str, config: dict | None = None, *, force_fresh: bool = False, features: Optional[NousSubscriptionFeatures] = None,
+    ts_key: str, config: dict | None = None, *, force_fresh: bool = False, features: Optional[MoorSubscriptionFeatures] = None,
 ) -> bool:
     """Check if a toolset's required API keys are configured."""
     if config is None:
@@ -992,7 +992,7 @@ def _shared_metrics_menu_label(config: dict) -> str:
     """Menu row for shared metrics. Collect-only is an answer the offer no longer has; a profile
     that chose it earlier keeps it, and the row names it rather than reading "off" while it collects."""
     enabled, send = _shared_metrics_state(config)
-    state = "off" if not enabled else ("sending to Nous" if send else "collecting locally")
+    state = "off" if not enabled else ("sending to Moor" if send else "collecting locally")
     return f"Configure shared metrics  ({state})"
 
 
@@ -1035,7 +1035,7 @@ def _platform_menu_label(config: dict, pkey: str) -> str:
 
 
 def _print_tools_summary(config: dict, enabled_platforms: list[str]) -> None:
-    """``hermes tools --summary``: enabled toolsets per platform, non-interactive."""
+    """``moor tools --summary``: enabled toolsets per platform, non-interactive."""
     total = len(_get_effective_configurable_toolsets())
     print(color("☤ Tool Summary", Colors.CYAN, Colors.BOLD))
     print()
@@ -1134,7 +1134,7 @@ def _configure_platforms(config: dict, platform_keys: list[str], *, all_platform
 
 
 def tools_command(args=None, first_install: bool = False, config: dict | None = None):
-    """Entry point for `hermes tools` / `hermes setup tools`. ``first_install`` skips the menu (checklist + key
+    """Entry point for `moor tools` / `moor setup tools`. ``first_install`` skips the menu (checklist + key
     prompts); a wizard-passed ``config`` receives platform_toolsets so its final save_config() keeps them."""
     if config is None:
         config = load_config()

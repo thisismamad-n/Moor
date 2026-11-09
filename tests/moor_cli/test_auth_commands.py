@@ -907,7 +907,7 @@ def test_seed_from_singletons_respects_moor_pkce_suppression(tmp_path, monkeypat
     from agent.credential_pool import _seed_from_singletons
     entries = []
     _changed, active = _seed_from_singletons("anthropic", entries)
-    # hermes_pkce suppressed, claude_code returns None → nothing should be seeded
+    # moor_pkce suppressed, claude_code returns None → nothing should be seeded
     assert entries == []
     assert "moor_pkce" not in active
 

@@ -1,4 +1,4 @@
-"""Tests for ``browser_exec`` (tools/browser_use_cli.py), Hermes' only core browser tool.
+"""Tests for ``browser_exec`` (tools/browser_use_cli.py), Moor' only core browser tool.
 
 Covers the seams the integration relies on:
 
@@ -87,8 +87,8 @@ class TestSubprocessEnvironment:
         """#83427/#84841/#86006/#86104: an inherited PYTHONPATH/PYTHONHOME must never reach the
         harness child; PYTHONPATH is replaced by the harness's own site dir, unrelated vars survive."""
         monkeypatch.setattr(bs, "build_browser_env", lambda: {
-            "PYTHONPATH": "/hermes:/hermes/venv/lib/site-packages",
-            "PYTHONHOME": "/hermes/venv",
+            "PYTHONPATH": "/moor:/moor/venv/lib/site-packages",
+            "PYTHONHOME": "/moor/venv",
             "KEEP_ME": "yes",
         })
         monkeypatch.setattr(bu_cli, "_harness_site_dir", lambda: "/harness-site")
@@ -165,7 +165,7 @@ class TestVaultSupervisorAttach:
     def test_exec_attaches_supervisor_to_the_browser_it_drives(self, tmp_path, monkeypatch, _fake_supervisor_registry):
         """browser_vault_fill injects secrets only over the supervisor's CDP WebSocket. Without this attach the
         default (Browser Use) backend had no supervisor at all and every fill failed with supervisor_required."""
-        monkeypatch.setattr("hermes_cli.config_effective.load_user_config_effective", lambda: {"browser": {}})
+        monkeypatch.setattr("moor_cli.config_effective.load_user_config_effective", lambda: {"browser": {}})
         cli = _fake_cli(tmp_path, 'cat > /dev/null\necho ok\n')
         monkeypatch.setattr(bu_cli, "_find_cli", lambda: [cli])
         monkeypatch.setattr("tools.browser_session_cdp.resolve_cdp_override", lambda url: url)
@@ -226,7 +226,7 @@ class TestVaultEgressRedaction:
 class TestLegacyCloudMigration:
     """Pre-CLI direct-API Browser Use cloud configs (cloud_provider:
     "browser-use" + BROWSER_USE_API_KEY) run on the CLI's native Browser Use
-    cloud (BU_AUTOSPAWN); Nous-gateway users stay on the provider path."""
+    cloud (BU_AUTOSPAWN); Moor-gateway users stay on the provider path."""
 
     _LEGACY = {"browser": {"cloud_provider": "browser-use"}}
 
@@ -258,7 +258,7 @@ class TestLegacyCloudMigration:
 
 
     def test_migrated_config_gets_bu_autospawn(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("hermes_cli.config_effective.load_user_config_effective", lambda: self._LEGACY)
+        monkeypatch.setattr("moor_cli.config_effective.load_user_config_effective", lambda: self._LEGACY)
         monkeypatch.setenv("BROWSER_USE_API_KEY", "bu-key")
         cli = _fake_cli(tmp_path, 'cat > /dev/null\necho "autospawn:$BU_AUTOSPAWN"\n')
         monkeypatch.setattr(bu_cli, "_find_cli", lambda: [cli])
@@ -267,7 +267,7 @@ class TestLegacyCloudMigration:
 
     def test_non_legacy_config_does_not_set_bu_autospawn(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {}},
         )
         cli = _fake_cli(tmp_path, 'cat > /dev/null\necho "autospawn:[$BU_AUTOSPAWN]"\n')
@@ -476,7 +476,7 @@ class TestBackendCdpResolution:
 
     def test_never_configured_autodetect_managed_provider_resolves_through_provider(self, monkeypatch):
         """A never-configured install (no ``browser.cloud_provider``, no BROWSER_USE_API_KEY) can
-        still get a ``browser-use`` provider back from autodetect — via the managed Nous gateway
+        still get a ``browser-use`` provider back from autodetect — via the managed Moor gateway
         token, which needs no API key. That provider DOES have a session/CDP path, so it must
         resolve through the provider instead of the direct-API shortcut: the shortcut leaves
         BU_CDP_* unset and the harness falls back to hunting the user's profile dirs
@@ -579,7 +579,7 @@ class TestOwnTabPreamble:
 
 
 class TestProviderPickerIntegration:
-    """The `hermes tools` Browser Automation picker rows."""
+    """The `moor tools` Browser Automation picker rows."""
 
     def test_picker_row_names_stay_unique(self):
         """The CLI row is named "Browser Use"; the legacy plugin API row must
@@ -961,7 +961,7 @@ class TestLightpandaPickerRow:
 
 
     def test_selecting_lightpanda_writes_engine_and_local(self):
-        from hermes_cli.tools_config import _write_provider_config
+        from moor_cli.tools_config import _write_provider_config
 
         config = {"browser": {"cloud_provider": "browserbase"}}
         _write_provider_config(self._row("Lightpanda"), config, managed_feature=None)
@@ -1002,7 +1002,7 @@ class TestTimeoutProcessGroupKill:
         """A grandchild that outlives the direct child and holds the inherited stdout
         pipe must not keep browser_exec blocked past the timeout (it wedged permanently
         before the group kill)."""
-        monkeypatch.setattr("hermes_cli.config_effective.load_user_config_effective", dict)
+        monkeypatch.setattr("moor_cli.config_effective.load_user_config_effective", dict)
         pid_file = tmp_path / "grandchild.pid"
         cli = _fake_cli(tmp_path, (
             "cat > /dev/null\n"

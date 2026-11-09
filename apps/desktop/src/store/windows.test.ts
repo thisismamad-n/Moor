@@ -186,7 +186,7 @@ describe('openBrowserInNewWindow', () => {
 describe('openSessionInTerminal', () => {
   it('hands a session to the bridge, and is a no-op without one or without a session id', async () => {
     const open = vi.fn().mockResolvedValue({ ok: true })
-    desktopWindow.hermesDesktop = { openSessionInTerminal: open } as unknown as Window['hermesDesktop']
+    desktopWindow.moorDesktop = { openSessionInTerminal: open } as unknown as Window['moorDesktop']
 
     expect(canOpenSessionInTerminal()).toBe(true)
     await openSessionInTerminal('', { cwd: '/work' })
@@ -194,7 +194,7 @@ describe('openSessionInTerminal', () => {
     await openSessionInTerminal('s1', { cwd: '/work', profile: 'work' })
     expect(open).toHaveBeenCalledWith('s1', { cwd: '/work', profile: 'work' })
 
-    delete desktopWindow.hermesDesktop
+    delete desktopWindow.moorDesktop
 
     expect(canOpenSessionInTerminal()).toBe(false)
     await openSessionInTerminal('s1')

@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import subprocess
 
-from hermes_cli._subprocess_compat import NO_LAZY_FETCH_ENV, noninteractive_git_env
+from moor_cli._subprocess_compat import NO_LAZY_FETCH_ENV, noninteractive_git_env
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def checkout_contains(sha: str) -> bool:
         stamped = str(identity.get("sha") or "")
         return bool(stamped) and (stamped == sha or stamped.startswith(sha) or sha.startswith(stamped))
     try:
-        from hermes_cli.update_custody import run_git
+        from moor_cli.update_custody import run_git
 
         result = run_git(
             ["git"], ["merge-base", "--is-ancestor", sha, "HEAD"],

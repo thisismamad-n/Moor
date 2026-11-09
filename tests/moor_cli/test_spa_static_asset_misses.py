@@ -13,8 +13,8 @@ WEB_PUBLIC = Path(__file__).resolve().parents[2] / "web" / "public"
 
 
 def _spa(monkeypatch, dist: Path, *, surface) -> TestClient:
-    from hermes_cli import web_server as server
-    from hermes_cli.web_server_dashboard import mount_spa
+    from moor_cli import web_server as server
+    from moor_cli.web_server_dashboard import mount_spa
 
     (dist / "index.html").write_text(HTML)
     (dist / "assets").mkdir(exist_ok=True)
@@ -23,13 +23,13 @@ def _spa(monkeypatch, dist: Path, *, surface) -> TestClient:
         app.state.ui_surface = surface
     app.state.web_dist = dist
     monkeypatch.setattr(server, "app", app)
-    monkeypatch.delenv("HERMES_SERVE_HEADLESS", raising=False)
+    monkeypatch.delenv("MOOR_SERVE_HEADLESS", raising=False)
     mount_spa(app)
     return TestClient(app)
 
 
 def _login_font_urls() -> list[str]:
-    from hermes_cli.dashboard_auth.login_page import render_login_html
+    from moor_cli.dashboard_auth.login_page import render_login_html
 
     urls = re.findall(r"url\('(/fonts/[^']+)'\)", render_login_html())
     assert urls
@@ -59,8 +59,8 @@ def test_a_font_in_the_served_bundle_wins(monkeypatch, tmp_path):
 
 def test_sign_in_fonts_load_from_the_packaged_dashboard_without_a_source_tree(monkeypatch, tmp_path):
     """Nix and wheel installs ship no ``web/public``; the packaged dashboard dist has the fonts."""
-    from hermes_cli import web_server as server
-    from hermes_cli import web_server_static_assets as static_assets
+    from moor_cli import web_server as server
+    from moor_cli import web_server_static_assets as static_assets
 
     dashboard = tmp_path / "dashboard"
     (dashboard / "fonts").mkdir(parents=True)

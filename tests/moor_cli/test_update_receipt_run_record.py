@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_cli import update_completion, update_receipt
+from moor_cli import update_completion, update_receipt
 
 
 def _lost_run(tmp_path):
@@ -14,7 +14,7 @@ def _lost_run(tmp_path):
 
 
 @pytest.mark.parametrize("content", ["null", "[]", "{torn"])
-def test_lost_completion_over_a_malformed_run_archive_still_closes_the_run(_isolate_hermes_home, tmp_path, content):
+def test_lost_completion_over_a_malformed_run_archive_still_closes_the_run(_isolate_moor_home, tmp_path, content):
     # The code is committed: an archive that is valid JSON but not a record (hand edit, foreign
     # writer) must settle exactly like a missing one, never raise out of the post-commit path.
     run, archive, request = _lost_run(tmp_path)
@@ -28,7 +28,7 @@ def test_lost_completion_over_a_malformed_run_archive_still_closes_the_run(_isol
     assert [row["step"] for row in result["receipt"]["followups"]] == ["completion"]
 
 
-def test_lost_completion_keeps_the_stages_the_completion_child_persisted(_isolate_hermes_home, tmp_path):
+def test_lost_completion_keeps_the_stages_the_completion_child_persisted(_isolate_moor_home, tmp_path):
     # The child resumed the parent's snapshot, persisted its own progress, then died (OOM, SIGKILL).
     # The parent's pre-child snapshot is stale: closing the run from it would erase what ran.
     run, _archive, request = _lost_run(tmp_path)

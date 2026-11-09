@@ -30,7 +30,7 @@ afterEach(() => {
 })
 
 describe('persistAccent', () => {
-  it('saves an accent as the profile theme and returns to Nous on null', () => {
+  it('saves an accent as the profile theme and returns to Moor on null', () => {
     render(
       <ThemeProvider>
         <ThemeProbe />

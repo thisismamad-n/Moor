@@ -49,7 +49,7 @@ const PROFILE_SKINS_KEY = 'moor-desktop-profile-themes-v1'
 const PROFILE_MODES_KEY = 'moor-desktop-profile-modes-v1'
 // Last active profile, recorded so the boot-time paint can pick that profile's
 // theme before the gateway reports which profile actually launched.
-const LAST_PROFILE_KEY = 'hermes-desktop-active-profile-v1'
+const LAST_PROFILE_KEY = 'moor-desktop-active-profile-v1'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -429,7 +429,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
   // Inject / clear customCSS from the skin (mirrors web/src/themes/context.tsx).
   // A theme carries the optional customCSS field; we inject/remove a single
   // <style> tag to keep the DOM clean and avoid stale rules on switch.
-  const cssId = 'hermes-desktop-custom-css'
+  const cssId = 'moor-desktop-custom-css'
   let cssEl = document.getElementById(cssId) as HTMLStyleElement | null
   const customCSS = theme.customCSS?.trim()
 
@@ -441,7 +441,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     if (!cssEl) {
       cssEl = document.createElement('style')
       cssEl.id = cssId
-      cssEl.dataset.hermesSkinCSS = 'true'
+      cssEl.dataset.moorSkinCSS = 'true'
       document.head.appendChild(cssEl)
     }
 

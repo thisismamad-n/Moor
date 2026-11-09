@@ -52,8 +52,8 @@ _ACTION_LOG_TAIL_MAX_BYTES = 256 * 1024
 _ACTION_LOG_TAIL_INITIAL_CHUNK_BYTES = 8 * 1024
 _ACTION_LOG_TAIL_MAX_CHUNK_BYTES = 64 * 1024
 
-_UPDATE_ACTION_COMPLETED_RE = re.compile(r"^=== hermes-update completed ([0-9a-f]{32}) ===$")
-_UPDATE_ACTION_STARTED_RE = re.compile(r"^=== hermes-update started .* ([0-9a-f]{32}) ===$")
+_UPDATE_ACTION_COMPLETED_RE = re.compile(r"^=== moor-update completed ([0-9a-f]{32}) ===$")
+_UPDATE_ACTION_STARTED_RE = re.compile(r"^=== moor-update started .* ([0-9a-f]{32}) ===$")
 
 _MANAGED_EXTERNALLY_MESSAGE = "Moor updates are managed outside this dashboard in containerized environments."
 
@@ -139,9 +139,9 @@ def _durable_completed_update_action_id(lines: list[str]) -> Optional[str]:
 
 
 def _latest_spawned_update_action_id(lines: list[str]) -> Optional[str]:
-    """Action id named by the latest ``hermes-update started`` header of THIS dashboard's log."""
+    """Action id named by the latest ``moor-update started`` header of THIS dashboard's log."""
     for line in reversed(lines):
-        if line.startswith("=== hermes-update started "):
+        if line.startswith("=== moor-update started "):
             match = _UPDATE_ACTION_STARTED_RE.fullmatch(line.strip())
             return match.group(1) if match else None
     return None
@@ -159,7 +159,7 @@ def _persisted_action_id(log_dir: Path, name: str) -> Optional[str]:
 
 @router.post("/api/gateway/restart")
 async def restart_gateway(profile: Optional[str] = None):
-    """Kick off a ``hermes gateway restart --interrupt`` in the background: the user-commanded force
+    """Kick off a ``moor gateway restart --interrupt`` in the background: the user-commanded force
     path that supersedes a drain (D6, 19b26244046), so live sessions do not refuse it."""
     with http_failure("Failed to spawn gateway restart", 500, "Failed to restart gateway"):
         proc, _reused = _spawn_gateway_restart(profile, interrupt=True)
@@ -231,7 +231,7 @@ async def gateway_drain(request: Request):
 
 
 def _update_refused(error: str, message: str, update_command: str) -> dict[str, Any]:
-    _record_completed_action("hermes-update", message, exit_code=1)
+    _record_completed_action("moor-update", message, exit_code=1)
     return {
         "ok": False, "pid": None, "name": "moor-update", "error": error, "message": message,
         "update_command": update_command,
@@ -286,9 +286,9 @@ def _source_release_label(status: dict[str, Any]) -> str:
     return f"{status.get('channel') or 'stable'} release" + (f" v{version}" if version else "")
 
 
-@router.get("/api/hermes/update/check")
-async def check_hermes_update(force: bool = False, profile: Optional[str] = None):
-    """Report whether a Hermes update is available, without applying it.
+@router.get("/api/moor/update/check")
+async def check_moor_update(force: bool = False, profile: Optional[str] = None):
+    """Report whether a Moor update is available, without applying it.
 
     Returns install_method ('apt'|'git'|'docker'|'nix'|'nixos'|'unknown'),
     current_version, behind (commits behind, 0 = up to date, -1 = unknown count,
@@ -395,10 +395,10 @@ async def get_action_status(name: str, lines: int = 200):
 
     durable_update_action_id = None
     update_receipt_summary = action_receipt_summary = None
-    if name == "hermes-update":
-        # ``hermes update`` mirrors to the ROOT home's update.log (main_dashboard), never this
+    if name == "moor-update":
+        # ``moor update`` mirrors to the ROOT home's update.log (main_dashboard), never this
         # dashboard's profile home: read it where it is written.
-        from hermes_cli.logs import log_file_path
+        from moor_cli.logs import log_file_path
 
         durable_update_action_id = _durable_completed_update_action_id(_tail_lines(log_file_path("update"), 2000))
         spawned_action_id = (_latest_spawned_update_action_id(_tail_lines(log_dir / log_file_name, 2000))
@@ -455,7 +455,7 @@ def _read_latest_receipt() -> Optional[dict[str, Any]]:
 
 def _latest_update_receipt_summary(action_id: Optional[str] = None) -> Optional[dict[str, Any]]:
     """Compact summary of dashboard action ``action_id``'s receipt when one exists, else of the
-    latest receipt (written by EVERY ``hermes update`` run, incl. refused/failed), or None; never
+    latest receipt (written by EVERY ``moor update`` run, incl. refused/failed), or None; never
     raises. Steps/skips stay in the full endpoint. ``action_id`` names the writer so a client
     never credits another action's run.
 
@@ -466,7 +466,7 @@ def _latest_update_receipt_summary(action_id: Optional[str] = None) -> Optional[
     """
     receipt = None
     if action_id:
-        from hermes_cli.update_receipt import read_receipt_for_action
+        from moor_cli.update_receipt import read_receipt_for_action
         receipt = read_receipt_for_action(action_id)
     receipt = receipt or _read_latest_receipt()
     if not receipt:

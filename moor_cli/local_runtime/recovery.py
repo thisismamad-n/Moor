@@ -149,7 +149,7 @@ def legacy_recorded_process(state: dict):
 
 def _legacy_orphan_process(state: dict):
     """Windows-only legacy stop recovery after the process identity is established."""
-    from hermes_cli.local_runtime.supervisor import state_path
+    from moor_cli.local_runtime.supervisor import state_path
 
     if os.name != "nt":
         return None

@@ -112,7 +112,7 @@ class TestDumpSubagentTimeoutDiagnostic:
         # We assert no exception propagates — the return value is advisory.
         assert result is None or Path(result).exists()
 
-    def test_timeout_diagnostic_marks_long_goal_as_non_original(self, hermes_home):
+    def test_timeout_diagnostic_marks_long_goal_as_non_original(self, moor_home):
         # #121572: an elided goal must carry the non-imitable counted marker,
         # never the bare "...[truncated]" the model could copy.
         from agent.compression_marker import _COMPRESSION_MARKER_RE

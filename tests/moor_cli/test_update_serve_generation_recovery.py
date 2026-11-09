@@ -476,29 +476,29 @@ def test_dashboard_unit_is_restarted_and_verified_by_the_serve_pass(linux_system
     """#125297: a systemd-supervised dashboard is the same stale-generation risk
     as a serve unit — the abort-recovery pass must enumerate and restart it too."""
     fake = _Systemctl(
-        listed=["hermes-serve.service", "hermes-dashboard-work.service"],
-        active={"hermes-serve.service": True, "hermes-dashboard-work.service": True},
-        main_pids={"hermes-serve.service": 7, "hermes-dashboard-work.service": 8},
+        listed=["moor-serve.service", "moor-dashboard-work.service"],
+        active={"moor-serve.service": True, "moor-dashboard-work.service": True},
+        main_pids={"moor-serve.service": 7, "moor-dashboard-work.service": 8},
     )
     out = recovery.restart_serve_units(run=fake, sleep=lambda _: None)
-    assert fake.restarted == ["hermes-serve.service", "hermes-dashboard-work.service"]
+    assert fake.restarted == ["moor-serve.service", "moor-dashboard-work.service"]
     assert out == {
-        "verified": ["user/hermes-dashboard-work", "user/hermes-serve"],
+        "verified": ["user/moor-dashboard-work", "user/moor-serve"],
         "failed": [],
     }
 
 
 def test_default_profile_dashboard_unit_is_restarted_by_the_serve_pass(linux_systemctl):
-    """#125297: the unprofiled ``hermes-dashboard.service`` — the exact unit from the
+    """#125297: the unprofiled ``moor-dashboard.service`` — the exact unit from the
     report's receipts — is enumerated and restarted alongside serve units."""
     fake = _Systemctl(
-        listed=["hermes-dashboard.service"],
-        active={"hermes-dashboard.service": True},
-        main_pids={"hermes-dashboard.service": 9},
+        listed=["moor-dashboard.service"],
+        active={"moor-dashboard.service": True},
+        main_pids={"moor-dashboard.service": 9},
     )
     out = recovery.restart_serve_units(run=fake, sleep=lambda _: None)
-    assert fake.restarted == ["hermes-dashboard.service"]
-    assert out == {"verified": ["user/hermes-dashboard"], "failed": []}
+    assert fake.restarted == ["moor-dashboard.service"]
+    assert out == {"verified": ["user/moor-dashboard"], "failed": []}
 
 
 def test_no_systemctl_means_no_serve_pass(monkeypatch):
@@ -881,8 +881,8 @@ def _fake_systemctl_path(tmp_path):
 
     The child interpreter is outside the in-process live-system guard and resolves
     ``systemctl`` through ``shutil.which``; without this it restarted the developer's
-    real hermes-serve / hermes-dashboard units. The fake lists one active user-scope
-    ``hermes-serve.service`` whose ``MainPID`` changes once it is restarted.
+    real moor-serve / moor-dashboard units. The fake lists one active user-scope
+    ``moor-serve.service`` whose ``MainPID`` changes once it is restarted.
     """
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -893,7 +893,7 @@ def _fake_systemctl_path(tmp_path):
         "#!/bin/sh\n"
         f"printf '%s\\n' \"$*\" >> '{log}'\n"
         'case " $* " in\n'
-        '  *" --user list-units hermes-serve* "*) echo "hermes-serve.service loaded active running Hermes" ;;\n'
+        '  *" --user list-units moor-serve* "*) echo "moor-serve.service loaded active running Moor" ;;\n'
         '  *" is-active "*) echo active ;;\n'
         f"  *\" show \"*) if [ -e '{marker}' ]; then echo 200; else echo 100; fi ;;\n"
         f"  *\" restart \"*) : > '{marker}' ;;\n"
@@ -908,7 +908,7 @@ def test_recovery_module_reports_serve_units_in_a_real_process(tmp_path):
     """The protocol survives a genuine subprocess round-trip."""
     path, log = _fake_systemctl_path(tmp_path)
     result = subprocess.run(
-        [sys.executable, "-m", "hermes_cli.update_restart_recovery", "--stdin"],
+        [sys.executable, "-m", "moor_cli.update_restart_recovery", "--stdin"],
         input=json.dumps(
             {"profiles": [], "serve_units": {"recover": True, "skip": []}}
         ),
@@ -920,9 +920,9 @@ def test_recovery_module_reports_serve_units_in_a_real_process(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["serve_units"] == {"verified": ["user/hermes-serve"], "failed": []}
+    assert payload["serve_units"] == {"verified": ["user/moor-serve"], "failed": []}
     restarts = [line for line in log.read_text().splitlines() if " restart " in f" {line} "]
-    assert restarts == ["--user --no-ask-password restart hermes-serve.service"]
+    assert restarts == ["--user --no-ask-password restart moor-serve.service"]
 
 
 @pytest.mark.platforms("not linux")

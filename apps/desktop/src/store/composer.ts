@@ -1,7 +1,7 @@
-import { randomUuid } from '@hermes/shared'
+import { randomUuid } from '@moor/shared'
 import { atom } from 'nanostores'
 
-import type { HermesStagedUpload } from '@/global'
+import type { MoorStagedUpload } from '@/global'
 import { deriveDraftTitle } from '@/lib/draft-title'
 import { triggerHaptic } from '@/lib/haptics'
 import { persistString, storedString } from '@/lib/storage'
@@ -87,10 +87,10 @@ export interface ComposerAttachment {
   thumbnailUrl?: string
   path?: string
   /** Ownership of browser-staged bytes; survives failed uploads and draft clones. */
-  stagedUpload?: HermesStagedUpload
+  stagedUpload?: MoorStagedUpload
   /** Validated MIME returned by canonical owner staging. */
   mime?: string
-  /** Bounded source text from a Hermes-generated large paste, sent only to the title path. */
+  /** Bounded source text from a moor-generated large paste, sent only to the title path. */
   titlePreview?: string
   attachedSessionId?: string
   /** Set while the file/image bytes are being staged into the session
@@ -272,7 +272,7 @@ export interface SessionDraft {
 // the key (rather than just its text) lets a reload restore that exact fresh
 // draft; starting another new chat rotates the key so abandoned unsent drafts
 // cannot bleed into the next lifecycle.
-const FRESH_DRAFT_STORAGE_KEY = 'hermes.desktop.freshDraftKey'
+const FRESH_DRAFT_STORAGE_KEY = 'moor.desktop.freshDraftKey'
 
 const createFreshDraftKey = (): string => `__new__:${randomUuid()}`
 

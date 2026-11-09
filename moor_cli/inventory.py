@@ -90,7 +90,7 @@ def build_models_payload(
     cannot stall the response (GUI picker opens). ``fast_custom_probe`` overrides the
     custom-endpoint discovery budget ``for_picker`` otherwise implies (1.5s vs 5s) — ``None`` keeps
     the coupling, ``False`` retains the full 5s budget (#103843)."""
-    from hermes_cli.model_switch import list_authenticated_providers
+    from moor_cli.model_switch import list_authenticated_providers
 
     rows = list_authenticated_providers(
         current_provider=ctx.current_provider, current_base_url=ctx.current_base_url,
@@ -264,7 +264,7 @@ def _apply_limits(rows: list[dict]) -> None:
     from datetime import datetime, timezone
 
     from agent.credential_pool import load_pool
-    from hermes_cli.auth import read_credential_pool
+    from moor_cli.auth import read_credential_pool
 
     def iso(epoch: float) -> str:
         return datetime.fromtimestamp(epoch, UTC).isoformat()
@@ -304,7 +304,7 @@ def _apply_usage(rows: list[dict]) -> None:
         cached_account_usage, has_account_usage, refresh_account_usage_async,
         refresh_account_usage_entries_async, snapshot_is_stale,
     )
-    from hermes_cli.auth import read_credential_pool
+    from moor_cli.auth import read_credential_pool
 
     def _wire_windows(snapshot) -> list[dict]:
         return [
@@ -453,7 +453,7 @@ def _pool_entry_host(slug: str, entry) -> str:
     from agent.credential_pool import _norm_url
 
     if slug == "openai-codex":
-        from hermes_cli.auth_codex import _codex_pool_route_base_url
+        from moor_cli.auth_codex import _codex_pool_route_base_url
 
         return _norm_url(_codex_pool_route_base_url(entry.runtime_base_url))
     return _norm_url(getattr(entry, "runtime_base_url", None))
@@ -462,7 +462,7 @@ def _pool_entry_host(slug: str, entry) -> str:
 def _pool_entry_route_base_url(slug: str, entry) -> Optional[str]:
     """The base URL a usage fetch for *entry* must target (its own route, never a sibling's)."""
     if slug == "openai-codex":
-        from hermes_cli.auth_codex import _codex_pool_route_base_url
+        from moor_cli.auth_codex import _codex_pool_route_base_url
 
         return _codex_pool_route_base_url(entry.runtime_base_url)
     return getattr(entry, "runtime_base_url", None) or None
@@ -545,7 +545,7 @@ def _apply_capabilities(rows: list[dict], *, metadata_config: dict | None = None
     serving aggregator's detail overrides models.dev (adds ``can_disable_reasoning``). ``supported_efforts``
     is deliberately NOT forwarded — it under-reports levels that work."""
     from agent.codex_service_tiers import ultrafast_offered
-    from hermes_cli.models import model_supports_ultrafast, resolve_fast_mode_overrides
+    from moor_cli.models import model_supports_ultrafast, resolve_fast_mode_overrides
 
     try:
         from agent.models_dev import get_model_capabilities
@@ -611,7 +611,7 @@ def _apply_featured(rows: list[dict], *, metadata_config: dict | None = None) ->
     # contain "/" and span >= 2 prefixes?) misread every Org/Model-shaped user provider as a
     # multi-lab aggregator and hid the models its owner configured by hand (#120217).
     try:
-        from hermes_cli.providers import is_routing_aggregator
+        from moor_cli.providers import is_routing_aggregator
     except Exception:
         is_routing_aggregator = None  # type: ignore[assignment]
 
@@ -698,8 +698,8 @@ def _append_unconfigured_rows(
     """Empty setup skeletons for canonical providers missing from ``rows`` — except the *current* one:
     if config.yaml still points at it but credentials are gone, keep a row carrying the saved model so
     GUI pickers don't silently snap to another provider."""
-    from hermes_cli.models import _PROVIDER_ALIASES, _model_requires_account_discovery
-    from hermes_cli.models_catalog_static import listed_canonical_providers
+    from moor_cli.models import _PROVIDER_ALIASES, _model_requires_account_discovery
+    from moor_cli.models_catalog_static import listed_canonical_providers
 
     seen = {r["slug"].lower() for r in rows}
     cur = (ctx.current_provider or "").lower()
@@ -773,7 +773,7 @@ def _anthropic_oauth_credentials_present() -> bool:
 def _filter_explicit_provider_rows(rows: list[dict], ctx: ConfigContext) -> list[dict]:
     """Keep only rows backed by explicit user configuration — ``list_authenticated_providers`` also
     discovers ambient credentials (e.g. another CLI's login token) Desktop chat pickers must not show."""
-    from hermes_cli.auth import is_provider_explicitly_configured
+    from moor_cli.auth import is_provider_explicitly_configured
 
     current_slug = str(ctx.current_provider or "").strip().lower()
 
@@ -875,15 +875,15 @@ def _reorder_canonical(rows: list[dict]) -> list[dict]:
     return canon + extras
 
 
-def _attach_nous_plan_usage(row: dict, *, warm: bool):
+def _attach_moor_plan_usage(row: dict, *, warm: bool):
     """Stamp ``plan_usage`` from the portal snapshot (window plans only) and return the PickerUsage (or
     None). A cache-only open reads the last snapshot at any age: the 60s account cache has usually lapsed
     by the time someone opens the composer menu. Accounts without a window plan get nothing."""
     try:
-        from hermes_cli.model_picker_usage import nous_picker_usage
-        usage = nous_picker_usage(warm=warm, any_age=not warm)
+        from moor_cli.model_picker_usage import moor_picker_usage
+        usage = moor_picker_usage(warm=warm, any_age=not warm)
     except Exception:
-        logging.getLogger(__name__).debug("Nous plan usage unavailable", exc_info=True)
+        logging.getLogger(__name__).debug("Moor plan usage unavailable", exc_info=True)
         return None
     if usage is not None:
         row["plan_usage"] = usage.to_payload()
@@ -899,7 +899,7 @@ def _attach_nous_plan_usage(row: dict, *, warm: bool):
 
 
 def _plan_usage_window(g) -> dict:
-    """One window-plan allowance in main's ``ProviderUsageWindow`` shape. The label is Hermes's row title
+    """One window-plan allowance in main's ``ProviderUsageWindow`` shape. The label is Moor's row title
     (``Today``), like the other providers' English window labels."""
     from datetime import datetime
     from agent.usage_gauges import WindowGauge, gauge_title
@@ -911,9 +911,9 @@ def _plan_usage_window(g) -> dict:
     }
 
 
-# health: allow CC -- usage-window plans: one branch attaches plan usage to the Nous row (built in _attach_nous_plan_usage); over target on main
-def _apply_pricing(rows: list[dict], *, force_fresh_nous_tier: bool = False, cached_only: bool = False) -> None:
-    """Set ``row["pricing"] = {model_id: {input, output, cache | None, free}}``; for Nous also
+# health: allow CC -- usage-window plans: one branch attaches plan usage to the Moor row (built in _attach_moor_plan_usage); over target on main
+def _apply_pricing(rows: list[dict], *, force_fresh_moor_tier: bool = False, cached_only: bool = False) -> None:
+    """Set ``row["pricing"] = {model_id: {input, output, cache | None, free}}``; for Moor also
     ``free_tier`` (account is free-tier) and ``unavailable_models`` (paid models a free user can't pick).
     ``cached_only`` never hits the network: unknown Moor entitlement fails closed (``free_tier_pending``,
     all models locked) and missing pricing is marked ``pricing_pending``."""
@@ -946,11 +946,11 @@ def _apply_pricing(rows: list[dict], *, force_fresh_nous_tier: bool = False, cac
             raw_pricing = get_pricing_for_provider(slug, **pricing_kwargs) or {}
         except Exception:
             raw_pricing = {}
-        cached_nous_tier: Optional[bool] = None
-        plan_usage = _attach_nous_plan_usage(row, warm=not cached_only) if slug == "nous" else None
-        if slug == "nous" and cached_only:
-            cached_nous_tier = get_cached_nous_free_tier()
-            if cached_nous_tier is None:
+        cached_moor_tier: Optional[bool] = None
+        plan_usage = _attach_moor_plan_usage(row, warm=not cached_only) if slug == "moor" else None
+        if slug == "moor" and cached_only:
+            cached_moor_tier = get_cached_moor_free_tier()
+            if cached_moor_tier is None:
                 # Entitlement unknown: stay nonblocking but fail closed until the prewarm has populated
                 # both caches, else a free account could briefly select paid models on first open.
                 row["free_tier_pending"] = True
@@ -1008,7 +1008,7 @@ def _apply_pricing(rows: list[dict], *, force_fresh_nous_tier: bool = False, cac
                 row["free_tier"] = False
                 row["unavailable_models"] = []
             if plan_usage is not None:
-                from hermes_cli.model_picker_usage import usage_levels
+                from moor_cli.model_picker_usage import usage_levels
                 # The gateway's per-plan word per model (free / low / medium / top_tier).
                 row["usage_levels"] = usage_levels(list(models), raw_pricing)
                 # Top-tier marks from the gateway (it decides, not the client).
@@ -1068,7 +1068,7 @@ def _prewarm_pricing_async(
             slug, base_url=base_url, current_provider=current_provider, current_base_url=current_base_url,
         ))
         for slug, base_url in slugs))
-    prewarm_key = (hermes_home_key(), endpoint_scope)
+    prewarm_key = (moor_home_key(), endpoint_scope)
 
     with _pricing_prewarm_lock:
         current = _pricing_prewarm_threads.get(prewarm_key)

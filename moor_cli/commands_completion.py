@@ -31,10 +31,10 @@ def _personalities_from_cli_config() -> dict[str, Any]:
     Falls back to a fresh load when the file cannot be stat'ed."""
     global _personalities_memo
     from cli import load_cli_config
-    from hermes_cli.personality import available_personalities
+    from moor_cli.personality import available_personalities
     try:
-        from hermes_cli.config import get_config_path
-        from hermes_cli.config_backend import config_cache_version
+        from moor_cli.config import get_config_path
+        from moor_cli.config_backend import config_cache_version
         cfg_path = get_config_path()
         sig = (str(cfg_path), *config_cache_version(cfg_path))
     except Exception:
@@ -468,7 +468,7 @@ class SlashCommandCompleter(Completer):
         try:
             found = self._plugin_commands_provider() if self._plugin_commands_provider else None
             if found is None:
-                from hermes_cli.plugins import get_plugin_commands
+                from moor_cli.plugins import get_plugin_commands
                 found = {name: info.get("description", "") for name, info in get_plugin_commands().items()}
             return found
         except Exception:  # a plugin's registry or the gateway call must never break typing
@@ -528,7 +528,7 @@ def cli_slash_completer(cli):
     """The classic CLI prompt's slash completer; on a gateway session its skills and plugin commands are
     the gateway's (``commands.catalog``), so completing loads no plugin in the CLI process."""
     from cli import _session_skill_commands, get_skill_bundles
-    from hermes_cli import gateway_plugin_commands
+    from moor_cli import gateway_plugin_commands
     return SlashCommandCompleter(
         skill_commands_provider=lambda: _session_skill_commands(cli), command_filter=cli._command_available,
         skill_bundles_provider=lambda: get_skill_bundles(), plugin_commands_provider=lambda: gateway_plugin_commands.names(cli))

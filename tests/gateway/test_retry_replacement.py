@@ -619,8 +619,8 @@ async def test_gateway_retry_preserves_archived_compaction_rows_when_probe_fails
 def _paused_runner_with_exchange(tmp_path, monkeypatch, session_id, rows):
     """Bare runner whose session holds one plain user/assistant exchange; returns
     ``(gw, store, session_entry)`` with the transcript snapshot taken before /retry."""
-    import hermes_state
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
+    import moor_state
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
 
     config = GatewayConfig()
     store = SessionStore(sessions_dir=tmp_path, config=config)
@@ -648,7 +648,7 @@ async def test_gateway_retry_paused_refusal_leaves_transcript_unchanged(tmp_path
         [("user", "retry me"), ("assistant", "old answer")],
     )
     before = store._db.get_messages("retry-paused-session", include_inactive=True)
-    paused_notice = "⏸️ Hermes is paused. New work is on hold; run `hermes resume`."
+    paused_notice = "⏸️ Moor is paused. New work is on hold; run `moor resume`."
     monkeypatch.setattr("agent.estop.paused_reply", lambda: paused_notice)
 
     result = await gw._handle_retry_command(
@@ -672,7 +672,7 @@ async def test_gateway_retry_paused_refusal_leaves_carrier_rewind_untouched(
         [("user", _composite_carrier()["content"]), ("assistant", "failed answer")],
     )
     before = store._db.get_messages("retry-paused-carrier-session", include_inactive=True)
-    paused_notice = "⏸️ Hermes is paused. New work is on hold; run `hermes resume`."
+    paused_notice = "⏸️ Moor is paused. New work is on hold; run `moor resume`."
     monkeypatch.setattr("agent.estop.paused_reply", lambda: paused_notice)
 
     result = await gw._handle_retry_command(

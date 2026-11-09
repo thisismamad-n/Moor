@@ -11,7 +11,7 @@ export const frNotices = {
   butterbar: {
     goTo: (index, total) => `Afficher l'avis ${index} sur ${total}`,
     legal: {
-      before: "L'utilisation de Hermes Agent est soumise à nos ",
+      before: "L'utilisation de Moor Agent est soumise à nos ",
       terms: "Conditions d'utilisation",
       between: ' et à notre ',
       privacy: 'Politique de confidentialité',
@@ -33,13 +33,13 @@ export const frNotices = {
     desktopCommands: frDesktopCommands
   },
   keepAwakeOffer: {
-    title: 'Votre ordinateur s’est mis en veille pendant que Hermes travaillait',
+    title: 'Votre ordinateur s’est mis en veille pendant que Moor travaillait',
     message:
-      'Hermes peut empêcher la mise en veille pendant qu’une tâche s’exécute. L’écran s’éteint toujours, et sur batterie l’ordinateur peut quand même se mettre en veille.',
+      'Moor peut empêcher la mise en veille pendant qu’une tâche s’exécute. L’écran s’éteint toujours, et sur batterie l’ordinateur peut quand même se mettre en veille.',
     action: 'Empêcher la veille pendant le travail'
   },
   billingBlock: {
-    titleNous: 'Plus de crédits Nous',
+    titleMoor: 'Plus de crédits Moor',
     titleProvider: provider => `Plus de crédits — ${provider}`,
     fallbackMessage: 'Votre compte est à court de crédits. Ajoutez-en pour continuer.',
     openBilling: 'Ouvrir la facturation',

@@ -1,4 +1,4 @@
-"""A Hermes start from a git checkout must not walk git for the release it never uses.
+"""A Moor start from a git checkout must not walk git for the release it never uses.
 
 Each case runs in a fresh interpreter (the suite's conftest pre-seeds the version cache) with a
 ``git`` shim on PATH that logs every invocation before running the real git.
@@ -23,9 +23,9 @@ def _run_logging_git(tmp_path: Path, code: str) -> tuple[dict, list[str]]:
     if real_git is None:
         pytest.skip("git not installed")
     home = tmp_path / "home"
-    # Version resolution falls back to <HERMES_HOME>/hermes-agent when the executing tree has no
+    # Version resolution falls back to <MOOR_HOME>/moor-agent when the executing tree has no
     # .git (sdist/archive test runs); give it a tagged checkout so the release walk always has one.
-    repo = home / "hermes-agent"
+    repo = home / "moor-agent"
     repo.mkdir(parents=True)
     # The fixture's own git ignores the developer's config (signing, hooks): run_tests.sh keeps the
     # real HOME, so a global commit.gpgsign would otherwise prompt for or fail on a key.
@@ -49,7 +49,7 @@ def _run_logging_git(tmp_path: Path, code: str) -> tuple[dict, list[str]]:
         **os.environ,
         "PATH": f"{bindir}{os.pathsep}{os.environ.get('PATH', '')}",
         "PYTHONPATH": str(ROOT),
-        "HERMES_HOME": str(home),
+        "MOOR_HOME": str(home),
     }
     out = subprocess.run(
         [sys.executable, "-c", code], cwd=str(ROOT), env=env, capture_output=True, text=True,
@@ -86,19 +86,19 @@ def test_provider_headers_run_no_git_until_read_and_stay_a_dict_for_overrides(tm
         ),
     }
     code = (
-        "import json, os, pathlib, hermes_cli.config, providers\n"
+        "import json, os, pathlib, moor_cli.config, providers\n"
         "providers.list_providers()\n"
         "log = os.environ['PATH'].split(os.pathsep)[0] + '/../git.log'\n"
         "before = open(log, encoding='utf-8-sig').read().splitlines() if os.path.exists(log) else []\n"
         "ua = dict(providers.get_provider_profile('fireworks').default_headers)['User-Agent']\n"
         f"for name, body in {overrides!r}.items():\n"
-        "    plugin = pathlib.Path(os.environ['HERMES_HOME'], 'plugins', 'model-providers', name)\n"
+        "    plugin = pathlib.Path(os.environ['MOOR_HOME'], 'plugins', 'model-providers', name)\n"
         "    plugin.mkdir(parents=True)\n"
         "    (plugin / '__init__.py').write_text('import dataclasses\\n'\n"
         "        'from providers import get_provider_profile, register_provider\\n'\n"
         "        \"base = get_provider_profile('gmi')\\n\" + body)\n"
         "providers._home_layer(force_stamp_check=True)\n"
-        "from hermes_cli.version_info import get_version_info\n"
+        "from moor_cli.version_info import get_version_info\n"
         "found = {n: providers.get_provider_profile(n) for n in ('gmi-eu', 'gmi-acct', 'gmi-tag')}\n"
         "print(json.dumps({'before': before, 'ua': ua, 'base': get_version_info().base_version,\n"
         "                  'found': {n: p and dict(p.default_headers) for n, p in found.items()}}))\n"
@@ -120,7 +120,7 @@ def test_provider_headers_run_no_git_until_read_and_stay_a_dict_for_overrides(tm
 def test_startup_checkout_sha_read_is_one_rev_parse(tmp_path):
     code = (
         "import json\n"
-        "from hermes_cli.update_cmd_fleet import _current_checkout_sha\n"
+        "from moor_cli.update_cmd_fleet import _current_checkout_sha\n"
         "sha = _current_checkout_sha()\n"
         "print(json.dumps({'sha': sha}))\n"
     )

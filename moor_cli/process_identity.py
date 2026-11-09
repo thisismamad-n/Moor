@@ -1,13 +1,13 @@
 """Process identity: spawn tags, the machine-wide spawn ledger, the Windows job-object self-attach,
 and the POSIX owner-death supervisor.
 
-Four layers make every long-lived Hermes process positively identifiable, so reapers (``hermes
+Four layers make every long-lived Moor process positively identifiable, so reapers (``moor
 update``, Desktop startup sweeps) never guess lineage from PPID archaeology or cmdline matching,
-and make every long-lived CHILD die with the Hermes process that owns it:
-1. spawn tags (``HERMES_SPAWN`` env stamped by the spawner); 2. a ``(pid, create_time)`` ledger;
+and make every long-lived CHILD die with the Moor process that owns it:
+1. spawn tags (``MOOR_SPAWN`` env stamped by the spawner); 2. a ``(pid, create_time)`` ledger;
 3. Windows job-object self-attach with ``KILL_ON_JOB_CLOSE`` so the whole child tree dies with the
 root — no launcher→worker chains left holding ``.pyd`` locks; 4. on POSIX, one supervisor per
-Hermes process that reaps the owned children's process groups the moment Hermes dies.
+Moor process that reaps the owned children's process groups the moment Moor dies.
 """
 
 from __future__ import annotations
@@ -215,8 +215,8 @@ def parse_spawn_tag(raw: object) -> Optional[SpawnTag]:
 def spawned_by_this_process(pid: int) -> bool:
     """True when ``pid`` carries a spawn tag naming THIS process (pid and create time).
 
-    A shared daemon (one session or pid file every Hermes of this user can reach) is owned only by
-    the Hermes whose command actually started it: the CLI it ran was given ``spawn_env`` and the
+    A shared daemon (one session or pid file every Moor of this user can reach) is owned only by
+    the Moor whose command actually started it: the CLI it ran was given ``spawn_env`` and the
     daemon inherited it. A pid file proves what a process is, not who started it. Fails closed:
     an unreadable environment (another user, a race) is not ours."""
     import psutil
@@ -249,7 +249,7 @@ class LedgerEntry:
     host: str = ""
     port: Optional[int] = None
     profile: str = ""
-    hermes_home: str = ""
+    moor_home: str = ""
     # `serve --isolated`: opted out of the host singleton (Desktop's SSH backend for another
     # machine). Attach-first readers must never adopt it; argv is truncated, so this is canonical.
     isolated: bool = False
@@ -363,7 +363,7 @@ def register_self(purpose: str, *, project_root: Optional[Path] = None, detail: 
     spawner_pid, spawner_create = (tag.spawner_pid, tag.spawner_create) if tag else _desktop_spawner_identity()
     entry = _new_entry(os.getpid(), _process_create_time(), purpose, project_root, spawner_pid, spawner_create)
     entry.spawner_boot = _verified_boot_start(spawner_pid, spawner_create)
-    entry.hermes_home = hermes_home_key()
+    entry.moor_home = moor_home_key()
     if detail:
         try:
             entry.host = str(detail.get("host") or "")
@@ -405,7 +405,7 @@ def is_desktop_owned_backend(argv: Optional[Sequence[str]] = None) -> bool:
 # Set while this process works for the Desktop app on its own machine: one request from, or one turn of
 # a chat created by, a client ``local_desktop_client`` accepted. The gateway serves the Desktop, the CLI,
 # the TUI and bots from one process, so this is a property of the activity, never of the process.
-_SERVING_LOCAL_DESKTOP: ContextVar[bool] = ContextVar("hermes_serving_local_desktop", default=False)
+_SERVING_LOCAL_DESKTOP: ContextVar[bool] = ContextVar("moor_serving_local_desktop", default=False)
 
 
 @contextmanager
@@ -470,12 +470,12 @@ def _append_entry(entry: LedgerEntry) -> bool:
     """Prune dead entries and append ``entry`` — the ONLY ledger write path.
 
     Serialized under ``_LEDGER_LOCK`` and, across processes, an exclusive lock on a sidecar file
-    (every ``spawn_owned`` writes here, so concurrent Hermes processes otherwise dropped each
+    (every ``spawn_owned`` writes here, so concurrent Moor processes otherwise dropped each
     other's rows), with an atomic tmp+replace; no writer touches the file outside this function.
 
     See #91660.
     """
-    from hermes_cli.active_sessions import _FileLock
+    from moor_cli.active_sessions import _FileLock
 
     path = _ledger_path()
     with _LEDGER_LOCK, ExitStack() as held:
@@ -483,12 +483,12 @@ def _append_entry(entry: LedgerEntry) -> bool:
             held.enter_context(_FileLock(path.with_name(path.name + ".lock"), timeout=_LEDGER_LOCK_TIMEOUT_S))
         except (RuntimeError, OSError):
             # Best-effort like the write itself: the thread lock is then the only guard, so a row another
-            # Hermes process writes meanwhile can be lost. Say so once where it shows (agent.log).
+            # Moor process writes meanwhile can be lost. Say so once where it shows (agent.log).
             global _ledger_lock_warned
             if not _ledger_lock_warned:
                 _ledger_lock_warned = True
                 logger.warning("spawn ledger lock unavailable (a stalled holder, or no file locks here); writing "
-                               "without it, so concurrent Hermes processes may drop each other's rows")
+                               "without it, so concurrent Moor processes may drop each other's rows")
             logger.debug("spawn ledger lock unavailable", exc_info=True)
         entries = _read_ledger_or_quarantine(path) or []
         # Drop malformed entries, our own stale entry, and provably dead pids.
@@ -613,7 +613,7 @@ def _reparented_orphan(pid: int) -> bool:
     unavailable there, so this rung never fires (desktop tree-kill reaps instead).
     """
     try:
-        from hermes_cli.dashboard_procs import (
+        from moor_cli.dashboard_procs import (
             _REAP_MIN_AGE_SECONDS, _lock_owned_serve_pids, _process_ppid)
         if _process_ppid(pid) not in (0, 1):
             return False
@@ -822,7 +822,7 @@ def attach_self_to_kill_on_close_job() -> bool:
 # its long-lived children reparent to init or the nearest subreaper (systemd --user) and run
 # forever; macOS has no PR_SET_PDEATHSIG, and on Linux it fires when the spawning THREAD exits,
 # which kills children spawned from short-lived worker threads while the owner is alive. So ONE
-# supervisor per Hermes process (``process_supervisor.sh``) holds the read end of a pipe whose only
+# supervisor per Moor process (``process_supervisor.sh``) holds the read end of a pipe whose only
 # write end we hold: EOF means we died, by any cause, and it killpg()s every group still registered.
 # A registered group that was never unregistered IS the orphan set, so a clean exit that stopped its
 # children first ends with nothing to kill, and one that didn't takes them along.
@@ -869,7 +869,7 @@ def _spawn_supervisor():
 # A supervisor that dies sooner than this after starting may not be able to stay up (a broken install:
 # sh exiting 2 or 127; a sandbox or OOM killer that keeps killing it): the waiter leaves it to the next
 # registration change instead of restarting it in a loop. One killed by a signal gets one young restart
-# (a new supervisor starts after every idle period, so a `pkill -f hermes` often meets a young one); if
+# (a new supervisor starts after every idle period, so a `pkill -f moor` often meets a young one); if
 # its replacement is killed young as well, that one waits for the next registration change too.
 _SUPERVISOR_RESTART_MIN_UPTIME_S = 5.0
 
@@ -883,7 +883,7 @@ def _watch_supervisor(proc) -> None:
     """One waiter thread per supervisor, blocked in the untimed ``wait()`` (waitpid, no polling). It
     reaps the supervisor the moment it exits, so no zombie child is left for psutil walkers of this
     process's children to trip on. A supervisor that died on its own while groups are still registered
-    (``pkill -f hermes``, the OOM killer) is restarted and replayed at once, so coverage does not wait
+    (``pkill -f moor``, the OOM killer) is restarted and replayed at once, so coverage does not wait
     for the next registration change; a released one (EOF with an empty set) is only reaped."""
     started = time.monotonic()
     young_restart = _starting_young_restart

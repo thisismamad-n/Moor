@@ -129,7 +129,7 @@ def _xai_finalize_catalog(ids: list[str]) -> list[str]:
 
 
 def _xai_curated_models() -> list[str]:
-    """Offline curated floor for xAI / xAI OAuth pickers: $HERMES_HOME/models_dev_cache.json
+    """Offline curated floor for xAI / xAI OAuth pickers: $MOOR_HOME/models_dev_cache.json
     (no network), else ``_XAI_STATIC_FALLBACK``. Any failure falls through to the static list.
     Reads through the process-wide models.dev copy, so the parse is the one every later reader shares."""
     try:
@@ -500,7 +500,7 @@ _PROVIDER_LABELS["custom"] = "Custom endpoint"  # special case: not a named prov
 def listed_canonical_providers() -> list[ProviderEntry]:
     """``CANONICAL_PROVIDERS`` minus pre-release profiles the user has not opted into: what a provider
     LIST offers. Typed paths (``provider:model``, labels, ``--provider``) keep the full table."""
-    from hermes_cli import models  # the binding every list consumer read before this filter existed
+    from moor_cli import models  # the binding every list consumer read before this filter existed
     from providers import unlisted_provider_names
     hidden = unlisted_provider_names()
     return [p for p in models.CANONICAL_PROVIDERS if p.slug not in hidden]
@@ -654,7 +654,7 @@ _PROVIDER_ALIASES = _CatalogAliases((
     ("ollama", "custom"),  # bare "ollama" = local; use "ollama-cloud" for cloud
     ("ollama_cloud", "ollama-cloud"),
     # Local OpenAI-compatible servers route through the generic "custom" provider
-    # (parity with hermes_cli.auth and hermes_cli.providers). Issue #62213. The llamacpp
+    # (parity with moor_cli.auth and moor_cli.providers). Issue #62213. The llamacpp
     # aliases stay unmapped: they are the managed local runtime's picker id, and the model
     # validator must reach its staged-library branch before the custom one.
     ("local", "custom"), ("vllm", "custom"),
@@ -689,7 +689,7 @@ _PROVIDER_RETIRED_ALIASES: dict[str, tuple[str, ...]] = {
 
 
 # Plugin profiles with ``aggregator=True`` join at sync time (``sync_plugin_provider_catalog``).
-_AGGREGATOR_PROVIDERS: set[str] = {"nous", "openrouter", "ai-gateway", "kilocode"}
+_AGGREGATOR_PROVIDERS: set[str] = {"moor", "openrouter", "ai-gateway", "kilocode"}
 sync_plugin_provider_catalog()  # every table it extends is defined above
 
 
@@ -715,7 +715,7 @@ _KEYLESS_STABLE_CACHE_PROVIDERS: frozenset[str] = frozenset({"opencode-free"})
 _OPENAI_FAST_MODE_PREFIXES: tuple[str, ...] = ("gpt-", "o1", "o3", "o4")
 # OpenAI Ultrafast (service_tier="ultrafast", 6x Standard): GPT-6 Astra and GPT-6.1 Sol
 # (developers.openai.com/api/docs/guides/ultrafast-mode, 2026-10-08).
-# Exact wire slugs, matched after stripping the vendor prefix and the Hermes-side ``-900k`` alias.
+# Exact wire slugs, matched after stripping the vendor prefix and the moor-side ``-900k`` alias.
 _OPENAI_ULTRAFAST_MODELS: frozenset[str] = frozenset({"gpt-6-astra", "gpt-6.1-sol"})
 
 

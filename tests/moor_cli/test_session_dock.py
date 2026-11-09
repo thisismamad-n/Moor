@@ -76,16 +76,16 @@ def test_dock_ignores_a_goal_manager_left_over_from_another_session(moor_home):
     assert goal_line(SimpleNamespace(session_id="new-sid")) == ""
 
 
-def test_dock_drops_the_prompt_a_turn_takes_from_the_queue_before_the_turn_runs(hermes_home):
+def test_dock_drops_the_prompt_a_turn_takes_from_the_queue_before_the_turn_runs(moor_home):
     """A seeded ``-q`` prompt (or any queued input) leaves ``_pending_input`` when its turn starts;
     the dock must stop listing it then, not up to a second later on the spinner thread's poll,
     or the dock is still painted when the reply prints and shrinks under it afterwards."""
     from unittest.mock import Mock
 
-    from cli import HermesCLI, _SeededQueryMessage
-    from hermes_cli.cli_subagent_monitor import SubagentMonitor
+    from cli import MoorCLI, _SeededQueryMessage
+    from moor_cli.cli_subagent_monitor import SubagentMonitor
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id, cli.agent = "sid-a", None
     cli._pending_input = queue.Queue()
     cli._pending_input.put(_SeededQueryMessage("hello"))
@@ -107,11 +107,11 @@ def test_dock_drops_the_prompt_a_turn_takes_from_the_queue_before_the_turn_runs(
     assert not monitor.has_rows
 
 
-def test_dock_loop_row_counts_down_to_the_next_wakeup(hermes_home):
+def test_dock_loop_row_counts_down_to_the_next_wakeup(moor_home):
     """A standing /loop gets a dock row whose countdown moves with the clock (it used to be a
     one-shot ``next in 45m`` transcript line that never changed)."""
-    from hermes_cli.cli_subagent_monitor import SubagentMonitor
-    from hermes_cli.loops import LoopManager
+    from moor_cli.cli_subagent_monitor import SubagentMonitor
+    from moor_cli.loops import LoopManager
 
     mgr = LoopManager(session_id="sid-a")
     mgr.set("check the deploy", interval_seconds=45 * 60)
@@ -135,13 +135,13 @@ def test_dock_loop_row_counts_down_to_the_next_wakeup(hermes_home):
     assert dock.refresh(now=due) and not dock.has_rows
 
 
-def test_dock_repaints_a_goal_a_tool_changed_mid_turn(hermes_home):
+def test_dock_repaints_a_goal_a_tool_changed_mid_turn(moor_home):
     """A plugin tool adds criteria to the goal mid-turn: the gateway's ``session.control.update`` frame
     marks the CLI's mirrored manager stale and the dock's next poll re-reads it (once), not at turn end."""
-    from hermes_cli.cli_loops_mixin import CLILoopsMixin
-    from hermes_cli.cli_subagent_monitor import SubagentMonitor
-    from hermes_cli.gateway_agent import _HANDLERS
-    from hermes_cli.goals import GoalManager
+    from moor_cli.cli_loops_mixin import CLILoopsMixin
+    from moor_cli.cli_subagent_monitor import SubagentMonitor
+    from moor_cli.gateway_agent import _HANDLERS
+    from moor_cli.goals import GoalManager
 
     mgr = GoalManager(session_id="sid-a")
     mgr.set("ship the dock feature")

@@ -19,9 +19,9 @@ import struct
 
 import pytest
 
-from hermes_cli.local_runtime.context_policy import spill_overrides
-from hermes_cli.local_runtime.estimator import profile_from_gguf
-from hermes_cli.local_runtime.gguf import read_gguf_header
+from moor_cli.local_runtime.context_policy import spill_overrides
+from moor_cli.local_runtime.estimator import profile_from_gguf
+from moor_cli.local_runtime.gguf import read_gguf_header
 
 GIB = 1 << 30
 
@@ -165,10 +165,10 @@ def test_residency_cap_prices_a_split_against_the_card(tmp_path, monkeypatch):
     """The consequence, not just the reader: a fleet whose largest model is a split must not be
     admitted ``models_max`` times over. Two giants co-resided because the probe saw a 175 GB model
     as a few GiB and booted the router with room for three."""
-    from hermes_cli.local_runtime import presets
-    from hermes_cli.local_runtime.estimator import HardwareBudget
+    from moor_cli.local_runtime import presets
+    from moor_cli.local_runtime.estimator import HardwareBudget
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     mdir = tmp_path / "models"
     mdir.mkdir()
     # A 48 GiB split laid out the reported way: part 1 a metadata stub, the weights in part 2.
@@ -188,10 +188,10 @@ def test_a_truncated_header_skips_the_model_instead_of_raising(tmp_path, monkeyp
     """Every caller skips a model whose header raises ValueError or OSError. A header cut short
     used to raise struct.error, which none of them catch, so one bad file took down the whole
     preset pass instead of dropping out of it."""
-    from hermes_cli.local_runtime import presets
-    from hermes_cli.local_runtime.estimator import HardwareBudget
+    from moor_cli.local_runtime import presets
+    from moor_cli.local_runtime.estimator import HardwareBudget
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     parts = _split(tmp_path, "cut-head", [
         {"tensors": []},
         {"tensors": [("blk.0.attn_q.weight", 16 << 20)]},

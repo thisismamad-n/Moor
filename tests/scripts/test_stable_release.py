@@ -379,10 +379,10 @@ def test_manifest_origin_checks_with_real_https(https_origin):
 
 # Stable runs from the default branch. GITHUB_SHA is main's tip, never the claim commit.
 CONTROLLER_ENV = {
-    "GITHUB_REPOSITORY": "example/hermes-agent",
+    "GITHUB_REPOSITORY": "example/moor-agent",
     "GITHUB_EVENT_NAME": "workflow_dispatch",
     "GITHUB_REF": "refs/heads/main",
-    "GITHUB_WORKFLOW_REF": "example/hermes-agent/.github/workflows/stable-release.yml@refs/heads/main",
+    "GITHUB_WORKFLOW_REF": "example/moor-agent/.github/workflows/stable-release.yml@refs/heads/main",
     "GITHUB_SHA": "e" * 40,
 }
 
@@ -411,8 +411,8 @@ def test_claim_must_run_from_the_default_branch_controller():
         {"GITHUB_REF": "refs/tags/rc.1-v1.2.3"},
         {"GITHUB_REF": "refs/heads/feature"},
         {"GITHUB_EVENT_NAME": "workflow_run"},
-        {"GITHUB_WORKFLOW_REF": "example/hermes-agent/.github/workflows/other.yml@refs/heads/main"},
-        {"GITHUB_WORKFLOW_REF": "example/hermes-agent/.github/workflows/stable-release.yml@refs/tags/rc.1-v1.2.3"},
+        {"GITHUB_WORKFLOW_REF": "example/moor-agent/.github/workflows/other.yml@refs/heads/main"},
+        {"GITHUB_WORKFLOW_REF": "example/moor-agent/.github/workflows/stable-release.yml@refs/tags/rc.1-v1.2.3"},
     ):
         with pytest.raises(ValueError, match="default-branch controller"):
             check_claim({**base, **wrong}, lambda argv: pytest.fail("no git before the controller check"))

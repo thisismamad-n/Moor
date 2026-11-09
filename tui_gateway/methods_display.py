@@ -152,16 +152,16 @@ def _(rid, params: dict) -> dict:
     """Mint a single-use, 30 s ticket for ``/api/display/ws``. The ticket carries the profile home so
     the bridge dials THIS profile's RFB socket, and a server-minted viewer id (returned to the caller,
     who passes it to ``display.lease.acquire`` / ``release``) so the lease can name the holder."""
-    from hermes_constants import get_hermes_home
-    from hermes_cli.dashboard_auth.ws_tickets import mint_ticket
-    from hermes_cli.web_session_sockets import admission_of
+    from moor_constants import get_moor_home
+    from moor_cli.dashboard_auth.ws_tickets import mint_ticket
+    from moor_cli.web_session_sockets import admission_of
     from tools.bot_desktop import runtime as _bd_runtime
     try:
         # The bridge dials either the host RFB socket or the sandbox relay; neither exists before start.
         if _bd_runtime.rfb_socket_path() is None and not _bd_runtime.sandbox_screen_running():
             return _err(rid, _DISPLAY_ERR, "this profile's Bot Desktop is not running; call display.start first")
         viewer_id = _mint_viewer_id(str(params.get("viewer_id") or "").strip())
-        extra = {"hermes_home": str(get_hermes_home()), "viewer_id": viewer_id}
+        extra = {"moor_home": str(get_moor_home()), "viewer_id": viewer_id}
         # A viewer a browser tab opens watches and can drive this screen: it signs out with that tab,
         # so the ticket carries the credential digest the tab's socket was admitted with.
         if (admitted := admission_of(getattr(current_transport(), "ws", None))) is not None:
@@ -179,7 +179,7 @@ def _(rid, params: dict) -> dict:
     """The Screen pane's answer to the pending default-image switch: ``approve`` true pins the new
     image (the container is recreated on the next terminal call), false pins the current one. Both
     end the offer. Refused when nothing is pending, so a stale pane cannot rewrite the config."""
-    from hermes_cli.sandbox_image_switch import decide, pending
+    from moor_cli.sandbox_image_switch import decide, pending
     sw = pending()
     if sw is None:
         return _err(rid, _DISPLAY_ERR, "no sandbox image switch is pending for this profile")

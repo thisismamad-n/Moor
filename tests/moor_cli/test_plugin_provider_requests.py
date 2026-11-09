@@ -1,7 +1,7 @@
 """Core makes Codex-signed requests for plugins; the token never reaches plugin code.
 
 Real loopback HTTP servers stand in for the provider; a real plugin directory under the test
-HERMES_HOME makes the call, and a fake Codex sign-in is seeded in that home's auth store.
+MOOR_HOME makes the call, and a fake Codex sign-in is seeded in that home's auth store.
 """
 
 import base64
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import plugin_provider_requests as ppr
+from moor_cli import plugin_provider_requests as ppr
 
 
 def _seg(d: dict) -> str:
@@ -74,7 +74,7 @@ def stubs(monkeypatch):
 
 
 def _home() -> Path:
-    return Path(os.environ["HERMES_HOME"])
+    return Path(os.environ["MOOR_HOME"])
 
 
 def _sign_in():
@@ -88,10 +88,10 @@ def _plugin(declares: bool):
     (root / "dashboard").mkdir(parents=True)
     (root / "plugin.yaml").write_text("name: voice\n" + ("requires_auth: [openai-codex]\n" if declares else ""))
     (root / "dashboard" / "plugin_api.py").write_text(
-        "from hermes_cli.plugin_provider_requests import credentialed_provider_request\n"
+        "from moor_cli.plugin_provider_requests import credentialed_provider_request\n"
         "def mint(url):\n"
         "    return credentialed_provider_request('openai-codex', 'POST', url, json={'session': {}})\n")
-    spec = importlib.util.spec_from_file_location(f"hermes_dashboard_plugin_{root.name}", root / "dashboard" / "plugin_api.py")
+    spec = importlib.util.spec_from_file_location(f"moor_dashboard_plugin_{root.name}", root / "dashboard" / "plugin_api.py")
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -140,6 +140,6 @@ def test_undeclared_plugin_and_non_plugin_callers_are_refused(stubs):
 
 def test_not_signed_in_names_the_sign_in_command(stubs):
     allowed, _ = stubs
-    with pytest.raises(ppr.ProviderNotSignedIn, match="hermes auth add openai-codex"):
+    with pytest.raises(ppr.ProviderNotSignedIn, match="moor auth add openai-codex"):
         _plugin(declares=True).mint(allowed.url)
     assert allowed.seen == []

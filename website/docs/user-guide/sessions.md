@@ -97,10 +97,10 @@ into chat.
 Use `/compress` when a session gets long, `/new` for a fresh thread, and
 `moor sessions prune` only when you want to delete old ended sessions from
 storage. If `state.db` has simply grown large, start with the non-destructive
-option first: `hermes sessions optimize` merges FTS5 index segments and
+option first: `moor sessions optimize` merges FTS5 index segments and
 VACUUMs the database without touching any session data. With the gateway running, `prune`
 asks the gateway to delete the sessions it selected. `optimize`, and `prune` with no gateway
-running, refuse while another Hermes process (Desktop, dashboard, cron) holds `state.db`. Stop
+running, refuse while another Moor process (Desktop, dashboard, cron) holds `state.db`. Stop
 it first, or pass `--force`; see [Session storage recovery](session-storage-recovery.md).
 Compression reduces the active context; it is not a privacy delete.
 Pass a name to `/new` (e.g. `/new payments-refactor`) to set the new session's
@@ -497,7 +497,7 @@ moor sessions export --format md --model sonnet --min-messages 50 --redact
 moor sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
 ```
 
-Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a `manifest.jsonl` with the file path, message count, lineage ids, and SHA-256. Bulk export requires at least one filter; a bare bulk export is refused. `--delete-after-verified` is intentionally limited to `--session-id` and requires `--yes`. Because deleting a parent session also removes its delegate/subagent sessions, this mode exports and verifies each delegate in a separate file before deleting anything. Markdown/QMD files hold the full history shown by the session, including turns archived by in-place compaction. Deletion compares that exact display transcript and the delegate set again inside the same database transaction that performs the delete; any intervening append, rewrite, rewind, compaction, or delegate change refuses deletion. The same display-history rule applies to `--format html`, `--only user-prompts` (with either Markdown or JSONL output), and `/save md|html`. Full-session JSON/JSONL exports (`hermes sessions export` without `--only`) and `/save json` (CLI, messaging, TUI, Desktop) are backups of every stored row, archived rows included (see [Export Sessions](#export-sessions)). `--redact` scrubs secrets (API keys, tokens, credentials) from message content and tool output before writing — recommended for any export you plan to share.
+Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a `manifest.jsonl` with the file path, message count, lineage ids, and SHA-256. Bulk export requires at least one filter; a bare bulk export is refused. `--delete-after-verified` is intentionally limited to `--session-id` and requires `--yes`. Because deleting a parent session also removes its delegate/subagent sessions, this mode exports and verifies each delegate in a separate file before deleting anything. Markdown/QMD files hold the full history shown by the session, including turns archived by in-place compaction. Deletion compares that exact display transcript and the delegate set again inside the same database transaction that performs the delete; any intervening append, rewrite, rewind, compaction, or delegate change refuses deletion. The same display-history rule applies to `--format html`, `--only user-prompts` (with either Markdown or JSONL output), and `/save md|html`. Full-session JSON/JSONL exports (`moor sessions export` without `--only`) and `/save json` (CLI, messaging, TUI, Desktop) are backups of every stored row, archived rows included (see [Export Sessions](#export-sessions)). `--redact` scrubs secrets (API keys, tokens, credentials) from message content and tool output before writing — recommended for any export you plan to share.
 
 ### Delete a Session
 
@@ -528,17 +528,17 @@ If the title is already in use by another session, an error is shown.
 ### Discard a Turn Lost in a Gateway Crash
 
 If the gateway stops in the middle of a turn, that turn's outcome is unknown and it is never replayed. It blocks
-the session until you acknowledge it. Interactive `hermes chat --resume <id>` lists it and accepts
-`/discard <admission_id>`. A scripted `hermes chat --resume <id> -q` refuses with exit code 3 and submits nothing.
+the session until you acknowledge it. Interactive `moor chat --resume <id>` lists it and accepts
+`/discard <admission_id>`. A scripted `moor chat --resume <id> -q` refuses with exit code 3 and submits nothing.
 To clear it from a script:
 
 ```bash
 # Acknowledge every unknown (lost) turn on the session, then continue it
-hermes sessions discard 20250305_091523_a1b2c3d4 --yes
-hermes chat --resume 20250305_091523_a1b2c3d4 -q "next question"
+moor sessions discard 20250305_091523_a1b2c3d4 --yes
+moor chat --resume 20250305_091523_a1b2c3d4 -q "next question"
 
 # Only one specific admission (repeatable); the session may also be named by title
-hermes sessions discard "debugging auth flow" --admission a9b59ad3ee914d75967def2a33435c88 --yes
+moor sessions discard "debugging auth flow" --admission a9b59ad3ee914d75967def2a33435c88 --yes
 ```
 
 Without `--yes` the command asks for confirmation, and it refuses (exit code 2) when stdin is not a terminal.
@@ -666,10 +666,10 @@ sessions it skipped as still open; add `--include-open` to archive them too
 (`prune` never deletes open sessions):
 
 ```bash
-hermes sessions archive --title "Review Hermes" --include-open --yes
+moor sessions archive --title "Review Moor" --include-open --yes
 ```
 
-At least one filter is required — a bare `hermes sessions archive` refuses to
+At least one filter is required — a bare `moor sessions archive` refuses to
 archive your entire history. A compacted conversation is archived as a unit
 through its live tip: an old compression segment never matches on its own age,
 so a chat that is still active is never hidden because its history is long.
@@ -680,7 +680,7 @@ unarchived from the Desktop/Dashboard session list.
 A chat hidden by the `sessions.auto_archive` idle sweep comes back on its own
 once it is live again — when it is resumed, or when new activity compresses it
 into a fresh continuation. A chat you archived yourself (sidebar, API, or
-`hermes sessions archive`) stays archived until you unarchive it.
+`moor sessions archive`) stays archived until you unarchive it.
 
 ### Session Statistics
 
@@ -716,14 +716,14 @@ After updating a profile's prompt sources, ask its sessions to adopt them:
 
 ```bash
 # Every session in the active profile (add -p <profile> for another one)
-hermes sessions refresh-prompts
+moor sessions refresh-prompts
 
 # One session (id or unique prefix)
-hermes sessions refresh-prompts --session SESSION_ID
+moor sessions refresh-prompts --session SESSION_ID
 ```
 
 The command records a refresh request in the profile's `state.db` and prints
-how many sessions hold a stored prompt. On each session's next turn, Hermes
+how many sessions hold a stored prompt. On each session's next turn, Moor
 rebuilds the system prompt from the current sources and then sends the
 message. The conversation history, the session id and the session's tool list
 stay as they were. The rebuilt prompt is saved, so every later turn reuses it
@@ -789,7 +789,7 @@ routing is the only thing the repair changes. Back up first
 Older builds affected by #122822 could let gateway hygiene or gateway `/compress`
 persist a detached maintenance agent's reduced-toolset system prompt over the
 live session. After the root fix in PR #122825 is installed, use
-`hermes sessions repair-prompts` to find rows that were already degraded.
+`moor sessions repair-prompts` to find rows that were already degraded.
 
 The scan is conservative: it only proposes a repair when the stored prompt is
 missing the `skill_manage` guidance line **and** the persisted `tools[]` pin
@@ -803,20 +803,20 @@ memory-only row also becomes repairable on its own: once the session is resumed,
 
 ```bash
 # Report verified candidates and unverifiable rows; writes nothing
-hermes sessions repair-prompts
+moor sessions repair-prompts
 
 # Clear verified degraded prompts after confirmation
-hermes sessions repair-prompts --apply
+moor sessions repair-prompts --apply
 
 # Machine-readable report
-hermes sessions repair-prompts --json
+moor sessions repair-prompts --json
 
 # Non-interactive automation: apply and report the ids actually cleared
-hermes sessions repair-prompts --apply --json
+moor sessions repair-prompts --apply --json
 
 # Explicit destructive override for one session (id or unique prefix).
 # This clears the stored prompt even when it is healthy.
-hermes sessions repair-prompts SESSION_ID --apply
+moor sessions repair-prompts SESSION_ID --apply
 ```
 
 Clearing the prompt intentionally stores NULL; the next turn rebuilds and persists healthy bytes,
@@ -829,7 +829,7 @@ Run the repair only after the #122822 root fix is present; otherwise a later
 maintenance compaction can degrade the row again.
 
 A running gateway keeps each cached session's old prompt in memory, so restart
-the gateway after `--apply` (`hermes gateway restart`) for repaired rows to
+the gateway after `--apply` (`moor gateway restart`) for repaired rows to
 take effect.
 
 ### Repair State Crossed Between Profiles
@@ -1079,14 +1079,14 @@ Gateway conversations do not reset after inactivity or at a daily boundary. Use 
 or `/reset` for an explicit new conversation; context compression remains automatic.
 Core ignores legacy `session_reset` settings, reset-policy overrides and reset-timer
 environment variables. If your config still sets `session_reset.mode` to `idle`, `daily`
-or `both`, gateway startup and `hermes doctor` warn about it. To keep time-based resets,
+or `both`, gateway startup and `moor doctor` warn about it. To keep time-based resets,
 install the catalog plugin that reads the same block unchanged:
-`hermes plugins install hermes-session-reset-policy`. Cached agents may be released to reclaim resources without
+`moor plugins install moor-session-reset-policy`. Cached agents may be released to reclaim resources without
 replacing the durable conversation. Restart-recovery freshness limits automatic
 continuation, not the history loaded when you send a message.
 
 **`/new` moves only the view that ran it.** One session can be open in several
-places at once — a Desktop window, the TUI, a `hermes chat --resume` terminal, an
+places at once — a Desktop window, the TUI, a `moor chat --resume` terminal, an
 ACP editor, a Telegram topic — all attached to the same live conversation on the
 gateway. Running `/new` (or `/reset`) in one of them creates a fresh session and
 rebinds *that* window or chat route to it. The other viewers stay on the original
@@ -1193,12 +1193,12 @@ Key tables in `state.db`:
 - Gateway conversations persist across inactivity; use `/new` or `/reset` for an explicit boundary
 - Before reset, the agent saves memories and skills from the expiring session
 - Auto-pruning (**off by default**; opt in): when `sessions.auto_prune` is `true`, ended sessions inactive for `sessions.retention_days` (default 90) are pruned at CLI/gateway/cron startup
-- **Low-disk prompt.** While your `config.yaml` has no `sessions.auto_prune` key, Hermes checks the disk holding `state.db` at session start (two filesystem calls, no measurable cost). When that disk is low (under 2 GB free, or under 10% free with less than 20 GB left) it asks once: the classic CLI asks at startup (the first low-disk launch only measures, in the background, and the question appears from the next launch on, so startup never waits on the database), the TUI and Desktop show a notice, and a gateway posts the question to its home channel. The prompt estimates how much history a prune would delete (weighted by stored bytes, so many small old messages don't overstate it) and says plainly when pruning will *not* fix the disk (no session older than `retention_days`, or the history is a small share of the full disk). Deleted history frees space inside `state.db`; the automatic `VACUUM` below rarely triggers after a single prune, so run `hermes sessions optimize` to give the space back to the disk. Answer with `/autoprune on`, `/autoprune off` (keep everything; never asked again) or `/autoprune later` (reminded in a week); `/autoprune` alone shows the current state
+- **Low-disk prompt.** While your `config.yaml` has no `sessions.auto_prune` key, Moor checks the disk holding `state.db` at session start (two filesystem calls, no measurable cost). When that disk is low (under 2 GB free, or under 10% free with less than 20 GB left) it asks once: the classic CLI asks at startup (the first low-disk launch only measures, in the background, and the question appears from the next launch on, so startup never waits on the database), the TUI and Desktop show a notice, and a gateway posts the question to its home channel. The prompt estimates how much history a prune would delete (weighted by stored bytes, so many small old messages don't overstate it) and says plainly when pruning will *not* fix the disk (no session older than `retention_days`, or the history is a small share of the full disk). Deleted history frees space inside `state.db`; the automatic `VACUUM` below rarely triggers after a single prune, so run `moor sessions optimize` to give the space back to the disk. Answer with `/autoprune on`, `/autoprune off` (keep everything; never asked again) or `/autoprune later` (reminded in a week); `/autoprune` alone shows the current state
 - `sessions.retention_days` must be a whole number of days `>= 0`. A negative value (or a missing one) is rejected: startup maintenance logs a warning naming the allowed range and skips the sweep instead of treating the future cutoff as "everything" — `sessions.auto_prune: false` is the switch that disables pruning
 - After a prune that actually removed rows, `state.db` is `VACUUM`ed to reclaim disk space only when **both** gates pass: at least `sessions.min_vacuum_interval_days` (default 30) have elapsed since the last successful `VACUUM`, **and** more than 25% of the file's pages are reclaimable (`PRAGMA freelist_count / page_count`). A dense database never pays for a full rewrite to reclaim a few MB (SQLite does not shrink the file on plain DELETE)
 - Pruning runs at most once per `sessions.min_interval_hours` (default 24); the last-run timestamp is tracked inside `state.db` itself so it's shared across every Moor process in the same `MOOR_HOME`
 
-Without pruning, `state.db` grows without bound — multi-GB files within weeks were reported on gateway + cron installs. To bound it, turn it on in `~/.hermes/config.yaml` (or answer `/autoprune on`):
+Without pruning, `state.db` grows without bound — multi-GB files within weeks were reported on gateway + cron installs. To bound it, turn it on in `~/.moor/config.yaml` (or answer `/autoprune on`):
 
 ```yaml
 sessions:
@@ -1260,8 +1260,8 @@ sessions:
   max_export_messages: 20000   # one-shot in-memory export of a single session
 ```
 
-`max_export_messages` applies per session to the JSON/JSONL backup (`hermes sessions export`,
-`sessions export` in `hermes console`, and `/save json` in the CLI, messaging, TUI and Desktop). It counts every stored row, archived included, because
+`max_export_messages` applies per session to the JSON/JSONL backup (`moor sessions export`,
+`sessions export` in `moor console`, and `/save json` in the CLI, messaging, TUI and Desktop). It counts every stored row, archived included, because
 the backup holds all of them. A heavily compacted session with a small live tail can still exceed it.
 The dashboard Sessions page's Export action streams the rows instead and is not capped.
 
@@ -1281,7 +1281,7 @@ history of the conversation:
 When a resume is refused the client receives error code `4130` with the count
 and the scope it was measured against (`across its lineage` or
 `in its tip segment`). A TUI/Desktop `/save` refused by `max_export_messages` returns error code `4131`.
-`hermes sessions export` still works for such sessions; its JSON/JSONL
+`moor sessions export` still works for such sessions; its JSON/JSONL
 backup needs each session to stay under `max_export_messages`.
 
 ### Manual Cleanup
@@ -1299,5 +1299,5 @@ moor sessions prune --older-than 30 --yes
 ```
 
 :::tip
-Auto-prune is **off by default**, and Hermes asks you once when the disk holding `state.db` runs low (see [Automatic Cleanup](#automatic-cleanup) above). When on, ended sessions inactive for `sessions.retention_days` (default 90) are removed at startup and active sessions are never touched. Session history powers `session_search` recall across past conversations, so the choice is yours: `/autoprune on|off`, or `sessions.auto_prune` in `config.yaml`. With auto-prune off, `hermes sessions prune` remains available for one-off cleanup (observed failure mode without any pruning: a 384 MB `state.db` with ~1000 sessions slowing down FTS5 inserts and `/resume` listing).
+Auto-prune is **off by default**, and Moor asks you once when the disk holding `state.db` runs low (see [Automatic Cleanup](#automatic-cleanup) above). When on, ended sessions inactive for `sessions.retention_days` (default 90) are removed at startup and active sessions are never touched. Session history powers `session_search` recall across past conversations, so the choice is yours: `/autoprune on|off`, or `sessions.auto_prune` in `config.yaml`. With auto-prune off, `moor sessions prune` remains available for one-off cleanup (observed failure mode without any pruning: a 384 MB `state.db` with ~1000 sessions slowing down FTS5 inserts and `/resume` listing).
 :::

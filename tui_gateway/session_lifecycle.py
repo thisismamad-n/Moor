@@ -49,7 +49,7 @@ def _start_session_work(target, *, name: str, session: dict | None = None):
 def _notify_session_boundary(event_type: str, session_id: str | None, platform: str | None = None) -> list[str]:
     """Fire session lifecycle hooks with CLI parity; returns plugin ``on_session_finalize`` user messages."""
     with contextlib.suppress(Exception):
-        from hermes_cli.lifecycle import finalize_session, invoke_hook, session_end_messages
+        from moor_cli.lifecycle import finalize_session, invoke_hook, session_end_messages
         if event_type == "on_session_finalize":
             return session_end_messages(finalize_session(session_id=session_id, platform=_resolve_agent_platform(platform)))
         invoke_hook(event_type, session_id=session_id, platform=_resolve_agent_platform(platform))
@@ -162,7 +162,7 @@ def _end_unless_ledger_busy(db, session_id: str, session_key, end_reason: str) -
         ids = {session_id, str(session_key or "")}
         if row is not None and str(row[0] or "").startswith("local-"):
             ids.add(str(row[0]))
-        from hermes_state_local import local_lineage_owner
+        from moor_state_local import local_lineage_owner
         ids.add(local_lineage_owner(conn, session_id))
         for sid in filter(None, ids):
             if conn.execute(_CANONICAL_PENDING_SQL, (sid, sid)).fetchone() is not None:
@@ -186,7 +186,7 @@ def _canonical_ledger_refusal(session: dict):
     and write the transcript beside the canonical FIFO. Checked on every turn, not only at the
     first claim, because a gateway may admit work while this backend still holds its lease."""
     import sqlite3
-    from hermes_cli.active_sessions import (
+    from moor_cli.active_sessions import (
         ActiveSessionRefusal, SESSION_COORDINATION_UNAVAILABLE, SESSION_NOT_OWNED)
     key = str(session.get("session_key") or "")
     if not key:
@@ -206,7 +206,7 @@ def _canonical_ledger_refusal(session: dict):
     logger.info("Refusing legacy turn for %s: canonical ledger holds %s work", key, row[0])
     refusal = ActiveSessionRefusal(
         f"Session {key} has {'outcome-unknown' if row[0] == 'unknown' else 'pending'} work in the gateway's "
-        "durable queue. Resume it through the gateway (hermes chat --resume, Desktop or the TUI) to "
+        "durable queue. Resume it through the gateway (moor chat --resume, Desktop or the TUI) to "
         "resolve it; nothing was run here.", SESSION_NOT_OWNED)
     # prompt.submit forwards a typed prompt to the owner's FIFO for work that ends on its own
     # (tui_gateway/owner_forward.py); an ``unknown`` admission is never forwarded past.
@@ -800,10 +800,10 @@ def _interrupt_session_turn(
         # live TUI/desktop turn is the same "loop is gone" event for plugins holding per-turn external
         # resources. Observer-only; dispatch failures never break the interrupt.
         # Every caller (session.interrupt RPC, orphan/idle reapers, lease takeover) is off-turn, so bind the
-        # SESSION's profile as _finalize_session does or an observer's get_hermes_home() names the launch
+        # SESSION's profile as _finalize_session does or an observer's get_moor_home() names the launch
         # profile (#125063). hydrate_secrets=False: observer-only, /stop must stay fast.
         try:
-            from hermes_cli.plugins import invoke_hook as _invoke_hook
+            from moor_cli.plugins import invoke_hook as _invoke_hook
             with _session_profile_runtime_scope(session, hydrate_secrets=False):
                 _invoke_hook(
                     "agent_loop_stopped", session_key=session.get("session_key", ""), platform="tui",

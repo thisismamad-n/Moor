@@ -15,7 +15,7 @@ from agent.agent_init import _CALLBACK_PARAMS
 from agent.onboarding_flow import Facts
 from agent.turn_empty_response import recover_empty_response
 from agent.turn_tool_round import stage_tool_call_message
-from hermes_state import SessionDB
+from moor_state import SessionDB
 from run_agent import AIAgent
 from tests.agent.test_run_agent import _mock_response
 from tools.setup_beat_tool import SETUP_BEAT_SCHEMA
@@ -23,7 +23,7 @@ from tools.setup_beat_tool import SETUP_BEAT_SCHEMA
 
 def _agent():
     agent = AIAgent.__new__(AIAgent)
-    agent.provider, agent.model, agent.session_id, agent.tools = "nous", "m", "s1", []
+    agent.provider, agent.model, agent.session_id, agent.tools = "moor", "m", "s1", []
     agent.log_prefix, agent.quiet_mode, agent.verbose_logging = "", True, False
     agent._mute_post_response, agent._base_url, agent.api_mode = False, "", "chat_completions"
     agent._current_streamed_assistant_text = ""
@@ -78,7 +78,7 @@ def _loop_agent(db):
 
 def test_a_card_closed_by_a_message_ends_the_turn_without_another_model_call(tmp_path, monkeypatch):
     """The message runs as the user's own next turn, so the old turn must not go on to answer it."""
-    monkeypatch.setattr("hermes_cli.onboarding_run.set_run", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.onboarding_run.set_run", lambda *a, **k: None)
     db = SessionDB(db_path=tmp_path / "state.db")
     agent = _loop_agent(db)
     agent.setup_beat_callback = lambda payload: {"wrote_instead": True}

@@ -15,23 +15,23 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 
-from hermes_cli import web_server_profiles
+from moor_cli import web_server_profiles
 from fastapi import HTTPException, UploadFile
 from fastapi.testclient import TestClient
 
-from hermes_cli import profiles, staged_uploads, web_server
-from hermes_cli.web_routers import uploads
-from hermes_constants import WEBAPP_ATTACHMENT_MAX_BYTES, mark_named_profile_deleted
+from moor_cli import profiles, staged_uploads, web_server
+from moor_cli.web_routers import uploads
+from moor_constants import WEBAPP_ATTACHMENT_MAX_BYTES, mark_named_profile_deleted
 
 
-_SESSION_HEADER = "X-Hermes-Session-Token"
+_SESSION_HEADER = "X-moor-session-Token"
 _BARRIER_TIMEOUT_SECONDS = 30
 
 
 def _client(tmp_path: Path, monkeypatch) -> TestClient:
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(web_server, "_SESSION_TOKEN", "webapp-test-token")
     monkeypatch.setattr(web_server.app.state, "auth_required", False, raising=False)
     monkeypatch.setattr(web_server.app.state, "bound_host", "127.0.0.1", raising=False)
@@ -78,13 +78,13 @@ def test_browser_document_upload_remains_extractable_after_file_attach(
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     with _client(tmp_path, monkeypatch) as client:
         from gateway.runtime_bootstrap import TicketStore
-        from hermes_cli import install_identity
+        from moor_cli import install_identity
         from tests.gateway.test_canonical_file_attach_staged_sources import _attach, _authority_with_old_desktop_chat
         from tools.file_tools import read_file_tool
         from tools.terminal_tool import clear_task_env_overrides, register_task_env_overrides
         from tools.terminal_tool_lifecycle import cleanup_vm
 
-        home = tmp_path / "hermes-home"
+        home = tmp_path / "moor-home"
         workspace = tmp_path / "workspace"
         workspace.mkdir()
         sid = "old-desktop"
@@ -150,8 +150,8 @@ def test_safe_upload_filename_is_bounded_basename_with_document_suffix(filename,
         assert Path(cleaned).suffix == suffix
 
 
-def test_browser_upload_stages_bytes_under_hermes_home(tmp_path: Path, monkeypatch):
-    upload_root = tmp_path / "hermes-home" / "uploads"
+def test_browser_upload_stages_bytes_under_moor_home(tmp_path: Path, monkeypatch):
+    upload_root = tmp_path / "moor-home" / "uploads"
     upload_root.mkdir(parents=True)
     abandoned = upload_root / "web-abandoned-old.txt"
     unrelated = upload_root / "keep-me.txt"
@@ -169,7 +169,7 @@ def test_browser_upload_stages_bytes_under_hermes_home(tmp_path: Path, monkeypat
     assert response.status_code == 200
     payload = response.json()
     staged = Path(payload["path"])
-    assert staged.parent == tmp_path / "hermes-home" / "uploads"
+    assert staged.parent == tmp_path / "moor-home" / "uploads"
     assert staged.name.endswith("notes-from-browser.txt")
     assert staged.read_bytes() == b"browser bytes"
     assert not abandoned.exists()
@@ -206,7 +206,7 @@ def test_browser_upload_rejects_oversize_without_leaving_partial_file(
         )
 
     assert response.status_code == 413
-    upload_root = tmp_path / "hermes-home" / "uploads"
+    upload_root = tmp_path / "moor-home" / "uploads"
     assert not upload_root.exists() or list(upload_root.iterdir()) == []
 
 
@@ -214,9 +214,9 @@ def test_browser_upload_rejects_oversize_without_leaving_partial_file(
 def test_browser_upload_checks_actual_spooled_size_and_closes_upload(
     payload: bytes, tmp_path: Path, monkeypatch
 ):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(uploads, "_MAX_UPLOAD_BYTES", 8)
     spool = tempfile.SpooledTemporaryFile(max_size=4, mode="w+b")
@@ -238,7 +238,7 @@ def test_browser_upload_checks_actual_spooled_size_and_closes_upload(
 def test_browser_file_cleanup_failure_preserves_primary_staging_error(
     tmp_path: Path, monkeypatch
 ):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
     real_open = staged_uploads.os.open
     real_unlink = Path.unlink
@@ -299,7 +299,7 @@ def test_browser_upload_requires_the_server_session(tmp_path: Path, monkeypatch)
 def test_browser_file_upload_never_recreates_profile_deleted_after_resolution(
     tmp_path: Path, monkeypatch
 ):
-    profile_home = tmp_path / "hermes-home" / "profiles" / "worker"
+    profile_home = tmp_path / "moor-home" / "profiles" / "worker"
     profile_home.mkdir(parents=True)
 
     real_resolve = staged_uploads.resolve_upload_home
@@ -329,7 +329,7 @@ def test_browser_file_upload_never_recreates_profile_deleted_after_resolution(
 def test_browser_image_upload_cleanup_failure_does_not_mask_write_status(
     tmp_path: Path, monkeypatch, write_error, expected_status
 ):
-    image_dir = tmp_path / "hermes-home" / "cache" / "images"
+    image_dir = tmp_path / "moor-home" / "cache" / "images"
     real_write_bytes = Path.write_bytes
     real_unlink = Path.unlink
 
@@ -366,9 +366,9 @@ def test_browser_uploads_to_a_profile_do_not_queue_behind_the_skills_lock(
 ):
     """Resolving an upload's profile home is a path lookup. A skills request holding the
     process-wide skills lock (and the skills-module globals it retargets) must not stall it."""
-    hermes_home = tmp_path / "hermes-home"
-    hermes_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    moor_home = tmp_path / "moor-home"
+    moor_home.mkdir(parents=True)
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     profile_home = profiles.create_profile("worker", no_alias=True, no_skills=True)
     holding, release = threading.Event(), threading.Event()
 
@@ -408,7 +408,7 @@ def test_browser_uploads_to_a_profile_do_not_queue_behind_the_skills_lock(
 def test_browser_image_upload_never_creates_a_missing_profile_home(
     tmp_path: Path, monkeypatch
 ):
-    profile_home = tmp_path / "hermes-home" / "profiles" / "worker"
+    profile_home = tmp_path / "moor-home" / "profiles" / "worker"
 
     monkeypatch.setattr(staged_uploads, "_resolve_profile_dir", lambda _name: profile_home)
     with _client(tmp_path, monkeypatch) as client:
@@ -428,9 +428,9 @@ def test_browser_image_upload_never_creates_a_missing_profile_home(
 def test_browser_uploads_reject_tombstone_before_profile_directory_removal(
     tmp_path: Path, monkeypatch
 ):
-    profile_home = tmp_path / "hermes-home" / "profiles" / "worker"
+    profile_home = tmp_path / "moor-home" / "profiles" / "worker"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor-home"))
     mark_named_profile_deleted(profile_home)
 
     monkeypatch.setattr(staged_uploads, "_resolve_profile_dir", lambda _name: profile_home)
@@ -459,7 +459,7 @@ def test_browser_uploads_reject_tombstone_before_profile_directory_removal(
 def test_browser_file_upload_does_not_report_a_path_after_tombstone_wins(
     tmp_path: Path, monkeypatch
 ):
-    profile_home = tmp_path / "hermes-home" / "profiles" / "worker"
+    profile_home = tmp_path / "moor-home" / "profiles" / "worker"
     profile_home.mkdir(parents=True)
 
     real_fsync = staged_uploads.os.fsync

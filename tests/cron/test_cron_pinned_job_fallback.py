@@ -22,7 +22,7 @@ import pytest
 
 from cron import scheduler
 from cron.scheduler import _CronJobConfig, _resolve_job_runtime
-from hermes_cli.auth import AuthError
+from moor_cli.auth import AuthError
 
 
 def _run_owned_job(job, tmp_path):
@@ -31,7 +31,7 @@ def _run_owned_job(job, tmp_path):
     error)`` tuple."""
     from gateway.session_contract import SessionRef
     from gateway.session_cron import current_execution, execute
-    from hermes_state_registry import acquire, release
+    from moor_state_registry import acquire, release
 
     ref = SessionRef("test-profile", "cron-owner-session")
     admission_id = "cron-owner-admission"
@@ -96,9 +96,9 @@ def _run(tmp_path, job, *, primary_error=None):
     with patch("cron.scheduler._moor_home", tmp_path), \
          patch("cron.scheduler._get_moor_home", return_value=tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_cli.runtime_provider.resolve_runtime_provider", side_effect=resolve), \
+         patch("moor_cli.env_loader.load_moor_dotenv"), \
+         patch("moor_cli.env_loader.reset_secret_source_cache"), \
+         patch("moor_cli.runtime_provider.resolve_runtime_provider", side_effect=resolve), \
          patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
          patch("run_agent.AIAgent") as agent_cls:
         agent_cls.return_value.run_conversation.return_value = {"final_response": "ok"}

@@ -78,7 +78,7 @@ SCHEMA_PATH = (
     / "moor_cli"
     / "observability"
     / "schemas"
-    / "hermes.shared_metrics.v4.schema.json"
+    / "moor.shared_metrics.v4.schema.json"
 )
 LEGACY_SCHEMA_PATH = SCHEMA_PATH.with_name("moor.shared_metrics.v1.schema.json")
 
@@ -178,7 +178,7 @@ def test_model_call_counter_survives_restart_and_exports_only_new_deltas(tmp_pat
     _schema_validator().validate(first_package)
     uuid.UUID(first_package["package_id"])
     uuid.UUID(first_package["install_id"])
-    assert first_package["schema_version"] == "hermes.shared_metrics.v4"
+    assert first_package["schema_version"] == "moor.shared_metrics.v4"
     assert first_package["resource"] == _resource()
     assert first_package["metrics"] == [
         {
@@ -256,7 +256,7 @@ def test_v2_package_preserves_pending_v1_model_counters(tmp_path):
     package = json.loads(package_path.read_text(encoding="utf-8"))
     _schema_validator().validate(package)
 
-    assert package["schema_version"] == "hermes.shared_metrics.v4"
+    assert package["schema_version"] == "moor.shared_metrics.v4"
     assert package["metrics"] == [
         {
             "name": LEGACY_MODEL_CALL_METRIC,
@@ -502,7 +502,7 @@ def test_package_schema_matches_the_model_call_contract():
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     properties = _package_dimension_schema()["properties"]
 
-    assert schema["properties"]["schema_version"]["const"] == "hermes.shared_metrics.v4"
+    assert schema["properties"]["schema_version"]["const"] == "moor.shared_metrics.v4"
     assert set(properties) == {"call_role", "error_class", "model", "outcome", "provider", "ttft_bucket"}
     # Rows counted before the v3 upgrade carry only model/provider and must still drain.
     assert set(_package_dimension_schema()["required"]) == {"model", "provider"}
@@ -537,9 +537,9 @@ def test_client_resource_classification_is_bounded():
 
 def test_microsoft_store_stamp_reports_its_own_install_method(tmp_path, monkeypatch):
     """The Store build's stamp is the only place it is named; ``detect_install_method`` has no word for it."""
-    from hermes_cli.observability.shared_metrics_install import detect_client_install_method
+    from moor_cli.observability.shared_metrics_install import detect_client_install_method
 
-    monkeypatch.setattr("hermes_cli.config.get_project_root", lambda: tmp_path)
+    monkeypatch.setattr("moor_cli.config.get_project_root", lambda: tmp_path)
     stamp = tmp_path / "install-stamp.json"
     stamp.write_text(json.dumps({"updateMechanism": "microsoft-store"}), encoding="utf-8")
     assert detect_client_install_method() == "microsoft-store"
@@ -580,7 +580,7 @@ def test_client_active_mark_accepts_only_an_empty_allowlisted_payload():
         name="moor.client.active",
         scope_category=None,
         metadata={
-            "hermes.metrics.schema_version": "hermes.metrics.event.v4",
+            "moor.metrics.schema_version": "moor.metrics.event.v4",
         },
         data={},
     )
@@ -752,7 +752,7 @@ def test_model_call_fields_report_terminal_model_and_shipped_provider():
         "model": "nvidia/nemotron-3-ultra",
         "provider": "openrouter",
     }
-    # A provider Hermes does not ship is user-named (a custom endpoint key): neither it nor
+    # A provider Moor does not ship is user-named (a custom endpoint key): neither it nor
     # the model id it serves leaves the machine.
     assert model_call_fields({
         "model": "ZAI/GLM-5.2",
@@ -855,7 +855,7 @@ def test_tool_subscriber_contract_accepts_only_bounded_events():
         category_profile={},
         name="moor.tool_call",
         scope_category="end",
-        metadata={"hermes.metrics.schema_version": "hermes.metrics.event.v4"},
+        metadata={"moor.metrics.schema_version": "moor.metrics.event.v4"},
         data={
             "approval_outcome": "approved",
             "error_class": "none",
@@ -895,7 +895,7 @@ def test_tool_subscriber_contract_accepts_only_bounded_events():
         category_profile=None,
         name="moor.tool_approval",
         scope_category=None,
-        metadata={"hermes.metrics.schema_version": "hermes.metrics.event.v4"},
+        metadata={"moor.metrics.schema_version": "moor.metrics.event.v4"},
         data={"attribution": "unattributed", "outcome": "denied"},
     )
     assert tool_approval_counter(approval) == (
@@ -907,7 +907,7 @@ def test_tool_subscriber_contract_accepts_only_bounded_events():
 
 
 def test_skill_subscriber_contract_accepts_only_bounded_marks():
-    metadata = {"hermes.metrics.schema_version": "hermes.metrics.event.v4"}
+    metadata = {"moor.metrics.schema_version": "moor.metrics.event.v4"}
     lifecycle = SimpleNamespace(
         kind="mark",
         category=None,
@@ -1113,8 +1113,8 @@ def test_store_exports_task_started_and_terminal_counters(tmp_path):
         retry_count=0,
     )
     end = SimpleNamespace(
-        kind="scope", category="function", category_profile=None, name="hermes.task_run",
-        scope_category="end", metadata={"hermes.metrics.schema_version": "hermes.metrics.event.v4"},
+        kind="scope", category="function", category_profile=None, name="moor.task_run",
+        scope_category="end", metadata={"moor.metrics.schema_version": "moor.metrics.event.v4"},
         data=terminal,
     )
     for counter in (task_counter(end), task_duration_counter(end)):
@@ -1125,19 +1125,19 @@ def test_store_exports_task_started_and_terminal_counters(tmp_path):
     _schema_validator().validate(package)
 
     assert {metric["name"] for metric in package["metrics"]} == {
-        "hermes.task_run.duration",
-        "hermes.task_run.finished",
-        "hermes.task_run.started",
+        "moor.task_run.duration",
+        "moor.task_run.finished",
+        "moor.task_run.started",
     }
 
 def test_v2_task_and_tool_rows_recorded_before_an_upgrade_still_package(tmp_path):
     store = SharedMetricsStore(tmp_path / "metrics.sqlite3", tmp_path / "outbox")
-    store.record_counter("hermes.task_run.finished", {
+    store.record_counter("moor.task_run.finished", {
         "duration_bucket": "1s_to_5s", "end_reason": "completed", "entrypoint": "interactive",
         "execution_surface": "cli", "model_call_count_bucket": "1", "outcome": "success",
         "retry_count_bucket": "0", "termination": "none", "tool_call_count_bucket": "2",
     }, _resource())
-    store.record_counter("hermes.tool_call.count", {
+    store.record_counter("moor.tool_call.count", {
         "approval_outcome": "not_required", "latency_bucket": "lt_100ms", "outcome": "success",
         "retry_count_bucket": "0", "tool_category": "file",
     }, _resource())
@@ -1146,19 +1146,19 @@ def test_v2_task_and_tool_rows_recorded_before_an_upgrade_still_package(tmp_path
     package = json.loads(package_path.read_text(encoding="utf-8"))
     _schema_validator().validate(package)
     assert {metric["name"] for metric in package["metrics"]} == {
-        "hermes.task_run.finished", "hermes.tool_call.count",
+        "moor.task_run.finished", "moor.tool_call.count",
     }
 
 
 def test_failure_class_rows_validate_and_v3_rows_still_drain(tmp_path, monkeypatch):
     """v4 adds failure_class to compression and memory rows: a free-form compressor class collapses to
     a closed name before it is stored, and rows counted before the upgrade (v3 shape) still package."""
-    from hermes_cli.observability.shared_metrics_fields import compression_fields
+    from moor_cli.observability.shared_metrics_fields import compression_fields
 
     store = SharedMetricsStore(tmp_path / "metrics.sqlite3", tmp_path / "outbox")
     legacy = {
-        "hermes.compression.count": {"context_fill_bucket": "lt_50", "outcome": "failed", "trigger": "auto"},
-        "hermes.memory.op.count": {"op": "add", "origin": "foreground", "outcome": "failed", "provider": "builtin"},
+        "moor.compression.count": {"context_fill_bucket": "lt_50", "outcome": "failed", "trigger": "auto"},
+        "moor.memory.op.count": {"op": "add", "origin": "foreground", "outcome": "failed", "provider": "builtin"},
     }
     for name, dimensions in legacy.items():
         store.record_counter(name, dimensions, _resource())
@@ -1167,13 +1167,13 @@ def test_failure_class_rows_validate_and_v3_rows_still_drain(tmp_path, monkeypat
         fields = compression_fields(trigger="auto", outcome="failed", tokens_before=1, context_length=10,
                                     failure_class=raw)
         classes[raw] = fields["failure_class"]
-        store.record_counter("hermes.compression.count", fields, _resource())
+        store.record_counter("moor.compression.count", fields, _resource())
     assert classes == {
         "exception:AcmeCorpSecretError": "exception", "rollback:KeyboardInterrupt": "rollback",
         "acme_engine_reason": "other", None: "unknown",
     }
     # The skip/fail verdict reads the same normalized class that is stored, so they cannot disagree.
-    from hermes_cli.observability import shared_metrics_events as events
+    from moor_cli.observability import shared_metrics_events as events
 
     recorded = []
     monkeypatch.setattr(events, "record_compression", lambda **kw: recorded.append(kw))
@@ -1273,13 +1273,13 @@ def test_package_builder_rejects_tampered_dimensions(tmp_path):
 
 
 @pytest.mark.parametrize(("metric_name", "dimensions"), [
-    ("hermes.tool_enabled_unused.count", {"toolset": "start_chat", "used": "yes"}),
-    ("hermes.tool.usage.count", {"error_class": "none", "outcome": "success", "tool_name": "setup_choose"}),
+    ("moor.tool_enabled_unused.count", {"toolset": "start_chat", "used": "yes"}),
+    ("moor.tool.usage.count", {"error_class": "none", "outcome": "success", "tool_name": "setup_choose"}),
     # Spotify left core after v0.21.6; the browser_vault_* tools became one browser_vault after v0.21.7.
-    ("hermes.tool_enabled_unused.count", {"toolset": "spotify", "used": "no"}),
-    ("hermes.tool.usage.count", {"error_class": "none", "outcome": "success", "tool_name": "spotify_search"}),
-    ("hermes.tool_unavailable.count", {"model": "custom", "provider": "custom", "tool_name": "spotify_playback"}),
-    ("hermes.tool_unavailable.count", {"model": "custom", "provider": "custom", "tool_name": "browser_vault_fill"}),
+    ("moor.tool_enabled_unused.count", {"toolset": "spotify", "used": "no"}),
+    ("moor.tool.usage.count", {"error_class": "none", "outcome": "success", "tool_name": "spotify_search"}),
+    ("moor.tool_unavailable.count", {"model": "custom", "provider": "custom", "tool_name": "spotify_playback"}),
+    ("moor.tool_unavailable.count", {"model": "custom", "provider": "custom", "tool_name": "browser_vault_fill"}),
 ])
 def test_a_saved_row_naming_a_retired_tool_or_toolset_still_packages(tmp_path, metric_name, dimensions):
     # A stable release recorded these names before core dropped them; v4 only adds values, so the
@@ -1325,8 +1325,8 @@ def test_package_builder_buckets_values_that_drifted_out_of_the_catalog(tmp_path
     """A catalog-backed value that left the catalog between the recording and packaging
     processes re-buckets to ``custom`` instead of aborting the whole period's package, and
     every other metric in the period still exports (#133017)."""
-    from hermes_cli.observability import shared_metrics_catalog as catalog_module
-    from hermes_cli.observability.shared_metrics_contract import EXTENSION_INSTALL_METRIC
+    from moor_cli.observability import shared_metrics_catalog as catalog_module
+    from moor_cli.observability.shared_metrics_contract import EXTENSION_INSTALL_METRIC
 
     database_path = tmp_path / "metrics.sqlite3"
     outbox_directory = tmp_path / "outbox"
@@ -1359,7 +1359,7 @@ def test_package_builder_settles_rows_an_earlier_build_stored_with_retired_value
     """A built-in toolset or tool an earlier build shipped (Spotify, Home Assistant) is no longer in
     the contract: rows holding it re-bucket (merged with their siblings) or, when the field has no
     bucket, stay out, and the rest of the period still exports instead of wedging every package."""
-    from hermes_cli.observability.shared_metrics_contract import (
+    from moor_cli.observability.shared_metrics_contract import (
         TOOL_ENABLED_UNUSED_METRIC, TOOL_UNAVAILABLE_METRIC,
     )
 

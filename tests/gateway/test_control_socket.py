@@ -246,7 +246,7 @@ def short_home():
         root = Path(tempfile.mkdtemp(prefix="hgw-", dir="/tmp"))
     except OSError:
         pytest.skip("/tmp not writable on this host")
-    home = root / ".hermes"
+    home = root / ".moor"
     home.mkdir()
     if resolve_server_socket_path(home)[1] is not None:
         shutil.rmtree(root, ignore_errors=True)
@@ -280,7 +280,7 @@ def test_home_refusing_sockets_listens_on_private_fallback_both_clients_reach(sh
     import os
     import stat
 
-    from hermes_cli.gateway_runtime_discovery import query_identify
+    from moor_cli.gateway_runtime_discovery import query_identify
 
     home = short_home.resolve()  # the server resolves its home; macOS /tmp is a symlink to /private/tmp
     home.chmod(0o700)
@@ -509,7 +509,7 @@ def test_runtime_inventory_dedupes_same_pid_across_homes(tmp_path: Path, monkeyp
         "moor_cli.gateway._get_service_pids", lambda all_profiles=False: set()
     )
     monkeypatch.setattr(
-        "hermes_cli.gateway.find_profile_gateway_processes", list
+        "moor_cli.gateway.find_profile_gateway_processes", list
     )
     monkeypatch.setattr(
         "gateway.control_socket.identify_gateway",
@@ -538,7 +538,7 @@ def test_runtime_inventory_prefers_socket_supervisor(tmp_path: Path, monkeypatch
         "moor_cli.gateway._get_service_pids", lambda all_profiles=False: set()
     )
     monkeypatch.setattr(
-        "hermes_cli.gateway.find_profile_gateway_processes", list
+        "moor_cli.gateway.find_profile_gateway_processes", list
     )
     monkeypatch.setattr(
         "gateway.control_socket.identify_gateway",

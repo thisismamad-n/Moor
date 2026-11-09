@@ -112,10 +112,10 @@ export interface Sandbox {
 }
 
 export function createSandbox(prefix: string): Sandbox {
-  // Canonical path: the backend resolves HERMES_HOME, so a symlinked tmpdir (macOS /var, a
-  // symlinked scratch dir) would otherwise make every HERMES_HOME match against the sandbox miss.
-  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `hermes-e2e-${prefix}-${Math.random()}`)))
-  const hermesHome = path.join(root, 'hermes-home')
+  // Canonical path: the backend resolves MOOR_HOME, so a symlinked tmpdir (macOS /var, a
+  // symlinked scratch dir) would otherwise make every MOOR_HOME match against the sandbox miss.
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `moor-e2e-${prefix}-${Math.random()}`)))
+  const moorHome = path.join(root, 'moor-home')
   const userDataDir = path.join(root, 'electron-user-data')
 
   fs.mkdirSync(moorHome, { recursive: true })
@@ -153,7 +153,7 @@ export function createSandbox(prefix: string): Sandbox {
     cleanup: () => {
       // `app.close()` leaves the detached gateway the app dialled; alive, it
       // would also rewrite this home right after the rmSync below.
-      stopSandboxGatewayDaemons(root, hermesHome)
+      stopSandboxGatewayDaemons(root, moorHome)
 
       try {
         fs.rmSync(root, { recursive: true, force: true })
@@ -182,9 +182,9 @@ function writeEmptyConfig(moorHome: string): void {
  * Build the environment for the Electron app process.
  *
  * Key env vars:
- *  - HERMES_HOME → sandbox hermes-home (isolated config/sessions)
- *  - HERMES_DESKTOP_USER_DATA_DIR → sandbox electron-user-data
- *  - HERMES_DESKTOP_IGNORE_EXISTING=1 → skip the installed runtime
+ *  - MOOR_HOME → sandbox moor-home (isolated config/sessions)
+ *  - MOOR_DESKTOP_USER_DATA_DIR → sandbox electron-user-data
+ *  - MOOR_DESKTOP_IGNORE_EXISTING=1 → skip the installed runtime
  *    (we want the dev checkout at REPO_ROOT)
  *  - MOOR_DESKTOP_MOOR_ROOT → REPO_ROOT (dev checkout resolution)
  *  - MOOR_DESKTOP_APP_NAME → unique-ish per test (avoids single-instance lock)
@@ -222,9 +222,9 @@ export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}
     // `app.close()` in teardown must exit even when a spec leaves a turn
     // mid-flight — otherwise the quit confirmation waits on a click that no
     // one is there to make, and the worker dies on a teardown timeout.
-    HERMES_DESKTOP_SKIP_QUIT_CONFIRM: '1',
-    // Never repoint the user's OS hermes:// handler (HKCU on Windows) at a test checkout.
-    HERMES_DESKTOP_SKIP_PROTOCOL_REGISTRATION: '1',
+    MOOR_DESKTOP_SKIP_QUIT_CONFIRM: '1',
+    // Never repoint the user's OS moor:// handler (HKCU on Windows) at a test checkout.
+    MOOR_DESKTOP_SKIP_PROTOCOL_REGISTRATION: '1',
     // Clear dev-server override — we want the built dist/, not a vite server.
     // The dev-server check in main.ts looks for this env var; if it's set,
     // it loads from the vite URL instead of the local file.

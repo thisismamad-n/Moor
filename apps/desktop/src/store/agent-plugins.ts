@@ -1,4 +1,4 @@
-import { JsonRpcGatewayError, type PluginsManageParams } from '@hermes/shared'
+import { JsonRpcGatewayError, type PluginsManageParams } from '@moor/shared'
 import { atom } from 'nanostores'
 
 import { notifyError } from '@/store/notifications'
@@ -19,7 +19,7 @@ import { notifyError } from '@/store/notifications'
 export type AgentPluginServerState =
   | 'connected'
   | 'app_not_running'
-  | 'hermes_not_connected'
+  | 'moor_not_connected'
   | 'endpoint_unavailable'
   | 'no_interactive_session'
   | 'version_too_old'
@@ -347,7 +347,7 @@ export async function installAgentPlugin(
     /** The commit the install dialog inspected: a custom source with no `ref` whose branch moved since is
      *  refused by the backend, never installed at the new tip. */
     inspectedSha?: string
-    /** Target profile's HERMES_HOME (null/undefined = backend launch profile). */
+    /** Target profile's MOOR_HOME (null/undefined = backend launch profile). */
     profile?: string | null
   }
 ): Promise<AgentPluginInstallResult> {

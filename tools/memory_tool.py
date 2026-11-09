@@ -233,7 +233,7 @@ def memory_tool(action: str | None = None, target: str = "memory", content: str 
         failure_class = "none" if outcome == "success" else FAILURE_CLASS.get()
     finally:
         FAILURE_CLASS.reset(token)
-    from hermes_cli.observability.shared_metrics_loop import record_builtin_memory_call
+    from moor_cli.observability.shared_metrics_loop import record_builtin_memory_call
     record_builtin_memory_call(action, operations, outcome=outcome, failure_class=failure_class)
     return result
 

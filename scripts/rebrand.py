@@ -140,7 +140,10 @@ PROTECT_PATTERNS: list[str] = [
     # GitHub Pages (nousresearch.github.io), and regex literals with escaped dots.
     # Bounded repetition keeps matching linear-time on megabyte lines while
     # still allowing intra-label prefixes (staging-nousresearch.com).
-    r"(?:[A-Za-z0-9-]{1,63}\\?\.){0,3}[A-Za-z0-9-]{0,63}nousresearch\\?\.(?:com|wtf|ai|dev|org|net|github\\?\.io|\.\.\.)(?:/[^\s\"'`<>)\]]*)?",
+    r"(?i:(?:[A-Za-z0-9-]{1,63}\\?\.){0,3}[A-Za-z0-9-]{0,63}nousresearch\\?\.(?:com|wtf|ai|dev|org|net|github\\?\.io|\.\.\.)(?:\.?)(?:/[^\s\"'`<>)\]]*)?)",
+    # Third-party community project URLs (true402.dev, true402/hermes-swap-guard)
+    r"(?i:true402\.dev/[^\s\"'`<>)\]]*)",
+    r"github\.com/true402/[^\s\"'`<>)\]]*",
     # Test/example nous hosts.
     r"(?:https?://)?(?:[A-Za-z0-9-]{1,63}\.){0,4}nous\.(?:test|example)(?:/[^\s\"'`<>)\]]*)?",
     # Truncated display hostnames ("https://...nousresearch..." with literal
@@ -219,8 +222,20 @@ LADDER: list[tuple[str, str]] = [
     (r"hermesx", "moorx"),                           # lookalike-module fixture in update-guard tests
     (r"hermesbyt4", "moorbyt4"),                     # docs example bot username
     (r"HERMESPENTEST", "MOORPENTEST"),               # pentest reflection marker
+    (r"HERMESPROBE", "MOORPROBE"),                   # probe env var in terminal-drop tests
     (r"hermes%3A", "moor%3A"),                       # URL-encoded @hermes: in matrix doc examples
+    (r"%2Fhermes%2F", "%2Fmoor%2F"),                 # URL-encoded /hermes/ path in auth tests
     (r"\bHermest\b", "Moort"),                       # inflected translation (hu: "a Hermest")
+    (r"\bHermesnek\b", "Moornak"),                   # inflected translation (hu)
+    (r"\bHermesbe\b", "Moorba"),
+    (r"\bhermesből\b", "moorból"),
+    (r"\bHermesszel\b", "Moorral"),
+    (r"\bHermesben\b", "Moorban"),
+    (r"\bHermessel\b", "Moorral"),
+    (r"\bHermes-szel\b", "Moor-ral"),
+    (r"\bHermes-ben\b", "Moor-ban"),
+    (r"\bHermes-nek\b", "Moor-nak"),
+    (r"\bHermes-be\b", "Moor-ba"),
     (r"hermesroom", "moorroom"),                     # API server room grant auth scheme
     (r"HermesRoom", "MoorRoom"),
     (r"hermeslocal", "moorlocal"),                   # desktop cert generation pass
@@ -827,10 +842,11 @@ def phase_cli_branding(dry: bool) -> list[str]:
         orig = text
         if "Classic Moor — gold and kawaii" in text or "Goodbye! ☤" in text or '"classic-gold":' not in text:
             text = re.sub(
-                r'_MOOR_BRANDING: Dict\[str, str\] = _branding\([^)]+\)',
-                '_MOOR_BRANDING: Dict[str, str] = _branding(\n'
+                r'_MOOR_BRANDING:\s*(?:dict|Dict)\[str,\s*str\]\s*=\s*_branding\(.*?\)(?=\s*\n\s*_BUILTIN_SKINS)',
+                '_MOOR_BRANDING: dict[str, str] = _branding(\n'
                 '    "Moor", "⬡", "Session terminated.", prompt="❯", help_header="[?] Available Commands")',
-                text
+                text,
+                flags=re.DOTALL
             )
             text = text.replace(
                 'def get_active_help_header(fallback: str = "(^_^)? Available Commands") -> str:',
@@ -1024,8 +1040,8 @@ def verify_boms(resolved_files: list[str]) -> list[str]:
             cwd=REPO, capture_output=True, check=True,
         ).stdout.decode("utf-8", "replace").split("\0")
         grep = subprocess.run(
-            ["git", "grep", "-I", "-l", "-P", "\\xef\\xbb\\xbf", "HEAD", "--"],
-            cwd=REPO, capture_output=True, text=True,
+            ["git", "grep", "-I", "-l", "^\ufeff", "HEAD", "--"],
+            cwd=REPO, capture_output=True, text=True, encoding="utf-8",
         )
     except subprocess.SubprocessError:
         return []  # no HEAD (bare/fresh) — nothing to compare

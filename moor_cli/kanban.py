@@ -16,14 +16,14 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
-from hermes_cli import kanban_db_workspace as kbw
-from hermes_cli import kanban_db_notify as kbn
-from hermes_cli import kanban_swarm as ks
-from hermes_cli import kanban_workflow
-from hermes_cli.kanban_output import (
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_db_workspace as kbw
+from moor_cli import kanban_db_notify as kbn
+from moor_cli import kanban_swarm as ks
+from moor_cli import kanban_workflow
+from moor_cli.kanban_output import (
     _ATTACHMENT_FIELDS, _RUNS_RUN_FIELDS, _SHOW_RUN_FIELDS, _bulk_apply, _err,
     _fmt_counts, _fmt_task_line, _fmt_ts, _json_out, _obj_dict, _print_json,
     _task_to_dict,
@@ -32,7 +32,7 @@ from moor_cli.kanban_boards import _dispatch_boards
 from moor_cli.kanban_ops import (
     _cmd_daemon, _kanban_config, _cmd_dispatch, _cmd_gc, _cmd_repair, _cmd_tail, _cmd_watch,
 )
-from hermes_cli.kanban_parser import build_parser
+from moor_cli.kanban_parser import build_parser
 
 
 # --- Flag parsing helpers ---

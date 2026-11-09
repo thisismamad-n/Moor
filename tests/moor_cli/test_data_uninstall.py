@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import uninstall
+from moor_cli import uninstall
 
 
 @pytest.fixture

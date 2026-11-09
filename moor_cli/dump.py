@@ -181,7 +181,7 @@ def _config_overrides(config: dict) -> dict[str, str]:
         overrides["toolsets"] = str(user_toolsets)
     fallbacks = config.get("fallback_providers", [])
     if fallbacks:
-        from hermes_cli.debug_redaction import redact_debug_support_text
+        from moor_cli.debug_redaction import redact_debug_support_text
 
         overrides["fallback_providers"] = redact_debug_support_text(
             str(_fallback_debug_projection(fallbacks))

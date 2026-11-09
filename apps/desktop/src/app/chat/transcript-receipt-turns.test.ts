@@ -1,10 +1,10 @@
-import type { PersistedTurn } from '@hermes/shared'
+import type { PersistedTurn } from '@moor/shared'
 import { describe, expect, it } from 'vitest'
 
 import { graftRefreshedTailOntoBackfill } from '@/app/chat/transcript-backfill'
 import { bindStoppedTurnReceipt } from '@/app/session/hooks/use-message-stream/interrupted-reply'
 import { type ChatMessage, chatMessageText, toChatMessages } from '@/lib/chat-messages'
-import type { SessionMessage } from '@/types/hermes'
+import type { SessionMessage } from '@/types/moor'
 
 /**
  * A long chat's newest page begins inside an older tool turn, so the refresh

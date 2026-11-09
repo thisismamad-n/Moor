@@ -526,8 +526,8 @@ class _SupervisorRegistry:
                      dialog_timeout_s: float = DEFAULT_DIALOG_TIMEOUT_S, start_timeout: float = 15.0) -> CDPSupervisor:
         """Idempotently ensure a supervisor runs for ``(task_id, cdp_url)``; one bound to a
         different ``cdp_url`` or unhealthy (dead thread / stopped loop) is stopped and replaced."""
-        from hermes_constants import hermes_home_key
-        home = hermes_home_key()
+        from moor_constants import moor_home_key
+        home = moor_home_key()
         with self._lock:
             existing = self._by_task.get(task_id)
             if existing is not None:

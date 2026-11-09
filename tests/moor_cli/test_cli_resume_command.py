@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cli import HermesCLI
+from cli import MoorCLI
 
 
 def _make_cli():
@@ -249,9 +249,9 @@ class TestResumeOpensTheTargetOnTheGateway:
     a ``GatewaySessionStore`` and skips it); the gateway double admits or refuses ``session.resume``."""
 
     def _switch(self, refusal=None):
-        from hermes_cli.gateway_client import GatewayRPCError
-        from hermes_cli.gateway_connection import GatewayConnection
-        from hermes_cli.gateway_session_store import GatewaySessionStore
+        from moor_cli.gateway_client import GatewayRPCError
+        from moor_cli.gateway_connection import GatewayConnection
+        from moor_cli.gateway_session_store import GatewaySessionStore
 
         calls = []
 
@@ -277,7 +277,7 @@ class TestResumeOpensTheTargetOnTheGateway:
         cli_obj = _make_cli()
         cli_obj._session_db = store
         with (
-            patch("hermes_cli.main._resolve_session_by_name_or_id", return_value="target"),
+            patch("moor_cli.main._resolve_session_by_name_or_id", return_value="target"),
             patch("cli._cprint") as mock_cprint,
         ):
             cli_obj._handle_resume_command("/resume target")

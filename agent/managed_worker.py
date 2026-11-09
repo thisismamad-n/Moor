@@ -5,11 +5,11 @@ reserved for framed events before runtime imports redirect ordinary output.
 Neither assignment secrets nor launch credentials appear in argv or logs.
 """
 # Spawned as a bare ``sys.executable -m``: in a PM install that interpreter carries no dependencies
-# until hermes_bootstrap selects the committed environment, so it must be the first import.
+# until moor_bootstrap selects the committed environment, so it must be the first import.
 try:
-    import hermes_bootstrap
+    import moor_bootstrap
 except ModuleNotFoundError as exc:
-    if exc.name != "hermes_bootstrap":
+    if exc.name != "moor_bootstrap":
         raise
 
 import contextlib
@@ -38,7 +38,7 @@ RESULT_FIELDS = ('final_response', 'failed', 'interrupted', 'completed', 'partia
 # plus ``unverified``) and ``free_tier`` (``agent/turn_recovery._stamp_free_tier``). With
 # ``failure_reason``, ``failure_retryable`` and ``failure_resets_at`` they are what
 # ``agent.error_surface.build_error_surface_from_result`` reads for the owner's error card.
-BILLING_FIELDS = ('provider', 'provider_label', 'model', 'billing_url', 'is_nous', 'message', 'unverified')
+BILLING_FIELDS = ('provider', 'provider_label', 'model', 'billing_url', 'is_moor', 'message', 'unverified')
 STRUCTURED_FIELDS = {'billing_block': BILLING_FIELDS, 'free_tier': ('kind', 'message')}
 
 
@@ -328,8 +328,8 @@ def tool_frame(call_id, name, args, *result):
 
 
 def execute(frame, channel):
-    # The owner RPC below imports gateway/config modules (hermes_cli.config, providers,
-    # hermes_cli.plugins) transitively; the policy must already be frozen when they load.
+    # The owner RPC below imports gateway/config modules (moor_cli.config, providers,
+    # moor_cli.plugins) transitively; the policy must already be frozen when they load.
     bind_worker_policy(frame)
     from agent.runtime_session_store import RuntimeSessionStore, WorkerRPC
     scope = dict(frame['scope'])
@@ -353,7 +353,7 @@ def execute(frame, channel):
     from tools.approval import register_gateway_notify, unregister_gateway_notify
     from tools.approval_context import set_current_session_key
     set_current_session_key(frame['route'])
-    os.environ['HERMES_GATEWAY_SESSION'] = '1'
+    os.environ['MOOR_GATEWAY_SESSION'] = '1'
     from gateway.session_worker_construct import checkpoint_agent_kwargs, construct_kwargs, routing_agent_kwargs
     construct = {'ephemeral_system_prompt': policy.skills_prompt, **construct_kwargs(frame)}
     controls = WorkerControls(channel, frame['route'])
@@ -444,7 +444,7 @@ def hello():
     the ancestor chain it observes. Launchers (uv's venv python.exe) put the owner's Popen
     handle one or two hops above; the owner, never this process, decides whether they match."""
     import psutil
-    from hermes_cli.process_identity import worker_birth
+    from moor_cli.process_identity import worker_birth
     me = psutil.Process()
     return {'pid': me.pid, 'birth': worker_birth(me), 'ancestors': [p.pid for p in me.parents()[:3]]}
 

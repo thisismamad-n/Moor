@@ -397,7 +397,7 @@ def test_clock_step_keeps_the_recorded_router(tmp_path, monkeypatch):
     """psutil's create_time moves with /proc/stat's boot time when the clock is stepped (WSL
     re-syncs within minutes); the live router must still resolve, and a reused PID must not."""
     import psutil._pslinux
-    from hermes_cli.local_runtime import endpoint, supervisor
+    from moor_cli.local_runtime import endpoint, supervisor
 
     monkeypatch.setattr(supervisor, "runtimes_root", lambda: tmp_path)
     sup = supervisor.LlamaServerSupervisor(tmp_path, tmp_path, port=59998)
@@ -424,7 +424,7 @@ def test_replacement_stops_only_an_orphaned_router(tmp_path, monkeypatch, owner)
     is gone; a live owner's router keeps running (its watchdog would respawn it anyway). POSIX: a
     Windows router dies with its owner's job object, so no orphan exists to stop."""
     from gateway.status import get_process_start_time
-    from hermes_cli.local_runtime import bootstrap, endpoint, supervisor
+    from moor_cli.local_runtime import bootstrap, endpoint, supervisor
 
     monkeypatch.setattr(supervisor, "runtimes_root", lambda: tmp_path)
     holder = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
@@ -461,7 +461,7 @@ def test_a_stepped_clock_never_buries_a_live_owner_of_an_older_record(monkeypatc
     (WSL). Only a newer incarnation proves the owner exited; a live owner must never read as
     dead, or a newer process would stop the server an older one is still using."""
     import psutil._pslinux
-    from hermes_cli.local_runtime import recovery
+    from moor_cli.local_runtime import recovery
 
     me = psutil.Process()
     state = {"owner_pid": me.pid, "owner_create_time": me.create_time()}
@@ -479,7 +479,7 @@ def test_the_process_that_boots_the_server_stops_it_on_a_clean_exit(tmp_path):
     marker = tmp_path / "stopped"
     code = (
         "import sys\n"
-        "from hermes_cli.local_runtime import bootstrap\n"
+        "from moor_cli.local_runtime import bootstrap\n"
         "class Sup:\n"
         f"    def stop(self): open({str(marker)!r}, 'w').close()\n"
         "bootstrap._SUPERVISOR = Sup()\n"

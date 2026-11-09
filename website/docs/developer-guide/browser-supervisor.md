@@ -24,7 +24,7 @@ in its snapshot, and exposing a `browser_dialog` tool for explicit responses.
 
 | Backend | Dialog detect | Dialog respond | Frame tree | OOPIF `Runtime.evaluate` via `browser_cdp(frame_id=...)` |
 |---|---|---|---|---|
-| Local Chromium (launched by Hermes for `browser_exec`) / `/browser connect` | ✓ | ✓ full workflow | ✓ | ✓ |
+| Local Chromium (launched by Moor for `browser_exec`) / `/browser connect` | ✓ | ✓ full workflow | ✓ | ✓ |
 | Browserbase | ✓ (via bridge) | ✓ full workflow (via bridge) | ✓ | ✓ |
 
 **Browserbase quirk.** Browserbase's CDP proxy uses Playwright internally and
@@ -41,7 +41,7 @@ From the page's perspective, `prompt()` still returns the agent-supplied
 string. From the agent's perspective, it's the same `browser_dialog(action=...)`
 API either way.
 
-The Camofox catalog plugin (`hermes plugins install camofox`) drives a REST-only
+The Camofox catalog plugin (`moor plugins install camofox`) drives a REST-only
 browser with no CDP surface, so the supervisor does not apply to it.
 
 ## Architecture
@@ -226,8 +226,8 @@ expiry, while the supervisor's long-lived connection keeps a valid session.
 - `tools/browser_dialog_tool.py` — `browser_dialog` tool handler
 - `tools/browser_session_cdp.py` — `ensure_cdp_supervisor` / `stop_cdp_supervisor`, `/browser connect` reattach, dialog-policy config
 - `tools/browser_session_lifecycle.py` — per-session teardown (supervisor stopped first)
-- `toolsets.py` — registers `browser_dialog` in `browser`, `hermes-acp`, `hermes-api-server`, and core toolsets (gated on CDP reachability)
-- `hermes_cli/config.py` — `browser.dialog_policy` and `browser.dialog_timeout_s` defaults
+- `toolsets.py` — registers `browser_dialog` in `browser`, `moor-acp`, `moor-api-server`, and core toolsets (gated on CDP reachability)
+- `moor_cli/config.py` — `browser.dialog_policy` and `browser.dialog_timeout_s` defaults
 
 ## Non-goals
 

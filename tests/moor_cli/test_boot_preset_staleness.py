@@ -78,7 +78,7 @@ def test_boot_replaces_incumbent_with_stale_presets(moor_home, monkeypatch):
 
     stopped = {}
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.endpoint._state_endpoint",
+        "moor_cli.local_runtime.endpoint._state_endpoint",
         lambda: {"base_url": "http://127.0.0.1:18434/v1", "api_key": "k"})
     monkeypatch.setattr(boot, "_stop_state_server", lambda: stopped.setdefault("stopped", True))
 
@@ -113,7 +113,7 @@ def test_refresh_bounces_an_adopted_server(moor_home, monkeypatch):
     stopped = {}
     monkeypatch.setattr(boot, "_SUPERVISOR", None)
     monkeypatch.setattr(
-        "hermes_cli.local_runtime.endpoint._state_endpoint",
+        "moor_cli.local_runtime.endpoint._state_endpoint",
         lambda: {"base_url": "http://127.0.0.1:18434/v1", "api_key": "k"})
     monkeypatch.setattr(boot, "_stop_state_server", lambda: stopped.setdefault("stopped", True))
     booted = {}

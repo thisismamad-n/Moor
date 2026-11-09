@@ -5,11 +5,11 @@ import os
 import sys
 import time
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
-from hermes_cli import plugins as plugins_mod
-from hermes_cli.plugins import PluginManager
+from moor_cli import plugins as plugins_mod
+from moor_cli.plugins import PluginManager
 
 PROBE_PLUGIN = '''
 import json, os
@@ -45,7 +45,7 @@ def register(ctx):
 
 
 def _home_with_plugins(tmp_path, monkeypatch, plugins: dict, isolation="host"):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir(parents=True, exist_ok=True)
     for name, body in plugins.items():
         plugin_dir = home / "plugins" / name
@@ -57,7 +57,7 @@ def _home_with_plugins(tmp_path, monkeypatch, plugins: dict, isolation="host"):
     empty_bundled = tmp_path / "bundled"
     empty_bundled.mkdir()
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     return home
 
@@ -78,10 +78,10 @@ def test_plugin_runs_out_of_process_with_ctx_round_trips_and_survives_host_crash
         first = json.loads(registry.dispatch("hostprobe_pid", {"x": 1}, scope=manager.scope_key))
         host_pid = first["pid"]
         assert host_pid != os.getpid()
-        # A handler calling back into Hermes while Hermes waits on it (nested ctx.dispatch_tool).
+        # A handler calling back into Moor while Moor waits on it (nested ctx.dispatch_tool).
         nested = json.loads(registry.dispatch("hostprobe_nested", {}, scope=manager.scope_key))
         assert nested["pid"] == host_pid and nested["x"] == "nested"
-        # Hooks fire in the host; provider objects arrive as instances of the ABC Hermes checks.
+        # Hooks fire in the host; provider objects arrive as instances of the ABC Moor checks.
         manager.invoke_hook("post_tool_call", tool_name="read_file", args={}, result="ok")
         assert "read_file" in json.loads(registry.dispatch("hostprobe_pid", {}, scope=manager.scope_key))["seen"]
         painter = image_gen_registry.get_provider("hostpainter")
@@ -90,7 +90,7 @@ def test_plugin_runs_out_of_process_with_ctx_round_trips_and_survives_host_crash
         # Live-object ctx surfaces fail the plugin with the boundary's reason, not a crash.
         assert "register_platform" in str(manager._plugins["platformprobe"].error)
 
-        # A plugin killing its host costs one tool error; Hermes keeps running and the host restarts.
+        # A plugin killing its host costs one tool error; Moor keeps running and the host restarts.
         crashed = registry.dispatch("hostprobe_crash", {}, scope=manager.scope_key)
         assert "plugin host" in crashed
         deadline, result = time.monotonic() + 15, ""
@@ -107,7 +107,7 @@ def test_plugin_runs_out_of_process_with_ctx_round_trips_and_survives_host_crash
 
 @pytest.mark.platforms("any")  # the host is a child process: its env/home resolution is per-OS
 def test_isolation_host_keeps_every_user_import_path_out_of_process(tmp_path, monkeypatch):
-    from hermes_cli.plugin_isolation_audit import audit_plugin_dir
+    from moor_cli.plugin_isolation_audit import audit_plugin_dir
     from plugins import plugin_loader
 
     home = _home_with_plugins(tmp_path, monkeypatch, {"platformprobe": PLATFORM_PLUGIN, "fine": PROBE_PLUGIN})
@@ -115,9 +115,9 @@ def test_isolation_host_keeps_every_user_import_path_out_of_process(tmp_path, mo
     # behind the memory / context-engine / cron host routes).
     import logging
     assert plugin_loader.load_plugin_module(
-        "_hermes_user_x.fine", home / "plugins" / "fine", parents=("_hermes_user_x",),
-        logger=logging.getLogger("t"), synthetic_namespace="_hermes_user_x") is None
-    assert "_hermes_user_x.fine" not in sys.modules
+        "_moor_user_x.fine", home / "plugins" / "fine", parents=("_moor_user_x",),
+        logger=logging.getLogger("t"), synthetic_namespace="_moor_user_x") is None
+    assert "_moor_user_x.fine" not in sys.modules
     # The static audit reads the same boundary table the host enforces.
     assert audit_plugin_dir(home / "plugins" / "fine").verdict == "host"
     blocked = audit_plugin_dir(home / "plugins" / "platformprobe")
@@ -127,15 +127,15 @@ def test_isolation_host_keeps_every_user_import_path_out_of_process(tmp_path, mo
 
 def test_managed_scope_pins_host_isolation_over_the_profiles_own_config(tmp_path, monkeypatch):
     """The isolated party must not be able to opt out: an operator pin in the managed scope
-    (/etc/hermes/config.yaml) wins over a profile config that says in_process."""
-    from hermes_cli import managed_scope
+    (/etc/moor/config.yaml) wins over a profile config that says in_process."""
+    from moor_cli import managed_scope
     from tools.registry import registry
 
     _home_with_plugins(tmp_path, monkeypatch, {"hostprobe": PROBE_PLUGIN}, isolation="in_process")
     managed = tmp_path / "managed"
     managed.mkdir()
     (managed / "config.yaml").write_text(yaml.safe_dump({"plugins": {"isolation": "host"}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("MOOR_MANAGED_DIR", str(managed))
     managed_scope.invalidate_managed_cache()
     manager = PluginManager()
     manager.discover_and_load()
@@ -191,7 +191,7 @@ import asyncio, json
 S = {"type": "object", "properties": {}}
 
 def register(ctx):
-    async def whoami(args, **kw):  # async plugin code calling back into Hermes
+    async def whoami(args, **kw):  # async plugin code calling back into Moor
         return json.dumps({"inner": json.loads(ctx.dispatch_tool("session_probe", {})),
                            "acomplete_awaitable": asyncio.iscoroutinefunction(ctx.llm.acomplete)})
     ctx.register_tool(name="async_whoami", toolset="asyncprobe", schema={"name": "async_whoami",
@@ -275,7 +275,7 @@ def test_hosted_memory_provider_stays_live_across_a_host_crash(tmp_path, monkeyp
         deadline = time.monotonic() + 10
         while host.alive and time.monotonic() < deadline:
             time.sleep(0.1)
-        # The proxy Hermes already holds reloads the provider into the new host on next use.
+        # The proxy Moor already holds reloads the provider into the new host on next use.
         assert provider.whoami() not in {first_pid, os.getpid()}
     finally:
         host.shutdown()

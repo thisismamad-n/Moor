@@ -36,7 +36,7 @@ function fakeDesktop() {
 function Harness({ handleGatewayEvent, handleServerRequest }: Pick<Parameters<typeof useGatewayBoot>[0], 'handleGatewayEvent' | 'handleServerRequest'>) {
   useGatewayBoot({ handleGatewayEvent, handleServerRequest, beforeConnectionSwitch: () => undefined,
     onConnectionReady: () => undefined, onGatewayReady: () => undefined,
-    refreshHermesConfig: async () => undefined, refreshSessions: async () => undefined })
+    refreshMoorConfig: async () => undefined, refreshSessions: async () => undefined })
 
   return null
 }
@@ -64,7 +64,7 @@ afterEach(() => {
   $connection.set(null)
   vi.useRealTimers()
   ;(globalThis as { WebSocket: unknown }).WebSocket = originalWebSocket
-  delete (window as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as { moorDesktop?: unknown }).moorDesktop
 })
 
 async function flushAsync() {
@@ -85,7 +85,7 @@ test('keeps canonical alpha events and questions on alpha while beta is foregrou
 
     desktop.getConnection.mockResolvedValue(native)
     desktop.getGatewayWsUrl.mockResolvedValue(native.wsUrl)
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     const events = vi.fn()
     const questions = vi.fn((_request: unknown) => true)
     render(<Harness handleGatewayEvent={events} handleServerRequest={questions} />)

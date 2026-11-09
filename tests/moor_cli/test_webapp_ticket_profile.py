@@ -19,17 +19,17 @@ _TOKEN = "b" * 43
 def two_profiles(monkeypatch, tmp_path):
     from gateway.session_authorities import SessionAuthorities
     from gateway.session_authority import SessionAuthority
-    from hermes_cli import web_server as server
-    from hermes_state import SessionDB
-    from hermes_state_runtime import begin_runtime_epoch
+    from moor_cli import web_server as server
+    from moor_state import SessionDB
+    from moor_state_runtime import begin_runtime_epoch
 
-    launch = tmp_path / ".hermes"
+    launch = tmp_path / ".moor"
     beta = launch / "profiles" / "beta"
     beta.mkdir(parents=True)
     for home in (launch, beta):
         (home / "config.yaml").write_text("{}", encoding="utf-8")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     registry = SessionAuthorities(launch, multiplexed=True)
     runner = SimpleNamespace(_draining=False, session_authorities=registry)
     authorities, dbs = {}, {}
@@ -55,7 +55,7 @@ def two_profiles(monkeypatch, tmp_path):
 def _ask(client, method, params, profile=None):
     """*method*'s reply on a tab socket opened for *profile* (``?profile=`` on the page)."""
     query = f"&profile={profile}" if profile else ""
-    minted = client.post(f"/api/webapp/socket-ticket?socket=gateway{query}", headers={"X-Hermes-Session-Token": _TOKEN})
+    minted = client.post(f"/api/webapp/socket-ticket?socket=gateway{query}", headers={"X-moor-session-Token": _TOKEN})
     assert minted.status_code == 200, minted.text
     ticket = minted.json()["ticket"]
     socket_query = f"&profile={profile}" if profile else ""

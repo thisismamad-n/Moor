@@ -125,7 +125,7 @@ concurrency:
 
 env:
   # A stable run is on the default branch, so GITHUB_SHA is not the commit under test.
-  HERMES_TESTED_COMMIT: ${{ inputs.commit || github.sha }}
+  MOOR_TESTED_COMMIT: ${{ inputs.commit || github.sha }}
 
 jobs:
   pick-releases:

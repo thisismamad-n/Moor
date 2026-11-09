@@ -57,7 +57,7 @@ def test_mentioned_data_file_that_cannot_be_scanned_is_not_a_verdict(tmp_path, m
     in 64+ remote-read misses (a markdown table of paths) or be a live SQLite database: each is
     "nothing to scan", never a block (#113944). The same file *executed* still fails closed."""
     from cron import lifecycle_guard
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    from moor_cli.sqlite_safe_read import connect_tracked
 
     minified = tmp_path / "minified.json"
     minified.write_text("[" + "1," * 40000 + "1]", encoding="utf-8")

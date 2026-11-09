@@ -6,7 +6,7 @@
  * it reaches back into neither.
  */
 
-import { Button, Codicon, host, Input, useI18n } from '@hermes/plugin-sdk'
+import { Button, Codicon, host, Input, useI18n } from '@moor/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 
 import { useBots } from './i18n'
@@ -23,7 +23,7 @@ import type { RosterRow } from './types'
 const HUB_ORIGIN = 'https://hermes-agent.nousresearch.com'
 const FALLBACK_HUB_ORIGIN = 'https://nousresearch.github.io'
 const HUB_PICKER_URL = HUB_ORIGIN + '/docs/skills?embed=picker'
-const FALLBACK_HUB_PICKER_URL = FALLBACK_HUB_ORIGIN + '/hermes-agent/docs/skills?embed=picker'
+const FALLBACK_HUB_PICKER_URL = FALLBACK_HUB_ORIGIN + '/moor-agent/docs/skills?embed=picker'
 // A WAF-blocked or unreachable docs host must not delay the fallback longer
 // than this — the probe only decides which origin to embed, never blocks it.
 const HUB_PROBE_TIMEOUT_MS = 8_000

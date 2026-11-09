@@ -14,11 +14,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 import plugins.dashboard_auth.basic as basic_plugin
-from hermes_cli import web_server
-from hermes_cli.config import read_raw_config
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from hermes_cli.dashboard_auth.cookies import SESSION_AT_COOKIE
-from hermes_cli.dashboard_auth.routes import _reset_password_rate_limit
+from moor_cli import web_server
+from moor_cli.config import read_raw_config
+from moor_cli.dashboard_auth import clear_providers, register_provider
+from moor_cli.dashboard_auth.cookies import SESSION_AT_COOKIE
+from moor_cli.dashboard_auth.routes import _reset_password_rate_limit
 
 HTTPS_REMOTE = "https://agent.example.com"
 PLAIN_HTTP_REMOTE = "http://192.168.50.220:9119"
@@ -40,7 +40,7 @@ def password_hash():
 def password_gate(request, password_hash, monkeypatch):
     """An all-interfaces listener gated by the bundled username/password provider: the standalone
     dashboard, or the gateway's Webapp (``ui_surface``), as the test's parameter says."""
-    monkeypatch.delenv("HERMES_DASHBOARD_PUBLIC_URL", raising=False)
+    monkeypatch.delenv("MOOR_DASHBOARD_PUBLIC_URL", raising=False)
     for key, value in (("bound_host", "0.0.0.0"), ("bound_port", 9119), ("auth_required", True),
                        ("trusted_public_hosts", frozenset())):
         monkeypatch.setattr(web_server.app.state, key, value, raising=False)

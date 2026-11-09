@@ -72,7 +72,7 @@ def _run_booked_job(monkeypatch, tmp_path):
     db = _RecordingSessionDB()
     db.db_path = tmp_path / "state.db"
     owner = SimpleNamespace(db=db)
-    monkeypatch.setattr("hermes_state_registry.acquire", lambda _path: db)
+    monkeypatch.setattr("moor_state_registry.acquire", lambda _path: db)
     monkeypatch.setattr(run_agent, "AIAgent", _FakeCronAgent)
     monkeypatch.setattr(
         "moor_constants.resolve_reasoning_config", lambda *_a, **_k: None
@@ -95,7 +95,7 @@ def _run_booked_job(monkeypatch, tmp_path):
         "moor_cli.runtime_provider.resolve_runtime_provider", _fake_runtime
     )
     monkeypatch.setattr("tools.mcp_tool_discovery.discover_mcp_tools", list)
-    monkeypatch.setattr(cron_scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(cron_scheduler, "_get_moor_home", lambda: tmp_path)
     monkeypatch.setattr(cron_scheduler, "get_fallback_chain", lambda _cfg: [])
     monkeypatch.setattr(
         cron_scheduler, "_guard_job_credential_exfil", lambda _job: None

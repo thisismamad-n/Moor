@@ -47,7 +47,7 @@ function Get-SourceMoorForStartup([string]$Root) {
 # the user-state snapshot (config.yaml is part of the baseline). Releases that
 # predate --set-channel follow main already.
 function Set-SourceMainChannel([string]$Root) {
-    $exe = Get-SourceHermes $Root
+    $exe = Get-SourceMoor $Root
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
     try {
         $help = & $exe update --help 2>&1 | Out-String

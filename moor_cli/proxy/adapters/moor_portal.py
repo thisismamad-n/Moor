@@ -6,8 +6,8 @@ import logging
 import threading
 from typing import Any, Dict, FrozenSet, Optional
 
-from hermes_cli.anon_challenge import background_caller
-from hermes_cli.auth import (
+from moor_cli.anon_challenge import background_caller
+from moor_cli.auth import (
     AuthError,
     DEFAULT_MOOR_INFERENCE_URL,
     _load_auth_store,
@@ -76,7 +76,7 @@ class MoorPortalAdapter(UpstreamAdapter):
                 # Every proxied request queues on self._lock: a free-tier browser challenge is
                 # announced and raised, never waited on while holding it.
                 with background_caller():
-                    refreshed = resolve_nous_runtime_credentials(
+                    refreshed = resolve_moor_runtime_credentials(
                         force_refresh=force_refresh, stale_access_token=stale_access_token or None
                     )
             except Exception as exc:
@@ -128,7 +128,7 @@ class MoorPortalAdapter(UpstreamAdapter):
                 providers = store.setdefault("providers", {})
                 providers["moor"] = state
                 _save_auth_store(store)
-            _write_shared_nous_state(state, renewal=True)
+            _write_shared_moor_state(state, renewal=True)
         except Exception as exc:
             logger.warning("proxy: failed to persist Moor quarantine state: %s", exc)
 

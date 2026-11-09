@@ -206,9 +206,9 @@ export const zhOverrides = {
     copyDetail: '复制详情',
     copyDetailFailed: '无法复制通知详情',
     backendOutOfDateTitle: '后端版本过旧',
-    backendOutOfDateMessage: '你的 Hermes 后端早于当前桌面构建，可能无法正常工作。请更新以保持一致。',
+    backendOutOfDateMessage: '你的 Moor 后端早于当前桌面构建，可能无法正常工作。请更新以保持一致。',
     desktopOutOfDateTitle: '应用版本过旧',
-    desktopOutOfDateMessage: '此 Hermes 应用早于所连接的后端，可能无法正常工作。请更新应用以保持一致。',
+    desktopOutOfDateMessage: '此 Moor 应用早于所连接的后端，可能无法正常工作。请更新应用以保持一致。',
     updateDesktopApp: '更新应用',
     installMethodUnsupportedTitle: '不受支持的安装方式',
     updateMoor: '更新 Moor',
@@ -273,8 +273,8 @@ export const zhOverrides = {
       rejectAction: '拒绝',
       inputTitle: '需要输入',
       inputTitleNamed: session => `需要输入 — ${session}`,
-      inputBody: 'Hermes 正在等待你的回应。',
-      turnDoneTitle: 'Hermes 已完成',
+      inputBody: 'Moor 正在等待你的回应。',
+      turnDoneTitle: 'Moor 已完成',
       turnDoneBody: '消息已完成。',
       turnErrorTitle: '本轮失败',
       backgroundDoneTitle: '后台任务已完成',
@@ -669,7 +669,7 @@ export const zhOverrides = {
         missingEnv: (_name, vars) => `缺少环境变量：${vars}。请在设置 → 密钥中添加。`,
         verified: '已验证',
         unverified: '未验证',
-        reviewedByNous: '已由 Nous 审核。',
+        reviewedByMoor: '已由 Moor 审核。',
         installsAndEnables: profile => `安装到 ${profile}，并立即启用。`,
         installsOnly: profile => `安装到 ${profile}。`,
         advanced: '高级',
@@ -1321,7 +1321,7 @@ export const zhOverrides = {
     // v2 多连接注册表：设置 → 网关。
     connections: {
       title: '已注册网关',
-      intro: '管理本机以及通过远程、SSH 或 Hermes Cloud 连接可访问的每个 Hermes 网关。',
+      intro: '管理本机以及通过远程、SSH 或 Moor Cloud 连接可访问的每个 Moor 网关。',
       stagedNote: '所有网关都保持连接。配置档案、聊天、消息和定时任务归属于各自网关，“会话”可以同时显示全部网关。',
       launchModeTitle: '启动时返回上次使用网关的会话视图',
       launchModeDesc: '关闭时，会话将在主网关上打开。',
@@ -1534,9 +1534,9 @@ export const zhOverrides = {
         '远程主机上未安装 Moor。请在远程安装（curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash）或设置 Moor 路径。',
       sshErrPlatform: '不支持的远程平台。Moor Desktop 的 SSH 模式支持 Linux、macOS 和 Windows 远程主机。',
       sshErrTimeout: 'SSH 连接超时。主机可能无法访问或处于休眠状态。',
-      sshErrUpdateRequired: '使用 Desktop SSH 连接前，请更新远程主机上的 Hermes。',
+      sshErrUpdateRequired: '使用 Desktop SSH 连接前，请更新远程主机上的 Moor。',
       sshErrInteractiveAuth:
-        'Tailscale SSH 需要交互式浏览器验证。请在终端运行 `ssh <host> true` 完成验证后重试——Hermes 以非交互方式运行 SSH。',
+        'Tailscale SSH 需要交互式浏览器验证。请在终端运行 `ssh <host> true` 完成验证后重试——Moor 以非交互方式运行 SSH。',
       sshErrUnknown: 'SSH 连接失败。'
     },
     keys: {
@@ -1690,7 +1690,7 @@ export const zhOverrides = {
       },
       keepGoingOnCredits: {
         title: '用额度继续',
-        description: '包含的用量用完后，使用你的额度。关闭时，Hermes 等待重置。',
+        description: '包含的用量用完后，使用你的额度。关闭时，Moor 等待重置。',
         approveInBrowser: '请在浏览器中批准 Remote Spending 以更改此设置。批准后立即生效。',
         openAgain: '再次打开',
         cancel: '取消',
@@ -2580,7 +2580,7 @@ export const zhOverrides = {
       MATTERMOST_ALLOWED_USERS: { label: '允许的用户 ID', help: '推荐。Mattermost 用户 ID（每格一个）。' },
       MATRIX_HOMESERVER: { label: 'Homeserver URL', placeholder: 'https://matrix.org' },
       MATRIX_ACCESS_TOKEN: { label: '访问令牌' },
-      MATRIX_USER_ID: { label: 'Bot 用户 ID', placeholder: '@hermes:example.org' },
+      MATRIX_USER_ID: { label: 'Bot 用户 ID', placeholder: '@moor:example.org' },
       MATRIX_ALLOWED_USERS: { label: '允许的 Matrix 用户 ID', help: '推荐。@user:server 格式的用户 ID（每格一个）。' },
       SIGNAL_HTTP_URL: {
         label: 'Signal 桥接 URL',
@@ -2701,7 +2701,7 @@ export const zhOverrides = {
     exported: '配置档案已导出',
     failedImport: '导入配置档案失败',
     failedExport: '导出配置档案失败',
-    exportNeedsHost: name => `浏览器无法保存配置档案归档。请在 Hermes 主机上运行：hermes profile export ${name}`,
+    exportNeedsHost: name => `浏览器无法保存配置档案归档。请在 Moor 主机上运行：moor profile export ${name}`,
     allProfiles: '全部配置档案',
     showAllProfiles: '显示全部配置档案',
     notServedHere: '此处未提供',
@@ -2717,9 +2717,9 @@ export const zhOverrides = {
       onGateway: (name, gateway) => `${name} · ${gateway}`,
       switchTo: (name, gateway) => `打开 ${gateway} 上的 ${name}`,
       deleteOn: gateway => `（位于 ${gateway}）`,
-      localDevice: '此设备（本地后端——若未安装 Hermes 则会安装，否则打开一个新会话）',
-      installDeviceTitle: '在此设备上安装 Hermes？',
-      installDeviceDesc: '这将在本地安装 Hermes，然后在这台电脑上打开一个新会话。确认之前不会开始安装。',
+      localDevice: '此设备（本地后端——若未安装 Moor 则会安装，否则打开一个新会话）',
+      installDeviceTitle: '在此设备上安装 Moor？',
+      installDeviceDesc: '这将在本地安装 Moor，然后在这台电脑上打开一个新会话。确认之前不会开始安装。',
       installDeviceConfirm: '本地安装',
       connectExistingInstead: '改为连接现有环境'
     },
@@ -3600,9 +3600,9 @@ export const zhOverrides = {
     copyFullLog: '复制完整更新日志',
     manualTitle: '从终端更新',
     manualUnavailableTitle: '无法从这里更新',
-    manualBody: '你是从命令行安装的 Hermes，因此更新也需要在那里运行。请将此命令粘贴到终端：',
-    manualBodyBackend: 'Hermes 后端由本应用之外管理。请在托管它的服务器上运行此命令：',
-    manualPickedUp: '下次启动 Hermes 时会使用新版本。',
+    manualBody: '你是从命令行安装的 Moor，因此更新也需要在那里运行。请将此命令粘贴到终端：',
+    manualBodyBackend: 'Moor 后端由本应用之外管理。请在托管它的服务器上运行此命令：',
+    manualPickedUp: '下次启动 Moor 时会使用新版本。',
     manualPickedUpBackend: '后端将在更新完成后加载新版本。',
     guiSkewTitle: '请更新桌面应用',
     guiSkewBody:
@@ -3821,10 +3821,10 @@ export const zhOverrides = {
     timedOutBody: '代码未在有效期内使用。你仍在免费层。',
     errorBody: '登录未完成；请重试。',
     alreadySignedInHeading: '已登录。',
-    alreadySignedInBody: '此 Hermes 已登录 Nous 账户。',
+    alreadySignedInBody: '此 Moor 已登录 Moor 账户。',
     offer: {
-      heading: '继续使用 Hermes',
-      body: '你正在使用免费额度。继续使用 Hermes 的话，你会开始遇到限制。登录免费的 Nous 账户，即可获得更多额度。',
+      heading: '继续使用 Moor',
+      body: '你正在使用免费额度。继续使用 Moor 的话，你会开始遇到限制。登录免费的 Moor 账户，即可获得更多额度。',
       signIn: '登录',
       notNow: '暂不'
     }
@@ -4316,7 +4316,7 @@ export const zhOverrides = {
         },
         timeout: {
           title: provider => `无法连接 ${provider}`,
-          body: provider => `Hermes 无法连接到 ${provider}。请检查网络连接后重试。`
+          body: provider => `Moor 无法连接到 ${provider}。请检查网络连接后重试。`
         },
         ssl_cert_verification: {
           title: provider => `无法验证 ${provider} 的连接`,

@@ -131,11 +131,11 @@ export async function stageDroppedFilePath(candidate: DroppedFile): Promise<stri
     throw new Error("Folders can't be attached by dropping them. Use Attach → Folder… instead.")
   }
 
-  if (!candidate.file || !window.hermesDesktop?.stageFileForAttach) {
+  if (!candidate.file || !window.moorDesktop?.stageFileForAttach) {
     return ''
   }
 
-  return window.hermesDesktop.stageFileForAttach(candidate.file)
+  return window.moorDesktop.stageFileForAttach(candidate.file)
 }
 
 /** Stage a drop for the main composer's chips. A rejected stage keeps its
@@ -457,12 +457,12 @@ export function useComposerActions({
     (attachment: ComposerAttachment) => {
       const stagedUpload =
         attachment.kind === 'file' && attachment.path
-          ? window.hermesDesktop?.getStagedFileForAttach?.(attachment.path)
+          ? window.moorDesktop?.getStagedFileForAttach?.(attachment.path)
           : undefined
 
       const displayName =
         attachment.kind === 'file' && attachment.path && attachment.label === pathLabel(attachment.path)
-          ? window.hermesDesktop?.getStagedFileDisplayName?.(attachment.path)
+          ? window.moorDesktop?.getStagedFileDisplayName?.(attachment.path)
           : undefined
 
       scope.add({

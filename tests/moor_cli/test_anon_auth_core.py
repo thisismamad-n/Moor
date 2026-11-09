@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import anon_auth
-from hermes_cli.auth import _load_auth_store, resolve_provider
-from tests.hermes_cli.anon_portal import PORTAL, WELCOME, claimed_trial, install_portal, make_jwt as _jwt, off_local_desktop
+from moor_cli import anon_auth
+from moor_cli.auth import _load_auth_store, resolve_provider
+from tests.moor_cli.anon_portal import PORTAL, WELCOME, claimed_trial, install_portal, make_jwt as _jwt, off_local_desktop
 
 
 @pytest.fixture
@@ -50,7 +50,7 @@ class TestIdentityLifecycle:
         assert "active_provider" not in store
         with pytest.raises(anon_auth.AuthError):
             resolve_provider("auto")
-        assert anon_auth.is_guest_state(store["providers"]["nous"])
+        assert anon_auth.is_guest_state(store["providers"]["moor"])
         assert _shared_store(tmp_path).get("anon_token") == state["anon_token"]
         assert portal.minted == 1
         # Second call: identity exists, zero network.
@@ -92,13 +92,13 @@ class TestIdentityLifecycle:
         claimed_trial(monkeypatch)
         off_local_desktop(monkeypatch)     # a CLI shell beside the desktop
         assert anon_auth.free_inference_active() is True
-        assert resolve_provider("auto") == "nous"
+        assert resolve_provider("auto") == "moor"
 
 
 class TestExplicitProvision:
     """``ensure_portal_identity(explicit=True)`` is the creator under both the welcome-trial claim and
     the connectors path. It mints once; every later caller adopts that identity through the shared
-    store, so two callers never create two identities. ``nous.guest: false`` still wins."""
+    store, so two callers never create two identities. ``moor.guest: false`` still wins."""
 
     def test_provision_mints_once_then_everything_adopts(self, portal, monkeypatch, tmp_path):
         assert anon_auth.is_guest_state(claimed_trial(monkeypatch))
@@ -146,13 +146,13 @@ class TestExplicitProvision:
 class TestResolverIsUnchanged:
     def test_guest_is_last_resort_and_explicit_key_wins(self, portal, monkeypatch):
         claimed_trial(monkeypatch)
-        assert resolve_provider("auto") == "nous"
+        assert resolve_provider("auto") == "moor"
         monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
         assert resolve_provider("auto") == "openrouter"
 
     def test_runtime_routes_to_welcome_host(self, portal, monkeypatch):
         claimed_trial(monkeypatch)
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider()
         assert runtime["provider"] == "moor"
         assert runtime["base_url"].rstrip("/") == WELCOME
@@ -165,7 +165,7 @@ class TestRouteFallback:
     def test_exchange_without_inference_url_routes_to_welcome_literal(self, portal, monkeypatch):
         portal.inference_base_url = None
         claimed_trial(monkeypatch)
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider()
         assert runtime["base_url"].rstrip("/") == WELCOME
         state = _load_auth_store()["providers"]["moor"]
@@ -174,7 +174,7 @@ class TestRouteFallback:
     def test_disallowed_inference_host_heals_to_welcome_literal(self, portal, monkeypatch):
         portal.inference_base_url = "https://welcome-api.staging-nousresearch.com/v1"
         claimed_trial(monkeypatch)
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider()
         assert runtime["base_url"].rstrip("/") == WELCOME
 
@@ -195,7 +195,7 @@ class TestRouteFallback:
 class TestTokenAcquisitionSeam:
     def test_expired_guest_jwt_reexchanges_and_never_hits_oauth_token(self, portal, monkeypatch):
         claimed_trial(monkeypatch)
-        from hermes_cli.auth import _auth_store_lock, _save_auth_store
+        from moor_cli.auth import _auth_store_lock, _save_auth_store
         with _auth_store_lock():
             store = _load_auth_store()
             store["providers"]["moor"]["access_token"] = _jwt(exp=int(time.time()) - 10)
@@ -215,10 +215,10 @@ class TestTokenAcquisitionSeam:
         error surfaces; inference never mints a replacement."""
         first = claimed_trial(monkeypatch)
         portal.dead_tokens.add(first["anon_token"])
-        from hermes_cli.auth_nous import resolve_nous_runtime_credentials
+        from moor_cli.auth_moor import resolve_moor_runtime_credentials
         with pytest.raises(anon_auth.AnonCredentialDead):
-            resolve_nous_runtime_credentials(force_refresh=True)
-        assert "nous" not in _load_auth_store().get("providers", {})
+            resolve_moor_runtime_credentials(force_refresh=True)
+        assert "moor" not in _load_auth_store().get("providers", {})
         assert portal.minted == 1
 
     def test_tool_gateway_token_path_reexchanges(self, portal):
@@ -326,7 +326,7 @@ class TestBootstrapNeverCreates:
 
     def test_bootstrap_on_a_fresh_machine_mints_nothing(self, portal, monkeypatch):
         monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda *_a, **_kw: False)
-        from tests.hermes_cli.anon_portal import as_local_desktop_backend
+        from tests.moor_cli.anon_portal import as_local_desktop_backend
         as_local_desktop_backend(monkeypatch)              # the trial is claimable here; boot still never claims it
         record = self._fresh().run_bootstrap(announce=False)
         assert record.has_identity is False and record.free_tier_account is False
@@ -337,7 +337,7 @@ class TestBootstrapNeverCreates:
         fb = self._fresh()
         record = fb.run_bootstrap(announce=False)
         assert record.free_tier_account and record.has_identity and record.provider_configured
-        assert record.inference_provider == "nous" and record.other_providers is False
+        assert record.inference_provider == "moor" and record.other_providers is False
         again = fb.run_bootstrap(announce=False)
         assert again is record and portal.minted == 1
         assert fb.wait_for_record(timeout=0) is record
@@ -349,15 +349,15 @@ class TestBootstrapNeverCreates:
         assert record.other_providers is True and record.has_identity is True
         assert record.free_tier_account is False, "a connector guest does not carry inference"
         assert record.inference_provider == "openrouter"
-        assert _load_auth_store().get("active_provider") != "nous"
+        assert _load_auth_store().get("active_provider") != "moor"
         assert portal.minted == 1
 
     def test_reads_never_mint(self, portal, monkeypatch):
         """status, provider resolution and the connector bearer are reads: with no identity they
         answer 'nothing' and touch no network."""
         monkeypatch.setattr("agent.bedrock_adapter.has_aws_credentials", lambda *_a, **_kw: False)
-        from tools.managed_tool_gateway import read_nous_access_token
-        assert read_nous_access_token() is None
+        from tools.managed_tool_gateway import read_moor_access_token
+        assert read_moor_access_token() is None
         with pytest.raises(anon_auth.AuthError):
             resolve_provider("auto")
         from moor_cli.main import _has_any_provider_configured
@@ -393,8 +393,8 @@ class TestIdentityOfRecordIsTheSharedStore:
 
     def test_clearing_a_dead_guest_leaves_a_sibling_identity_alone(self, portal, tmp_path):
         anon_auth.ensure_portal_identity(explicit=True)
-        from hermes_cli.auth_nous import _write_shared_nous_state
-        _write_shared_nous_state({"access_token": _jwt(client_id="hermes-cli"), "refresh_token": "rt-sibling",
+        from moor_cli.auth_moor import _write_shared_moor_state
+        _write_shared_moor_state({"access_token": _jwt(client_id="moor-cli"), "refresh_token": "rt-sibling",
                                   "expires_at": "2030-01-01T00:00:00+00:00", "auth_method": "oauth_device_code"},
                                  renewal=False)
         anon_auth.clear_dead_guest("test")
@@ -428,7 +428,7 @@ class TestConnectorTokenPath:
     def test_opt_out_hides_the_free_tier_from_connectors_including_cached_tokens(self, portal, monkeypatch):
         anon_auth.ensure_portal_identity(explicit=True)
         from tools import managed_tool_gateway as mtg
-        assert mtg.read_nous_access_token()  # now a cached, valid JWT exists
+        assert mtg.read_moor_access_token()  # now a cached, valid JWT exists
         _write_config(monkeypatch, guest=False)
         assert mtg.peek_moor_access_token() is None
         assert mtg.read_moor_access_token() is None

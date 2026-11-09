@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from aiohttp import web
 
-from hermes_cli.config_backend import ConfigBackendUnavailable
+from moor_cli.config_backend import ConfigBackendUnavailable
 
 
 @web.middleware

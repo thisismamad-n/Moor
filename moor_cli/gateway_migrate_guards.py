@@ -177,8 +177,8 @@ def masked_default_unit(default_home: Path) -> Optional[Path]:
     """The default profile's systemd unit when the operator MASKED it (``systemctl mask`` links it to
     ``/dev/null``), else None. A masked survivor cannot be enabled at boot, and masking is a deliberate
     "never start this", so the update hook reads it as an opt-out instead of refusing (#139324)."""
-    from hermes_cli import gateway as gw
-    from hermes_cli.gateway_migrate import _home_env
+    from moor_cli import gateway as gw
+    from moor_cli.gateway_migrate import _home_env
     with _home_env(default_home):
         units = [gw.get_systemd_unit_path(system=system) for system in (False, True)]
     for unit in units:

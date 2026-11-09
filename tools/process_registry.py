@@ -26,7 +26,7 @@ _IS_WINDOWS = platform.system() == "Windows"
 # See #70716.
 _IS_LINUX = platform.system() == "Linux"
 from tools.environments.local import _append_dropped_path_entries, _find_shell, _resolve_safe_cwd, _sanitize_subprocess_env, _terminal_env
-from hermes_cli._subprocess_compat import windows_hide_flags
+from moor_cli._subprocess_compat import windows_hide_flags
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, NamedTuple, Optional
 
@@ -281,7 +281,7 @@ def _systemd_run_user_scope_available() -> bool:
                 binary = shutil.which("systemd-run")
                 if binary:
                     # Unique unit avoids collisions; the timeout bounds D-Bus.
-                    probe_unit = f"hermes-probe-scope-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+                    probe_unit = f"moor-probe-scope-{os.getpid()}-{uuid.uuid4().hex[:8]}"
                     for _attempt in range(2):
                         result = subprocess.run(
                             _systemd_scope_argv(binary, probe_unit, "/bin/sh", "-c", "exit 0"),
@@ -697,7 +697,7 @@ class ProcessRegistry(ProcessTerminationMixin, ProcessCheckpointMixin, ProcessOu
         import queue as _queue_mod
         self.completion_queue: _queue_mod.Queue = _queue_mod.Queue()
         # Durable delegation completions are NOT rehydrated here: this constructor runs at
-        # import time in every process that touches the tools graph (cron clients, `hermes
+        # import time in every process that touches the tools graph (cron clients, `moor
         # sessions list`, workers), and restoring means writing the canonical ledger. The
         # owner replays them explicitly (GatewayRunner._start_recover_previous_run) and the
         # first consumer through restore_completions() (#123265). Importing the module is
@@ -1092,7 +1092,7 @@ class ProcessRegistry(ProcessTerminationMixin, ProcessCheckpointMixin, ProcessOu
         return ProcessSession(
             id=f"proc_{uuid.uuid4().hex[:12]}", command=command, task_id=task_id,
             owner_task_id=owner_task_id, session_key=session_key, cwd=cwd,
-            parent_session_id=get_session_env("HERMES_SESSION_ID", ""),
+            parent_session_id=get_session_env("MOOR_SESSION_ID", ""),
             wsl_chain=_is_wsl_launcher_command(command),
             started_at=time.time(), **extra)
 
@@ -1256,7 +1256,7 @@ class ProcessRegistry(ProcessTerminationMixin, ProcessCheckpointMixin, ProcessOu
         session.pid = proc.pid
         session.host_start_time = self._safe_host_start_time(session.pid)
         session.notify_on_complete = notify_on_complete
-        handed_pgid = getattr(proc, "_hermes_owned_pgid", None)
+        handed_pgid = getattr(proc, "_moor_owned_pgid", None)
         self._take_handoff_group(session, proc)
         if output_so_far:
             session.append_output(output_so_far)
@@ -1811,8 +1811,8 @@ class ProcessRegistry(ProcessTerminationMixin, ProcessCheckpointMixin, ProcessOu
         if self._completions_restored:
             return 0
         self._completions_restored = True
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-        token = set_hermes_home_override(None)
+        from moor_constants import reset_moor_home_override, set_moor_home_override
+        token = set_moor_home_override(None)
         try:
             from tools.async_delegation import restore_undelivered_completions
             return restore_undelivered_completions(self.completion_queue)
@@ -1820,7 +1820,7 @@ class ProcessRegistry(ProcessTerminationMixin, ProcessCheckpointMixin, ProcessOu
             logger.warning("Could not restore async delegation completions: %s", exc)
             return 0
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     def drain_notifications(
         self, session_key: str = "", owns_event=None, *, skip_poll_observed: bool = True,

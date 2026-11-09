@@ -1,9 +1,9 @@
-"""An owner from an older Hermes on the SAME home is replaced by ensure, never reported forever.
+"""An owner from an older Moor on the SAME home is replaced by ensure, never reported forever.
 
 Upgrade path (Windows Desktop report, TUI "retrying in 30s" forever): the pre-protocol gateway a user
 left running answers ``identify`` without ``runtime_protocol``. Every client of this install ensures
-through ``ensure_gateway_runtime`` (TUI bootstrap, Desktop's ``hermes gateway ensure``), so that is
-where the old owner is stopped the way ``hermes gateway stop`` stops it and the current one started.
+through ``ensure_gateway_runtime`` (TUI bootstrap, Desktop's ``moor gateway ensure``), so that is
+where the old owner is stopped the way ``moor gateway stop`` stops it and the current one started.
 A gateway of another install (a home that resolves outside this install's root) stays refused.
 """
 from __future__ import annotations
@@ -14,9 +14,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import gateway_runtime as runtime
-from hermes_cli import gateway_runtime_replace as replace
-from hermes_cli.gateway_runtime import GatewayDiscovery, GatewayEndpoint
+from moor_cli import gateway_runtime as runtime
+from moor_cli import gateway_runtime_replace as replace
+from moor_cli.gateway_runtime import GatewayDiscovery, GatewayEndpoint
 
 
 def _ready(home: Path) -> GatewayDiscovery:
@@ -27,7 +27,7 @@ def _ready(home: Path) -> GatewayDiscovery:
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    home = (tmp_path / ".hermes").resolve()
+    home = (tmp_path / ".moor").resolve()
     home.mkdir()
     monkeypatch.setattr(runtime, "_update_fenced", lambda homes: False)
     return home
@@ -50,7 +50,7 @@ def test_ensure_replaces_an_incompatible_owner_of_this_home(home, monkeypatch):
                           GatewayDiscovery("absent"), _ready(home)])
     monkeypatch.setattr(replace, "replace_incompatible_owner",
                         lambda h, *, deadline: stopped.append(h) or None)
-    from hermes_cli import gateway_runtime_service as service, gateway_runtime_start as start
+    from moor_cli import gateway_runtime_service as service, gateway_runtime_start as start
     monkeypatch.setattr(service, "discover_existing_gateway_service", lambda h, deadline: None)
     monkeypatch.setattr(start, "spawn_unmanaged_gateway",
                         lambda h, deadline, idle_exit=False: SimpleNamespace(poll=lambda: None, pid=1))
@@ -93,15 +93,15 @@ def test_a_refused_replacement_is_reported_with_its_reason(home, monkeypatch):
     result = runtime.ensure_gateway_runtime(home, timeout=5)
 
     assert (result.state, result.reason_code) == ("incompatible", "runtime_protocol")
-    assert result.detail and "another Hermes install" in result.detail
+    assert result.detail and "another Moor install" in result.detail
 
 
 # --- the stop itself -------------------------------------------------------------------------------
 
 def _owner_payload(home: Path, pid: int, start_time):
-    # MAIN's identify: no runtime_protocol, kind/pid/start_time/hermes_home from its pid record.
-    return {"protocol": 1, "kind": "hermes-gateway", "pid": pid, "start_time": start_time,
-            "hermes_home": str(home), "supervisor": "manual"}
+    # MAIN's identify: no runtime_protocol, kind/pid/start_time/moor_home from its pid record.
+    return {"protocol": 1, "kind": "moor-gateway", "pid": pid, "start_time": start_time,
+            "moor_home": str(home), "supervisor": "manual"}
 
 
 @pytest.fixture

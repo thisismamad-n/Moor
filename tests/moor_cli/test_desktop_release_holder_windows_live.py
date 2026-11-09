@@ -1,7 +1,7 @@
-"""A program outside Hermes whose working folder is inside release/ blocks the Desktop swap (#101789).
+"""A program outside Moor whose working folder is inside release/ blocks the Desktop swap (#101789).
 
 Real processes on a real Windows host: a helper started with its cwd inside
-``release/win-unpacked`` (the shape of Sogou IME's ``SogouCloud.exe``, spawned from a Hermes
+``release/win-unpacked`` (the shape of Sogou IME's ``SogouCloud.exe``, spawned from a Moor
 window and inheriting its cwd) makes Windows refuse the promotion rename. The failure must name
 that program, must never close it without consent, and a consented retry must close exactly it
 and finish the swap.
@@ -19,7 +19,7 @@ from pathlib import Path
 import psutil
 import pytest
 
-from hermes_cli import desktop_release_holders, main_desktop
+from moor_cli import desktop_release_holders, main_desktop
 
 pytestmark = pytest.mark.platforms("windows")
 
@@ -31,10 +31,10 @@ def swap_fixture(tmp_path, monkeypatch):
     desktop_dir = tmp_path / "apps" / "desktop"
     live_root = desktop_dir / "release" / "win-unpacked"
     live_root.mkdir(parents=True)
-    (live_root / "Hermes.exe").write_text("old", encoding="utf-8")
+    (live_root / "Moor.exe").write_text("old", encoding="utf-8")
     staging = main_desktop._desktop_staging_dir(desktop_dir)
     (staging / "win-unpacked").mkdir(parents=True)
-    (staging / "win-unpacked" / "Hermes.exe").write_text("new", encoding="utf-8")
+    (staging / "win-unpacked" / "Moor.exe").write_text("new", encoding="utf-8")
     monkeypatch.setattr(main_desktop, "_DESKTOP_SWAP_RENAME_RETRY_DELAYS_S", (0.2,))
     script = tmp_path / "foreign_helper.py"
     script.write_text(_HELPER, encoding="utf-8")
@@ -68,8 +68,8 @@ def test_blocked_swap_names_the_foreign_holder_and_leaves_it_running(swap_fixtur
     assert promoted is None
     assert f"pid {helper.pid}" in error, error  # the update failure names the holder
     assert f"Desktop app folder held by: {psutil.Process(helper.pid).name()} (pid {helper.pid}, " in out, out
-    assert helper.poll() is None, "a program outside Hermes was closed without consent"
-    assert (live_root / "Hermes.exe").read_text(encoding="utf-8") == "old"
+    assert helper.poll() is None, "a program outside Moor was closed without consent"
+    assert (live_root / "Moor.exe").read_text(encoding="utf-8") == "old"
 
 
 def _consent_for_run(desktop_dir: Path, helper, run_id: str) -> tuple[Path, list]:
@@ -87,25 +87,25 @@ def test_a_consent_given_for_another_run_closes_nothing_and_is_used_up(swap_fixt
     """Review N1: a gateway /update (or any swap not started by the consented retry) never closes."""
     desktop_dir, staging, live_root, helper = swap_fixture
     consent, _tree = _consent_for_run(desktop_dir, helper, "desktop-retry-1")
-    monkeypatch.setenv("HERMES_UPDATE_CORRELATION_ID", "gateway-update-7")
+    monkeypatch.setenv("MOOR_UPDATE_CORRELATION_ID", "gateway-update-7")
 
     promoted, error = _promote(desktop_dir, staging)
 
     assert promoted is None and f"pid {helper.pid}" in error, error
     assert helper.poll() is None, "closed on a consent given for another run"
     assert not consent.exists(), "the swap attempt consumes the consent, matching or not"
-    assert (live_root / "Hermes.exe").read_text(encoding="utf-8") == "old"
+    assert (live_root / "Moor.exe").read_text(encoding="utf-8") == "old"
 
 
 def test_consented_retry_closes_exactly_the_holder_and_promotes(swap_fixture, capsys, monkeypatch):
     desktop_dir, staging, live_root, helper = swap_fixture
     consent, tree = _consent_for_run(desktop_dir, helper, "desktop-retry-1")
-    monkeypatch.setenv("HERMES_UPDATE_CORRELATION_ID", "desktop-retry-1")  # windows.ps1 exports its run id
+    monkeypatch.setenv("MOOR_UPDATE_CORRELATION_ID", "desktop-retry-1")  # windows.ps1 exports its run id
 
     promoted, error = _promote(desktop_dir, staging)
 
     assert error == ""
-    assert promoted == live_root / "Hermes.exe"
+    assert promoted == live_root / "Moor.exe"
     assert promoted.read_text(encoding="utf-8") == "new"
     assert helper.wait(10) is not None
     assert not [p.pid for p in tree if p.is_running()]
@@ -130,7 +130,7 @@ def test_a_partial_close_reports_only_the_holder_still_in_the_way(swap_fixture, 
         # What psutil answers for a protected process (elevated, another user's): no program path.
         monkeypatch.setattr(desktop_release_holders, "_exe_or_empty",
                             lambda proc: "" if proc.pid in protected_pids else real_exe(proc))
-        monkeypatch.setenv("HERMES_UPDATE_CORRELATION_ID", "desktop-retry-1")
+        monkeypatch.setenv("MOOR_UPDATE_CORRELATION_ID", "desktop-retry-1")
 
         promoted, error = _promote(desktop_dir, staging)
 
@@ -140,7 +140,7 @@ def test_a_partial_close_reports_only_the_holder_still_in_the_way(swap_fixture, 
                     for ln in capsys.readouterr().out.splitlines() if "Desktop app folder held by: " in ln}
         assert protected.pid in reported, reported
         assert not reported & {p.pid for p in closed_tree}, f"an exited holder was reported again: {reported}"
-        assert (live_root / "Hermes.exe").read_text(encoding="utf-8") == "old"
+        assert (live_root / "Moor.exe").read_text(encoding="utf-8") == "old"
     finally:
         for proc in [*psutil.Process(protected.pid).children(recursive=True), psutil.Process(protected.pid)]:
             proc.kill()
@@ -166,11 +166,11 @@ def test_a_program_in_a_sibling_unpacked_folder_is_neither_named_nor_closed(swap
         seen = json.loads(consent.read_text(encoding="utf-8"))
         seen["holders"] += [{"pid": p.pid, "start_time": p.create_time(), "exe": p.exe()} for p in sibling_tree]
         consent.write_text(json.dumps(seen), encoding="utf-8")
-        monkeypatch.setenv("HERMES_UPDATE_CORRELATION_ID", "desktop-retry-1")
+        monkeypatch.setenv("MOOR_UPDATE_CORRELATION_ID", "desktop-retry-1")
 
         promoted, error = _promote(desktop_dir, staging)
 
-        assert error == "" and promoted == live_root / "Hermes.exe"
+        assert error == "" and promoted == live_root / "Moor.exe"
         assert helper.wait(10) is not None
         assert not [p.pid for p in tree if p.is_running()]
         assert all(p.is_running() for p in sibling_tree), "closed a program that never held the renamed folder"

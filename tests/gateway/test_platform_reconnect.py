@@ -77,7 +77,7 @@ def _make_runner():
     # A bare MagicMock attribute is os.fspath()-able as the RELATIVE path "MagicMock/<name>/<id>":
     # startup's heartbeat restore treats ``_routing_home`` as the launch home and would build a
     # profile home (state.db, SOUL.md) under the cwd, i.e. the repo checkout. None falls back to
-    # the test's isolated HERMES_HOME.
+    # the test's isolated MOOR_HOME.
     runner.session_store._routing_home = None
     return runner
 
@@ -371,7 +371,7 @@ class TestPlatformReconnectWatcher:
         """An unregistered plugin platform (its deferred load failed at startup) heals on the next watcher
         tick: the adapter_unavailable branch re-arms the failed load instead of waiting for a manual
         reload-plugins or restart (#126356)."""
-        import hermes_cli.plugins as plugins_mod
+        import moor_cli.plugins as plugins_mod
 
         runner = _make_runner()
         runner._update_platform_runtime_status = MagicMock()
@@ -545,8 +545,8 @@ class TestReconnectKeepsInboundDedup:
         runner._configure_profile_adapter = MagicMock(side_effect=lambda *_a: setattr(runner, "_running", False))
         if mode != "connect-raises":  # stub the attempt; connect-raises runs the real one's own teardown
             runner._secondary_reconnect_attempt = attempt
-        with patch("hermes_cli.profiles.get_profile_dir"), \
-             patch("hermes_cli.env_loader.hydrate_profile_secret_sources"), \
+        with patch("moor_cli.profiles.get_profile_dir"), \
+             patch("moor_cli.env_loader.hydrate_profile_secret_sources"), \
              patch("gateway.run._profile_runtime_scope", MagicMock()), \
              patch("gateway.run._platform_has_bot_credential", return_value=True), \
              patch("gateway.config.load_gateway_config") as load, \

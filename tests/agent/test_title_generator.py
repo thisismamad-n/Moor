@@ -61,7 +61,7 @@ class TestGenerateTitle:
         ``@file:``) sends NO Desktop paste preview, so the build_title_input
         ref-only shortcut cannot rescue it. The titler must still refuse to
         name the session after the truncated file path."""
-        msg = "@file:AppData/Local/hermes/profiles/local/attachments/report.pdf"
+        msg = "@file:AppData/Local/moor/profiles/local/attachments/report.pdf"
 
         assert is_titleable_user_message(msg) is False
         assert derive_title(msg) is None

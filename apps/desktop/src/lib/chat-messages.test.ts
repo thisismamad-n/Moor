@@ -246,7 +246,7 @@ describe('toChatMessages', () => {
   })
 
   it('lifts the leading attachment block into the chip row, like the live bubble (large paste)', () => {
-    const paste = '@file:/home/u/.hermes/attachments/pasted_content_2026-09-27_21-33-42-827_55e028-2.txt'
+    const paste = '@file:/home/u/.moor/attachments/pasted_content_2026-09-27_21-33-42-827_55e028-2.txt'
 
     const [captioned, bare] = toChatMessages([
       {
@@ -579,7 +579,7 @@ describe('toChatMessages', () => {
     ])
   })
 
-  // Hermes closes a failed turn with an assistant-role row (agent/turn_failure_copy.py);
+  // Moor closes a failed turn with an assistant-role row (agent/turn_failure_copy.py);
   // painted as the model's reply it read as the assistant refusing the request.
   it('renders the failed-turn boundary as a Moor notice, not a model reply', () => {
     const messages = toChatMessages([

@@ -584,21 +584,21 @@ function Header() {
   )
 }
 
-export const FEATURED_ID = 'nous'
+export const FEATURED_ID = 'moor'
 
-// Stand-in for the Nous row when the OAuth provider list could not be read
+// Stand-in for the Moor row when the OAuth provider list could not be read
 // (it failed or came back empty, which drops the picker onto the key form).
 // Starting sign-in only needs the id; the backend's start reply decides the flow.
-const NOUS_FALLBACK: OAuthProvider = {
-  cli_command: 'hermes auth add nous',
+const MOOR_FALLBACK: OAuthProvider = {
+  cli_command: 'moor auth add moor',
   docs_url: 'https://portal.nousresearch.com',
   flow: 'device_code',
   id: FEATURED_ID,
-  name: 'Nous Portal',
+  name: 'Moor Portal',
   status: { logged_in: false }
 }
 
-const SHOW_ALL_KEY = 'hermes-onboarding-show-all-v1'
+const SHOW_ALL_KEY = 'moor-onboarding-show-all-v1'
 
 const readShowAll = () => {
   try {
@@ -729,7 +729,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   )
 }
 
-// The API-key step of the picker. Nous stays reachable from it, including when
+// The API-key step of the picker. Moor stays reachable from it, including when
 // the provider list failed to load and there is no picker to go back to; the
 // custom-endpoint form (localEndpoint) is a deliberate destination and skips it.
 function KeyFormStep({
@@ -751,11 +751,11 @@ function KeyFormStep({
   onSelect: (provider: OAuthProvider) => void
   providers: OAuthProvider[]
 }) {
-  const nous = localEndpoint ? null : (providers.find(p => p.id === FEATURED_ID) ?? NOUS_FALLBACK)
+  const moor = localEndpoint ? null : (providers.find(p => p.id === FEATURED_ID) ?? MOOR_FALLBACK)
 
   return (
     <div className="grid gap-3">
-      {nous ? <FeaturedProviderRow onSelect={onSelect} provider={nous} /> : null}
+      {moor ? <FeaturedProviderRow onSelect={onSelect} provider={moor} /> : null}
       <ApiKeyForm
         canGoBack={hasOauth && !localEndpoint}
         initialEnvKey={localEndpoint ? 'OPENAI_BASE_URL' : initialEnvKey}

@@ -51,7 +51,7 @@ describe('TerminalRail', () => {
       const plus = screen.getByRole('button', { name: 'New terminal' })
 
       // The app-wide menu leaves a marked trigger alone; an unmarked one gets the generic menu.
-      expect(plus.hasAttribute('data-hermes-context-menu-trigger')).toBe(true)
+      expect(plus.hasAttribute('data-moor-context-menu-trigger')).toBe(true)
       fireEvent.contextMenu(plus)
 
       fireEvent.click(await screen.findByRole('menuitem', { name: 'NAS' }))

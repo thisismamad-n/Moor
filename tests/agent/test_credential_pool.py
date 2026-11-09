@@ -993,8 +993,8 @@ def test_load_pool_falls_back_to_os_environ_when_dotenv_empty(tmp_path, monkeypa
 
 
 
-def test_load_pool_mirrors_nous_invoke_jwt_agent_key_runtime_api_key(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+def test_load_pool_mirrors_moor_invoke_jwt_agent_key_runtime_api_key(tmp_path, monkeypatch):
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
     expires_at = datetime.fromtimestamp(time.time() + 3600, tz=UTC).isoformat()
     token = _jwt_with_claims({
         "sub": "test-user",

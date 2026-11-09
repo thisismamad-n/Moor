@@ -128,7 +128,7 @@ def test_exit_cleanup_preserves_dirty_worktree(git_repo, tmp_path, monkeypatch, 
 
     cli._cleanup_worktree({
         "path": str(worktree),
-        "branch": "hermes/session",
+        "branch": "moor/session",
         "repo_root": str(git_repo),
     })
 
@@ -260,9 +260,9 @@ class TestWorktreeLockPredicate:
         p = self._mk_locked(git_repo, "moor-foreign", "some other tool")
         assert worktree_ops._worktree_lock_is_live(str(git_repo), str(p)) == "dead"
 
-    def test_unparseable_hermes_lock_reason_fails_safe_to_live(self, git_repo):
-        # N5: a hermes lock this version cannot read is never evidence that its owner is gone.
-        p = self._mk_locked(git_repo, "hermes-future", "hermes owner=v2 pid=12x")
+    def test_unparseable_moor_lock_reason_fails_safe_to_live(self, git_repo):
+        # N5: a moor lock this version cannot read is never evidence that its owner is gone.
+        p = self._mk_locked(git_repo, "moor-future", "moor owner=v2 pid=12x")
         assert worktree_ops._worktree_lock_is_live(str(git_repo), str(p)) == "live"
 
     def test_bad_repo_root_fails_safe_to_live(self, tmp_path):

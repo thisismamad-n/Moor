@@ -83,8 +83,8 @@ describe('ConnectionsRegistrySection', () => {
     save.mockRejectedValueOnce(new Error('plaintext consent required'))
     const applyConnectionConfig = vi.fn()
     const select = vi.fn()
-    Object.assign(window.hermesDesktop, { applyConnectionConfig })
-    Object.assign(window.hermesDesktop.connections!, { select })
+    Object.assign(window.moorDesktop, { applyConnectionConfig })
+    Object.assign(window.moorDesktop.connections!, { select })
     render(<ConnectionsRegistrySection />)
     fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
     const values = screen.getAllByPlaceholderText('Saved — leave blank to keep')
@@ -224,7 +224,7 @@ describe('ConnectionsRegistrySection', () => {
     // draft must sign in on the legacy shared portal jar, which is the jar the
     // saved cloud entry reads — never a private per-connection jar.
     await waitFor(() =>
-      expect(oauthLoginConnectionConfig).toHaveBeenCalledWith('https://team.hermes.cloud', {
+      expect(oauthLoginConnectionConfig).toHaveBeenCalledWith('https://team.moor.cloud', {
         connectionId: null,
         label: 'Team cloud',
         authMode: 'oauth',

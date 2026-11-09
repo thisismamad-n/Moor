@@ -106,7 +106,7 @@ def register_credential_file(relative_path: str, container_base: str = "/root/.m
     return True
 
 
-def register_credential_files(entries: list, container_base: str = "/root/.hermes") -> list[str]:
+def register_credential_files(entries: list, container_base: str = "/root/.moor") -> list[str]:
     """Register skill-frontmatter entries (str or dict with ``path``); return missing paths."""
     missing = []
     for entry in entries:
@@ -197,7 +197,7 @@ def _walk_skill_tree(root: Path) -> Iterator[tuple[Path, list[Path]]]:
         yield base, [f for f in (base / n for n in filenames) if not f.is_symlink() and f.is_file()]
 
 
-def get_skills_directory_mount(container_base: str = "/root/.hermes") -> list[dict[str, str]]:
+def get_skills_directory_mount(container_base: str = "/root/.moor") -> list[dict[str, str]]:
     """Directory mount entries for all skill dirs (local + external + project).
 
     Bind mounts follow symlinks, so a dir containing any symlink is replaced by a sanitized
@@ -234,7 +234,7 @@ def _safe_skills_path(skills_dir: Path) -> str:
     return str(safe_dir)
 
 
-def iter_skills_files(container_base: str = "/root/.hermes") -> list[dict[str, str]]:
+def iter_skills_files(container_base: str = "/root/.moor") -> list[dict[str, str]]:
     """Per-file entries for all skills files (for backends that upload individually)."""
     return [_mount(item, f"{container_root}/{item.relative_to(host_dir).as_posix()}")
             for host_dir, container_root in _skill_dir_roots(container_base)
@@ -243,7 +243,7 @@ def iter_skills_files(container_base: str = "/root/.hermes") -> list[dict[str, s
 
 # --- Cache directory mounts (documents, images, audio, videos, screenshots) ---
 
-# (new_subpath, old_name) pairs matching hermes_constants.get_hermes_dir().
+# (new_subpath, old_name) pairs matching moor_constants.get_moor_dir().
 _GENERATED_CACHE = f"cache/{GENERATED_SUBDIR}"
 _CACHE_DIRS: list[tuple[str, str]] = [
     ("cache/documents", "document_cache"),
@@ -265,7 +265,7 @@ _CACHE_DIRS: list[tuple[str, str]] = [
     # Mount it so the agent's file tools can read dropped binaries (zip/pdf/...) from inside sandbox
     # containers instead of dangling host paths (#76577).
     ("attachments", "attachments"),
-    # Desktop stages a large plain-text paste as a `.txt` under this Hermes-managed dir
+    # Desktop stages a large plain-text paste as a `.txt` under this moor-managed dir
     # (apps/desktop/electron/composer-paste.ts; `COMPOSER_PASTES_DIRNAME` in
     # agent/context_references.py) and attaches it as `@file:`. Without a mount/sync
     # entry, remote execution backends (ssh/daytona/vercel_sandbox) never received the
@@ -299,8 +299,8 @@ def _cache_dir_roots(container_base: str, *, create_missing: bool) -> Iterator[t
         yield host_dir, f"{base}/{new_subpath}"
 
 
-def get_cache_directory_mounts(container_base: str = "/root/.hermes") -> list[dict[str, str]]:
-    """Bind-mount entries for each cache directory (host layout via ``get_hermes_dir``)."""
+def get_cache_directory_mounts(container_base: str = "/root/.moor") -> list[dict[str, str]]:
+    """Bind-mount entries for each cache directory (host layout via ``get_moor_dir``)."""
     return [_mount(h, c) for h, c in _cache_dir_roots(container_base, create_missing=True)]
 
 
@@ -312,11 +312,11 @@ def _remap_cache_path(path: str, container_base: str, src: str, dst: str, join: 
     return None
 
 
-def map_cache_path_to_container(host_path: str, container_base: str = "/root/.hermes") -> Optional[str]:
+def map_cache_path_to_container(host_path: str, container_base: str = "/root/.moor") -> Optional[str]:
     """POSIX container path for a host path under an auto-mounted cache dir, else None.
 
     Also matches through symlinks: ``@file:`` expansion hands over RESOLVED paths while the mount roots keep
-    HERMES_HOME's configured spelling, so a symlinked home (``~/.hermes`` -> dotfiles, macOS ``/var`` ->
+    MOOR_HOME's configured spelling, so a symlinked home (``~/.moor`` -> dotfiles, macOS ``/var`` ->
     ``/private/var``) left a staged attachment's host path in front of the sandboxed agent (#103147)."""
     def join(root: str, rel: Path) -> str:
         return posixpath.join(root, rel.as_posix())
@@ -359,7 +359,7 @@ def to_agent_visible_cache_path(host_path: str, container_base: str = "/root/.mo
     """Translate a host cache path to where the active backend (TERMINAL_ENV) sees it.
 
     Mirrors ``_agent_cache_base_for_env`` in tools/image_generation_tool.py: docker/modal mount at
-    ``/root/.hermes``; ssh/daytona/vercel_sandbox under ``~/.hermes``; plugin backends declare
+    ``/root/.moor``; ssh/daytona/vercel_sandbox under ``~/.moor``; plugin backends declare
     ``cache_path_base`` (None = host paths stay correct, e.g. the singularity plugin); local/unknown
     unchanged.
 
@@ -386,7 +386,7 @@ def to_agent_visible_cache_path(host_path: str, container_base: str = "/root/.mo
     return mapped if mapped is not None else host_path
 
 
-def iter_cache_files(container_base: str = "/root/.hermes") -> list[dict[str, str]]:
+def iter_cache_files(container_base: str = "/root/.moor") -> list[dict[str, str]]:
     """Per-file cache entries (Modal upload/resync); skips symlinks. ``cache/generated`` is
     never swept, so only its files from the last ``MEDIA_CACHE_MAX_AGE_HOURS`` are synced —
     otherwise every remote sync would re-walk and upload the whole generation history."""

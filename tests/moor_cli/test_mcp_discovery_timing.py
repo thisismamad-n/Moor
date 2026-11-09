@@ -154,7 +154,7 @@ def test_ensure_helper_swallows_errors(monkeypatch):
     mcp_startup.ensure_mcp_discovery_before_agent_build(logger=logger)
 
 # The classic CLI's _init_agent no longer waits on MCP discovery: the gateway session owns MCP
-# (tests/hermes_cli/test_cli_startup_trim.py).
+# (tests/moor_cli/test_cli_startup_trim.py).
 
 # ── bounded wait: slow server doesn't freeze startup ────────────────────────
 

@@ -1,5 +1,5 @@
 """`ctx.inject_message(text)` with no session_key/origin (plugins.md "Active CLI conversation") reaches
-the attached classic `hermes chat` session as a queued prompt, from a plugin's own thread (B2-11).
+the attached classic `moor chat` session as a queued prompt, from a plugin's own thread (B2-11).
 
 The classic CLI loads no plugin code on a gateway session (PLG-7): the plugin runs in the gateway, which
 picks the one attached classic CLI session of the plugin's profile."""
@@ -29,8 +29,8 @@ async def test_the_classic_chat_view_reads_no_plugin_manager(monkeypatch):
     """No plugin code runs in the classic CLI process on a gateway session, so its chat view has no
     plugin inject slot to install."""
     import asyncio
-    import hermes_cli.plugins as plugins_mod
-    from hermes_cli.gateway_chat_view import GatewayChatView
+    import moor_cli.plugins as plugins_mod
+    from moor_cli.gateway_chat_view import GatewayChatView
     monkeypatch.setattr(plugins_mod, 'get_plugin_manager', lambda: pytest.fail('the chat view read the plugin manager'))
 
     class Peer:

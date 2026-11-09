@@ -298,16 +298,16 @@ describe('PluginsTab', () => {
   })
 
   it('badges "Install here" with the catalog tier of the package it came from', async () => {
-    seedCatalog([{ ...weatherEntry, name: 'hermes-media-studio', tier: 'official' }])
+    seedCatalog([{ ...weatherEntry, name: 'moor-media-studio', tier: 'official' }])
     $pluginRecords.set({
       media: {
         id: 'media',
         name: 'Media Studio',
         kind: 'disk',
         status: 'loaded',
-        packageName: 'hermes-media-studio',
+        packageName: 'moor-media-studio',
         packageOrigin: {
-          catalogName: 'hermes-media-studio',
+          catalogName: 'moor-media-studio',
           repo: 'https://github.com/NousResearch/hermes-media-studio.git',
           sha: 'abc'
         }
@@ -318,7 +318,7 @@ describe('PluginsTab', () => {
     screen.getByRole('button', { name: 'Install here' }).click()
 
     await waitFor(() => {
-      expect($pluginInstallRequest.get()).toMatchObject({ catalogName: 'hermes-media-studio', tier: 'official' })
+      expect($pluginInstallRequest.get()).toMatchObject({ catalogName: 'moor-media-studio', tier: 'official' })
     })
   })
 
@@ -610,7 +610,7 @@ describe('PluginsTab', () => {
       expect(checked()).toBe('false')
       expect($pluginRecords.get().kanban.status).toBe('disabled')
       expect($pluginDecisions.get()).not.toHaveProperty('kanban')
-      expect(window.localStorage.getItem('hermes.desktop.pluginDecisions.v2')).toBeNull()
+      expect(window.localStorage.getItem('moor.desktop.pluginDecisions.v2')).toBeNull()
       expect(notices('success')).toHaveLength(0)
 
       // Same intended value again, backend healthy: both halves turn on.

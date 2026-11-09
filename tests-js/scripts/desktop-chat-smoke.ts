@@ -63,7 +63,7 @@ const identitySchema = z.object({
 export async function readChatIdentity(page: Page): Promise<ChatIdentity> {
   const identity = identitySchema.parse(await page.evaluate(async (): Promise<ChatIdentity> => {
     // SAFETY: the driver uses a desktop page; the returned IPC data is parsed outside the renderer.
-    const bridge = (window as SmokeWindow).hermesDesktop
+    const bridge = (window as SmokeWindow).moorDesktop
 
     if (!bridge) {
       throw new Error('Desktop version bridge is unavailable')

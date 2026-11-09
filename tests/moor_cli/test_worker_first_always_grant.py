@@ -26,7 +26,7 @@ KEY = "recursive delete"
 
 
 def _snapshot(home, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     from gateway.run import _load_gateway_config
     from gateway.session_managed_worker import _worker_config
     from gateway.session_policy import build_policy
@@ -35,7 +35,7 @@ def _snapshot(home, monkeypatch):
 
 
 def _bypass_snapshot(home, monkeypatch, *, safe_mode):
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     from gateway.session_local import _bypass_policy
     from gateway.session_managed_worker import _worker_config
     params = {"source": "cli", "cwd": str(home), "model": "m"}
@@ -78,7 +78,7 @@ def _always_in_worker(tmp_path, monkeypatch, live_yaml, bind=True, *, safe_mode=
                 from agent.safe_worker_policy import _bind_worker_config
                 _bind_worker_config(snap)
             if os.environ["GRANT_ACTION"] == "approvals":
-                from hermes_cli.config import load_config, save_config
+                from moor_cli.config import load_config, save_config
                 cfg = load_config()
                 cfg["approvals"]["mode"] = "off"
                 save_config(cfg)
@@ -94,18 +94,18 @@ def _always_in_worker(tmp_path, monkeypatch, live_yaml, bind=True, *, safe_mode=
     from tests.gateway.fixtures.local_recovery_probe import child_env
     env = child_env()
     env.update(
-        HOME=str(home), USERPROFILE=str(home), HERMES_HOME=str(home), GRANT_KEY=KEY,
+        HOME=str(home), USERPROFILE=str(home), MOOR_HOME=str(home), GRANT_KEY=KEY,
         GRANT_SNAPSHOT=json.dumps(snapshot), GRANT_BIND=bind_mode,
         GRANT_SAFE="1" if safe_mode else "0", GRANT_ACTION=action,
-        HERMES_DISABLE_LAZY_INSTALLS="1",
+        MOOR_DISABLE_LAZY_INSTALLS="1",
     )
     proc = subprocess.run(
         [sys.executable, str(script)], cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
         capture_output=True, text=True, timeout=90, check=False,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    import hermes_yaml
-    on_disk = hermes_yaml.safe_load((home / "config.yaml").read_text(encoding="utf-8")) or {}
+    import moor_yaml
+    on_disk = moor_yaml.safe_load((home / "config.yaml").read_text(encoding="utf-8")) or {}
     return json.loads(proc.stdout.strip().splitlines()[-1]), on_disk, snapshot
 
 
@@ -139,13 +139,13 @@ def test_controls_persist(tmp_path, monkeypatch, live_yaml, bind, expected):
 
 def _bind_snapshot(monkeypatch, snapshot):
     import copy
-    from hermes_cli import config as cfg
+    from moor_cli import config as cfg
     monkeypatch.setattr(cfg, "_worker_config_snapshot", lambda: copy.deepcopy(snapshot))
     return cfg
 
 
 def test_rebase_applies_an_edit_to_a_default_only_list(monkeypatch):
-    from hermes_cli.config_worker_save import rebase_for_save
+    from moor_cli.config_worker_save import rebase_for_save
     snapshot = {"model": {"default": "m"}}
     cfg = _bind_snapshot(monkeypatch, snapshot)
     desired = cfg.load_config()
@@ -155,7 +155,7 @@ def test_rebase_applies_an_edit_to_a_default_only_list(monkeypatch):
 
 
 def test_rebase_keeps_a_list_the_snapshot_carried_and_the_operator_deleted(monkeypatch):
-    from hermes_cli.config_worker_save import rebase_for_save
+    from moor_cli.config_worker_save import rebase_for_save
     snapshot = {"model": {"default": "m"}, "command_allowlist": ["a *"]}
     cfg = _bind_snapshot(monkeypatch, snapshot)
     desired = cfg.load_config()
@@ -166,7 +166,7 @@ def test_rebase_keeps_a_list_the_snapshot_carried_and_the_operator_deleted(monke
 
 def test_rebase_applies_an_edit_to_a_default_only_mapping(monkeypatch):
     import copy
-    from hermes_cli.config_worker_save import rebase_for_save
+    from moor_cli.config_worker_save import rebase_for_save
     snapshot = {"model": {"default": "m"}}
     cfg = _bind_snapshot(monkeypatch, snapshot)
     base = cfg.load_config()
@@ -181,7 +181,7 @@ def test_rebase_applies_an_edit_to_a_default_only_mapping(monkeypatch):
 
 
 def test_rebase_keeps_a_mapping_the_snapshot_carried_and_the_operator_deleted(monkeypatch):
-    from hermes_cli.config_worker_save import rebase_for_save
+    from moor_cli.config_worker_save import rebase_for_save
     snapshot = {"model": {"default": "m"}, "approvals": {"mode": "manual"}}
     cfg = _bind_snapshot(monkeypatch, snapshot)
     desired = cfg.load_config()
@@ -191,7 +191,7 @@ def test_rebase_keeps_a_mapping_the_snapshot_carried_and_the_operator_deleted(mo
 
 
 def test_rebase_applies_an_edit_to_a_nested_default_only_list(monkeypatch):
-    from hermes_cli.config_worker_save import rebase_for_save
+    from moor_cli.config_worker_save import rebase_for_save
     # The parent is in the snapshot and the live file. ``deny`` is not: it comes
     # only from the schema defaults under that parent.
     snapshot = {"model": {"default": "m"}, "approvals": {"mode": "manual"}}
@@ -245,7 +245,7 @@ def test_bypass_worker_keeps_an_existing_allowlist_and_unrelated_keys(tmp_path, 
 
 
 def test_rebase_keeps_an_explicit_empty_list_the_operator_deleted(monkeypatch):
-    from hermes_cli.config_worker_save import rebase_for_save
+    from moor_cli.config_worker_save import rebase_for_save
     snapshot = {"model": {"default": "m"}, "command_allowlist": []}
     cfg = _bind_snapshot(monkeypatch, snapshot)
     desired = cfg.load_config()
@@ -255,7 +255,7 @@ def test_rebase_keeps_an_explicit_empty_list_the_operator_deleted(monkeypatch):
 
 
 def test_rebase_keeps_a_nested_list_the_snapshot_carried_and_the_operator_deleted(monkeypatch):
-    from hermes_cli.config_worker_save import rebase_for_save
+    from moor_cli.config_worker_save import rebase_for_save
     snapshot = {"model": {"default": "m"}, "approvals": {"mode": "manual", "deny": ["old"]}}
     live = {"model": {"default": "m"}, "approvals": {"mode": "manual"}}
     cfg = _bind_snapshot(monkeypatch, snapshot)

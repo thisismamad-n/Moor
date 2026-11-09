@@ -202,7 +202,7 @@ def _exact_name_hits(results, name: str):
     """Results that ARE `name`: display name as written first, then — only when that finds nothing —
     the separator-insensitive form of the display name or of the identifier's trailing slug. Catalogs
     that carry a prettified title (ClawHub rows read "Blender Bpy Enhanced") or a path-shaped
-    identifier ("@org/my-skill") match by neither, so `hermes skills install my-skill` refused with
+    identifier ("@org/my-skill") match by neither, so `moor skills install my-skill` refused with
     "No exact match" while printing that very slug on the suggestion line."""
     query = str(name or "").strip().lower()
     hits = [r for r in results if str(r.name or "").strip().lower() == query]
@@ -296,7 +296,7 @@ def _is_valid_installed_skill_name(name: str) -> bool:
 
 
 def _existing_categories() -> list[str]:
-    """Sorted category buckets under ``~/.hermes/skills/`` (children without their own SKILL.md)."""
+    """Sorted category buckets under ``~/.moor/skills/`` (children without their own SKILL.md)."""
     from tools.skills_hub import SKILLS_DIR
     from tools.skills_hub_install import _category_skill_dirs
     try:
@@ -661,20 +661,20 @@ def _print_fetch_failure(c: Console, sources, identifier: str, meta=None, source
         c.print(f"[bold red]Error:[/] '{identifier}' is listed in the {src_id} index, "
                 f"but its files no longer exist upstream.")
         c.print("[dim]Stale index entry: the skill was likely renamed or removed by "
-                "its author. Try `hermes skills search` for an alternative.[/]\n")
+                "its author. Try `moor skills search` for an alternative.[/]\n")
         return "stale_index"
     c.print(f"[bold red]Error:[/] Could not download '{identifier}'.")
     if rejected:
         c.print(f"[yellow]Hint:[/] GitHub rejected {' and '.join(rejected)} (401 Bad credentials). "
-                f"Replace or remove the token in {display_hermes_home()}/.env, or re-run [bold]gh auth login[/].")
+                f"Replace or remove the token in {display_moor_home()}/.env, or re-run [bold]gh auth login[/].")
     if rate_limited:
         c.print("[yellow]Hint:[/] GitHub API rate limit exhausted "
                 "(unauthenticated: 60 requests/hour).\n"
                 "Set [bold]GITHUB_TOKEN[/] in your .env or install the [bold]gh[/] CLI and run "
                 "[bold]gh auth login[/] to raise the limit to 5,000/hr.\n")
     else:
-        c.print(f"Check the name with [bold]hermes skills search {identifier.rsplit('/', 1)[-1]}[/] "
-                "and check your internet connection. If it keeps failing, run [bold]hermes doctor[/].\n")
+        c.print(f"Check the name with [bold]moor skills search {identifier.rsplit('/', 1)[-1]}[/] "
+                "and check your internet connection. If it keeps failing, run [bold]moor doctor[/].\n")
     return "rate_limited" if rate_limited else "auth_rejected" if rejected else "fetch_failed"
 
 
@@ -725,7 +725,7 @@ _SKILL_METRIC_SOURCES = {"official": "catalog", "url": "url", "bundled": "bundle
 
 
 def _install_bundled(c: Console, name: str, invalidate_cache: bool) -> tuple:
-    """``_install_skill`` for a name Hermes ships: point at the active copy, or restore it from the
+    """``_install_skill`` for a name Moor ships: point at the active copy, or restore it from the
     bundled source. The hub copy of a built-in is either a stranger's same-named skill or this
     repo's files rescanned as community content and refused, so neither is fetched."""
     from types import SimpleNamespace
@@ -776,7 +776,7 @@ def _record_skill_install(identifier: str, bundle, outcome: str, attempt: Option
     stay anonymous, every other registry is the hub. ``attempt`` carries the failure class the
     failing exit named and the hub adapter id (``registry``); a raised ``error`` is classified by
     its type inside the metrics guard."""
-    from hermes_cli.observability.shared_metrics_events import record_extension_install
+    from moor_cli.observability.shared_metrics_events import record_extension_install
     attempt = attempt or {}
     origin = getattr(bundle, "source", None) or attempt.get("origin") or (
         "official" if identifier.startswith("official/")
@@ -1088,7 +1088,7 @@ def do_update(name: Optional[str] = None, console: Optional[Console] = None,
     if skipped_local:
         c.print(f"[dim]{len(skipped_local)} skill(s) kept your local edits: "
                 f"{', '.join(sorted(skipped_local))}.[/]")
-        c.print("[dim]Overwrite with: hermes skills update <name> --force[/]\n")
+        c.print("[dim]Overwrite with: moor skills update <name> --force[/]\n")
     if failed:
         c.print(f"[bold red]Not updated:[/] {', '.join(sorted(failed))} (see the messages above).\n")
         return False
@@ -1452,7 +1452,7 @@ def do_snapshot_export(output_path: str, console: Optional[Console] = None) -> N
     installed = HubLockFile().list_installed()
     tap_list = TapsManager().list_taps()
     snapshot = {
-        "hermes_version": "0.1.0",
+        "moor_version": "0.1.0",
         "exported_at": datetime.now(UTC).isoformat(),
         "skills": [
             {"name": entry["name"], "source": entry.get("source", ""),
@@ -1525,7 +1525,7 @@ def _snapshot_cli(args) -> Optional[bool]:
     elif snap_action == "import":
         return do_snapshot_import(args.input, force=getattr(args, "force", False))
     else:
-        _console.print("Usage: hermes skills snapshot [export|import]\n")
+        _console.print("Usage: moor skills snapshot [export|import]\n")
     return None
 
 
@@ -1568,16 +1568,16 @@ _CLI_ACTIONS = {
 
 
 def skills_command(args) -> Optional[int]:
-    """Router for `hermes skills <subcommand>` — called from hermes_cli/main.py."""
+    """Router for `moor skills <subcommand>` — called from moor_cli/main.py."""
     handler = _CLI_ACTIONS.get(getattr(args, "skills_action", None))
     if handler is None:
-        _console.print("Usage: hermes skills [browse|search|install|inspect|list|list-modified|diff|check|update|audit|uninstall|reset|opt-out|opt-in|publish|snapshot|tap]\n")
-        _console.print("Run 'hermes skills <command> --help' for details.\n")
+        _console.print("Usage: moor skills [browse|search|install|inspect|list|list-modified|diff|check|update|audit|uninstall|reset|opt-out|opt-in|publish|snapshot|tap]\n")
+        _console.print("Run 'moor skills <command> --help' for details.\n")
         return None
     # A handler reporting a real failure (install/update/uninstall's False) must exit non-zero: the
     # Desktop Hub reads the spawned action's exit code to decide whether to toast, so an exit-0
     # failure renders as "the button did nothing" while the reason sits unread in the action log.
-    # Returned, not sys.exit()-ed: `hermes` turns a handler's int into the exit code.
+    # Returned, not sys.exit()-ed: `moor` turns a handler's int into the exit code.
     return 1 if handler(args) is False else None
 
 

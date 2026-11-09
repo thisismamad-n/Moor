@@ -42,7 +42,7 @@ function installTitleBridge(title: string) {
 afterEach(() => {
   __resetLinkTitleCache()
   closeRightRail()
-  globalThis.document.documentElement.removeAttribute('data-hermes-desktop-host')
+  globalThis.document.documentElement.removeAttribute('data-moor-desktop-host')
   setAlwaysExternalLinks(false)
   vi.restoreAllMocks()
   cleanup()
@@ -139,7 +139,7 @@ describe('external link helpers', () => {
   it.each([false, true])(
     'opens a Webapp web link synchronously without adding a preview when always external is %s',
     alwaysExternal => {
-      globalThis.document.documentElement.dataset.hermesDesktopHost = 'browser'
+      globalThis.document.documentElement.dataset.moorDesktopHost = 'browser'
       setAlwaysExternalLinks(alwaysExternal)
       const openExternal = vi.fn().mockResolvedValue(undefined)
       installDesktopBridge({ openExternal })

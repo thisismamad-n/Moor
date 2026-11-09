@@ -7,15 +7,15 @@ admission's ``model_override``.
 import queue
 from types import SimpleNamespace
 
-from hermes_cli.gateway_client import GatewayClientError
-from hermes_cli.model_switch import ModelSwitchResult
+from moor_cli.gateway_client import GatewayClientError
+from moor_cli.model_switch import ModelSwitchResult
 
 
 class RecordingConnection:
     epoch = 1
 
     def __init__(self, info):
-        from hermes_cli.gateway_connection import SessionState
+        from moor_cli.gateway_connection import SessionState
         self.events = queue.Queue()
         self.calls = []
         self.closed = False
@@ -56,7 +56,7 @@ class RecordingConnection:
 
 
 def _agent(conn, **kw):
-    from hermes_cli.gateway_agent import GatewayAgent
+    from moor_cli.gateway_agent import GatewayAgent
     return GatewayAgent(connection=conn, session_id="s", **kw)
 
 
@@ -69,24 +69,24 @@ def _model_routes(conn):
 
 def test_classic_cli_model_switch_reaches_the_gateway_session(monkeypatch):
     import cli as cli_mod
-    from tests.hermes_cli.test_cli_model_once import _StubCLI
+    from tests.moor_cli.test_cli_model_once import _StubCLI
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     stub = _StubCLI()
     stub.agent = _agent(conn, model="old/model", provider="openrouter")
-    stub._snapshot_model_runtime = cli_mod.HermesCLI._snapshot_model_runtime.__get__(stub)
+    stub._snapshot_model_runtime = cli_mod.MoorCLI._snapshot_model_runtime.__get__(stub)
     stub._session_db = None
     stub.session_id = "s"
     printed = []
     monkeypatch.setattr(cli_mod, "_cprint", lambda s, *a, **k: printed.append(str(s)))
-    monkeypatch.setattr("hermes_cli.inventory.load_picker_context", lambda: SimpleNamespace(
+    monkeypatch.setattr("moor_cli.inventory.load_picker_context", lambda: SimpleNamespace(
         user_providers=None, custom_providers=None,
         with_overrides=lambda **_: SimpleNamespace(user_providers=None, custom_providers=None)))
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **_: ModelSwitchResult(
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", lambda **_: ModelSwitchResult(
         success=True, new_model="claude-sonnet-4.6", target_provider="anthropic", api_key="sk-ant",
         base_url="https://api.anthropic.com", api_mode="anthropic_messages", provider_label="Anthropic"))
-    monkeypatch.setattr("hermes_cli.model_switch.resolve_display_context_length", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.model_switch.resolve_display_context_length", lambda *a, **k: None)
 
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic")
 
     failed = [line for line in printed if "fail" in line.lower()]
     assert not failed, ("/model printed a failure", failed)

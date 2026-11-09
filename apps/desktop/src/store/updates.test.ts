@@ -318,10 +318,10 @@ describe('reportBackendContract', () => {
     expect(dismissSpy).toHaveBeenCalledWith('backend-contract-skew')
     expect(notifySpy).not.toHaveBeenCalled()
 
-    reportBackendContract(undefined, 'hermes-gateway-v0')
+    reportBackendContract(undefined, 'moor-gateway-v0')
     expect(notifySpy).toHaveBeenCalledTimes(1)
 
-    reportBackendContract(Number.MAX_SAFE_INTEGER, 'hermes-gateway-v0')
+    reportBackendContract(Number.MAX_SAFE_INTEGER, 'moor-gateway-v0')
     expect(notifySpy).toHaveBeenCalledTimes(2)
   })
 
@@ -581,11 +581,11 @@ describe('requestActiveUpdate', () => {
 
   it('shows the refusal message, not a fake command, when the backend has no command to run', async () => {
     setRemote(true)
-    updateHermesSpy.mockResolvedValue({
+    updateMoorSpy.mockResolvedValue({
       ok: false,
-      name: 'hermes-update',
+      name: 'moor-update',
       error: 'dashboard_update_managed_externally',
-      message: 'Hermes updates are managed outside this dashboard in containerized environments.',
+      message: 'Moor updates are managed outside this dashboard in containerized environments.',
       update_command: ''
     })
 
@@ -598,13 +598,13 @@ describe('requestActiveUpdate', () => {
     expect($backendUpdateApply.get().message).toContain('managed outside this dashboard')
   })
 
-  it('falls back to `hermes update` only when an older backend omits update_command', async () => {
+  it('falls back to `moor update` only when an older backend omits update_command', async () => {
     setRemote(true)
-    updateHermesSpy.mockResolvedValue({ ok: false, name: 'hermes-update', message: 'Run it yourself.' })
+    updateMoorSpy.mockResolvedValue({ ok: false, name: 'moor-update', message: 'Run it yourself.' })
 
     await applyBackendUpdate()
 
-    expect($backendUpdateApply.get().command).toBe('hermes update')
+    expect($backendUpdateApply.get().command).toBe('moor update')
   })
 })
 
@@ -1502,11 +1502,11 @@ describe('applyBackendUpdate recovery', () => {
   }, 10000)
 
   it('reports a committed update with owed follow-ups as success plus an owed-step warning', async () => {
-    updateHermesSpy.mockResolvedValue({ action_id: 'e'.repeat(32), ok: true, name: 'hermes-update', pid: 1 })
+    updateMoorSpy.mockResolvedValue({ action_id: 'e'.repeat(32), ok: true, name: 'moor-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue({
       exit_code: 0,
       lines: ['Update complete!'],
-      name: 'hermes-update',
+      name: 'moor-update',
       pid: null,
       running: false,
       receipt: {
@@ -1530,12 +1530,12 @@ describe('applyBackendUpdate recovery', () => {
   })
 
   it("names a partial update's owed user action verbatim, only from this action's own receipt", async () => {
-    const instruction = 'Your local changes are parked in stash@{0}; run `git stash pop` in ~/.hermes/hermes-agent.'
+    const instruction = 'Your local changes are parked in stash@{0}; run `git stash pop` in ~/.moor/moor-agent.'
 
     const status = (actionId: string) => ({
       exit_code: 1,
       lines: ['update parked local changes'],
-      name: 'hermes-update',
+      name: 'moor-update',
       pid: null,
       running: false,
       receipt: {
@@ -1546,16 +1546,16 @@ describe('applyBackendUpdate recovery', () => {
       }
     })
 
-    updateHermesSpy.mockResolvedValue({ action_id: 'c'.repeat(32), ok: true, name: 'hermes-update', pid: 1 })
+    updateMoorSpy.mockResolvedValue({ action_id: 'c'.repeat(32), ok: true, name: 'moor-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue(status('c'.repeat(32)))
     const own = applyBackendUpdate()
     await vi.advanceTimersByTimeAsync(1500)
     const result = await own
 
-    // exit 1 stays a failed apply, but the committed run's debt is named, never as "re-run hermes update".
+    // exit 1 stays a failed apply, but the committed run's debt is named, never as "re-run moor update".
     expect(result).toMatchObject({ ok: false, error: 'apply-failed' })
     expect(result.message).toContain(`local_changes: ${instruction}`)
-    expect(result.message).not.toMatch(/Re-run `hermes update`/)
+    expect(result.message).not.toMatch(/Re-run `moor update`/)
     expect($backendUpdateApply.get()).toMatchObject({ stage: 'error', message: result.message })
 
     // The status route attaches the latest receipt when this action has none: another run's debt is not ours.
@@ -1570,7 +1570,7 @@ describe('applyBackendUpdate recovery', () => {
     const receipt = (actionId: string) => ({
       exit_code: null,
       lines: [],
-      name: 'hermes-update',
+      name: 'moor-update',
       pid: null,
       running: false,
       receipt: {
@@ -1583,7 +1583,7 @@ describe('applyBackendUpdate recovery', () => {
       }
     })
 
-    updateHermesSpy.mockResolvedValue({ action_id: 'b'.repeat(32), ok: true, name: 'hermes-update', pid: 1 })
+    updateMoorSpy.mockResolvedValue({ action_id: 'b'.repeat(32), ok: true, name: 'moor-update', pid: 1 })
     getActionStatusSpy.mockResolvedValue(receipt('a'.repeat(32)))
     const foreign = applyBackendUpdate()
     await vi.advanceTimersByTimeAsync(6 * 60 * 1000 + 1500)
@@ -1679,14 +1679,14 @@ describe('startUpdatePoller', () => {
     // Both profiles resolve to mode: 'remote' — only baseUrl differs. A
     // mode-only comparison would treat this as "no change" and never
     // re-check, leaving profile A's stale status on screen for profile B.
-    checkHermesUpdateSpy.mockReset()
-    checkHermesUpdateSpy.mockResolvedValue({
+    checkMoorUpdateSpy.mockReset()
+    checkMoorUpdateSpy.mockResolvedValue({
       install_method: 'git',
       current_version: '0.16.0',
       behind: 1,
       update_available: true,
       can_apply: true,
-      update_command: 'hermes update',
+      update_command: 'moor update',
       message: null
     })
 
@@ -1703,7 +1703,7 @@ describe('startUpdatePoller', () => {
 
     startUpdatePoller()
     await vi.advanceTimersByTimeAsync(0)
-    checkHermesUpdateSpy.mockClear()
+    checkMoorUpdateSpy.mockClear()
 
     setConnection({
       baseUrl: 'http://profile-b:9119',
@@ -1717,7 +1717,7 @@ describe('startUpdatePoller', () => {
     })
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(checkHermesUpdateSpy).toHaveBeenCalled()
+    expect(checkMoorUpdateSpy).toHaveBeenCalled()
   })
 
   it('re-checks backend updates when switching between two profiles on the same remote backend', async () => {
@@ -1725,14 +1725,14 @@ describe('startUpdatePoller', () => {
     // update check is profile-scoped (per-profile overrides can pin a
     // different channel/branch), so a baseUrl-only key would treat this as
     // "no change" and keep the first profile's status on screen.
-    checkHermesUpdateSpy.mockReset()
-    checkHermesUpdateSpy.mockResolvedValue({
+    checkMoorUpdateSpy.mockReset()
+    checkMoorUpdateSpy.mockResolvedValue({
       install_method: 'git',
       current_version: '0.16.0',
       behind: 1,
       update_available: true,
       can_apply: true,
-      update_command: 'hermes update',
+      update_command: 'moor update',
       message: null
     })
 
@@ -1751,12 +1751,12 @@ describe('startUpdatePoller', () => {
     setConnection(pooled('alpha'))
     startUpdatePoller()
     await vi.advanceTimersByTimeAsync(0)
-    checkHermesUpdateSpy.mockClear()
+    checkMoorUpdateSpy.mockClear()
 
     setConnection(pooled('beta'))
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(checkHermesUpdateSpy).toHaveBeenCalled()
+    expect(checkMoorUpdateSpy).toHaveBeenCalled()
   })
 
   it('discards a stale in-flight response and re-checks after switching to B before A resolves', async () => {
@@ -1764,7 +1764,7 @@ describe('startUpdatePoller', () => {
     // trigger is locked out by $backendUpdateChecking. Once A's (now stale)
     // response lands it must not overwrite the display with A's result, and
     // B's own check must still run once the lock clears.
-    checkHermesUpdateSpy.mockReset()
+    checkMoorUpdateSpy.mockReset()
 
     let resolveA: (value: unknown) => void = () => {}
 
@@ -1772,14 +1772,14 @@ describe('startUpdatePoller', () => {
       resolveA = resolve
     })
 
-    checkHermesUpdateSpy.mockImplementationOnce(() => aPending)
-    checkHermesUpdateSpy.mockResolvedValueOnce({
+    checkMoorUpdateSpy.mockImplementationOnce(() => aPending)
+    checkMoorUpdateSpy.mockResolvedValueOnce({
       install_method: 'git',
       current_version: '0.17.0',
       behind: 4,
       update_available: true,
       can_apply: true,
-      update_command: 'hermes update',
+      update_command: 'moor update',
       message: null
     })
 
@@ -1795,7 +1795,7 @@ describe('startUpdatePoller', () => {
     })
 
     startUpdatePoller()
-    // A's checkHermesUpdate() call is now in flight (aPending unresolved).
+    // A's checkMoorUpdate() call is now in flight (aPending unresolved).
     // Switch profiles before it settles.
 
     setConnection({
@@ -1816,14 +1816,14 @@ describe('startUpdatePoller', () => {
       behind: 1,
       update_available: true,
       can_apply: true,
-      update_command: 'hermes update',
+      update_command: 'moor update',
       message: null
     })
     await vi.advanceTimersByTimeAsync(0)
     // Flush the automatic follow-up check queued for B once A's lock cleared.
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(checkHermesUpdateSpy).toHaveBeenCalledTimes(2)
+    expect(checkMoorUpdateSpy).toHaveBeenCalledTimes(2)
     // B's result (behind: 4), not A's stale one (behind: 1).
     expect($backendUpdateStatus.get()?.behind).toBe(4)
   })

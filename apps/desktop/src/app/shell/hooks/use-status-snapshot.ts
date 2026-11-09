@@ -9,7 +9,7 @@ import { $setupReadyTick } from '@/store/live-sync'
 import { dismissNotification, notify } from '@/store/notifications'
 import { $desktopOnboarding, isLocalRuntimeUnavailable, settleLocalRuntimeNotice } from '@/store/onboarding'
 import { $currentModel } from '@/store/session'
-import type { StatusResponse } from '@/types/hermes'
+import type { StatusResponse } from '@/types/moor'
 
 // Statusbar health is ambient chrome, not live data — nothing the user acts on
 // within seconds. 60s + an actively-viewed check keeps traffic low; focus and

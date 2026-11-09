@@ -130,7 +130,7 @@ class TestModelOptionsSkewGuard:
         monkeypatch.setattr(
             _web_server_profiles, "_profile_scope", lambda profile: contextlib.nullcontext()
         )
-        monkeypatch.setattr("hermes_cli.inventory.load_picker_context", dict)
+        monkeypatch.setattr("moor_cli.inventory.load_picker_context", dict)
 
         payload_calls: list = []
         expected = {"providers": [], "model": {}, "provider": None}
@@ -159,7 +159,7 @@ class TestModelSetSkewGuard:
         applied: list = []
         monkeypatch.setattr(_rt_models, "_apply_model_assignment_sync", lambda *a, **k: applied.append(1))
 
-        body = _rt_models.ModelAssignment(scope="main", provider="nous", model="some-model")
+        body = _rt_models.ModelAssignment(scope="main", provider="moor", model="some-model")
         with pytest.raises(HTTPException) as excinfo:
             asyncio.run(_rt_models.set_model_assignment(body))
 
@@ -179,6 +179,6 @@ class TestModelSetSkewGuard:
         monkeypatch.setattr(_rt_models, "_apply_model_assignment_sync",
                             lambda *a, **k: {"ok": True, "scope": "main"})
 
-        body = _rt_models.ModelAssignment(scope="main", provider="nous", model="some-model")
+        body = _rt_models.ModelAssignment(scope="main", provider="moor", model="some-model")
         result = asyncio.run(_rt_models.set_model_assignment(body))
         assert result["ok"] is True

@@ -304,7 +304,7 @@ class TestSidebarShowSubagents:
 
     @staticmethod
     def _seed_subagent(home, parent_id, child_id):
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         _seed_session(home, parent_id, source="desktop")
         db = SessionDB(db_path=home / "state.db")

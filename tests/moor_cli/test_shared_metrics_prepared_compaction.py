@@ -2,7 +2,7 @@
 
 * Adoption: the daily snapshot says whether the profile turned the feature on, read as the agent reads it,
   and snapshots counted before the field existed still package against the v4 schema.
-* ``hermes.prepared_compaction.count``: every pass and splice outcome lands as one closed-enum row in the
+* ``moor.prepared_compaction.count``: every pass and splice outcome lands as one closed-enum row in the
   profile that owns the compressor, including the rows the background pass thread records, and every
   waste mode (a summary nothing uses, a wait that timed out, a failed pass, a spliced compaction that did
   not commit) says why.
@@ -17,21 +17,21 @@ from pathlib import Path
 import pytest
 
 from agent import prepared_compaction as pc
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability.shared_metrics import SharedMetricsStore
-from hermes_cli.observability.shared_metrics_snapshot import collect_install_snapshot
+from moor_cli.observability import shared_metrics_contract as contract
+from moor_cli.observability.shared_metrics import SharedMetricsStore
+from moor_cli.observability.shared_metrics_snapshot import collect_install_snapshot
 from tests.agent.test_prepared_compaction import _agent, _compressor, _grow, _messages
 
 SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2] / "hermes_cli" / "observability" / "schemas"
-    / "hermes.shared_metrics.v4.schema.json"
+    Path(__file__).resolve().parents[2] / "moor_cli" / "observability" / "schemas"
+    / "moor.shared_metrics.v4.schema.json"
 )
-RESOURCE = {"architecture": "x86_64", "hermes_version": "test", "install_method": "git", "os_family": "linux"}
+RESOURCE = {"architecture": "x86_64", "moor_version": "test", "install_method": "git", "os_family": "linux"}
 
 
 def test_snapshot_reports_prepare_ahead_and_older_snapshots_still_package(tmp_path, monkeypatch):
     jsonschema = pytest.importorskip("jsonschema")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     states = {
         value: collect_install_snapshot({"compression": {"prepare_ahead": value}})["compression_prepare_ahead"]
         for value in (True, "yes", "on", False, "false", None)
@@ -54,15 +54,15 @@ def test_snapshot_reports_prepare_ahead_and_older_snapshots_still_package(tmp_pa
 @pytest.fixture
 def marks(monkeypatch):
     """Rows as the real producer emits them, with the profile and thread each was recorded under."""
-    from hermes_cli.observability import relay_shared_metrics
-    from hermes_constants import get_hermes_home
+    from moor_cli.observability import relay_shared_metrics
+    from moor_constants import get_moor_home
 
     rows = []
     lock = threading.Lock()
 
     def record(mark, data):
         with lock:
-            rows.append((mark, dict(data), str(get_hermes_home()), threading.current_thread().name))
+            rows.append((mark, dict(data), str(get_moor_home()), threading.current_thread().name))
 
     monkeypatch.setattr(relay_shared_metrics, "enabled", lambda: True)
     monkeypatch.setattr(relay_shared_metrics, "record_process_mark", record)
@@ -85,10 +85,10 @@ def _run_pass(cc, msgs, origin):
 
 
 def test_pass_and_splice_outcomes_are_counted_in_the_owning_profile(tmp_path, marks):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     owner = tmp_path / "owner"
-    token = set_hermes_home_override(owner)
+    token = set_moor_home_override(owner)
     try:
         msgs = _messages(30)
         spliced = _compressor()
@@ -108,7 +108,7 @@ def test_pass_and_splice_outcomes_are_counted_in_the_owning_profile(tmp_path, ma
         _run_pass(reset, msgs, "tool-batch")
         reset.on_session_reset()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
     pass_rows = [("pass_completed", "tool_batch", "none", "none", "none"),
                  ("pass_started", "tool_batch", "none", "none", "none")]

@@ -1,11 +1,11 @@
 """The browser credential has one generation check and one rotation that ends every grant.
 
 Every grant made under the Webapp's browser credential records the credential's generation and is
-honoured only while ``is_current`` says it is the one in use; ``rotate`` (``hermes webapp
+honoured only while ``is_current`` says it is the one in use; ``rotate`` (``moor webapp
 --sign-out``) replaces the credential and runs every revoker registered with ``on_rotate``. The
 grant kinds themselves are pinned in test_webapp_sign_out_sockets.py and test_webapp_gated_sign_out.py.
 """
-from hermes_cli import browser_credential, web_server
+from moor_cli import browser_credential, web_server
 
 
 def test_a_generation_is_current_only_while_its_credential_is_in_use(monkeypatch):

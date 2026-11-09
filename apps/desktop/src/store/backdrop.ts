@@ -5,7 +5,7 @@ import { persistBoolean, storedBoolean } from '@/lib/storage'
 
 import { recordFeatureToggle } from './desktop-metrics'
 
-const KEY = 'hermes.desktop.backdrop.v1'
+const KEY = 'moor.desktop.backdrop.v1'
 
 /** Whether the faint Moor ant artwork renders behind the chat transcript. */
 export const $backdrop = atom(storedBoolean(KEY, false))

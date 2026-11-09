@@ -1035,15 +1035,15 @@ def my_callback(session_id: str | None, platform: str, **kwargs):
 | `session_id` | `str` or `None` | The outgoing session ID. May be `None` if no active session existed. |
 | `platform` | `str` | `"cli"` or the messaging platform name (`"telegram"`, `"discord"`, etc.). |
 
-**Fires:** In CLI/TUI teardown (including the end of a `hermes -z` one-shot run, success or failure) and in gateway reset or shutdown paths. Gateway shutdown can finalize without a matching `on_session_reset`.
+**Fires:** In CLI/TUI teardown (including the end of a `moor -z` one-shot run, success or failure) and in gateway reset or shutdown paths. Gateway shutdown can finalize without a matching `on_session_reset`.
 
-**Return value — show the user a message:** return a non-empty `str`, or a dict with a `"message"` string, and Hermes shows it to the user as a notice. It never becomes a model turn and never edits the assistant's reply. Return `None` to show nothing. Where it appears:
+**Return value — show the user a message:** return a non-empty `str`, or a dict with a `"message"` string, and Moor shows it to the user as a notice. It never becomes a model turn and never edits the assistant's reply. Return `None` to show nothing. Where it appears:
 
 | Surface | Shown as |
 |---------|---------|
 | CLI `/new` | Printed in the terminal before the new session starts. |
-| CLI quit | Printed above the exit summary (`hermes --resume …`). |
-| `hermes chat -q` / `-z` one-shot | Printed to **stderr**, so stdout still holds only the answer. |
+| CLI quit | Printed above the exit summary (`moor --resume …`). |
+| `moor chat -q` / `-z` one-shot | Printed to **stderr**, so stdout still holds only the answer. |
 | TUI `/new` | A system line in the fresh session's transcript. |
 | Messaging gateway `/new` or `/reset` | Sent to the chat that owned the session, as its own message. |
 | Gateway shutdown / restart | Sent to each active chat before the adapters disconnect. |
@@ -1092,7 +1092,7 @@ def my_callback(session_id: str, platform: str, **kwargs):
 
 ### `on_session_delete`
 
-Fires **once per operation, after the transaction commits**, when a session actually went away: deleted (single, bulk, the empty-session sweep, retention prune, ghost-prune maintenance, profile repair) or deliberately archived. Every surface ends in the same `SessionDB` methods, so CLI (`hermes sessions delete|prune|archive`, `/exit --delete`), TUI, Desktop/dashboard (single and bulk delete, archive) and the gateway API server are all covered. Plugins that keep per-session state on disk can clean up without polling the session store.
+Fires **once per operation, after the transaction commits**, when a session actually went away: deleted (single, bulk, the empty-session sweep, retention prune, ghost-prune maintenance, profile repair) or deliberately archived. Every surface ends in the same `SessionDB` methods, so CLI (`moor sessions delete|prune|archive`, `/exit --delete`), TUI, Desktop/dashboard (single and bulk delete, archive) and the gateway API server are all covered. Plugins that keep per-session state on disk can clean up without polling the session store.
 
 **Callback signature:**
 
@@ -1521,7 +1521,7 @@ def register(ctx):
 
 ### `on_human_input_request`
 
-Fires right before Hermes blocks waiting for a person to type or click something, whatever the prompt is and wherever it shows up. One hook pair covers every blocking prompt, so a notifier ("Hermes is waiting on you") does not have to subscribe to a separate hook per prompt type or pattern-match tool arguments:
+Fires right before Moor blocks waiting for a person to type or click something, whatever the prompt is and wherever it shows up. One hook pair covers every blocking prompt, so a notifier ("Moor is waiting on you") does not have to subscribe to a separate hook per prompt type or pattern-match tool arguments:
 
 | `kind` | Prompt | Surfaces |
 |--------|--------|----------|
@@ -1542,7 +1542,7 @@ def my_callback(kind: str, request_id: str, session_id: str, session_key: str,
 |-----------|------|-------------|
 | `kind` | `str` | `"sudo"`, `"clarify"` or `"approval"` |
 | `request_id` | `str` | Unique per prompt; the matching `on_human_input_resolved` carries the same value |
-| `session_id` | `str` | Hermes session id when known, else `""` |
+| `session_id` | `str` | Moor session id when known, else `""` |
 | `session_key` | `str` | Session/chat routing key, useful for scoping notifications per chat |
 | `platform` | `str` | Gateway platform (`"telegram"`, `"discord"`, ...) or local source (`"cli"`, `"tui"`, `"desktop"`, ...) |
 | `prompt` | `str` | What the person is asked about: the command for `sudo`/`approval`, the question text for `clarify`. Always redacted with the secret redactor, even when `security.redact_secrets` is off |
@@ -1569,7 +1569,7 @@ def register(ctx):
     pending = {}
 
     def on_request(kind, request_id, prompt, session_key, **kwargs):
-        pending[request_id] = threading.Timer(30, push_notification, (f"Hermes needs you ({kind}): {prompt[:80]}",))
+        pending[request_id] = threading.Timer(30, push_notification, (f"Moor needs you ({kind}): {prompt[:80]}",))
         pending[request_id].start()  # only page if nobody answers within 30s
 
     def on_resolved(request_id, **kwargs):
@@ -1822,7 +1822,7 @@ While a plugin loaded in a profile holds the stream, that profile's sessions sho
 
 What else is held:
 
-- **Commentary** (model text sent between tool calls, `display.interim_assistant_messages`) never passes through `transform_llm_output`, so a held turn drops it. It stays in the model's context but is stored hidden, so resuming or reopening the session (TUI, desktop app, dashboard, classic CLI) does not show it either. The same goes for every other model text the user never got: an answer Hermes sent back for another try (late language-server errors, verify-on-stop), a reply cut by the output limit before its continuation, a call to an unknown tool.
+- **Commentary** (model text sent between tool calls, `display.interim_assistant_messages`) never passes through `transform_llm_output`, so a held turn drops it. It stays in the model's context but is stored hidden, so resuming or reopening the session (TUI, desktop app, dashboard, classic CLI) does not show it either. The same goes for every other model text the user never got: an answer Moor sent back for another try (late language-server errors, verify-on-stop), a reply cut by the output limit before its continuation, a call to an unknown tool.
 - **Every way a turn ends passes through the hook.** A reply cut by the output limit on every continuation, an iteration-budget summary, a provider or compression error, an interrupt: whatever text the turn ends with reaches the user only after `transform_llm_output` saw it, and model text is stored as the rewrite.
 - **A failing hook withholds the reply.** If no hook rewrote the reply and one raised or timed out, the user gets a short "reply withheld" notice, never the original.
 - **The hook set is fixed for the turn.** A held turn runs the `transform_llm_output` hooks that were loaded when it started, even if plugins are re-discovered mid-turn.
@@ -2112,7 +2112,7 @@ printf '{}\n'
 
 ### Consent model
 
-Each unique `(event, command)` pair prompts the user for approval the first time Hermes sees it, then persists the decision to `~/.hermes/shell-hooks-allowlist.json`. Subsequent runs (CLI or gateway) skip the prompt. The classic CLI asks on its terminal before it opens its gateway session; the gateway re-reads `hooks:` and the allowlist whenever a local session (CLI, TUI, Desktop) is created or resumed, so a hook added, approved, removed or revoked since the gateway started takes effect then. A change to a profile's allowlist or `hooks:` block (an approval, `hermes hooks revoke`, an edit) also takes effect within about 30 seconds without any session opening, on every profile a gateway serves.
+Each unique `(event, command)` pair prompts the user for approval the first time Moor sees it, then persists the decision to `~/.moor/shell-hooks-allowlist.json`. Subsequent runs (CLI or gateway) skip the prompt. The classic CLI asks on its terminal before it opens its gateway session; the gateway re-reads `hooks:` and the allowlist whenever a local session (CLI, TUI, Desktop) is created or resumed, so a hook added, approved, removed or revoked since the gateway started takes effect then. A change to a profile's allowlist or `hooks:` block (an approval, `moor hooks revoke`, an edit) also takes effect within about 30 seconds without any session opening, on every profile a gateway serves.
 
 Three escape hatches bypass the interactive prompt — any one is sufficient:
 
@@ -2120,7 +2120,7 @@ Three escape hatches bypass the interactive prompt — any one is sufficient:
 2. `MOOR_ACCEPT_HOOKS=1` environment variable
 3. `hooks_auto_accept: true` in `~/.moor/config.yaml`
 
-Only a foreground `hermes chat` (or `hermes rl`) ever asks. The gateway, cron, `hermes mcp-serve --tools` (the mcp-serve plugin), `hermes acp` and CI never prompt, even when stdin looks like a terminal (a hidden console from a Windows login-item launcher does), so they need one of these three or an allowlist entry. Otherwise a newly-added hook stays un-registered and a warning names the profile's allowlist file it is missing from (`profiles/<name>/shell-hooks-allowlist.json` for a non-default profile). `hermes gateway run --accept-hooks` (like `HERMES_ACCEPT_HOOKS=1` on the gateway) approves the hooks of every profile that gateway serves, including hooks added after it started.
+Only a foreground `moor chat` (or `moor rl`) ever asks. The gateway, cron, `moor mcp-serve --tools` (the mcp-serve plugin), `moor acp` and CI never prompt, even when stdin looks like a terminal (a hidden console from a Windows login-item launcher does), so they need one of these three or an allowlist entry. Otherwise a newly-added hook stays un-registered and a warning names the profile's allowlist file it is missing from (`profiles/<name>/shell-hooks-allowlist.json` for a non-default profile). `moor gateway run --accept-hooks` (like `MOOR_ACCEPT_HOOKS=1` on the gateway) approves the hooks of every profile that gateway serves, including hooks added after it started.
 
 **Script edits are silently trusted.** The allowlist keys on the exact command string, not the script's hash, so editing the script on disk does not invalidate consent. `moor hooks doctor` flags mtime drift so you can spot edits and decide whether to re-approve.
 
@@ -2145,10 +2145,10 @@ The command string must match the configured hook command exactly. A path-keyed 
 
 | Command | What it does |
 |---------|--------------|
-| `hermes hooks list` | Dump configured hooks with matcher, timeout, and consent status |
-| `hermes hooks test <event> [--for-tool X] [--payload-file F]` | Fire every matching hook against a synthetic payload and print the parsed response |
-| `hermes hooks revoke <command>` | Remove every allowlist entry matching `<command>` (a running gateway stops running it within about 30 seconds) |
-| `hermes hooks doctor` | For every configured hook: check exec bit, allowlist status, mtime drift, JSON output validity, and rough execution time |
+| `moor hooks list` | Dump configured hooks with matcher, timeout, and consent status |
+| `moor hooks test <event> [--for-tool X] [--payload-file F]` | Fire every matching hook against a synthetic payload and print the parsed response |
+| `moor hooks revoke <command>` | Remove every allowlist entry matching `<command>` (a running gateway stops running it within about 30 seconds) |
+| `moor hooks doctor` | For every configured hook: check exec bit, allowlist status, mtime drift, JSON output validity, and rough execution time |
 
 ### Security
 

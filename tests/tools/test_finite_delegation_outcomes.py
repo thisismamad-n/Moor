@@ -246,7 +246,7 @@ def test_owner_finite_scope_overrides_history_without_leaking(harness, monkeypat
     from gateway.session_finite import finite_turn_scope, finite_turn_required
     from tools.delegate_tool_dispatch import _resolve_async_wake_sid
 
-    monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")
+    monkeypatch.setenv("MOOR_SINGLE_QUERY_SESSION", "1")
     gate = threading.Barrier(2)
     before = dict(os.environ)
 
@@ -272,7 +272,7 @@ def test_oneshot_started_session_joins_children_on_an_interactive_turn(harness, 
     from gateway.session_policy import build_policy, policy_scope
 
     parent, _children, dispatch = harness
-    monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION")
+    monkeypatch.delenv("MOOR_SINGLE_QUERY_SESSION")
     with policy_scope(build_policy({"source": "oneshot", "cwd": str(os.getcwd()), "model": "m"}, {})):
         assert agent_is_oneshot(parent)  # the pin the tool build froze for this session
     sc.set_session_vars(async_delivery=True)

@@ -31,7 +31,7 @@ STANDALONE_PROFILE_REASON = "this profile is standalone (gateway.standalone: tru
 #: profile appears: the in-place switch is an automatic migration, so the opt-out holds it back.
 AUTO_MIGRATION_OPTED_OUT_REASON = (
     "gateway.auto_multiplex_migration is false, so this gateway serves only its own profile; "
-    "run `hermes gateway migrate --multiplex` to serve every profile")
+    "run `moor gateway migrate --multiplex` to serve every profile")
 
 #: ``gateway.standalone: true`` is a TEMPORARY backwards-compatibility shim, not a supported topology.
 #: It exists so fleets that lost per-profile gateways in the multiplex-only switch keep working while
@@ -59,8 +59,8 @@ def explicit_multiplex_flag(default_home: Path) -> Optional[bool]:
     """The operator's explicit choice for the DEFAULT profile's gateway: a recognized
     ``GATEWAY_MULTIPLEX_PROFILES``, else ``gateway.multiplex_profiles`` (or the top-level alias) as
     written in its config.yaml; ``None`` when neither is set. Raw read on purpose: the callers are
-    other processes (``hermes -p X ...`` has X's config loaded) asking about the default's file."""
-    from hermes_cli.config_backend import config_exists
+    other processes (``moor -p X ...`` has X's config loaded) asking about the default's file."""
+    from moor_cli.config_backend import config_exists
     from gateway.config import _bool_token, _env_multiplex_profiles_override
     env = _env_multiplex_profiles_override()
     if env is not None:
@@ -93,7 +93,7 @@ def host_serves_named_profile(default_home: Path, home: Path) -> Optional[bool]:
     ``False`` for a ``gateway.standalone: true`` secondary (``profiles_to_serve`` never serves it),
     ``True`` for an explicit ``true`` on the default, ``None`` when boot settles it (unset or the
     retired ``false``, see :func:`resolve_multiplex_mode`)."""
-    from hermes_cli.profiles import profile_is_standalone
+    from moor_cli.profiles import profile_is_standalone
     if profile_is_standalone(home):
         return False
     return settled_explicit_flag(explicit_multiplex_flag(default_home))
@@ -197,13 +197,13 @@ def persist_resolved_default(decision: MultiplexDecision, default_home: Optional
     is made explicit ("left unset" was read as "off"), a retired ``false`` is rewritten in place and
     leaves a one-time marker for the boxed notice. Comment-preserving writer, once, and NEVER on a guard
     refusal (the file must not say true while the runtime is standalone). Returns True on a write."""
-    from hermes_cli.config_backend import config_exists
+    from moor_cli.config_backend import config_exists
     if not decision.enabled or decision.source == "guard":
         return False
     default_home = Path(default_home) if default_home is not None else _default_profile_home()
     cfg_path = default_home / "config.yaml"
     try:
-        from hermes_cli.config import read_user_config_raw
+        from moor_cli.config import read_user_config_raw
         cfg = read_user_config_raw(cfg_path) or {} if config_exists(cfg_path) else {}
         section = cfg.get("gateway") if isinstance(cfg.get("gateway"), dict) else {}
         in_file = cfg.get("multiplex_profiles", section.get("multiplex_profiles"))
@@ -286,7 +286,7 @@ _pending_decision: list[MultiplexDecision] = []
 
 
 def record_multiplex_decision(decision: MultiplexDecision) -> None:
-    """Persist a guard refusal into ``gateway_state.json`` so `hermes gateway status` can show why this
+    """Persist a guard refusal into ``gateway_state.json`` so `moor gateway status` can show why this
     gateway serves one profile while the default says multiplex; any other verdict clears the field.
 
     Only the runtime-lock owner writes that file. The decision is made while the config loads, before
@@ -387,7 +387,7 @@ def recorded_standalone_reason(state_path: Path | None = None) -> str | None:
 
 def recorded_standalone_warning_lines() -> list[str]:
     """Same box, rebuilt from the live gateway's ``gateway_state.json`` for processes that did not
-    make the decision (``hermes update``'s summary, ``hermes gateway status``)."""
+    make the decision (``moor update``'s summary, ``moor gateway status``)."""
     reason = recorded_standalone_reason()
     if not reason:
         return []

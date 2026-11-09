@@ -1,7 +1,7 @@
-"""The AIAgent surface main's HermesCLI uses, backed by the shared gateway session (CALLMAP §3.2-3.3).
+"""The AIAgent surface main's MoorCLI uses, backed by the shared gateway session (CALLMAP §3.2-3.3).
 
 ``run_conversation`` submits ``prompt.submit`` and replays the gateway's event stream, on the
-calling (agent) thread, into the SAME callbacks HermesCLI passed to ``AIAgent`` on main, then
+calling (agent) thread, into the SAME callbacks MoorCLI passed to ``AIAgent`` on main, then
 returns a dict shaped like ``AIAgent.run_conversation``'s. The CLI process never builds an agent,
 never runs a tool and never writes ``state.db``: the turn runs in the gateway.
 
@@ -18,8 +18,8 @@ import time
 import uuid
 from contextlib import suppress
 
-from hermes_cli.gateway_client import GatewayClientError, GatewayRPCError
-from hermes_cli.gateway_connection import DISCONNECTED, NOT_SENT, CallStopped, lost_before
+from moor_cli.gateway_client import GatewayClientError, GatewayRPCError
+from moor_cli.gateway_connection import DISCONNECTED, NOT_SENT, CallStopped, lost_before
 
 logger = logging.getLogger(__name__)
 
@@ -323,7 +323,7 @@ class GatewayAgent:
             if self._route_off_session(new_model, new_provider) is None:
                 self._turn_route = None
                 return True
-        from hermes_cli.gateway_mutations import model_refusal_text
+        from moor_cli.gateway_mutations import model_refusal_text
         payload = {"model": new_model, **({"provider": new_provider} if new_provider else {})}
         snapshot = self.connection.call("session.resume", session_id=self.session_id)
         fence = dict(session_id=self.session_id, operation="model", expected_revision=snapshot["revision"],
@@ -630,7 +630,7 @@ class GatewayAgent:
         the tail and the compression count stay as they were."""
         from agent.context_compressor import _DB_PERSISTED_MARKER
         from agent.conversation_compression import COMPACTION_STATUS
-        from hermes_cli.gateway_client import COMPRESS_RPC_TIMEOUT
+        from moor_cli.gateway_client import COMPRESS_RPC_TIMEOUT
         payload = {}
         if focus_topic:
             payload["focus"] = focus_topic
@@ -757,7 +757,7 @@ class GatewayAgent:
         self._usage_stale = True
         self._interrupt_requested = False
         self._interrupt_sent_at = None
-        from hermes_cli.gateway_tools_notify import take_admitted_turn
+        from moor_cli.gateway_tools_notify import take_admitted_turn
         adopted = take_admitted_turn(self, persist_user_message if isinstance(persist_user_message, str)
                                      else user_message)
         if adopted is not None:
@@ -820,7 +820,7 @@ class GatewayAgent:
     def _drain_stale(self):
         """Frames left from an earlier turn of this viewer (a late settlement) are not this turn's. A
         ``/queue`` admission's start among them is remembered: that turn is painted after this one."""
-        from hermes_cli.gateway_tools_notify import missed_start
+        from moor_cli.gateway_tools_notify import missed_start
         while True:
             try:
                 frame = self.connection.events.get_nowait()
@@ -866,7 +866,7 @@ class GatewayAgent:
         return f"Your message was not sent.\n{notice}" if notice else ""
 
     def _lost_turn_notice(self):
-        from hermes_cli.gateway_chat_view import pending_lines
+        from moor_cli.gateway_chat_view import pending_lines
         pending = self._state().pending
         return "\n".join(pending_lines(pending)) if any(row["status"] == "unknown" for row in pending) else ""
 
@@ -898,7 +898,7 @@ class GatewayAgent:
             kind, payload = params.get("type"), params.get("payload") or {}
             admission = params.get("admission_id") or (payload.get("admission_id") if isinstance(payload, dict) else None)
             if self._admission and admission and admission != self._admission:
-                from hermes_cli.gateway_tools_notify import missed_start
+                from moor_cli.gateway_tools_notify import missed_start
                 missed_start(self._state(), params)  # a /queue turn run ahead of this one: painted after it
                 continue
             if params.get("execution_generation") is not None:
@@ -920,7 +920,7 @@ class GatewayAgent:
     def _recover(self, turn):
         """``gateway_replay_gap``: re-attach, answer the controls the hole hid, stop painting live text. A
         turn the snapshot no longer lists settles from its receipt; None waits for the live completion."""
-        from hermes_cli.gateway_replay_gap import settled
+        from moor_cli.gateway_replay_gap import settled
         lost, stop = GatewayClientError("session_replay_gap: " + DISCONNECTED), self._stop(turn)
         try:
             snapshot = self.connection.reattach(turn.session_id, abandon=stop)
@@ -1024,14 +1024,14 @@ class GatewayAgent:
             self.tool_progress_callback("tool.completed", name, None, None, duration=duration,
                                         is_error=bool(payload.get("is_error")), result=result)
         self._usage_stale = True
-        from hermes_cli.gateway_tools import mark_dirty
+        from moor_cli.gateway_tools import mark_dirty
         mark_dirty()  # a terminal/process call may have started or stopped a background process
         if name == "todo":
             self._todo_from_result(result)
         diff = payload.get("inline_diff")
         if isinstance(diff, str) and diff:
             from cli import _cprint
-            from hermes_cli.cli_modern_layout import diff_printer
+            from moor_cli.cli_modern_layout import diff_printer
             emit = diff_printer(_cprint)
             for line in diff.rstrip("\n").splitlines():
                 emit(line)
@@ -1167,7 +1167,7 @@ class GatewayAgent:
 
     def _answer_request(self, frame):
         """A gateway server→client request (``sudo``, ``secret``, the ``vault.*`` prompts, ``clarify``): main's own modal
-        answers it on this (agent) thread, through the callback HermesCLI registered for the turn; the
+        answers it on this (agent) thread, through the callback MoorCLI registered for the turn; the
         answer travels only in the JSON-RPC response frame."""
         method = frame["method"]
         self._open_request = (frame["id"], method)
@@ -1206,13 +1206,13 @@ class GatewayAgent:
 
     def _ask_secret(self, params):
         """Main's masked "Skill Setup Required" panel (the CLI's registered secret-capture callback,
-        ``hermes_cli.callbacks.prompt_for_secret``) collects the value and prints main's lines; the
+        ``moor_cli.callbacks.prompt_for_secret``) collects the value and prints main's lines; the
         gateway, not this process, saves it in the profile ``.env``, so the panel's save is captured."""
         from tools import skills_tool
         callback = skills_tool._secret_capture_callback
         if callback is None:
             return ""
-        from hermes_cli import callbacks
+        from moor_cli import callbacks
         captured = []
 
         def capture(key, value):
@@ -1227,7 +1227,7 @@ class GatewayAgent:
         return captured[0] if captured else ""
 
     def _ask_vault_unlock(self, params):
-        """Main's masked password-manager unlock panel, through the callback HermesCLI registered."""
+        """Main's masked password-manager unlock panel, through the callback MoorCLI registered."""
         from agent.vault_backends.unlock import get_unlock_prompt_callback
         callback = get_unlock_prompt_callback()
         if callback is None:
@@ -1250,7 +1250,7 @@ class GatewayAgent:
             answer.clear()
 
     def _ask_vault_code(self, params):
-        """Main's one-time-code panel, through the callback HermesCLI registered."""
+        """Main's one-time-code panel, through the callback MoorCLI registered."""
         from agent.vault_backends.unlock import get_code_prompt_callback
         callback = get_code_prompt_callback()
         if callback is None:
@@ -1333,7 +1333,7 @@ class GatewayAgent:
     def _paint_owed(self, turn, out, complete, stream_callback):
         """After a replay gap, the reply once (``owed_reply``): a reuse this terminal showed whole stays
         the only copy; otherwise main's panel shows what streaming did not."""
-        from hermes_cli.gateway_replay_gap import owed_reply
+        from moor_cli.gateway_replay_gap import owed_reply
         reply = out.get("pre_transform_response") if out.get("response_transformed") else None
         reply = reply if isinstance(reply, str) else out.get("final_response")
         if out.get("failed") or not isinstance(reply, str) or not reply.strip():
@@ -1468,7 +1468,7 @@ def _moa_handler(kind):
 
 
 def clarify_reply(callback, params) -> dict:
-    """Main's batch clarify panel (``callback(questions)``, ``HermesCLI._clarify_callback``) answering a
+    """Main's batch clarify panel (``callback(questions)``, ``MoorCLI._clarify_callback``) answering a
     ``clarify`` server request's whole question set: its ``ClarifyResult``."""
     questions = [{"qid": q.get("qid"), "question": q.get("question") or "",
                   "choices": list(q.get("choices") or []), "multi_select": bool(q.get("multi_select"))}

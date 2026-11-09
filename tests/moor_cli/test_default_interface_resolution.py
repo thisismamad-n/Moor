@@ -182,7 +182,7 @@ class TestParserFlags:
         assert "--tui" in inherited
 
     def test_native_flag_is_relaunch_inherited(self):
-        from hermes_cli.relaunch import _INHERITED_FLAGS_TABLE
+        from moor_cli.relaunch import _INHERITED_FLAGS_TABLE
 
         inherited = {flag for flag, _takes_value in _INHERITED_FLAGS_TABLE}
         assert "--native" in inherited

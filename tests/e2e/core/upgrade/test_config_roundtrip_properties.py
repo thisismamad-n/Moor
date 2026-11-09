@@ -389,7 +389,7 @@ def _quiet():
 class ReadFaults:
     """Counts every read of config.yaml through the lowest-level YAML read seam
     (``utils.fast_safe_load``, called by the file config backend that every config.yaml reader —
-    hermes_cli.config, ``read_user_config_raw`` and therefore tui_gateway — goes through) and fails
+    moor_cli.config, ``read_user_config_raw`` and therefore tui_gateway — goes through) and fails
     chosen reads with a transient ``EMFILE`` on an otherwise intact file."""
 
     def __init__(self, monkeypatch, config_path: Path):
@@ -498,7 +498,7 @@ _SET_EXCLUDE = {
     ("model", "api_base"),            # alias rewritten to model.base_url
     ("_config_version",),
     ("display", "language"),          # validated against the live language set (bundled ∪ overlay ∪ packs);
-                                      # an unknown id is refused with the list — tests/hermes_cli/test_config_display_language.py
+                                      # an unknown id is refused with the list — tests/moor_cli/test_config_display_language.py
 }
 
 
@@ -570,7 +570,7 @@ def _dotted_provider(case: Case) -> str:
 
 
 def _cli(env: dict, *args: str, timeout: float = 120) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "hermes_cli.main", *args], cwd=str(WORKTREE), env=env,
+    return subprocess.run([sys.executable, "-m", "moor_cli.main", *args], cwd=str(WORKTREE), env=env,
                           capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, check=False)
 
 

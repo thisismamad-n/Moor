@@ -63,7 +63,7 @@ class TransportSpec:
     url: Optional[str] = None
     version: Optional[str] = None  # informational, pinned
     # Static env for the stdio subprocess (telemetry opt-outs, mode flags). NOT for secrets — those
-    # go through auth.env so they are prompted for and land in ~/.hermes/.env.
+    # go through auth.env so they are prompted for and land in ~/.moor/.env.
     env: dict[str, str] = field(default_factory=dict)
 
 
@@ -748,7 +748,7 @@ def record_mcp_install(source: str, name: Optional[str], outcome: str, *, failur
                        error: Optional[BaseException] = None) -> None:
     """One shared-metrics extension install for an MCP server (catalog entry name, or None when custom).
     A failed one names its ``failure_class`` or passes the raised ``error`` (classified by its type)."""
-    from hermes_cli.observability.shared_metrics_events import record_extension_install
+    from moor_cli.observability.shared_metrics_events import record_extension_install
 
     record_extension_install(kind="mcp_server", source=source, name=name, outcome=outcome,
                              failure_class=failure_class, error=error)

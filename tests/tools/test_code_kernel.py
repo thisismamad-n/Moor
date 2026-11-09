@@ -438,8 +438,8 @@ class TestInScriptToolErrors(unittest.TestCase):
             return json.dumps({"ok": True})
 
         with _kernel_config(), patch("model_tools.handle_function_call", new=_handle):
-            failed = _run("import hermes_tools\nhermes_tools.write_file('a.py', 'x')\nprint('done')\n")
-            clean = _run("import hermes_tools\nhermes_tools.web_search(query='q')\n")
+            failed = _run("import moor_tools\nmoor_tools.write_file('a.py', 'x')\nprint('done')\n")
+            clean = _run("import moor_tools\nmoor_tools.web_search(query='q')\n")
         self.assertEqual(failed["status"], "success", failed)
         self.assertEqual(failed["tool_errors"], [{"tool": "write_file", "error": "Refusing to overwrite a.py: never read"}])
         self.assertNotIn("tool_errors", clean)

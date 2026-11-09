@@ -134,8 +134,8 @@ def test_spawn_resolves_claimed_task_policy(
     """The worker passes identity, while the owner reads overrides from SQLite."""
     from gateway.session_contract import Principal
     from gateway.session_kanban import build_kanban_policy
-    from hermes_cli import kanban_worker_client
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_cli import kanban_worker_client
+    from moor_state_runtime import RuntimeStoreError
 
     profile = kanban_home / "profiles" / "elias"
     profile.mkdir(parents=True)
@@ -155,8 +155,8 @@ def test_spawn_resolves_claimed_task_policy(
 
     monkeypatch.setattr(subprocess, "Popen", fake_popen)
     kbd._default_spawn(task, str(workspace))
-    assert captured["cmd"] == [sys.executable, "-m", "hermes_cli.kanban_worker_client"]
-    assert captured["env"]["HERMES_HOME"] == str(profile)
+    assert captured["cmd"] == [sys.executable, "-m", "moor_cli.kanban_worker_client"]
+    assert captured["env"]["MOOR_HOME"] == str(profile)
     actor = Principal("owner", str(profile), frozenset({"session:create"}), "transport")
     connection = SimpleNamespace(
         authority=SimpleNamespace(profile_id=str(profile)), actor=actor, native_owner=True)

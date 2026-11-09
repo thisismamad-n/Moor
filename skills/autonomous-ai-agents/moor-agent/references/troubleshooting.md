@@ -14,7 +14,7 @@
 1. `moor doctor` — check config and dependencies
 2. `moor auth` — re-authenticate OAuth providers (or `moor auth add <provider>`)
 3. Check `.env` has the right API key
-4. **GitHub Copilot** (`copilot` / `copilot-acp`) lives in the `github-copilot` labs plugin (`hermes plugins install github-copilot`); sign in with `hermes auth add copilot` — `gh` CLI logins are not read.
+4. **GitHub Copilot** (`copilot` / `copilot-acp`) lives in the `github-copilot` labs plugin (`moor plugins install github-copilot`); sign in with `moor auth add copilot` — `gh` CLI logins are not read.
 
 ### Changes not taking effect
 - **Tools/skills:** `/reset` starts a new session with updated toolset

@@ -30,16 +30,16 @@ from moor_cli.dashboard_auth import (
     clear_providers,
     register_provider,
 )
-from hermes_cli.dashboard_auth import routes as auth_routes
-from hermes_cli.dashboard_auth.cookies import SESSION_AT_COOKIE, SESSION_RT_COOKIE
-from hermes_cli.dashboard_auth.login_page import render_login_html
-from hermes_cli.dashboard_auth.routes import (
+from moor_cli.dashboard_auth import routes as auth_routes
+from moor_cli.dashboard_auth.cookies import SESSION_AT_COOKIE, SESSION_RT_COOKIE
+from moor_cli.dashboard_auth.login_page import render_login_html
+from moor_cli.dashboard_auth.routes import (
     _PW_RATE_MAX_ATTEMPTS,
     _PW_RATE_MAX_BUCKETS,
     _reset_password_rate_limit,
 )
-from hermes_cli.web_server_lifecycle import _dashboard_forwarded_allow_ips
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+from moor_cli.web_server_lifecycle import _dashboard_forwarded_allow_ips
+from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
 
 
 # ---------------------------------------------------------------------------
@@ -240,7 +240,7 @@ class TestPasswordLoginRoute:
         self: TestPasswordLoginRoute, gated_app: TestClient,
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rate_limited: bool,
     ) -> None:
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         if rate_limited:
             response = None
             for _ in range(15):
@@ -441,7 +441,7 @@ class TestRateLimit:
 def test_client_ip_uses_asgi_peer_not_forwarded_header(peer: tuple[str, int] | None) -> None:
     from fastapi import Request
 
-    from hermes_cli.dashboard_auth.request_utils import client_ip
+    from moor_cli.dashboard_auth.request_utils import client_ip
 
     # Preserve the ASGI address, including one normalized by trusted upstream
     # middleware; a missing peer must not fall back to an untrusted header.

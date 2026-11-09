@@ -270,7 +270,7 @@ class TestListBundles:
 
 
 class TestBundleCacheRaces:
-    """The gateway's cache must see edits another process (`hermes bundles`) makes in the same mtime tick."""
+    """The gateway's cache must see edits another process (`moor bundles`) makes in the same mtime tick."""
 
     T = 1_800_000_000_000_000_000
 

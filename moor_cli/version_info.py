@@ -312,11 +312,11 @@ def get_version_info() -> VersionInfo:
     return info
 
 
-def hermes_user_agent(product: str = "hermes-cli") -> str:
+def moor_user_agent(product: str = "moor-cli") -> str:
     """``<product>/<base version>`` for an outbound request.
 
     Call it where the request is built, never at module level: a source checkout resolves the
-    release from git, so a module-level read made every Hermes start pay that walk whether or not
+    release from git, so a module-level read made every Moor start pay that walk whether or not
     it ever sent the request.
     """
     return f"{product}/{get_version_info().base_version}"

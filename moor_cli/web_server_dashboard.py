@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
-import hermes_yaml as yaml
+import moor_yaml as yaml
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocketException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -20,14 +20,14 @@ from starlette.requests import HTTPConnection
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from hermes_cli.config import cfg_get, get_process_hermes_home
+from moor_cli.config import cfg_get, get_process_moor_home
 from utils import env_var_enabled
 
 # Serve assets with explicit MIME types: the host's map (on Windows the
 # registry can map .js -> text/plain) must not decide the Content-Type of
 # dashboard bundles (#28987). Runs before any StaticFiles/FileResponse below
 # serves a request, and is idempotent.
-from hermes_cli.web_asset_mime_types import normalize_web_asset_mime_types
+from moor_cli.web_asset_mime_types import normalize_web_asset_mime_types
 
 normalize_web_asset_mime_types()
 
@@ -109,8 +109,8 @@ def mount_spa(application: FastAPI):
 
     Dashboard injects its session token into index.html; Webapp instead receives
     the same credential through an operator-only launch fragment. Behind a path-prefix reverse
-    proxy (``X-Forwarded-Prefix: /hermes``) the served index.html is rewritten so absolute
-    asset URLs and the runtime ``__HERMES_BASE_PATH__`` honour that prefix without a rebuild.
+    proxy (``X-Forwarded-Prefix: /moor``) the served index.html is rewritten so absolute
+    asset URLs and the runtime ``__MOOR_BASE_PATH__`` honour that prefix without a rebuild.
 
     A missing WEB_DIST is deliberately NOT a mount-time terminal state: every route copes
     with a missing dist per-request (404 JSON / ``check_dir=False``), so a long-lived
@@ -119,10 +119,10 @@ def mount_spa(application: FastAPI):
     another renderer (the Webapp's ``dist-webapp``) records it on ``application.state.web_dist``
     later.
     """
-    from hermes_cli.web_server import WEB_DIST, _DASHBOARD_EMBEDDED_CHAT_ENABLED
-    from hermes_cli.web_deps import _server
-    from hermes_cli.web_server_surface import policy
-    from hermes_cli.web_server_static_assets import is_static_asset_path, public_font_file
+    from moor_cli.web_server import WEB_DIST, _DASHBOARD_EMBEDDED_CHAT_ENABLED
+    from moor_cli.web_deps import _server
+    from moor_cli.web_server_surface import policy
+    from moor_cli.web_server_static_assets import is_static_asset_path, public_font_file
 
     # `moor serve` is the headless backend: it must NEVER serve the browser SPA, even if a
     # dist is lying around, so only the JSON-RPC/WS/API surface is reachable.
@@ -172,14 +172,14 @@ def mount_spa(application: FastAPI):
             html = (web_dist() / "index.html").read_text(encoding="utf-8-sig")
         except OSError:
             # Partial build / wiped dist / permissions: same JSON 404 as a fully-missing dist. The
-            # Webapp's bundle is built by `hermes webapp`, not by the dashboard's web project.
+            # Webapp's bundle is built by `moor webapp`, not by the dashboard's web project.
             webapp = getattr(application.state, "ui_surface", "dashboard") == "webapp"
-            missing = ("The Webapp is not built. Run: hermes webapp" if webapp
+            missing = ("The Webapp is not built. Run: moor webapp" if webapp
                        else "Frontend not built. Run: cd web && npm run build")
             return JSONResponse({"error": missing}, status_code=404)
         if getattr(application.state, "ui_surface", "dashboard") == "webapp":
-            # A bundle `hermes update` could not rebuild was built for the code before the update:
-            # refuse it until `hermes webapp` rebuilds it.
+            # A bundle `moor update` could not rebuild was built for the code before the update:
+            # refuse it until `moor webapp` rebuilds it.
             from gateway.webapp_listener import bundle_stale_reason
             stale = bundle_stale_reason(web_dist())
             if stale:
@@ -188,14 +188,14 @@ def mount_spa(application: FastAPI):
         gated = bool(getattr(application.state, "auth_required", False))
         # Only a host that records its surface (the gateway's Webapp) names it to the page.
         surface = getattr(application.state, "ui_surface", None)
-        surface_js = "" if surface is None else f"window.__HERMES_UI_SURFACE__={json.dumps(surface)};"
+        surface_js = "" if surface is None else f"window.__MOOR_UI_SURFACE__={json.dumps(surface)};"
         # Webapp grants host files and shell.exec as well as PTYs: its existing
         # session token must come from the operator, never anonymous HTML. The
         # gateway-hosted listener (gateway/run_api.py) never publishes it either:
         # local clients use tickets.
         withheld = (gated or bool(getattr(_server().app.state, "withhold_session_token", False))
                     or not policy(application.state).html_token)
-        token_js = "" if withheld else f'window.__HERMES_SESSION_TOKEN__="{_server()._SESSION_TOKEN}";'
+        token_js = "" if withheld else f'window.__MOOR_SESSION_TOKEN__="{_server()._SESSION_TOKEN}";'
         # Launcher-preselected profile (``--open-profile``): the SPA's fallback scope when the URL
         # omits ``?profile=`` (#73085). ``</`` escaped so a hostile name cannot close the script tag.
         initial_profile_js = json.dumps(str(getattr(application.state, "initial_profile", "") or "")).replace("</", "<\\/")
@@ -205,16 +205,16 @@ def mount_spa(application: FastAPI):
         # as the host serves more than one, and the switcher shows the same profile it writes. The
         # Webapp reads it as the profile its gateway socket and REST answer for when a request names
         # none, so a tab on any other profile names that profile on every request.
-        from hermes_cli.web_server_profiles import serving_profile_name as _serving_profile_name
+        from moor_cli.web_server_profiles import serving_profile_name as _serving_profile_name
         serving_profile_js = json.dumps(_serving_profile_name()).replace("</", "<\\/")
         bootstrap_script = (
             f"<script>{token_js}"
-            f"window.__HERMES_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
-            f'window.__HERMES_BASE_PATH__="{prefix}";'
-            f"window.__HERMES_AUTH_REQUIRED__={'true' if gated else 'false'};"
-            f"window.__HERMES_INITIAL_PROFILE__={initial_profile_js};"
+            f"window.__MOOR_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
+            f'window.__MOOR_BASE_PATH__="{prefix}";'
+            f"window.__MOOR_AUTH_REQUIRED__={'true' if gated else 'false'};"
+            f"window.__MOOR_INITIAL_PROFILE__={initial_profile_js};"
             f"{surface_js}"
-            f"window.__HERMES_DASHBOARD_PROFILE__={serving_profile_js};"
+            f"window.__MOOR_DASHBOARD_PROFILE__={serving_profile_js};"
             f"</script>"
         )
         if prefix:
@@ -226,7 +226,7 @@ def mount_spa(application: FastAPI):
         if theme_bootstrap:
             html = html.replace("</head>", f"{theme_bootstrap}</head>", 1)
         html = html.replace("</head>", f"{bootstrap_script}</head>", 1)
-        from hermes_cli.webapp_page_policy import page_headers
+        from moor_cli.webapp_page_policy import page_headers
         return HTMLResponse(html, headers=page_headers(request, html, _NO_STORE))
 
     # Built CSS contains absolute ``url(/fonts/...)`` / ``url(/ds-assets/...)`` references that
@@ -266,7 +266,7 @@ def mount_spa(application: FastAPI):
             asset_files[directory] = _ImmutableAssetFiles(directory=directory, check_dir=False)
         await asset_files[directory](scope, receive, send)
 
-    from hermes_cli.webapp_previews import mount_preview_assets
+    from moor_cli.webapp_previews import mount_preview_assets
     mount_preview_assets(application)
     application.mount("/assets", serve_assets, name="assets")
 
@@ -614,7 +614,7 @@ def _dashboard_plugin_entry(data: dict[str, Any], name: str, dashboard_dir: Path
 
 def _discover_dashboard_plugins(search_dirs: Optional[list] = None) -> list:
     """Scan ``<plugins root>/*/dashboard/manifest.json`` across user, bundled and (opt-in)
-    project plugin sources — same three sources as ``hermes_cli.plugins`` — or ``search_dirs``."""
+    project plugin sources — same three sources as ``moor_cli.plugins`` — or ``search_dirs``."""
     plugins = []
     seen_names: set = set()
     for plugins_root, source in (_dashboard_plugin_search_dirs() if search_dirs is None else search_dirs):
@@ -697,9 +697,9 @@ def _schedule_check_fn_probe(fn) -> Optional[threading.Thread]:
 
 
 def _plugin_login_command(name: str) -> str:
-    """A plugin that left core with its own login command (``hermes spotify login``), else ``hermes auth <name>``."""
-    from hermes_cli.left_core_migration import LEFT_CORE
-    return next((f"hermes {f.cli} login" for f in LEFT_CORE if f.plugin == name and f.cli), f"hermes auth {name}")
+    """A plugin that left core with its own login command (``moor spotify login``), else ``moor auth <name>``."""
+    from moor_cli.left_core_migration import LEFT_CORE
+    return next((f"moor {f.cli} login" for f in LEFT_CORE if f.plugin == name and f.cli), f"moor auth {name}")
 
 
 def _plugin_auth_hint(name: str, provides_tools: list) -> tuple:
@@ -770,7 +770,7 @@ def _merged_plugins_hub(force_refresh: bool = False) -> dict[str, Any]:
     disabled_set = _get_disabled_set()
     enabled_set = _get_enabled_set()
     hidden_plugins: list = cfg_get(load_config(), "dashboard", "hidden_plugins", default=[]) or []
-    plugins_root_resolved = (get_hermes_home() / "plugins").resolve()
+    plugins_root_resolved = (get_moor_home() / "plugins").resolve()
     rows: list[dict[str, Any]] = []
 
     # One kill-list resolution for the whole rebuild: resolving per row costs a live-catalog
@@ -866,20 +866,20 @@ def _launch_profile_scope():
     """Resolve config as the launch profile's, whichever profile the request is scoped to: home and
     secrets switch together, so the launch config's ``${VAR}`` refs (and its last-good copy) never
     expand through another profile's secrets."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    from hermes_cli.web_server_profiles import _config_profile_scope
-    token = set_hermes_home_override(None)
+    from moor_constants import reset_moor_home_override, set_moor_home_override
+    from moor_cli.web_server_profiles import _config_profile_scope
+    token = set_moor_home_override(None)
     try:
         with _config_profile_scope(None):
             yield
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _plugin_enable_sets_here() -> tuple[set, set]:
     """``(plugins.enabled, plugins.disabled)`` of the active profile scope from one cached read-only
     config read: the gates run on the event loop for every plugin request and upgrade."""
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     try:
         config = load_config_readonly()
     except Exception:  # health: allow BLE001 -- an unreadable config grants no consent (empty sets), as plugins_cmd reads it
@@ -893,7 +893,7 @@ def _plugin_consent_withheld(plugin: dict[str, Any]) -> bool:
     """Whether a request must not reach ``plugin``'s backend or assets (#46435, GHSA-mcfc-hp25-cjv7).
 
     ``plugin`` is the active scope's own copy (a secondary profile's plugins are discovered under
-    its home and run in its plugin host, :mod:`hermes_cli.web_server_plugin_profiles`), so the
+    its home and run in its plugin host, :mod:`moor_cli.web_server_plugin_profiles`), so the
     profile the request acts for decides alone: a native ticket's profile, a ``?profile=``
     selection, else the launch profile (#134889, PLG-3).
     """
@@ -914,8 +914,8 @@ async def _plugin_api_request_refused(name: str) -> bool:
     keeps its router mounted until restart, so every request is checked again. An unknown name
     counts as a user plugin (safe default: refused).
     """
-    from hermes_cli.web_server import _get_dashboard_plugins
-    from hermes_cli.web_server_plugin_profiles import rescanned_plugin, secondary_profile_home
+    from moor_cli.web_server import _get_dashboard_plugins
+    from moor_cli.web_server_plugin_profiles import rescanned_plugin, secondary_profile_home
     plugin = next((p for p in _get_dashboard_plugins() if p.get("name") == name), None)
     home = secondary_profile_home()
     if plugin is None and home is not None:  # installed since the last scan (rate-limited per name)
@@ -942,7 +942,7 @@ class PluginApiWebSocketGate:
         self.app = app
 
     async def __call__(self, scope, receive, send) -> None:
-        from hermes_cli.web_server_plugin_profiles import plugin_request_scope, refuse_secondary_plugin_socket
+        from moor_cli.web_server_plugin_profiles import plugin_request_scope, refuse_secondary_plugin_socket
         name = _plugin_api_name(scope) if scope["type"] == "websocket" else ""
         if not name:
             await self.app(scope, receive, send)
@@ -957,15 +957,15 @@ class PluginApiWebSocketGate:
 
 @contextmanager
 def _native_ws_scope(scope):
-    """Yield whether a plugin socket's native grant (``X-Hermes-Gateway-Ticket``) was admitted,
+    """Yield whether a plugin socket's native grant (``X-moor-gateway-Ticket``) was admitted,
     with that grant's home and secret scope bound for the rest of the connection; without the
     header, True and the ambient scope. The grant is redeemed here only: the route's credential
     check reads the principal stamped on the connection, and its scope dependency resolves the
     same profile, so consent, home and ``get_secret`` all follow the grant, as on HTTP
     (``native_profile_scope``).
     """
-    from hermes_cli.dashboard_auth.native_http import HEADER, native_profile_scope, redeem_native_ws
-    from hermes_cli.web_server_profiles import _config_profile_scope
+    from moor_cli.dashboard_auth.native_http import HEADER, native_profile_scope, redeem_native_ws
+    from moor_cli.web_server_profiles import _config_profile_scope
     conn = HTTPConnection(scope)
     if HEADER not in conn.headers:
         yield True
@@ -993,8 +993,8 @@ async def _plugin_route_secret_scope(conn: HTTPConnection, profile: Optional[str
     a sync yield-dependency's setup and teardown run on different threadpool threads, so the
     scope token would be reset in a foreign context; sync handlers still see the scope because
     ``run_in_threadpool`` copies the request context into the worker."""
-    from hermes_cli.web_server_plugin_profiles import in_process_router_refused
-    from hermes_cli.web_server_profiles import _config_profile_scope, _is_current_profile
+    from moor_cli.web_server_plugin_profiles import in_process_router_refused
+    from moor_cli.web_server_profiles import _config_profile_scope, _is_current_profile
     name = _plugin_api_name(conn.scope)
     with _config_profile_scope(profile):
         # The plugin must not run on a profile that disabled it (#134889), and this router is the
@@ -1020,10 +1020,10 @@ def _mount_hosted_plugin_api(app, plugin: dict, api_file_name: str) -> None:
         if target is None:
             return JSONResponse({"detail": f"plugin {name!r} is not enabled in this profile"}, status_code=404)
         host, dashboard_dir, api_file = target
-        from hermes_cli.web_server_plugin_profiles import run_hosted_request
+        from moor_cli.web_server_plugin_profiles import run_hosted_request
         query, headers = request.url.query, [(k, v) for k, v in request.headers.items() if k.lower() != "host"]
         body = await request.body()
-        from hermes_cli.plugin_host_http_auth import admitted_for_sensitive_route
+        from moor_cli.plugin_host_http_auth import admitted_for_sensitive_route
         authenticated = admitted_for_sensitive_route(request)
         return await run_hosted_request(host.home, name, lambda timeout: host.asgi_request(
             name, dashboard_dir, api_file, request.method, "/" + path, query, headers, body,
@@ -1038,8 +1038,8 @@ def _mount_hosted_plugin_api(app, plugin: dict, api_file_name: str) -> None:
 def _hosted_plugin_for_request(name: str) -> Optional[tuple]:
     """``(plugin host, dashboard dir, api file)`` for plugin ``name`` in the active profile, or None
     when that profile has no enabled user copy of it."""
-    from hermes_cli.plugins import get_plugin_manager
-    from hermes_cli.plugins_cmd import _get_disabled_set, _get_enabled_set
+    from moor_cli.plugins import get_plugin_manager
+    from moor_cli.plugins_cmd import _get_disabled_set, _get_enabled_set
     for plugin in _discover_dashboard_plugins():
         if plugin.get("name") != name or not plugin.get("_api_file") or plugin.get("source") != "user":
             continue
@@ -1094,10 +1094,10 @@ def _try_hot_mount_plugin_api(name: str) -> bool:
     """
     if not name or any(c in name for c in "/\\{}") or name == "..":
         return False
-    from hermes_cli.plugins_cmd import _get_disabled_set, _get_enabled_set
-    from hermes_cli.web_server import _get_dashboard_plugins, app
-    from hermes_cli.web_server_plugin_profiles import plugin_api_path, secondary_plugin, secondary_profile_home
-    # A secondary profile reaches this router only for its own bundled copy (Hermes code), and its
+    from moor_cli.plugins_cmd import _get_disabled_set, _get_enabled_set
+    from moor_cli.web_server import _get_dashboard_plugins, app
+    from moor_cli.web_server_plugin_profiles import plugin_api_path, secondary_plugin, secondary_profile_home
+    # A secondary profile reaches this router only for its own bundled copy (Moor code), and its
     # own lists decide that one (PLG-3).
     secondary, own, requester_sets = secondary_profile_home() is not None, secondary_plugin(name), _plugin_enable_sets_here()
     with _launch_profile_scope(), _plugin_api_mount_lock:
@@ -1145,8 +1145,8 @@ class _PluginApiHotMount:
     """
 
     async def __call__(self, scope, receive, send) -> None:
-        from hermes_cli.web_server import app
-        from hermes_cli.web_server_plugin_profiles import plugin_request_scope
+        from moor_cli.web_server import app
+        from moor_cli.web_server_plugin_profiles import plugin_request_scope
         name = str(scope.get("path_params", {}).get("name", ""))
         with plugin_request_scope(scope):  # a ``?profile=`` selection decides its own cold mount (PLG-3)
             mounted = await asyncio.to_thread(_try_hot_mount_plugin_api, name)
@@ -1187,7 +1187,7 @@ def _mount_one_plugin_api(app, plugin: dict[str, Any], enabled_set: set, disable
         _log.debug("Plugin %s: skipping API mount (%s)", plugin.get("name", ""), skip)
         return False
     if plugin.get("source") not in ("bundled", "project"):
-        from hermes_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
+        from moor_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
         if isolation_mode() == ISOLATION_HOST:
             _mount_hosted_plugin_api(app, plugin, api_file_name)
             return True
@@ -1195,7 +1195,7 @@ def _mount_one_plugin_api(app, plugin: dict[str, Any], enabled_set: set, disable
         _log.warning(
             "Plugin %s: ignoring backend api=%s (project plugins may "
             "not auto-import Python code; move the plugin to "
-            "~/.hermes/plugins/ if you trust it)",
+            "~/.moor/plugins/ if you trust it)",
             plugin["name"], api_file_name,
         )
         return False
@@ -1215,7 +1215,7 @@ def _mount_one_plugin_api(app, plugin: dict[str, Any], enabled_set: set, disable
         _log.warning("Plugin %s declares api=%s but file not found", plugin["name"], api_file_name)
         return False
     try:
-        module_name = f"hermes_dashboard_plugin_{plugin['name']}"
+        module_name = f"moor_dashboard_plugin_{plugin['name']}"
         spec = importlib.util.spec_from_file_location(module_name, api_path)
         if spec is None or spec.loader is None:
             return False

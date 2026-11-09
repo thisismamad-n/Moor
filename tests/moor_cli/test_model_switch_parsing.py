@@ -37,7 +37,7 @@ def test_once_with_global_conflict():
 
 def test_reset_is_its_own_request_and_takes_no_flags():
     assert parse_model_switch_args("  Reset ").is_reset
-    for raw in ("reset --global", "reset --once", "reset --provider nous", "reset --reasoning high"):
+    for raw in ("reset --global", "reset --once", "reset --provider moor", "reset --reasoning high"):
         req = parse_model_switch_args(raw)
         assert req.errors == (MODEL_SWITCH_ERR_RESET_WITH_FLAGS,) and not req.is_reset, raw
     # "default" is MoA's preset name; a qualified slug reaches a model whose bare id is "reset".

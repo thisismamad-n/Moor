@@ -222,7 +222,7 @@ def test_posix_materializer_publishes_only_executable_shell_launchers(tmp_path, 
     # Shell executables need exact bytes: neither a BOM before #! nor CRLF is
     # interchangeable with the generated script, even if text decoding agrees.
     assert launcher.read_bytes() == expected
-    result = subprocess.run([str(out / "hermes"), "--print-runtime-command"],
+    result = subprocess.run([str(out / "moor"), "--print-runtime-command"],
                             capture_output=True, text=True, encoding="utf-8", timeout=30, check=False)
     assert result.returncode == 0, result.stderr
     assert Path(json.loads(result.stdout)[0]).samefile(_interpreter)
@@ -238,7 +238,7 @@ def test_materializer_cli_refuses_missing_store_without_publishing(tmp_path, mon
     orphan.parent.mkdir(parents=True)
     orphan.touch()  # uncommitted tool bytes are not an installed interpreter
     out = tmp_path / "bin"
-    result = subprocess.run([sys.executable, "-I", str(repo / "hermes_cli/_launchers.py"), str(out)],
+    result = subprocess.run([sys.executable, "-I", str(repo / "moor_cli/_launchers.py"), str(out)],
                             cwd=tmp_path, capture_output=True, text=True, encoding="utf-8", timeout=30, check=False)
     assert result.returncode == 1, result.stdout + result.stderr
     assert "store interpreter" in result.stderr
@@ -246,8 +246,8 @@ def test_materializer_cli_refuses_missing_store_without_publishing(tmp_path, mon
 
 
 @pytest.mark.platforms("posix")
-@pytest.mark.parametrize("legacy_hermes", ["venv-python", "venv-console-script"])
-def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeypatch, legacy_hermes):
+@pytest.mark.parametrize("legacy_moor", ["venv-python", "venv-console-script"])
+def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeypatch, legacy_moor):
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "home", lambda: home)
     monkeypatch.setenv("MOOR_INSTALL_ROOT", str(repo))
@@ -255,17 +255,17 @@ def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeyp
     out = home / ".local" / "bin"
     out.mkdir(parents=True)
     # Old venv and sibling-ACP wrappers, with an unrelated command sharing bin.
-    old_wrapper = (f'#!/bin/sh\nexec "{repo}/venv/bin/python" "{repo}/hermes" "$@"\n'
-                   if legacy_hermes == "venv-python" else
+    old_wrapper = (f'#!/bin/sh\nexec "{repo}/venv/bin/python" "{repo}/moor" "$@"\n'
+                   if legacy_moor == "venv-python" else
                    f'#!/usr/bin/env bash\nunset PYTHONPATH\nunset PYTHONHOME\n'
-                   f'exec "{repo}/venv/bin/hermes" "$@"\n')
-    (out / "hermes").write_text(old_wrapper, encoding="utf-8")
-    (out / "hermes-acp").write_text(
-        '#!/usr/bin/env bash\n# Hermes Agent — ACP launcher (written by `hermes update`).\n'
-        f'exec "{out}/hermes" acp "$@"\n', encoding="utf-8")
+                   f'exec "{repo}/venv/bin/moor" "$@"\n')
+    (out / "moor").write_text(old_wrapper, encoding="utf-8")
+    (out / "moor-acp").write_text(
+        '#!/usr/bin/env bash\n# Moor Agent — ACP launcher (written by `moor update`).\n'
+        f'exec "{out}/moor" acp "$@"\n', encoding="utf-8")
     # Mentions this install only in a comment and runs another checkout's venv.
-    foreign = f'#!/bin/sh\n# user note about {repo}/venv/bin/hermes\nexec "{tmp_path}/other/venv/bin/hermes" "$@"\n'
-    (out / "hermes-agent").write_text(foreign, encoding="utf-8")
+    foreign = f'#!/bin/sh\n# user note about {repo}/venv/bin/moor\nexec "{tmp_path}/other/venv/bin/moor" "$@"\n'
+    (out / "moor-agent").write_text(foreign, encoding="utf-8")
 
     result = _launchers.expose_cli()
     assert result["ok"], result
@@ -393,10 +393,10 @@ def test_running_source_launcher_can_republish_itself(tmp_path, monkeypatch, lau
                          ids=["idle", "running", "running-store-pip"])
 def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypatch, running, store_pip):
     repo, home, _interpreter = fixture_tree(tmp_path, monkeypatch)
-    (repo / "hermes_cli/main.py").write_text(
+    (repo / "moor_cli/main.py").write_text(
         "import sys\ndef main():\n    print('ready', flush=True)\n    sys.stdin.read()\n    return 0\n",
         encoding="utf-8")
-    local = repo / ".hermes/bin"
+    local = repo / ".moor/bin"
     original = Path(_launchers.ensure_install_launchers(repo, local)[0])
     assert original.suffix == ".exe"
     new_python = home / "tools" / "repinned" / "python.exe"
@@ -415,13 +415,13 @@ def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypat
     process = None
     try:
         if running:
-            # The launcher a repin retires is the one running `hermes update`.
+            # The launcher a repin retires is the one running `moor update`.
             process = subprocess.Popen([str(original)], cwd=tmp_path, stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE, text=True, encoding="utf-8")
             first = queue.Queue()
             threading.Thread(target=lambda: first.put(process.stdout.readline()), daemon=True).start()
             assert first.get(timeout=60).strip() == "ready"
-        result = _launchers.stage_launcher("hermes", repo, local)
+        result = _launchers.stage_launcher("moor", repo, local)
     finally:
         if process is not None:
             try:
@@ -430,20 +430,20 @@ def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypat
                 process.kill()
                 process.communicate()
     if store_pip:
-        # Desktop's backend sweep, shortcuts and the install E2E all name hermes.exe.
-        assert result == local / "hermes.exe"
+        # Desktop's backend sweep, shortcuts and the install E2E all name moor.exe.
+        assert result == local / "moor.exe"
         assert _launchers._launcher_python(result) == new_python
-        assert not (local / "hermes.cmd").exists()
+        assert not (local / "moor.cmd").exists()
     else:
-        assert result == local / "hermes.cmd"
+        assert result == local / "moor.cmd"
         assert not original.exists()  # cmd.exe must not run the old exe first
         assert result is not None and str(new_python) in result.read_text(encoding="utf-8-sig")
     if process is not None:
         assert process.returncode == 0  # the retired launcher finished its own run
         # distlib is back for the next publication: the aside copy still goes.
         monkeypatch.setattr(_launchers, "_load_script_maker", real_maker)
-        assert _launchers.stage_launcher("hermes", repo, local) == local / "hermes.exe"
-        assert not list(local.glob("hermes.exe*.deleteme"))
+        assert _launchers.stage_launcher("moor", repo, local) == local / "moor.exe"
+        assert not list(local.glob("moor.exe*.deleteme"))
 
 
 @pytest.mark.platforms("windows")
@@ -577,20 +577,20 @@ def test_sync_migrates_old_store_wrapper_before_python_collection(tmp_path, monk
                 assert not (home / "config.yaml").exists()
                 assert not (home / "skills").exists()
     shutil.rmtree(store / "python-A")
-    result = subprocess.run([str(out / "hermes")], cwd=tmp_path,
+    result = subprocess.run([str(out / "moor")], cwd=tmp_path,
                             capture_output=True, text=True, timeout=30, encoding="utf-8", check=False)
     assert result.returncode == 7, result.stderr
     assert json.loads(result.stdout)["value"] == "ready"
     assert Path(json.loads(result.stdout)["exe"]) == store / "python-B/bin/python3"
 
 def _torn_by_a_killed_merge(tmp_path, monkeypatch):
-    """A git install whose update was killed mid-merge while git rewrote ``hermes_constants.py``.
+    """A git install whose update was killed mid-merge while git rewrote ``moor_constants.py``.
 
     Git rewrites a file as unlink, create, write: the kill left HEAD at the old commit, the
-    interrupted-pull marker of a dead updater, ``.git/index.lock`` and no ``hermes_constants.py``.
+    interrupted-pull marker of a dead updater, ``.git/index.lock`` and no ``moor_constants.py``.
     """
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
-    for relative in ("hermes_cli/update_lock.py", "hermes_cli/update_custody.py"):
+    for relative in ("moor_cli/update_lock.py", "moor_cli/update_custody.py"):
         shutil.copy2(ROOT / relative, repo / relative)
 
     def git(*args):
@@ -603,17 +603,17 @@ def _torn_by_a_killed_merge(tmp_path, monkeypatch):
     git("add", "-A")
     git("commit", "-qm", "pre")
     pre = git("rev-parse", "HEAD")
-    constants = repo / "hermes_constants.py"
+    constants = repo / "moor_constants.py"
     original = constants.read_bytes()
     constants.write_bytes(original + b"\nTARGET_ONLY = 1\n")
     git("commit", "-qam", "target")
     target = git("rev-parse", "HEAD")
     git("reset", "-q", "--hard", pre)
-    from hermes_cli import _early_recovery
+    from moor_cli import _early_recovery
 
     marker = _early_recovery.interrupted_pull_marker(repo)
     # The updater records the git it moved the tree with: a Windows install's only git is PM's
-    # store copy, which the repair cannot look up through ``pm`` (it imports hermes_constants).
+    # store copy, which the repair cannot look up through ``pm`` (it imports moor_constants).
     marker.write_text(f"pid=0\npre={pre}\ntarget={target}\nstash=\ngit={shutil.which('git')}\n",
                       encoding="utf-8", newline="")
     constants.unlink()
@@ -624,13 +624,13 @@ def _torn_by_a_killed_merge(tmp_path, monkeypatch):
 
 @pytest.mark.platforms("posix")
 @pytest.mark.parametrize("surface", ["launcher", "runtime-command"])
-def test_a_merge_killed_writing_hermes_constants_is_repaired_by_the_next_launch(tmp_path, monkeypatch, surface):
+def test_a_merge_killed_writing_moor_constants_is_repaired_by_the_next_launch(tmp_path, monkeypatch, surface):
     """C1 recovery reachability: the launcher reaches the repair before importing any other
-    checkout module, so a torn ``hermes_constants.py`` is put back instead of killing every launch."""
+    checkout module, so a torn ``moor_constants.py`` is put back instead of killing every launch."""
     repo, home, interpreter, pre, original, marker = _torn_by_a_killed_merge(tmp_path, monkeypatch)
     env = dict(os.environ)
-    env.pop("HERMES_HOME", None)  # the default-home pin itself needs hermes_constants
-    env.pop("HERMES_RUNTIME_DIR", None)
+    env.pop("MOOR_HOME", None)  # the default-home pin itself needs moor_constants
+    env.pop("MOOR_RUNTIME_DIR", None)
     env.pop("PYTEST_CURRENT_TEST", None)  # the repair stands down in a checkout pytest itself runs from
     no_git = tmp_path / "path-without-git"
     no_git.mkdir()
@@ -638,18 +638,18 @@ def test_a_merge_killed_writing_hermes_constants_is_repaired_by_the_next_launch(
     if surface == "launcher":
         out = tmp_path / "commands"
         out.mkdir()
-        command = [str(_launchers._mint_shell_launcher("hermes", out, interpreter,
-                                                       _launchers._launcher_script("hermes", repo, None)))]
+        command = [str(_launchers._mint_shell_launcher("moor", out, interpreter,
+                                                       _launchers._launcher_script("moor", repo, None)))]
     else:
         command = _launchers.runtime_command(repo, python=interpreter)
     result = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True,
                             text=True, encoding="utf-8", errors="replace", timeout=60, check=False)
-    assert "No module named 'hermes_constants'" not in result.stderr, result.stderr
+    assert "No module named 'moor_constants'" not in result.stderr, result.stderr
     assert result.returncode == 7, result.stdout + result.stderr
     receipt = json.loads(result.stdout.strip().splitlines()[-1])
     assert receipt["value"] == "repaired"
     assert Path(receipt["home"]) == home, "the default home is still pinned, after the repair"
-    assert (repo / "hermes_constants.py").read_bytes() == original
+    assert (repo / "moor_constants.py").read_bytes() == original
     assert not marker.exists() and not (repo / ".git" / "index.lock").exists()
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True,
                           text=True, encoding="utf-8", check=True).stdout.strip()
@@ -676,7 +676,7 @@ def test_update_import_probe_uses_selected_dependencies(tmp_path, monkeypatch):
 @pytest.mark.platforms("posix")
 def test_stage_launcher_ignores_an_inherited_runtime_directory(tmp_path, monkeypatch):
     # #131745: a persisted launcher must boot the install's own store python.
-    # An inherited HERMES_RUNTIME_DIR (e2e fixture, desktop toolchain, PM
+    # An inherited MOOR_RUNTIME_DIR (e2e fixture, desktop toolchain, PM
     # subprocess env) names a runtime directory for the RUNNING process, never
     # for the artifacts the process publishes — that store can be a scratch
     # tree a later cleanup deletes, leaving the launcher dead (exit 127).
@@ -694,13 +694,13 @@ def test_stage_launcher_ignores_an_inherited_runtime_directory(tmp_path, monkeyp
     foreign_python.symlink_to(interpreter)
     (foreign_store / "facts.json").write_text(
         json.dumps({"packages": {"python": {"entry": "python-foreign"}}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(foreign_store))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(foreign_store))
 
     # Publication callers create the bin dir before staging (see
     # ensure_install_launchers); the launcher writer does not invent it.
-    out = repo / ".hermes" / "bin"
+    out = repo / ".moor" / "bin"
     out.mkdir(parents=True, exist_ok=True)
-    published = _launchers.stage_launcher("hermes", repo, out)
+    published = _launchers.stage_launcher("moor", repo, out)
 
     assert published is not None
     wrapper = published.read_text(encoding="utf-8-sig")
@@ -710,7 +710,7 @@ def test_stage_launcher_ignores_an_inherited_runtime_directory(tmp_path, monkeyp
 
 @pytest.mark.platforms("posix")
 def test_service_launcher_binds_the_tree_store_despite_inherited_runtime_override(tmp_path, monkeypatch):
-    from hermes_cli import gateway
+    from moor_cli import gateway
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(gateway, "PROJECT_ROOT", repo)
@@ -727,11 +727,11 @@ def test_service_launcher_binds_the_tree_store_despite_inherited_runtime_overrid
     foreign_python.symlink_to(interpreter)
     (foreign_store / "facts.json").write_text(
         json.dumps({"packages": {"python": {"entry": "python-foreign"}}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(foreign_store))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(foreign_store))
 
     gateway._prepare_service_launcher()
 
-    wrapper = (repo / ".hermes" / "bin" / "hermes").read_text(encoding="utf-8-sig")
+    wrapper = (repo / ".moor" / "bin" / "moor").read_text(encoding="utf-8-sig")
     assert "python-A" in wrapper
     assert "python-foreign" not in wrapper
 
@@ -739,7 +739,7 @@ def test_service_launcher_binds_the_tree_store_despite_inherited_runtime_overrid
 @pytest.mark.platforms("posix")
 def test_runtime_override_still_selects_the_runtime_python(tmp_path, monkeypatch):
     # The publication split must not mute the override for execution paths:
-    # resolving a python to RUN still honors HERMES_RUNTIME_DIR by default.
+    # resolving a python to RUN still honors MOOR_RUNTIME_DIR by default.
     repo, _home, interpreter = fixture_tree(tmp_path, monkeypatch)
     foreign_store = tmp_path / "foreign" / "tools"
     foreign_store.mkdir(parents=True)
@@ -748,7 +748,7 @@ def test_runtime_override_still_selects_the_runtime_python(tmp_path, monkeypatch
     foreign_python.symlink_to(interpreter)
     (foreign_store / "facts.json").write_text(
         json.dumps({"packages": {"python": {"entry": "python-foreign"}}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(foreign_store))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(foreign_store))
 
     selected = _launchers.resolve_store_python(repo)
 
@@ -771,31 +771,31 @@ def test_install_launchers_never_bind_a_fixture_store_under_scratch(tmp_path, mo
     # Idle pruning later deletes that store, and the service exits 127.
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     own = _launchers.resolve_store_python(repo)
-    fixture = home / "cache" / "scratch" / "hermes-e2e-media-overlap-run" / "hermes-home" / "tools"
+    fixture = home / "cache" / "scratch" / "moor-e2e-media-overlap-run" / "moor-home" / "tools"
     _record_store_python(fixture, interpreter)
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(fixture))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(fixture))
 
-    written = _launchers.ensure_install_launchers(repo, repo / ".hermes" / "bin")
+    written = _launchers.ensure_install_launchers(repo, repo / ".moor" / "bin")
 
     assert len(written) == len(_launchers.WINDOWS_BIN_LAUNCHERS)
     for path in written:
         wrapper = Path(path).read_text(encoding="utf-8-sig")
-        assert "hermes-e2e-media-overlap-run" not in wrapper
+        assert "moor-e2e-media-overlap-run" not in wrapper
         assert shlex.quote(str(own)) in wrapper
 
 
 @pytest.mark.platforms("posix")
 def test_publication_uses_the_runtime_store_when_the_tree_records_none(tmp_path, monkeypatch):
-    # The desktop source-backend contract keeps its store beside HERMES_HOME
-    # and names it through HERMES_RUNTIME_DIR. A tree with no store of its own
+    # The desktop source-backend contract keeps its store beside MOOR_HOME
+    # and names it through MOOR_RUNTIME_DIR. A tree with no store of its own
     # still publishes from that one.
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     (home / "tools" / "facts.json").unlink()
     runtime = tmp_path / "runtime-tools"
     python = _record_store_python(runtime, interpreter)
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(runtime))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(runtime))
 
-    written = _launchers.ensure_install_launchers(repo, repo / ".hermes" / "bin")
+    written = _launchers.ensure_install_launchers(repo, repo / ".moor" / "bin")
 
     assert len(written) == len(_launchers.WINDOWS_BIN_LAUNCHERS)
     for path in written:

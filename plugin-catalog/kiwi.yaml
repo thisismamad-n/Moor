@@ -1,5 +1,5 @@
 name: kiwi
-repo: https://github.com/harrylabsj/hermes-plugin-kiwi
+repo: https://github.com/harrylabsj/moor-plugin-kiwi
 sha: 6703b4f6187f9a2ec0826959f0c87ccc2d0f14fe
 description: 'Source suppliers and negotiate purchases through the Kiwi Buyer MCP server — an
   open-source A2A commerce runtime (pinned @harrylabsj/kiwi@0.12.7 over npx stdio), with the
@@ -11,7 +11,7 @@ description: 'Source suppliers and negotiate purchases through the Kiwi Buyer MC
 maintainer: harrylabsj
 tier: community
 category: tools
-docs_url: https://github.com/harrylabsj/hermes-plugin-kiwi
+docs_url: https://github.com/harrylabsj/moor-plugin-kiwi
 version: "1.2.3"
 platforms: []
 capabilities:

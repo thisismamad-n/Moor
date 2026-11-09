@@ -504,7 +504,7 @@ def _check_windows_gateway_autostart(should_fix: bool, f: Finding) -> None:
     Startup-folder entry side by side launch it twice (#80569)."""
     if sys.platform != "win32":
         return
-    from hermes_cli import gateway_windows
+    from moor_cli import gateway_windows
     redundant = gateway_windows.redundant_autostart_entries()
     if not redundant:
         return
@@ -512,7 +512,7 @@ def _check_windows_gateway_autostart(should_fix: bool, f: Finding) -> None:
     if not should_fix:
         for path in redundant:
             check_warn("Redundant gateway login item", f"({path})")
-        f.issues.append("Remove duplicate Windows gateway autostart entries: hermes doctor --fix")
+        f.issues.append("Remove duplicate Windows gateway autostart entries: moor doctor --fix")
         return
     done, warnings = gateway_windows.reconcile_autostart_launchers()
     for message in done:
@@ -530,18 +530,18 @@ def _check_web_dashboard_import(should_fix: bool, f: Finding) -> None:
     """Import the dashboard web surface in a subprocess so an import-time crash lands in the report.
 
     When starlette is updated past the fastapi pinned beside it (the CVE starlette pin ships in
-    several extras on its own), ``hermes dashboard`` dies constructing ``FastAPI(...)`` with a
+    several extras on its own), ``moor dashboard`` dies constructing ``FastAPI(...)`` with a
     TypeError — not an ImportError — so the module's own lazy-install fallback never fires and the
     process exits before a single log line. Importing in a subprocess keeps a dead web surface
     from taking the doctor down with it; lazy installs stay off so the probe never mutates the
     environment it is diagnosing.
     """
-    from hermes_cli.doctor import PROJECT_ROOT
+    from moor_cli.doctor import PROJECT_ROOT
 
-    env = dict(os.environ, HERMES_DISABLE_LAZY_INSTALLS="1")
+    env = dict(os.environ, MOOR_DISABLE_LAZY_INSTALLS="1")
     try:
         proc = subprocess.run(
-            [sys.executable, "-c", "import hermes_cli.web_server"],
+            [sys.executable, "-c", "import moor_cli.web_server"],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -555,7 +555,7 @@ def _check_web_dashboard_import(should_fix: bool, f: Finding) -> None:
         _fail_and_issue(
             "Dashboard web surface",
             "(import probe timed out)",
-            "Repair the dashboard dependencies: `hermes pm repair`, then restart Hermes",
+            "Repair the dashboard dependencies: `moor pm repair`, then restart Moor",
             f.issues,
         )
         return
@@ -572,7 +572,7 @@ def _check_web_dashboard_import(should_fix: bool, f: Finding) -> None:
     _fail_and_issue(
         "Dashboard web surface",
         detail,
-        "Repair the dashboard dependencies: `hermes pm repair`, then restart Hermes",
+        "Repair the dashboard dependencies: `moor pm repair`, then restart Moor",
         f.issues,
     )
 

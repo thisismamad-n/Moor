@@ -3,7 +3,7 @@
 from argparse import Namespace
 
 
-from hermes_cli import sessions_cmd
+from moor_cli import sessions_cmd
 
 
 

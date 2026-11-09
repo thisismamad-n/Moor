@@ -240,7 +240,7 @@ def _configured_plugin_entries(config: GatewayConfig) -> list:
     config.yaml blocks already materialized their adapters in load_yaml_layer (and every merged
     block is in config.platforms), so the YAML is not parsed a second time here."""
     try:
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         from gateway.platform_activation import configured_plugin_entries
@@ -404,7 +404,7 @@ def builtin_platform_status(platform_id: str, yaml_cfg: dict) -> Optional[tuple[
     from gateway.config_loader import (
         _apply_managed_extra, bridge_platform_shared_keys, merge_platform_sections, snapshot_authored_extra,
     )
-    from hermes_cli.managed_scope import apply_managed_overlay
+    from moor_cli.managed_scope import apply_managed_overlay
 
     platform = Platform(platform_id)
     names = {platform_id, Platform.RELAY.value}

@@ -34,8 +34,8 @@ def gateway_declares_external_supervisor(pid: int, home: Path | None = None) -> 
     if not pid or pid <= 1:
         return False
     from gateway.control_socket import identify_gateway, launch_supervisor
-    from gateway.status import _get_process_hermes_home, read_runtime_status
-    from hermes_cli.gateway import _capture_gateway_argv
+    from gateway.status import _get_process_moor_home, read_runtime_status
+    from moor_cli.gateway import _capture_gateway_argv
 
     home = home or _get_process_moor_home()
     identity = identify_gateway(home) or {}
@@ -105,7 +105,7 @@ def restart_externally_supervised_gateway(supervised_pid: int) -> None:
 def refuse_restart_of_service_managed_gateway(pid: int | None) -> None:
     """Refuse the manual restart fallback when systemd owns the gateway under ANY unit name.
 
-    Canonical-unit checks miss pre-convention installs (``hermes.service``), so the fallback's
+    Canonical-unit checks miss pre-convention installs (``moor.service``), so the fallback's
     stop + in-process ``run_gateway`` SIGKILLed a live service-managed gateway and spawned an
     unsupervised orphan in the caller's cgroup while the unit flapped against the stolen lock
     (#126474). Reuses the dashboard's MainPID-verified lookup: a bare ``.service`` cgroup alone
@@ -113,23 +113,23 @@ def refuse_restart_of_service_managed_gateway(pid: int | None) -> None:
     """
     if not pid or pid <= 1:
         return
-    from hermes_cli import main_dashboard as _dash
+    from moor_cli import main_dashboard as _dash
 
     owner = _dash._systemd_owner_for_pid(pid)
     if owner is None:
         return
     unit, scope = owner
     cmds = _dash._systemd_restart_commands(unit, scope)
-    from hermes_cli.gateway import _print_lines
+    from moor_cli.gateway import _print_lines
     _print_lines(
         "",
         f"✗ Gateway (PID {pid}) is managed by systemd unit {unit}.",
-        "  `hermes gateway restart` cannot restart it from here: the fallback would",
+        "  `moor gateway restart` cannot restart it from here: the fallback would",
         "  kill a live gateway and spawn an unsupervised replacement in this shell's",
         "  cgroup while the unit keeps failing against the stolen lock.",
         "  Restart it through its unit instead:",
         *(f"    {c}" for c in cmds),
-        "  (Pre-convention `hermes.service` installs: `hermes gateway migrate-legacy`",
+        "  (Pre-convention `moor.service` installs: `moor gateway migrate-legacy`",
         "  removes the legacy unit so the canonical one can own the gateway.)",
     )
     sys.exit(1)
@@ -142,8 +142,8 @@ def start_restart_replacement(args, *, force: bool) -> None:
     ``gateway ensure`` starts an absent owner. In the foreground that caller became the long-lived
     gateway it only meant to restart: a child its own timeout killed, holding the app's quit open.
     """
-    from hermes_cli import gateway as gw
+    from moor_cli import gateway as gw
     if getattr(args, "detach", False):
-        from hermes_cli.gateway_runtime_start import start_detached_replacement
-        sys.exit(start_detached_replacement(gw.get_hermes_home(), force=force))
+        from moor_cli.gateway_runtime_start import start_detached_replacement
+        sys.exit(start_detached_replacement(gw.get_moor_home(), force=force))
     gw.run_gateway(verbose=0, force=force)

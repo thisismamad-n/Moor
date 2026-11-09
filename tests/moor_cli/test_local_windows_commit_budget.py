@@ -15,9 +15,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.local_runtime import hardware as hw
-from hermes_cli.local_runtime import presets
-from hermes_cli.local_runtime.estimator import HardwareBudget, ModelProfile
+from moor_cli.local_runtime import hardware as hw
+from moor_cli.local_runtime import presets
+from moor_cli.local_runtime.estimator import HardwareBudget, ModelProfile
 
 G = 1 << 30
 
@@ -100,7 +100,7 @@ def test_models_the_router_holds_together_share_the_cache_room():
 
 def test_router_holds_only_the_models_free_commit_fits(tmp_path, monkeypatch):
     """Capacity alone would admit two 12 GiB models; 20 GiB of commit holds one."""
-    from hermes_cli.local_runtime import bootstrap
+    from moor_cli.local_runtime import bootstrap
 
     monkeypatch.setattr(bootstrap, "staged_in", lambda mdir: [tmp_path / "a.gguf", tmp_path / "b.gguf"])
     monkeypatch.setattr(presets, "_launch_footprint", lambda gguf, budget, engine_tag=None: 12 * G)
@@ -119,7 +119,7 @@ def test_growth_counts_the_outgoing_model_at_its_commit_charge(spark):
 
 
 def _staged(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     gguf = tmp_path / "model.gguf"
     gguf.touch()
     monkeypatch.setattr(presets, "read_gguf_header", lambda p: SimpleNamespace(path=p, sampling_defaults={}))

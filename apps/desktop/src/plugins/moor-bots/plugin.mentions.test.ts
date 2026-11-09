@@ -376,8 +376,8 @@ describe('@-mention completions', () => {
       focused: 'default',
       profiles: [
         { name: 'default' },
-        { name: 'john-2', ui_meta: { 'hermes-bots': { title: 'John ♥' } } },
-        { name: 'eva-2', ui_meta: { 'hermes-bots': { title: 'Eva 🌥' } } }
+        { name: 'john-2', ui_meta: { 'moor-bots': { title: 'John ♥' } } },
+        { name: 'eva-2', ui_meta: { 'moor-bots': { title: 'Eva 🌥' } } }
       ]
     })
 
@@ -540,8 +540,8 @@ describe('the mention middleware', () => {
   })
 })
 
-describe('the local default when a real hermes profile exists', () => {
-  const RAW = ['default', 'hermes', 'researcher'].map(name => ({
+describe('the local default when a real moor profile exists', () => {
+  const RAW = ['default', 'moor', 'researcher'].map(name => ({
     connectionId: 'local',
     connectionKind: 'local',
     connectionLabel: 'This device',
@@ -573,12 +573,12 @@ describe('the local default when a real hermes profile exists', () => {
     })
 
     const toDefault = (await handler({ text: 'please ask @default to review' })).text
-    const toHermes = (await handler({ text: 'please ask @hermes to review' })).text
+    const toMoor = (await handler({ text: 'please ask @moor to review' })).text
 
-    // message_agent maps 'hermes' to the real hermes profile, so the default must never be handed it.
+    // message_agent maps 'moor' to the real moor profile, so the default must never be handed it.
     expect(toDefault).toMatch(/@default = agent profile "default"/)
-    expect(toDefault).not.toMatch(/message_agent target: "hermes"/)
-    expect(toHermes).toMatch(/@hermes = agent profile "hermes"/)
-    expect(toHermes).not.toMatch(/agent profile "default"/)
+    expect(toDefault).not.toMatch(/message_agent target: "moor"/)
+    expect(toMoor).toMatch(/@moor = agent profile "moor"/)
+    expect(toMoor).not.toMatch(/agent profile "default"/)
   })
 })

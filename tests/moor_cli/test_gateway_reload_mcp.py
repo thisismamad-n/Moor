@@ -3,8 +3,8 @@ agents (``reload.mcp``); the CLI never touches its GatewayAgent stand-in's tools
 import asyncio
 from contextlib import asynccontextmanager
 
-from cli import HermesCLI
-from hermes_cli.gateway_connection import GatewayConnection
+from cli import MoorCLI
+from moor_cli.gateway_connection import GatewayConnection
 
 
 class _Client:
@@ -27,7 +27,7 @@ def test_reload_mcp_runs_on_the_gateway(capsys):
         yield client
     conn = GatewayConnection(connect=connect)
     conn.start(5)
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id = "local-mcp"
     cli._command_running = False
     try:

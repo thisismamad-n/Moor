@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { HermesConfigRecord } from '@/hermes'
+import type { MoorConfigRecord } from '@/moor'
 import { type I18nConfigClient, I18nProvider, registerAppLocale } from '@/i18n'
 import { stubMenuDomApis, stubResizeObserver } from '@/test/jsdom'
 
@@ -45,11 +45,11 @@ describe('LanguageSwitcher', () => {
     const dispose = registerAppLocale(
       'pl',
       { endonym: 'Polski', translations: { language: { switchTo: 'Zmień język' } } },
-      'plugin:hermes-lang-pl'
+      'plugin:moor-lang-pl'
     )
 
     const saveConfig = vi.fn().mockResolvedValue({ ok: true })
-    const latestConfig: HermesConfigRecord = { display: { language: 'en' } }
+    const latestConfig: MoorConfigRecord = { display: { language: 'en' } }
 
     const configClient: I18nConfigClient = {
       getConfig: vi.fn().mockResolvedValue(latestConfig),

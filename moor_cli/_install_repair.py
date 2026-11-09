@@ -302,7 +302,7 @@ def migrate_windows_bin_path(
         return False  # staging incomplete — leave the PATH alone
 
     try:
-        from hermes_cli._launchers import owns_user_path
+        from moor_cli._launchers import owns_user_path
 
         if not owns_user_path(home):
             return False  # new consoles resolve another home; leave the User PATH to it

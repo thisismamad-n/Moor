@@ -175,7 +175,7 @@ class TestResumeRoundTrip:
 class TestMakeAgentForwardsProviderRequestBody:
     """#103738 hole 1: the resolver lifts a custom entry's ``extra_body`` onto ``request_overrides``; the
     TUI/Desktop build must hand it to AIAgent like the CLI and cron do, or a proxy that requires a body field
-    (``user``) 400s in the app while ``hermes chat`` works."""
+    (``user``) 400s in the app while ``moor chat`` works."""
 
     def test_entry_extra_body_reaches_agent(self, monkeypatch):
         entry = {**LEGACY_LIST_CONFIG["custom_providers"][0], "extra_body": {"user": "proxy-user"}}
@@ -601,7 +601,7 @@ class TestFollowProfileConfigRuntimeOverrides:
         launch, secondary = tmp_path / "a", tmp_path / "b"
         for home, model in ((launch, "launch/model"), (secondary, "profile/default")):
             home.mkdir()
-            (home / "config.yaml").write_text(f"model:\n  default: {model}\n  provider: nous\n", encoding="utf-8")
+            (home / "config.yaml").write_text(f"model:\n  default: {model}\n  provider: moor\n", encoding="utf-8")
             (home / ".env").write_text("", encoding="utf-8")
         stored = "20260919-000000-botc"
         db = SessionDB(db_path=secondary / "state.db")
@@ -635,8 +635,8 @@ class TestFollowProfileConfigRuntimeOverrides:
         known = set(server._sessions)
         try:
             with (
-                patch("hermes_cli.model_switch.resolve_persist_behavior", return_value=False),
-                patch("hermes_cli.model_switch.switch_model", return_value=result),
+                patch("moor_cli.model_switch.resolve_persist_behavior", return_value=False),
+                patch("moor_cli.model_switch.switch_model", return_value=result),
                 server._profile_build_scope(secondary),
             ):
                 server._apply_model_switch("sid-live", live, "glm-5.1")
@@ -658,7 +658,7 @@ class TestFollowProfileConfigRuntimeOverrides:
             assert record["model_override"]["model"] == "zai/glm-5.1"
             assert record["composer_override_profile"] == {"model": "profile/default", "provider": "moor"}
 
-            (secondary / "config.yaml").write_text("model:\n  default: profile/new-default\n  provider: nous\n", encoding="utf-8")
+            (secondary / "config.yaml").write_text("model:\n  default: profile/new-default\n  provider: moor\n", encoding="utf-8")
             assert resume().get("model_override") is None
         finally:
             db.close()
@@ -676,10 +676,10 @@ class TestFollowProfileConfigRuntimeOverrides:
         launch, secondary = tmp_path / "a", tmp_path / "b"
         for home, model in ((launch, "launch/model"), (secondary, "profile/default")):
             home.mkdir()
-            (home / "config.yaml").write_text(f"model:\n  default: {model}\n  provider: nous\n")
+            (home / "config.yaml").write_text(f"model:\n  default: {model}\n  provider: moor\n")
             (home / ".env").write_text("")
-        monkeypatch.setenv("HERMES_HOME", str(launch))
-        monkeypatch.setattr(server, "_hermes_home", str(launch))
+        monkeypatch.setenv("MOOR_HOME", str(launch))
+        monkeypatch.setattr(server, "_moor_home", str(launch))
         monkeypatch.setattr(server, "_profile_home", lambda p: secondary if p == "b" else None)
         monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
         monkeypatch.setattr(server, "_schedule_agent_build", lambda *a, **k: None)
@@ -692,7 +692,7 @@ class TestFollowProfileConfigRuntimeOverrides:
                 "follow_profile_config": True}})
             assert "error" not in resp, resp
             session = server._sessions[resp["result"]["session_id"]]
-            assert session["composer_override_profile"] == {"model": "profile/default", "provider": "nous"}
+            assert session["composer_override_profile"] == {"model": "profile/default", "provider": "moor"}
             assert server._ensure_session_db_row(session)
             db = SessionDB(db_path=secondary / "state.db")
             try:

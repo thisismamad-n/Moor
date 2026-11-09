@@ -80,7 +80,7 @@ class TestMtimeSkip:
             uploaded.extend(Path(staged).read_text(encoding="utf-8") for staged, _remote in files)
 
         mgr = FileSyncManager(
-            get_files_fn=lambda: [(str(token), "/root/.hermes/token.json")],
+            get_files_fn=lambda: [(str(token), "/root/.moor/token.json")],
             upload_fn=MagicMock(),
             delete_fn=MagicMock(),
             bulk_upload_fn=bulk_upload,
@@ -107,7 +107,7 @@ class TestMtimeSkip:
             uploaded.extend(Path(staged).read_text(encoding="utf-8") for staged, _remote in files)
 
         mgr = FileSyncManager(
-            get_files_fn=lambda: [(str(token), "/root/.hermes/token.json")],
+            get_files_fn=lambda: [(str(token), "/root/.moor/token.json")],
             upload_fn=MagicMock(),
             delete_fn=MagicMock(),
             bulk_upload_fn=bulk_upload,

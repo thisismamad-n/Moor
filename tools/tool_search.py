@@ -135,7 +135,7 @@ def _core_tool_names() -> frozenset[str]:
         return frozenset()
 
 
-# Session-gated GUI toolsets: off ``_HERMES_CORE_TOOLS`` so non-GUI clients never pay
+# Session-gated GUI toolsets: off ``_MOOR_CORE_TOOLS`` so non-GUI clients never pay
 # their schema; once enabled they stay direct unless the deferral list names them.
 _DIRECT_SURFACE_TOOLSETS = CLIENT_SURFACE_TOOLSETS | TOOLSET_SESSION_PLATFORMS.keys()
 
@@ -484,8 +484,8 @@ def dispatch_tool_search(args: dict[str, Any], *, current_tool_defs: list[dict[s
 
 def _record_search_metric(current_tool_defs: list[dict[str, Any]], *, hits: int, outcome: str,
                           catalog: Optional[list[CatalogEntry]] = None) -> None:
-    """One ``hermes.tool_search.count`` row: which corpora the search read, never the query."""
-    from hermes_cli.observability.shared_metrics_events import record_tool_search
+    """One ``moor.tool_search.count`` row: which corpora the search read, never the query."""
+    from moor_cli.observability.shared_metrics_events import record_tool_search
 
     local = bool(catalog if catalog is not None else _deferrable_in(current_tool_defs))
     hosted = connections_in_scope(current_tool_defs)
@@ -560,7 +560,7 @@ def out_of_scope_reason(name: str) -> Optional[str]:
     try:
         if _registry_toolset(name) in _DIRECT_SURFACE_TOOLSETS:
             return (f"'{name}' needs a desktop-app session with a GUI surface (preview/terminal panes). "
-                    "This session has none: use it only from the Hermes desktop app, not via tool_search.")
+                    "This session has none: use it only from the Moor desktop app, not via tool_search.")
     except Exception:
         pass
     return None

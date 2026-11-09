@@ -327,15 +327,15 @@ def test_a_standalone_profile_boots_its_own_slot_instead_of_folding_into_root(tm
     """The root multiplexer never serves a `gateway.standalone` profile, so folding its intent into
     the root leaves it dark after every container restart. It boots its own slot; a non-standalone
     profile's intent still folds into the root."""
-    hermes_home = tmp_path / "data"
-    hermes_home.mkdir()
-    _seed_default_root(hermes_home, state="stopped")
-    solo = _make_profile(hermes_home, "solo", state=None, desired_state="running")
+    moor_home = tmp_path / "data"
+    moor_home.mkdir()
+    _seed_default_root(moor_home, state="stopped")
+    solo = _make_profile(moor_home, "solo", state=None, desired_state="running")
     (solo / "config.yaml").write_text("gateway:\n  standalone: true\n")
-    _make_profile(hermes_home, "coder", state=None, desired_state="running")
+    _make_profile(moor_home, "coder", state=None, desired_state="running")
 
     actions = reconcile_profile_gateways(
-        hermes_home=hermes_home, scandir=tmp_path / "svc", dry_run=True, container_argv=())
+        moor_home=moor_home, scandir=tmp_path / "svc", dry_run=True, container_argv=())
 
     by_profile = {a.profile: a for a in actions}
     assert by_profile["solo"].action == "started" and by_profile["solo"].folded_into_root is False

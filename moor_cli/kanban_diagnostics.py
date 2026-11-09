@@ -750,7 +750,7 @@ def _rule_stale_running(task, events, runs, now, cfg) -> list[Diagnostic]:
     grace_seconds = float(cfg.get("stale_running_grace_seconds", 60 * 60))
     if _task_field(task, "status") != "running":
         return []
-    from hermes_cli import kanban_db as kb
+    from moor_cli import kanban_db as kb
     expires = kb._to_epoch(_task_field(task, "claim_expires", None))
     if expires is None or (now - expires) < grace_seconds:
         return []
@@ -761,7 +761,7 @@ def _rule_stale_running(task, events, runs, now, cfg) -> list[Diagnostic]:
     if hb is not None and (now - hb) <= kb.DEFAULT_CLAIM_HEARTBEAT_MAX_STALE_SECONDS:
         return []
 
-    from hermes_cli.kanban_db_dispatch import _worker_alive
+    from moor_cli.kanban_db_dispatch import _worker_alive
     recorded = [(_task_field(task, "worker_pid", None),
                  _task_field(task, "worker_started_at", None))]
     # Only this attempt's pids speak for it: an earlier run's worker that is still alive
@@ -799,7 +799,7 @@ def _rule_stale_running(task, events, runs, now, cfg) -> list[Diagnostic]:
                f"hold its profile's worker slot indefinitely while every card queued behind it "
                f"stays deferred. Check the card's log, then reclaim it.",
         actions=[DiagnosticAction(kind="reclaim", label="Reclaim the dead claim", suggested=True),
-                 _cli_hint("Reclaim from the CLI", f"hermes kanban reclaim {task_id}")],
+                 _cli_hint("Reclaim from the CLI", f"moor kanban reclaim {task_id}")],
         first_seen_at=expires, last_seen_at=expires, count=1,
         data={"claim_expires": expires, "expired_seconds": int(expired_seconds),
               "recorded_pids": pids, "last_heartbeat_at": hb,

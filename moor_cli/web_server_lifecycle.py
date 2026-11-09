@@ -147,13 +147,13 @@ def _warm_gateway_module() -> None:
     thread (#60800). Warm them all off-loop while the socket is already open.
     """
     for mod in (
-        "hermes_cli.gateway",
-        "hermes_cli.auth",  # provider auth state
+        "moor_cli.gateway",
+        "moor_cli.auth",  # provider auth state
         "providers",  # provider plugin discovery (below) imports every profile's module chain
-        "hermes_cli.runtime_provider",
-        "hermes_cli.skin_engine",  # resolve_skin() config + skin engine init
-        "hermes_cli.inventory",  # provider catalogs + models.dev cache
-        "hermes_cli.model_switch",
+        "moor_cli.runtime_provider",
+        "moor_cli.skin_engine",  # resolve_skin() config + skin engine init
+        "moor_cli.inventory",  # provider catalogs + models.dev cache
+        "moor_cli.model_switch",
     ):
         try:
             __import__(mod)
@@ -185,7 +185,7 @@ def _eager_reconcile_own_session_db() -> None:
     two-writer corruption vector, #107688 / #100896). Access-mode semantics
     (no bootstrap of a missing store; one additive catch-up of a store that lags
     SCHEMA_SQL, only while no gateway owns it, #79531 / #140315) live in the routers' own-store opener,
-    :func:`hermes_cli.web_server_sessions._open_session_db_at_path`. Never
+    :func:`moor_cli.web_server_sessions._open_session_db_at_path`. Never
     raises: an unfixable store still gets the per-poll read-probe heal.
     """
     try:
@@ -242,7 +242,7 @@ def _maybe_open_browser(host: str, actual_port: int, open_browser: bool, initial
         )
         return
 
-    from hermes_cli.url_utils import format_url_host
+    from moor_cli.url_utils import format_url_host
 
     _display_host = host if host not in ("0.0.0.0", "::") else "127.0.0.1"
     _open_url = f"http://{format_url_host(_display_host)}:{actual_port}"
@@ -303,7 +303,7 @@ def _is_serve_orphaned(
 #: Ceiling on the post-orphan graceful unwind before the hard exit takes over.
 #: The desktop is already gone, so nothing escalates for us and this is the
 #: whole budget: comfortably past the 5s exit-flush budget
-#: (``HERMES_TUI_EXIT_FLUSH_BUDGET_S``), still short enough to keep the reap prompt.
+#: (``MOOR_TUI_EXIT_FLUSH_BUDGET_S``), still short enough to keep the reap prompt.
 _ORPHAN_EXIT_CEILING_S = 10.0
 
 
@@ -532,7 +532,7 @@ def _uvicorn_console_logging() -> None:
     ``logging.shutdown()`` on every live handler: a multiplexed gateway's profile log routers are
     already installed when its listener is built, and a closed router stays closed. The listeners
     pass ``log_config=None`` and get uvicorn's handlers here instead: ``uvicorn`` to stderr,
-    ``uvicorn.access`` to stdout, neither propagating into the Hermes log files.
+    ``uvicorn.access`` to stdout, neither propagating into the Moor log files.
     """
     from uvicorn.config import LOGGING_CONFIG
     from uvicorn.logging import AccessFormatter, DefaultFormatter
@@ -567,8 +567,8 @@ def build_listener_server(served_app, host: str, port: int, *, auth_required: bo
     both (SSH-isolated Desktop backends).
     """
     import uvicorn
-    from hermes_cli.config import load_config
-    from hermes_cli.web_server_boundary import _DESKTOP_ATTACHMENT_WS_MAX_BYTES, _LOOPBACK_HOST_VALUES
+    from moor_cli.config import load_config
+    from moor_cli.web_server_boundary import _DESKTOP_ATTACHMENT_WS_MAX_BYTES, _LOOPBACK_HOST_VALUES
 
     try:
         dash_cfg = load_config().get("dashboard") or {}

@@ -37,15 +37,15 @@ from typing import Any, Callable, Dict, List, Optional, Union
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cron.worker_bootstrap import WORKER_MARKER, finish_worker_boot
-from hermes_constants import get_hermes_home, hermes_home_key
-from hermes_cli.observability.shared_metrics_gateway import note_cron_execution, note_cron_skipped
+from moor_constants import get_moor_home, moor_home_key
+from moor_cli.observability.shared_metrics_gateway import note_cron_execution, note_cron_skipped
 from cron.env_settings import cron_env_setting
 from moor_cli._subprocess_compat import windows_hide_flags
 from moor_cli.config import (
     load_config, load_config_readonly)
-from hermes_cli.config_backend import ConfigBackendUnavailable
-from hermes_cli.fallback_config import get_fallback_chain, scoped_fallback_chain
-from hermes_time import now as _hermes_now, safe_strftime
+from moor_cli.config_backend import ConfigBackendUnavailable
+from moor_cli.fallback_config import get_fallback_chain, scoped_fallback_chain
+from moor_time import now as _moor_now, safe_strftime
 from agent.interrupt_compat import request_hard_interrupt
 from agent.delegation_context import (
     enter_non_dispatcher_owned_context, exit_non_dispatcher_owned_context)
@@ -451,7 +451,7 @@ def _merge_mcp_into_per_job_toolsets(per_job: list[str], cfg: dict) -> list[str]
     # and the fallback below unioned EVERY enabled server into its allowlist (#141468).
     # A server that is CONFIGURED but disabled still counts as named: it is the user's selection, it
     # stays off, and it must not fall through to every enabled server either - the same rule the
-    # interactive resolver follows (hermes_cli.tools_config._merge_mcp_servers).
+    # interactive resolver follows (moor_cli.tools_config._merge_mcp_servers).
     configured = cfg.get("mcp_servers") if isinstance(cfg.get("mcp_servers"), dict) else {}
     known = enabled_mcp | {str(name) for name in configured}
     if set(result) & (known | {f"mcp-{name}" for name in known}):
@@ -675,7 +675,7 @@ def get_running_job_ids() -> frozenset[str]:
 def get_running_job_details() -> list[dict]:
     """Per in-flight job: ``{"job_id", "elapsed_s", "worker_pid", "restart_safe"}`` (``worker_pid``
     None for in-process runs; ``restart_safe`` True when the worker owns its own systemd scope). The
-    drain wait publishes this so ``hermes update`` can say WHICH job it is waiting on."""
+    drain wait publishes this so ``moor update`` can say WHICH job it is waiting on."""
     now = time.time()
     with _running_lock:
         return [
@@ -1603,17 +1603,17 @@ class _CronJobConfig:
 
 def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConfig:
     """Load config.yaml and resolve the run's model: per-job pin > cron.model (fleet default) >
-    the main agent model (config ``model:``, then HERMES_MODEL) > the claimed welcome trial's. Re-read
-    every tick (no cache) so ``hermes cron edit --model`` and ``hermes model`` both apply next tick."""
-    from hermes_cli.anon_auth import trial_model
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    the main agent model (config ``model:``, then MOOR_MODEL) > the claimed welcome trial's. Re-read
+    every tick (no cache) so ``moor cron edit --model`` and ``moor model`` both apply next tick."""
+    from moor_cli.anon_auth import trial_model
+    model = job.get("model") or cron_env_setting("MOOR_MODEL") or ""
     _cron_default_provider = ""
     _cfg: dict = {}
     _model_cfg: Any = {}
     try:
-        from hermes_cli.config_backend import config_exists
-        from hermes_cli.config_effective import load_user_config_effective
-        _cfg_path = str(_get_hermes_home() / "config.yaml")
+        from moor_cli.config_backend import config_exists
+        from moor_cli.config_effective import load_user_config_effective
+        _cfg_path = str(_get_moor_home() / "config.yaml")
         if config_exists(_cfg_path):
             _cfg = load_user_config_effective(Path(_cfg_path))
             # Coerce null to {} so a falsy default never clobbers a resolved env value.
@@ -1873,7 +1873,7 @@ def _open_cron_session_db(job: dict):
                 return acquire()
             db = acquire(Path(owner[0].db.db_path))
             if db is not owner[0].db:
-                from hermes_state_registry import release_or_close
+                from moor_state_registry import release_or_close
                 release_or_close(db)
                 raise RuntimeError('cron requires the canonical owner store')
             return db
@@ -2575,7 +2575,7 @@ def run_job(
     from run_agent import AIAgent
 
     _cron_session_id = (owner_execution[1] if owner_execution is not None else
-                        f"cron_{job_id}_{_hermes_now().strftime('%Y%m%d_%H%M%S')}")
+                        f"cron_{job_id}_{_moor_now().strftime('%Y%m%d_%H%M%S')}")
     logger.info("Running job '%s' (ID: %s)", job_name, job_id)
     logger.info("Prompt: %s", prompt[:100])
 
@@ -2813,7 +2813,7 @@ def run_one_job(
 
     execution_id = str(job["execution_id"])
     note_cron_execution(job)
-    external_owner = os.environ.get("_HERMES_CRON_EXTERNAL_WORKER") == execution_id
+    external_owner = os.environ.get("_MOOR_CRON_EXTERNAL_WORKER") == execution_id
     if not external_owner:
         try:
             handed_off = _launch_external_cron_worker(job)
@@ -2991,7 +2991,7 @@ class _FireOwnership:
         self.claim_lost = claim_lost
         self.transport_cancel = transport_cancel
         self.operator_cancel = operator_cancel
-        # ``operator_cancel`` (``hermes cron cancel``) is a THIRD source, deliberately not folded
+        # ``operator_cancel`` (``moor cron cancel``) is a THIRD source, deliberately not folded
         # into ``transport_cancel``: only a transport cancel counts as claim loss for bookkeeping,
         # while an operator cancel is a real outcome this run records itself.
         # What ``run_job`` receives as its ``cancel_event``: any source cancels the run.
@@ -3216,10 +3216,10 @@ def _install_fire_secret_scope() -> tuple[contextvars.Token, Optional[contextvar
     """
     from agent.secret_scope import set_multiplex_context, set_secret_scope
     from cron.scheduler_provider import routed_profile_fire
-    from hermes_cli.env_loader import hydrate_profile_secret_sources
+    from moor_cli.env_loader import hydrate_profile_secret_sources
     from tui_gateway.launch_profile_policy import owner_secret_scope
 
-    home = Path(_get_hermes_home())
+    home = Path(_get_moor_home())
     hydrate_profile_secret_sources(home)
     scope_token = set_secret_scope(owner_secret_scope(home), profile_home=str(home))
     context_token = set_multiplex_context(True) if routed_profile_fire() else None
@@ -3250,7 +3250,7 @@ def _fire_secret_scope():
 def _start_owned_run(job: dict, execution_id: str) -> Optional[contextvars.Token]:
     """Win the run's ``claimed`` → ``running`` CAS and bind its cron identity; ``None`` when the run
     lost ownership first. A restart-safe worker already won it by adopting the row."""
-    if os.environ.get("_HERMES_CRON_EXTERNAL_WORKER") == execution_id:
+    if os.environ.get("_MOOR_CRON_EXTERNAL_WORKER") == execution_id:
         record = get_execution(execution_id)
     elif (record := mark_execution_running(execution_id)) is None:
         return None
@@ -3281,7 +3281,7 @@ def _run_one_job_body(
         execution_id = create_execution(
             job["id"], source="direct", scheduled_instant=job.get("_scheduled_instant"))["id"]
     job = dict(job, execution_id=execution_id)
-    # The execution id is resolved BEFORE the fence so ``hermes cron cancel`` can join the same
+    # The execution id is resolved BEFORE the fence so ``moor cron cancel`` can join the same
     # cancel seam: the marker it writes is polled by whichever process owns this attempt.
     fence = _FireOwnership(job, claim_lost, transport_cancel, CancelRequest(execution_id))
     fire_owner = fence.owner
@@ -3329,7 +3329,7 @@ def _run_one_job_body(
         from tools.terminal_scope import (
             install_profile_terminal_scope)
 
-        _terminal_scope_token = install_profile_terminal_scope(_get_hermes_home())
+        _terminal_scope_token = install_profile_terminal_scope(_get_moor_home())
         # Defer agent teardown until AFTER delivery: closing first races the live send against a
         # torn-down async client (#58720). run_job hands the agent back via this list instead.
         _deferred_agents: list = []
@@ -3686,11 +3686,11 @@ def _launch_external_cron_worker(job: dict) -> bool:
         payload_path.unlink(missing_ok=True)
         raise
 
-    profile_home = _get_hermes_home().resolve()
+    profile_home = _get_moor_home().resolve()
     # Same hydrate -> scope -> (routed) multiplex-context install the in-process fire uses, for exactly
     # the env build; the helper's reset order keeps the context from outliving its scope.
     with _fire_secret_scope():
-        # No restore_managed_env here: the worker re-runs load_hermes_dotenv -> _apply_managed_env at
+        # No restore_managed_env here: the worker re-runs load_moor_dotenv -> _apply_managed_env at
         # import, and strip_launch_profile_env leaves managed keys in place.
         worker_env = strip_launch_profile_env(build_subprocess_env(
             scrub_secrets=multiplex_active,
@@ -3708,13 +3708,13 @@ def _launch_external_cron_worker(job: dict) -> bool:
         "MOOR_EXEC_ASK",
     ):
         worker_env.pop(_presence_var, None)
-    # `-m cron.scheduler` has no hermes_cli.main bootstrap; pin this checkout explicitly
+    # `-m cron.scheduler` has no moor_cli.main bootstrap; pin this checkout explicitly
     # (PYTHONSAFEPATH / stale editable mapping, #112729), hand the child the committed
     # dependency generation (#122222), and mark it so its own entry runs the PM dependency
     # boot. See cron/scheduler_worker_env.py and cron/worker_bootstrap.py.
-    from cron.scheduler_worker_env import pin_hermes_tree_on_pythonpath
+    from cron.scheduler_worker_env import pin_moor_tree_on_pythonpath
     repo_root = Path(__file__).resolve().parent.parent
-    worker_env = pin_hermes_tree_on_pythonpath(worker_env, repo_root)
+    worker_env = pin_moor_tree_on_pythonpath(worker_env, repo_root)
     worker_env[WORKER_MARKER] = "1"
     try:
         stderr_fd = os.open(stderr_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
@@ -3886,7 +3886,7 @@ def _run_external_worker_payload(payload_path: Path, ack_path: Path) -> bool:
         # discovery; this process starts with the builtin registry alone, so hydrating without it
         # silently dropped every plugin-sourced credential (#121929). Runs under the home override
         # so a multiplexed worker loads the OWNING profile's plugins, not the launch profile's.
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
 
         discover_plugins()
         hydrate_profile_secret_sources(profile_home)
@@ -3945,7 +3945,7 @@ def _run_external_worker_payload(payload_path: Path, ack_path: Path) -> bool:
                 if old_external_execution is None:
                     os.environ.pop("_MOOR_CRON_EXTERNAL_WORKER", None)
                 else:
-                    os.environ["_HERMES_CRON_EXTERNAL_WORKER"] = old_external_execution
+                    os.environ["_MOOR_CRON_EXTERNAL_WORKER"] = old_external_execution
     finally:
         if secret_token is not None:
             reset_secret_scope(secret_token)
@@ -4028,16 +4028,16 @@ _worktree_maintenance_lock = threading.Lock()
 
 
 def _worktree_maintenance_repos() -> list[str]:
-    """Repos whose ``.worktrees/`` to keep pruned: the hermes checkout, job workdir repo roots and
+    """Repos whose ``.worktrees/`` to keep pruned: the moor checkout, job workdir repo roots and
     every repo this profile created a worktree in (``worktree_registry``), filtered to those that
     actually have a ``.worktrees/`` dir."""
     repos: set = set()
 
     with contextlib.suppress(Exception):
-        from hermes_cli.worktree_registry import registered_repos
+        from moor_cli.worktree_registry import registered_repos
         repos.update(registered_repos())
 
-    # Hermes source checkout (git installs only; wheel installs have no .git).
+    # Moor source checkout (git installs only; wheel installs have no .git).
     with contextlib.suppress(Exception):
         install_root = Path(__file__).resolve().parent.parent
         if (install_root / ".git").exists():
@@ -4065,16 +4065,16 @@ def _worktree_maintenance_repos() -> list[str]:
 
 def _maybe_run_worktree_maintenance() -> None:
     """Throttled worktree prune from the cron tick, on a daemon thread so the tick never waits on
-    git. Same pruner as ``hermes -w`` startup (idle dirty/unpushed trees archived before removal,
+    git. Same pruner as ``moor -w`` startup (idle dirty/unpushed trees archived before removal,
     live trees untouched). Discovery is throttled per profile home, the prune once per repo across
     served profiles, and ``cron.scheduler_worktree_maintenance`` runs one sweep at a time per
     process. Runs in a copy of the caller's context (profile-home override); never raises."""
     global _last_worktree_maintenance_at
     import contextvars
 
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    home = str(get_hermes_home())
+    home = str(get_moor_home())
     now = time.monotonic()
     with _worktree_maintenance_lock:
         stamps = _last_worktree_maintenance_at or {}

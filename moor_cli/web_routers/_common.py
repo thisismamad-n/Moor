@@ -14,9 +14,9 @@ from typing import Any, Callable, Dict, Optional
 
 from fastapi import HTTPException
 
-from hermes_cli.config_backend import ConfigLockedError, ConfigValueError, ConfigWriteError
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_profiles import _profile_cli_args
+from moor_cli.config_backend import ConfigLockedError, ConfigValueError, ConfigWriteError
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_profiles import _profile_cli_args
 
 # Same logger the handlers used before extraction (identical logger object).
 log = logging.getLogger("moor_cli.web_server")
@@ -209,14 +209,14 @@ _STORE_STATUS_DETAIL_BY_CAUSE = {"deleted_wal": DELETED_WAL_DETAIL, "replaced": 
 def corrupt_store_status(db_path, exc) -> HTTPException:
     """The structured ``state_db_corrupt`` 503 for a malformed store, warning once per store per
     :data:`_CORRUPT_STORE_WARN_INTERVAL_S` (debug afterwards). Callers ``raise ... from exc``."""
-    from hermes_state_errors import classify_persistence_error
+    from moor_state_errors import classify_persistence_error
     key, now = str(db_path), time.monotonic()
     last = _corrupt_store_warned_at.get(key)
     detail = _STORE_STATUS_DETAIL_BY_CAUSE.get(classify_persistence_error(exc), CORRUPT_STORE_DETAIL)
     if last is None or now - last >= _CORRUPT_STORE_WARN_INTERVAL_S:
         _corrupt_store_warned_at[key] = now
         log.warning("state.db at %s is unreadable (%s); dashboard reads return a status payload until it is "
-                    "repaired — run `hermes doctor`", db_path, exc)
+                    "repaired — run `moor doctor`", db_path, exc)
     else:
         log.debug("state.db at %s still has error: %s", db_path, exc)
     return HTTPException(status_code=503, detail={**detail, "path": key})

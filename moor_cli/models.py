@@ -28,10 +28,10 @@ if TYPE_CHECKING:
     from typing import TypeGuard
 
 from agent.proxy_bypass import is_loopback_host
-from hermes_cli.route_identity import normalize_route_base_url
-from hermes_cli.urllib_security import open_credentialed_url
-from hermes_cli.version_info import hermes_user_agent
-from hermes_cli.models_catalog_static import (
+from moor_cli.route_identity import normalize_route_base_url
+from moor_cli.urllib_security import open_credentialed_url
+from moor_cli.version_info import moor_user_agent
+from moor_cli.models_catalog_static import (
     CuratedFallbackModels,
     CANONICAL_PROVIDERS,
     OPENROUTER_MODELS,
@@ -271,16 +271,16 @@ def union_with_portal_paid_recommendations(
         force_refresh=force_refresh, synthesize_free_pricing=False)
 
 
-def union_with_nous_on_sale_models(curated_ids: list[str], pricing: dict[str, dict[str, Any]]) -> list[str]:
-    """Curated list plus every paid Nous model the gateway is discounting right now, deepest
+def union_with_moor_on_sale_models(curated_ids: list[str], pricing: dict[str, dict[str, Any]]) -> list[str]:
+    """Curated list plus every paid Moor model the gateway is discounting right now, deepest
     discount first. A sale lives only in ``/v1/models`` ``pricing.original``, so without this the
     picker badges discounts on curated rows but never shows a discounted model the curated list and
     Portal recommendations omit. Free rows stay with ``freeRecommendedModels``; rows the gateway
-    marks tool-less (``"tools": False``) are skipped because Hermes is tool-calling-first, and
+    marks tool-less (``"tools": False``) are skipped because Moor is tool-calling-first, and
     image/video generation rows are skipped because they are not chat models."""
     from math import isfinite
 
-    from hermes_cli.models_pricing import _price_float, compute_sale_discount
+    from moor_cli.models_pricing import _price_float, compute_sale_discount
 
     seen = set(curated_ids)
     on_sale: list[tuple[int, str]] = []
@@ -346,16 +346,16 @@ def check_moor_free_tier(*, force_fresh: bool = False, cached_only: bool = False
 # [{modelName}], {paid,free}Recommended{Compaction,Vision}Model: {modelName} | null
 # ---------------------------------------------------------------------------
 
-NOUS_RECOMMENDED_MODELS_MIRROR = "https://web-assets.nousresearch.com/dynamic"
-_NOUS_MIRROR_TIMEOUT: float = 2.0  # seconds: a hanging mirror delays the Portal fallback by at most this
-_NOUS_RECOMMENDED_CACHE_TTL: int = 600  # seconds (10 minutes)
+MOOR_RECOMMENDED_MODELS_MIRROR = "https://web-assets.nousresearch.com/dynamic"
+_MOOR_MIRROR_TIMEOUT: float = 2.0  # seconds: a hanging mirror delays the Portal fallback by at most this
+_MOOR_RECOMMENDED_CACHE_TTL: int = 600  # seconds (10 minutes)
 # (result_dict, monotonic timestamp), scoped to the profile and portal.
 _moor_recommended_cache: dict[tuple[str, str], tuple[dict[str, Any], float]] = {}
 
 
-def _nous_recommended_disk_path() -> Path:
-    from hermes_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "nous_recommended_cache.json"
+def _moor_recommended_disk_path() -> Path:
+    from moor_constants import get_moor_home
+    return get_moor_home() / "cache" / "moor_recommended_cache.json"
 
 
 def _read_moor_recommended_disk(base: str) -> tuple[dict[str, Any], float] | None:
@@ -390,7 +390,7 @@ def fetch_moor_recommended_models(
     portal_base_url: str = "", timeout: float = 5.0, *, force_refresh: bool = False
 ) -> dict[str, Any]:
     """Fetch the Portal's public recommended models (no auth): its R2 mirror, else the Portal itself.
-    Results are reused for ``_NOUS_RECOMMENDED_CACHE_TTL`` s across restarts unless ``force_refresh``;
+    Results are reused for ``_MOOR_RECOMMENDED_CACHE_TTL`` s across restarts unless ``force_refresh``;
     stale disk data is the fallback on failure, and reading it never renews its freshness."""
     base = (portal_base_url or "https://portal.nousresearch.com").rstrip("/")
     now = time.monotonic()
@@ -405,19 +405,19 @@ def fetch_moor_recommended_models(
         return data
     parts = urllib.parse.urlsplit(base)
     mirror = [] if is_loopback_host(parts.hostname) else [
-        (f"{NOUS_RECOMMENDED_MODELS_MIRROR}/{parts.netloc}", min(timeout, _NOUS_MIRROR_TIMEOUT))]
+        (f"{MOOR_RECOMMENDED_MODELS_MIRROR}/{parts.netloc}", min(timeout, _MOOR_MIRROR_TIMEOUT))]
     for origin, origin_timeout in [*mirror, (base, timeout)]:  # the Portal itself when its mirror is missing (404) or failing
         try:
-            data = _get_json(f"{origin}/api/nous/recommended-models", timeout=origin_timeout,
+            data = _get_json(f"{origin}/api/moor/recommended-models", timeout=origin_timeout,
                              headers={"Accept": "application/json", "Accept-Encoding": "gzip"})
         except Exception:
             continue
         if isinstance(data, dict) and data:
-            _write_nous_recommended_disk(base, data)
+            _write_moor_recommended_disk(base, data)
             break
     else:
         data = disk[0] if disk is not None else {}
-    _nous_recommended_cache[cache_key] = (data, now)
+    _moor_recommended_cache[cache_key] = (data, now)
     return data
 
 
@@ -540,11 +540,11 @@ def recommended_moor_default_model() -> dict[str, Any]:
     is selectable (callers degrade). Shared by ``GET /api/model/recommended-default`` and the
     sign-in completion in ``moor_cli.anon_auth`` so both land on the same model.
     """
-    from hermes_cli import model_picker_usage, models_pricing as mp
-    from hermes_cli.auth import get_provider_auth_state
-    model_ids = get_curated_nous_model_ids()
-    pricing = mp.get_pricing_for_provider("nous") or {}
-    free_tier = check_nous_free_tier(force_fresh=True)
+    from moor_cli import model_picker_usage, models_pricing as mp
+    from moor_cli.auth import get_provider_auth_state
+    model_ids = get_curated_moor_model_ids()
+    pricing = mp.get_pricing_for_provider("moor") or {}
+    free_tier = check_moor_free_tier(force_fresh=True)
     try:
         portal_url = (get_provider_auth_state("moor") or {}).get("portal_base_url", "") or ""
     except Exception:
@@ -559,7 +559,7 @@ def recommended_moor_default_model() -> dict[str, Any]:
         # Never default onto a subscription-billed row: spending that plan is the user's call.
         model_ids = [mid for mid in model_ids if not _is_subscription_billed(pricing.get(mid))] or model_ids
     model = "" if free_tier else model_picker_usage.window_plan_default(model_ids, pricing)
-    return {"provider": "nous", "model": model or pick_silent_default_model(model_ids, provider="nous"),
+    return {"provider": "moor", "model": model or pick_silent_default_model(model_ids, provider="moor"),
             "free_tier": bool(free_tier)}
 
 
@@ -828,8 +828,8 @@ def _provider_has_credentials(pid: str) -> bool:
 
 
 def list_available_providers() -> list[dict[str, str]]:
-    """``{id, label, aliases, authenticated}`` per listed provider (shared with ``hermes model`` / ``/model``)."""
-    from hermes_cli.models_catalog_static import listed_canonical_providers
+    """``{id, label, aliases, authenticated}`` per listed provider (shared with ``moor model`` / ``/model``)."""
+    from moor_cli.models_catalog_static import listed_canonical_providers
     aliases_for: dict[str, list[str]] = {}
     for alias, canonical in _PROVIDER_ALIASES.items():
         aliases_for.setdefault(canonical, []).append(alias)
@@ -1363,10 +1363,10 @@ def _codex_catalog(normalized: str, force_refresh: bool) -> list[str]:
 
 def _moor_catalog(normalized: str, force_refresh: bool) -> Optional[list[str]]:
     try:
-        from hermes_cli.anon_challenge import background_caller
-        from hermes_cli.auth import fetch_nous_models, resolve_nous_runtime_credentials
+        from moor_cli.anon_challenge import background_caller
+        from moor_cli.auth import fetch_moor_models, resolve_moor_runtime_credentials
         with background_caller():  # never waits on or opens a challenge
-            creds = resolve_nous_runtime_credentials()
+            creds = resolve_moor_runtime_credentials()
         if creds:
             live = fetch_moor_models(api_key=creds.get("api_key", ""), inference_base_url=creds.get("base_url", ""))
             if live:
@@ -1374,7 +1374,7 @@ def _moor_catalog(normalized: str, force_refresh: bool) -> Optional[list[str]]:
     except Exception:
         pass
     # Live failed / no creds: the docs-hosted manifest, so new Portal models surface without a release.
-    return get_curated_nous_model_ids() or None
+    return get_curated_moor_model_ids() or None
 
 
 def _api_key_credentials(normalized: str) -> tuple[str, str]:
@@ -1524,7 +1524,7 @@ def _azure_foundry_catalog(normalized: str, force_refresh: bool) -> Optional[lis
 _PROVIDER_CATALOG_FETCHERS: dict[str, Any] = {
     "openrouter": lambda normalized, force_refresh: model_ids(force_refresh=force_refresh),
     "openai-codex": _codex_catalog,
-    "nous": _nous_catalog,
+    "moor": _moor_catalog,
     "stepfun": _stepfun_catalog,
     "gmi": _api_key_provider_live,
     "anthropic": _anthropic_catalog,
@@ -1538,7 +1538,7 @@ _PROVIDER_CATALOG_FETCHERS: dict[str, Any] = {
     "custom": _custom_catalog,
     "bedrock": _bedrock_catalog,
     "azure-foundry": _azure_foundry_catalog,
-    "opencode-free": _opencode_free_catalog,
+    "opencode-free": lambda normalized, force_refresh: _opencode_free_catalog(normalized, force_refresh),
 }
 
 
@@ -1637,7 +1637,7 @@ def _drop_delisted_opencode_models(normalized: str, rows: Optional[list[str]]) -
 
 def _chat_catalog_rows(models):
     """Drop generation ids from a chat-catalog list, keeping its list subclass."""
-    from hermes_cli.chat_catalog import without_generation_models
+    from moor_cli.chat_catalog import without_generation_models
     return without_generation_models(models)
 
 
@@ -1669,7 +1669,7 @@ def _configured_relay_base_url(provider: str) -> str:
     # profile leaves it empty; OpenRouter has no registry row) is not a relay: setup persists
     # canonical URLs, and OAuth providers (Codex) need native discovery.
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY
+        from moor_cli.auth import PROVIDER_REGISTRY
         from providers import get_provider_profile
 
         profile_url = getattr(get_provider_profile(normalized), "base_url", "")
@@ -1946,7 +1946,7 @@ def _credential_fingerprint(provider: str) -> str:
             pass
 
     if provider == "openai-codex":
-        from hermes_cli.codex_models import codex_catalog_credential_identity
+        from moor_cli.codex_models import codex_catalog_credential_identity
         parts.append(f"codex_identity={codex_catalog_credential_identity()}")
     else:
         try:
@@ -1986,7 +1986,7 @@ def _save_provider_models_cache(data: dict) -> None:
 def _store_cache_entry(cache_key: str, entry: dict) -> None:
     """Write one row into the disk cache, re-reading it under the thread + cross-process locks: a slow
     fetch worker or another process must never write back the snapshot it loaded before fetching."""
-    from hermes_cli.models_cache_lock import write_under_cache_lock
+    from moor_cli.models_cache_lock import write_under_cache_lock
 
     def write_row() -> None:
         cache = _load_provider_models_cache()
@@ -2077,7 +2077,7 @@ def clear_provider_models_cache(provider: Optional[str] = None) -> None:
     """Drop one provider's cache entry, or wipe the whole cache (``provider=None``). Used by
     ``/model --refresh`` and ``moor model --refresh``."""
     try:
-        from hermes_cli.model_catalog import clear_fetch_backoff
+        from moor_cli.model_catalog import clear_fetch_backoff
         clear_fetch_backoff()  # a recovered catalog is fetched now, not after the offline backoff
         # Native Ollama tags are keyed by root URL, not provider slug: clear them on every refresh.
         _OLLAMA_LOCAL_MODELS_CACHE.clear()
@@ -2088,7 +2088,7 @@ def clear_provider_models_cache(provider: Optional[str] = None) -> None:
         from providers import list_providers
         for profile in list_providers():
             profile.invalidate_catalog_cache()
-        from hermes_cli.models_cache_lock import write_under_cache_lock
+        from moor_cli.models_cache_lock import write_under_cache_lock
         path = _provider_models_cache_path()
 
         # Under the cache lock like every other writer: a locked writer that loaded the cache
@@ -2318,6 +2318,12 @@ def _opencode_free_known_model_slugs() -> set[str]:
     return known
 
 
+def _opencode_free_catalog(normalized: str, force_refresh: bool) -> list[str]:
+    # Live keyless catalog filtered to the anonymous-servable `*-free` tier ourselves (models.dev's
+    # cost.input==0 lags reality); the curated floor applies only when the live fetch fails/is empty.
+    return _fetch_opencode_free_models(force_refresh=force_refresh) or list(_PROVIDER_MODELS.get(normalized, []))
+
+
 def opencode_zen_free_runtime(provider_id: Optional[str], model_id: Optional[str]) -> Optional[dict]:
     """Keyless runtime entry for an OpenCode Zen free-tier model, or None. Fires when ``provider_id``
     is ``opencode-free`` (EVERY model on it routes anonymously) or when any other OpenCode-family
@@ -2463,9 +2469,9 @@ def probe_api_models(
             return _probe_result(
                 None, normalized.rstrip("/") + "/models", normalized,
                 alternate_base if alternate_base != normalized else None)
-    headers: dict[str, str] = {"User-Agent": hermes_user_agent()}
+    headers: dict[str, str] = {"User-Agent": moor_user_agent()}
     if urllib.parse.urlparse(normalized).hostname == "generativelanguage.googleapis.com":
-        headers["X-Goog-Api-Client"] = hermes_user_agent("hermes-agent")
+        headers["X-Goog-Api-Client"] = moor_user_agent("moor-agent")
     if api_key and api_mode == "anthropic_messages":
         headers["x-api-key"] = api_key
         headers["anthropic-version"] = "2023-06-01"
@@ -2496,7 +2502,7 @@ def probe_api_models(
             continue
         if _neg_key is not None:
             _probe_neg_cache.pop(_neg_key, None)
-        from hermes_cli.chat_catalog import note_catalog_item
+        from moor_cli.chat_catalog import note_catalog_item
 
         probed = []
         for item in data.get("data", []):
@@ -2565,7 +2571,7 @@ def _fetch_deepinfra_catalog(
         if last_fail is not None and (time.monotonic() - last_fail) < _DEEPINFRA_CATALOG_NEG_TTL:
             return None
 
-    headers: dict[str, str] = {"User-Agent": hermes_user_agent()}
+    headers: dict[str, str] = {"User-Agent": moor_user_agent()}
     api_key = _deepinfra_env("DEEPINFRA_API_KEY")
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -2640,7 +2646,7 @@ def _fetch_ai_gateway_models(timeout: float = 5.0) -> Optional[list[str]]:
         from moor_constants import AI_GATEWAY_BASE_URL
         base_url = AI_GATEWAY_BASE_URL
 
-    headers = {"Authorization": f"Bearer {api_key}", "User-Agent": hermes_user_agent()}
+    headers = {"Authorization": f"Bearer {api_key}", "User-Agent": moor_user_agent()}
     try:
         url = base_url.rstrip("/") + "/models"
         data = _get_json(url, timeout=timeout, headers=headers)

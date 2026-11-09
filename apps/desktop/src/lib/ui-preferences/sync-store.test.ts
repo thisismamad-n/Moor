@@ -15,16 +15,16 @@ import { writeKey } from '../storage'
 import { captureOwnPreferences, hydrateFromSnapshot, startUiPreferencesSync, type UiPreferencesBridge } from './sync'
 
 // The renderer sync against the real native writer on a real file (#145536 review).
-const DENSITY = 'hermes.desktop.sessionListDensity'
-const MODE = 'hermes-desktop-mode-v1'
-const THEME = 'hermes-desktop-theme-v2'
-const USER_THEMES = 'hermes-desktop-user-themes-v1'
-const KEYBINDS = 'hermes.desktop.keybinds'
+const DENSITY = 'moor.desktop.sessionListDensity'
+const MODE = 'moor-desktop-mode-v1'
+const THEME = 'moor-desktop-theme-v2'
+const USER_THEMES = 'moor-desktop-user-themes-v1'
+const KEYBINDS = 'moor.desktop.keybinds'
 const dirs: string[] = []
 const tick = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms))
 
 function storeFile(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-ui-sync-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-ui-sync-'))
   dirs.push(dir)
 
   return path.join(dir, 'ui-preferences.json')
@@ -69,7 +69,7 @@ it('a store a fresh client created never removes another client’s values: it i
 
   // Native Desktop, another origin, launches with its own preferences.
   window.localStorage.clear()
-  const mine = { [KEYBINDS]: '{"newChat":"mod+n"}', [THEME]: 'nous', [USER_THEMES]: '{"mine":{"name":"Mine"}}' }
+  const mine = { [KEYBINDS]: '{"newChat":"mod+n"}', [THEME]: 'moor', [USER_THEMES]: '{"mine":{"name":"Mine"}}' }
   Object.entries(mine).forEach(([key, value]) => window.localStorage.setItem(key, value))
   captureOwnPreferences()
   hydrateFromSnapshot(readUiPreferences(file))

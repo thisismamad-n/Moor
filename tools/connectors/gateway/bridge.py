@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 SIGN_IN_EXPIRED = "sign_in_expired"
 UNREACHABLE = "unreachable"
-# No Nous identity yet: the first hosted manage_connections action creates one.
+# No Moor identity yet: the first hosted manage_connections action creates one.
 NOT_SET_UP = "not_set_up"
 NOT_SET_UP_MESSAGE = ("Hosted connectors are not set up for this user yet. "
                       "Call manage_connections to connect the app first; that sets them up.")

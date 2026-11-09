@@ -17,7 +17,7 @@ import pytest
 ])
 def test_prompt_turn_ack_paints_through_cprint_before_the_turn_is_queued(handler, arg, needle, monkeypatch, capsys):
     import cli
-    from hermes_cli.cli_commands_mixin import CLICommandsMixin
+    from moor_cli.cli_commands_mixin import CLICommandsMixin
     events = []
     monkeypatch.setattr(cli, "_pt_app_is_running", lambda: True)
     monkeypatch.setattr(cli, "_cprint", lambda text: events.append(("paint", text)))

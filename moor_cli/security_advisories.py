@@ -276,4 +276,4 @@ def gateway_log_message(hits: list[AdvisoryHit]) -> Optional[str]:
         return (f"Security advisory [{h.advisory.id}] active: {h.package}=={h.installed_version} "
                 f"matches {h.advisory.title}. See {h.advisory.url}")
     return (f"{len(fresh)} security advisories active (IDs: {', '.join(h.advisory.id for h in fresh)}). "
-            "Run `hermes doctor` on the gateway host for details.")
+            "Run `moor doctor` on the gateway host for details.")

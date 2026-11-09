@@ -10,15 +10,15 @@ import json
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 
 @pytest.fixture
 def llamacpp_home(monkeypatch):
-    from hermes_cli.local_runtime import detect
+    from moor_cli.local_runtime import detect
 
     def write(local_runtime: dict) -> None:
-        home = get_hermes_home()
+        home = get_moor_home()
         home.mkdir(parents=True, exist_ok=True)
         config = {"model": {"provider": "llamacpp", "default": "local-qwen"}, "local_runtime": local_runtime}
         (home / "config.yaml").write_text(json.dumps(config), encoding="utf-8")
@@ -29,7 +29,7 @@ def llamacpp_home(monkeypatch):
 
 
 def _resolution_error():
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from moor_cli.runtime_provider import resolve_runtime_provider
 
     with pytest.raises(ValueError) as caught:
         resolve_runtime_provider(requested="llamacpp", target_model="local-qwen")
@@ -38,7 +38,7 @@ def _resolution_error():
 
 @pytest.mark.parametrize("enabled", [False, True])
 def test_runtime_check_names_a_down_local_server(llamacpp_home, enabled):
-    from hermes_cli.runtime_readiness import readiness_failure
+    from moor_cli.runtime_readiness import readiness_failure
 
     llamacpp_home({"enabled": enabled})
     answer = readiness_failure(_resolution_error())
@@ -49,7 +49,7 @@ def test_runtime_check_names_a_down_local_server(llamacpp_home, enabled):
 
 
 def test_runtime_check_leaves_other_failures_uncoded():
-    from hermes_cli.runtime_readiness import readiness_failure
+    from moor_cli.runtime_readiness import readiness_failure
 
     assert readiness_failure(ValueError("No usable credentials found for openrouter.")) == {
         "ok": False, "error": "No usable credentials found for openrouter."}
@@ -118,6 +118,6 @@ def test_chat_text_suggests_retry_only_while_the_server_can_come_up(llamacpp_hom
 
     assert ("/retry" in hint) is enabled
     if not enabled:
-        assert "hermes model" in hint and "/model" in hint
+        assert "moor model" in hint and "/model" in hint
         # Surface-neutral: the backend sentence names the terminal path too, not only the Desktop app.
-        assert "hermes model" in str(exc)
+        assert "moor model" in str(exc)

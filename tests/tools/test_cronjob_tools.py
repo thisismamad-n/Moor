@@ -673,7 +673,7 @@ class TestValidateCronBaseUrl:
     def test_stored_key_only_goes_to_the_configured_origin(self, monkeypatch):
         # The stored key is bound to the configured origin, not to its hostname: another
         # scheme, port or subdomain is a different endpoint the operator never configured.
-        from hermes_cli.auth import PROVIDER_REGISTRY
+        from moor_cli.auth import PROVIDER_REGISTRY
         reg, known = next((k, p.inference_base_url) for k, p in PROVIDER_REGISTRY.items()
                           if str(getattr(p, "inference_base_url", "")).startswith("https://"))
 
@@ -692,8 +692,8 @@ class TestValidateCronBaseUrl:
     def test_bare_custom_sends_a_stored_key_only_to_a_configured_origin(self, monkeypatch):
         # Whatever key the real resolver would attach to a bare-custom base_url, the guard lets
         # the job through only at the origin the operator configured. No key: still pure BYOK.
-        from hermes_cli.config import get_config_path
-        from hermes_cli.runtime_provider import resolve_runtime_provider
+        from moor_cli.config import get_config_path
+        from moor_cli.runtime_provider import resolve_runtime_provider
 
         configured, stored = "https://api.acmellm.example/v1", "sk-stored-acmellm-key"
         monkeypatch.setenv("ACMELLM_API_KEY", stored)

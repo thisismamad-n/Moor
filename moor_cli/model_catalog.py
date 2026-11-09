@@ -1,8 +1,8 @@
 """Remote model catalog fetcher.
 
 ``get_catalog()`` returns the parsed manifest: in-process cache (TTL) → disk cache at
-``~/.hermes/cache/model_catalog.json`` → master URL fetch; any fetch failure keeps the stale copy
-(or ``{}``, and the URL is not retried for ``FETCH_RETRY_DELAY_SECONDS``). ``get_curated_openrouter_models()`` / ``get_curated_nous_models()`` are thin accessors
+``~/.moor/cache/model_catalog.json`` → master URL fetch; any fetch failure keeps the stale copy
+(or ``{}``, and the URL is not retried for ``FETCH_RETRY_DELAY_SECONDS``). ``get_curated_openrouter_models()`` / ``get_curated_moor_models()`` are thin accessors
 whose callers fall back to the in-repo lists on ``None``.
 """
 
@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from hermes_cli.version_info import hermes_user_agent
+from moor_cli.version_info import moor_user_agent
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -56,8 +56,8 @@ _fetch_retry_lock = threading.Lock()
 
 
 def _backoff_key(kind: str, url: str) -> tuple[str, str, str]:
-    from hermes_constants import hermes_home_key
-    return (hermes_home_key(), kind, url)
+    from moor_constants import moor_home_key
+    return (moor_home_key(), kind, url)
 
 
 def _backing_off(kind: str, url: str) -> bool:
@@ -77,8 +77,8 @@ def _note_fetch_result(kind: str, url: str, ok: bool) -> None:
 
 def clear_fetch_backoff() -> None:
     """Forget the active profile's fetch failures so an explicit refresh retries every URL."""
-    from hermes_constants import hermes_home_key
-    home = hermes_home_key()
+    from moor_constants import moor_home_key
+    home = moor_home_key()
     with _fetch_retry_lock:
         for key in [k for k in _fetch_retry_after if k[0] == home]:
             del _fetch_retry_after[key]
@@ -126,7 +126,7 @@ def _cache_path() -> Path:
 def _fetch_manifest(url: str, timeout: float) -> dict[str, Any] | None:
     """HTTP GET the manifest URL and return a validated dict, or None on failure."""
     try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": hermes_user_agent()})
+        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": moor_user_agent()})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
@@ -228,7 +228,7 @@ def _spawn_catalog_swr_refresh(url: str) -> None:
             with _catalog_swr_lock:
                 _catalog_swr_inflight.discard(inflight_key)
 
-    # copy_context: the picker may be serving a profile scoped by the HERMES_HOME ContextVar
+    # copy_context: the picker may be serving a profile scoped by the MOOR_HOME ContextVar
     # (tui_gateway ``_profile_scoped``), so the worker must write THAT profile's cache file.
     context = contextvars.copy_context()
     threading.Thread(target=lambda: context.run(_refresh), daemon=True, name="model-catalog-swr").start()
@@ -292,7 +292,7 @@ def refresh_interval_seconds() -> float:
 
 def refresh_catalogs() -> bool:
     """Force-refresh every remote catalog the picker reads (manifest, OpenRouter live list, and the
-    Nous Portal recommendations for a Nous account, the only reader), writing each disk cache so the
+    Moor Portal recommendations for a Moor account, the only reader), writing each disk cache so the
     next ``/model`` open in ANY process sees them. Blocking; run it off the event loop."""
     if not _load_catalog_config()["enabled"]:
         return False
@@ -300,14 +300,14 @@ def refresh_catalogs() -> bool:
     catalog = get_catalog(force_refresh=True)
     try:
         from agent.secret_scope import get_secret
-        from hermes_cli.anon_auth import current_nous_state, is_guest_state
-        from hermes_cli.auth import read_credential_pool
-        from hermes_cli.models import _resolve_nous_portal_url, fetch_nous_recommended_models, fetch_openrouter_models
+        from moor_cli.anon_auth import current_moor_state, is_guest_state
+        from moor_cli.auth import read_credential_pool
+        from moor_cli.models import _resolve_moor_portal_url, fetch_moor_recommended_models, fetch_openrouter_models
 
         fetch_openrouter_models(force_refresh=True)
-        logins = [current_nous_state(), *read_credential_pool("nous")]
+        logins = [current_moor_state(), *read_credential_pool("moor")]
         if any(e and not is_guest_state(e) for e in logins) or get_secret("NOUS_API_KEY"):
-            fetch_nous_recommended_models(_resolve_nous_portal_url(), force_refresh=True)
+            fetch_moor_recommended_models(_resolve_moor_portal_url(), force_refresh=True)
     except Exception:
         logger.debug("provider catalog refresh failed", exc_info=True)
     return bool(catalog)
@@ -397,7 +397,7 @@ def seed_cache_from_checkout(project_root: Path | str) -> bool:
 
 
 def reset_cache() -> None:
-    """Clear the in-process cache and fetch-failure backoff. Used by tests and ``hermes model --refresh``."""
+    """Clear the in-process cache and fetch-failure backoff. Used by tests and ``moor model --refresh``."""
     global _catalog_cache, _catalog_cache_source_mtime, _catalog_cache_source_path
     with _fetch_retry_lock:
         _fetch_retry_after.clear()

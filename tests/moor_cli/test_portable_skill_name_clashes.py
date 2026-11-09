@@ -2,7 +2,7 @@
 
 Skills take the plugin's slugged name, so two such plugins claim one qualified name. Only one may
 own it, a saved hashed name must reach only its own plugin's skill, and disabling one must not
-block the other. Real plugin discovery against a temp ``HERMES_HOME``.
+block the other. Real plugin discovery against a temp ``MOOR_HOME``.
 """
 
 from __future__ import annotations
@@ -11,20 +11,20 @@ import json
 
 import pytest
 
-from hermes_cli import plugins as plugins_mod
-from hermes_cli.plugins_manifest import _portable_data_namespace
+from moor_cli import plugins as plugins_mod
+from moor_cli.plugins_manifest import _portable_data_namespace
 from tools.skills_tool import skill_view
 
 
 def _home(tmp_path, monkeypatch, *, enabled, disabled=()):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     (home / "plugins").mkdir(parents=True)
     (home / "config.yaml").write_text(json.dumps({"plugins": {"enabled": list(enabled), "disabled": list(disabled)}}))
     bundled = tmp_path / "bundled"
     bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: bundled)
-    from hermes_cli.agent_plugins import PLUGIN_SCHEMA_V1
+    from moor_cli.agent_plugins import PLUGIN_SCHEMA_V1
     for name in ("foo.bar", "foo-bar"):
         skill = home / "plugins" / name / "skills" / "workflow"
         skill.mkdir(parents=True)

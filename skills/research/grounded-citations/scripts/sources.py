@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _hermes_home import get_hermes_home
+from _moor_home import get_moor_home
 
 SCHEMA_VERSION = 1
 

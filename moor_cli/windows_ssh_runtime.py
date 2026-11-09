@@ -329,7 +329,7 @@ def process_state(pid: int, creation_time_ns: int, moor_path: str, spawn_nonce: 
     is_python = os.path.basename(arg0).startswith("python")
     from gateway.status_inline_source import inline_bootstrap_argv
     logical_argv = inline_bootstrap_argv(argv) or argv
-    launches_module = logical_argv[1:3] == ["-m", "hermes_cli.main"]
+    launches_module = logical_argv[1:3] == ["-m", "moor_cli.main"]
     executable_match = arg0 == expected or (is_python and launches_module)
     try:
         serve = logical_argv.index("serve")
@@ -365,7 +365,7 @@ def _resolve_direct_command(moor_path: str) -> list[str]:
     The port owner must be the process we lock, not a console-launcher child.
     No assumption about python.exe beside an external bin launcher is valid.
     """
-    out = subprocess.run([hermes_path, "--print-runtime-command"], capture_output=True,
+    out = subprocess.run([moor_path, "--print-runtime-command"], capture_output=True,
                          text=True, encoding="utf-8", errors="replace", timeout=30, check=False)
     if out.returncode != 0:
         raise ValueError("could not resolve Moor runtime; refresh this installation's launcher")
@@ -416,10 +416,10 @@ def spawn_backend(payload: dict[str, Any]) -> dict[str, Any]:
             "logPath": str(log_path), "tokenPath": token_path}
 
 
-def inspect_hermes(hermes_path: str) -> dict[str, Any]:
-    path = os.path.abspath(hermes_path)
-    if not os.path.isabs(hermes_path) or not os.path.isfile(path):
-        raise ValueError("Hermes path is not an executable file")
+def inspect_moor(moor_path: str) -> dict[str, Any]:
+    path = os.path.abspath(moor_path)
+    if not os.path.isabs(moor_path) or not os.path.isfile(path):
+        raise ValueError("Moor path is not an executable file")
     version = subprocess.run([path, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20, check=False)
     help_result = subprocess.run([path, "serve", "--help"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=20, check=False)
     help_text = help_result.stdout + help_result.stderr
@@ -437,9 +437,9 @@ def _probe(*_: str) -> dict[str, Any]:
 
 def _inventory(*_: str) -> dict[str, Any]:
     """Desktop's read-only roster: the canonical root and profile predicate; never mints an identity."""
-    from hermes_cli.install_identity import _INSTALL_ID_FILENAME, _read_existing
-    from hermes_cli.profiles import _iter_named_profile_dirs
-    install_id, _ = _read_existing(get_default_hermes_root() / _INSTALL_ID_FILENAME)
+    from moor_cli.install_identity import _INSTALL_ID_FILENAME, _read_existing
+    from moor_cli.profiles import _iter_named_profile_dirs
+    install_id, _ = _read_existing(get_default_moor_root() / _INSTALL_ID_FILENAME)
     return {"profiles": ["default", *[p.name for p in _iter_named_profile_dirs()]], "installId": install_id}
 
 

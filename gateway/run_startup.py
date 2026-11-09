@@ -27,7 +27,7 @@ from gateway.restart import (
     DEFAULT_GATEWAY_CRON_DRAIN_TIMEOUT, GATEWAY_FATAL_CONFIG_EXIT_CODE, is_global_startup_conflict
 )
 from gateway.run_shutdown import _log_suppressed, _send_error
-from hermes_cli.observability.shared_metrics_busy import note_running_chat_owner
+from moor_cli.observability.shared_metrics_busy import note_running_chat_owner
 from gateway.shutdown_watchdog import (
     DEFAULT_HEARTBEAT_INTERVAL_S, DEFAULT_LOOP_WATCHDOG_INTERVAL_S,
     DEFAULT_LOOP_WATCHDOG_MAX_STRIKES, DEFAULT_LOOP_WATCHDOG_TIMEOUT_S, loop_heartbeat_forever,
@@ -43,7 +43,7 @@ def recover_left_core_in(home: Path, *, hydrate_secrets: bool = True) -> None:
     *home*'s runtime scope (its config, secrets and allow_lazy_installs); once per process per home.
     Blocking: call it off the event loop."""
     from gateway.run import _profile_runtime_scope
-    from hermes_cli.left_core_migration import recover_at_startup
+    from moor_cli.left_core_migration import recover_at_startup
     with _profile_runtime_scope(Path(home), hydrate_secrets=hydrate_secrets):
         recover_at_startup(gateway_start=True)
 
@@ -53,11 +53,11 @@ def recover_left_core_at_gateway_start() -> None:
     home and the default root (the multiplex primary; a named launcher is then served as a
     secondary). Every secondary runs :func:`recover_left_core_in` before its plugins are discovered,
     so a platform plugin it gets starts its adapter in the same gateway start."""
-    from hermes_cli.left_core_migration import recover_at_startup
-    from hermes_constants import get_default_hermes_root, get_hermes_home
+    from moor_cli.left_core_migration import recover_at_startup
+    from moor_constants import get_default_moor_root, get_moor_home
     recover_at_startup(gateway_start=True)
-    root = Path(get_default_hermes_root())
-    if root.resolve() != Path(get_hermes_home()).resolve():
+    root = Path(get_default_moor_root())
+    if root.resolve() != Path(get_moor_home()).resolve():
         recover_left_core_in(root)
 
 
@@ -110,7 +110,7 @@ class GatewayStartupMixin:
         if not (self._external_drain_active or self._draining or not self._running):
             self._update_runtime_status(self._serving_state())
         logger.error(
-            "%s is parked after a non-retryable error (fix it, then `hermes gateway restart`). The gateway "
+            "%s is parked after a non-retryable error (fix it, then `moor gateway restart`). The gateway "
             "is DEGRADED — it serves local clients and cron with no messaging platform. %s: %s",
             adapter.platform.value, adapter.fatal_error_code or "unknown",
             adapter.fatal_error_message or "unknown error",
@@ -165,7 +165,7 @@ class GatewayStartupMixin:
                     continue
                 # Mark the replay so _handle_message does not re-queue it while the restore gate is closed.
                 with suppress(Exception):
-                    event._hermes_startup_restore_replay = True
+                    event._moor_startup_restore_replay = True
                 await adapter.handle_message(event)
             except Exception:
                 # One bad replay must not abort the drain: the remaining queued
@@ -1013,8 +1013,8 @@ class GatewayStartupMixin:
         unless the plugin that honours it is enabled. Never raises."""
         with _log_suppressed(logging.DEBUG, "retired session_reset check failed", exc_info=True):
             from gateway.config_loader import read_yaml_layers
-            from hermes_cli.profiles import profiles_to_serve
-            from hermes_cli.session_reset_retirement import format_notice, reset_plugin_enabled, retired_reset_policy
+            from moor_cli.profiles import profiles_to_serve
+            from moor_cli.session_reset_retirement import format_notice, reset_plugin_enabled, retired_reset_policy
             hits = [(name, found) for name, home in profiles_to_serve(bool(self.config.multiplex_profiles))
                     if (found := retired_reset_policy(read_yaml_layers(home)))]
             if hits and not reset_plugin_enabled():
@@ -1107,8 +1107,8 @@ class GatewayStartupMixin:
         # Discover plugins before shell hooks (plugin block decisions win ties). Explicit: the gateway
         # lazily imports run_agent, so model_tools' discover_plugins() side-effect may not have run.
         with _log_suppressed(logging.WARNING, "plugin discovery failed at gateway startup", exc_info=True):
-            from hermes_cli.plugins import discover_plugins
-            from hermes_cli.plugins_cmd_remove import sweep_pending_plugin_deletes
+            from moor_cli.plugins import discover_plugins
+            from moor_cli.plugins_cmd_remove import sweep_pending_plugin_deletes
             sweep_pending_plugin_deletes()  # trees a previous life still held when they were uninstalled
             discover_plugins()
         # Relay entrypoints share the effective profile opt-out, including when a
@@ -1152,7 +1152,7 @@ class GatewayStartupMixin:
 
         The gateway never prompts (register_from_config defaults to ``interactive=False``), even
         when a hidden console makes stdin look like a TTY, so consent must come from the allowlist,
-        --accept-hooks, HERMES_ACCEPT_HOOKS, or hooks_auto_accept: true; ``accept_hooks=False`` lets
+        --accept-hooks, MOOR_ACCEPT_HOOKS, or hooks_auto_accept: true; ``accept_hooks=False`` lets
         register_from_config resolve env + config.
         Never raises (logged at ``level``).
         """
@@ -1494,7 +1494,7 @@ class GatewayStartupMixin:
             self._startup_parked_platforms = True
             logger.error(
                 "%d configured platform(s) failed to start and are parked (fix the reported error, then "
-                "`hermes gateway restart`): %s. The gateway is DEGRADED — it serves local clients and "
+                "`moor gateway restart`): %s. The gateway is DEGRADED — it serves local clients and "
                 "cron with no messaging platform.",
                 len(startup_nonretryable_errors), "; ".join(startup_nonretryable_errors),
             )
@@ -1745,7 +1745,7 @@ class GatewayStartupMixin:
         self._update_runtime_status(self._serving_state())
         await self._start_finish_wiring(connected_count)
         self._start_spawn_background_watchers()
-        from hermes_cli.observability.shared_metrics_startup import record_process_ready
+        from moor_cli.observability.shared_metrics_startup import record_process_ready
         record_process_ready("gateway_boot", background=True)
         logger.info("Press Ctrl+C to stop")
         return True

@@ -260,7 +260,7 @@ async def delete_webhook(name: str, profile: Optional[str] = None):
     profile = destructive_profile(profile, "DELETE /api/webhooks/{name}")
 
     def _run():
-        import hermes_cli.webhook as wh
+        import moor_cli.webhook as wh
 
         def remove(subscriptions):
             del subscriptions[_webhook_key_in(subscriptions, name)]
@@ -276,7 +276,7 @@ async def set_webhook_enabled(name: str, body: WebhookEnabledToggle, profile: Op
     """Disabled routes stay on disk (re-enable later) but the gateway rejects
     their events with 403; it hot-reloads the file, so no restart is needed."""
     def _run():
-        import hermes_cli.webhook as wh
+        import moor_cli.webhook as wh
 
         def toggle(subscriptions):
             key = _webhook_key_in(subscriptions, name)
@@ -308,7 +308,7 @@ async def start_gateway(profile: Optional[str] = None):
 
 @router.post("/api/gateway/stop")
 async def stop_gateway(profile: Optional[str] = None, interrupt: bool = False):
-    from hermes_cli.web_server_gateway import live_session_refusal, multiplexed_profile_refusal
+    from moor_cli.web_server_gateway import live_session_refusal, multiplexed_profile_refusal
     # A served profile has no gateway of its own to stop: the child prints "No gateway running for this
     # profile" (exit 0) while the multiplexer keeps serving it and the UI flips to "stopped".
     refusal = await asyncio.to_thread(multiplexed_profile_refusal, profile, "stop")
@@ -318,7 +318,7 @@ async def stop_gateway(profile: Optional[str] = None, interrupt: bool = False):
     if not interrupt and (refusal := await asyncio.to_thread(live_session_refusal, profile, "stop")):
         raise HTTPException(status_code=409, detail=refusal)
     with http_failure("Failed to spawn gateway stop", 500, "Failed to stop gateway"):
-        proc = _spawn_hermes_action(_gateway_subcommand(profile, "stop") + ["--interrupt"] * interrupt, "gateway-stop")
+        proc = _spawn_moor_action(_gateway_subcommand(profile, "stop") + ["--interrupt"] * interrupt, "gateway-stop")
     return {"ok": True, "pid": proc.pid, "name": "gateway-stop"}
 
 

@@ -122,8 +122,8 @@ def seams(monkeypatch):
     """
     from agent import credential_pool
     from agent import credential_sources
-    from hermes_cli import web_server_gateway, web_server_sessions
-    from hermes_cli.config import get_hermes_home
+    from moor_cli import web_server_gateway, web_server_sessions
+    from moor_cli.config import get_moor_home
 
     record = {"spawn": [], "db": [], "pool_home": []}
 

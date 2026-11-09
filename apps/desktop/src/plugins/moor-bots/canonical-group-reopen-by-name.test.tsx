@@ -1,5 +1,5 @@
-import type * as HermesSdk from '@hermes/plugin-sdk'
-import { host } from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { WritableAtom } from 'nanostores'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -17,8 +17,8 @@ import { translateBots } from './i18n-test-helper'
 const { request, notify, openWorkspace, catalog } = vi.hoisted(() => ({
   request: vi.fn(), notify: vi.fn(), openWorkspace: vi.fn(), catalog: { patch: null as null | ((t: Record<string, unknown>) => unknown) }
 }))
-vi.mock('@hermes/plugin-sdk', async importOriginal => {
-  const sdk = await importOriginal<typeof HermesSdk>()
+vi.mock('@moor/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof MoorSdk>()
   const { en } = await import('@/i18n/en')
 
   return {

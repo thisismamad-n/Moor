@@ -142,7 +142,7 @@ async function spawnFixture(launcher: 'setsid' | 'nohup', owned: boolean): Promi
 import json,os,signal,time
 from pathlib import Path
 pid=os.getpid()
-mutex=Path(os.environ['HERMES_HOME'])/'.hermes-update-in-progress.lock'
+mutex=Path(os.environ['MOOR_HOME'])/'.moor-update-in-progress.lock'
 identity=mutex.stat()
 fds=[]
 for fd in range(3,256):
@@ -344,13 +344,13 @@ test.skipIf(process.platform === 'win32')(
 
     try {
       await writeFile(fixture.marker, `${dead}\n${now}\nct:${ct}\ndelegate:${dead} ct:${ct}\nrun:desk-1\n`)
-      await assertRemoteInstallUpdateClear(fixture.ssh, fixture.lock.hermesHome)
+      await assertRemoteInstallUpdateClear(fixture.ssh, fixture.lock.moorHome)
       await assert.rejects(readFile(fixture.marker), { code: 'ENOENT' })
 
       const live: string = `${dead}\n${now}\nct:${ct}\ndelegate:${delegate.pid} ct:${ct}\n`
       await writeFile(fixture.marker, live)
       await assert.rejects(
-        assertRemoteInstallUpdateClear(fixture.ssh, fixture.lock.hermesHome),
+        assertRemoteInstallUpdateClear(fixture.ssh, fixture.lock.moorHome),
         (error: any) => error.kind === 'update-in-progress' && error.message.includes(`process ${delegate.pid}`)
       )
       await assert.rejects(fixture.run(fixture.command), { code: 75, stdout: '' })

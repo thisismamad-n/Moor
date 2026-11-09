@@ -40,22 +40,22 @@ _STATIC_PROVIDER_ENV_BLOCKLIST = frozenset({
     "DAYTONA_API_KEY", "GATEWAY_RELAY_ID", "GATEWAY_RELAY_SECRET",
     "GATEWAY_RELAY_DELIVERY_KEY", "VERCEL_OIDC_TOKEN", "VERCEL_TOKEN",
     "VERCEL_PROJECT_ID", "VERCEL_TEAM_ID",
-    # Keys the OAuth provider profiles (nous, qwen-oauth) also accept when pasted. The auth
+    # Keys the OAuth provider profiles (moor, qwen-oauth) also accept when pasted. The auth
     # registry mirrors env_vars only for api_key profiles, and discovering the provider plugins
     # from here, at import, would re-mirror them over a plugin's own registry entry.
     "NOUS_API_KEY", "QWEN_API_KEY",
-    # Hermes' own secrets read in code: the anonymous-inference secret, dashboard auth
+    # Moor' own secrets read in code: the anonymous-inference secret, dashboard auth
     # (basic, OIDC, drain) and the Google Meet realtime key.
-    "HERMES_ANON_API_SECRET", "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD",
-    "HERMES_DASHBOARD_BASIC_AUTH_SECRET", "HERMES_DASHBOARD_DRAIN_SECRET",
-    "HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "HERMES_MEET_REALTIME_KEY",
+    "MOOR_ANON_API_SECRET", "MOOR_DASHBOARD_BASIC_AUTH_PASSWORD",
+    "MOOR_DASHBOARD_BASIC_AUTH_SECRET", "MOOR_DASHBOARD_DRAIN_SECRET",
+    "MOOR_DASHBOARD_OIDC_CLIENT_SECRET", "MOOR_MEET_REALTIME_KEY",
 })
 
 
 def _left_core_env(*, secrets_only: bool) -> frozenset:
-    """Env of features that left core for a catalog plugin (``hermes_cli.left_core_migration``):
+    """Env of features that left core for a catalog plugin (``moor_cli.left_core_migration``):
     stripped exactly as when core shipped them, plugin installed or not."""
-    from hermes_cli.left_core_migration import LEFT_CORE
+    from moor_cli.left_core_migration import LEFT_CORE
     return frozenset(name for feature in LEFT_CORE
                      for name in feature.secret_env + (() if secrets_only else feature.private_env))
 
@@ -102,13 +102,13 @@ def _build_adapter_secret_env() -> frozenset:
     """Secrets the messaging adapters declare, process-wide: core ``password`` messaging entries
     of OPTIONAL_ENV_VARS, the bundled platform plugin manifests' secret entries, and the
     secret-named keys the gateway env-override table reads (WEIXIN_TOKEN, FEISHU_ENCRYPT_KEY, ...).
-    Declared names only: a user's own ``SLACK_USER_TOKEN`` or ``LOCAL_LLM_API_KEY`` is not Hermes's.
+    Declared names only: a user's own ``SLACK_USER_TOKEN`` or ``LOCAL_LLM_API_KEY`` is not Moor's.
     A profile's user-installed platform plugins are per home: :func:`_home_adapter_secret_env`.
     Nothing here fails soft: an unreadable bundled manifest or env table fails the import rather
     than dropping its secrets from the policy."""
-    from hermes_cli.config import (
+    from moor_cli.config import (
         CORE_DECLARED_ENV_NAMES, OPTIONAL_ENV_VARS, PLATFORM_SECRET_ENV_SUFFIXES, platform_manifest_secret_envs)
-    from hermes_cli.profile_channels import config_env_table_keys
+    from moor_cli.profile_channels import config_env_table_keys
     # Read in code only, declared nowhere else: the Microsoft Graph app secret and webhook
     # clientState, the QQ bot's speech-to-text key, and secrets only a plugin's ``env_overrides``
     # reads (Feishu webhook keys, Yuanbao's legacy app key). Those rows live on the adapter's
@@ -124,11 +124,11 @@ def _build_adapter_secret_env() -> frozenset:
     return frozenset(names)
 
 
-# Provider blocklist first: it imports hermes_cli.auth before hermes_cli.config, whose import
+# Provider blocklist first: it imports moor_cli.auth before moor_cli.config, whose import
 # discovers provider plugins that expect a fully initialized auth registry.
 _PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 _ADAPTER_SECRET_ENV = _build_adapter_secret_env()
-_HERMES_PROVIDER_ENV_BLOCKLIST = _PROVIDER_ENV_BLOCKLIST | _ADAPTER_SECRET_ENV
+_MOOR_PROVIDER_ENV_BLOCKLIST = _PROVIDER_ENV_BLOCKLIST | _ADAPTER_SECRET_ENV
 
 _HOME_ADAPTER_SECRET_CACHE: dict[str, tuple] = {}
 
@@ -141,10 +141,10 @@ def _home_adapter_secret_env() -> frozenset:
     manifest under ``plugins/platforms/`` that cannot be read raises. A partial scan (a plugin dir
     or flat manifest unreadable or unparsable) keeps the names this home already had and is not
     cached, so a failed discovery never releases a known denial and recovery is seen at once."""
-    from hermes_cli.config import platform_manifest_secret_scan, platform_manifest_stamp
-    from hermes_constants import get_hermes_home, hermes_home_key
-    home = get_hermes_home()
-    key, stamp = hermes_home_key(home), platform_manifest_stamp(home)
+    from moor_cli.config import platform_manifest_secret_scan, platform_manifest_stamp
+    from moor_constants import get_moor_home, moor_home_key
+    home = get_moor_home()
+    key, stamp = moor_home_key(home), platform_manifest_stamp(home)
     cached = _HOME_ADAPTER_SECRET_CACHE.get(key)
     if cached is None or cached[0] is None or cached[0] != stamp:
         names, complete = platform_manifest_secret_scan(home)
@@ -162,7 +162,7 @@ def _registry_adapter_secret_env() -> frozenset:
     must not strip it from credentialed children. No blanket fallback: a registry error surfaces
     instead of an empty (fail-open) set."""
     from gateway.platform_registry import platform_registry
-    from hermes_cli.config import PLATFORM_SECRET_ENV_SUFFIXES
+    from moor_cli.config import PLATFORM_SECRET_ENV_SUFFIXES
     return frozenset(n.upper() for n in platform_registry.required_env_names()
                      if n.upper().endswith(PLATFORM_SECRET_ENV_SUFFIXES))
 
@@ -178,10 +178,10 @@ def _is_provider_env_blocklisted(name: str, _registered: frozenset | None = None
     """``name`` is a blocklisted provider/tool credential or adapter secret, matched the way the
     platform's environment resolves names: exact plus case-folded. On Windows the environment
     block is case-insensitive, so ``openai_api_key`` IS ``OPENAI_API_KEY``; consistent with
-    ``_is_hermes_internal_secret``, which already folds (``key.upper()``). Loops pass
+    ``_is_moor_internal_secret``, which already folds (``key.upper()``). Loops pass
     ``_registered`` so the registry is read once per env, not once per key."""
     upper = name.upper()
-    if name in _HERMES_PROVIDER_ENV_BLOCKLIST or upper in _HERMES_PROVIDER_ENV_BLOCKLIST:
+    if name in _MOOR_PROVIDER_ENV_BLOCKLIST or upper in _MOOR_PROVIDER_ENV_BLOCKLIST:
         return True
     return upper in (_registered_adapter_secret_env() if _registered is None else _registered)
 
@@ -208,7 +208,7 @@ def _is_provider_env_blocklisted(name: str, _registered: frozenset | None = None
 # ``_sanitize_subprocess_env`` is also consumed by search workers (e.g. the ddgs web-search subprocess), the
 # computer-use driver binary, and user-script runners (bang ``!`` commands, quick commands, cron scripts,
 # webhook-filter scripts), so those children receive the vars too — matching the approved background/PTY
-# scope. Every other surface stays sealed — execute_code scrubbing, :func:`hermes_subprocess_env` (browser /
+# scope. Every other surface stays sealed — execute_code scrubbing, :func:`moor_subprocess_env` (browser /
 # TUI host / ACP agent spawns), docker children, and ``env_passthrough`` registration (skills/config
 # still cannot register these names). The GHSA-rhgp-j443-p4rf seal is preserved because no registration path
 # is opened; this is a scrub-path exemption, not an allowlist addition. First-party matches use the merged
@@ -277,30 +277,30 @@ def _is_terminal_first_party_env(name: str) -> bool:
 _ACTIVE_VENV_MARKER_VARS = ("VIRTUAL_ENV", "CONDA_PREFIX", "PYTHONHOME")
 
 # Identity a supervisor hands to the ONE process it started, which no child of that process owns.
-# HERMES_LAUNCHD_LABEL is the stderr-timestamp wrapper's re-export of its launchd job label for the
-# gateway it starts (#120087); HERMES_GATEWAY_EXTERNAL_SUPERVISOR is stamped into the gateway's own
+# MOOR_LAUNCHD_LABEL is the stderr-timestamp wrapper's re-export of its launchd job label for the
+# gateway it starts (#120087); MOOR_GATEWAY_EXTERNAL_SUPERVISOR is stamped into the gateway's own
 # environ by ``gateway run --external-supervisor``. Inherited, a gateway an agent starts from its
 # terminal answers ``launchd``/supervised and takes the exit-75 restart route no supervisor answers.
 # NOTIFY_SOCKET/WATCHDOG_* name the systemd unit's main process (sd_notify's unset_environment).
 # Kept on purpose: XPC_SERVICE_NAME (launchd's own per-process stamp, "0" below the wrapper, which
-# ``hermes update`` compares to tell it runs inside a job), INVOCATION_ID/JOURNAL_STREAM (systemd
+# ``moor update`` compares to tell it runs inside a job), INVOCATION_ID/JOURNAL_STREAM (systemd
 # sets them for every process of the unit, and the gateway-child dispatch reads them there), and the
-# launch markers HERMES_SUPERVISED_CHILD / HERMES_S6_SUPERVISED_CHILD (profile pinning, s6 redirect).
+# launch markers MOOR_SUPERVISED_CHILD / MOOR_S6_SUPERVISED_CHILD (profile pinning, s6 redirect).
 _SUPERVISED_PROCESS_IDENTITY_VARS = (
-    "HERMES_LAUNCHD_LABEL", "HERMES_GATEWAY_EXTERNAL_SUPERVISOR", "NOTIFY_SOCKET", "WATCHDOG_USEC", "WATCHDOG_PID",
+    "MOOR_LAUNCHD_LABEL", "MOOR_GATEWAY_EXTERNAL_SUPERVISOR", "NOTIFY_SOCKET", "WATCHDOG_USEC", "WATCHDOG_PID",
 )
 # The supervisor markers are also profile pins: a CLI under them skips the sticky active_profile
-# (``hermes_cli.main._under_gateway_supervisor``, #74872), and HERMES_GATEWAY_EXTERNAL_SUPERVISOR is an
+# (``moor_cli.main._under_gateway_supervisor``, #74872), and MOOR_GATEWAY_EXTERNAL_SUPERVISOR is an
 # --external-supervisor gateway's ONLY one. A child that loses a marker keeps the pin under a name the
 # restart-route and launch-identity probes never read, so it stays on the gateway's profile without
 # claiming the supervisor.
-GATEWAY_PROFILE_PIN_ENV = "HERMES_GATEWAY_PROFILE_PIN"
+GATEWAY_PROFILE_PIN_ENV = "MOOR_GATEWAY_PROFILE_PIN"
 
 
 def carry_gateway_profile_pin(env: dict) -> dict:
     """Mark *env* with :data:`GATEWAY_PROFILE_PIN_ENV` while it still holds a pinning supervisor marker."""
-    if env.get("HERMES_SUPERVISED_CHILD") or str(
-            env.get("HERMES_GATEWAY_EXTERNAL_SUPERVISOR", "")).strip().lower() in {"1", "true", "yes", "on"}:
+    if env.get("MOOR_SUPERVISED_CHILD") or str(
+            env.get("MOOR_GATEWAY_EXTERNAL_SUPERVISOR", "")).strip().lower() in {"1", "true", "yes", "on"}:
         env[GATEWAY_PROFILE_PIN_ENV] = "1"
     return env
 
@@ -423,12 +423,12 @@ _ALWAYS_STRIP_KEYS: frozenset[str] = frozenset({
     # _is_moor_internal_secret, but _ID has no secret suffix, so it must be
     # enumerated here to stay stripped on the inherit_credentials=True path.
     "GATEWAY_RELAY_ID", "GATEWAY_RELAY_SECRET", "GATEWAY_RELAY_DELIVERY_KEY",
-    "EMAIL_PASSWORD", "HERMES_DASHBOARD_SESSION_TOKEN",
+    "EMAIL_PASSWORD", "MOOR_DASHBOARD_SESSION_TOKEN",
     # Dashboard auth: the basic-auth password and session-signing secret, the OIDC client
     # secret and the drain bearer. They let a holder mint or forge dashboard sessions, and no
     # child (credentialed CLIs included) consumes them.
-    "HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "HERMES_DASHBOARD_BASIC_AUTH_SECRET",
-    "HERMES_DASHBOARD_OIDC_CLIENT_SECRET", "HERMES_DASHBOARD_DRAIN_SECRET",
+    "MOOR_DASHBOARD_BASIC_AUTH_PASSWORD", "MOOR_DASHBOARD_BASIC_AUTH_SECRET",
+    "MOOR_DASHBOARD_OIDC_CLIENT_SECRET", "MOOR_DASHBOARD_DRAIN_SECRET",
     # Remote-compute / infrastructure secrets
     "MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET", "DAYTONA_API_KEY",
 }) | _ADAPTER_SECRET_ENV | _left_core_env(secrets_only=True)  # every declared adapter secret is Tier 1

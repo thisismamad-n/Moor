@@ -114,8 +114,8 @@ website/
 assets/
 !assets/
 assets/*
-!assets/nous-girl-black.svg
-!assets/nous-girl-white.svg
+!assets/moor-girl-black.svg
+!assets/moor-girl-white.svg
 !assets/dmg-volume.png
 !assets/backgrounds/
 !assets/backgrounds/**

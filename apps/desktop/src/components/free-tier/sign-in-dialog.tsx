@@ -21,7 +21,7 @@ import {
   $freeTierStatus,
   FREE_TIER_MODEL,
   friendlyWait,
-  NOUS_PROVIDER_ID,
+  MOOR_PROVIDER_ID,
   refreshFreeTierStatus
 } from '@/store/free-tier'
 import {
@@ -45,7 +45,7 @@ import { $localModelOfferPending } from '@/store/local-model-offer'
 import { refreshOnboardingProviders } from '@/store/onboarding'
 import { $onboardingSurfaceClear } from '@/store/onboarding-presence'
 import { $currentModel, setModelPickerOpen } from '@/store/session'
-import type { AppHandoffStatus } from '@/types/hermes'
+import type { AppHandoffStatus } from '@/types/moor'
 
 interface FreeTierSignInDialogProps {
   /** The app's model-assignment path. Used only to re-home a live session that

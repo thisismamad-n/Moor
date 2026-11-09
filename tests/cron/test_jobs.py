@@ -498,7 +498,7 @@ class TestJobCRUD:
 
     def test_rejects_stale_past_one_shot_at_creation(self, tmp_cron_dir, monkeypatch):
         now = datetime(2026, 3, 18, 4, 30, 0, tzinfo=UTC)
-        monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
+        monkeypatch.setattr("cron.jobs._moor_now", lambda: now)
         stale = (now - timedelta(minutes=5)).isoformat()
 
         with pytest.raises(ValueError, match="past and cannot be scheduled"):
@@ -624,7 +624,7 @@ class TestPauseResumeJob:
         """Resuming a paused one-shot whose time is now in the past must raise
         ValueError — the revived job would silently never fire."""
         now = datetime(2026, 7, 6, 12, 0, 0, tzinfo=UTC)
-        monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
+        monkeypatch.setattr("cron.jobs._moor_now", lambda: now)
         # Create directly — bypass create_job's past-oneshot guard so we can
         # test the resume path independently.
         job = {
@@ -654,7 +654,7 @@ class TestPauseResumeJob:
         still due — the due scan then fires it (late/catch-up) or logs the skip. Re-anchoring
         from now consumed the occurrence with no run, no ledger row and no log line (#113603)."""
         now = datetime(2026, 9, 16, 17, 0, 0, tzinfo=UTC)
-        monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
+        monkeypatch.setattr("cron.jobs._moor_now", lambda: now)
         job = create_job(prompt="daily pipeline", schedule="30 1 * * *", deliver="local")
         stored = load_jobs()
         row = next(r for r in stored if r["id"] == job["id"])
@@ -673,7 +673,7 @@ class TestPauseResumeJob:
         """Control: a paused job whose stored slot is still ahead, or created ``--paused`` with no
         slot, resumes onto the next future occurrence as before."""
         now = datetime(2026, 9, 16, 17, 0, 0, tzinfo=UTC)
-        monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
+        monkeypatch.setattr("cron.jobs._moor_now", lambda: now)
         ahead = create_job(prompt="daily", schedule="30 1 * * *", deliver="local")
         pause_job(ahead["id"])
         canary = create_job(prompt="canary", schedule="0 9 * * *", deliver="local", paused=True)
@@ -1087,7 +1087,7 @@ class TestGetDueJobs:
 
     def test_broken_recent_one_shot_without_next_run_is_recovered(self, tmp_cron_dir, monkeypatch):
         now = datetime(2026, 3, 18, 4, 22, 30, tzinfo=UTC)
-        monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
+        monkeypatch.setattr("cron.jobs._moor_now", lambda: now)
 
         run_at = "2026-03-18T04:22:00+00:00"
         save_jobs(
@@ -1813,7 +1813,7 @@ class TestJobsJsonIdKeyedMap:
 
         def add_junk():
             payload = json.loads(JOBS_FILE.read_text(encoding="utf-8"))
-            payload["jobs"][0]["next_run_at"] = (_hermes_now() - timedelta(seconds=5)).isoformat()
+            payload["jobs"][0]["next_run_at"] = (_moor_now() - timedelta(seconds=5)).isoformat()
             payload["jobs"] += [None, "i am not a job", 42]
             JOBS_FILE.write_text(json.dumps(payload), encoding="utf-8")
 

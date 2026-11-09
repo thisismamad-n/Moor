@@ -28,12 +28,12 @@ class _FakeAdapter:
 
 @pytest.fixture
 def served(tmp_path, monkeypatch):
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.moor'
     root.mkdir(mode=0o700)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
-    import hermes_state
-    monkeypatch.setattr(hermes_state, 'DEFAULT_DB_PATH', hermes_state._IMPORT_DEFAULT_DB_PATH)
+    monkeypatch.setenv('MOOR_HOME', str(root))
+    import moor_state
+    monkeypatch.setattr(moor_state, 'DEFAULT_DB_PATH', moor_state._IMPORT_DEFAULT_DB_PATH)
     homes = [('default', root)]
     config = GatewayConfig()
     config._runtime_profile_homes = tuple(homes)
@@ -94,8 +94,8 @@ async def test_retry_into_a_draining_authority_keeps_the_exchange(served):
 async def test_retry_into_a_full_fifo_keeps_the_exchange(served, monkeypatch):
     runner, root = served
     source, sid, sent = await _exchange(runner, root)
-    import hermes_state_runtime
-    monkeypatch.setattr(hermes_state_runtime, 'ADMISSION_QUEUE_MAX', 0)
+    import moor_state_runtime
+    monkeypatch.setattr(moor_state_runtime, 'ADMISSION_QUEUE_MAX', 0)
 
     reply = await _retry(runner, root, source)
 
@@ -124,8 +124,8 @@ async def _admitting_exchange(runner, root, rows=None):
 
 
 def _queued_texts(authority, sid):
-    import hermes_state_runtime
-    rows = hermes_state_runtime.list_session_admissions(authority.db, session_id=authority.logical_owner(sid))
+    import moor_state_runtime
+    rows = moor_state_runtime.list_session_admissions(authority.db, session_id=authority.logical_owner(sid))
     return [row['payload']['text'] for row in rows if row['status'] == 'queued']
 
 

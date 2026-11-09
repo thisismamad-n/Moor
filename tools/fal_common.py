@@ -34,7 +34,7 @@ from urllib.parse import urlencode
 # A 429 whose Retry-After is longer than this is reported, not waited out inside a tool call.
 MANAGED_FAL_RATE_LIMIT_RETRY_CAP_SECONDS = 30.0
 # Queue status poll cadence. ``handle.get()`` polls every 0.1 s (+RTT): one 12 s image cost
-# ~208 requests/min against the Nous gateway's 200/min window, so a second job 429s. 2 s is
+# ~208 requests/min against the Moor gateway's 200/min window, so a second job 429s. 2 s is
 # ~25 requests/min per job (8 concurrent jobs fit) for at most +2 s latency per job.
 FAL_QUEUE_POLL_SECONDS = 2.0
 

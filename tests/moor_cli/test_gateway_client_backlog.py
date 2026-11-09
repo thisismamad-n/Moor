@@ -12,9 +12,9 @@ from contextlib import asynccontextmanager
 import pytest
 from websockets.protocol import State
 
-from hermes_cli import gateway_client
-from hermes_cli.gateway_client import GatewayClient, GatewayClientError
-from hermes_cli.gateway_connection import GatewayConnection
+from moor_cli import gateway_client
+from moor_cli.gateway_client import GatewayClient, GatewayClientError
+from moor_cli.gateway_connection import GatewayConnection
 
 SID = "local-backlog"
 
@@ -103,7 +103,7 @@ class CardOwner:
 @pytest.mark.asyncio
 async def test_kanban_worker_settles_a_card_whose_turn_outstreams_the_client_queue(monkeypatch, tmp_path):
     from gateway import session_kanban
-    from hermes_cli import kanban_worker_client
+    from moor_cli import kanban_worker_client
 
     @asynccontextmanager
     async def connect():
@@ -112,7 +112,7 @@ async def test_kanban_worker_settles_a_card_whose_turn_outstreams_the_client_que
 
     monkeypatch.setattr(gateway_client, "connect_gateway", connect)
     monkeypatch.setattr(session_kanban, "worker_result", lambda *_: {"exit_code": 0, "last_output": "card closed"})
-    monkeypatch.delenv("HERMES_TUI_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("MOOR_TUI_GATEWAY_URL", raising=False)
     assert await asyncio.wait_for(kanban_worker_client.run({"task_id": "t1"}, str(tmp_path / "kanban.db")), 5) == 0
 
 

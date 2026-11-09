@@ -501,9 +501,9 @@ def test_history_orders_by_instant_across_dst_fall_back(monkeypatch, tmp_path):
     new_york = ZoneInfo("America/New_York")
     first_pass = datetime(2026, 11, 1, 1, 50, tzinfo=new_york, fold=0)
     second_pass = datetime(2026, 11, 1, 1, 10, tzinfo=new_york, fold=1)
-    monkeypatch.setattr(executions, "_hermes_now", lambda: first_pass)
+    monkeypatch.setattr(executions, "_moor_now", lambda: first_pass)
     earlier = executions.create_execution("dst-job", source="builtin")
-    monkeypatch.setattr(executions, "_hermes_now", lambda: second_pass)
+    monkeypatch.setattr(executions, "_moor_now", lambda: second_pass)
     later = executions.create_execution("dst-job", source="builtin")
     assert later["claimed_at"] < earlier["claimed_at"]
 

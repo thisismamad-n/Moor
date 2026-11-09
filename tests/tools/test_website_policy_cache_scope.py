@@ -7,18 +7,18 @@ from pathlib import Path
 
 import pytest
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 from tools import website_policy
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_constants import reset_moor_home_override, set_moor_home_override
 
 
 @contextmanager
 def _profile(home: Path):
-    token = set_hermes_home_override(home)
+    token = set_moor_home_override(home)
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _write_policy(home: Path, *, enabled: bool, domains: list[str] | None = None) -> None:

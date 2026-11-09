@@ -8,9 +8,9 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from hermes_cli import web_server
-from hermes_cli.dashboard_auth import clear_providers, register_provider
-from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
+from moor_cli import web_server
+from moor_cli.dashboard_auth import clear_providers, register_provider
+from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
 
 
 @pytest.fixture
@@ -18,8 +18,8 @@ def gated_webapp(monkeypatch, tmp_path):
     """The gateway's Webapp behind the sign-in gate, serving a renderer dist with its icons."""
     dist = tmp_path / "dist-webapp"
     dist.mkdir()
-    (dist / "index.html").write_text("<!doctype html><title>Hermes</title>", encoding="utf-8")
-    for name in ("apple-touch-icon.png", "favicon.ico", "hermes.png"):
+    (dist / "index.html").write_text("<!doctype html><title>Moor</title>", encoding="utf-8")
+    for name in ("apple-touch-icon.png", "favicon.ico", "moor.png"):
         (dist / name).write_bytes(b"\x89PNG icon bytes")
     clear_providers()
     register_provider(StubAuthProvider())
@@ -39,7 +39,7 @@ def test_page_icons_answer_without_a_session(gated_webapp, path):
     assert response.content == b"\x89PNG icon bytes"
 
 
-@pytest.mark.parametrize("path", ["/hermes.png", "/apple-touch-icon.png.map", "/apple-touch-icon.pngx"])
+@pytest.mark.parametrize("path", ["/moor.png", "/apple-touch-icon.png.map", "/apple-touch-icon.pngx"])
 def test_other_files_still_require_sign_in(gated_webapp, path):
     response = gated_webapp.get(path, follow_redirects=False)
 

@@ -30,10 +30,10 @@ def test_restart_exit_wait_budget_outlasts_deferral_plus_stop_envelope():
 
 
 def test_cli_restart_wait_covers_configured_cron_drain(tmp_path, monkeypatch):
-    import hermes_cli.gateway as gateway_cli
+    import moor_cli.gateway as gateway_cli
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    for key in ("HERMES_RESTART_DRAIN_TIMEOUT", "HERMES_RESTART_AFTER_TURN_TIMEOUT", "HERMES_CRON_DRAIN_TIMEOUT"):
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    for key in ("MOOR_RESTART_DRAIN_TIMEOUT", "MOOR_RESTART_AFTER_TURN_TIMEOUT", "MOOR_CRON_DRAIN_TIMEOUT"):
         monkeypatch.delenv(key, raising=False)
     config = tmp_path / "config.yaml"
     config.write_text("agent:\n  restart_drain_timeout: 2\n  restart_after_turn_timeout: 3\n  cron_drain_timeout: 80\n")

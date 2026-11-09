@@ -55,9 +55,9 @@ class TestRecordMoorRateLimit:
     def test_the_429_bodys_wait_outranks_the_hourly_window_end(self, rate_guard_env):
         # A welcome-tier fair-share 429 said retry after 410 s; the hourly bucket's reset header (its
         # window end, ~1 h) turned that into an hour-long block on the next turns.
-        from agent.nous_rate_guard import record_nous_rate_limit, _state_path
+        from agent.moor_rate_guard import record_moor_rate_limit, _state_path
 
-        record_nous_rate_limit(
+        record_moor_rate_limit(
             headers={"x-ratelimit-remaining-requests-1h": "37", "x-ratelimit-reset-requests-1h": "3594"},
             error_context={"reset_at": time.time() + 410},
             anonymous=True,

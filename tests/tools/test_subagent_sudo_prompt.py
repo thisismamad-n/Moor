@@ -139,10 +139,10 @@ class TestDelegatedChildFailureMessaging:
 
 
 def test_single_query_never_prompts(monkeypatch):
-    """`hermes chat -q` exports HERMES_INTERACTIVE=1 and registers the CLI sudo callback, but never renders the
+    """`moor chat -q` exports MOOR_INTERACTIVE=1 and registers the CLI sudo callback, but never renders the
     panel (a 45 s wait per sudo call for nobody): it is headless, like a delegated child."""
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-    monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")
+    monkeypatch.setenv("MOOR_INTERACTIVE", "1")
+    monkeypatch.setenv("MOOR_SINGLE_QUERY_SESSION", "1")
     calls = []
     tt.set_sudo_password_callback(lambda: calls.append(1) or "pw")
     monkeypatch.setattr(tts, "_prompt_for_sudo_password",
@@ -159,9 +159,9 @@ def test_single_query_sudo_failure_gets_the_headless_tip_and_no_reprompt_promise
     """A -q sudo failure is told how to fix it (SUDO_PASSWORD), never promised a prompt it will not get."""
     from tools.terminal_tool_result import _sudo_annotations
 
-    monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-    monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+    monkeypatch.setenv("MOOR_INTERACTIVE", "1")
+    monkeypatch.setenv("MOOR_SINGLE_QUERY_SESSION", "1")
+    monkeypatch.delenv("MOOR_GATEWAY_SESSION", raising=False)
     out = tts._handle_sudo_failure("sudo: a password is required", env_type="local")
     assert "cannot prompt for a sudo password" in out and "SUDO_PASSWORD" in out
 

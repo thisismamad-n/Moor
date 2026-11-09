@@ -35,7 +35,7 @@ def kanban_list(tenant: str) -> list[dict]:
     output isn't supported by the installed moor CLI."""
     try:
         out = subprocess.run(
-            ["hermes", "kanban", "list", "--tenant", tenant, "--json"],
+            ["moor", "kanban", "list", "--tenant", tenant, "--json"],
             stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding='utf-8', errors='replace', check=False,
         )
         if out.returncode == 0 and out.stdout.strip().startswith("["):
@@ -44,7 +44,7 @@ def kanban_list(tenant: str) -> list[dict]:
         pass
     # Fallback: textual parse of `moor kanban list`
     out = subprocess.run(
-        ["hermes", "kanban", "list", "--tenant", tenant],
+        ["moor", "kanban", "list", "--tenant", tenant],
         stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding='utf-8', errors='replace', check=False,
     )
     rows = []
@@ -68,7 +68,7 @@ def kanban_list(tenant: str) -> list[dict]:
 
 def kanban_show(task_id: str) -> dict | None:
     out = subprocess.run(
-        ["hermes", "kanban", "show", task_id, "--json"],
+        ["moor", "kanban", "show", task_id, "--json"],
         stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding='utf-8', errors='replace', check=False,
     )
     if out.returncode != 0:

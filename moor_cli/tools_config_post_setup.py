@@ -11,8 +11,8 @@ from typing import Set
 from moor_cli.cli_output import (
     print_error as _print_error, print_info as _print_info, print_success as _print_success,
     print_warning as _print_warning)
-from hermes_cli.config import get_env_value
-from hermes_cli.tools_config_cua import _cua_driver_install_ready, install_cua_driver
+from moor_cli.config import get_env_value
+from moor_cli.tools_config_cua import _cua_driver_install_ready, install_cua_driver
 from tools.transcription_common import DEFAULT_LOCAL_MODEL, STT_MODEL_CATALOG
 
 _LOCAL_STT_MODEL_SUMMARY = ", ".join(
@@ -28,14 +28,14 @@ def _info_lines(*lines: str) -> None:
 
 def _ensure_browser_use_cli() -> None:
     """Confirm browser_exec's engine is runnable. It is browser-harness, a core dependency of
-    Hermes's own venv, so there is nothing to download; a miss means the venv needs a re-sync."""
+    Moor's own venv, so there is nothing to download; a miss means the venv needs a re-sync."""
     from tools.browser_use_cli import _find_cli
 
     if _find_cli() is not None:
-        _print_success("    browser_exec ready (browser-harness, bundled with Hermes)")
+        _print_success("    browser_exec ready (browser-harness, bundled with Moor)")
     else:
-        _print_warning("    browser-harness is missing from Hermes's Python environment")
-        _print_info("    Re-sync it with: hermes update")
+        _print_warning("    browser-harness is missing from Moor's Python environment")
+        _print_info("    Re-sync it with: moor update")
 
 
 def _post_setup_lightpanda() -> None:
@@ -54,11 +54,11 @@ def _post_setup_lightpanda() -> None:
 
 
 def _post_setup_chromium() -> None:
-    """Local Browser row: browser_exec launches pm's Chromium. Termux (system Chromium) and the Hermes
+    """Local Browser row: browser_exec launches pm's Chromium. Termux (system Chromium) and the Moor
     Docker image (its baked build) own their payloads, so a miss there is a hint, never a download."""
     import pm
-    from hermes_cli.browser_runtime import BAKED_EXECUTABLE_FILE, chromium_executable, chromium_missing_hint
-    from hermes_constants import is_termux
+    from moor_cli.browser_runtime import BAKED_EXECUTABLE_FILE, chromium_executable, chromium_missing_hint
+    from moor_constants import is_termux
 
     _ensure_browser_use_cli()
     if chromium_executable() is None and not (is_termux() or BAKED_EXECUTABLE_FILE.exists()):
@@ -66,7 +66,7 @@ def _post_setup_chromium() -> None:
             pm.ensure("chromium", explicit=True)
         except (RuntimeError, OSError) as exc:  # pm.InstallError, a download or worker failure
             _print_warning(f"    Chromium install failed: {exc}")
-            _info_lines("Retry with: hermes tools post-setup chromium")
+            _info_lines("Retry with: moor tools post-setup chromium")
             return
     found = chromium_executable()
     if found is None:
@@ -324,7 +324,7 @@ def _module_installed(module_name: str) -> bool:
 def _chromium_installed() -> bool:
     """Everything ``_run_post_setup("chromium")`` provides is present: browser-harness and a Chromium, so
     "Run setup" flips to installed only when re-running it would be a no-op."""
-    from hermes_cli.browser_runtime import chromium_executable
+    from moor_cli.browser_runtime import chromium_executable
 
     return _browser_harness_installed() and chromium_executable() is not None
 

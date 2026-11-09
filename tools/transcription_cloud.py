@@ -281,9 +281,9 @@ def _transcribe_xai(
     language = language or _resolve_stt_language("xai", stt_config) or ""
 
     def _post() -> Any:
-        from tools.xai_http import hermes_xai_user_agent
+        from tools.xai_http import moor_xai_user_agent
         # Always name the model: xAI moved the server default from 1.0 to 2.0 mid-September and
-        # will retire 1.0, so an omitted field silently changes what Hermes runs.
+        # will retire 1.0, so an omitted field silently changes what Moor runs.
         resolved_model = normalize_xai_stt_model(model_name)
         data: dict[str, str] = {"model": resolved_model}
         if language:
@@ -364,7 +364,7 @@ def _transcribe_elevenlabs(
 def _transcribe_deepinfra(
     file_path: str, model_name: str, *, language: Optional[str] = None, prompt: Optional[str] = None
 ) -> dict[str, Any]:
-    """Resolve DeepInfra credentials/model (shared ``hermes_cli.models`` helpers), then delegate to :func:`_transcribe_openai`."""
+    """Resolve DeepInfra credentials/model (shared ``moor_cli.models`` helpers), then delegate to :func:`_transcribe_openai`."""
     from tools.transcription_tools import _load_stt_config, _resolve_provider_key
     api_key = _resolve_provider_key("DEEPINFRA_API_KEY", "deepinfra")
     if not api_key:

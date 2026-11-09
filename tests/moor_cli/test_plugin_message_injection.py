@@ -6,10 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import moor_yaml as yaml
 
-import hermes_cli.plugins as plugins_mod
+import moor_cli.plugins as plugins_mod
 from agent import secret_scope
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
+from moor_constants import reset_moor_home_override, set_moor_home_override
+from moor_cli.plugins import PluginContext, PluginManager, PluginManifest
 
 
 def _context(name: str = "notify-plugin") -> tuple[PluginContext, PluginManager]:
@@ -221,18 +221,18 @@ def test_published_gateway_host_reaches_existing_and_future_profile_managers(tmp
                 "plugins": {"entries": {"notify-plugin": {"allow_gateway_injection": True}}}
             })
         )
-    monkeypatch.setenv("HERMES_HOME", str(homes[0]))
+    monkeypatch.setenv("MOOR_HOME", str(homes[0]))
     plugins_mod._reset_plugin_managers_for_tests()
     # Multiplex gateway: launch home + secondary profiles served by one process.
     was_active = secret_scope.is_multiplex_active()
     secret_scope.set_multiplex_active(True)
 
     def manager_for(home):
-        token = set_hermes_home_override(str(home))
+        token = set_moor_home_override(str(home))
         try:
             return plugins_mod.get_plugin_manager()
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     owner = object()
     injector = MagicMock(return_value=True)
@@ -252,7 +252,7 @@ def test_published_gateway_host_reaches_existing_and_future_profile_managers(tmp
         assert manager_for(homes[0]) is launch_manager
         assert launch_manager.has_gateway_message_injector is True
 
-        token = set_hermes_home_override(str(homes[1]))
+        token = set_moor_home_override(str(homes[1]))
         try:
             context = PluginContext(
                 PluginManifest(name="notify-plugin", key="notify-plugin", source="user"),
@@ -262,7 +262,7 @@ def test_published_gateway_host_reaches_existing_and_future_profile_managers(tmp
                 "continue", session_key="agent:secondary:telegram:dm:42"
             ) is True
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
         # The calling manager's immutable home, not the launch home, rides with the key.
         injector.assert_called_once_with(
@@ -294,11 +294,11 @@ def test_origin_injection_targets_the_plugins_own_home(tmp_path, monkeypatch):
     manager.set_gateway_message_injector(object(), injector)
     other = tmp_path / "other"
     other.mkdir()
-    token = set_hermes_home_override(other)
+    token = set_moor_home_override(other)
     try:
         assert context.inject_message("Kick off", origin=ORIGIN) is True
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     injector.assert_called_once_with(
         origin=ORIGIN, plugin_home=manager.home_path, content="Kick off", plugin_id="notify-plugin",
     )
@@ -317,11 +317,11 @@ def test_origin_injection_permission_comes_from_the_plugins_own_profile(tmp_path
         yaml.safe_dump({"plugins": {"entries": {"notify-plugin": {"allow_gateway_injection": True}}}}),
         encoding="utf-8",
     )
-    token = set_hermes_home_override(granting)
+    token = set_moor_home_override(granting)
     try:
         assert context.inject_message("x", origin=ORIGIN) is False
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     injector.assert_not_called()
 
 

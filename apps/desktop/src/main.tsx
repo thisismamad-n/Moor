@@ -51,7 +51,7 @@ installSelectionCopyColorGuard()
 // Browser host only: the tab carries session status while the user is away.
 installBrowserTabTitle()
 // One preferences store per machine, shared by native Desktop and its Webapp (#145213).
-startUiPreferencesSync(window.hermesDesktop?.uiPreferences)
+startUiPreferencesSync(window.moorDesktop?.uiPreferences)
 
 // The perf probe ships in dev, and in a production build ONLY when explicitly
 // opted in (VITE_PERF_PROBE=1) — this lets the perf harness measure a real,

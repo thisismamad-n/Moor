@@ -74,14 +74,14 @@ def stream_held() -> bool:
     """True when a plugin loaded in the active profile registered ``transform_llm_output`` with
     ``hold_stream=True``: that profile's replies reach the user only as the rewritten final.
     Lazy-discovers first, like ``has_hook``."""
-    from hermes_cli.plugins import _delivery_manager
+    from moor_cli.plugins import _delivery_manager
 
     return _delivery_manager().holds_stream()
 
 
 def held_stream_transforms() -> tuple[Callable, ...]:
     """:meth:`PluginDispatchMixin.held_transforms` of the active profile's manager (lazy-discovers)."""
-    from hermes_cli.plugins import _delivery_manager
+    from moor_cli.plugins import _delivery_manager
 
     return _delivery_manager().held_transforms()
 
@@ -234,9 +234,9 @@ def resolve_plugin_command_result(result: Any) -> Any:
             done.set()
 
     # copy_context: the helper thread must see the caller's profile/secret scope, else an
-    # async hook under a running loop reads the default HERMES_HOME and get_secret raises.
+    # async hook under a running loop reads the default MOOR_HOME and get_secret raises.
     threading.Thread(target=contextvars.copy_context().run, args=(_runner,),
-                     name="hermes-plugin-command-await", daemon=True).start()
+                     name="moor-plugin-command-await", daemon=True).start()
     if not done.wait(timeout=_PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS):
         raise TimeoutError("Plugin command async handler did not complete within "
                            f"{_PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS:.0f}s")
@@ -296,7 +296,7 @@ class PluginDispatchMixin:
                             failed: Optional[list] = None) -> list[Any]:
         """:meth:`invoke_hook`'s loop over ``callbacks``; each one that raised or timed out is
         appended to ``failed`` when given."""
-        from hermes_cli.plugins import _resolve_hook_callback_timeout
+        from moor_cli.plugins import _resolve_hook_callback_timeout
         results: list[Any] = []
         timeout = _resolve_hook_callback_timeout()
         use_timeout = _hook_uses_callback_timeout(hook_name, timeout)
@@ -568,7 +568,7 @@ class PluginDispatchMixin:
         """Register ``callback`` for ``hook_name`` on behalf of ``context`` (unknown names warn but are
         still stored). ``hold_stream=True`` on ``transform_llm_output`` declares the rewrite must reach
         the user first, so this profile's replies are not streamed (:meth:`holds_stream`)."""
-        from hermes_cli.plugins import VALID_HOOKS
+        from moor_cli.plugins import VALID_HOOKS
 
         handle = context._track_callback("hook", hook_name, callback, self._hooks, VALID_HOOKS)
         if hold_stream and hook_name != STREAM_HOLDING_HOOK:
@@ -740,7 +740,7 @@ class PluginDispatchMixin:
         of ``original_<key>`` so an in-place edit cannot leak.
         """
         from agent.safe_worker_policy import safe_worker_enabled
-        from hermes_cli.middleware import _safe_copy
+        from moor_cli.middleware import _safe_copy
 
         if safe_worker_enabled():
             return []

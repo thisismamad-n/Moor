@@ -24,7 +24,7 @@ def deliver_kept_startup_notices(agent) -> None:
         return
     if (getattr(agent, "platform", None) or "cli") != "cli" and not getattr(agent, "notice_callback", None):
         return
-    from hermes_cli.left_core_migration import claim_kept_notices
+    from moor_cli.left_core_migration import claim_kept_notices
     for message in claim_kept_notices():
         agent._emit_startup_warning(message)
 
@@ -122,7 +122,7 @@ class StatusOutputMixin:
 
     def _emit_startup_warning(self, message: str) -> None:
         """A warning raised during ``__init__`` that the user must see (e.g. a memory provider that
-        could not be recovered). The CLI prints it; a CLI session the gateway hosts (``hermes chat``) has
+        could not be recovered). The CLI prints it; a CLI session the gateway hosts (``moor chat``) has
         no viewer sink until its first turn wires one, so the line waits for that turn. Other drivers get
         a sticky warn ``AgentNotice``: Desktop renders notices but no warn-kind ``status.update``, and the
         messaging gateway wires its callbacks per turn, after init, so a notice raised before then waits

@@ -281,8 +281,8 @@ def _enabled_mcp_servers(config: Optional[dict[str, Any]]) -> list[str]:
     """Names of MCP servers the user has enabled — kept in the coding posture. The profile default's
     resolver, so plugin-provided servers stay too; *config* None reads the user's config."""
     try:
-        from hermes_cli.config import read_raw_config
-        from hermes_cli.tools_config import enabled_mcp_server_names
+        from moor_cli.config import read_raw_config
+        from moor_cli.tools_config import enabled_mcp_server_names
         return sorted(enabled_mcp_server_names(read_raw_config() if config is None else config))
     except Exception:
         logger.debug("Could not list enabled MCP servers for the coding posture", exc_info=True)
@@ -327,7 +327,7 @@ class RuntimeMode:
 
     def toolset_selection(self, config: Optional[dict[str, Any]] = None) -> Optional[list[str]]:
         """Toolset list (only under ``focus``), or ``None`` to keep the platform default. Callers
-        apply it only when the user hasn't pinned a selection (``--toolsets``, ``HERMES_TUI_TOOLSETS``).
+        apply it only when the user hasn't pinned a selection (``--toolsets``, ``MOOR_TUI_TOOLSETS``).
         *config* None lists MCP servers from the user's config."""
         if self.config_mode != "focus" or self.profile.toolset is None:
             return None
@@ -548,7 +548,7 @@ def build_coding_workspace_block(cwd: Optional[str | Path] = None) -> str:
     if git_root is not None:
         # ``status`` hashes re-timestamped files through the repo-named clean filter; skip it when
         # the filter overrides cannot be discovered rather than run it half-hardened.
-        from hermes_cli._subprocess_compat import noninteractive_repo_git_env
+        from moor_cli._subprocess_compat import noninteractive_repo_git_env
         status_env = noninteractive_repo_git_env(root)
         status = "" if status_env is None else bounded_git_probe(
             ["git", "-C", str(root), "status", "--porcelain=2", "--branch"], timeout=_GIT_TIMEOUT, env=status_env)
@@ -565,7 +565,7 @@ def build_coding_workspace_block(cwd: Optional[str | Path] = None) -> str:
         # Linked worktree: say so (branches/stashes are shared state) but do NOT expose
         # the primary tree path — a second absolute path makes the model run commands
         # in the wrong directory. Derived from the session's own cwd, so every surface
-        # opened in a worktree (``hermes -w``, Ink, Desktop, ACP) gets the same guidance.
+        # opened in a worktree (``moor -w``, Ink, Desktop, ACP) gets the same guidance.
         git_dir, common_dir = _git(root, "rev-parse", "--git-dir"), _git(root, "rev-parse", "--git-common-dir")
         if git_dir and common_dir and Path(git_dir).resolve() != Path(common_dir).resolve():
             on_branch = f" on branch {head}" if head and head != "(detached)" else ""

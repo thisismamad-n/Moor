@@ -5,11 +5,11 @@ import os
 import sys
 from pathlib import Path
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
-from hermes_cli import plugins as plugins_mod
-from hermes_cli.plugins import PluginManager
+from moor_cli import plugins as plugins_mod
+from moor_cli.plugins import PluginManager
 
 HOSTED_PROVIDER = '''
 import os
@@ -45,7 +45,7 @@ def test_hosted_delegation_provider_extends_schema_and_routes_from_the_host(tmp_
     from agent.delegation_registry import get_active_provider
     from tools.delegate_tool_routes import resolve_task_routes, schema_extension
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     plugin_dir = home / "plugins" / "hosted-map"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "hosted-map", "version": "1.0"}), encoding="utf-8")
@@ -58,7 +58,7 @@ def test_hosted_delegation_provider_extends_schema_and_routes_from_the_host(tmp_
     (empty_bundled / "delegation").symlink_to(Path(__file__).resolve().parents[2] / "plugins" / "delegation",
                                               target_is_directory=True)
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     manager = PluginManager()
     manager.discover_and_load()
@@ -83,7 +83,7 @@ def test_hosted_delegation_provider_extends_schema_and_routes_from_the_host(tmp_
         # The /delegation seam acts on THIS process (ctx.delegation_backends is a host remote facade): its
         # config.yaml, and the --now rebuild THIS process's session runs at its next turn.
         from agent import delegation_backends
-        from hermes_cli.plugin_command_dispatch import invoke_plugin_command
+        from moor_cli.plugin_command_dispatch import invoke_plugin_command
         out = invoke_plugin_command(plugins_mod.get_plugin_command_handler("deleg-switch"), "default",
                                     session_key="chat-a")
         pid, listed = out.split(" ", 1)

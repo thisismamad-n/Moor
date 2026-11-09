@@ -5,7 +5,7 @@ import logging
 import sys
 import uuid
 
-from hermes_cli.gateway_client import GatewayClientError
+from moor_cli.gateway_client import GatewayClientError
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def _quoted(row, fallback):
     return f'    "{preview}"' if preview else f"    ({fallback} {row['admission_id']})"
 
 
-_UNKNOWN_OUTCOME = ("Hermes couldn't confirm how this turn ended (usually because it restarted mid-turn). "
+_UNKNOWN_OUTCOME = ("Moor couldn't confirm how this turn ended (usually because it restarted mid-turn). "
                     "Resume this session and use the /discard <id> command it shows to drop the turn. "
                     "Don't send the same message again until you've checked.")
 
@@ -52,17 +52,17 @@ def pending_lines(pending, *, interactive=True):
     queued = [row for row in pending if row["status"] == "queued"]
     lines = []
     if len(lost) == 1:
-        lines.append("⏸ This chat is paused. Hermes couldn't confirm how the last turn ended "
+        lines.append("⏸ This chat is paused. Moor couldn't confirm how the last turn ended "
                      "(usually because it restarted mid-turn):")
         if _pending_preview(lost[0].get("text")):
             lines.append(_quoted(lost[0], "lost turn"))
-        lines.append("  Hermes won't re-run it by itself, since it may already have done part of the work.")
+        lines.append("  Moor won't re-run it by itself, since it may already have done part of the work.")
         if interactive:
             lines += ["  To drop it and continue, type:", f"/discard {lost[0]['admission_id']}"]
     elif lost:
-        lines.append(f"⏸ This chat is paused. Hermes couldn't confirm how {len(lost)} turns ended "
+        lines.append(f"⏸ This chat is paused. Moor couldn't confirm how {len(lost)} turns ended "
                      "(usually because it restarted mid-turn):")
-        lines.append("  Hermes won't re-run them by itself, since they may already have done part of the work.")
+        lines.append("  Moor won't re-run them by itself, since they may already have done part of the work.")
         if interactive:
             lines.append("  To continue, drop each one with the /discard line under it:")
         for row in lost:
@@ -96,7 +96,7 @@ class GatewayChatView:
         self.generation = snapshot.get("execution_generation", 0)
         self.prompts = {p["prompt_id"]: p for p in snapshot.get("prompts", [])}
         self.pending = snapshot.get("pending", [])
-        self.model = str((snapshot.get("info") or {}).get("model") or "Hermes").split("/")[-1]
+        self.model = str((snapshot.get("info") or {}).get("model") or "Moor").split("/")[-1]
         # ``--format stream-json``: stdout belongs to the JSONL protocol, so every human line is
         # replaced by an emitter event and the terminal record carries the exit code.
         self.emitter = emitter
@@ -116,7 +116,7 @@ class GatewayChatView:
         # Set once with ``failure``: the interactive composer races its line read against it so a
         # dead owner ends the REPL immediately instead of on the next keypress.
         self.failed = asyncio.Event()
-        from hermes_cli.gateway_mutations import PreparedMutations
+        from moor_cli.gateway_mutations import PreparedMutations
         self.mutations = PreparedMutations()
         # The interactive composer (set by ``run``); None in one-shot / non-TTY runs, where a
         # guarded model switch stays a refusal instead of a prompt.
@@ -204,7 +204,7 @@ class GatewayChatView:
     async def _recover(self, admission, sid):
         """Queued: it lost nothing. Running: cut until its live completion. Unknown: its completion was the
         one lost, so an own turn settles as unknown now. Unlisted: it ended in the hole."""
-        from hermes_cli.gateway_replay_gap import pending_status, settled
+        from moor_cli.gateway_replay_gap import pending_status, settled
         status = pending_status(self.pending, admission)
         if status == "unknown" and admission in self.mine:
             self._complete(admission, {"outcome": "unknown", "text": _UNKNOWN_OUTCOME})
@@ -307,7 +307,7 @@ class GatewayChatView:
         streamed, cut = self.streams.pop(admission, ""), self.cut.pop(admission, None)
         self.mine.pop(admission, None)
         if cut is not None:
-            from hermes_cli.gateway_replay_gap import owed_reply
+            from moor_cli.gateway_replay_gap import owed_reply
             payload = {**payload, "replay_gap": True}
             if not self.quiet and text:
                 print(owed_reply(cut, text), flush=True)
@@ -388,7 +388,7 @@ class GatewayChatView:
                                   admission_id=lost["admission_id"], execution_generation=lost["execution_generation"])
             return True
         if command in {'/branch', '/model', '/compress'}:
-            from hermes_cli.gateway_mutations import slash_mutation
+            from moor_cli.gateway_mutations import slash_mutation
             operation, payload = slash_mutation(command, rest.strip())
             original = self.session_id
             confirm = self._confirm_model_switch if operation == 'model' and self._composer is not None else None
@@ -422,7 +422,7 @@ class GatewayChatView:
                                            **({"value": "1" if word == "on" else "0"} if word else {}))
             print(f"YOLO {'on' if result.get('value') == '1' else 'off'} for this session")
             return True
-        from hermes_cli import gateway_chat_commands
+        from moor_cli import gateway_chat_commands
         if command == "/help":
             print(gateway_chat_commands.help_text())
             return True
@@ -436,9 +436,9 @@ class GatewayChatView:
         self.pending = snapshot.get('pending', [])
         self.model = str((snapshot.get('info') or {}).get('model') or self.model).split('/')[-1]
         if not self.finite:
-            # Bare `hermes -c` in this terminal continues the session it is now on, as the
+            # Bare `moor -c` in this terminal continues the session it is now on, as the
             # in-process CLI re-wrote its breadcrumb on every session switch.
-            from hermes_cli.terminal_breadcrumbs import write_breadcrumb
+            from moor_cli.terminal_breadcrumbs import write_breadcrumb
             await asyncio.to_thread(write_breadcrumb, self.session_id)
 
     async def _confirm_model_switch(self, refusal):
@@ -446,7 +446,7 @@ class GatewayChatView:
         the in-process CLI does (``_confirm_expensive_model_switch``: switch anyway once, or cancel)
         on this composer. Only an explicit yes applies; anything else keeps the current model."""
         from agent.i18n import t
-        from hermes_cli.gateway_mutations import confirm_choice, confirmation_title
+        from moor_cli.gateway_mutations import confirm_choice, confirmation_title
         choices = [("once", t("cli.model.choice_switch_anyway"), t("cli.model.desc_switch_anyway")),
                    ("cancel", t("cli.model.choice_cancel"), t("cli.model.desc_keep_current_model"))]
         print(f"\n!!! {confirmation_title(refusal)} !!!\n{refusal['confirm_message']}\n")
@@ -479,7 +479,7 @@ class GatewayChatView:
             self.completions[admission] = {"outcome": "unknown", "text": _UNKNOWN_OUTCOME}
             return None
         if own == "queued" and self.unknown_admissions():
-            return ("This chat is paused behind a turn whose ending Hermes couldn't confirm. "
+            return ("This chat is paused behind a turn whose ending Moor couldn't confirm. "
                     "Your message is saved and will run once you resume this session and /discard "
                     "that turn; don't send it again.")
         if self.prompts and (own or not self.gaps):  # a control blocks only a turn still pending
@@ -523,11 +523,11 @@ class GatewayChatView:
     def _report_no_reply(self, exit_code):
         """`-z` exit 1 (a completed turn with no reply text): the in-process one-shot's stderr line."""
         if self.unattended and exit_code == 1:
-            print("hermes -z: no final response was produced; treating the run as failed.", file=sys.stderr)
+            print("moor -z: no final response was produced; treating the run as failed.", file=sys.stderr)
 
     def _write_usage_file(self, result, outcome):
         """``-z --usage-file``: the same JSON ledger the in-process one-shot wrote."""
-        from hermes_cli.oneshot import _write_usage_file
+        from moor_cli.oneshot import _write_usage_file
         result = {**result, "session_id": result.get("session_id") or self.session_id}
         failure = None if outcome in ("completed", "cancelled") else (result.get("error") or outcome or "failed")
         _write_usage_file(self.usage_file, result, failure=failure)
@@ -541,7 +541,7 @@ class GatewayChatView:
         if oneshot and self.unknown_admissions():
             # A new admission would queue behind the unknown row and never run; refuse BEFORE
             # submitting so nothing is left queued for the next interactive resume to find.
-            return self._detach(f"Your message was not sent. To continue, run `hermes sessions discard "
+            return self._detach(f"Your message was not sent. To continue, run `moor sessions discard "
                                 f"{self.session_id} --yes`, or resume this session in an interactive chat "
                                 "and /discard the paused turn there; then send it again.")
         renderer = asyncio.create_task(self.render())
@@ -572,8 +572,8 @@ class GatewayChatView:
                 # The outcome only says failed/cancelled; a turn stopped by --max-turns settles
                 # 'completed' with ``completed: False`` in its committed result. Judge both with the
                 # in-process exit contracts: `-z` 0/2/130 (1 = no text), `chat -q`/`-Q` 0/1/130.
-                from hermes_cli.oneshot import _oneshot_exit_code
-                from hermes_cli.turn_exit import turn_exit_code
+                from moor_cli.oneshot import _oneshot_exit_code
+                from moor_cli.turn_exit import turn_exit_code
                 recovered = terminal.get("_receipt")
                 result = dict(recovered.get("result") or {}) if recovered else await self._settled_result(admission)
                 result.update(failed=bool(result.get("failed")) or outcome not in ("completed", "cancelled"),
@@ -596,8 +596,8 @@ class GatewayChatView:
                 return exit_code
             from prompt_toolkit import PromptSession
             from prompt_toolkit.patch_stdout import patch_stdout
-            from hermes_cli.skin_engine import get_active_prompt_symbol, get_active_skin
-            welcome = "Welcome to Hermes Agent! Type your message or /help for commands."
+            from moor_cli.skin_engine import get_active_prompt_symbol, get_active_skin
+            welcome = "Welcome to Moor Agent! Type your message or /help for commands."
             print(get_active_skin().get_branding("welcome", welcome), flush=True)
             # The classic status bar's leading segments: model, then the attached session.
             prompt = PromptSession(erase_when_done=True,
@@ -644,7 +644,7 @@ def resume_footer(session_id):
     """The classic single-query exit block (``_print_exit_summary``): how to continue this session.
     A non-default profile needs ``-p`` because session ids are profile-scoped."""
     from agent.i18n import t
-    from hermes_cli.profiles import get_active_profile_name
+    from moor_cli.profiles import get_active_profile_name
     profile = get_active_profile_name()
     flag = "" if profile in ("default", "custom") else f" -p {profile}"
-    return f"\n{t('cli.session.exit_resume_hint')}\n  hermes --resume {session_id}{flag}"
+    return f"\n{t('cli.session.exit_resume_hint')}\n  moor --resume {session_id}{flag}"

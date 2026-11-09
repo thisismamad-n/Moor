@@ -68,8 +68,8 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     render as unavailable with an install hint — not a false 'available'.
 
     Unlike the mocked-feature tests above, this drives the real
-    ``get_nous_subscription_features`` so the surface stays aligned with the
-    launcher's Chromium selection (``hermes_cli.browser_runtime.chromium_executable``).
+    ``get_moor_subscription_features`` so the surface stays aligned with the
+    launcher's Chromium selection (``moor_cli.browser_runtime.chromium_executable``).
     """
     monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
@@ -83,12 +83,12 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     save_config(cfg)
 
     # Only stub the readiness probes; the feature resolver itself is real.
-    monkeypatch.setattr("hermes_cli.nous_subscription._has_browser_harness", lambda: True)
+    monkeypatch.setattr("moor_cli.moor_subscription._has_browser_harness", lambda: True)
     monkeypatch.setattr(
         "moor_cli.moor_subscription.get_moor_portal_account_info",
         lambda *a, **k: None,
     )
-    monkeypatch.setattr("hermes_cli.browser_runtime.chromium_executable", lambda **_kw: None)
+    monkeypatch.setattr("moor_cli.browser_runtime.chromium_executable", lambda **_kw: None)
     monkeypatch.setattr(
         "agent.auxiliary_client.get_available_vision_backends", list
     )
@@ -97,4 +97,4 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     output = capsys.readouterr().out
 
     assert "Browser Automation (Local browser)" not in output
-    assert "hermes pm install chromium" in output
+    assert "moor pm install chromium" in output

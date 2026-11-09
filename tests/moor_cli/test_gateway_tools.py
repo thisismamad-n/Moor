@@ -1,7 +1,7 @@
 """Main's process dock, status-bar ``⚙ N`` and ``/stop`` read the gateway session's processes.
 
 Rewired, ``terminal(background=true)`` runs in the gateway, so the CLI process's own
-``tools.process_registry`` is empty. ``hermes_cli.gateway_tools`` answers main's registry calls from
+``tools.process_registry`` is empty. ``moor_cli.gateway_tools`` answers main's registry calls from
 ``process.list`` / ``process.kill`` / ``process.stop`` (scripted fake gateway, no live gateway).
 """
 import asyncio
@@ -10,9 +10,9 @@ from contextlib import asynccontextmanager
 
 import pytest
 
-from hermes_cli import gateway_tools
-from hermes_cli.gateway_agent import GatewayAgent
-from hermes_cli.gateway_connection import GatewayConnection
+from moor_cli import gateway_tools
+from moor_cli.gateway_agent import GatewayAgent
+from moor_cli.gateway_connection import GatewayConnection
 
 SID = "local-abc"
 
@@ -70,7 +70,7 @@ def gateway():
 
 
 def test_dock_rows_come_from_the_gateway_session(gateway):
-    from hermes_cli import cli_process_dock as dock
+    from moor_cli import cli_process_dock as dock
     _agent, client = gateway
     rows = dock.process_rows()
     assert [(r["id"], r["status"]) for r in rows] == [("proc_1", "running"), ("proc_2", "done")]
@@ -89,7 +89,7 @@ def test_status_bar_count_reads_the_cached_gateway_count(gateway):
 
 
 def test_stop_kills_the_session_processes_through_the_gateway(gateway, capsys):
-    from hermes_cli.cli_commands_session_tools import CLICommandsSessionToolsMixin
+    from moor_cli.cli_commands_session_tools import CLICommandsSessionToolsMixin
     _agent, client = gateway
     CLICommandsSessionToolsMixin._handle_stop_command(object())
     out = capsys.readouterr().out
@@ -100,7 +100,7 @@ def test_stop_kills_the_session_processes_through_the_gateway(gateway, capsys):
 def test_agents_lists_the_gateway_sessions_processes_and_subagents(gateway, capsys):
     """/agents reads where the work runs (tracker #134889 CLI-7): the session's processes and its
     running background subagents, not this process's empty registries."""
-    from hermes_cli.cli_commands_session_tools import CLICommandsSessionToolsMixin
+    from moor_cli.cli_commands_session_tools import CLICommandsSessionToolsMixin
     agent, client = gateway
     agent.connection.state(SID).usage = {"active_subagents": 2}
     CLICommandsSessionToolsMixin._handle_agents_command(object())
@@ -114,8 +114,8 @@ def test_agents_before_the_first_turn_reads_the_opened_sessions_processes(gatewa
     """A resumed session's background work runs on the gateway before this CLI's first turn builds
     its chat agent: opening the session binds the view, so /agents never reads the empty local
     registry (Greptile 4277259979)."""
-    from cli import HermesCLI
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from cli import MoorCLI
+    from moor_cli.gateway_session_store import GatewaySessionStore
 
     class _ResumedStore(GatewaySessionStore):
         def open_session(self, cli, launch=None):
@@ -123,7 +123,7 @@ def test_agents_before_the_first_turn_reads_the_opened_sessions_processes(gatewa
 
     agent, client = gateway
     gateway_tools._view = None  # no chat agent built yet
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.session_id, cli._resumed, cli.enabled_toolsets = SID, True, ["terminal"]
     cli._session_db = _ResumedStore(agent.connection)
     cli._ensure_gateway_session()
@@ -143,7 +143,7 @@ def test_stop_typed_mid_turn_interrupts_the_turn_then_stops_processes(gateway, m
     import threading
     from types import SimpleNamespace
     import cli as cli_module
-    from cli import HermesCLI
+    from cli import MoorCLI
     painted = []
     monkeypatch.setattr(cli_module, "_cprint", painted.append)
     _agent, client = gateway
@@ -164,7 +164,7 @@ def test_stop_typed_mid_turn_interrupts_the_turn_then_stops_processes(gateway, m
         def hard_interrupt(self, message=None):
             stops.append(message)
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli._agent_running, cli.agent = True, _Agent()
     buffer = SimpleNamespace(reset=lambda **_k: None)
     event = SimpleNamespace(app=SimpleNamespace(current_buffer=buffer, invalidate=lambda: None))
@@ -179,7 +179,7 @@ def test_stop_typed_mid_turn_interrupts_the_turn_then_stops_processes(gateway, m
 
 
 def test_dock_stop_kills_one_process_through_the_gateway(gateway):
-    from hermes_cli import cli_process_dock as dock
+    from moor_cli import cli_process_dock as dock
     _agent, client = gateway
     dock.process_rows()
     assert dock.kill("proc_1")["status"] == "killed"
@@ -188,7 +188,7 @@ def test_dock_stop_kills_one_process_through_the_gateway(gateway):
 
 def test_tools_lists_the_gateway_session_catalog_with_main_rendering(gateway, capsys):
     """/tools prints the gateway session's tools (its MCP servers live there), in main's layout."""
-    from hermes_cli.cli_info_mixin import CLIInfoMixin
+    from moor_cli.cli_info_mixin import CLIInfoMixin
     _agent, client = gateway
     CLIInfoMixin.show_tools(type("C", (), {"enabled_toolsets": None, "disabled_toolsets": None})())
     out = capsys.readouterr().out
@@ -201,7 +201,7 @@ def test_tools_lists_the_gateway_session_catalog_with_main_rendering(gateway, ca
 def test_reload_skills_rescans_in_the_gateway_session_and_prints_main_lines(gateway, capsys, monkeypatch):
     """/reload-skills rescans where the turn runs; main's lines print from the gateway's diff."""
     from agent import skill_commands
-    from hermes_cli.cli_info_mixin import CLIInfoMixin
+    from moor_cli.cli_info_mixin import CLIInfoMixin
     _agent, client = gateway
     # The gateway's first rescan diffs against an empty map (everything "added"); main's lines come
     # from the CLI's own diff, which matches what the user installed.

@@ -75,7 +75,7 @@ def test_broken_override_never_acquires_standard_driver(tmp_path, monkeypatch, u
 def test_autostart_uses_selected_binary_and_verifies_registration(tmp_path, monkeypatch, old_target):
     """``computer_use.autostart`` is opt-in (#97389): the default is on-demand,
     so exercising the registration path here requires arming the opt-in first."""
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     binary = str(tmp_path / "User's driver directory" / "cua-driver.exe")
     selected = str(tmp_path / "old-cua-driver.exe") if old_target else binary
@@ -119,11 +119,11 @@ def test_repair_without_opt_in_spawns_no_powershell(monkeypatch):
     """``computer_use.autostart`` defaults to on-demand (#97389): without the
     opt-in the repair degrades to a no-op — returns True (nothing to repair)
     and spawns no PowerShell at all."""
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     monkeypatch.setattr(cua, "_cua_driver_autostart_registered_windows", lambda binary=None: False)
     monkeypatch.setattr(cua.shutil, "which", lambda command: AssertionError("resolved a binary"))
-    with patch("hermes_cli.config.load_config", return_value={}), \
+    with patch("moor_cli.config.load_config", return_value={}), \
          patch.object(cua.subprocess, "run", side_effect=AssertionError("spawned PowerShell")), \
          patch.object(cua, "_run_text", side_effect=AssertionError("spawned PowerShell")):
         assert cua._repair_cua_driver_autostart_windows("cua-driver.exe", verbose=False)
@@ -135,24 +135,24 @@ def test_repair_without_opt_in_spawns_no_powershell(monkeypatch):
     {"computer_use": {"autostart": False}},
 ])
 def test_autostart_opt_in_defaults_to_on_demand(config):
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
-    with patch("hermes_cli.config.load_config", return_value=config):
+    with patch("moor_cli.config.load_config", return_value=config):
         assert cua._cua_autostart_opt_in() is False
 
 
 def test_autostart_opt_in_explicit_true_registers():
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
-    with patch("hermes_cli.config.load_config",
+    with patch("moor_cli.config.load_config",
                return_value={"computer_use": {"autostart": True}}):
         assert cua._cua_autostart_opt_in() is True
 
 
 def test_autostart_opt_in_unreadable_config_fails_closed():
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
-    with patch("hermes_cli.config.load_config", side_effect=OSError("unreadable")):
+    with patch("moor_cli.config.load_config", side_effect=OSError("unreadable")):
         assert cua._cua_autostart_opt_in() is False
 
 
@@ -160,7 +160,7 @@ def test_autostart_registration_ps_command_quotes_paths_with_spaces():
     """Start-Process structured ``-FilePath`` / ``-ArgumentList``: older
     install.ps1 builds interpolated the binary path into a command string,
     which split at the first space."""
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     path = "C:\\Program Files\\cua driver\\cua-driver.exe"
     ps = cua._cua_autostart_registration_ps_command(path)
@@ -177,7 +177,7 @@ def test_autostart_registration_ps_command_quotes_paths_with_spaces():
 def test_install_ready_task_requirement_follows_the_opt_in(monkeypatch, opt_in, expected):
     """With ``computer_use.autostart`` off (#97389) a missing cua-driver-serve
     logon task is not a repair condition; opted in, it still is."""
-    from hermes_cli import tools_config_cua as cua
+    from moor_cli import tools_config_cua as cua
 
     monkeypatch.setattr(cua, "_cua_driver_contract_status",
                         lambda *a: {"ready": True, "version": "0.20.0",

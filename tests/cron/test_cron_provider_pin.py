@@ -26,7 +26,7 @@ def _run_owned_job(job, tmp_path):
     """Exercise the production owner bridge with an isolated canonical store."""
     from gateway.session_contract import SessionRef
     from gateway.session_cron import current_execution, execute
-    from hermes_state_registry import acquire, release
+    from moor_state_registry import acquire, release
 
     ref = SessionRef("test-profile", "cron-owner-session")
     admission_id = "cron-owner-admission"
@@ -112,12 +112,12 @@ def _run(job, tmp_path, *, current_provider="openrouter", current_model=None, cr
             "api_mode": "chat_completions",
         }
 
-    with patch("cron.scheduler._hermes_home", tmp_path), \
-         patch("cron.scheduler._get_hermes_home", return_value=tmp_path), \
+    with patch("cron.scheduler._moor_home", tmp_path), \
+         patch("cron.scheduler._get_moor_home", return_value=tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_cli.runtime_provider.resolve_runtime_provider", side_effect=_resolve), \
+         patch("moor_cli.env_loader.load_moor_dotenv"), \
+         patch("moor_cli.env_loader.reset_secret_source_cache"), \
+         patch("moor_cli.runtime_provider.resolve_runtime_provider", side_effect=_resolve), \
          patch("run_agent.AIAgent") as mock_agent_cls:
         mock_agent = MagicMock()
         mock_agent.run_conversation.return_value = {"final_response": "ok"}
@@ -172,9 +172,9 @@ class TestPinnedLocksTheMainModel:
     def _store(monkeypatch, tmp_path, main_model="main-model", main_provider="openrouter"):
         from cron import jobs
         (tmp_path / "config.yaml").write_text(f"model:\n  default: {main_model}\n")
-        monkeypatch.setattr(jobs, "get_hermes_home", lambda: tmp_path, raising=True)
+        monkeypatch.setattr(jobs, "get_moor_home", lambda: tmp_path, raising=True)
         from cron import jobs_model_pin  # the pin reads the main model's config where it lives
-        monkeypatch.setattr(jobs_model_pin, "get_hermes_home", lambda: tmp_path, raising=True)
+        monkeypatch.setattr(jobs_model_pin, "get_moor_home", lambda: tmp_path, raising=True)
         state = {"jobs": []}
         monkeypatch.setattr(jobs, "load_jobs", lambda: list(state["jobs"]), raising=True)
         monkeypatch.setattr(jobs, "save_jobs", lambda j: state.__setitem__("jobs", list(j)), raising=True)

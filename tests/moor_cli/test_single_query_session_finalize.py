@@ -70,11 +70,11 @@ def test_finalize_settles_session_before_a_successor_can_take_over(tmp_path, mon
     predecessor's whole finalize. On the unsafe order (release → linger → flush)
     the flush's unconditional ``end_session`` stamps the successor's interval and
     this test fails."""
-    from hermes_cli import active_sessions
-    from hermes_state import SessionDB
+    from moor_cli import active_sessions
+    from moor_state import SessionDB
 
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".moor"
+    monkeypatch.setenv("MOOR_HOME", str(home))
     db = SessionDB(db_path=tmp_path / "state.db")
     sid = "s1"
     db.create_session(sid, "cli")

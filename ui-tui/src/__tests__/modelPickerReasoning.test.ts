@@ -20,7 +20,7 @@ describe('ModelPicker reasoning step', () => {
       'gpt-5.6 --provider moor --reasoning none --global'
     )
     // "Keep current effort" (empty value) adds no flag at all.
-    expect(modelPickerCommand('gpt-5.6', 'nous', false, '')).toBe('gpt-5.6 --provider nous --tui-session')
+    expect(modelPickerCommand('gpt-5.6', 'moor', false, '')).toBe('gpt-5.6 --provider moor --tui-session')
     expect(reasoningPickerRows().at(-1)?.value).toBe('')
     // The new-session draft label strips the effort flag like it strips --provider.
     expect(draftModelNameFromArg(modelPickerCommand('gpt-5.6', 'moor', false, 'low'))).toBe('gpt-5.6')

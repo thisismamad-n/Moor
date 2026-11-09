@@ -6,8 +6,8 @@ stays ``None`` and tools report "desktop only". Routing keys off ``MOOR_UI_SESSI
 so the event lands on the window that owns the turn (the sink is lock-guarded).
 
 Window-level events (``pane.reveal``, ``preview.open``) route by
-``HERMES_UI_SESSION_ID`` — the window/socket that owns the turn.
-Session-scoped events (``message.reaction``) route by ``HERMES_SESSION_ID``
+``MOOR_UI_SESSION_ID`` — the window/socket that owns the turn.
+Session-scoped events (``message.reaction``) route by ``MOOR_SESSION_ID``
 so the renderer's gateway-event stream, keyed on the chat session, receives
 the frame on the correct transcript transport (#80678).
 """
@@ -23,7 +23,7 @@ _emit: Optional[Callable[[str, str, dict], None]] = None
 
 # Events that target a specific chat session rather than a window/socket.
 # The renderer's gateway-event stream is keyed on the session id, so
-# routing these through HERMES_UI_SESSION_ID (the window identity) means
+# routing these through MOOR_UI_SESSION_ID (the window identity) means
 # the frame lands on a stream that doesn't own the transcript and is
 # never painted (#80678).
 _SESSION_SCOPED_EVENTS: frozenset[str] = frozenset({"message.reaction"})
@@ -61,11 +61,11 @@ def emit(event: str, payload: dict) -> bool:
     if _emit is None:
         return False
     if event in _SESSION_SCOPED_EVENTS:
-        sid = get_session_env("HERMES_SESSION_ID", "")
+        sid = get_session_env("MOOR_SESSION_ID", "")
         if not sid:
-            sid = get_session_env("HERMES_UI_SESSION_ID", "")
+            sid = get_session_env("MOOR_UI_SESSION_ID", "")
     else:
-        sid = get_session_env("HERMES_UI_SESSION_ID", "")
+        sid = get_session_env("MOOR_UI_SESSION_ID", "")
     _emit(sid, event, payload)
     return True
 

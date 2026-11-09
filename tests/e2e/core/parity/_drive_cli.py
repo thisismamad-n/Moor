@@ -15,10 +15,10 @@ Driver contract (every ``_drive_*.py`` module follows it)::
   SIGTERM, RPC) before returning; never SIGKILL except as a last resort after a
   bounded graceful wait (and then report it via ``graceful_exit=False``).
 
-``hermes -z`` and ``hermes chat -q`` are thin clients of the unified gateway
+``moor -z`` and ``moor chat -q`` are thin clients of the unified gateway
 runtime: the turn runs in the profile's ``gateway run`` daemon (spawned on first
 connect), which outlives the client by design. Their normal shutdown is therefore
-client exit + ``hermes gateway stop`` (``stop_profile_gateway``).
+client exit + ``moor gateway stop`` (``stop_profile_gateway``).
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from tests.e2e.core.parity._helpers import (
     TURN_TIMEOUT,
     DriveResult,
     ParityHome,
-    hermes_argv,
+    moor_argv,
     stop_profile_gateway,
 )
 from tests.fakes.fake_llm_provider import FakeLLMServer
@@ -51,14 +51,14 @@ def _client_turn(ph: ParityHome, label: str, *args: str) -> DriveResult:
         # The daemon is the surface's process; a failed client still leaves it to stop.
         stopped = stop_profile_gateway(ph)
     return DriveResult(
-        final_text=proc.stdout.strip(), toolset="hermes-cli", graceful_exit=stopped,
+        final_text=proc.stdout.strip(), toolset="moor-cli", graceful_exit=stopped,
         extra={"exit_code": proc.returncode, "stderr_tail": proc.stderr[-2000:], "gateway_stopped": stopped},
     )
 
 
 def drive_oneshot(ph: ParityHome, srv: FakeLLMServer, prompt: str) -> DriveResult:
-    return _client_turn(ph, "hermes -z", "-z", prompt)
+    return _client_turn(ph, "moor -z", "-z", prompt)
 
 
 def drive_chat_q(ph: ParityHome, srv: FakeLLMServer, prompt: str) -> DriveResult:
-    return _client_turn(ph, "hermes chat -q", "chat", "-q", prompt, "-Q")
+    return _client_turn(ph, "moor chat -q", "chat", "-q", prompt, "-Q")

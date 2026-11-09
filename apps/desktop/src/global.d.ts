@@ -6,7 +6,7 @@ import type { ChallengeOutcome } from '../electron/challenge-window'
 import type { ScreenshotApi } from '../electron/command-screenshot-types'
 import type { HudModifierApi } from '../electron/hud-modifier-types'
 import type { MachineProfile } from '../electron/machine-profile'
-import type { HermesNotification } from '../electron/notification-types'
+import type { MoorNotification } from '../electron/notification-types'
 import type { KeepAwakeMode } from '../electron/power-save'
 import type { UpdateHoldWire } from '../electron/update-hold-types'
 import type { UpdateRunReport } from '../electron/updater/update-metrics'
@@ -37,13 +37,13 @@ declare global {
       // Resolve a backend connection. Omit `profile` (or pass the primary) for
       // the window's backend; pass a named profile to dial/reuse that profile's
       // cached gateway descriptor.
-      getConnection: (profile?: string | null) => Promise<HermesConnection>
+      getConnection: (profile?: string | null) => Promise<MoorConnection>
       // Registry-scoped backend resolution: dial (connectionId, profile). An
       // empty/local connectionId delegates to the legacy getConnection path.
       getConnectionFor?: (payload: {
         connectionId?: null | string
         profile?: null | string
-      }) => Promise<HermesConnection>
+      }) => Promise<MoorConnection>
       // Registry-scoped fresh WS URL (same result contract as getGatewayWsUrl).
       getGatewayWsUrlFor?: (payload: {
         connectionId?: null | string
@@ -111,7 +111,7 @@ declare global {
       // `onBrowserPopoutClosed` so the caller can dock the tab again.
       openBrowserWindow?: (tabId: string) => Promise<{ ok: boolean; error?: string }>
       // Cross-window renderer relay (pop-out Browser ↔ chat windows). Electron
-      // main relays opaque payloads to the other Hermes renderer windows;
+      // main relays opaque payloads to the other Moor renderer windows;
       // renderer code keeps the destination exact and rejects anything not
       // addressed to its window.
       windowRelay?: {
@@ -293,8 +293,8 @@ declare global {
         // clear the preference.
         set: (name: string | null) => Promise<DesktopActiveProfile>
       }
-      api: <T>(request: HermesApiRequest) => Promise<T>
-      notify: (payload: HermesNotification) => Promise<boolean>
+      api: <T>(request: MoorApiRequest) => Promise<T>
+      notify: (payload: MoorNotification) => Promise<boolean>
       /** Launch -> ready ms for the first caller per app launch, null afterwards. Absent on older shells. */
       claimStartupLatency?: () => Promise<null | number>
       requestMicrophoneAccess: () => Promise<boolean>
@@ -310,15 +310,15 @@ declare global {
           title: string
         } | null
       } | null>
-      readFileDataUrl: (filePath: string) => Promise<string | HermesReadFileErrorResult>
+      readFileDataUrl: (filePath: string) => Promise<string | MoorReadFileErrorResult>
       /** Remote non-image attach: higher dedicated cap than preview/Settings default. */
-      readFileDataUrlForAttach?: (filePath: string) => Promise<string | HermesReadFileErrorResult>
+      readFileDataUrlForAttach?: (filePath: string) => Promise<string | MoorReadFileErrorResult>
       /** Settings → Chat: max size for local files loaded as data URLs (attach/preview). */
       dataUrlReadMax?: {
         get: () => Promise<{ defaultMaxMb: number; maxBytes: number; maxMb: number }>
         set: (maxMb: number) => Promise<{ defaultMaxMb: number; maxBytes: number; maxMb: number }>
       }
-      readFileText: (filePath: string) => Promise<HermesReadFileTextResult | HermesReadFileErrorResult>
+      readFileText: (filePath: string) => Promise<MoorReadFileTextResult | MoorReadFileErrorResult>
       /** Full-source read for runtime desktop plugins (readFileText truncates
        *  at the 512 KiB preview cap). Absent on older shells — callers fall
        *  back to readFileText and must reject a `truncated` result. */
@@ -392,14 +392,14 @@ declare global {
        *  profile-scoped host storage. Native shells already expose real paths. */
       stageFileForAttach?: (file: File) => Promise<string>
       /** Source ownership returned when this browser stages a file on its host. */
-      getStagedFileForAttach?: (path: string) => HermesStagedUpload | undefined
+      getStagedFileForAttach?: (path: string) => MoorStagedUpload | undefined
       /** Browser-picked display name; never replaces the host path or source identity. */
       getStagedFileDisplayName?: (path: string) => string | undefined
-      normalizePreviewTarget: (target: string, baseDir?: string) => Promise<HermesPreviewTarget | null>
-      /** Resolves to `HermesReadFileErrorResult` when the watched file was
+      normalizePreviewTarget: (target: string, baseDir?: string) => Promise<MoorPreviewTarget | null>
+      /** Resolves to `MoorReadFileErrorResult` when the watched file was
        *  already gone at call time (a restored tab probing a deleted path) —
        *  structured data instead of a rejection, matching the read handlers. */
-      watchPreviewFile: (url: string) => Promise<HermesPreviewWatch | HermesReadFileErrorResult>
+      watchPreviewFile: (url: string) => Promise<MoorPreviewWatch | MoorReadFileErrorResult>
       /** Watch a directory for entry churn (disk-plugin door); same watcher
        *  registry + onPreviewFileChanged channel as watchPreviewFile. Optional:
        *  older Electron shells predate it and fall back to the readdir poll. */
@@ -417,7 +417,7 @@ declare global {
       /** Dev-only launch flag (`--fresh-install`, unpackaged builds): onboarding treats this launch as a fresh install. */
       assumeFreshInstall?: boolean
       /** Sanitized local `display.skin`, available before any gateway connects. */
-      localSkin?: { profile: string; skin: HermesSkin } | null
+      localSkin?: { profile: string; skin: MoorSkin } | null
       /** This machine's shared UI preferences store (#145213): preload IPC natively,
        *  `/api/ui-preferences` on the Webapp. */
       uiPreferences?: UiPreferencesBridge
@@ -527,10 +527,10 @@ declare global {
         published: string[]
         refused: { name: string; reason: string }[]
       }>
-      /** LOCAL `<HERMES_HOME>/logs` of `profile` (default: the active Desktop
+      /** LOCAL `<MOOR_HOME>/logs` of `profile` (default: the active Desktop
        *  profile) — error card "Open Logs". */
       logsRoot?: (profile?: string) => Promise<string>
-      // Local AGENT-plugin root (<HERMES_HOME>/plugins), same Electron-local
+      // Local AGENT-plugin root (<MOOR_HOME>/plugins), same Electron-local
       // resolution. The disk door also scans it for `<name>/desktop/plugin.js`
       // so one agent-plugin package can ship a desktop UI half. Optional:
       // older Electron shells predate it — the scanner then skips this root.
@@ -547,10 +547,10 @@ declare global {
         request: (
           pluginId: string,
           labels: { buttonLabel: string; title: string }
-        ) => Promise<HermesPluginFilesResult<{ folder: HermesPluginFolderGrant | null }>>
-        grants: (pluginId: string) => Promise<HermesPluginFolderGrant[]>
+        ) => Promise<MoorPluginFilesResult<{ folder: MoorPluginFolderGrant | null }>>
+        grants: (pluginId: string) => Promise<MoorPluginFolderGrant[]>
         revoke: (pluginId: string, folderId?: string) => Promise<{ ok: true; removed: number }>
-        op: (pluginId: string, request: Record<string, unknown>) => Promise<HermesPluginFilesResult>
+        op: (pluginId: string, request: Record<string, unknown>) => Promise<MoorPluginFilesResult>
         /** A grant was added or revoked in any window; returns an unsubscribe. */
         onChanged?: (callback: (change: { pluginId: string }) => void) => () => void
       }
@@ -624,9 +624,9 @@ declare global {
         /** Browser cleanup releases the viewer without terminating its shell. */
         detach?: (id: string) => Promise<boolean>
         closeSaved?: (restoreKey: string) => Promise<boolean>
-        onState?: (id: string, callback: (state: HermesTerminalState) => void) => () => void
+        onState?: (id: string, callback: (state: MoorTerminalState) => void) => () => void
         onData: (id: string, callback: (payload: string, options?: { replay: boolean }) => void) => () => void
-        onExit: (id: string, callback: (payload: HermesTerminalExit) => void) => () => void
+        onExit: (id: string, callback: (payload: MoorTerminalExit) => void) => () => void
         resize: (id: string, size: { cols: number; rows: number }) => Promise<boolean>
         start: (options?: {
           cols?: number
@@ -636,7 +636,7 @@ declare global {
           rows?: number
           restoreKey?: string
           resumeOnly?: boolean
-        }) => Promise<HermesTerminalSession>
+        }) => Promise<MoorTerminalSession>
         write: (id: string, data: string) => Promise<boolean>
       }
       reachPreviewUrl?: (url: string) => Promise<string>
@@ -777,14 +777,14 @@ declare global {
   }
 }
 
-export interface HermesPluginFolderGrant {
+export interface MoorPluginFolderGrant {
   id: string
   name: string
   path: string
   grantedAt: string
 }
 
-export type HermesPluginFilesResult<T extends object = Record<string, unknown>> =
+export type MoorPluginFilesResult<T extends object = Record<string, unknown>> =
   ({ ok: true } & T) | { ok: false; error: string; message: string }
 
 export interface DesktopMarketplaceSearchItem {
@@ -809,9 +809,9 @@ export interface DesktopMarketplaceThemeResult {
   themes: DesktopMarketplaceThemeFile[]
 }
 
-export type HermesTerminalState = 'open' | 'reconnecting' | 'disconnected'
+export type MoorTerminalState = 'open' | 'reconnecting' | 'disconnected'
 
-export interface HermesTerminalSession {
+export interface MoorTerminalSession {
   /** Gateway the shell runs on (`local` = This device); Electron only. */
   connectionId?: null | string
   cwd: string
@@ -864,7 +864,7 @@ export interface DesktopVersionInfo {
   appVersion: string
   /** The active connection's backend runtime version ('' when unreachable). */
   backendVersion?: string
-  /** This machine's install: the stamp for packages, `hermes --version` for source installs. */
+  /** This machine's install: the stamp for packages, `moor --version` for source installs. */
   clientVersion?: string
   /** Fixed release identity. Commit builds have no update channel. */
   channel?: string | null
@@ -936,7 +936,7 @@ export interface DesktopUninstallSummary {
   code_removal_allowed: boolean
   /** Native removal steps when the OS or a package manager owns removal. */
   native_removal_instructions: null | string
-  hermes_home: string
+  moor_home: string
   agent_installed: boolean
   gui_installed: boolean
   source_built_artifacts: string[]
@@ -1002,7 +1002,7 @@ export interface DesktopUpdateStatus {
   aheadOfRelease?: boolean
   /** Source stable: the checkout already contains the release, so installing it moves back. */
   rollback?: boolean
-  /** Source stable: `hermes update` would refuse the release (it predates the gateway runtime these
+  /** Source stable: `moor update` would refuse the release (it predates the gateway runtime these
    *  session stores use), so it is held instead of offered. */
   held?: 'downgrade'
   targetSha?: string
@@ -1707,14 +1707,14 @@ export interface MoorReadFileTextResult {
  *  file, or a path under a cleared /tmp, is an expected outcome that the
  *  renderer already displays as "preview unavailable". Other errors still
  *  reject as before. */
-export interface HermesReadFileErrorResult {
+export interface MoorReadFileErrorResult {
   ok: false
   error: string
   message: string
   path?: string
 }
 
-export interface HermesPreviewWatch {
+export interface MoorPreviewWatch {
   id: string
   path: string
 }
@@ -1858,13 +1858,13 @@ export interface MoorPreviewFileChanged {
 }
 
 /** Backend-provided source identity, not an authorization token. */
-export interface HermesStagedUpload {
+export interface MoorStagedUpload {
   install_id: string
   path: string
   profile_home: string
 }
 
-export interface HermesSelectPathsOptions {
+export interface MoorSelectPathsOptions {
   title?: string
   defaultPath?: string
   directories?: boolean

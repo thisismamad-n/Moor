@@ -5,7 +5,7 @@ exits. The interactive self-improvement loop is pure overhead there, and a measu
 one-shot benchmark trajectories the agent authored 7 new skills and patched a bundled one mid-task, 37 of
 ~215 tool calls were ``skill_view``/``skill_manage``, and skill text was 34% of every tool-result byte fed
 back into context. Two rules follow, both keyed on the same session marker the approval gate and the
-delegation dispatcher already read (``HERMES_SINGLE_QUERY_SESSION``), so interactive sessions are untouched
+delegation dispatcher already read (``MOOR_SINGLE_QUERY_SESSION``), so interactive sessions are untouched
 (``skill_manage`` itself stays offered: a one-shot may still author skills):
 
 * the ## Skills prompt drops the "record it / patch it / offer to save" coaching and the "load process skills

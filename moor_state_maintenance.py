@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from hermes_state_common import (
+from moor_state_common import (
     AUTO_VACUUM_MIN_FREELIST_RATIO, _id_chunks, _non_continuation_child_sql, _placeholders, _sql_session_last_active,
     escape_like as _escape_like, emit_session_deleted,
 )
@@ -26,7 +26,7 @@ def _like(value: str) -> str:
 
 
 def _cwd_prefix_filter(value: str) -> tuple[list[str], list]:
-    from hermes_state_sessions import _cwd_prefix_clause
+    from moor_state_sessions import _cwd_prefix_clause
     clause, params = _cwd_prefix_clause(value)
     return [clause], list(params)
 
@@ -124,7 +124,7 @@ class SessionMaintenanceMixin:
                       SELECT 1 FROM messages WHERE messages.session_id = sessions.id
                   )
             """, (cutoff,)).fetchall()]
-            from hermes_state_mutation_retirement import retire_prunable
+            from moor_state_mutation_retirement import retire_prunable
             ids = retire_prunable(conn, ids)
             for chunk in _id_chunks(ids):
                 conn.execute(f"DELETE FROM sessions WHERE id IN ({_placeholders(chunk)})", chunk)
@@ -133,7 +133,7 @@ class SessionMaintenanceMixin:
             return ids
         removed_ids = self._execute_write(_do) or []
         emit_session_deleted(self, removed_ids, reason="ghost_prune", sessions_dir=sessions_dir)
-        from hermes_state_media import collect_retired_media
+        from moor_state_media import collect_retired_media
         collect_retired_media(self)
         for sid in removed_ids if sessions_dir else ():
             self._remove_session_files(sessions_dir, sid)
@@ -384,7 +384,7 @@ class SessionMaintenanceMixin:
             session_ids = {row["id"] for row in cursor.fetchall()}
             if exclude_active_write_guards:
                 session_ids -= self._guarded_ids(conn, session_ids)
-            from hermes_state_mutation_retirement import prune_retired_tombstones, retire_prunable
+            from moor_state_mutation_retirement import prune_retired_tombstones, retire_prunable
             session_ids = retire_prunable(conn, sorted(session_ids))
             prune_retired_tombstones(conn)  # every prune pass also reclaims expired deletion tombstones
             if not session_ids:
@@ -401,7 +401,7 @@ class SessionMaintenanceMixin:
         count = self._execute_write(_do)
         if count:
             emit_session_deleted(self, removed_ids, reason="prune", sessions_dir=sessions_dir)
-        from hermes_state_media import collect_retired_media
+        from moor_state_media import collect_retired_media
         collect_retired_media(self)
         for sid in removed_ids:
             self._remove_session_files(sessions_dir, sid)
@@ -498,7 +498,7 @@ class SessionMaintenanceMixin:
         ``request_dump_*``) for pruned sessions are removed as part of the same sweep (issue #3015).
         Messaging and UI sources are never touched here. See #54189.
         """
-        from hermes_state_repair import _release_auto_maintenance_lock, _try_acquire_auto_maintenance_lock
+        from moor_state_repair import _release_auto_maintenance_lock, _try_acquire_auto_maintenance_lock
         result: dict[str, Any] = {"skipped": False, "pruned": 0, "closed": 0, "vacuumed": False}
         if retention_days is None or retention_days < 0:
             # A negative retention would build a future cutoff and match every ended

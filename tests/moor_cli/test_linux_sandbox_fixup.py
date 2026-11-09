@@ -171,7 +171,7 @@ class TestDesktopLinuxSandboxFixupNoTty:
     def _fake_packaged_app(self, tmp_path):
         unpacked = tmp_path / "linux-unpacked"
         unpacked.mkdir(exist_ok=True)
-        exe = unpacked / "Hermes"
+        exe = unpacked / "Moor"
         exe.write_text("", encoding="utf-8")
         sandbox = unpacked / "chrome-sandbox"
         sandbox.write_text("", encoding="utf-8")

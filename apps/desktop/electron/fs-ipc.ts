@@ -1,14 +1,14 @@
 // IPC surface for local filesystem operations the renderer's project/file
 // surfaces use: directory reads, reveal/open in the OS file manager, plugin
 // roots + git installs, rename/write/trash, and the plugin SDK's folder-scoped
-// file door. Extracted from main.ts; path hardening, HERMES_HOME resolution,
+// file door. Extracted from main.ts; path hardening, MOOR_HOME resolution,
 // and the git binary stay injected.
 import fs from 'node:fs'
 import path from 'node:path'
 
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 
-import { platformDefaultHermesHome } from './data-paths'
+import { platformDefaultMoorHome } from './data-paths'
 import { installDesktopPluginFromGit, probePluginRepo } from './desktop-plugin-install'
 import { removeDesktopPlugin } from './desktop-plugin-remove'
 import {
@@ -43,7 +43,7 @@ export function registerFsIpc({
   ipcMain.handle('moor:fs:readDir', async (_event, dirPath) => readDirForIpc(dirPath))
 
   // `ctx.files`: a plugin's own data folder plus folders the user grants it.
-  // The legacy `~/.hermes` stays protected beside the resolved and default homes.
+  // The legacy `~/.moor` stays protected beside the resolved and default homes.
   registerPluginFilesIpc({
     ipcMain,
     dialog,
@@ -51,19 +51,19 @@ export function registerFsIpc({
     // App windows only: preview guests and webviews never hear about grants.
     broadcastChange: change => {
       for (const window of BrowserWindow.getAllWindows()) {
-        window.webContents.send('hermes:pluginFiles:changed', change)
+        window.webContents.send('moor:pluginFiles:changed', change)
       }
     },
     userDataDir: () => app.getPath('userData'),
-    hermesHomes: () => [
-      hermesHome,
-      platformDefaultHermesHome(app.getPath('home')),
-      path.join(app.getPath('home'), '.hermes')
+    moorHomes: () => [
+      moorHome,
+      platformDefaultMoorHome(app.getPath('home')),
+      path.join(app.getPath('home'), '.moor')
     ],
     trashItem: target => shell.trashItem(target)
   })
 
-  ipcMain.handle('hermes:fs:gitRoot', async (_event, startPath) => gitRootForIpc(startPath))
+  ipcMain.handle('moor:fs:gitRoot', async (_event, startPath) => gitRootForIpc(startPath))
 
   // Reveal a path in the OS file manager (Finder / Explorer / Files).
   // `showItemInFolder` silently no-ops on a missing item, and a remote
@@ -133,7 +133,7 @@ export function registerFsIpc({
     const profile =
       named && (named === 'default' || DESKTOP_PROFILE_NAME_RE.test(named)) ? named : readActiveDesktopProfile()
 
-    const base = profile && profile !== 'default' ? path.join(hermesHome, 'profiles', profile) : hermesHome
+    const base = profile && profile !== 'default' ? path.join(moorHome, 'profiles', profile) : moorHome
 
     return ensureDir(path.join(base, dirName))
   }
@@ -157,20 +157,20 @@ export function registerFsIpc({
   // update / uninstall through the gateway) so the app-level copy tracks the
   // package without waiting for the next root resolution. Answers which
   // packages' halves it refused too, so the install dialog can say so.
-  ipcMain.handle('hermes:fs:reconcileDesktopPlugins', async () => {
-    const root = await ensureDir(path.join(hermesHome, DESKTOP_PLUGINS_DIR))
+  ipcMain.handle('moor:fs:reconcileDesktopPlugins', async () => {
+    const root = await ensureDir(path.join(moorHome, DESKTOP_PLUGINS_DIR))
 
-    return reconcileDesktopHalvesReport(hermesHome, root)
+    return reconcileDesktopHalvesReport(moorHome, root)
   })
 
   // The LOCAL logs root (`<MOOR_HOME>/logs`, profile-aware) — the error
   // card's "Open Logs" action reveals agent.log/gateway.log without the user
-  // knowing where HERMES_HOME lives. Same Electron-local resolution as the
+  // knowing where MOOR_HOME lives. Same Electron-local resolution as the
   // plugin roots: valid in every connection mode, created on demand. The
   // caller names the profile that OWNS the failing session: a pooled backend
   // serves many profile homes, and the active Desktop profile is the launch
   // one, not the one whose agent.log holds the failure (#119080).
-  ipcMain.handle('hermes:fs:logsRoot', async (_event, profile) => localPluginsRoot('logs', profile))
+  ipcMain.handle('moor:fs:logsRoot', async (_event, profile) => localPluginsRoot('logs', profile))
 
   ipcMain.handle('moor:plugin:probe', async (_event, payload) => {
     const identifier = String(payload?.identifier || payload?.repo || '').trim()

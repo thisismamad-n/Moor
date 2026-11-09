@@ -3,7 +3,7 @@
 A browser tab's ``/api/ws`` reaches the gateway through the dashboard mount (``chat_ws.gateway_ws``),
 not the native ticket path (``gateway/run_api.py``) that wraps the socket in ``owner_scope``. The
 authority answers ``-32601`` for ``billing.state``, so the frame falls back to the legacy handler,
-which reads the Nous Portal override through the socket's scope: unbound, a multiplexed gateway
+which reads the Moor Portal override through the socket's scope: unbound, a multiplexed gateway
 refused the read (``UnscopedSecretError`` -> "no profile secret scope on a multiplexed call") and the
 token went to the default Portal. ``dispatch_legacy`` binds a non-launch ticket's profile; a
 launch-profile socket relies on ``gateway_ws``'s own scope.
@@ -36,9 +36,9 @@ def _jwt(label):
 
 def _home(home, label):
     home.mkdir(parents=True, exist_ok=True)
-    (home / "config.yaml").write_text("model:\n  provider: nous\n  default: fixture-model\n")
-    (home / ".env").write_text(f"HERMES_PORTAL_BASE_URL=https://{label}-portal.invalid\n")
-    (home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"nous": {
+    (home / "config.yaml").write_text("model:\n  provider: moor\n  default: fixture-model\n")
+    (home / ".env").write_text(f"MOOR_PORTAL_BASE_URL=https://{label}-portal.invalid\n")
+    (home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"moor": {
         "access_token": _jwt(label), "refresh_token": f"{label}-refresh",
         "expires_at": "2999-01-01T00:00:00+00:00", "scope": "inference:invoke", "client_id": "fixture-client",
         "portal_base_url": "https://portal.nousresearch.com",
@@ -53,26 +53,26 @@ def gateway(tmp_path, monkeypatch):
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
     from gateway.session_authority import SessionAuthority
-    from hermes_cli import auth, nous_account, nous_billing
-    from hermes_state import SessionDB
-    from hermes_state_runtime import begin_runtime_epoch
+    from moor_cli import auth, moor_account, moor_billing
+    from moor_state import SessionDB
+    from moor_state_runtime import begin_runtime_epoch
     from tui_gateway import launch_profile_policy, server
 
     launch, b = tmp_path / "launch", tmp_path / "launch" / "profiles" / "b"
     _home(launch, "launch")
     _home(b, "b")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-auth"))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared-auth"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    for key in ("HERMES_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL", "NOUS_INFERENCE_BASE_URL",
-                "HERMES_DEV_BILLING_FIXTURE", "HERMES_DEV_SUBSCRIPTION_FIXTURE", "HERMES_DEV_CREDITS_FIXTURE"):
+    for key in ("MOOR_PORTAL_BASE_URL", "MOOR_PORTAL_BASE_URL", "MOOR_INFERENCE_BASE_URL",
+                "MOOR_DEV_BILLING_FIXTURE", "MOOR_DEV_SUBSCRIPTION_FIXTURE", "MOOR_DEV_CREDITS_FIXTURE"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(launch_profile_policy, "_snapshot", None)
-    monkeypatch.setattr(server, "_hermes_home", str(launch))
+    monkeypatch.setattr(server, "_moor_home", str(launch))
     monkeypatch.setattr(server, "_served_profile_homes", set())
     monkeypatch.setattr(auth, "_RESOLVE_TOKEN_CACHE", {})
-    monkeypatch.setattr(nous_billing, "_token_cache", {})
-    nous_account.reset_nous_portal_account_info_cache()
+    monkeypatch.setattr(moor_billing, "_token_cache", {})
+    moor_account.reset_moor_portal_account_info_cache()
     previous = secret_scope.is_multiplex_active()
     launch_profile_policy.activate_multi_profile_hosting()
 
@@ -105,8 +105,8 @@ def gateway(tmp_path, monkeypatch):
         return response
     monkeypatch.setattr("urllib.request.urlopen", urlopen)
 
-    from hermes_cli import mcp_startup
-    from hermes_cli.web_routers import chat_ws
+    from moor_cli import mcp_startup
+    from moor_cli.web_routers import chat_ws
 
     async def allowed(*_a, **_k):
         return True
@@ -126,8 +126,8 @@ class _Socket:
     def __init__(self, authority, frames, ticket_home=None):
         self.app = SimpleNamespace(state=SimpleNamespace(session_authority=authority))
         self.scope, self.client, self.closed, self.sent = {}, None, None, []
-        self._hermes_auth_identity = {"user_id": "owner", "provider": "session-token"}
-        self._hermes_ticket_profile_home = None if ticket_home is None else str(ticket_home)
+        self._moor_auth_identity = {"user_id": "owner", "provider": "session-token"}
+        self._moor_ticket_profile_home = None if ticket_home is None else str(ticket_home)
         self._frames = [json.dumps(frame) for frame in frames]
         self._answered = asyncio.Event()
 
@@ -154,7 +154,7 @@ class _Socket:
 
 
 def _billing_state_over_socket(gateway, ticket_home):
-    from hermes_cli.web_routers import chat_ws
+    from moor_cli.web_routers import chat_ws
     ws = _Socket(gateway.authority, [{"jsonrpc": "2.0", "id": "bill", "method": "billing.state", "params": {}}],
                  ticket_home)
     gateway.portal_hits.clear()
@@ -174,7 +174,7 @@ def test_billing_state_on_a_webapp_socket_reaches_its_tickets_profile_portal(gat
 
 
 def test_a_profile_ticket_with_no_authority_bound_is_refused_not_served_as_the_launch_profile(gateway):
-    from hermes_cli.web_routers import chat_ws
+    from moor_cli.web_routers import chat_ws
     ws = _Socket(None, [{"jsonrpc": "2.0", "id": "bill", "method": "billing.state", "params": {}}], gateway.b)
 
     asyncio.run(chat_ws.gateway_ws(ws))

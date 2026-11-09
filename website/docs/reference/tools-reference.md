@@ -16,7 +16,7 @@ In addition to built-in tools, Moor can load tools dynamically from MCP servers.
 
 ## `browser` toolset
 
-`browser_exec` and `browser_vault` drive the browser session — the Chromium Hermes launches, a cloud browser, or the browser attached with `/browser connect`. `browser_cdp` and `browser_dialog` are offered only while a CDP endpoint is configured (`/browser connect`, `BROWSER_CDP_URL` or `browser.cdp_url`) and act on that browser; they are absent for launched and cloud sessions. See [Browser Automation](../user-guide/features/browser.md).
+`browser_exec` and `browser_vault` drive the browser session — the Chromium Moor launches, a cloud browser, or the browser attached with `/browser connect`. `browser_cdp` and `browser_dialog` are offered only while a CDP endpoint is configured (`/browser connect`, `BROWSER_CDP_URL` or `browser.cdp_url`) and act on that browser; they are absent for launched and cloud sessions. See [Browser Automation](../user-guide/features/browser.md).
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
@@ -41,7 +41,7 @@ Per-surface behavior:
 - **TUI and CLI** show a compact status list (`✓` answered / `▸` active / `·` pending) with only the active question's choices expanded. Enter locks the active answer and jumps to the next unanswered question; Tab moves between questions to answer in any order; an empty submit skips that question; Esc cancels the batch.
 - **Messaging platforms** (Telegram, Discord, …) ask the questions one at a time, one card per question. Reply `skip` to skip one question. If the user stops responding, the remaining questions are not sent.
 
-If the prompt times out part-way, answers the user already locked are kept: the tool result carries them with `"outcome": "timed_out"` and marks the rest `"status": "unanswered"`, so the agent can distinguish a deliberate skip from an absent user. On messaging platforms the result also carries a `"notice"` saying why the wait ended (`[user did not respond within Nm]`, or `[clarify prompt could not be delivered]` when the platform rejected the card — Hermes first retries the question as a plain numbered-list message, and only reports this when that fails too; `[clarify prompt could not be delivered: no chat surface]` when the run has no chat to prompt in), so an undelivered prompt is never reported as user inactivity.
+If the prompt times out part-way, answers the user already locked are kept: the tool result carries them with `"outcome": "timed_out"` and marks the rest `"status": "unanswered"`, so the agent can distinguish a deliberate skip from an absent user. On messaging platforms the result also carries a `"notice"` saying why the wait ended (`[user did not respond within Nm]`, or `[clarify prompt could not be delivered]` when the platform rejected the card — Moor first retries the question as a plain numbered-list message, and only reports this when that fails too; `[clarify prompt could not be delivered: no chat surface]` when the run has no chat to prompt in), so an undelivered prompt is never reported as user inactivity.
 
 ## `connections` toolset
 
@@ -114,11 +114,11 @@ For local files, a full unredacted read (including all pages of the same file ve
 
 
 :::note
-**Honcho tools** (`honcho_profile`, `honcho_search`, `honcho_context`, `honcho_reasoning`, `honcho_conclude`) are no longer built-in. They are available via the Honcho memory provider plugin from the plugin catalog (`hermes plugins install honcho`). See [Memory Providers](../user-guide/features/memory-providers.md) for installation and usage.
+**Honcho tools** (`honcho_profile`, `honcho_search`, `honcho_context`, `honcho_reasoning`, `honcho_conclude`) are no longer built-in. They are available via the Honcho memory provider plugin from the plugin catalog (`moor plugins install honcho`). See [Memory Providers](../user-guide/features/memory-providers.md) for installation and usage.
 
-**Home Assistant tools** (`ha_list_entities`, `ha_get_state`, `ha_list_services`, `ha_call_service`, toolset `homeassistant`) are no longer built-in. They come from the `homeassistant` catalog plugin (`hermes plugins install homeassistant`). See [Home Assistant](../user-guide/messaging/homeassistant.md).
+**Home Assistant tools** (`ha_list_entities`, `ha_get_state`, `ha_list_services`, `ha_call_service`, toolset `homeassistant`) are no longer built-in. They come from the `homeassistant` catalog plugin (`moor plugins install homeassistant`). See [Home Assistant](../user-guide/messaging/homeassistant.md).
 
-**Spotify tools** (`spotify_playback`, `spotify_devices`, `spotify_queue`, `spotify_search`, `spotify_playlists`, `spotify_albums`, `spotify_library`, toolset `spotify`) are no longer built-in. They come from the `spotify` catalog plugin (`hermes plugins install spotify`, then `hermes spotify login`). See [Spotify](../user-guide/features/spotify.md).
+**Spotify tools** (`spotify_playback`, `spotify_devices`, `spotify_queue`, `spotify_search`, `spotify_playlists`, `spotify_albums`, `spotify_library`, toolset `spotify`) are no longer built-in. They come from the `spotify` catalog plugin (`moor plugins install spotify`, then `moor spotify login`). See [Spotify](../user-guide/features/spotify.md).
 :::
 
 ## `image_gen` toolset
@@ -164,11 +164,11 @@ Tools for driving desktop [Projects](../user-guide/cli.md) — named, multi-fold
 
 ## `catalog` toolset
 
-Enabled for sessions whose source is the desktop app, whichever backend it's connected to. CLI, TUI, `hermes -z`, cron, kanban and messaging sessions never get it, even when a config list names it. `all` does not include it. Remove it with `agent.disabled_toolsets: [catalog]`.
+Enabled for sessions whose source is the desktop app, whichever backend it's connected to. CLI, TUI, `moor -z`, cron, kanban and messaging sessions never get it, even when a config list names it. `all` does not include it. Remove it with `agent.disabled_toolsets: [catalog]`.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
-| `manage_catalog` | Desktop sessions only, deferred behind `tool_search` by default. `search` lists catalog plugins and hub skills matching `query` (optionally one `kind`) with `id`, `kind`, `display`, `tier`, `platforms` and `installed` (present in this chat's profile); it changes nothing. `install` takes `items: [{kind, id}]` and shows one approval card with a row per item (Install, Advanced, Skip); an id the catalog does not know, or a plugin this OS cannot run, is drawn failed with the reason. An approved row installs into this chat's profile (or the profile chosen under Advanced) at the catalog's reviewed commit, with the same kill list, security scan and live activation as the Plugins tab, so the plugin's MCP tools and skills are usable in that profile's open chats at once. The result lists each row as `connected` (with `tools` and `skill`), `skipped`, `failed` (with `detail`) or `not_connected`; a failed row ends the wait like an installed or skipped one, and an install turns on a catalog plugin that is on disk but not enabled. The model cannot pass a source, commit, profile or setting. Anywhere else the call returns the `hermes plugins install` / `hermes skills install` command to run instead. | — |
+| `manage_catalog` | Desktop sessions only, deferred behind `tool_search` by default. `search` lists catalog plugins and hub skills matching `query` (optionally one `kind`) with `id`, `kind`, `display`, `tier`, `platforms` and `installed` (present in this chat's profile); it changes nothing. `install` takes `items: [{kind, id}]` and shows one approval card with a row per item (Install, Advanced, Skip); an id the catalog does not know, or a plugin this OS cannot run, is drawn failed with the reason. An approved row installs into this chat's profile (or the profile chosen under Advanced) at the catalog's reviewed commit, with the same kill list, security scan and live activation as the Plugins tab, so the plugin's MCP tools and skills are usable in that profile's open chats at once. The result lists each row as `connected` (with `tools` and `skill`), `skipped`, `failed` (with `detail`) or `not_connected`; a failed row ends the wait like an installed or skipped one, and an install turns on a catalog plugin that is on disk but not enabled. The model cannot pass a source, commit, profile or setting. Anywhere else the call returns the `moor plugins install` / `moor skills install` command to run instead. | — |
 
 ## `session_search` toolset
 
@@ -207,9 +207,9 @@ messaging, and cron sessions.
 | `read_window_below` | Identify the OS window directly underneath the Moor desktop window — app name, title, bounds (metadata only, never pixels). On macOS, other apps' titles appear only when Screen Recording is already granted; the tool never prompts for it. | — |
 | `focus_pane` | Reveal and focus a pane in the Moor desktop app (chat, files, terminal, review, sessions). | — |
 | `react_to_message` | React to a message with a single emoji, iMessage-tapback style. Opt-in via Settings → Appearance (`display.message_reactions`). | — |
-| `gui_tour` | Give a live guided tour: dim the screen, highlight an element, and attach a narrated popover (driver.js). Works on the Hermes app's own UI and on any page open in the preview pane. `start` with no steps runs the app's built-in tour (`preset` `quick` or `full`, default `full`). For a custom tour, `targets` discovers what's on screen, `show` narrates step-by-step, and `start` with `steps` hands the user Next/Prev controls. | — |
+| `gui_tour` | Give a live guided tour: dim the screen, highlight an element, and attach a narrated popover (driver.js). Works on the Moor app's own UI and on any page open in the preview pane. `start` with no steps runs the app's built-in tour (`preset` `quick` or `full`, default `full`). For a custom tour, `targets` discovers what's on screen, `show` narrates step-by-step, and `start` with `steps` hands the user Next/Prev controls. | — |
 | `show_tip` | Point at one element with a small accent bubble and an arrow — the quiet sibling of `gui_tour`, with no dimming, no spotlight, and no Next/Prev. Same `data-tour` handles and the same `tour(action='targets')` discovery call. | — |
-| `set_theme` | Set the Hermes desktop app's accent colour (a swatch id, `theme`, or `#rrggbb`), light/dark/system mode, and layout preset (Simple: `sidebar-left`, `sidebar-right`; Advanced: `default`, `basic`, `focus`, `terminal-deck`, `quad`; or a saved layout's id). The result reports what was applied; an unknown value comes back with the available ids. `picker` (`accent` or `layout`) shows a picker card in the chat and waits up to 5 minutes for the pick. | — |
+| `set_theme` | Set the Moor desktop app's accent colour (a swatch id, `theme`, or `#rrggbb`), light/dark/system mode, and layout preset (Simple: `sidebar-left`, `sidebar-right`; Advanced: `default`, `basic`, `focus`, `terminal-deck`, `quad`; or a saved layout's id). The result reports what was applied; an unknown value comes back with the available ids. `picker` (`accent` or `layout`) shows a picker card in the chat and waits up to 5 minutes for the pick. | — |
 
 ### Tours
 
@@ -361,7 +361,7 @@ Registered on the `moor-discord` platform toolset. Moderation actions require th
 |------|-------------|----------------------|
 | `discord_admin` | Manage a Discord server via the REST API: list guilds/channels/roles, create/edit/delete channels, manage role grants, timeouts, kicks, and bans. | `DISCORD_BOT_TOKEN` + bot permissions |
 
-## `hermes-yuanbao` toolset
+## `moor-yuanbao` toolset
 
 Registered only on the `moor-yuanbao` platform toolset. Yuanbao is Tencent's chat app; these tools drive its DM/group/sticker APIs.
 

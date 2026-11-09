@@ -34,7 +34,7 @@ def flavored_assets(icons: Path, assets: Path):
     flavored (canary/commit) build cannot package from the rendered product
     directory alone. Restore the admitted files once packaging ends: the source
     custody check refuses a dirty checkout, and a build that leaves its own
-    render behind breaks every later build in that tree and `hermes update`.
+    render behind breaks every later build in that tree and `moor update`.
     """
     admitted = {path.relative_to(assets): path.read_bytes()
                 for path in assets.rglob("*") if path.is_file()}
@@ -130,7 +130,7 @@ def _build_prepared(prepared, builder_args: list[str], variant: str | None) -> N
              "--out", str(desktop / "dist")], cwd=repo, env=env)
         version_args = []
         if sys.platform == "win32" and request.channel_request is None and request.tag is not None:
-            script = "const m=require('./scripts/msix-shared.mjs');console.log(m.nativeQuad(process.argv[1], Number(process.env.HERMES_RELEASE_EPOCH)))"
+            script = "const m=require('./scripts/msix-shared.mjs');console.log(m.nativeQuad(process.argv[1], Number(process.env.MOOR_RELEASE_EPOCH)))"
             quad = capture([node, "-e", script, request.tag], repo, env)
             version_args = [f'-c.extraMetadata.shortVersion={quad}', f'-c.extraMetadata.shortVersionWindows={quad}']
         run([node, "scripts/run-electron-builder.mjs", *package_args, *version_args, *builder_args], cwd=desktop,

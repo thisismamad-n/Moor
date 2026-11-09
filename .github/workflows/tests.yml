@@ -22,7 +22,7 @@ on:
         default: true
       strict_acceptance:
         description: >-
-          Acceptance runs only: known_failure owners whose gaps FAIL this run instead of xfailing ('upd-txn', a comma list, or '1' for every gap). Sets HERMES_E2E_STRICT_ACCEPTANCE for the E2E suites (tests/e2e/core/_pending_fixes.py).
+          Acceptance runs only: known_failure owners whose gaps FAIL this run instead of xfailing ('upd-txn', a comma list, or '1' for every gap). Sets MOOR_E2E_STRICT_ACCEPTANCE for the E2E suites (tests/e2e/core/_pending_fixes.py).
         type: string
         required: false
         default: ''
@@ -112,9 +112,9 @@ jobs:
         run: |
           scripts/run_tests.sh
         env:
-          HERMES_TEST_SLICE: ${{ matrix.slice }}/2
-          HERMES_TEST_WORKERS: 32
-          HERMES_TEST_FILE_TIMEOUT: 600
+          MOOR_TEST_SLICE: ${{ matrix.slice }}/2
+          MOOR_TEST_WORKERS: 32
+          MOOR_TEST_FILE_TIMEOUT: 600
           # Ensure tests don't accidentally call real APIs
           OPENROUTER_API_KEY: ""
           OPENAI_API_KEY: ""
@@ -191,7 +191,7 @@ jobs:
       - name: Install tmux
         # tests/e2e/core/cli_tmux and the Vertex /bg CLI suite drive real CLIs in tmux. The runner
         # image ships it today; install it if it ever stops, and require_tmux() fails (not skips)
-        # without it under HERMES_E2E_REQUIRE_TUI=1, so the lane can't go green over zero coverage.
+        # without it under MOOR_E2E_REQUIRE_TUI=1, so the lane can't go green over zero coverage.
         run: |
           set -euo pipefail
           command -v tmux >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq tmux; }
@@ -234,7 +234,7 @@ jobs:
           mapfile -t files < <(find tests/e2e -name 'test_*.py' -not -path 'tests/e2e/core/upgrade/*' | sort)
           scripts/run_tests.sh --include-integration "${files[@]}"
         env:
-          HERMES_E2E_STRICT_ACCEPTANCE: ${{ inputs.strict_acceptance }}
+          MOOR_E2E_STRICT_ACCEPTANCE: ${{ inputs.strict_acceptance }}
           # An e2e file is a process tree, not one CPU-bound pytest worker. With
           # 32 files at once the hosted run starved live children before their
           # ready frames (empty stderr, still alive) and hit 60–120s deadlines
@@ -330,7 +330,7 @@ jobs:
           fetch-tags: true
 
       - name: Set up Node
-        # `hermes update` builds the web UI / TUI workspaces.
+        # `moor update` builds the web UI / TUI workspaces.
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # 7.0.0
         with:
           node-version: 26
@@ -422,12 +422,12 @@ jobs:
           scripts/run_tests.sh --include-integration "${files[@]}"
         env:
           SHARD: ${{ matrix.shard }}
-          HERMES_E2E_STRICT_ACCEPTANCE: ${{ inputs.strict_acceptance }}
+          MOOR_E2E_STRICT_ACCEPTANCE: ${{ inputs.strict_acceptance }}
           # Each file drives real installs/updaters (process trees plus uv and
           # git I/O); cpu_count of them at once starves their deadlines. A
           # shard holds at most ~7 files, so this runs each shard in one wave.
-          HERMES_TEST_WORKERS: "6"
-          HERMES_TEST_FILE_TIMEOUT: "3000"
+          MOOR_TEST_WORKERS: "6"
+          MOOR_TEST_FILE_TIMEOUT: "3000"
           OPENROUTER_API_KEY: ""
           OPENAI_API_KEY: ""
           NOUS_API_KEY: ""

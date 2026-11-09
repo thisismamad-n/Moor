@@ -42,7 +42,7 @@ _profile_scoped = _registry.profile_scoped
 #   keeps running in the background; the in-flight entry is cleared when it
 #   settles, so the next poll starts a fresh probe and never reads a stale one.
 _readiness_pool = concurrent.futures.ThreadPoolExecutor(
-    max_workers=max(2, min(4, env_int("HERMES_TUI_RPC_POOL_WORKERS", 8))),
+    max_workers=max(2, min(4, env_int("MOOR_TUI_RPC_POOL_WORKERS", 8))),
     thread_name_prefix="tui-readiness")
 atexit.register(lambda: _readiness_pool.shutdown(wait=False, cancel_futures=True))
 _readiness_lock = threading.Lock()
@@ -87,7 +87,7 @@ def _(rid, params: dict) -> dict:
     """Repos for the desktop overview: scanned-from-disk (cached) ∪ session-derived. A profile whose
     session store was never initialized still answers from its scan cache (``db`` is None then)."""
     with _profile_db(params) as db:
-        from hermes_cli import projects_db as pdb
+        from moor_cli import projects_db as pdb
         policy = _repo_discovery_policy()
         with pdb.connect_closing() as conn:
             _reconcile_repo_discovery(pdb, conn, policy, _repo_discovery_policy_key(policy))
@@ -244,9 +244,9 @@ def _cfg_get_thinking_mode(params):
 
 
 def _cfg_get_mtime(params):
-    from hermes_cli.config_backend import config_version_or_none, version_token
+    from moor_cli.config_backend import config_version_or_none, version_token
     try:
-        mtime = version_token(config_version_or_none(_hermes_home / "config.yaml"))
+        mtime = version_token(config_version_or_none(_moor_home / "config.yaml"))
     except Exception:
         return {"mtime": 0}
     # mcp_rev: hash of the MCP-relevant sections so the poller reloads MCP servers only when
@@ -368,7 +368,7 @@ def _readiness_check(rid, params, probe, *, probe_key, wait_seconds):
     # ``profile_home=None`` is the launch profile: once this process multiplexes its probe must
     # run under its own frozen secret scope too (``_profile_runtime_scope_tokens`` binds nothing in
     # a single-profile process), or the first profile-scoped read inside the resolver
-    # (``HERMES_CODEX_BASE_URL`` for openai-codex) fails closed and the UI shows onboarding.
+    # (``MOOR_CODEX_BASE_URL`` for openai-codex) fails closed and the UI shows onboarding.
     def run_probe():
         # Applied on the readiness pool thread: ContextVars do not cross threads, and
         # concurrent probes (different profiles) stay isolated exactly as they did when
@@ -393,9 +393,9 @@ def _(rid, params: dict) -> dict:
     The record's fields ride along additively (``ready``, ``free_tier_account``, ``free_tier_route``,
     ``other_providers``)."""
     try:
-        from hermes_cli.anon_auth import free_tier_route
-        from hermes_cli.main import _has_any_provider_configured
-        from hermes_cli.free_tier_bootstrap import wait_for_record
+        from moor_cli.anon_auth import free_tier_route
+        from moor_cli.main import _has_any_provider_configured
+        from moor_cli.free_tier_bootstrap import wait_for_record
 
         def probe(profile, scoped):
             record = None if profile else wait_for_record()
@@ -467,20 +467,20 @@ def _(rid, params: dict) -> dict:
             api_key_text = "" if callable(api_key) else str(api_key or "").strip()
             if not (callable(api_key) or api_key_text in {"aws-sdk", "no-key-required"}
                     or has_usable_secret(api_key_text) or bool(runtime.get("command"))):
-                from hermes_cli.runtime_readiness import missing_credentials_suffix
+                from moor_cli.runtime_readiness import missing_credentials_suffix
                 return fail(f"No usable credentials found for {blamed}.{missing_credentials_suffix(blamed)}",
                             runtime.get("source"))
-            from hermes_cli.anon_auth import route_is_welcome_host
-            # free_tier_route is keyed on the SELECTED route (the welcome host serves only nous/welcome), not
-            # on profile state: a paid Nous key beside a free-tier identity must not read as free.
+            from moor_cli.anon_auth import route_is_welcome_host
+            # free_tier_route is keyed on the SELECTED route (the welcome host serves only moor/welcome), not
+            # on profile state: a paid Moor key beside a free-tier identity must not read as free.
             return {"ok": True, "provider": runtime.get("provider"), "model": model,
                     "source": runtime.get("source"),
-                    "free_tier_route": provider == "nous" and route_is_welcome_host(runtime.get("base_url")),
+                    "free_tier_route": provider == "moor" and route_is_welcome_host(runtime.get("base_url")),
                     **scoped}
         return _readiness_check(rid, params, probe, probe_key=f"runtime:{requested or ''}",
                                 wait_seconds=_READINESS_SHARE_WAIT_SECONDS)
     except Exception as e:
-        from hermes_cli.runtime_readiness import readiness_failure
+        from moor_cli.runtime_readiness import readiness_failure
         return _ok(rid, readiness_failure(e))
 
 
@@ -489,7 +489,7 @@ def _redact_client_text(text: str, cap: int) -> str:
     first line end in [2x, 3x) cap, else a hard 2x-cap cut, so a key cut by the cap
     still gets redacted but an unbounded (even single-line) RPC param cannot make
     the superlinear scrub run on megabytes."""
-    from hermes_cli.debug_redaction import redact_debug_support_text
+    from moor_cli.debug_redaction import redact_debug_support_text
 
     cut = text.find("\n", 2 * cap, 3 * cap)
     window = text[: cut + 1] if cut >= 0 else text[: 2 * cap]
@@ -512,11 +512,11 @@ def _(rid, params: dict) -> dict:
     upload failures render inline. Optional: ``error_context`` (-> ``error-context.txt``),
     ``extra_files`` ({label -> text}), ``log_lines`` (default 200); all force-redacted."""
     # Outside the try: the except path needs it, and agent.redact is a hard dependency.
-    from hermes_cli.debug_redaction import redact_debug_support_text
+    from moor_cli.debug_redaction import redact_debug_support_text
 
     try:
-        from hermes_cli.debug import build_nous_bundle, collect_share_bundle
-        from hermes_cli.diagnostics_upload import share_to_nous
+        from moor_cli.debug import build_moor_bundle, collect_share_bundle
+        from moor_cli.diagnostics_upload import share_to_moor
         log_lines = params.get("log_lines")
         if not isinstance(log_lines, int) or not (10 <= log_lines <= 2000):
             log_lines = 200
@@ -531,7 +531,7 @@ def _(rid, params: dict) -> dict:
             safe_label = _safe_client_label(label) if isinstance(label, str) else ""
             if safe_label and isinstance(text, str) and text.strip():
                 bundle[f"client/{safe_label}"] = _redact_client_text(text, 524_288)
-        res = share_to_nous(build_nous_bundle(bundle, redact=True))
+        res = share_to_moor(build_moor_bundle(bundle, redact=True))
         view_url = res.get("viewUrl") or res.get("view_url")
         upload_id = res.get("id")
         if not view_url and not upload_id:  # an upload the user can't reference is useless to support

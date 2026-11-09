@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import auth
+from moor_cli import auth
 
 
 # --- helpers ---------------------------------------------------------------

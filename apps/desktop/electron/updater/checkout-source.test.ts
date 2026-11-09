@@ -313,8 +313,8 @@ def install():
         opener.open = local
         return opener
     urllib.request.build_opener = local_build
-if not getattr(urllib.request, '_hermes_loopback', False):
-    urllib.request._hermes_loopback = True
+if not getattr(urllib.request, '_moor_loopback', False):
+    urllib.request._moor_loopback = True
     install()
 `
     )
@@ -395,9 +395,9 @@ if not getattr(urllib.request, '_hermes_loopback', False):
         spawned.push({ command, args, options })
         // C2: a hand-off has started only once the script takes the Desktop's
         // bridge marker in its own (live, foreign) name — do that here. Line 2
-        // echoes HERMES_UPDATE_STARTED_AT as posix.sh does; a fresh clock read
+        // echoes MOOR_UPDATE_STARTED_AT as posix.sh does; a fresh clock read
         // misses the Desktop's stamp whenever the spawn lands in the next second.
-        fs.writeFileSync(markerPath(home), `${process.ppid}\n${options.env?.HERMES_UPDATE_STARTED_AT}\n`)
+        fs.writeFileSync(markerPath(home), `${process.ppid}\n${options.env?.MOOR_UPDATE_STARTED_AT}\n`)
 
         return { unref: (): void => {} }
       }
@@ -475,7 +475,7 @@ if not getattr(urllib.request, '_hermes_loopback', False):
     )
     fs.rmSync(markerPath(home), { force: true })
     fs.rmSync(scriptDirectory, { recursive: true, force: true })
-    expect(await strategy.apply()).toMatchObject({ manual: true, command: 'hermes update --branch feature/gui' })
+    expect(await strategy.apply()).toMatchObject({ manual: true, command: 'moor update --branch feature/gui' })
     // main IS the git branch: re-resolving it reads no channel record and makes no
     // GitHub or artifact request, so a WAF that 403s the record can't stop the update.
     expect(requests.slice(count)).toEqual([])

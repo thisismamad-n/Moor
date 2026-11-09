@@ -46,7 +46,7 @@ export interface HandoffResult {
   runId: string | null
   /** C2: `ok:true` with follow-up work that failed after the commit point. */
   warnings: string[]
-  /** #101789: programs outside Hermes whose working folder blocked the Desktop app swap. */
+  /** #101789: programs outside Moor whose working folder blocked the Desktop app swap. */
   releaseHolders: ReleaseHolder[]
 }
 
@@ -186,7 +186,7 @@ function toHandoffResult(parsed: any, manual: boolean): HandoffResult {
  * time inside the run (started_at..finished_at), never as its exact start.
  */
 export function readAndConsumeHandoffResult(
-  hermesHome: string,
+  moorHome: string,
   {
     now = Date.now,
     maxAgeMs = HANDOFF_RESULT_MAX_AGE_MS,
@@ -201,7 +201,7 @@ export function readAndConsumeHandoffResult(
     log?: (line: string) => void
   } = {}
 ): HandoffResult | null {
-  const consumed = consumeHandoffResultFile(handoffResultPath(hermesHome), log)
+  const consumed = consumeHandoffResultFile(handoffResultPath(moorHome), log)
 
   if (consumed === null) {
     return null

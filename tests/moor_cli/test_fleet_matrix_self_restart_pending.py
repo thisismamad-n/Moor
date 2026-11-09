@@ -12,9 +12,9 @@ import os
 
 import pytest
 
-import hermes_cli.update_cmd_fleet as fleet_mod
-import hermes_cli.update_cmd_fleet_verify as fleet_verify
-import hermes_cli.update_receipt as ur
+import moor_cli.update_cmd_fleet as fleet_mod
+import moor_cli.update_cmd_fleet_verify as fleet_verify
+import moor_cli.update_receipt as ur
 
 OLD = "a" * 40
 HEAD = "b" * 40
@@ -66,8 +66,8 @@ def test_restart_phase_records_accepted_self_restart_and_verify_exits_clean(monk
     """The ancestor branch of the drain triage feeds the pid set the matrix reads: end to end the
     verify phase exits 0 (not 1) and clears the pending marker for an update whose only old-code
     gateway is the one it runs inside."""
-    from hermes_cli import gateway
-    from hermes_cli import update_cmd
+    from moor_cli import gateway
+    from moor_cli import update_cmd
 
     ancestor = os.getpid()
     monkeypatch.setattr(gateway, "_is_pid_ancestor_of_current_process", lambda pid: pid == ancestor)
@@ -79,7 +79,7 @@ def test_restart_phase_records_accepted_self_restart_and_verify_exits_clean(monk
 
     _fleet_homes(monkeypatch, tmp_path, {"default": {"pid": ancestor, "gateway_state": "running", "code_sha": OLD}})
     monkeypatch.setattr(fleet_verify, "_print_legacy_units_warning", lambda: None)
-    monkeypatch.setattr("hermes_cli.update_cmd_maint._refresh_dashboard_after_update", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.update_cmd_maint._refresh_dashboard_after_update", lambda *a, **k: None)
     monkeypatch.setattr(update_cmd, "_surviving_pre_update_serve_runtimes", lambda plan: [])
     monkeypatch.setattr(fleet_mod._time, "sleep", lambda s: None)
     cleared = []

@@ -109,7 +109,7 @@ def _answer_via_fork(parent_agent: Any, question: str, history: Optional[list[di
     ``on_fork(None)`` follows its teardown.
     """
     from agent.background_review import _digest_history, build_cache_parity_fork, release_cache_parity_fork
-    from hermes_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
+    from moor_cli.plugins import clear_thread_tool_whitelist, set_thread_tool_whitelist
 
     fork, _rt, routed = build_cache_parity_fork(parent_agent, _side_question_task_config(),
                                                 max_iterations=_FORK_MAX_ITERATIONS, write_origin="side_question")

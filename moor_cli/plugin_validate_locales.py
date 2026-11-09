@@ -1,8 +1,8 @@
-"""``hermes plugins validate`` — language-pack checks (``provides_locales``).
+"""``moor plugins validate`` — language-pack checks (``provides_locales``).
 
 For every declared id the pack must ship ``locales/<id>.yaml`` that parses and is text-only (a number,
 list or null leaf is an error: ``t()`` would silently drop it). Keys the English catalogs do not have
-are a WARNING naming them — a pack written against a newer or older Hermes still installs, it just
+are a WARNING naming them — a pack written against a newer or older Moor still installs, it just
 carries dead keys. Core keys come from the bundled ``locales/en.yaml``; TUI/Desktop keys from
 ``locales/_keys.tui.json`` / ``locales/_keys.desktop.json`` (exported by the TS packages' build
 scripts). When an export is absent the key check for that surface is skipped, never failed.
@@ -41,20 +41,20 @@ def reference_keys(surface: str) -> Optional[set[str]]:
         data = json.loads(export.read_text(encoding="utf-8-sig"))
         keys = data.get("keys") if isinstance(data, dict) else data
         return {str(k) for k in keys} if isinstance(keys, list) else None
-    except Exception as exc:  # a broken reference is a Hermes bug, not the pack's
+    except Exception as exc:  # a broken reference is a Moor bug, not the pack's
         logger.debug("i18n reference keys for %s unavailable: %s", surface, exc)
         return None
 
 
 def _load_document(path: Path) -> Any:
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
     with path.open("r", encoding="utf-8-sig") as handle:
         return yaml.safe_load(handle)
 
 
 def check_language_packs(report, manifest: dict, plugin_dir: Path) -> None:
     """Locale-pack admission checks; a no-op (single passing line) when nothing is declared."""
-    from hermes_cli.plugins_manifest import parse_provides_locales
+    from moor_cli.plugins_manifest import parse_provides_locales
 
     raw = manifest.get("provides_locales")
     declared, _meta = parse_provides_locales(raw, str(manifest.get("name") or plugin_dir.name))

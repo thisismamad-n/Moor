@@ -136,7 +136,7 @@ class TestNativeImageAttach:
         from tools.mcp_tool_registration import _register_server_tools
         from tools.registry import ToolRegistry
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         if not image:
             buf = io.BytesIO()
             Image.new("RGB", (3000, 2000), (20, 90, 200)).save(buf, "PNG")  # past the 1568 px embed edge
@@ -159,7 +159,7 @@ class TestNativeImageAttach:
         with patch("tools.registry.registry", registry), \
              patch.dict(mcp_tool._servers, {"srv": server}), \
              patch("tools.mcp_tool_loop._run_on_mcp_loop", side_effect=run), \
-             patch("hermes_cli.config.load_config", return_value=cfg), \
+             patch("moor_cli.config.load_config", return_value=cfg), \
              patch("agent.auxiliary_client._read_main_provider", return_value="anthropic"), \
              patch("agent.auxiliary_client._read_main_model", return_value="claude-opus-4-5"), \
              patch("agent.image_routing._lookup_supports_vision", return_value=True):

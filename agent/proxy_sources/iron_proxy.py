@@ -502,7 +502,7 @@ def ensure_audit_log(audit_path: Path) -> None:
 
 
 def write_proxy_config(config: dict) -> Path:
-    """Serialize the config dict to ``<hermes_home>/proxy/proxy.yaml`` (safe_dump, no Python tags).
+    """Serialize the config dict to ``<moor_home>/proxy/proxy.yaml`` (safe_dump, no Python tags).
 
     The file holds proxy tokens: written 0600 from creation, never at process umask."""
     if (yaml := _yaml()) is None:
@@ -740,7 +740,7 @@ def _spawn_daemon(bin_path: Path, cfg: Path, env: dict[str, str], log_path: Path
         # start_new_session is POSIX-only (Windows isn't supported anyway — no upstream binary).
         return subprocess.Popen(
             [str(bin_path), "-config", str(cfg)], env=env, stdin=subprocess.DEVNULL, stdout=log_fd, stderr=subprocess.STDOUT,
-            # detached-spawn: ok — a daemon meant to outlive the CLI that started it; `hermes egress stop` ends it (pidfile + nonce)
+            # detached-spawn: ok — a daemon meant to outlive the CLI that started it; `moor egress stop` ends it (pidfile + nonce)
             **({} if platform.system() == "Windows" else {"start_new_session": True}),
         )
     except OSError as exc:

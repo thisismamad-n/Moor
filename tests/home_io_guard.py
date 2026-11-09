@@ -33,8 +33,8 @@ _INTERPRETER_PREFIXES = tuple({
 } | {
     # scripts/run_tests.sh runs a PM generation venv (<installs>/<key>/{environments,test-environment}
     # /<gen>/venv) that sits under the home whenever HOME is the run's fake home. The generation dir
-    # around the venv is that interpreter's installation too: `hermes update` probes
-    # <venv>/../hermes_cli/main.py to find the checkout owning its venv (update_owning_install).
+    # around the venv is that interpreter's installation too: `moor update` probes
+    # <venv>/../moor_cli/main.py to find the checkout owning its venv (update_owning_install).
     *_pm_generation_dirs((sys.prefix, sys.exec_prefix)),
 } | {
     # The default install checks the repo out INSIDE the home (install.sh:
@@ -100,14 +100,14 @@ class HomeIOGuard:
                 return
             resolved = self._refuse_installed_app_change(value, absolute) if destructive else None
             roots = tuple(_normcase(os.fspath(r)) for r in self.roots())
-            # Resolving the root itself (get_default_hermes_root's relative_to
+            # Resolving the root itself (get_default_moor_root's relative_to
             # probe) reads no state; only its contents are guarded.
             if metadata and absolute in roots:
                 return
             # ``shutil.which`` stats/accesses ``<PATH entry>/<name>``, and command resolution
-            # realpath()s the entry itself (is it a Hermes-managed bin dir?), which lstats each of
-            # its ancestors. A developer shell puts PM's tool store (~/.hermes/tools/...) on PATH;
-            # probing there is command lookup, not reading Hermes state. CI has no such entries.
+            # realpath()s the entry itself (is it a moor-managed bin dir?), which lstats each of
+            # its ancestors. A developer shell puts PM's tool store (~/.moor/tools/...) on PATH;
+            # probing there is command lookup, not reading Moor state. CI has no such entries.
             if metadata:
                 path = os.environ.get("PATH", "")
                 cwd = os.getcwd() if self._relative_path_entries(path) else None
@@ -151,8 +151,8 @@ class HomeIOGuard:
                 import pytest
                 # pytest.fail, not AssertionError: removal helpers catch Exception and would log
                 # the refusal as a warning while the test passed.
-                pytest.fail(f"TEST BUG: changing the REAL installed Hermes desktop app: {value}\n"
-                            "Stub hermes_cli.gui_uninstall.packaged_gui_app_paths to a temporary path.")
+                pytest.fail(f"TEST BUG: changing the REAL installed Moor desktop app: {value}\n"
+                            "Stub moor_cli.gui_uninstall.packaged_gui_app_paths to a temporary path.")
         return resolved
 
     @staticmethod

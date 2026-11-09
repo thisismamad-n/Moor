@@ -63,7 +63,7 @@ test('gitFor accepts internally resolved git paths with restricted non-space cha
   const restrictedBinaries = [
     String.raw`C:\Git(x86)\cmd\git.exe`,
     String.raw`C:\tools\git+portable\cmd\git.exe`,
-    String.raw`C:\Users\João\AppData\Local\hermes\git\cmd\git.exe`
+    String.raw`C:\Users\João\AppData\Local\moor\git\cmd\git.exe`
   ]
 
   for (const binary of restrictedBinaries) {
@@ -81,7 +81,7 @@ test('gitFor accepts a Windows no-console host tuple with restricted characters'
       windowsGitHost: () => ({
         isWindows: true,
         pythonBin: String.raw`C:\Tools\python-3.14+build\python.exe`,
-        scriptPath: String.raw`C:\Hermes\hermes-no-console-git.py`
+        scriptPath: String.raw`C:\Moor\moor-no-console-git.py`
       })
     }
   })
@@ -126,7 +126,7 @@ test('simpleGitHostEnv forwards the allow-listed git variables and drops the oth
     GIT_ASKPASS: '/usr/bin/askpass',
     SSH_ASKPASS: '/usr/bin/ssh-askpass',
     GIT_TERMINAL_PROMPT: '1',
-    HERMES_GIT_ARGV0: '"git"'
+    MOOR_GIT_ARGV0: '"git"'
   })
 })
 
@@ -138,7 +138,7 @@ test('simpleGitHostEnv still defaults GIT_TERMINAL_PROMPT off for the host tuple
 // test can tell whether the user's GIT_SSH_COMMAND reached the git process.
 function makeRepoWithSshRemote() {
   const dir = makeRepo()
-  const toolDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-fake-ssh-'))
+  const toolDir = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-fake-ssh-'))
   const marker = path.join(toolDir, 'ssh-command-ran')
   const sshScript = path.join(toolDir, 'fake-ssh.sh')
 
@@ -179,7 +179,7 @@ test.skipIf(process.platform === 'win32')(
 )
 
 const HOST_PYTHON =
-  process.env.HERMES_PYTHON || process.env.UV_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
+  process.env.MOOR_PYTHON || process.env.UV_PYTHON || (process.platform === 'win32' ? 'python' : 'python3')
 
 test.skipIf(process.platform === 'win32')(
   "gitFor's Windows host-tuple path forwards GIT_SSH_COMMAND and does not throw on inherited guarded variables",
@@ -191,7 +191,7 @@ test.skipIf(process.platform === 'win32')(
 
     const { dir, marker, sshScript } = makeRepoWithSshRemote()
     const actualNoConsole = await vi.importActual<typeof NoConsoleGit>('./no-console-git')
-    const scriptDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-git-host-'))
+    const scriptDir = fs.mkdtempSync(path.join(os.tmpdir(), 'moor-git-host-'))
 
     tempDirs.push(scriptDir)
 

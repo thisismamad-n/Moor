@@ -343,10 +343,10 @@ describe('connection-aware plugin host APIs', () => {
         path: expect.stringContaining('/api/profiles/sessions?')
       })
     )
-    expect(hermesApi).toHaveBeenNthCalledWith(2, {
+    expect(moorApi).toHaveBeenNthCalledWith(2, {
       connectionId: 'source-a', path: '/api/sessions/bot-chat/mutation-snapshot?profile=backend-worker'
     })
-    expect(hermesApi).toHaveBeenNthCalledWith(3, {
+    expect(moorApi).toHaveBeenNthCalledWith(3, {
       connectionId: 'source-a',
       path: '/api/sessions/bot-chat',
       method: 'PATCH',
@@ -359,13 +359,13 @@ describe('connection-aware plugin host APIs', () => {
   })
 
   it('keeps an unrouted persisted-session edit on the window primary instead of pinning it to this device', async () => {
-    vi.mocked(hermesApi)
+    vi.mocked(moorApi)
       .mockResolvedValueOnce({ exists: true, runtime_revision: 2, runtime_generation: 1 })
       .mockResolvedValueOnce({ ok: true, hidden: true })
 
     await host.setPersistedSessionHidden(null, { sessionId: 'remote-chat', profile: 'default', hidden: true })
 
-    expect(vi.mocked(hermesApi).mock.calls.map(([request]) => request.connectionId)).toEqual([null, null])
+    expect(vi.mocked(moorApi).mock.calls.map(([request]) => request.connectionId)).toEqual([null, null])
   })
 
   it('forwards an explicit timeout so long-running methods outlive the generic deadline', async () => {

@@ -277,7 +277,7 @@ class SubagentLifecycleService:
     def launch(self, request: SubagentLaunchRequest | Mapping[str, Any]) -> SubagentHandle:
         parent = self._parent_agent_resolver()
         if parent is None:
-            raise SubagentLifecycleError("No active Hermes parent session is available.")
+            raise SubagentLifecycleError("No active Moor parent session is available.")
         request = _coerce_request(request)
         self._validate_request(request, parent)
         parent_session_id = _session_id_of(parent)

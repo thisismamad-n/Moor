@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from hermes_cli.plugin_install_phase import InstallPhase
-from hermes_constants import get_hermes_home, profile_name_for_home
+from moor_cli.plugin_install_phase import InstallPhase
+from moor_constants import get_moor_home, profile_name_for_home
 from tools.connectors.contract import Actor, SettleReason, TargetState
 from tools.connectors.mcp import _fail, _move
 from tools.connectors.operation import ConnectionOperation, IllegalTransition, Target
@@ -60,8 +60,8 @@ def target_scope(home: Path):
     from tui_gateway import server
     from tui_gateway.launch_profile_policy import launch_profile_runtime_scope
 
-    launch = home.resolve() == Path(server._hermes_home).resolve()
-    scope = (launch_profile_runtime_scope(server._hermes_home) if launch
+    launch = home.resolve() == Path(server._moor_home).resolve()
+    scope = (launch_profile_runtime_scope(server._moor_home) if launch
              else server._session_profile_runtime_scope({"profile_home": str(home)}))
     with scope:
         yield
@@ -71,7 +71,7 @@ def _named_home(name: str) -> Path:
     """The home of the profile the Advanced modal named; raises for one that does not exist."""
     from tui_gateway import server
 
-    return server._profile_home(name) or Path(server._hermes_home)
+    return server._profile_home(name) or Path(server._moor_home)
 
 
 class HostInstaller:
@@ -85,14 +85,14 @@ class HostInstaller:
 
     def refuse(self, entry: Any) -> None:
         """Raise with the installer's own text when the catalog would refuse this entry here."""
-        from hermes_cli.plugins_cmd_catalog import raise_if_removed, refuse_incompatible_catalog_entry
+        from moor_cli.plugins_cmd_catalog import raise_if_removed, refuse_incompatible_catalog_entry
 
         raise_if_removed(entry.name, entry.repo)
         refuse_incompatible_catalog_entry(entry)
 
     def install_plugin(self, name: str, *, force: bool, enable: bool, ref: Optional[str],
                        on_step: Callable[[InstallPhase], None]) -> dict[str, Any]:
-        from hermes_cli.plugins_cmd import dashboard_install_plugin
+        from moor_cli.plugins_cmd import dashboard_install_plugin
 
         return dashboard_install_plugin("", force=force, enable=enable, catalog_name=name, ref=ref, on_step=on_step)
 
@@ -120,7 +120,7 @@ class HostInstaller:
         hit's bare slug is read back through its ``clawhub/<slug>`` card id."""
         from rich.console import Console
 
-        from hermes_cli.skills_hub import do_install
+        from moor_cli.skills_hub import do_install
         from tools.skills_hub import HubLockFile, installed_entry
 
         def entry() -> Optional[dict[str, Any]]:
@@ -162,7 +162,7 @@ class _Runner:
         self.approved_env: dict[str, dict[str, str]] = {}
         # Built on the tool call's thread: the calling chat's own home is the default install
         # target, and its profile name labels the row (None for a home that is no named profile).
-        self.home: Path = get_hermes_home()
+        self.home: Path = get_moor_home()
         self.label: Optional[str] = profile_name_for_home(self.home)
 
     # -- prepare: resolve each id and draw its row ------------------------------------------------
@@ -311,7 +311,7 @@ def target_declared_env(fact: Any) -> list[str]:
 
 
 def _plugin_row(entry: Any, label: Optional[str]) -> dict[str, Any]:
-    from hermes_cli.plugin_catalog_presence import presence
+    from moor_cli.plugin_catalog_presence import presence
 
     row: dict[str, Any] = {
         "display": getattr(entry, "title", "") or _display(entry.name),
@@ -319,7 +319,7 @@ def _plugin_row(entry: Any, label: Optional[str]) -> dict[str, Any]:
         "tier": entry.tier if entry.tier in _TIERS else "community",
         "repo": entry.repo,
         "sha": entry.sha,
-        "requires_hermes": entry.requires_hermes or None,
+        "requires_moor": entry.requires_moor or None,
         "has_desktop_half": False,
         "target_profile": label,
         "app_state": presence(entry).state,
@@ -358,7 +358,7 @@ def _installed_row(target: Target, outcome: dict[str, Any]) -> tuple:
 
 
 def _save_credentials(env: dict[str, str]) -> None:
-    from hermes_cli.config import save_env_value, validate_env_var_name_for_write
+    from moor_cli.config import save_env_value, validate_env_var_name_for_write
 
     for key, value in env.items():
         validate_env_var_name_for_write(key)

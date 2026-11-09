@@ -319,16 +319,16 @@ async def test_plugin_slash_command_sees_session_env(monkeypatch):
 
 
 def test_set_session_env_binds_the_turn_session_id(monkeypatch):
-    """A cached agent sets HERMES_SESSION_ID only on the turn that built it. Every later turn's
+    """A cached agent sets MOOR_SESSION_ID only on the turn that built it. Every later turn's
     task context must still carry the session id, or a command yielded to the background
     records no parent session and its completion is refused by the owner (admission_conflict)."""
     runner = object.__new__(GatewayRunner)
     source = SessionSource(platform=Platform.LOCAL, chat_id="local-abc", chat_type="dm", user_id="uid:1")
     context = SessionContext(source=source, connected_platforms=[], home_channels={},
                              session_key="agent:main:local:dm:local-abc", session_id="20261006_x")
-    monkeypatch.setenv("HERMES_SESSION_ID", "stale-process-env")
+    monkeypatch.setenv("MOOR_SESSION_ID", "stale-process-env")
     tokens = runner._set_session_env(context)
-    assert get_session_env("HERMES_SESSION_ID") == "20261006_x"
+    assert get_session_env("MOOR_SESSION_ID") == "20261006_x"
     runner._clear_session_env(tokens)
 
 
@@ -336,7 +336,7 @@ def test_set_session_env_binds_the_turn_session_id(monkeypatch):
 async def test_plugin_slash_command_receives_calling_session(monkeypatch):
     """A gateway plugin command handler that opts in receives the calling chat's source and its
     current session id (the one a later /new reports as old_session_id, #123245); the bound
-    HERMES_SESSION_ID agrees with it."""
+    MOOR_SESSION_ID agrees with it."""
     from datetime import datetime
     from unittest.mock import MagicMock
 
@@ -356,10 +356,10 @@ async def test_plugin_slash_command_receives_calling_session(monkeypatch):
     seen = []
 
     def _handler(raw_args, *, source, session_id, session_key, platform):
-        seen.append((raw_args, source, session_id, session_key, platform, get_session_env("HERMES_SESSION_ID")))
+        seen.append((raw_args, source, session_id, session_key, platform, get_session_env("MOOR_SESSION_ID")))
         return "ok"
 
-    from hermes_cli import plugins as _plugins_mod
+    from moor_cli import plugins as _plugins_mod
     monkeypatch.setattr(_plugins_mod, "get_plugin_command_handler", lambda name: _handler)
 
     event = MessageEvent(text="/who details", source=source, message_id="m1")

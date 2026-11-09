@@ -1,6 +1,6 @@
 """One gateway connection per classic-CLI process (CALLMAP §3.1, §4).
 
-A daemon thread owns an asyncio loop and one ``GatewayClient``. It never calls a HermesCLI
+A daemon thread owns an asyncio loop and one ``GatewayClient``. It never calls a MoorCLI
 method and never blocks: every event frame goes into a thread-safe ``queue.Queue`` that the
 agent thread drains (``GatewayAgent.run_conversation``), and ``session.info``-class frames
 also update the plain-attribute ``SessionState`` caches the status bar reads.
@@ -16,7 +16,7 @@ import queue
 import threading
 import time
 
-from hermes_cli.gateway_client import (DEFAULT_RPC_TIMEOUT, DISCONNECTED, NOT_SENT, RESUME_KEY_MISMATCH,
+from moor_cli.gateway_client import (DEFAULT_RPC_TIMEOUT, DISCONNECTED, NOT_SENT, RESUME_KEY_MISMATCH,
                                        GatewayClientError, GatewayRPCError)
 
 logger = logging.getLogger(__name__)
@@ -176,7 +176,7 @@ class GatewayConnection:
         # dial again. Each connect bumps ``epoch``, and its loss is tagged with it (``lost_before``).
         self._detached = False
         self.epoch = 0
-        # /bg and /btw answers by task id (hermes_cli/gateway_side.py); created by whichever of the
+        # /bg and /btw answers by task id (moor_cli/gateway_side.py); created by whichever of the
         # waiter or the frame comes first, so an answer faster than the verb's reply is kept.
         self._side: dict[str, queue.Queue] = {}
         self._side_lock = threading.Lock()
@@ -231,7 +231,7 @@ class GatewayConnection:
                         self._error = None
                         self._ready.clear()
                         self.closed = False
-                    thread = self._thread = spawn_context_thread(self._run, name="hermes-gateway-loop")
+                    thread = self._thread = spawn_context_thread(self._run, name="moor-gateway-loop")
                     thread.start()
             # Every caller waits out a dial in progress, its own or another thread's.
             if not self._ready.wait(max(deadline - time.monotonic(), 0)):
@@ -261,7 +261,7 @@ class GatewayConnection:
         self._stop = asyncio.Event()
         connect = self._connect
         if connect is None:
-            from hermes_cli.gateway_client import connect_gateway
+            from moor_cli.gateway_client import connect_gateway
             connect = connect_gateway
         try:
             async with connect() as client:
@@ -348,7 +348,7 @@ class GatewayConnection:
             self.events.put(frame)
 
     def _take_side(self, params):
-        from hermes_cli.gateway_side import SIDE_EVENTS
+        from moor_cli.gateway_side import SIDE_EVENTS
         payload = params.get("payload")
         if params.get("type") not in SIDE_EVENTS or not isinstance(payload, dict) or not payload.get("task_id"):
             return False
@@ -436,7 +436,7 @@ class GatewayConnection:
         answer, sent = concurrent.futures.Future(), threading.Event()
         answer.add_done_callback(lambda _done: wake.set())
         thread = spawn_context_thread(lambda: asyncio.run(self._command(method, params, wake, answer, sent)),
-                                      name="hermes-gateway-command")
+                                      name="moor-gateway-command")
         with self._side_lock:
             self._commands.add(wake)
         thread.start()
@@ -458,7 +458,7 @@ class GatewayConnection:
         the transport's error; a set ``wake`` without an answer cancels the dial or the wait."""
         connect = self._connect
         if connect is None:
-            from hermes_cli.gateway_client import connect_gateway
+            from moor_cli.gateway_client import connect_gateway
             connect = connect_gateway
         task = asyncio.current_task()
         stop = asyncio.ensure_future(asyncio.to_thread(wake.wait))

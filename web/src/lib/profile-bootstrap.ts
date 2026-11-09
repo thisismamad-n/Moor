@@ -42,7 +42,7 @@ export function shouldAdoptActiveProfile(
   activeProfile: string,
 ): boolean {
   // Only the machine (default-hosted) dashboard aligns to the sticky active
-  // profile. A dashboard hosted by a named profile (`hermes -p demo serve`)
+  // profile. A dashboard hosted by a named profile (`moor -p demo serve`)
   // serves THAT agent: adopting the machine-global active_profile would
   // silently retarget its banner, chat TUI env and model to another profile.
   return (

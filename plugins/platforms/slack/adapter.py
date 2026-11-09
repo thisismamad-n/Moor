@@ -69,7 +69,7 @@ except ImportError:  # pragma: no cover - plugin loaded outside package context
 logger = logging.getLogger(__name__)
 
 # User-Agent prefix (``HermesAgent/<version>``) for platform-partner attribution of API calls.
-from hermes_cli.version_info import hermes_user_agent
+from moor_cli.version_info import moor_user_agent
 
 _SLACK_ERROR_BODY_LIMIT_BYTES = 8 * 1024
 _BOOL_WORDS = frozenset({"1", "0", "true", "false", "yes", "no", "on", "off"})
@@ -1680,7 +1680,7 @@ class SlackAdapter(BasePlatformAdapter):
         else:  # pragma: no cover - registry always non-empty
             _slash_pattern = re.compile(r"^/moor$")
 
-        self._app.command(_slash_pattern)(self._handle_hermes_command)
+        self._app.command(_slash_pattern)(self._handle_moor_command)
 
         # Approval buttons, slash-confirm buttons (tools/slash_confirm.py), feedback.
         for _action_id in self._APPROVAL_CHOICES:
@@ -1755,7 +1755,7 @@ class SlackAdapter(BasePlatformAdapter):
 
     @staticmethod
     def _new_web_client(token: str, proxy_url: Optional[str]) -> Any:
-        client = AsyncWebClient(token=token, user_agent_prefix=hermes_user_agent("HermesAgent"))
+        client = AsyncWebClient(token=token, user_agent_prefix=moor_user_agent("MoorAgent"))
         _apply_slack_proxy(client, proxy_url)
         return client
 
@@ -5011,11 +5011,11 @@ class SlackAdapter(BasePlatformAdapter):
                     "type": "actions",
                     "elements": [
                         self._button(t("platform.slack.confirm.approve_once")[:75],
-                                     "hermes_confirm_once", value, style="primary"),
+                                     "moor_confirm_once", value, style="primary"),
                         self._button(t("platform.slack.confirm.always_approve")[:75],
-                                     "hermes_confirm_always", value),
+                                     "moor_confirm_always", value),
                         self._button(t("platform.slack.confirm.cancel")[:75],
-                                     "hermes_confirm_cancel", value, style="danger")]}]
+                                     "moor_confirm_cancel", value, style="danger")]}]
             return f"{_title}: {body[:100]}", blocks
 
         return await self._send_interactive_prompt(chat_id, metadata, _build, "send_slash_confirm")
@@ -5081,7 +5081,7 @@ class SlackAdapter(BasePlatformAdapter):
         provider = next((p for p in providers if p["slug"] == provider_slug), None)
         pname = provider.get("name", provider_slug) if provider else provider_slug
         models = (provider or {}).get("models", [])[:100]
-        from hermes_cli.model_picker_usage import picker_row_suffix
+        from moor_cli.model_picker_usage import picker_row_suffix
         options = []
         for idx, model_id in enumerate(models):
             short = model_id.split("/")[-1] if "/" in model_id else model_id
@@ -5418,8 +5418,8 @@ class SlackAdapter(BasePlatformAdapter):
     async def send_clarify(
         self, chat_id: str, question: str, choices: Optional[list], clarify_id: str,
         session_key: str, metadata: Optional[dict[str, Any]] = None) -> SendResult:
-        """Clarify prompt as Block Kit buttons: one ``hermes_clarify_choice_<idx>`` per option
-        (value ``clarify_id|idx``) plus "✏️ Other…" (``hermes_clarify_other``), which flips the
+        """Clarify prompt as Block Kit buttons: one ``moor_clarify_choice_<idx>`` per option
+        (value ``clarify_id|idx``) plus "✏️ Other…" (``moor_clarify_other``), which flips the
         entry into text-capture mode for the gateway's text-intercept. No choices → base impl."""
         if not choices:
             return await super().send_clarify(
@@ -5444,7 +5444,7 @@ class SlackAdapter(BasePlatformAdapter):
                         label[:75], f"moor_clarify_choice_{idx}",
                         f"{clarify_id}|{idx}", emoji=True))
             elements.append(
-                self._button(t("platform.slack.clarify.other")[:75], "hermes_clarify_other",
+                self._button(t("platform.slack.clarify.other")[:75], "moor_clarify_other",
                              f"{clarify_id}|other", emoji=True)
             )
             blocks: list = [{"type": "section", "text": {"type": "mrkdwn", "text": body}}]
@@ -5569,15 +5569,15 @@ class SlackAdapter(BasePlatformAdapter):
 
     # Button action_id → choice, and choice → outcome text (``{user}`` = clicker's name).
     _APPROVAL_CHOICES: ClassVar[dict[str, str]] = {
-        "hermes_approve_once": "once", "hermes_approve_session": "session",
-        "hermes_approve_always": "always", "hermes_deny": "deny"}
+        "moor_approve_once": "once", "moor_approve_session": "session",
+        "moor_approve_always": "always", "moor_deny": "deny"}
     # choice → catalog key; resolved through ``t()`` at click time so the active language applies.
     _APPROVAL_DECISION_KEYS: ClassVar[dict[str, str]] = {
         "once": "platform.slack.approval.resolved_once", "session": "platform.slack.approval.resolved_session",
         "always": "platform.slack.approval.resolved_always", "deny": "platform.slack.approval.resolved_deny"}
     _CONFIRM_CHOICES: ClassVar[dict[str, str]] = {
-        "hermes_confirm_once": "once", "hermes_confirm_always": "always",
-        "hermes_confirm_cancel": "cancel"}
+        "moor_confirm_once": "once", "moor_confirm_always": "always",
+        "moor_confirm_cancel": "cancel"}
     _CONFIRM_DECISION_KEYS: ClassVar[dict[str, str]] = {
         "once": "platform.slack.approval.resolved_once", "always": "platform.slack.confirm.resolved_always",
         "cancel": "platform.slack.confirm.resolved_cancel"}
@@ -5698,7 +5698,7 @@ class SlackAdapter(BasePlatformAdapter):
         # "Other" → text-capture mode: mark_awaiting_text flips the entry and the
         # gateway's text-intercept resolves it from the user's next message.
         expired_text = t("platform.slack.clarify.expired", user=user_name)
-        if action_id == "hermes_clarify_other" or token == "other":
+        if action_id == "moor_clarify_other" or token == "other":
             if not _clarify_mod.mark_awaiting_text(clarify_id):
                 # Entry evicted/gateway restarted — a typed answer would go nowhere.
                 self._clarify_messages.pop(clarify_id, None)
@@ -6061,7 +6061,7 @@ class SlackAdapter(BasePlatformAdapter):
         allowed_channels = self._slack_allowed_channels()
         return bool(allowed_channels) and not str(channel_id).startswith("D") and channel_id not in allowed_channels
 
-    async def _handle_hermes_command(self, ack, command: dict) -> None:
+    async def _handle_moor_command(self, ack, command: dict) -> None:
         """Bolt listener for every native slash: ack within 3s, then run. A gated channel gets a
         bare ack, never a "Running /x" promise the gate in _handle_slash_command will break."""
         if self._slash_channel_gated(command.get("channel_id", "")):
@@ -6105,13 +6105,13 @@ class SlackAdapter(BasePlatformAdapter):
             message_type=(MessageType.COMMAND if text.startswith("/") else MessageType.TEXT),
             source=source, raw_message=command,
             channel_prompt=self._channel_prompt_with_identity(channel_id, team_id),
-            # Bound skills load only when a session starts; "/hermes <question>" can start one.
+            # Bound skills load only when a session starts; "/moor <question>" can start one.
             auto_skill=resolve_channel_skills(self.config.extra, channel_id, None))
         # A slash turn is a human turn: it re-pins the channel prompt and session context, so it
         # must carry the same names as a message here or the next message flips them. A command
         # that interrupts, unblocks or pauses work starts no turn of its own, and a slow
         # users.info must not hold /stop or /pause back while the worker keeps running.
-        from hermes_cli.commands import resolve_command
+        from moor_cli.commands import resolve_command
         cmd = resolve_command(event.get_command() or "")
         controls_running_turn = cmd is not None and (
             cmd.busy_policy == "interrupt_then_dispatch" or cmd.name in ("approve", "deny", "pause"))
@@ -6128,7 +6128,7 @@ class SlackAdapter(BasePlatformAdapter):
                 if ahead is not None:
                     await asyncio.wait((ahead,))
             # Stash response_url so the first reply for this channel+user goes ephemeral. COMMAND
-            # events only: free-form "/hermes <question>" replies must stay public.
+            # events only: free-form "/moor <question>" replies must stay public.
             response_url = command.get("response_url", "")
             if response_url and user_id and channel_id and text.startswith("/"):
                 self._stash_slash_context(team_id, channel_id, user_id, response_url)
@@ -6919,7 +6919,7 @@ _is_connected = _env_is_connected("SLACK_BOT_TOKEN")
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Moor plugin system."""
     from .adapter_hint import PLATFORM_HINT
     from .send_targets import SEND_ENTRY_KWARGS
     from .dashboard_card import DASHBOARD_CARD

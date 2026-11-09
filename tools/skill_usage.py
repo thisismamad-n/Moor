@@ -578,7 +578,7 @@ def set_pinned(skill_name: str, pinned: bool) -> bool:
 
 
 def set_locked(skill_name: str, locked: bool) -> bool:
-    """User declaration (``hermes curator lock``) that the autonomous passes — background review and
+    """User declaration (``moor curator lock``) that the autonomous passes — background review and
     curator — must not change this skill's content. NOT curation-gated: hand-written, bundled and
     hub skills can all be locked; archival eligibility is the separate ``pinned`` axis. True when
     the write landed."""

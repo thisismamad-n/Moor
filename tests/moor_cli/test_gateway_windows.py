@@ -8,9 +8,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import gateway
-from hermes_cli import gateway_windows
-from hermes_cli import setup
+from moor_cli import gateway
+from moor_cli import gateway_windows
+from moor_cli import setup
 
 
 _BREAKAWAY_MARKER = "_MOOR_GATEWAY_BREAKAWAY"
@@ -44,17 +44,17 @@ def test_exec_schtasks_decodes_ansi_output_under_utf8_mode(monkeypatch):
 
 
 @pytest.mark.platforms("windows")
-def test_registered_task_launchers_reads_each_hermes_task_action(monkeypatch):
-    """The install probe's view of the Scheduled Tasks: the launcher each ``Hermes_Gateway*`` task
+def test_registered_task_launchers_reads_each_moor_task_action(monkeypatch):
+    """The install probe's view of the Scheduled Tasks: the launcher each ``Moor_Gateway*`` task
     starts, as the task XML this module writes names it, and a pre-``wscript`` task's ``.cmd``."""
-    launcher = r"C:\Users\Ann Lee\custom hermes\gateway-service\Hermes_Gateway_work.vbs"
-    legacy = r"C:\Users\ann\h2\gateway-service\Hermes_Gateway.cmd"
-    current = gateway_windows._build_scheduled_task_xml("Hermes_Gateway_work", Path(launcher), "PC\\ann")
+    launcher = r"C:\Users\Ann Lee\custom moor\gateway-service\Moor_Gateway_work.vbs"
+    legacy = r"C:\Users\ann\h2\gateway-service\Moor_Gateway.cmd"
+    current = gateway_windows._build_scheduled_task_xml("Moor_Gateway_work", Path(launcher), "PC\\ann")
     older = current.replace("<Command>wscript.exe</Command>", f"<Command>{legacy}</Command>").replace(
         f'//B //Nologo "{launcher}"', "")
     listing = ('\r\n"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag","N/A","Ready"\r\n'
-               '"\\Hermes_Gateway_work","N/A","Ready"\r\n"\\Hermes_Gateway","N/A","Running"\r\n')
-    xml = {"Hermes_Gateway_work": current, "Hermes_Gateway": older}
+               '"\\Moor_Gateway_work","N/A","Ready"\r\n"\\Moor_Gateway","N/A","Running"\r\n')
+    xml = {"Moor_Gateway_work": current, "Moor_Gateway": older}
     monkeypatch.setattr(gateway_windows, "_exec_schtasks",
                         lambda args, timeout=None: (0, listing if "/FO" in args else xml[args[2]], ""))
 
@@ -153,7 +153,7 @@ def test_build_gateway_argv_keeps_venv_console_python_for_uv_venv(monkeypatch, t
         encoding="utf-8",
     )
 
-    from hermes_cli import gateway
+    from moor_cli import gateway
 
     monkeypatch.setattr(gateway, "PROJECT_ROOT", project)
     monkeypatch.setattr(gateway, "get_python_path", lambda: str(venv_python))
@@ -343,7 +343,7 @@ def test_install_scheduled_task_recreates_instead_of_change(monkeypatch, tmp_pat
         raise AssertionError(f"unexpected schtasks args: {args}")
 
     monkeypatch.setattr(gateway_windows, "_exec_schtasks", fake_schtasks)
-    ok, _detail = gateway_windows._install_scheduled_task("Hermes_Gateway_alice", script_path)
+    ok, _detail = gateway_windows._install_scheduled_task("Moor_Gateway_alice", script_path)
 
     assert ok is True
     assert "/Change" not in [arg for call in calls for arg in call]
@@ -442,12 +442,12 @@ def _startup_with_fallback_and_legacy_entries(monkeypatch, tmp_path):
     """A Startup folder holding both the .vbs fallback and the pre-#45610 .cmd launcher."""
     startup = tmp_path / "Startup"
     startup.mkdir(parents=True)
-    script = tmp_path / "gateway-service" / "Hermes_Gateway_alice.cmd"
-    vbs, cmd = startup / "Hermes_Gateway_alice.vbs", startup / "Hermes_Gateway_alice.cmd"
+    script = tmp_path / "gateway-service" / "Moor_Gateway_alice.cmd"
+    vbs, cmd = startup / "Moor_Gateway_alice.vbs", startup / "Moor_Gateway_alice.cmd"
     vbs.write_text(gateway_windows._build_startup_launcher(script), encoding="utf-8")
     cmd.write_text("@echo off", encoding="utf-8")
     monkeypatch.setattr(gateway_windows, "_assert_windows", lambda: None)
-    monkeypatch.setattr(gateway_windows, "get_task_name", lambda: "Hermes_Gateway_alice")
+    monkeypatch.setattr(gateway_windows, "get_task_name", lambda: "Moor_Gateway_alice")
     monkeypatch.setattr(gateway_windows, "get_startup_entry_path", lambda: vbs)
     monkeypatch.setattr(gateway_windows, "_legacy_startup_entry_path", lambda: cmd)
     monkeypatch.setattr(gateway_windows, "_write_task_script", lambda: script)
@@ -470,7 +470,7 @@ def test_scheduled_task_install_removes_startup_entries_that_would_double_launch
 
 
 def test_reconcile_leaves_one_autostart_mechanism(monkeypatch, tmp_path):
-    """#80569: what `hermes update` and `hermes doctor --fix` run. Beside a registered task every
+    """#80569: what `moor update` and `moor doctor --fix` run. Beside a registered task every
     Startup entry is redundant; with no task a legacy .cmd next to the .vbs is. After reconcile
     nothing is redundant and exactly one mechanism remains."""
     startup, _script = _startup_with_fallback_and_legacy_entries(monkeypatch, tmp_path)
@@ -489,7 +489,7 @@ def test_reconcile_leaves_one_autostart_mechanism(monkeypatch, tmp_path):
     assert [p.suffix for p in gateway_windows.redundant_autostart_entries()] == [".cmd"]
     gateway_windows.reconcile_autostart_launchers()
     assert gateway_windows.redundant_autostart_entries() == []
-    assert [p.name for p in (tmp_path / "no-task" / "Startup").iterdir()] == ["Hermes_Gateway_alice.vbs"]
+    assert [p.name for p in (tmp_path / "no-task" / "Startup").iterdir()] == ["Moor_Gateway_alice.vbs"]
 
 
 def test_reconcile_rewrites_an_older_startup_entry_as_utf16(monkeypatch, tmp_path):
@@ -498,26 +498,26 @@ def test_reconcile_rewrites_an_older_startup_entry_as_utf16(monkeypatch, tmp_pat
     reconcile rewrites it as UTF-16 with a BOM."""
     import codecs
     startup, script = _startup_with_fallback_and_legacy_entries(monkeypatch, tmp_path / "Usuário 方舟")
-    (startup / "Hermes_Gateway_alice.cmd").unlink()
+    (startup / "Moor_Gateway_alice.cmd").unlink()
     monkeypatch.setattr(gateway_windows, "is_task_registered", lambda: False)
     monkeypatch.setattr(gateway_windows, "get_task_script_path", lambda: script)
 
     assert gateway_windows.reconcile_autostart_launchers() == ([], [])
-    raw = (startup / "Hermes_Gateway_alice.vbs").read_bytes()
+    raw = (startup / "Moor_Gateway_alice.vbs").read_bytes()
     assert raw.startswith(codecs.BOM_UTF16_LE)
     assert raw.decode("utf-16") == gateway_windows._build_startup_launcher(script)
-    assert sorted(p.name for p in startup.iterdir()) == ["Hermes_Gateway_alice.vbs"]
+    assert sorted(p.name for p in startup.iterdir()) == ["Moor_Gateway_alice.vbs"]
 
 
 def test_reconcile_warns_when_legacy_entry_cannot_be_removed(monkeypatch, tmp_path):
     """#80569: no task, legacy .cmd locked. The .vbs gets written but the .cmd survives, so both fire
     at logon; reconcile must warn instead of reporting a migration, and doctor --fix must not count it."""
     import sys
-    from hermes_cli import doctor_platform
-    from hermes_cli.doctor_report import Finding
+    from moor_cli import doctor_platform
+    from moor_cli.doctor_report import Finding
 
     startup, _script = _startup_with_fallback_and_legacy_entries(monkeypatch, tmp_path)
-    (startup / "Hermes_Gateway_alice.vbs").unlink()   # legacy-only install
+    (startup / "Moor_Gateway_alice.vbs").unlink()   # legacy-only install
     monkeypatch.setattr(gateway_windows, "is_task_registered", lambda: False)
     real_unlink = Path.unlink
 
@@ -529,8 +529,8 @@ def test_reconcile_warns_when_legacy_entry_cannot_be_removed(monkeypatch, tmp_pa
     monkeypatch.setattr(Path, "unlink", locked_unlink)
 
     done, warnings = gateway_windows.reconcile_autostart_launchers()
-    assert done == [] and len(warnings) == 1 and "Hermes_Gateway_alice.cmd" in warnings[0]
-    assert sorted(p.name for p in startup.iterdir()) == ["Hermes_Gateway_alice.cmd", "Hermes_Gateway_alice.vbs"]
+    assert done == [] and len(warnings) == 1 and "Moor_Gateway_alice.cmd" in warnings[0]
+    assert sorted(p.name for p in startup.iterdir()) == ["Moor_Gateway_alice.cmd", "Moor_Gateway_alice.vbs"]
     assert [p.suffix for p in gateway_windows.redundant_autostart_entries()] == [".cmd"]
 
     monkeypatch.setattr(sys, "platform", "win32")

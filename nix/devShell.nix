@@ -47,10 +47,10 @@
         ++ self'.packages.default.passthru.devDeps;
         shellHook = ''
           # The editable venv's .pth resolves the checkout through this.
-          export HERMES_PYTHON_SRC_ROOT=$(git rev-parse --show-toplevel)
+          export MOOR_PYTHON_SRC_ROOT=$(git rev-parse --show-toplevel)
 
-          ${hermesAgentDevShellHook}
-          ${hermesNpmLib.mkNpmDevShellHook npmPackageJsonPaths}
+          ${moorAgentDevShellHook}
+          ${moorNpmLib.mkNpmDevShellHook npmPackageJsonPaths}
 
           # Force Node to use Nix's playwright-test binary instead of node_modules/.bin
           export PATH="${pkgs.playwright-test}/bin:$PATH"

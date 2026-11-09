@@ -1,4 +1,4 @@
-"""``HERMES_CONFIG_BACKEND=<kind>`` resolves to the package ``plugins/config_backends/<kind>/``
+"""``MOOR_CONFIG_BACKEND=<kind>`` resolves to the package ``plugins/config_backends/<kind>/``
 through one entry point (``get_backend()``), and everything core needs from a backend is a protocol
 method (teknium1 P2-1 on #122509). A backend core has never heard of is served end to end: the
 fake package below lives in a temp directory, and nothing in core is patched or edited."""
@@ -11,14 +11,14 @@ import textwrap
 import pytest
 
 import plugins.config_backends
-from hermes_cli import config_backend as cb
+from moor_cli import config_backend as cb
 
 FAKE = "fakekind_p21"
 
 _FAKE_PACKAGE = '''
 import contextlib
 
-from hermes_cli.config_backend import FileBackend
+from moor_cli.config_backend import FileBackend
 
 EVENTS = []
 
@@ -59,7 +59,7 @@ def fake_kind(tmp_path, monkeypatch):
     monkeypatch.setattr(plugins.config_backends, "__path__", [*plugins.config_backends.__path__, str(root)])
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.delenv(cb.BACKEND_ENV, raising=False)
     monkeypatch.delenv("FAKE_P21_PLANE", raising=False)
     monkeypatch.setattr(cb, "_BOOTSTRAPPED", False)
@@ -69,11 +69,11 @@ def fake_kind(tmp_path, monkeypatch):
 
 
 def test_unknown_kind_is_served_through_protocol_methods_only(fake_kind):
-    from hermes_cli.doctor_config import _check_config_backend
-    from hermes_cli.doctor_report import Finding
+    from moor_cli.doctor_config import _check_config_backend
+    from moor_cli.doctor_report import Finding
 
     home = fake_kind
-    (home / ".env").write_text(f"HERMES_CONFIG_BACKEND={FAKE}\nFAKE_P21_PLANE=https://plane.test\n", encoding="utf-8")
+    (home / ".env").write_text(f"MOOR_CONFIG_BACKEND={FAKE}\nFAKE_P21_PLANE=https://plane.test\n", encoding="utf-8")
     (home / "config.yaml").write_text("a: 1\n", encoding="utf-8")
 
     backend = cb.get_config_backend()
@@ -121,6 +121,6 @@ def test_absent_kind_fails_closed(monkeypatch):
 def test_broken_backend_package_shows_its_own_import_error(fake_kind):
     pkg = plugins.config_backends.__path__[-1]
     with open(f"{pkg}/{FAKE}/__init__.py", "w", encoding="utf-8") as fh:
-        fh.write("import hermes_missing_dependency_p21\n")
-    with pytest.raises(ModuleNotFoundError, match="hermes_missing_dependency_p21"):
+        fh.write("import moor_missing_dependency_p21\n")
+    with pytest.raises(ModuleNotFoundError, match="moor_missing_dependency_p21"):
         cb._backend_for(FAKE)

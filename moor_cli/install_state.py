@@ -1,12 +1,12 @@
-"""Has this OS user already used Hermes on this computer?
+"""Has this OS user already used Moor on this computer?
 
 The desktop's welcome trial goes only to a first install, once per OS user, so ``onboarding.start``
 asks this before it claims one. The answer is about the OS user, not the active profile: it looks at
-every Hermes root the machine names (default roots, channel and package roots, the roots gateway
-services and the ``hermes`` launcher point at) and at a marker file no Hermes setting can move.
+every Moor root the machine names (default roots, channel and package roots, the roots gateway
+services and the ``moor`` launcher point at) and at a marker file no Moor setting can move.
 
 This is product gating, not security: the inference API's limits stop abuse. So it reads only small
-known files, never scans the disk, never writes into a Hermes root, and treats doubt as "used".
+known files, never scans the disk, never writes into a Moor root, and treats doubt as "used".
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ class Evidence(enum.Enum):
     NAMED_PROFILE = "named-profile"        # a live profile someone created
     PROVIDER_CONFIG = "provider-config"    # config.yaml picks a provider other than auto
     PROVIDER_KEY = "provider-key"          # .env holds a provider, tool, messaging or skill key
-    PROVIDER_LOGIN = "provider-login"      # auth.json / nous_auth.json holds a login or a guest
+    PROVIDER_LOGIN = "provider-login"      # auth.json / moor_auth.json holds a login or a guest
     MESSAGES = "messages"                  # state.db holds a message
     UNREADABLE = "unreadable"              # a root we could not, or must not, read
 
@@ -74,7 +74,7 @@ class Places:
 
     @classmethod
     def of_this_machine(cls) -> Places:
-        from hermes_platform.resolver import known_dirs
+        from moor_platform.resolver import known_dirs
 
         return cls(
             markers=tuple(_expand_all(known_dirs.machine_marker_files())),
@@ -120,14 +120,14 @@ _claim_lock_holder = threading.local()
 
 @contextlib.contextmanager
 def claim_lock() -> Iterator[None]:
-    """One welcome-trial claim at a time for this OS user, whichever Hermes data root it runs from
+    """One welcome-trial claim at a time for this OS user, whichever Moor data root it runs from
     (stable and canary started together hold different auth locks). Beside the marker it guards, and
     taken before any auth lock."""
     places = machine_places()
     if not places.markers:
         yield
         return
-    from hermes_cli.auth import _file_lock
+    from moor_cli.auth import _file_lock
 
     lock_path = places.markers[0].with_name(places.markers[0].name + ".lock")
     with _file_lock(lock_path, _claim_lock_holder, CLAIM_LOCK_TIMEOUT_SECONDS,
@@ -156,7 +156,7 @@ def _write_marker(content: dict[str, str], *, answer_moved: bool = True) -> None
         atomic_json_write(marker, content)  # unique temp name: two backends may mark at once
     probe.cache_clear()
     if answer_moved:
-        from hermes_cli import onboarding_due
+        from moor_cli import onboarding_due
 
         onboarding_due.invalidate()
 
@@ -199,7 +199,7 @@ def _inside(path: Path, dirs: Iterable[Path]) -> bool:
 
 
 def _protected_dirs() -> tuple[Path, ...]:
-    from hermes_platform.resolver import known_dirs
+    from moor_platform.resolver import known_dirs
 
     return tuple(_expand_all(known_dirs.mac_privacy_protected_dirs()))
 
@@ -218,42 +218,42 @@ def _expand_all(patterns: Iterable[str]) -> Iterator[Path]:
 
 
 def _active_root() -> Iterable[Path]:
-    from hermes_constants import _get_platform_default_hermes_home, get_default_hermes_root
+    from moor_constants import _get_platform_default_moor_home, get_default_moor_root
 
-    return (get_default_hermes_root(), _get_platform_default_hermes_home())
+    return (get_default_moor_root(), _get_platform_default_moor_home())
 
 
 def _home_globs() -> Iterable[Path]:
-    from hermes_platform.resolver import known_dirs
+    from moor_platform.resolver import known_dirs
 
-    return _expand_all(known_dirs.hermes_home_globs())
+    return _expand_all(known_dirs.moor_home_globs())
 
 
 def _shared_auth_dir() -> Iterable[Path]:
-    raw = os.environ.get("HERMES_SHARED_AUTH_DIR", "").strip()
+    raw = os.environ.get("MOOR_SHARED_AUTH_DIR", "").strip()
     return (Path(raw),) if raw else ()
 
 
 def _registry_home() -> Iterable[Path]:
-    """The ``HERMES_HOME`` older Windows installers saved for the user (the desktop honours it)."""
+    """The ``MOOR_HOME`` older Windows installers saved for the user (the desktop honours it)."""
     if sys.platform != "win32":
         return ()
     import winreg
 
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
-            value, _kind = winreg.QueryValueEx(key, "HERMES_HOME")
+            value, _kind = winreg.QueryValueEx(key, "MOOR_HOME")
     except OSError:
         return ()
     return (Path(os.path.expandvars(str(value))),) if str(value).strip() else ()
 
 
 def _service_homes() -> Iterable[Path]:
-    """The ``HERMES_HOME`` of every gateway service this OS user runs: its own definitions, the
+    """The ``MOOR_HOME`` of every gateway service this OS user runs: its own definitions, the
     machine-wide units that run as it, and the launchers its Scheduled Tasks start. Another account's
     gateway is that account's install."""
-    from hermes_cli import gateway_windows
-    from hermes_platform.resolver import known_dirs
+    from moor_cli import gateway_windows
+    from moor_platform.resolver import known_dirs
 
     for machine_wide, globs in ((False, known_dirs.gateway_service_definition_globs()),
                                 (True, known_dirs.system_gateway_service_definition_globs())):
@@ -266,8 +266,8 @@ def _service_homes() -> Iterable[Path]:
 def _definition_homes(definition: Path, *, machine_wide: bool, follow: bool = True) -> Iterator[Path]:
     """The homes one definition names, and those named by the launchers it starts (the Windows
     Startup-folder fallback names only its launcher). Unreadable: none."""
-    from hermes_cli.gateway_runtime_service_identity import launcher_text
-    from hermes_cli.gateway_service_owner import service_definition_homes, service_definition_launchers
+    from moor_cli.gateway_runtime_service_identity import launcher_text
+    from moor_cli.gateway_service_owner import service_definition_homes, service_definition_launchers
 
     try:
         text = launcher_text(_read_bytes(definition))
@@ -299,11 +299,11 @@ def _is_this_account(account: str) -> bool:
 
 
 def _launcher_root() -> Iterable[Path]:
-    """The root that owns the ``hermes`` on PATH: its launcher execs that root's ``tools/`` Python."""
-    from hermes_cli._launchers import _launcher_python
-    from hermes_platform.resolver import locate_command
+    """The root that owns the ``moor`` on PATH: its launcher execs that root's ``tools/`` Python."""
+    from moor_cli._launchers import _launcher_python
+    from moor_platform.resolver import locate_command
 
-    found = locate_command("hermes").command
+    found = locate_command("moor").command
     if not found:
         return ()
     protected = _protected_dirs()
@@ -314,8 +314,8 @@ def _launcher_root() -> Iterable[Path]:
         return (launcher.parent,)  # reading it would raise a macOS permission prompt; reported as unreadable
     python = _launcher_python(launcher)
     owners = [p.parent for p in (python.parents if python else ()) if p.name == "tools"]
-    if not owners and launcher.parent.name == "bin" and launcher.parent.parent.name == ".hermes":
-        owners = [launcher.parent.parent.parent.parent]  # <root>/<checkout>/.hermes/bin/hermes
+    if not owners and launcher.parent.name == "bin" and launcher.parent.parent.name == ".moor":
+        owners = [launcher.parent.parent.parent.parent]  # <root>/<checkout>/.moor/bin/moor
     return owners[:1]
 
 
@@ -355,7 +355,7 @@ class _Root:
     @cached_property
     def auth_stores(self) -> tuple[dict[str, Any], ...]:
         # The shared-auth override names the directory itself, so its file sits at the top.
-        names = ("auth.json", "shared/nous_auth.json", "nous_auth.json")
+        names = ("auth.json", "shared/moor_auth.json", "moor_auth.json")
         return tuple(_read_mapping(self.file(name), json.loads) for name in names)
 
 
@@ -372,7 +372,7 @@ def _onboarding_done(home: _Root) -> bool:
 
 
 def _named_profile(home: _Root) -> bool:
-    from hermes_constants import PROFILE_ID_RE, named_profile_has_identity, named_profile_is_deleted
+    from moor_constants import PROFILE_ID_RE, named_profile_has_identity, named_profile_is_deleted
 
     profiles = home.file("profiles")
     if not profiles.is_dir():
@@ -393,12 +393,12 @@ def _provider_config(home: _Root) -> bool:
 
 
 # A deployment secret, not something a user entered.
-_IGNORED_ENV_KEYS = frozenset({"HERMES_ANON_API_SECRET"})
+_IGNORED_ENV_KEYS = frozenset({"MOOR_ANON_API_SECRET"})
 _USER_ENV_CATEGORIES = frozenset({"provider", "tool", "messaging", "skill"})
 
 
 def _provider_key(home: _Root) -> bool:
-    from hermes_cli.config_defaults import OPTIONAL_ENV_VARS
+    from moor_cli.config_defaults import OPTIONAL_ENV_VARS
 
     from agent.secret_scope import load_env_file
 
@@ -413,14 +413,14 @@ def _provider_key(home: _Root) -> bool:
 
 def _provider_login(home: _Root) -> bool:
     """A login, an active provider or a guest (only a connector action or a trial claim makes one),
-    or a credential the user added by hand. Pool rows Hermes seeds on its own (shell env keys, other
+    or a credential the user added by hand. Pool rows Moor seeds on its own (shell env keys, other
     tools' CLI logins) prove nothing."""
     for store in home.auth_stores:
         providers = store.get("providers")
         if store.get("active_provider") or (isinstance(providers, dict) and any(providers.values())):
             return True
         if store.get("auth_method") or store.get("anon_token") or store.get("refresh_token"):
-            return True  # nous_auth.json holds one provider state at its top level
+            return True  # moor_auth.json holds one provider state at its top level
         pool = store.get("credential_pool")
         rows = (row for rows in (pool.values() if isinstance(pool, dict) else ()) if isinstance(rows, list)
                 for row in rows if isinstance(row, dict))
@@ -482,9 +482,9 @@ def _read_mapping(path: Path, parse: Callable[[str], Any]) -> dict[str, Any]:
 
 
 def _parse_yaml(text: str) -> Any:
-    import hermes_yaml
+    import moor_yaml
 
     try:
-        return hermes_yaml.safe_load(text)
-    except hermes_yaml.YAMLError as exc:
+        return moor_yaml.safe_load(text)
+    except moor_yaml.YAMLError as exc:
         raise ValueError(str(exc)) from exc

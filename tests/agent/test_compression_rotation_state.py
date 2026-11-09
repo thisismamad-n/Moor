@@ -32,7 +32,7 @@ from agent.conversation_compression import (
     _is_real_user_message,
 )
 from agent.message_metadata import DB_ROW_SNAPSHOT
-from hermes_state import SessionDB
+from moor_state import SessionDB
 import itertools
 
 
@@ -144,9 +144,9 @@ class TestGoalMigratesOnRotation:
         agent = _build_agent_with_db(db, parent)
 
         # Set a persistent goal on the parent via the real persistence path.
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path / ".hermes")}):
-            (tmp_path / ".hermes").mkdir(exist_ok=True)
-            from hermes_cli import goals
+        with patch.dict(os.environ, {"MOOR_HOME": str(tmp_path / ".moor")}):
+            (tmp_path / ".moor").mkdir(exist_ok=True)
+            from moor_cli import goals
             goals._DB_CACHE.clear()
             # Point the goal DB at the same state.db the agent uses.
             with patch.object(goals, "_get_session_db", return_value=db):

@@ -260,15 +260,15 @@ async function verifyRunningDesktop(app: ElectronApplication, options: SmokeOpti
 }
 
 function assertResolvedIdentity(identity: ChatIdentity, options: SmokeOptions, predictedHome: string | undefined): void {
-  if (options.origin === 'source' && fs.realpathSync(identity.hermesRoot) !== fs.realpathSync(options.root)) {
+  if (options.origin === 'source' && fs.realpathSync(identity.moorRoot) !== fs.realpathSync(options.root)) {
     throw new Error('Desktop resolved a different source installation')
   }
   // A bundled artifact that bakes its own env resolves its home itself; the
   // app must report the home the driver predicted and seeded, not some other
   // (possibly real, pre-existing) profile.
   if (predictedHome) {
-    if (!identity.hermesHome || fs.realpathSync(identity.hermesHome) !== fs.realpathSync(predictedHome)) {
-      throw new Error(`Desktop resolved Hermes home ${identity.hermesHome ?? '(unreported)'} instead of the predicted ${predictedHome}`)
+    if (!identity.moorHome || fs.realpathSync(identity.moorHome) !== fs.realpathSync(predictedHome)) {
+      throw new Error(`Desktop resolved Moor home ${identity.moorHome ?? '(unreported)'} instead of the predicted ${predictedHome}`)
     }
   }
 }
@@ -291,10 +291,10 @@ export async function runInstalledDesktopSmoke(options: SmokeOptions, launchApp:
     fs.accessSync(options.root)
     const launch: Launch = resolveSmokeLaunch(options)
     const bundleEnv: Record<string, string | null> | undefined = options.origin === 'bundled' ? readBundledBundleEnv(options.root) : undefined
-    predictedHome = bundleEnv ? predictSmokeHermesHome(launch.env, bundleEnv) : undefined
+    predictedHome = bundleEnv ? predictSmokeMoorHome(launch.env, bundleEnv) : undefined
 
     // Check before the driver creates its sandbox folders inside this home.
-    if (predictedHome) { requireEmptyHermesHome(predictedHome) }
+    if (predictedHome) { requireEmptyMoorHome(predictedHome) }
 
     fs.mkdirSync(options.home, { recursive: true })
     fs.mkdirSync(options['user-data'], { recursive: true })
@@ -316,7 +316,7 @@ export async function runInstalledDesktopSmoke(options: SmokeOptions, launchApp:
     // provider config and .env. When the artifact's stamp carries its baked
     // bundle env, predict the home the app will actually resolve and seed that
     // too, refusing to seed a non-empty one.
-    for (const home of new Set([...candidateSmokeHermesHomes(options.home, options['user-data']), ...(predictedHome ? [predictedHome] : [])])) {
+    for (const home of new Set([...candidateSmokeMoorHomes(options.home, options['user-data']), ...(predictedHome ? [predictedHome] : [])])) {
       writeMockProviderConfig(home, mockUrl)
       writeEnvFile(home, 'e2e-mock-key', mockUrl)
     }
@@ -337,19 +337,19 @@ export async function runInstalledDesktopSmoke(options: SmokeOptions, launchApp:
     const identity = await readChatIdentity(page)
     assertResolvedIdentity(identity, options, predictedHome)
     // The ordinary host-attach path may reuse the updater's relaunched app's
-    // backend, and `hermes gateway ensure` attaches to (or starts, detached) the
+    // backend, and `moor gateway ensure` attaches to (or starts, detached) the
     // canonical gateway. Observe the ledger and gateway_state.json the app's home
     // resolves to (its machine root), not an arbitrary listener, and retain the
     // OS listener + installed-tree proof below.
     fs.writeFileSync(path.join(out, `desktop-backend-${options.phase}.log`), connection.logs.map(redact).join('\n'))
     const backend = localBackendProcess(Number(base.port), running.pid, predictedHome ?? options.home)
-    // `identity.hermesRoot` was asserted against options.root above. For a listener that
+    // `identity.moorRoot` was asserted against options.root above. For a listener that
     // descends from this app process, on a platform that cannot read the backend's own
     // environment, those two facts are the available evidence; a ledger-attached host
     // backend is not tied to the app by ancestry and must prove its tree itself; a canonical
     // gateway whose cwd is unreadable must report the installed commit.
     const provenanceCommit = readInstallationCommit(options.root, options.origin)
-    assertBackendOrigin(backend, options.root, options.origin, { appReportedRoot: identity.hermesRoot, installedCommit: provenanceCommit })
+    assertBackendOrigin(backend, options.root, options.origin, { appReportedRoot: identity.moorRoot, installedCommit: provenanceCommit })
     if (provenanceCommit !== options['expect-commit']) { throw new Error('Installed commit differs from --expect-commit') }
     // Trace only chat actions. Connection probes can return credential-bearing logs.
     await app.context().tracing.start({ screenshots: true, snapshots: false, sources: false })

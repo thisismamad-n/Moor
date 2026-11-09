@@ -52,7 +52,7 @@ def test_browser_skip_becomes_the_pm_opt_out(tmp_path: Path, flags: list[str], e
               'bootstrap_python() { boot_py="$FIXTURE_PY"; }; bootstrap_pm; '
               'printf "noninteractive=%s\\n" "$NON_INTERACTIVE"')
     result = subprocess.run([bash, "-c", script, "test", str(INSTALL_SH), str(tmp_path), str(boot), *flags],
-                            env={**os.environ, "HERMES_HOME": str(tmp_path / "home")},
+                            env={**os.environ, "MOOR_HOME": str(tmp_path / "home")},
                             capture_output=True, text=True, timeout=30, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     assert record.read_text(encoding="utf-8").splitlines() == expected

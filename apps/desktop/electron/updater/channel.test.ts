@@ -188,11 +188,11 @@ test.each(['NODE_OPTIONS', 'PATH', 'MOOR_PYTHON'])(
 
 test('channel manifest drops retired bundle keys but rejects unknown names', async (): Promise<void> => {
   const f = await fixture()
-  f.manifest.request.bundleEnv.HERMES_SKIP_INTRO = '1'
-  f.manifest.request.bundleEnv.HERMES_GUEST_ONBOARDING = '1'
+  f.manifest.request.bundleEnv.MOOR_SKIP_INTRO = '1'
+  f.manifest.request.bundleEnv.MOOR_GUEST_ONBOARDING = '1'
   expect(decodeChannelManifest(JSON.stringify(f.manifest)).request.bundleEnv).toEqual({})
 
-  f.manifest.request.bundleEnv.HERMES_UNKNOWN = '1'
+  f.manifest.request.bundleEnv.MOOR_UNKNOWN = '1'
   expect((): void => {
     decodeChannelManifest(JSON.stringify(f.manifest))
   }).toThrow('Invalid bundle environment name')

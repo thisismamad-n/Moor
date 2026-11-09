@@ -24,7 +24,7 @@ from agent.model_metadata_memo_bounds import MEMO_LOCK, bound_codex_caches, reme
 
 from utils import atomic_json_write, base_url_host_matches, base_url_hostname
 
-from hermes_constants import OPENROUTER_MODELS_URL, openrouter_variant_base
+from moor_constants import OPENROUTER_MODELS_URL, openrouter_variant_base
 from agent.message_metadata import PERSISTENCE_ONLY_MESSAGE_FIELDS, unpriced_replay_fields, without_persistence_fields
 from agent.model_metadata_token_memo import (  # _MSG_TOKENS_CACHE: tests and benches read it here
     _MSG_TOKENS_CACHE, MemoPins, lookup_message_tokens, remember_message_tokens,
@@ -304,7 +304,7 @@ DEFAULT_CONTEXT_LENGTHS = {
     # its own branch). 5.4-nano/-mini are 400k, not 1.05M; gpt-5.3-codex-spark is
     # Codex-OAuth-only and listed so "gpt-5" (400k) doesn't win.
     "gpt-6-astra": 1050000,  # also matches -pro (verified live on OpenRouter)
-    "gpt-6.1-sol": 1050000, "gpt-6.1-terra": 1050000,  # Sol -pro too; both live on OpenRouter (Terra also Nous Portal, 2026-10-26)
+    "gpt-6.1-sol": 1050000, "gpt-6.1-terra": 1050000,  # Sol -pro too; both live on OpenRouter (Terra also Moor Portal, 2026-10-26)
     "gpt-6-sol": 1050000, "gpt-6-luna": 1050000,  # -pro too (OpenRouter live 2026-09-22)
     "gpt-5.6-luna": 1050000, "gpt-5.6-terra": 1050000, "gpt-5.6-sol": 1050000, "gpt-5.5": 1050000,
     "gpt-5.4-nano": 400000, "gpt-5.4-mini": 400000, "gpt-5.4": 1050000,
@@ -451,7 +451,7 @@ _URL_TO_PROVIDER: dict[str, str] = {
     "api.stepfun.ai": "stepfun", "api.stepfun.com": "stepfun", "api.arcee.ai": "arcee", "api.minimax": "minimax",
     "dashscope.aliyuncs.com": "alibaba", "dashscope-intl.aliyuncs.com": "alibaba", "portal.qwen.ai": "qwen-oauth",
     "openrouter.ai": "openrouter", "generativelanguage.googleapis.com": "gemini",
-    "inference-api.nousresearch.com": "nous", "api.deepseek.com": "deepseek",
+    "inference-api.nousresearch.com": "moor", "api.deepseek.com": "deepseek",
     "api.fireworks.ai": "fireworks", "opencode.ai": "opencode-go", "api.x.ai": "xai",
     "integrate.api.nvidia.com": "nvidia", "api.xiaomimimo.com": "xiaomi", "xiaomimimo.com": "xiaomi",
     "api.gmi-serving.com": "gmi", "api.novita.ai": "novita",
@@ -1793,7 +1793,7 @@ def _codex_catalog_probe_allowed(access_token: str, base_url: str = "") -> bool:
     base = (base_url or "").strip() or CODEX_MODELS_CATALOG_ENDPOINT
     if not base_url_host_matches(base, "chatgpt.com"):
         return True
-    from hermes_cli.auth_constants import _decode_jwt_claims
+    from moor_cli.auth_constants import _decode_jwt_claims
     return bool(_decode_jwt_claims(access_token))
 
 
@@ -1928,9 +1928,9 @@ def _resolve_codex_oauth_context_length_with_source(model: str, access_token: st
     return _apply_verified_bump(hit[1], "fallback", catalog_max) if hit else (None, "")
 
 
-def _resolve_nous_context_length(model: str, base_url: str = "", api_key: str = "") -> tuple[Optional[int], str]:
-    """``(context_length, source)`` for a Nous Portal model: portal /v1/models is authoritative
-    ("portal"). Fallback matches OR's prefixed ids against the bare Nous id with dot/dash
+def _resolve_moor_context_length(model: str, base_url: str = "", api_key: str = "") -> tuple[Optional[int], str]:
+    """``(context_length, source)`` for a Moor Portal model: portal /v1/models is authoritative
+    ("portal"). Fallback matches OR's prefixed ids against the bare Moor id with dot/dash
     normalisation ("openrouter" — callers must NOT persist it, or a portal blip freezes the wrong value)."""
     if base_url:
         portal_ctx = _resolve_endpoint_context_length(model, base_url, api_key=api_key)
@@ -2161,11 +2161,11 @@ def _resolve_provider_aware_context_length(model: str, base_url: str, api_key: s
     with contextlib.suppress(Exception):  # fall through to models.dev
         if profile is not None and (ctx := profile.live_context_length(model, api_key=api_key or "", base_url=base_url or "")):
             return ctx
-    # 5b/5c. Nous portal and Codex OAuth (lower limits than the direct API for the same slug; its
+    # 5b/5c. Moor portal and Codex OAuth (lower limits than the direct API for the same slug; its
     # own /models is authoritative). Persist ONLY the authoritative source ("portal" / "live"): an
     # OR-fallback or static-table value cached on a blip would be frozen in by step 1 forever.
     sourced = {
-        "nous": lambda: _resolve_nous_context_length(model, base_url=base_url or "", api_key=api_key or "") + ("portal",),
+        "moor": lambda: _resolve_moor_context_length(model, base_url=base_url or "", api_key=api_key or "") + ("portal",),
         "openai-codex": lambda: _resolve_codex_oauth_context_length_with_source(model, access_token=api_key or "", base_url=base_url or "") + ("live",),
     }.get(effective_provider)
     if sourced is not None:
@@ -2216,7 +2216,7 @@ def get_model_context_length(
     model_overrides / custom_providers / endpoint-scoped; 1 persistent cache (Moor, LM
     Studio, Codex OAuth bypass it) and Bedrock; 2-3 custom endpoints (/models, local
     probe, Ollama); 4 Anthropic /v1/models (API keys only); 5 provider-aware (profile live
-    catalog, Nous, Codex OAuth, GMI, Ollama, OpenRouter live, models.dev); 6 OpenRouter for
+    catalog, Moor, Codex OAuth, GMI, Ollama, OpenRouter live, models.dev); 6 OpenRouter for
     unknown providers; 7 local server; 8 hardcoded defaults; 9 256K fallback."""
     # 0. Explicit config override — user knows best
     if isinstance(config_context_length, int) and config_context_length > 0:

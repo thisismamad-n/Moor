@@ -202,12 +202,12 @@ Alias:   ~/.local/bin/work
 moor profile alias <name> [options]
 ```
 
-Regenerates the shell alias script at `~/.local/bin/<name>` (`<name>.bat` on Windows). Useful if the alias was accidentally deleted or if you need to update it after moving your Hermes installation.
+Regenerates the shell alias script at `~/.local/bin/<name>` (`<name>.bat` on Windows). Useful if the alias was accidentally deleted or if you need to update it after moving your Moor installation.
 
 | Argument / Option | Description |
 |-------------------|-------------|
 | `<name>` | Profile to create/update the alias for. |
-| `--remove` | Remove the wrapper script instead of creating it. Also removes an orphan alias whose profile was deleted: pass the alias name (`hermes doctor` lists them). |
+| `--remove` | Remove the wrapper script instead of creating it. Also removes an orphan alias whose profile was deleted: pass the alias name (`moor doctor` lists them). |
 | `--name <alias>` | Custom alias name (default: profile name). |
 
 **Example:**
@@ -230,9 +230,9 @@ moor profile rename <old-name> <new-name>
 ```
 
 Renames a profile. Updates the directory and shell alias. A gateway service installed under the
-old name (`hermes -p <old-name> gateway install`) is removed, whether or not the gateway is
+old name (`moor -p <old-name> gateway install`) is removed, whether or not the gateway is
 running, because it would start the old name at the next login; reinstall it with
-`hermes -p <new-name> gateway install`. Inside the Docker image the s6 gateway slot moves to the
+`moor -p <new-name> gateway install`. Inside the Docker image the s6 gateway slot moves to the
 new name.
 
 | Argument | Description |

@@ -12,7 +12,7 @@ import type {
 import {
   connectionScoped,
   getApiRequestConnection,
-  hermesApi,
+  moorApi,
   profileScoped,
   STARTUP_REQUEST_TIMEOUT_MS
 } from './client'
@@ -130,7 +130,7 @@ export function triggerCronJob(jobId: string): Promise<CronJob> {
 // Asks the job's live run to stop; the run books a 'cancelled' attempt at its next cancel
 // check (a second or two), so callers poll the job list for the ledger to settle.
 export function cancelCronJobRun(jobId: string): Promise<CronCancelResult> {
-  return hermesApi<CronCancelResult>({
+  return moorApi<CronCancelResult>({
     ...profileScoped(),
     ...connectionScoped(),
     path: `/api/cron/jobs/${encodeURIComponent(jobId)}/cancel`,
@@ -158,7 +158,7 @@ export function deleteCronJob(jobId: string): Promise<{ ok: boolean }> {
 // from its gateways), and instantiate creates the job in that profile. Fetch the
 // catalog for the same profile you instantiate into. Mirrors the dashboard's api.ts.
 export function getAutomationBlueprints(profile: string): Promise<{ blueprints: AutomationBlueprint[] }> {
-  return hermesApi<{ blueprints: AutomationBlueprint[] }>({
+  return moorApi<{ blueprints: AutomationBlueprint[] }>({
     ...profileScoped(),
     ...connectionScoped(),
     path: `/api/cron/blueprints?profile=${encodeURIComponent(profile)}`,

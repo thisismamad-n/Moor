@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from rich.console import Console
 
-from hermes_cli import banner
+from moor_cli import banner
 import model_tools
 import tools.mcp_tool_discovery
 
@@ -37,8 +37,8 @@ def test_cprint_falls_back_to_plain_print_when_prompt_toolkit_has_no_console(cap
 
 def test_empty_model_shows_no_model_configured(tmp_path, monkeypatch):
     """The banner prints before credentials resolve; with no model it says so rather than guessing."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir()
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    (tmp_path / ".moor").mkdir()
     with (
         patch.object(model_tools, "check_tool_availability", return_value=([], [])),
         patch.object(banner, "get_available_skills", return_value={}),

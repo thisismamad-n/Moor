@@ -117,7 +117,7 @@ def test_private_start_uses_post_ensure_binary(cua_home, monkeypatch, permission
 
     monkeypatch.setattr(subprocess, "Popen", capture_serve)
     # The stand-in daemon has no real process group: keep it away from the owner-death supervisor.
-    from hermes_cli import process_identity
+    from moor_cli import process_identity
     monkeypatch.setattr(process_identity, "_update_supervised_pgids", lambda verb, pgids: None)
     monkeypatch.setattr(process_identity, "register_child", lambda pid, purpose: None)
     # Re-start the same backend after PM publishes another version as well.

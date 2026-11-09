@@ -86,7 +86,7 @@ class CreditsState:
 
     @property
     def credits_pay(self) -> bool:
-        """Top-up credits will cover Hermes usage once the included allowance is used up."""
+        """Top-up credits will cover Moor usage once the included allowance is used up."""
         return self.purchased_micros > 0 and self.keep_going_on_credits is not False
 
     @property
@@ -518,7 +518,7 @@ def evaluate_credits_notices(state: CreditsState, latch: dict, *, model_is_free:
 
 
 # Header contract: (field, kind[, default-when-absent]); a field is REQUIRED unless it has a default.
-# Header name = ``x-nous-credits-<field>`` (``x-nous-<field>`` for tool_pool_*), underscores → dashes.
+# Header name = ``x-moor-credits-<field>`` (``x-moor-<field>`` for tool_pool_*), underscores → dashes.
 # micros: int >= 0 ("signed": may be negative; "bp": 0..10000); usd: the server's formatted string ^-?\d+\.\d{2}$
 # (never re-parsed); bool: "true"/"false" STRING. Handled inline: subscription-limit-* (PAIRED/optional),
 # denominator-kind ("subscription_cap" | "none"), disabled-reason (omitted when null).
@@ -539,9 +539,9 @@ _WINDOW_OPTIONAL_FIELDS = _GRANT_ONLY_FIELDS | {"purchased_micros", "purchased_u
 
 
 # Usage-window headers, read only when ``denominator-kind`` is ``usage_window``: the gauge list
-# (``x-nous-credits-window-gauges``, REQUIRED: a note that names the kind but has no readable list is a
+# (``x-moor-credits-window-gauges``, REQUIRED: a note that names the kind but has no readable list is a
 # miss), plus the optional ``-spend-source`` / ``-window-paused-reason`` / ``-keep-going-on-credits``.
-_GAUGES_HEADER = "x-nous-credits-window-gauges"
+_GAUGES_HEADER = "x-moor-credits-window-gauges"
 
 
 def _header_name(field: str) -> str:
@@ -555,11 +555,11 @@ def _parse_window_fields(lowered: Mapping[str, str]) -> Optional[dict[str, Any]]
     if gauges is None or not all_scope(gauges):
         return None
     out: dict[str, Any] = {"gauges": gauges}
-    source = lowered.get("x-nous-credits-spend-source")
+    source = lowered.get("x-moor-credits-spend-source")
     out["spend_source"] = source if source in _VALID_SPEND_SOURCES else None
-    paused = lowered.get("x-nous-credits-window-paused-reason")
+    paused = lowered.get("x-moor-credits-window-paused-reason")
     out["paused_reason"] = paused.strip() if isinstance(paused, str) and paused.strip() else None
-    keep_going = (lowered.get("x-nous-credits-keep-going-on-credits") or "").strip().lower()
+    keep_going = (lowered.get("x-moor-credits-keep-going-on-credits") or "").strip().lower()
     out["keep_going_on_credits"] = {"on": True, "off": False}.get(keep_going)  # anything else: unknown (older server)
     return out
 
@@ -601,7 +601,7 @@ def parse_credits_headers(headers: Mapping[str, str], provider: str = "") -> Opt
                 _version_warning_emitted = True
                 logger.warning("credits header version %d unsupported, ignoring — update Moor", version_val)
             return None
-        denominator_kind = lowered.get("x-nous-credits-denominator-kind", "none")
+        denominator_kind = lowered.get("x-moor-credits-denominator-kind", "none")
         window_note = denominator_kind == "usage_window"
         fields: dict[str, Any] = {}
         for name, kind, *default in _HEADER_FIELDS:
@@ -609,8 +609,8 @@ def parse_credits_headers(headers: Mapping[str, str], provider: str = "") -> Opt
             if raw is None and window_note and name in _WINDOW_OPTIONAL_FIELDS:
                 continue  # a window note may drop these: dataclass default
             fields[name] = _parse_field(kind, raw, *default)
-        lim_micros_raw = lowered.get("x-nous-credits-subscription-limit-micros")
-        lim_usd_raw = lowered.get("x-nous-credits-subscription-limit-usd")
+        lim_micros_raw = lowered.get("x-moor-credits-subscription-limit-micros")
+        lim_usd_raw = lowered.get("x-moor-credits-subscription-limit-usd")
         if lim_micros_raw is not None and lim_usd_raw is not None:
             fields["subscription_limit_micros"] = _parse_field("micros", lim_micros_raw)
             fields["subscription_limit_usd"] = _parse_field("usd", lim_usd_raw)
@@ -621,7 +621,7 @@ def parse_credits_headers(headers: Mapping[str, str], provider: str = "") -> Opt
             if window is None:
                 return None
             fields.update(window)
-        disabled_reason = lowered.get("x-nous-credits-disabled-reason")  # None if absent (omitted when null)
+        disabled_reason = lowered.get("x-moor-credits-disabled-reason")  # None if absent (omitted when null)
         return CreditsState(version=version_val, denominator_kind=denominator_kind, disabled_reason=disabled_reason,
                             captured_at=time.time(), from_header=True, **fields)
     except Exception:  # fail-open → miss; the breadcrumb distinguishes a parser regression from a no-headers response
@@ -630,7 +630,7 @@ def parse_credits_headers(headers: Mapping[str, str], provider: str = "") -> Opt
 
 
 def response_is_usage_window(http_response: Any) -> bool:
-    """True iff *http_response* carries complete usage-window ``x-nous-credits-*`` headers (the same
+    """True iff *http_response* carries complete usage-window ``x-moor-credits-*`` headers (the same
     test as ``CreditsState.is_usage_window``). Lets the window-only header captures leave every other
     account untouched. Never raises."""
     try:
@@ -644,7 +644,7 @@ def response_is_usage_window(http_response: Any) -> bool:
         return False
 
 
-# ── Dev fixtures (HERMES_DEV_CREDITS_FIXTURE): throwaway scaffolding to trigger any notice state
+# ── Dev fixtures (MOOR_DEV_CREDITS_FIXTURE): throwaway scaffolding to trigger any notice state
 # without real spend. Value is a state NAME or a FILE PATH whose contents are a name (re-read every
 # turn → `echo depleted > /tmp/cf` flips live). Drives per-turn notices, the cold-start seed, and /usage.
 def _fixture(remaining: str, subscription: str, limit: Optional[str] = None, purchased: Optional[str] = None,
@@ -726,7 +726,7 @@ def _credits_state_from_account(info) -> Optional[CreditsState]:
 
 
 def _window_seed_fields(uw) -> Optional[dict[str, Any]]:
-    """Portal ``usage_window`` (NousUsageWindowInfo or dict) → CreditsState window fields; None unless it
+    """Portal ``usage_window`` (MoorUsageWindowInfo or dict) → CreditsState window fields; None unless it
     carries a readable gauge list with an all-scope allowance (same requirement as the header parser)."""
     if uw is None:
         return None
@@ -804,8 +804,8 @@ def apply_keep_going_change(agent, enabled: bool) -> None:
         agent._credits_state = replace(state, keep_going_on_credits=enabled)
         _rerun_notice_policy(agent)
         from agent.memory_provider import spawn_context_thread
-        from hermes_cli.nous_account import get_nous_portal_account_info
-        spawn_context_thread(lambda: get_nous_portal_account_info(force_fresh=True), name="keep-going-refresh").start()
+        from moor_cli.moor_account import get_moor_portal_account_info
+        spawn_context_thread(lambda: get_moor_portal_account_info(force_fresh=True), name="keep-going-refresh").start()
     except Exception:
         logger.debug("keep going ▸ local refresh failed", exc_info=True)
 

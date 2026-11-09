@@ -324,7 +324,7 @@ def test_goal_mode_review_handoff_cannot_bypass_judge(
     monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(cli_claimed.current_run_id))
 
     from agent import auxiliary_client
-    from hermes_cli import goals
+    from moor_cli import goals
 
     monkeypatch.setattr(
         auxiliary_client,

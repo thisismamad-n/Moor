@@ -145,8 +145,8 @@ def test_launch_home_dotenv_still_loads_under_multiplex(tmp_path, monkeypatch):
     """
     import os
 
-    from hermes_cli.env_loader import load_hermes_dotenv
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_cli.env_loader import load_moor_dotenv
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     launch = tmp_path / "launch"
     routed = tmp_path / "profiles" / "routed"
@@ -154,16 +154,16 @@ def test_launch_home_dotenv_still_loads_under_multiplex(tmp_path, monkeypatch):
     routed.mkdir(parents=True)
     (launch / ".env").write_text("LAUNCH_ONLY_FALLBACK_KEY=launch-key\n", encoding="utf-8")
     (routed / ".env").write_text("LAUNCH_ONLY_FALLBACK_KEY=routed-secret\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.delenv("LAUNCH_ONLY_FALLBACK_KEY", raising=False)
     ss.set_multiplex_active(True)
 
     def _load(home):
-        token = set_hermes_home_override(str(home))
+        token = set_moor_home_override(str(home))
         try:
-            return load_hermes_dotenv(hermes_home=home)
+            return load_moor_dotenv(moor_home=home)
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
     assert _load(launch) == [launch / ".env"]
     assert os.environ["LAUNCH_ONLY_FALLBACK_KEY"] == "launch-key"
@@ -179,8 +179,8 @@ def test_launch_home_load_inside_foreign_turn_keeps_routed_cwd_out_of_process_en
     into the shared ``TERMINAL_CWD`` that the launch profile's own turns and cron jobs read."""
     import os
 
-    from hermes_cli.env_loader import load_hermes_dotenv
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_cli.env_loader import load_moor_dotenv
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     launch = tmp_path / "launch"
     routed = tmp_path / "profiles" / "routed"
@@ -191,15 +191,15 @@ def test_launch_home_load_inside_foreign_turn_keeps_routed_cwd_out_of_process_en
     (launch / ".env").write_text("LAUNCH_ONLY_FALLBACK_KEY=launch-key\n", encoding="utf-8")
     (launch / "config.yaml").write_text(f"terminal:\n  backend: local\n  cwd: {launch_work}\n", encoding="utf-8")
     (routed / "config.yaml").write_text(f"terminal:\n  backend: local\n  cwd: {routed_work}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     monkeypatch.setenv("TERMINAL_CWD", str(launch_work))
     ss.set_multiplex_active(True)
 
-    token = set_hermes_home_override(str(routed))
+    token = set_moor_home_override(str(routed))
     try:
-        assert load_hermes_dotenv(hermes_home=launch) == []
+        assert load_moor_dotenv(moor_home=launch) == []
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     assert os.environ["TERMINAL_CWD"] == str(launch_work)
 
 

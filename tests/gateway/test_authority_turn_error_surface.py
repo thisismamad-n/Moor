@@ -30,7 +30,7 @@ def _authority_turn(platform, failure, identity=None):
 
         def run_conversation(self, message, **kwargs):
             return {'final_response': '', 'messages': [], 'failed': True, 'completed': False,
-                    **({} if identity else {'provider': 'nous', 'model': 'free-model'}), **failure}
+                    **({} if identity else {'provider': 'moor', 'model': 'free-model'}), **failure}
 
     ctx = TurnContext(
         source=SessionSource(platform=platform, chat_id='sid', user_id='u'),
@@ -76,7 +76,7 @@ def test_rate_limited_turn_completes_with_rate_limit_and_reset_time():
 
 
 def test_usage_window_refusal_completes_with_the_window_card():
-    limit = {'limit': 'weekly', 'suggestions': [{'model': 'nous/free-model', 'label': 'Free model'}]}
+    limit = {'limit': 'weekly', 'suggestions': [{'model': 'moor/free-model', 'label': 'Free model'}]}
     refusal = {'failure_reason': 'billing', 'failure_retryable': False, 'error': 'HTTP 402',
                'usage_window_message': "You've hit your weekly limit.", 'failure_resets_at': 1900000000.0,
                'usage_limit': limit}
@@ -89,7 +89,7 @@ def test_usage_window_refusal_completes_with_the_window_card():
 def test_a_managed_worker_turn_carries_the_free_tier_failure_to_the_owner():
     from agent.managed_worker import accept_result, encode_frame, read_frame, result_frame
 
-    raw = {'final_response': '', 'failed': True, 'completed': False, 'provider': 'nous', 'model': 'free-model',
+    raw = {'final_response': '', 'failed': True, 'completed': False, 'provider': 'moor', 'model': 'free-model',
            'messages': [], **_FREE_TIER_FULL}
     wire = read_frame(io.BytesIO(encode_frame({'type': 'result', 'result': result_frame(raw)})))
     accepted, usage = accept_result(wire['result'])

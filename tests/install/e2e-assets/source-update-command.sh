@@ -22,8 +22,8 @@ build_source_update_command() {
 # the user-state snapshot (config.yaml is part of the baseline). Releases that
 # predate --set-channel follow main already.
 pin_source_main_channel() {
-  local hermes="$1" help
-  help="$("$hermes" update --help 2>&1)" || { printf 'update --help failed: %s\n' "$help" >&2; return 1; }
+  local moor="$1" help
+  help="$("$moor" update --help 2>&1)" || { printf 'update --help failed: %s\n' "$help" >&2; return 1; }
   grep -qF -- --set-channel <<< "$help" || return 0
-  "$hermes" update --set-channel main < /dev/null
+  "$moor" update --set-channel main < /dev/null
 }

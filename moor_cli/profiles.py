@@ -17,18 +17,18 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from agent.file_safety import HOME_CREDENTIAL_DIRS
-from hermes_cli.archive_safe import archive_root_dirs, make_targz, normalize_archive_parts, safe_extract_targz
-from hermes_cli import config_backend as _config_backend
-from hermes_cli.profiles_config import _migrate_profile_config_if_outdated
-from hermes_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS, SECRET_CACHE_STORES
-from hermes_cli.profiles_remove import _rmtree_make_writable, _rmtree_with_retry, wait_profile_unowned
-from hermes_constants import (
+from moor_cli.archive_safe import archive_root_dirs, make_targz, normalize_archive_parts, safe_extract_targz
+from moor_cli import config_backend as _config_backend
+from moor_cli.profiles_config import _migrate_profile_config_if_outdated
+from moor_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS, SECRET_CACHE_STORES
+from moor_cli.profiles_remove import _rmtree_make_writable, _rmtree_with_retry, wait_profile_unowned
+from moor_constants import (
     LOCAL_RUNTIME_ROOT_DIRS, PROFILE_ID_RE, clear_named_profile_deleted, mark_named_profile_deleted,
     named_profile_has_identity, named_profile_is_deleted, named_profile_is_live,
 )
-from hermes_cli.config_backend import (
+from moor_cli.config_backend import (
     config_cache_version, config_cache_version_or_none, config_exists, require_file_tooling)
-from hermes_cli.profiles_cache import _PROFILE_FILE_CACHE, _cached_profile_read
+from moor_cli.profiles_cache import _PROFILE_FILE_CACHE, _cached_profile_read
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
 # OS credential dirs (file_safety.HOME_CREDENTIAL_DIRS) + direnv .envrc (_BLOCKED_PROJECT_ENV_BASENAMES).
 _OS_CREDENTIAL_STORES = (*HOME_CREDENTIAL_DIRS, ".envrc")
 
-# Credential stores in a profile home, as paths relative to it, plus the directories where Hermes
+# Credential stores in a profile home, as paths relative to it, plus the directories where Moor
 # keeps recovery copies of them. Never shipped in a profile export, and user-owned (never
 # overwritten) on a distribution install. Add a store here when a writer or loader starts using one.
 PROFILE_CREDENTIAL_PATHS = frozenset({
@@ -187,7 +187,7 @@ PROFILE_CREDENTIAL_PATHS = frozenset({
 })
 _CREDENTIAL_PATH_PARTS = tuple(tuple(p.casefold().split("/")) for p in PROFILE_CREDENTIAL_PATHS)
 
-# Copies Hermes' writers leave beside a store at the profile root, matched case-folded. Any
+# Copies Moor' writers leave beside a store at the profile root, matched case-folded. Any
 # ``auth.json.*`` / ``.env.bak*`` is a credential store whoever named it; for config.yaml only the
 # writers' formats match (post_update ``.bak-<stamp>[.N]``, config_backups' legacy siblings), because a
 # hand-named ``config.yaml.bak-my-note`` is the user's and ships through the export scrub instead.
@@ -215,7 +215,7 @@ def profile_path_contains_private_store(parts: tuple[str, ...]) -> bool:
     folded = _fold(parts)
     return any(len(store) > len(folded) and store[:len(folded)] == folded for store in _CREDENTIAL_PATH_PARTS)
 
-# Directories/files to exclude when exporting the default (~/.hermes) profile.
+# Directories/files to exclude when exporting the default (~/.moor) profile.
 # The default profile contains infrastructure (repo checkout, worktrees, DBs,
 # caches, binaries) that named profiles don't have.  We exclude those so the
 # export is a portable, reasonable-size archive of actual profile data.
@@ -311,16 +311,16 @@ def _wrapper_path(alias: str) -> Path:
 
 
 def _find_our_wrapper(alias: str) -> Optional[Path]:
-    """The Hermes wrapper for *alias*: :func:`_wrapper_path`, else a pre-``.bat`` bare Windows one."""
+    """The Moor wrapper for *alias*: :func:`_wrapper_path`, else a pre-``.bat`` bare Windows one."""
     candidates = [_wrapper_path(alias), _get_wrapper_dir() / alias] if sys.platform == "win32" else [_wrapper_path(alias)]
     return next((p for p in candidates if _is_our_wrapper(p)), None)
 
 
 def _is_our_wrapper(path: Path) -> bool:
-    """True when *path* reads as a Hermes-generated wrapper (``hermes -p`` in its head)."""
+    """True when *path* reads as a moor-generated wrapper (``moor -p`` in its head)."""
     try:
         with open(path, encoding="utf-8-sig") as f:
-            return "hermes -p" in f.read(_WRAPPER_READ_LIMIT)
+            return "moor -p" in f.read(_WRAPPER_READ_LIMIT)
     except Exception:
         return False
 
@@ -730,11 +730,11 @@ def _seed_model_config(profile_dir: Path) -> None:
     config_path = profile_dir / "config.yaml"
     if config_exists(config_path):
         return
-    with contextlib.suppress(Exception):  # creation must not fail over this; `hermes model` sets it later
-        from hermes_constants import get_hermes_home
-        from hermes_cli.config import atomic_config_write, read_user_config_raw
-        from hermes_cli.profile_model_seed import launch_model_seed
-        source = get_hermes_home() / "config.yaml"
+    with contextlib.suppress(Exception):  # creation must not fail over this; `moor model` sets it later
+        from moor_constants import get_moor_home
+        from moor_cli.config import atomic_config_write, read_user_config_raw
+        from moor_cli.profile_model_seed import launch_model_seed
+        source = get_moor_home() / "config.yaml"
         seed = launch_model_seed(read_user_config_raw(source)) if config_exists(source) else {}
         if seed:
             atomic_config_write(config_path, seed)
@@ -858,7 +858,7 @@ def _cached_skill_count(profile_dir: Path) -> int:
 
 
 # profile.yaml — per-profile metadata (description, etc.)
-# Deliberately tiny and separate from ``config.yaml`` (user-facing Hermes config, ~5000
+# Deliberately tiny and separate from ``config.yaml`` (user-facing Moor config, ~5000
 # lines of defaults): this is metadata ABOUT the profile. Missing file -> empty defaults,
 # never an error; the kanban decomposer falls back to the profile name.
 
@@ -1016,7 +1016,7 @@ def profile_is_standalone(home: Path) -> bool:
     (``gateway.standalone: true``)? Memoised by file signature. The DEFAULT profile is
     never standalone — it IS the host — and warns once per process if the key is set there."""
     global _STANDALONE_WARNED
-    from hermes_yaml import YAMLError
+    from moor_yaml import YAMLError
 
     home = Path(home)
     cfg_path = home / "config.yaml"
@@ -1083,7 +1083,7 @@ _parked_default_warned: set[Path] = set()
 
 def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
                       include_parked: bool = False) -> list[tuple[str, Path]]:
-    """``(profile_name, hermes_home)`` pairs a gateway should serve — the single chokepoint
+    """``(profile_name, moor_home)`` pairs a gateway should serve — the single chokepoint
     for "which profiles does the inbound gateway handle".
 
     ``multiplex=False``: exactly one entry for the *active* profile (byte-for-byte the
@@ -1249,7 +1249,7 @@ def _strip_multiplex_flag(config_path: Path) -> None:
     if not config_exists(config_path):
         return
     with contextlib.suppress(Exception):  # creation must not fail over an unreadable copy
-        from hermes_cli.config import atomic_config_replace, read_user_config_raw
+        from moor_cli.config import atomic_config_replace, read_user_config_raw
         cfg = read_user_config_raw(config_path)
         gateway = cfg.get("gateway") if isinstance(cfg.get("gateway"), dict) else {}
         if "multiplex_profiles" not in cfg and "multiplex_profiles" not in gateway:
@@ -1309,8 +1309,8 @@ def _bootstrap_profile_dir(profile_dir: Path, source_dir: Optional[Path],
     AND user-installed skills), and memory/identity files from *source_dir*.
 
     ``sync_imports`` also copies the source's ``import-sync.json`` (the manifest the agent-importers
-    plugin's ``hermes import-agent`` writes) so the clone stays registered against the same external trees
-    and ``hermes -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
+    plugin's ``moor import-agent`` writes) so the clone stays registered against the same external trees
+    and ``moor -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
     external tree, never to the source profile: both profiles stay independent islands."""
     profile_dir.mkdir(parents=True, exist_ok=True)
     for subdir in _PROFILE_DIRS:
@@ -1327,7 +1327,7 @@ def _bootstrap_profile_dir(profile_dir: Path, source_dir: Optional[Path],
     for relpath in _CLONE_SUBDIR_FILES:
         _clone_file(source_dir, profile_dir, relpath)
     _clone_plugins(source_dir, profile_dir)
-    from hermes_cli.profile_memory_config import _load_config_dict, active_memory_provider, clone_memory_provider_config
+    from moor_cli.profile_memory_config import _load_config_dict, active_memory_provider, clone_memory_provider_config
     clone_memory_provider_config(source_dir, profile_dir, active_memory_provider(_load_config_dict(source_dir)))
     if sync_imports:  # a plain file at the profile root, written by the agent-importers plugin
         _clone_file(source_dir, profile_dir, "import-sync.json")
@@ -1392,7 +1392,7 @@ def create_profile(
     # on every create and every 30 s, and ``_iter_named_profile_dirs`` only lists valid ids (no leading
     # dot), so it can never adopt the half-copied tree and start adapters on credentials the strip
     # below has not removed yet.
-    from hermes_cli.profiles_initialization import clone_staging_dir, discard_unpublished_vault_key, finish_profile_layout
+    from moor_cli.profiles_initialization import clone_staging_dir, discard_unpublished_vault_key, finish_profile_layout
     staging = clone_staging_dir(profile_dir)
     clone_key = None  # the keychain entry made for this clone's vault, if any
     try:
@@ -1856,7 +1856,7 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> bool:
         def _run(*cmd: str) -> None:
             subprocess.run(list(cmd), capture_output=True, check=False, timeout=10)
 
-        from hermes_cli.profiles_service_cleanup import owned_by_profile, remove_system_systemd_unit, remove_windows_task
+        from moor_cli.profiles_service_cleanup import owned_by_profile, remove_system_systemd_unit, remove_windows_task
 
         system = _platform.system()
         removed = False
@@ -1889,7 +1889,7 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> bool:
         reset_moor_home_override(home_token)
         os.environ.pop("MOOR_HOME", None)
         if old_home is not None:
-            os.environ["HERMES_HOME"] = old_home
+            os.environ["MOOR_HOME"] = old_home
     return False
 
 
@@ -2327,7 +2327,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
             _notify_multiplexer(old_canon)
         _maybe_register_gateway_service(old_canon)
         if service_removed:
-            print(f"⚠ The gateway service was removed. Reinstall it with: hermes -p {old_canon} gateway install")
+            print(f"⚠ The gateway service was removed. Reinstall it with: moor -p {old_canon} gateway install")
         raise
     print(f"✓ Renamed {old_dir.name} → {new_dir.name}")
     # The tombstone lives at profiles/.deleted/<old_name>; old_dir is gone so nothing can
@@ -2341,7 +2341,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     _record_profile_rename(new_dir, old_canon)
 
     # 3. Update profile-scoped Honcho host blocks, preserving aiPeer identity
-    from hermes_cli.profiles_honcho import migrate_honcho_profile_host
+    from moor_cli.profiles_honcho import migrate_honcho_profile_host
     migrate_honcho_profile_host(old_canon, new_canon, new_dir)
 
     # 4. Update wrapper script
@@ -2367,7 +2367,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
         _notify_multiplexer(new_canon)
     _maybe_register_gateway_service(new_canon)
     if service_removed:
-        print(f"⚠ The gateway service was removed. Reinstall it with: hermes -p {new_canon} gateway install")
+        print(f"⚠ The gateway service was removed. Reinstall it with: moor -p {new_canon} gateway install")
     return new_dir
 
 

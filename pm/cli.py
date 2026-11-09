@@ -298,7 +298,7 @@ def _install_flag_error(args, *, extras: list[str], cross_target, tools_only: bo
 def _install_defaults(names: list[str], *, verify: bool) -> None:
     """Install the optional defaults; a failure warns and never fails the install.
 
-    They are the browser and computer-use tools, not what Hermes needs to run:
+    They are the browser and computer-use tools, not what Moor needs to run:
     a Chromium download that fails behind a proxy must not abort an install
     whose required closure and venv are fine.
     """
@@ -344,7 +344,7 @@ def _install_python_environments(extras: list[str], *, sync: bool, test_environm
 def cmd_install(args) -> int:
     from pm.defaults import canonical_default_name
 
-    # Old install logs print `hermes pm install agent-browser` as the browser opt-back-in.
+    # Old install logs print `moor pm install agent-browser` as the browser opt-back-in.
     args.names = [canonical_default_name(name) for name in args.names or ()]
     cross_target = getattr(args, "target", None)
     # Source-install launchers require the store interpreter, even though
@@ -492,7 +492,7 @@ def _doctor_uv_cache(*, repair: bool) -> int:
         return 0
     if not repair:
         print(f"✗ uv cache: corrupt entries for {', '.join(corrupt)} in {cache}; "
-              "run `hermes pm doctor --repair` (installs also remove them when they hit one)")
+              "run `moor pm doctor --repair` (installs also remove them when they hit one)")
         return 1
     try:
         managed_environment(cache, cache=cache).purge_cached_packages(corrupt)
@@ -679,7 +679,7 @@ def _apply_pins(changed: list, lockfile) -> int:
     if not failed:
         return rc
     print(f"pm update: pinned {len(pinned)}, failed {len(failed)}: {', '.join(failed)}")
-    # The venv sync above leaves an `ok` sync receipt as latest; `hermes pm
+    # The venv sync above leaves an `ok` sync receipt as latest; `moor pm
     # status` and the desktop read latest, so the partial run must land last.
     from pm import receipt
 
@@ -720,7 +720,7 @@ def _refresh_npm_lock() -> int:
 
 
 def cmd_update(args) -> int:
-    """`hermes pm update [names...] [--check] [--target T] [--skip-target T] [--uv] [--npm] [--termux]`.
+    """`moor pm update [names...] [--check] [--target T] [--skip-target T] [--uv] [--npm] [--termux]`.
 
     Resolve each package's latest via its own latest_versions() hook,
     intersect across targets, and (real mode) re-pin the lockfile + install
@@ -857,7 +857,7 @@ def _extra_requirements(project: Path, extras: list[str]) -> list[str]:
     """The pinned requirements of declared extras, self-references expanded.
 
     Pins, not the whole lock, define the environment: an identity over uv.lock
-    would build a new generation on every Hermes update, and superseded side
+    would build a new generation on every Moor update, and superseded side
     generations are never reclaimed while a caller may still run from them.
     """
     import re
@@ -888,7 +888,7 @@ def cmd_environment(args) -> int:
     """Make a named side environment current and print its interpreter.
 
     Shell callers (skills) cannot import PM: the terminal's `python` is rarely
-    Hermes's own. Concurrent callers serialize on PM's per-environment lock and
+    Moor's own. Concurrent callers serialize on PM's per-environment lock and
     a rebuild lands in a new generation, so a running caller keeps its files.
     """
     import contextlib
@@ -897,9 +897,9 @@ def cmd_environment(args) -> int:
     import pm
 
     if bool(args.extra) == bool(args.requirement):
-        print("hermes pm environment: pass --extra or --requirement (not both)", file=sys.stderr)
+        print("moor pm environment: pass --extra or --requirement (not both)", file=sys.stderr)
         return 2
-    # stdout carries only the interpreter path, for PY=$(hermes pm environment ...);
+    # stdout carries only the interpreter path, for PY=$(moor pm environment ...);
     # progress from PM and its uv children goes to stderr at both levels.
     sys.stdout.flush()
     saved = os.dup(1)
@@ -909,7 +909,7 @@ def cmd_environment(args) -> int:
             requirements = _extra_requirements(repo_root(), args.extra) if args.extra else args.requirement
             python = pm.ensure_environment(args.name, requirements, explicit=True)
     except (InstallError, ValueError) as exc:
-        print(f"hermes pm environment: {exc}", file=sys.stderr)
+        print(f"moor pm environment: {exc}", file=sys.stderr)
         return 1
     finally:
         sys.stdout.flush()
@@ -954,7 +954,7 @@ def main(argv=None) -> int:
                    help="enable a declared dependency extra in the venv (repeatable)")
     p.add_argument("--without", action="append", default=[], metavar="NAME",
                    help="leave an optional default package (chromium, cua-driver) out of this and every later "
-                        "default install and update; `hermes pm install NAME` opts back in (repeatable)")
+                        "default install and update; `moor pm install NAME` opts back in (repeatable)")
     p.add_argument("--tools-only", action="store_true",
                    help="install the tool closure, put it on PATH, and stop before the venv sync")
     p.add_argument("--trust-recorded", action="store_true",
@@ -984,8 +984,8 @@ def main(argv=None) -> int:
 
     p = sub.add_parser(
         "environment", help="make a named side environment current and print its python",
-        description="Build or reuse HERMES_HOME/environments/NAME, an isolated venv that never "
-                    "touches Hermes's own: --extra installs the pins of a declared extra, "
+        description="Build or reuse MOOR_HOME/environments/NAME, an isolated venv that never "
+                    "touches Moor's own: --extra installs the pins of a declared extra, "
                     "--requirement an ad hoc bounded requirement (both repeatable). "
                     "Prints only the interpreter path on stdout.")
     p.add_argument("name")

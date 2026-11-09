@@ -177,11 +177,11 @@ class TestGatewayPidState:
         """A live PID behind a HELD lock is not stale-cleanup authority, even unscoped: an
         identity rejection (a matcher lagging a launcher shape) must not unlink the live
         gateway's gateway.pid/gateway.lock (#125610, #123109)."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         record = {
-            "pid": 4242, "kind": "hermes-gateway", "start_time": 123,
-            "argv": ["python", "-m", "hermes_cli.main", "gateway", "run"],
-            "hermes_home": str(tmp_path.resolve()),
+            "pid": 4242, "kind": "moor-gateway", "start_time": 123,
+            "argv": ["python", "-m", "moor_cli.main", "gateway", "run"],
+            "moor_home": str(tmp_path.resolve()),
         }
         pid_path = tmp_path / "gateway.pid"
         lock_path = tmp_path / "gateway.lock"
@@ -190,7 +190,7 @@ class TestGatewayPidState:
         monkeypatch.setattr(status, "is_gateway_runtime_lock_active", lambda _path=None: True)
         monkeypatch.setattr(status, "_pid_exists", lambda _pid: True)
         monkeypatch.setattr(status, "_get_process_start_time", lambda _pid: 123)
-        monkeypatch.setattr(status, "_read_process_cmdline", lambda _pid: "python -m hermes_cli.main chat")
+        monkeypatch.setattr(status, "_read_process_cmdline", lambda _pid: "python -m moor_cli.main chat")
         monkeypatch.setattr(status, "get_runtime_status_running_pid", lambda: None)
 
         assert status.get_running_pid() is None
@@ -201,11 +201,11 @@ class TestGatewayPidState:
     ):
         """A live gateway.pid that names ANOTHER home's gateway is poison inside this home and goes
         on refusal (#89315); the HELD gateway.lock is the holder's and stays (#125610)."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         record = {
-            "pid": 4242, "kind": "hermes-gateway", "start_time": 123,
-            "argv": ["python", "-m", "hermes_cli.main", "gateway", "run"],
-            "hermes_home": str((tmp_path / "other-home").resolve()),
+            "pid": 4242, "kind": "moor-gateway", "start_time": 123,
+            "argv": ["python", "-m", "moor_cli.main", "gateway", "run"],
+            "moor_home": str((tmp_path / "other-home").resolve()),
         }
         pid_path = tmp_path / "gateway.pid"
         lock_path = tmp_path / "gateway.lock"
@@ -214,7 +214,7 @@ class TestGatewayPidState:
         monkeypatch.setattr(status, "is_gateway_runtime_lock_active", lambda _path=None: True)
         monkeypatch.setattr(status, "_pid_exists", lambda _pid: True)
         monkeypatch.setattr(status, "_get_process_start_time", lambda _pid: 123)
-        monkeypatch.setattr(status, "_read_process_cmdline", lambda _pid: "python -m hermes_cli.main gateway run")
+        monkeypatch.setattr(status, "_read_process_cmdline", lambda _pid: "python -m moor_cli.main gateway run")
         monkeypatch.setattr(status, "get_runtime_status_running_pid", lambda: None)
 
         assert status.get_running_pid() is None
@@ -434,13 +434,13 @@ class TestGatewayRuntimeStatus:
         """``--profile default`` names THE DEFAULT PROFILE: a hand-written launchd plist that
         mirrors the named-profile service shape must still count as the default home's gateway
         (#100817), while a foreign ``-p coder`` keeps being rejected."""
-        default_home = Path("/opt/hermes-data")
+        default_home = Path("/opt/moor-data")
         for cmdline in (
-            "hermes --profile default gateway run --replace --external-supervisor",
-            "/opt/hermes/.venv/bin/hermes -p default gateway run",
+            "moor --profile default gateway run --replace --external-supervisor",
+            "/opt/moor/.venv/bin/moor -p default gateway run",
         ):
             assert status._command_line_belongs_to_profile(cmdline, default_home) is True, cmdline
-        assert status._command_line_belongs_to_profile("hermes -p coder gateway run", default_home) is False
+        assert status._command_line_belongs_to_profile("moor -p coder gateway run", default_home) is False
 
     def test_command_line_belongs_to_profile_normalizes_separators(self):
         """A Windows argv renders MOOR_HOME with backslashes while the
@@ -627,7 +627,7 @@ class TestRuntimeStatusBackgroundWriter:
             release_write.set()
         assert writer.flush(timeout=2.0)
     def test_write_runtime_status_records_platform_metrics(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
 
         status.write_runtime_status(
             platform="api_server",
@@ -1208,7 +1208,7 @@ class TestTakeoverMarker:
             "target_pid": os.getpid(),
             "target_start_time": 100,
             "replacer_pid": 99999,
-            "replacer_hermes_home": str(tmp_path / "profiles" / "other"),
+            "replacer_moor_home": str(tmp_path / "profiles" / "other"),
             "written_at": datetime.now(UTC).isoformat(),
         }))
 
@@ -1546,7 +1546,7 @@ class TestLaunchdPlistRespawnGovernance:
 class TestPermissionErrorOnLockFile:
     @pytest.mark.platforms("linux")
     def test_inaccessible_lock_is_not_deleted_or_treated_as_absence(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         lock = tmp_path / "gateway.lock"
         lock.write_text("existing owner")
         # The owner is live (its gateway.pid names a running process). Without one, an unreadable
@@ -1567,7 +1567,7 @@ class TestPermissionErrorOnLockFile:
 
     @pytest.mark.platforms("linux")
     def test_runtime_lock_does_not_follow_symlink(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         target = tmp_path / "unrelated"
         target.write_text("unchanged")
         (tmp_path / "gateway.lock").symlink_to(target)
@@ -1786,17 +1786,17 @@ def test_strict_gateway_identity_rejects_reused_pid(tmp_path, monkeypatch):
 def test_strict_gateway_identity_adopts_held_lock_when_pid_file_is_gone(tmp_path, monkeypatch):
     """A held lock whose record validates against the live process IS the gateway's identity: a
     --replace relaunch (or a launch-service gateway, #110166) leaves gateway.lock without
-    gateway.pid, and raising there aborted every following `hermes update` (#123430)."""
+    gateway.pid, and raising there aborted every following `moor update` (#123430)."""
     pid_path = tmp_path / "gateway.pid"
     lock_path = tmp_path / "gateway.lock"
-    record = {"pid": 123, "start_time": 10.0, "kind": "hermes-gateway",
-              "argv": ["python", "-m", "hermes_cli.main", "gateway", "run", "--replace"]}
+    record = {"pid": 123, "start_time": 10.0, "kind": "moor-gateway",
+              "argv": ["python", "-m", "moor_cli.main", "gateway", "run", "--replace"]}
     lock_path.write_text(json.dumps(record), encoding="utf-8")
     monkeypatch.setattr(status, "_get_gateway_lock_path", lambda _path=None: lock_path)
     monkeypatch.setattr(status, "_is_gateway_runtime_lock_active_strict", lambda _path=None: True)
     monkeypatch.setattr(status, "_pid_exists", lambda _pid: True)
     monkeypatch.setattr(status, "_get_process_start_time", lambda _pid: 10.0)
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda _pid: "python -m hermes_cli.main gateway run --replace")
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda _pid: "python -m moor_cli.main gateway run --replace")
     monkeypatch.setattr(status, "_IS_WINDOWS", False)
 
     assert status.get_running_pid_identity_strict(pid_path) == (123, 10.0)
@@ -1812,9 +1812,9 @@ def test_pid_record_names_the_entry_point_under_an_inline_launcher(tmp_path, mon
     (#124029, #123151)."""
     import types
 
-    entry = types.SimpleNamespace(__file__="/opt/Hermes Agent/hermes-agent/hermes_cli/main.py")
-    monkeypatch.setitem(status.sys.modules, "hermes_cli.main", entry)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    entry = types.SimpleNamespace(__file__="/opt/Moor Agent/moor-agent/moor_cli/main.py")
+    monkeypatch.setitem(status.sys.modules, "moor_cli.main", entry)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(status.sys, "argv", ["-c", "gateway", "run"])
     record = status._build_pid_record()
     assert record["argv"] == [entry.__file__, "gateway", "run"]

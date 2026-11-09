@@ -4,7 +4,7 @@ With ``kernel.apparmor_restrict_unprivileged_userns=1`` (Ubuntu 23.10+), any unc
 may still create a user namespace, but it loses every capability inside it unless an AppArmor
 profile attached to that program's path grants ``userns``. ``unshare --user true`` therefore
 succeeds while Chromium, which needs those capabilities, aborts with ``No usable sandbox!``.
-Only the Hermes binary itself, under whatever profile attaches to its path, can answer whether
+Only the Moor binary itself, under whatever profile attaches to its path, can answer whether
 its namespace sandbox starts, so on a restricted host the launcher asks that binary.
 """
 
@@ -22,7 +22,7 @@ from typing import Optional
 
 RESTRICT_SYSCTL = Path("/proc/sys/kernel/apparmor_restrict_unprivileged_userns")
 # Answered by apps/desktop/electron/entry.ts before any window, lock or backend exists.
-SANDBOX_PROBE_SWITCH = "--hermes-sandbox-probe"
+SANDBOX_PROBE_SWITCH = "--moor-sandbox-probe"
 _PROBE_TIMEOUT_S = 15
 _SUDO_TIMEOUT_S = 300  # room for a typed password, never an unbounded hang
 _PROFILE_DIR = Path("/etc/apparmor.d")
@@ -85,7 +85,7 @@ def chromium_userns_sandbox_verdict(packaged_executable: Path) -> Optional[bool]
 def profile_name(packaged_executable: Path) -> str:
     """One profile per install path, so two checkouts never overwrite each other's grant."""
     digest = hashlib.sha256(str(packaged_executable.resolve()).encode()).hexdigest()[:10]
-    return f"hermes-desktop-{digest}"
+    return f"moor-desktop-{digest}"
 
 
 def profile_text(packaged_executable: Path) -> str:
@@ -93,8 +93,8 @@ def profile_text(packaged_executable: Path) -> str:
     name = profile_name(packaged_executable)
     exe = str(packaged_executable.resolve())
     return (
-        "# Hermes Desktop: let Chromium's user-namespace sandbox start under\n"
-        "# kernel.apparmor_restrict_unprivileged_userns=1 (written by `hermes desktop --install-apparmor-profile`).\n"
+        "# Moor Desktop: let Chromium's user-namespace sandbox start under\n"
+        "# kernel.apparmor_restrict_unprivileged_userns=1 (written by `moor desktop --install-apparmor-profile`).\n"
         "abi <abi/4.0>,\n"
         "include <tunables/global>\n\n"
         f'profile {name} "{exe}" flags=(unconfined) {{\n'
@@ -133,10 +133,10 @@ def _run(command: list[str], stdin_text: Optional[str] = None) -> Optional[subpr
 
 def _profile_parses(parser: str, text: str) -> bool:
     """Compile *text* as this user without loading it, so a bad profile never reaches /etc."""
-    from hermes_constants import get_scratch_dir
+    from moor_constants import get_scratch_dir
 
     with tempfile.TemporaryDirectory(dir=get_scratch_dir(), prefix="apparmor-") as scratch:
-        candidate = Path(scratch) / "hermes-desktop.profile"
+        candidate = Path(scratch) / "moor-desktop.profile"
         candidate.write_text(text, encoding="utf-8")
         completed = _run([parser, "--skip-kernel-load", "--skip-cache", str(candidate)])
     if completed is None:
@@ -152,7 +152,7 @@ def _write_and_load(sudo: str, parser: str, target: Path, text: str) -> bool:
     """Stage the profile beside ``target``, load it, and only then rename it into place, so a
     failed write or load leaves an already-installed profile intact. The stage is a dotfile,
     which apparmor_parser skips when it loads the directory at boot."""
-    staged = target.with_name(f".{target.name}.hermes-new")
+    staged = target.with_name(f".{target.name}.moor-new")
     failure = ""
     written = _run([sudo, "tee", str(staged)], text)
     if written is None or written.returncode != 0:
@@ -184,7 +184,7 @@ def install_profile(packaged_executable: Path) -> bool:
         print("  pattern syntax (apparmor.d(5), Globbing), so a profile could not name this binary alone.")
         print("  Move the checkout to a path without these characters, or use the setuid chrome-sandbox helper.")
         return False
-    from hermes_platform.resolver import locate_command
+    from moor_platform.resolver import locate_command
 
     sudo = next(iter(locate_command("sudo").command), None)
     parser = next(iter(locate_command("apparmor_parser", known_dirs=("/usr/sbin", "/sbin")).command),
@@ -208,7 +208,7 @@ def install_profile(packaged_executable: Path) -> bool:
     if verdict is False:
         print("✗ The profile is loaded, but Chromium's sandbox still cannot start for this binary.")
         return False
-    print(f"✓ AppArmor profile installed; Hermes Desktop can use Chromium's user-namespace sandbox ({target}).")
+    print(f"✓ AppArmor profile installed; Moor Desktop can use Chromium's user-namespace sandbox ({target}).")
     return True
 
 
@@ -223,8 +223,8 @@ def print_no_sandbox_fallback(packaged_executable: Path) -> None:
           " and the Electron sandbox helper could not be configured.")
     helper = shlex.quote(str(packaged_executable.parent / "chrome-sandbox"))
     print("  Ubuntu's AppArmor policy (kernel.apparmor_restrict_unprivileged_userns=1) blocks Chromium's")
-    print("  user-namespace sandbox for Hermes Desktop. To keep the sandbox on, run ONE of these:")
+    print("  user-namespace sandbox for Moor Desktop. To keep the sandbox on, run ONE of these:")
     print(f"    sudo chown root:root {helper} && sudo chmod 4755 {helper}")
     print("        Chromium's setuid sandbox helper (recommended; redo after each rebuild)")
-    print("    hermes desktop --install-apparmor-profile")
+    print("    moor desktop --install-apparmor-profile")
     print("        AppArmor profile for this path (survives rebuilds; any program running as you can use it)")

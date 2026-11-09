@@ -23,9 +23,9 @@ import subprocess
 
 import pytest
 
-from hermes_cli import _early_recovery as er
-from hermes_cli import update_cmd
-from hermes_cli import update_pause_record as pause_record
+from moor_cli import _early_recovery as er
+from moor_cli import update_cmd
+from moor_cli import update_pause_record as pause_record
 
 pytestmark = [
     pytest.mark.platforms("posix"),

@@ -1,4 +1,4 @@
-import type { ModelOptionProvider, ModelOptionsResult, ModelPricing } from '@hermes/shared'
+import type { ModelOptionProvider, ModelOptionsResult, ModelPricing } from '@moor/shared'
 import {
   DEFAULT_REASONING_EFFORT,
   planBlocks,
@@ -6,7 +6,7 @@ import {
   splitRecommended,
   usageLevel,
   usageTag
-} from '@hermes/shared'
+} from '@moor/shared'
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -40,7 +40,7 @@ import {
 import { HighlightMatches } from '@/components/ui/highlight-matches'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tip, TipHintLabel } from '@/components/ui/tooltip'
-import type { HermesGateway } from '@/hermes'
+import type { MoorGateway } from '@/moor'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { isSubmitEnter } from '@/lib/ime'
@@ -87,7 +87,7 @@ export const ModelMenuCloseContext = createContext<() => void>(() => {})
 /** Compact per-row price: `$in/$out` per Mtok (cached read appended when the
  *  provider ships it), "free", and a sale tag when the portal reports a
  *  discounted list price. Rendered only when the provider's payload carries
- *  pricing (Nous Portal and others that ship it). */
+ *  pricing (Moor Portal and others that ship it). */
 function ModelPrice({ pricing }: { pricing: ModelPricing }) {
   const { t } = useI18n()
   const copy = t.shell.modelMenu
@@ -181,7 +181,7 @@ interface ModelCatalogMenuProps {
   footer?: ReactNode
   /** Rows above the search, outside the keyboard list (the local-setup offer). */
   header?: ReactNode
-  gateway?: HermesGateway
+  gateway?: MoorGateway
   /** Owner-routed RPC for catalog reads. Preferred over `gateway.request` so
    *  a tile's menu queries the session owner's backend, not chrome's. */
   request?: <T>(method: string, params?: Record<string, unknown>) => Promise<T>
@@ -1048,7 +1048,7 @@ function ModelFamilyRow({
   const caps = provider.capabilities?.[family.id]
   const limit = familyLimit(provider, family, isCurrent)
 
-  // Live per-model $/Mtok pricing (Nous Portal and other providers that ship
+  // Live per-model $/Mtok pricing (Moor Portal and other providers that ship
   // it). A `-fast` sibling shares the base id's price: the collapsed row
   // fronts the base, so fall back to it when only the fast variant is unpriced.
   const pricing = provider.pricing?.[family.id] ?? (family.fastId ? provider.pricing?.[family.fastId] : undefined)
@@ -1425,18 +1425,18 @@ function groupModels(
   return groups
 }
 
-// The Nous row: the only one the menu re-reads on open or while its pricing warms (window-plan labels).
-function isNous(provider: ModelOptionProvider): boolean {
-  return provider.slug === 'nous'
+// The Moor row: the only one the menu re-reads on open or while its pricing warms (window-plan labels).
+function isMoor(provider: ModelOptionProvider): boolean {
+  return provider.slug === 'moor'
 }
 
-// Nous only: re-read on every open (cached list shows instantly, the re-read swaps in when it
+// Moor only: re-read on every open (cached list shows instantly, the re-read swaps in when it
 // lands). The plan (usage-window labels, used-up notes) loads with the first turn, after the
 // list was first fetched at boot, so the 60s cache would hide it until "Refresh models".
-// A cheap local cache-only read (the plan may not be known yet, so any Nous row); every other
+// A cheap local cache-only read (the plan may not be known yet, so any Moor row); every other
 // provider keeps the 60s cache.
 function nousRefetchOnMount(data: ModelOptionsResult | undefined): 'always' | true {
-  return data?.providers?.some(isNous) ? 'always' : true
+  return data?.providers?.some(isMoor) ? 'always' : true
 }
 
 // A cache-only open on a fresh backend ships rows marked pending while pricing warms in the
@@ -1444,7 +1444,7 @@ function nousRefetchOnMount(data: ModelOptionsResult | undefined): 'always' | tr
 // Bounded (~10s): a failed pricing fetch can leave rows pending, and an open menu must not
 // poll forever. Only runs while the menu is mounted and a row is pending.
 function nousPricingPoll(data: ModelOptionsResult | undefined, updates: number): false | number {
-  return updates < 6 && data?.providers?.some(p => isNous(p) && p.pricing_pending) ? 2_000 : false
+  return updates < 6 && data?.providers?.some(p => isMoor(p) && p.pricing_pending) ? 2_000 : false
 }
 
 // Window plans: the plan's featured picks lead (the backend lists them first). Re-applied after the

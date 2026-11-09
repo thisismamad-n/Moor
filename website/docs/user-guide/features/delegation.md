@@ -297,10 +297,10 @@ Note that the pin is global: with the default strategy `delegate_task` has no pe
 
 `delegation.backend` selects how each task becomes a subagent. `default` (the default) is everything above. Strategy plugins can let the model choose per task, from options you define:
 
-- a **profile per subagent** (`profile_routes`): each child runs as one of your Hermes profiles, with that profile's model, credentials, skills and persona;
+- a **profile per subagent** (`profile_routes`): each child runs as one of your Moor profiles, with that profile's model, credentials, skills and persona;
 - a **named model map** (`model_map`): you list titled options (`fast`, `deep`, ...) with a description and a provider/model each, and the model picks one per task.
 
-Both come from the official `advanced-delegation` plugin, which also adds `hermes delegation config` (create, edit and delete model routes, pick profiles) and the `/delegation` slash command. While `model_map` or `profile_routes` is active, `delegation.model` / `delegation.provider` are inactive: the routes decide.
+Both come from the official `advanced-delegation` plugin, which also adds `moor delegation config` (create, edit and delete model routes, pick profiles) and the `/delegation` slash command. While `model_map` or `profile_routes` is active, `delegation.model` / `delegation.provider` are inactive: the routes decide.
 
 Each strategy's settings live under `delegation.backends.<backend name>`:
 
@@ -331,7 +331,7 @@ The model only ever sees the names and descriptions you configured, never raw pr
 
 **Failures are explicit, never a silent switch.** If the selected backend is missing (plugin not installed or disabled) or reports it cannot run, `delegate_task` returns a tool error naming the backend and the fix, and no subagent starts; it never quietly runs the children on the default route. Within a batch, a task its backend cannot route (an unknown option, a parameter the selected backend does not take, a profile that does not exist, a `service_tier` the route does not offer, an unknown `reasoning_effort`, missing credentials) is refused alone: its result entry has `status: "error"`, the reason, and `route.refused: true`, while the other tasks run. A model route without its own `fallback_providers` uses `delegation.fallback_providers`; `fallback_providers: []` on the route disables fallback for it. A profile route uses that profile's own fallback chain.
 
-**Switching back.** `/delegation default` (from the `advanced-delegation` plugin) saves `delegation.backend` to `config.yaml` and applies from the next session (`/new`): a running chat keeps routing on the backend it started with, because the per-task choices the model sees (option or profile names) are part of the cached tool list and the two switch together. A hand edit of `delegation.backend` behaves the same. `/delegation <backend> --now` also rebuilds the current chat's tools at its next turn, so it routes on and offers the new backend from there, at the cost of one prompt-cache miss (context compression, which rebuilds the tools anyway, picks up the saved backend too). A task that sends a parameter its chat's backend does not take is refused with a message naming the backend, the parameter and the fix (`/delegation <backend> --now`, or `/new`); it never runs on the backend's default route. Without the plugin, `hermes config set delegation.backend default` restores the default.
+**Switching back.** `/delegation default` (from the `advanced-delegation` plugin) saves `delegation.backend` to `config.yaml` and applies from the next session (`/new`): a running chat keeps routing on the backend it started with, because the per-task choices the model sees (option or profile names) are part of the cached tool list and the two switch together. A hand edit of `delegation.backend` behaves the same. `/delegation <backend> --now` also rebuilds the current chat's tools at its next turn, so it routes on and offers the new backend from there, at the cost of one prompt-cache miss (context compression, which rebuilds the tools anyway, picks up the saved backend too). A task that sends a parameter its chat's backend does not take is refused with a message naming the backend, the parameter and the fix (`/delegation <backend> --now`, or `/new`); it never runs on the backend's default route. Without the plugin, `moor config set delegation.backend default` restores the default.
 
 :::note Profile routes share credentials
 Listing a profile in `delegation.backends.profile_routes` lets this profile's subagents use that profile's credentials, credential pool, `SOUL.md` and terminal policy. Only list profiles whose keys and terminal access you are happy for this profile's agent to use.
@@ -595,7 +595,7 @@ delegate_task(
 
 **Cost warning:** With `max_spawn_depth: 3` and `max_concurrent_children: 3`, the tree can reach 3×3×3 = 27 concurrent leaf agents. Each extra level multiplies spend — raise `max_spawn_depth` intentionally.
 
-**One-shot runs are capped separately.** `hermes chat -q` / `--oneshot` sessions may spawn at most `delegation.oneshot_max_children` subagents in total (default `2`, `0` = unlimited). A one-shot run has no later turn to receive results, and in benchmark trajectories most of its spawns were "independently review my own work" rather than parallel work — each such child re-pays a cold system prompt and re-reads the repo. Interactive and gateway sessions are unaffected. Because a one-shot joins its children inside the `delegate_task` call, its schema leaves out the live-control parameters (`action` list/steer/stop, `subagent_id`, `message`).
+**One-shot runs are capped separately.** `moor chat -q` / `--oneshot` sessions may spawn at most `delegation.oneshot_max_children` subagents in total (default `2`, `0` = unlimited). A one-shot run has no later turn to receive results, and in benchmark trajectories most of its spawns were "independently review my own work" rather than parallel work — each such child re-pays a cold system prompt and re-reads the repo. Interactive and gateway sessions are unaffected. Because a one-shot joins its children inside the `delegate_task` call, its schema leaves out the live-control parameters (`action` list/steer/stop, `subagent_id`, `message`).
 
 ## Finite chat runs
 
@@ -612,7 +612,7 @@ final response before the CLI exits.
   including when resuming an interactive session. It does not change that session's
   creation policy, sibling viewers, or the daemon environment.
 - **Existing safeguards:** delegation limits, timeouts, cancellation, and
-  `approvals.single_query_mode` (`-q` turns; `hermes -z` turns are unattended) still apply.
+  `approvals.single_query_mode` (`-q` turns; `moor -z` turns are unattended) still apply.
   Joining does not auto-approve commands or guarantee successful child outcomes.
   Inspect results and verify artifacts. Managed/safe workers still reject child
   delegation until their child-registration contract is available.
@@ -672,7 +672,7 @@ change to `gateway_mode` or to `interim_assistant_messages` applies from the nex
 (`/new`). A running chat keeps the mode it started with across gateway restarts, agent
 cache evictions, context compaction and `/reload-mcp`. A scheduled heartbeat turn mutes
 interim messages only for itself and does not change the chat's mode. One exception: the
-first turn after a Hermes update rebuilds the session's tool definitions from the new
+first turn after a Moor update rebuilds the session's tool definitions from the new
 code, so the chat adopts the current setting at that turn.
 
 Listing `delegate_task` in `tools.tool_search.defer` turns inline off for that session:
@@ -686,8 +686,8 @@ Top-level model-facing `delegate_task` calls run in the background automatically
 
 - Normal follow-up messages do not cancel background children, and neither does stopping the current turn: Ctrl+C, Esc, the Desktop/TUI Stop button and an ACP cancel end only the turn. The `/stop` command (gateway `/stop` — also when the session is idle after the dispatching turn ended — or CLI `/stop`) ends the session's running background delegations, and closing or resetting the owning session does the same.
 - Explicit session close/reset interrupts that session's background children. In the CLI and TUI, the gateway owns the session and the client only views it: when the last viewer exits or runs `/new` (a TUI resume switch counts too), the gateway interrupts that session's background children at once and refuses new ones for it until a viewer opens the session again. A plain detach cancels nothing: closing Desktop, a dropped connection, or exiting while another viewer is still attached leaves the work running. Background processes (`terminal(background=True)`) keep running either way.
-- A completion for a CLI or TUI session — a background child's result (including an interrupted one), or a `notify_on_complete` process exit or watch-pattern notice — that reaches the head of the session's queue while no viewer is attached does not start a turn. It is written into the session as a note, and the next turn reads it (for example after `hermes chat --resume`). If a viewer is attached by then, including one that came back after the completion arrived, the completion runs as a turn as before. Messaging chats have no viewers and are unchanged: their completions still start a turn.
-- A Hermes process restart does **not** resume a running child. Its attempt becomes `unknown` because Hermes cannot prove which side effects happened.
+- A completion for a CLI or TUI session — a background child's result (including an interrupted one), or a `notify_on_complete` process exit or watch-pattern notice — that reaches the head of the session's queue while no viewer is attached does not start a turn. It is written into the session as a note, and the next turn reads it (for example after `moor chat --resume`). If a viewer is attached by then, including one that came back after the completion arrived, the completion runs as a turn as before. Messaging chats have no viewers and are unchanged: their completions still start a turn.
+- A Moor process restart does **not** resume a running child. Its attempt becomes `unknown` because Moor cannot prove which side effects happened.
 - A child that completed before restart but whose result was not delivered is restored and routed back through the owning session's normal checks.
 - Stopped children return a structured result (`status="interrupted"`, `exit_reason="interrupted"`) whose `summary` is the last text the child produced before the stop (the interrupt placeholder moves to `error`). The stop recurses down the spawn tree — an orchestrator child's synchronous workers are interrupted first and their partial results roll up into the child's own interrupted result — and each background unit's result re-enters the conversation right away as its normal completion notice (`Subagent Task Interrupted: …`), so nothing waits for the child to exhaust its budget.
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from gateway.control_socket import _home_hash
-from hermes_cli.gateway_runtime_discovery import DiscoveryError, home_mode_unsafe, query_identify
+from moor_cli.gateway_runtime_discovery import DiscoveryError, home_mode_unsafe, query_identify
 
 
 def _ready_owner_payload(home):
@@ -27,8 +27,8 @@ def _ready_owner_payload(home):
 @pytest.mark.platforms("linux", "macos")
 def test_discovery_resolves_a_private_overlay_lock_to_its_owner(tmp_path, monkeypatch):
     """ACP task homes share the served profile's lock instead of publishing a socket of their own."""
-    import hermes_cli.gateway_runtime as runtime
-    import hermes_cli.gateway_runtime_discovery as discovery
+    import moor_cli.gateway_runtime as runtime
+    import moor_cli.gateway_runtime_discovery as discovery
 
     owner = tmp_path / "owner"
     overlay = tmp_path / "task-home"
@@ -64,8 +64,8 @@ def test_discovery_resolves_a_private_overlay_lock_to_its_owner(tmp_path, monkey
 @pytest.mark.platforms("linux", "macos")
 def test_discovery_does_not_follow_an_overlay_lock_from_a_writable_home(tmp_path, monkeypatch):
     """A task directory another user can replace must not select a gateway owner."""
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
-    import hermes_cli.gateway_runtime_discovery as discovery
+    from moor_cli.gateway_runtime import discover_gateway_endpoint
+    import moor_cli.gateway_runtime_discovery as discovery
 
     owner = tmp_path / "owner"
     overlay = tmp_path / "task-home"
@@ -94,7 +94,7 @@ def test_fallback_pointer_uses_owner_location_and_keeps_identity_checks(tmp_path
     home.mkdir(mode=0o700)
     # The owner has a distinct TMPDIR, as a service or native app commonly does.
     with tempfile.TemporaryDirectory(prefix='h-owner-') as root:
-        directory = Path(root) / f'hermes-gw-{_home_hash(home)}'
+        directory = Path(root) / f'moor-gw-{_home_hash(home)}'
         directory.mkdir(mode=0o700)
         target = directory / 'control.sock'
         pointer = home / 'gateway.sock.path'
@@ -123,7 +123,7 @@ def test_fallback_pointer_uses_owner_location_and_keeps_identity_checks(tmp_path
             finally:
                 thread.join(timeout=4)
             assert json.loads(requests[0])['verb'] == 'identify'
-            pointer.write_text(str(directory.with_name('hermes-gw-wrong') / 'control.sock'), encoding='utf-8')
+            pointer.write_text(str(directory.with_name('moor-gw-wrong') / 'control.sock'), encoding='utf-8')
             with pytest.raises(DiscoveryError, match='invalid_control_pointer'):
                 query_identify(home, timeout=2)
             pointer.write_text(str(target), encoding='utf-8')
@@ -138,7 +138,7 @@ def test_the_client_verdict_names_the_unsafe_node_and_its_fix(monkeypatch, reque
     detail must survive discovery and ensure, with the code unchanged for callers that match it."""
     import os
     import shutil
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint, ensure_gateway_runtime
+    from moor_cli.gateway_runtime import discover_gateway_endpoint, ensure_gateway_runtime
     # A short root: the socket path must fit AF_UNIX's limit.
     root = Path(tempfile.mkdtemp(prefix='h-'))
     request.addfinalizer(lambda: shutil.rmtree(root, ignore_errors=True))
@@ -178,20 +178,20 @@ def test_the_client_verdict_names_the_unsafe_node_and_its_fix(monkeypatch, reque
 
 
 @pytest.mark.platforms("linux", "macos")
-def test_hermes_chat_prints_the_whole_repair_command(monkeypatch, request):
-    """``hermes chat`` shows a failed attach through ``agent_init_failure_message``, whose 120-character
+def test_moor_chat_prints_the_whole_repair_command(monkeypatch, request):
+    """``moor chat`` shows a failed attach through ``agent_init_failure_message``, whose 120-character
     summary cut the hint mid-path: the whole command must reach the user."""
     import asyncio
     import shutil
-    from hermes_cli.cli_chat_error_copy import agent_init_failure_message
-    from hermes_cli.gateway_client import GatewayUnavailableError, connect_gateway
+    from moor_cli.cli_chat_error_copy import agent_init_failure_message
+    from moor_cli.gateway_client import GatewayUnavailableError, connect_gateway
     root = Path(tempfile.mkdtemp(prefix='h-'))
     request.addfinalizer(lambda: shutil.rmtree(root, ignore_errors=True))
     home = root / ('profile-' + 'x' * 12)
     home.mkdir(mode=0o700)
     control = home / 'gateway.sock'
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.delenv('HERMES_TUI_GATEWAY_URL', raising=False)
+    monkeypatch.setenv('MOOR_HOME', str(home))
+    monkeypatch.delenv('MOOR_TUI_GATEWAY_URL', raising=False)
 
     async def attach():
         async with connect_gateway():
@@ -210,7 +210,7 @@ def test_hermes_chat_prints_the_whole_repair_command(monkeypatch, request):
 def test_a_long_home_keeps_the_repair_command_whole_or_drops_it(tmp_path):
     """The detail is bounded to 500 characters; a long profile home (named twice: the node and the
     command) must not leave the client printing a chmod cut off mid-path or missing its quote."""
-    from hermes_cli.gateway_runtime import discover_gateway_endpoint
+    from moor_cli.gateway_runtime import discover_gateway_endpoint
 
     omitted = '; repair command omitted (path too long to print)'
     home = tmp_path.resolve() / ('p' * 200) / "profile's home"
@@ -233,7 +233,7 @@ def test_a_long_home_keeps_the_repair_command_whole_or_drops_it(tmp_path):
 def test_a_permission_hint_runs_as_printed_for_a_path_with_spaces(tmp_path):
     """The hint is a command the user pastes into a shell: a profile home with a space must survive it."""
     import subprocess
-    from hermes_cli.gateway_runtime_discovery import _private_node
+    from moor_cli.gateway_runtime_discovery import _private_node
 
     home = tmp_path / 'profile home'
     home.mkdir(mode=0o700)
@@ -254,7 +254,7 @@ def test_an_open_control_directory_names_its_path_and_mode(tmp_path):
     home = tmp_path / 'profile'
     home.mkdir(mode=0o700)
     with tempfile.TemporaryDirectory(prefix='h-owner-') as root:
-        directory = Path(root) / f'hermes-gw-{_home_hash(home)}'
+        directory = Path(root) / f'moor-gw-{_home_hash(home)}'
         directory.mkdir(mode=0o755)
         pointer = home / 'gateway.sock.path'
         pointer.write_text(str(directory / 'control.sock'), encoding='utf-8')
@@ -315,7 +315,7 @@ def test_upgraded_same_owner_0644_lock_is_narrowed_not_inaccessible(tmp_path):
     import os
     import stat
     from gateway.runtime_ownership import ProfileOwnership
-    from hermes_cli.gateway_runtime_discovery import missing_owner_state
+    from moor_cli.gateway_runtime_discovery import missing_owner_state
     home = tmp_path / 'profile'
     home.mkdir(mode=0o700)
     lock = home / 'gateway.lock'

@@ -107,15 +107,15 @@ For more context, see the upstream Astral reports: [astral-sh/uv#13553](https://
 ## Getting Started
 
 ```bash
-hermes              # Interactive CLI — start a conversation
-hermes model        # Choose your LLM provider and model
-hermes tools        # Configure which tools are enabled
-hermes config set   # Set individual config values
-hermes config get   # Print individual config values
-hermes gateway      # Start the messaging gateway (Telegram, Discord, etc.)
-hermes setup        # Run the full setup wizard (configures everything at once)
-hermes update       # Update to the latest version
-hermes doctor       # Diagnose any issues
+moor              # Interactive CLI — start a conversation
+moor model        # Choose your LLM provider and model
+moor tools        # Configure which tools are enabled
+moor config set   # Set individual config values
+moor config get   # Print individual config values
+moor gateway      # Start the messaging gateway (Telegram, Discord, etc.)
+moor setup        # Run the full setup wizard (configures everything at once)
+moor update       # Update to the latest version
+moor doctor       # Diagnose any issues
 ```
 
 📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
@@ -187,18 +187,18 @@ All documentation lives at **[hermes-agent.nousresearch.com/docs](https://hermes
 
 ## Migrating from OpenClaw or another agent
 
-If you're coming from OpenClaw, Claude Code, Codex CLI or Cursor, Hermes can import your settings, memories and skills (and, for OpenClaw, API keys when you ask for them).
+If you're coming from OpenClaw, Claude Code, Codex CLI or Cursor, Moor can import your settings, memories and skills (and, for OpenClaw, API keys when you ask for them).
 
-**During setup:** `hermes setup` asks whether to import from another agent, pre-selects the ones it finds (`~/.openclaw`, `~/.claude`, `~/.codex`, `~/.cursor`), installs the official `agent-importers` plugin and runs the import with a preview first.
+**During setup:** `moor setup` asks whether to import from another agent, pre-selects the ones it finds (`~/.openclaw`, `~/.claude`, `~/.codex`, `~/.cursor`), installs the official `agent-importers` plugin and runs the import with a preview first.
 
 **Anytime after install:**
 
 ```bash
-hermes plugins install agent-importers          # once per profile
-hermes import-agent openclaw                    # interactive migration (full preset)
-hermes import-agent openclaw --dry-run          # preview what would be migrated
-hermes import-agent openclaw --migrate-secrets  # also bring allowlisted API keys
-hermes import-agent claude-code                 # or codex / cursor
+moor plugins install agent-importers          # once per profile
+moor import-agent openclaw                    # interactive migration (full preset)
+moor import-agent openclaw --dry-run          # preview what would be migrated
+moor import-agent openclaw --migrate-secrets  # also bring allowlisted API keys
+moor import-agent claude-code                 # or codex / cursor
 ```
 
 What gets imported from OpenClaw:
@@ -212,7 +212,7 @@ What gets imported from OpenClaw:
 - **TTS assets** — workspace audio files
 - **Workspace instructions** — AGENTS.md (with `--workspace-target`)
 
-`hermes claw migrate` still works as the older spelling. See the [OpenClaw migration guide](https://hermes-agent.nousresearch.com/docs/guides/migrate-from-openclaw) and [Import from Other Agents](https://hermes-agent.nousresearch.com/docs/user-guide/import-from-other-agents).
+`moor claw migrate` still works as the older spelling. See the [OpenClaw migration guide](https://hermes-agent.nousresearch.com/docs/guides/migrate-from-openclaw) and [Import from Other Agents](https://hermes-agent.nousresearch.com/docs/user-guide/import-from-other-agents).
 
 ---
 

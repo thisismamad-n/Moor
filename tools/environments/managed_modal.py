@@ -186,7 +186,7 @@ class ManagedModalEnvironment(BaseEnvironment):
 
     def _request(self, method: str, path: str, *, json: dict[str, Any] | None = None, timeout: int = 30,
                  extra_headers: dict[str, str] | None = None) -> requests.Response:
-        headers = {"Authorization": f"Bearer {self._nous_user_token}", "Content-Type": "application/json",
+        headers = {"Authorization": f"Bearer {self._moor_user_token}", "Content-Type": "application/json",
                    **(extra_headers or {})}
         return requests.request(method, f"{self._gateway_origin}{path}", headers=headers, json=json, timeout=timeout)
 

@@ -59,7 +59,7 @@ API requests use the gateway's durable admission queue. Structured image content
 structured through execution; it is not interpreted as a gateway slash command.
 
 - `/v1/runs` and `/v1/responses` retain the conversation declared by
-  `X-Hermes-Session-Key`. An explicit session or response chain takes precedence and
+  `X-moor-session-Key`. An explicit session or response chain takes precedence and
   does not transfer its conversation identity to a different header.
 - A nonempty `/v1/runs` `conversation_history` is authoritative, even with an explicit
   `session_id`. Otherwise session continuation loads history when the turn executes,
@@ -70,7 +70,7 @@ structured through execution; it is not interpreted as a gateway slash command.
   for interrupted turns and `"error"` for failures, not a successful `"stop"`.
 - A turn that runs out of its iteration budget (`agent.max_turns`) still answers with the
   agent's wrap-up of what it found. Chat Completions delivers that text with
-  `finish_reason: "length"` and `hermes.error_code: "iteration_budget_exhausted"`;
+  `finish_reason: "length"` and `moor.error_code: "iteration_budget_exhausted"`;
   Responses reports `status: "incomplete"`. Treat the content as a usable answer to a task
   that stopped short, not as a cancellation.
 - Session-chat replies include `status`; their streams report matching terminal run
@@ -108,7 +108,7 @@ The identity fields differ by endpoint:
   `conversation_history`, `model`, `provider`, `model_options` and `tools`, plus
   `truncation` when sent.
 - **Chat Completions:** the last user message, the earlier messages (unless
-  `X-Hermes-Session-Id` is sent, in which case history comes from the session), the
+  `X-moor-session-Id` is sent, in which case history comes from the session), the
   system prompt, and the turn settings such as the requested model, provider and
   `model_options`. `tools` and `tool_choice` are not part of it: a retry that changes
   only those replays the original answer instead of a conflict.
@@ -146,13 +146,13 @@ and are never dropped, and deleting a response removes its identity sooner. This
 current default, not a replay guarantee.
 :::
 
-An explicit `X-Hermes-Session-Id` is never remapped. The deleted session's id stays
+An explicit `X-moor-session-Id` is never remapped. The deleted session's id stays
 retired even after pruning. An exact keyed retry whose identity is still retained there
 replays, and a changed one is refused as a conflict. A request with no retained
 identity there, such as a fresh request or a retry whose identity was pruned, is refused
 with `not_found`.
 
-A Chat Completions request without `X-Hermes-Session-Id` derives its session from the
+A Chat Completions request without `X-moor-session-Id` derives its session from the
 system prompt and first user message. A deleted session's id is never reused, so a new
 conversation that opens like a deleted one gets a new session, and its later turns land
 on that same session, including after a restart. An exact keyed retry of a turn from the
@@ -216,8 +216,8 @@ Uploaded files (`file` / `input_file` / `file_id`) and non-image `data:` URLs re
 All SSE streams (Chat Completions, Responses, `/api/sessions/{id}/chat/stream`, `/v1/runs/{id}/events`) emit a `: keepalive` comment line whenever no event has been sent for 10 seconds, so long tool calls do not trip client idle timeouts. Standard SSE clients ignore comment lines; custom parsers must skip lines that start with `:`.
 
 **Tool progress in streams**:
-- **Chat Completions**: Hermes emits `event: hermes.tool.progress` for tool-start visibility without polluting persisted assistant text. Strict OpenAI clients that choke on named SSE events can turn these frames off with `gateway.platforms.api_server.tool_progress_events: false` (default `true`); content chunks are unaffected. The opt-out applies only to Chat Completions — `/v1/runs/{id}/events` always emits tool events, which is what the `tool_progress_events` feature in `/v1/capabilities` describes.
-- **Responses**: Hermes emits spec-native `function_call` and `function_call_output` output items during the SSE stream, so clients can render structured tool UI in real time.
+- **Chat Completions**: Moor emits `event: moor.tool.progress` for tool-start visibility without polluting persisted assistant text. Strict OpenAI clients that choke on named SSE events can turn these frames off with `gateway.platforms.api_server.tool_progress_events: false` (default `true`); content chunks are unaffected. The opt-out applies only to Chat Completions — `/v1/runs/{id}/events` always emits tool events, which is what the `tool_progress_events` feature in `/v1/capabilities` describes.
+- **Responses**: Moor emits spec-native `function_call` and `function_call_output` output items during the SSE stream, so clients can render structured tool UI in real time.
 
 **Model reasoning** (emitted only when the model actually produces reasoning and the resolved `reasoning` config allows it; the input-side opt-out is `model_options.reasoning.enabled: false`):
 - **Chat Completions**: reasoning deltas arrive as `choices[0].delta.reasoning_content` chunks (the DeepSeek-style field Open WebUI, opencode and the Vercel AI SDK render as a thinking block); answer text stays in `delta.content`.
@@ -385,7 +385,7 @@ The browser-extension controller protocol (`POST /v1/browser-control/register`,
 `browser.controller.*` RPCs and the `browser.extension_control` config key) has
 been removed. It routed the old `browser_navigate`/`browser_click`/… tools,
 which no longer exist: browser automation is now `browser_exec` over CDP. To let
-Hermes drive a browser you already run, point it at that browser's DevTools
+Moor drive a browser you already run, point it at that browser's DevTools
 endpoint with `browser.cdp_url` in `config.yaml` or `/browser connect` — see
 [Your own browser via CDP](./browser#your-own-browser-via-cdp-browser-connect).
 Upgrading drops a leftover `browser.extension_control` block from `config.yaml`.
@@ -494,13 +494,13 @@ and the run controls answer HTTP 503 (`runtime_draining` or `storage_unavailable
 a malformed control body answers 400 `invalid_params`; ownership, generation and identity refusals
 stay 409.
 
-When `session_id` identifies an existing Hermes session and no explicit
+When `session_id` identifies an existing Moor session and no explicit
 `conversation_history` or `previous_response_id` is supplied, the run loads
 that session's active transcript. Session turn leases serialize concurrent
 writers and refresh the transcript after a contended wait.
 
 **API sessions are their own sessions.** `session_id` (here) and the
-`X-Hermes-Session-Id` header (on `/v1/chat/completions` and `/v1/responses`) may
+`X-moor-session-Id` header (on `/v1/chat/completions` and `/v1/responses`) may
 name a session the API server created or one it may create; they cannot bind a
 session that another surface owns — a CLI, TUI, Desktop, ACP or messaging
 conversation. Such a request is refused with HTTP 409 and error code
@@ -601,7 +601,7 @@ subscriber continues draining normally.
 
 After an authority-owner restart, a turn that was already claimed has an
 unknown execution outcome, and `GET /v1/runs/{run_id}` reports it as
-`"status": "unknown"` (not terminal). Hermes pauses later work in that session
+`"status": "unknown"` (not terminal). Moor pauses later work in that session
 rather than risk replaying the lost head. Read the exact `admission_id` and
 `execution_generation` from that body, then acknowledge that the
 lost execution will not finish:
@@ -880,7 +880,7 @@ API_SERVER_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 When CORS is enabled:
 - **Preflight responses** include `Access-Control-Max-Age: 600` (10 minute cache)
 - **SSE streaming responses** include CORS headers so browser EventSource clients work correctly
-- **`X-Hermes-Session-Id`** is an allowed request header, so browsers on an allowlisted origin can request session continuation.
+- **`X-moor-session-Id`** is an allowed request header, so browsers on an allowlisted origin can request session continuation.
 - **`Idempotency-Key`** is an allowed request header — clients can send it for deduplication (see [Idempotency keys](#idempotency-keys) for what a key covers and how long it is kept)
 
 Most documented frontends such as Open WebUI connect server-to-server and do not need CORS at all.

@@ -1,6 +1,6 @@
 /**
- * A `display.*` method-not-found from a Portal-managed (Hermes Cloud) backend must not be
- * rendered as "Update the bot's Hermes": the user cannot update a managed release, and the
+ * A `display.*` method-not-found from a Portal-managed (Moor Cloud) backend must not be
+ * rendered as "Update the bot's Moor": the user cannot update a managed release, and the
  * managed Cloud tab already reports it is on the latest release (#120852). A self-upgradable
  * (git/remote) backend keeps the update instruction.
  *
@@ -14,7 +14,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { DisplayStatus } from './screen-connection'
 import type { RosterRow } from './types'
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { useStore } = await import('@nanostores/react')
   const { onGatewayEvent } = await import('../../contrib/events')
 
@@ -43,18 +43,18 @@ vi.mock('./i18n', () => ({
   useBots: () => ({
     screen: {
       title: 'Screen',
-      portalUnavailable: 'Update the bot’s Hermes to use Screen',
-      portalUnavailableManaged: 'Screen is not available on this managed Hermes release yet',
-      unavailableTitle: 'Screen needs a newer Hermes',
+      portalUnavailable: 'Update the bot’s Moor to use Screen',
+      portalUnavailableManaged: 'Screen is not available on this managed Moor release yet',
+      unavailableTitle: 'Screen needs a newer Moor',
       managedNotIncludedTitle: 'Screen isn’t included on this bot',
-      managedNotIncludedBody: 'Hermes Cloud includes Screen on bots with 8 GB of memory or more.',
+      managedNotIncludedBody: 'Moor Cloud includes Screen on bots with 8 GB of memory or more.',
       notInstalledTitle: 'Screen packages missing',
       install: 'Install on host'
     }
   })
 }))
 
-import { host } from '@hermes/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 
 import { BotScreenPane } from './screen-pane'
 import { $screenState } from './screen-state'
@@ -79,8 +79,8 @@ it('a managed Cloud backend gets the managed-release copy, not a self-update ins
   const view = render(<BotScreenPane bot={cloudBot} />)
   await act(async () => {})
 
-  expect(view.getByText('Screen is not available on this managed Hermes release yet')).toBeTruthy()
-  expect(view.queryByText('Update the bot’s Hermes to use Screen')).toBeNull()
+  expect(view.getByText('Screen is not available on this managed Moor release yet')).toBeTruthy()
+  expect(view.queryByText('Update the bot’s Moor to use Screen')).toBeNull()
   view.unmount()
 })
 
@@ -89,14 +89,14 @@ it('a self-upgradable backend keeps the update instruction', async () => {
   const view = render(<BotScreenPane bot={gitBot} />)
   await act(async () => {})
 
-  expect(view.getByText('Update the bot’s Hermes to use Screen')).toBeTruthy()
-  expect(view.queryByText('Screen is not available on this managed Hermes release yet')).toBeNull()
+  expect(view.getByText('Update the bot’s Moor to use Screen')).toBeTruthy()
+  expect(view.queryByText('Screen is not available on this managed Moor release yet')).toBeNull()
   view.unmount()
 })
 
 const packagesMissing: DisplayStatus = {
   profile: 'default',
-  profile_key: '/home/hermes/.hermes',
+  profile_key: '/home/moor/.moor',
   supported: true,
   installed: false,
   missing: ['tigervnc-standalone-server'],

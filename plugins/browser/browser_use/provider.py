@@ -64,7 +64,7 @@ class BrowserUseBrowserProvider(CloudBrowserProvider):
     label = "Browser Use"
     release_method = "patch"
     release_path = "/browsers/{session_id}"
-    # Hidden from the picker; stays registered for the Nous gateway path and legacy cloud_provider
+    # Hidden from the picker; stays registered for the Moor gateway path and legacy cloud_provider
     # configs.
     setup_tag = None
 
@@ -72,9 +72,9 @@ class BrowserUseBrowserProvider(CloudBrowserProvider):
         return self._get_config_or_none(refresh_token=False) is not None
 
     def _get_config_or_none(self, *, refresh_token: bool = True) -> Optional[dict[str, Any]]:
-        # Lazy: managed_tool_gateway pulls in the Nous auth stack direct-key users never need.
-        from tools.managed_tool_gateway import peek_nous_access_token, resolve_managed_tool_gateway
-        from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, read_selection
+        # Lazy: managed_tool_gateway pulls in the Moor auth stack direct-key users never need.
+        from tools.managed_tool_gateway import peek_moor_access_token, resolve_managed_tool_gateway
+        from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, read_selection
 
         def _managed_config() -> Optional[dict[str, Any]]:
             # Keep availability scans off the synchronous OAuth refresh path.

@@ -27,7 +27,7 @@ import { $focusedTreePaneId as $focusedTreePaneIdMock } from '@/store/session-fo
 import { $sessionStates, $sessionTiles } from '@/store/session-states'
 import { $statusbarVisible, setStatusbarItemVisible } from '@/store/statusbar-prefs'
 import { $desktopVersion, $updateStatus } from '@/store/updates'
-import type { ContextBreakdown, FreeTierStatus, UsageStats } from '@/types/hermes'
+import type { ContextBreakdown, FreeTierStatus, UsageStats } from '@/types/moor'
 
 import { useStatusbarItems } from './use-statusbar-items'
 
@@ -139,7 +139,7 @@ describe('statusbar update channel vocabulary', () => {
       $desktopVersion.set({
         appVersion: '0.21.6',
         electronVersion: '37',
-        hermesRoot: '/h',
+        moorRoot: '/h',
         nodeVersion: '22',
         platform: 'linux'
       })
@@ -163,7 +163,7 @@ describe('statusbar update channel vocabulary', () => {
       $desktopVersion.set({
         appVersion: '0.21.7',
         electronVersion: '37',
-        hermesRoot: '/h',
+        moorRoot: '/h',
         nodeVersion: '22',
         platform: 'linux'
       })
@@ -396,8 +396,8 @@ describe('free-tier Sign in in every interface mode', () => {
     available,
     enabled: true,
     has_guest: available,
-    label: 'Nous · free tier',
-    model: 'nous/welcome',
+    label: 'Moor · free tier',
+    model: 'moor/welcome',
     notice_pending: false
   })
 
@@ -439,7 +439,7 @@ describe('free-tier Sign in in every interface mode', () => {
     const chip = [...leftStatusbarItems, ...statusbarItems].find(item => item.id === 'free-tier')
 
     expect(signInChipVisible()).toBe(true)
-    expect(chip?.title).toBe('Nous')
+    expect(chip?.title).toBe('Moor')
   })
 
   it('holds the chip while onboarding is open and brings it back after', () => {

@@ -803,7 +803,7 @@ def test_windows_python_also_answers_to_python3(monkeypatch, tmp_path, target):
     staged = tmp_path / "staged"
     staged.mkdir()
     (staged / "python.exe").write_bytes(b"launcher")
-    monkeypatch.setattr("hermes_cli.macos_signing.sign_managed_python", lambda p: False)
+    monkeypatch.setattr("moor_cli.macos_signing.sign_managed_python", lambda p: False)
     python.stage(None, staged, "3.14.7", target)
     assert (staged / "python3.exe").read_bytes() == b"launcher"
     assert python.verify(staged, target) == ""
@@ -821,7 +821,7 @@ def test_python3_alias_is_windows_only(monkeypatch, tmp_path):
     staged = tmp_path / "staged"
     (staged / "bin").mkdir(parents=True)
     (staged / "bin/python3").write_bytes(b"interpreter")
-    monkeypatch.setattr("hermes_cli.macos_signing.sign_managed_python", lambda p: False)
+    monkeypatch.setattr("moor_cli.macos_signing.sign_managed_python", lambda p: False)
     python.stage(None, staged, "3.14.7", "linux-x64")
     assert not (staged / "python3.exe").exists()
     assert python.verify(staged, "linux-x64") == ""

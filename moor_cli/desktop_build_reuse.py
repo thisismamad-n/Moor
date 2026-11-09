@@ -1,6 +1,6 @@
 """Reuse a packaged desktop app across commits that changed none of its build inputs.
 
-``hermes update`` used to rebuild and repackage the Electron app (6-38 min on Windows) whenever HEAD
+``moor update`` used to rebuild and repackage the Electron app (6-38 min on Windows) whenever HEAD
 moved, because ``_packaged_desktop_current_for_head`` requires the app's baked commit to BE HEAD. The
 freshness receipt already proves everything else the build reads is byte-identical; the baked
 install stamp is the one input it cannot see, since only a build rewrites it. This module answers
@@ -49,7 +49,7 @@ def packaged_desktop_reusable(desktop_dir: Path, project_root: Path, env: dict) 
     stamp a build at HEAD would bake that differs only in commit provenance. Anything unreadable
     means build.
     """
-    from hermes_cli.main_desktop import _desktop_build_needed, _packaged_resources_dir
+    from moor_cli.main_desktop import _desktop_build_needed, _packaged_resources_dir
 
     resources = _packaged_resources_dir(desktop_dir)
     if resources is None:

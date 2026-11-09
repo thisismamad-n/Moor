@@ -58,7 +58,7 @@ afterEach(() => {
   container = null
   disposePane = null
   globalThis.document.querySelectorAll('[data-titlebar-cluster]').forEach(element => element.remove())
-  delete globalThis.document.documentElement.dataset.hermesDesktopHost
+  delete globalThis.document.documentElement.dataset.moorDesktopHost
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -412,7 +412,7 @@ describe('TreeGroup', () => {
       vi.fn().mockReturnValue({ addEventListener: vi.fn(), matches: true, removeEventListener: vi.fn() })
     )
     stubMenuDomApis()
-    globalThis.document.documentElement.dataset.hermesDesktopHost = 'browser'
+    globalThis.document.documentElement.dataset.moorDesktopHost = 'browser'
 
     render(<TreeGroup node={terminalGroup(false)} parentAxis="column" />)
 

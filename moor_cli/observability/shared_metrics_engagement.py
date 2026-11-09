@@ -1,8 +1,8 @@
 """Daily engagement rollup, per-conversation session tally and turns-before-switch.
 
 Engagement is accumulated locally per UTC day in the profile's metrics store and emitted once the
-day closes (the first interaction of a later day): one ``hermes.engagement.surface_day.count`` row
-per surface used, and one ``hermes.engagement.day.count`` row with the day's total active time, how
+day closes (the first interaction of a later day): one ``moor.engagement.surface_day.count`` row
+per surface used, and one ``moor.engagement.day.count`` row with the day's total active time, how
 many surfaces it touched and the model that served most attended turns. Active time is the sum of
 the gaps between consecutive interactions (a turn starting or ending), each capped at
 ``IDLE_CAP_MS``. Days-active-per-week and next-day/next-week return by model are derived
@@ -46,9 +46,9 @@ _ACTIVE_THRESHOLDS = (
     (360 * _MINUTE_MS, "2h_to_6h"),
 )
 _SWITCH_THRESHOLDS = ((2, "1"), (4, "2_to_3"), (11, "4_to_10"), (31, "11_to_30"))
-# Task entrypoints that are a person using Hermes. Unattended cron runs (counted by hermes.cron.run),
+# Task entrypoints that are a person using Moor. Unattended cron runs (counted by moor.cron.run),
 # delegated children, background review forks, batch and API/python embedding are not engagement.
-# ``one_shot`` keeps the treatment it had while it read ``interactive``: a person typing ``hermes -z`` and a
+# ``one_shot`` keeps the treatment it had while it read ``interactive``: a person typing ``moor -z`` and a
 # script looping it look the same from inside the process; the label lets the rollup split them instead.
 _ENGAGED_ENTRYPOINTS = frozenset({"gateway_message", "interactive", "one_shot"})
 _INTERACTION_METRICS = frozenset({contract.TASK_STARTED_METRIC, contract.TASK_FINISHED_METRIC})
@@ -128,10 +128,10 @@ def _now_ms() -> int:
 
 
 def _root_home(profile_home: Path) -> Path:
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
 
     try:
-        return get_default_hermes_root(home=profile_home).resolve()
+        return get_default_moor_root(home=profile_home).resolve()
     except Exception:
         return profile_home.resolve()
 
@@ -142,17 +142,17 @@ def _profile_hash(profile_home: Path) -> str:
 
 def _collects(home: Path) -> bool:
     """The root profile's own collection consent (read-only; never touches its runtime)."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
-    token = set_hermes_home_override(str(home))
+    token = set_moor_home_override(str(home))
     try:
-        from hermes_cli.config import read_raw_config_readonly
+        from moor_cli.config import read_raw_config_readonly
 
         config: Any = read_raw_config_readonly() or {}
     except Exception:
         return False
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     for key in ("telemetry", "shared_metrics"):
         config = config.get(key) if isinstance(config, dict) else None
     return isinstance(config, dict) and config.get("enabled") is True

@@ -46,7 +46,7 @@ import {
 import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
-import { deleteProfile, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { deleteProfile, getLogs, getStatus, moorApi, type MoorGateway } from '@/moor'
 import { traceIdentityChange } from '@/lib/identity-trace'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
 import {
@@ -125,7 +125,7 @@ import { $viewport, type ViewportRect } from './viewport'
 
 /** Pane, status bar and titlebar slots; see `./areas` for the mount rules. */
 export * from './areas'
-/** The plugin authoring contract (`HermesPlugin`, `PluginContext`, `ctx.*` door types). */
+/** The plugin authoring contract (`MoorPlugin`, `PluginContext`, `ctx.*` door types). */
 export type * from './plugin-contract'
 export type { PluginProfileRequestOptions, PluginProfileRoute } from './profile-request'
 
@@ -1485,12 +1485,12 @@ export const host = {
     return mutateSessionFenced(
       JSON.stringify([scope, options.sessionId, payload]),
       () =>
-        hermesApi<SessionMutationSnapshot>({
+        moorApi<SessionMutationSnapshot>({
           ...scope,
           path: `${path}/mutation-snapshot?profile=${encodeURIComponent(profile)}`
         }),
       identity =>
-        hermesApi<{ ok: boolean; hidden: boolean }>({
+        moorApi<{ ok: boolean; hidden: boolean }>({
           ...scope,
           path,
           method: 'PATCH',
@@ -1860,7 +1860,7 @@ export { PROFILE_SWATCHES, profileColor, profileColorSoft } from '@/lib/profile-
  *  `useQueryClient`. */
 export { queryClient } from '@/lib/query-client'
 
-/** Compact labels for the reasoning levels exported from @hermes/shared, so a
+/** Compact labels for the reasoning levels exported from @moor/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'
 
@@ -1945,20 +1945,20 @@ export type { StatusResponse } from '@/types/moor'
 /** Public SDK name for the shared gateway wire event; kept stable for plugins. */
 export type { GatewayEvent as RpcEvent } from '@moor/shared'
 /** Bot Screen wire shapes, generated from `tui_gateway/contracts/display.py`. */
-export type { DisplayLease, DisplayObserveResult, DisplayStatus, DisplayThumbnailResult } from '@hermes/shared'
+export type { DisplayLease, DisplayObserveResult, DisplayStatus, DisplayThumbnailResult } from '@moor/shared'
 /** `session.list` / `profiles.list` session rows, generated from `tui_gateway/contracts`. */
-export type { ProfileSessionPreview, SessionListRow } from '@hermes/shared'
+export type { ProfileSessionPreview, SessionListRow } from '@moor/shared'
 /** THE compact-number formatter — every user-facing count/token figure goes
  *  through here (1230 → "1.2k", 1_500_000 → "1.5M"). Don't hand-roll `/1000`. */
-export { compactNumber } from '@hermes/shared'
+export { compactNumber } from '@moor/shared'
 /** Client deadline for `approval.respond`: matches the backend's
  *  `approvals.timeout` (300s) so a plugin answering an approval never rejects
  *  its own RPC while the backend still applies the decision (#60654). */
-export { APPROVAL_RESPOND_TIMEOUT_MS } from '@hermes/shared'
+export { APPROVAL_RESPOND_TIMEOUT_MS } from '@moor/shared'
 /** THE id minter: a v4 UUID on every origin. `crypto.randomUUID` exists only in secure contexts,
  *  so a Webapp opened over plain HTTP from another machine has none. */
-export { randomUuid } from '@hermes/shared'
-/** Hermes' reasoning levels, so a plugin surfacing a thinking depth uses the
+export { randomUuid } from '@moor/shared'
+/** Moor' reasoning levels, so a plugin surfacing a thinking depth uses the
  *  same scale as the rest of the app (labels: `reasoningEffortLabel`). */
 export {
   DEFAULT_REASONING_EFFORT,

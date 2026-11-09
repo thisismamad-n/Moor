@@ -97,7 +97,7 @@ def _make_relay(transport, platform="slack", max_message_length=4000):
 @pytest.mark.parametrize("content", ["scheduled result", "x" * 5000], ids=["short", "oversized"])
 async def test_relay_fronted_target_delivers_without_prior_inbound_chat_state(tmp_path, monkeypatch, content):
     """A persisted Slack home receives the complete payload from the gateway."""
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_moor_home", lambda: tmp_path)
     transport = _RelayDeliveryTransport()
     relay = _make_relay(transport)
     config = GatewayConfig(
@@ -419,7 +419,7 @@ async def test_relay_fronted_telegram_target_receives_payload_above_its_own_limi
     The connector splits egress against the negotiated max_message_length
     (4096 for Telegram), so the full payload must reach the transport intact.
     """
-    monkeypatch.setattr("gateway.delivery.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("gateway.delivery.get_moor_home", lambda: tmp_path)
     transport = _RelayDeliveryTransport(platform="telegram")
     relay = _make_relay(transport, platform="telegram", max_message_length=4096)
     config = GatewayConfig(

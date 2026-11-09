@@ -14,7 +14,7 @@ from agent.display import build_tool_preview
 
 logger = logging.getLogger(__name__)
 
-# Hermes tool name -> ACP ToolKind (anything unlisted is "other").
+# Moor tool name -> ACP ToolKind (anything unlisted is "other").
 TOOL_KIND_MAP: dict[str, ToolKind] = {
     name: kind
     for kind, names in {

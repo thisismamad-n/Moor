@@ -12,7 +12,7 @@ from gateway.config import Platform
 LIMIT = {
     "gauge_id": "day", "scope": "all", "limit_name": "daily", "resets_at_ms": 4_000_000_000_000,
     "message": "You've hit your daily limit · resets 15:56",
-    "suggestions": [{"model": "example/model-free:free", "label": "Model Free", "note": "free", "provider": "nous"}],
+    "suggestions": [{"model": "example/model-free:free", "label": "Model Free", "note": "free", "provider": "moor"}],
     "credits": {"action": "add_credits"},
 }
 
@@ -123,7 +123,7 @@ async def test_a_tap_switches_this_session_only_then_resends_like_retry(monkeypa
 
     async def _commit(result, ctx, *, source, picker):
         seen["picker"] = picker
-        runner._session_model_overrides[ctx.session_key] = {"model": result.new_model, "provider": "nous"}
+        runner._session_model_overrides[ctx.session_key] = {"model": result.new_model, "provider": "moor"}
         return "✓ Model switched to Model Free"
 
     tasks = []
@@ -135,7 +135,7 @@ async def test_a_tap_switches_this_session_only_then_resends_like_retry(monkeypa
 
     reply = await runner._accept_usage_limit_switch(_event(), "example/model-free:free")
     assert reply.startswith("✓")
-    assert seen == {"target": "example/model-free:free", "provider": "nous", "persist_global": False, "picker": True}
+    assert seen == {"target": "example/model-free:free", "provider": "moor", "persist_global": False, "picker": True}
     assert len(tasks) == 1
     await tasks[0]
     resent = adapter.handle_message.await_args.args[0]
@@ -243,7 +243,7 @@ async def test_a_turn_that_ran_during_the_switch_is_not_retried(monkeypatch):
         return SimpleNamespace(new_model=target), None
 
     async def _commit(result, ctx, *, source, picker):
-        runner._session_model_overrides[ctx.session_key] = {"model": result.new_model, "provider": "nous"}
+        runner._session_model_overrides[ctx.session_key] = {"model": result.new_model, "provider": "moor"}
         return "✓ Model switched to Model Free"
 
     tasks = []

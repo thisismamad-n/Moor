@@ -159,7 +159,7 @@ def test_a_stale_manager_does_not_fire_a_heartbeat_stopped_since(stop, stored):
 
 @pytest.mark.parametrize("stop,stored", [("clear", None), ("pause", "paused")])
 def test_a_heartbeat_stopped_during_a_claim_stays_stopped(stop, stored, monkeypatch):
-    from hermes_cli import heartbeat
+    from moor_cli import heartbeat
     sid = f"hb-race-{stop}"
     mgr = HeartbeatManager(session_id=sid)
     mgr.set("tick", 600).created_at = time.time() - 700

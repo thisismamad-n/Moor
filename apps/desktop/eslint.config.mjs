@@ -50,7 +50,7 @@ export default [
         'error',
         {
           property: 'randomUUID',
-          message: 'Use randomUuid from @hermes/shared (plugins: @hermes/plugin-sdk); it works on insecure origins.'
+          message: 'Use randomUuid from @moor/shared (plugins: @moor/plugin-sdk); it works on insecure origins.'
         }
       ]
     }

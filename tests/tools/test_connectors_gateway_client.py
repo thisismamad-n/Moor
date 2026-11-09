@@ -107,7 +107,7 @@ def test_execute_sends_one_single_call_request_per_call_with_its_own_key():
     ]
     keys = [r["headers"]["x-idempotency-key"] for r in transport.requests]
     assert all(keys) and keys[0] != keys[1]
-    assert transport.requests[0]["headers"]["Authorization"] == "Bearer nous-token"
+    assert transport.requests[0]["headers"]["Authorization"] == "Bearer moor-token"
     assert results == [
         {"data": {"id": "m1"}, "error": None},
         {"data": "ok", "error": None},

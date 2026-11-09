@@ -8,15 +8,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_connect as kbc
+from moor_cli import kanban_db_dispatch as kbd
 
 
 def _isolated_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -26,7 +26,7 @@ def test_unknown_assignee_skip_writes_per_task_event(tmp_path, monkeypatch):
     """RED (#122422): the skip must append a per-task board event naming the
     missing profile, so ``tail``/``show`` reveal why the card never spawns."""
     _isolated_home(tmp_path, monkeypatch)
-    from hermes_cli import profiles
+    from moor_cli import profiles
     monkeypatch.setattr(profiles, "profile_exists", lambda name: False)
     with kbc.connect() as conn:
         tid = kb.create_task(conn, title="demo", assignee="no-such-profile")
@@ -45,7 +45,7 @@ def test_unknown_assignee_skip_event_is_written_once(tmp_path, monkeypatch):
     row each (one per minute forever; one per foreign home on a shared board),
     and a dry-run tick writes nothing."""
     _isolated_home(tmp_path, monkeypatch)
-    from hermes_cli import profiles
+    from moor_cli import profiles
     monkeypatch.setattr(profiles, "profile_exists", lambda name: False)
     with kbc.connect() as conn:
         tid = kb.create_task(conn, title="demo", assignee="no-such-profile")

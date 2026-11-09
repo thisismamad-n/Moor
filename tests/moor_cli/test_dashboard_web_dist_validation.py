@@ -18,7 +18,7 @@ import pytest
 
 @pytest.fixture()
 def main_mod():
-    from hermes_cli import main
+    from moor_cli import main
     return main
 
 

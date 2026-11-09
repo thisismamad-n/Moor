@@ -333,7 +333,7 @@ def _capture_hooks(run):
     """Run ``run()`` with the approval hook dispatch captured; drop the per-turn ids
     every surface adds, so only the prompt payload is compared."""
     captured = []
-    with patch("hermes_cli.plugins.invoke_hook",
+    with patch("moor_cli.plugins.invoke_hook",
                side_effect=lambda name, **kw: captured.append((name, kw)) or []):
         result = run()
     # on_human_input_* fire around the same prompts with their own payload contract
@@ -364,7 +364,7 @@ class TestClassicCliPromptsFireGatewayTwinHooks:
         monkeypatch.setattr(approval_context, "_get_approval_config",
                             lambda: {"mode": "manual", "timeout": 60})
         # Gateway twin: the notifier answers "once" as soon as the card is sent.
-        monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
+        monkeypatch.setenv("MOOR_GATEWAY_SESSION", "1")
         approval_module.register_gateway_notify(
             isolated_session, lambda _data: approval_module.resolve_gateway_approval(isolated_session, "once"))
         try:
@@ -374,7 +374,7 @@ class TestClassicCliPromptsFireGatewayTwinHooks:
         assert result == approved
 
         # Classic CLI: the prompt_toolkit panel callback registered on the agent thread answers "once".
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION")
+        monkeypatch.delenv("MOOR_GATEWAY_SESSION")
         set_approval_callback(lambda *_a, **_kw: "once")
         try:
             result, cli_hooks = _capture_hooks(run)
@@ -388,7 +388,7 @@ class TestClassicCliPromptsFireGatewayTwinHooks:
 
     def test_protected_write_without_a_human_channel_fires_no_hooks(self, isolated_session, monkeypatch):
         """Fail-closed with no panel callback: nobody is waiting, so observers hear nothing."""
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("MOOR_GATEWAY_SESSION", raising=False)
         monkeypatch.setattr("tools.terminal_tool._get_approval_callback", lambda: None)
         result, captured = _capture_hooks(lambda: _request_protected_instruction_approval(["AGENTS.md"]))
         assert result is not None and "has NOT consented" in result

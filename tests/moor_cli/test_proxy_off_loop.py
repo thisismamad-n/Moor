@@ -47,7 +47,7 @@ from moor_cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
 aiohttp = pytest.importorskip("aiohttp")
 from aiohttp import web
 
-from hermes_cli.proxy.server import create_app
+from moor_cli.proxy.server import create_app
 
 
 # How long the fake adapter blocks. Long enough that a starved loop records

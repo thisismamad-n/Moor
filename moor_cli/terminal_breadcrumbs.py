@@ -112,10 +112,10 @@ def resolve_breadcrumb_session() -> Optional[str]:
     if not session_id:
         return None
     try:
-        from hermes_state import SessionDB
-        from hermes_constants import get_hermes_home
+        from moor_state import SessionDB
+        from moor_constants import get_moor_home
 
-        db = SessionDB(db_path=get_hermes_home() / "state.db", read_only=True)
+        db = SessionDB(db_path=get_moor_home() / "state.db", read_only=True)
     except Exception:
         return None
     try:

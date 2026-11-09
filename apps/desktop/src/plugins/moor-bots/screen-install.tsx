@@ -9,8 +9,8 @@
  * a fresh status the caller uses to flip the pane to "Start screen".
  */
 
-import { Button, Codicon, EmptyState, GlyphSpinner, host } from '@hermes/plugin-sdk'
-import type { RpcEvent } from '@hermes/plugin-sdk'
+import { Button, Codicon, EmptyState, GlyphSpinner, host } from '@moor/plugin-sdk'
+import type { RpcEvent } from '@moor/plugin-sdk'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useBots } from './i18n'
@@ -32,7 +32,7 @@ interface ScreenInstallCardProps {
 }
 
 /**
- * The pane for a host without the screen packages. Hermes Cloud ships Screen in the image of
+ * The pane for a host without the screen packages. Moor Cloud ships Screen in the image of
  * its larger sizes; a smaller bot's image leaves it out, and packages installed by hand would
  * not survive the next update, so only a self-managed host is offered the install.
  */

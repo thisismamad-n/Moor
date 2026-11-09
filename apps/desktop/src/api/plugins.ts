@@ -1,10 +1,10 @@
-import { isStableOpen, reconnectBackoffDelayMs } from '@hermes/shared'
+import { isStableOpen, reconnectBackoffDelayMs } from '@moor/shared'
 
-import type { HermesConnection } from '@/global'
+import type { MoorConnection } from '@/global'
 import { hostHas } from '@/lib/host-capabilities'
 import { RECONNECT_ATTEMPT_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
 
-import { $apiRequestScope, getApiRequestConnection, getApiRequestProfile, hermesApi, profileScoped } from './client'
+import { $apiRequestScope, getApiRequestConnection, getApiRequestProfile, moorApi, profileScoped } from './client'
 
 /** Resolve the ACTIVE backend's connection descriptor, (connectionId,
  *  profile)-scoped — mirroring how store/profile resolves $connection: a
@@ -97,9 +97,9 @@ type PluginSocketTarget = null | string | { refused: 'permission' }
 /** The URL a plugin socket dials, or null to stay on polling. A local gateway
  *  (`authMode: 'native'`, no static token) gets a fresh one-use URL from main:
  *  its native grant rides a request header main attaches to that one dial. */
-async function pluginSocketUrl(connection: HermesConnection, pluginId: string, suffix: string): Promise<PluginSocketTarget> {
+async function pluginSocketUrl(connection: MoorConnection, pluginId: string, suffix: string): Promise<PluginSocketTarget> {
   if (connection.authMode === 'native') {
-    const mint = window.hermesDesktop.getPluginWsUrl
+    const mint = window.moorDesktop.getPluginWsUrl
 
     // An IPC round-trip with no deadline of its own, bounded like activeConnection().
     return mint
@@ -175,11 +175,11 @@ export function pluginSocket(pluginId: string, path: string, onMessage: (data: u
     const stale = () => disposed || dial !== generation
 
     // No bridge: stay on the polling fallback.
-    if (!window.hermesDesktop?.getConnection) {
+    if (!window.moorDesktop?.getConnection) {
       return
     }
 
-    let connection: HermesConnection
+    let connection: MoorConnection
 
     try {
       connection = await activeConnection()

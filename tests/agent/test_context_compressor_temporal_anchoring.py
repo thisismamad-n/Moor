@@ -77,7 +77,7 @@ def test_anchoring_rule_uses_date_from_moor_time_now():
     """The date is taken from moor_time.now(), which respects the user's TZ."""
     compressor = _compressor()
     fixed = datetime(2025, 12, 31, 23, 30, tzinfo=UTC)
-    with patch.object(hermes_time, "now", lambda: fixed), patch(
+    with patch.object(moor_time, "now", lambda: fixed), patch(
         "agent.context_compressor.call_llm", return_value=_response("summary")
     ) as mock_call:
         compressor._generate_summary(_turns())

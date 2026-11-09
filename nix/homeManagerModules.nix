@@ -109,11 +109,11 @@
         _token_file=''${_token_file//\$\{XDG_RUNTIME_DIR\}/''${XDG_RUNTIME_DIR:-}}
 
         if [ -r "$_token_file" ]; then
-          HERMES_DESKTOP_REMOTE_TOKEN="$(tr -d '\r\n' < "$_token_file")"
-          export HERMES_DESKTOP_REMOTE_TOKEN
+          MOOR_DESKTOP_REMOTE_TOKEN="$(tr -d '\r\n' < "$_token_file")"
+          export MOOR_DESKTOP_REMOTE_TOKEN
         else
-          echo "hermes-desktop: cannot read the session token at $_token_file." >&2
-          echo "hermes-desktop: the application starts its own backend instead of the one of the service." >&2
+          echo "moor-desktop: cannot read the session token at $_token_file." >&2
+          echo "moor-desktop: the application starts its own backend instead of the one of the service." >&2
         fi
       '';
 
@@ -437,7 +437,7 @@
             (lib.mkIf (isDarwin && cfg.backend.mode != "none") {
               launchd.agents.moor-backend = mkAgent {
                 argv = common.backendArgv { inherit pkgs cfg; };
-                logName = "hermes-backend";
+                logName = "moor-backend";
                 environment = common.backendSessionEnvironment { inherit cfg; };
               };
             })

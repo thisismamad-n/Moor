@@ -21,7 +21,7 @@ _CREDENTIALS = {
 
 @pytest.mark.parametrize("platform", sorted(_CREDENTIALS))
 def test_dotenv_only_credentials_show_configured(monkeypatch, platform):
-    import hermes_cli.gateway as gateway_mod
+    import moor_cli.gateway as gateway_mod
 
     for creds in _CREDENTIALS.values():
         for name in creds:

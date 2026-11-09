@@ -1028,9 +1028,9 @@ def _with_media(message, kind):
 
 
 @pytest.mark.parametrize("message, expected", [
-    (_group_message("@hermes_bot when is rent due?", entities=[_mention_entity("@hermes_bot when is rent due?")]), True),
+    (_group_message("@moor_bot when is rent due?", entities=[_mention_entity("@moor_bot when is rent due?")]), True),
     (_group_message("sure, saturday", reply_to_bot=True), True),
-    (_group_message("hermes, add milk to the list"), True),
+    (_group_message("moor, add milk to the list"), True),
     (_group_message("", caption="/status"), True),
     (_group_message(" /status"), True),
     (_dm_message("hello"), True),
@@ -1057,7 +1057,7 @@ def _with_media(message, kind):
     "voice-note", "audio-file", "video-note", "captioned-voice-chatter", "photo-without-caption",
 ])
 def test_reply_expected_follows_who_the_group_message_addresses(message, expected):
-    adapter = _make_adapter(require_mention=False, mention_patterns=["hermes"])
+    adapter = _make_adapter(require_mention=False, mention_patterns=["moor"])
 
     assert adapter._build_message_event(message, MessageType.TEXT).reply_expected is expected
 

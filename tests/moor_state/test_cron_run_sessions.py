@@ -11,8 +11,8 @@ import pytest
 
 from cron import jobs
 from gateway import session_cron
-from hermes_state import SessionDB
-from hermes_state_runtime import RuntimeStoreError
+from moor_state import SessionDB
+from moor_state_runtime import RuntimeStoreError
 from tests.fakes.cron_owner import admit_fire, cron_owner
 
 

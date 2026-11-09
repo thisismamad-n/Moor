@@ -8,7 +8,7 @@ from moor_constants import (
     reset_moor_home_override,
     set_moor_home_override,
 )
-from hermes_cli.logs import _parse_line_timestamp
+from moor_cli.logs import _parse_line_timestamp
 from tools.mcp_tool_config import _StderrTee, _get_mcp_stderr_log, _write_stderr_log_header
 from tools.mcp_tool_lifecycle import shutdown_mcp_servers
 
@@ -69,8 +69,8 @@ def test_rename_profile_releases_cached_log_handle(tmp_path, monkeypatch):
         handle.close()
 
 
-def test_every_mcp_log_line_carries_a_stamp_hermes_logs_since_reads(tmp_path):
-    token = set_hermes_home_override(tmp_path)
+def test_every_mcp_log_line_carries_a_stamp_moor_logs_since_reads(tmp_path):
+    token = set_moor_home_override(tmp_path)
     try:
         _write_stderr_log_header("probe")
         log = io.StringIO()
@@ -81,8 +81,8 @@ def test_every_mcp_log_line_carries_a_stamp_hermes_logs_since_reads(tmp_path):
         assert tee.close() == "first half second half\ncrlf line\r\nno newline at exit"
         banner = (tmp_path / "logs" / "mcp-stderr.log").read_text().strip()
     finally:
-        reset_hermes_home_override(token)
-        shutdown_mcp_servers(scope=hermes_home_key(tmp_path))
+        reset_moor_home_override(token)
+        shutdown_mcp_servers(scope=moor_home_key(tmp_path))
     lines = log.getvalue().splitlines()
     assert [line[24:] for line in lines] == ["first half second half", "crlf line", "no newline at exit"]
     for line in [banner, *lines]:

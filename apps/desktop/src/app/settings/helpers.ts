@@ -1,7 +1,7 @@
 import { foldPersonalityName } from '@/lib/personalities'
 import { asText, normalize } from '@/lib/text'
 import { localShowReasoning } from '@/store/reasoning-disclosure'
-import type { ConfigFieldSchema, HermesConfig, HermesConfigRecord, ToolsetInfo } from '@/types/hermes'
+import type { ConfigFieldSchema, MoorConfig, MoorConfigRecord, ToolsetInfo } from '@/types/moor'
 
 import { BUILTIN_PERSONALITIES, ENUM_OPTIONS, PROVIDER_GROUPS, SECTIONS } from './constants'
 
@@ -28,7 +28,7 @@ export const withoutKey = <T>(record: Record<string, T>, key: string) => {
 export const redactedValue = (v: string) => (v.length <= 8 ? '••••' : `${v.slice(0, 4)}...${v.slice(-4)}`)
 
 // The backend wraps stored-key previews in a write-guard sentinel
-// (hermes_cli/web_routers/_common.redacted_credential_preview): show the inner
+// (moor_cli/web_routers/_common.redacted_credential_preview): show the inner
 // preview, and a plain mask for the label-less forms.
 export const credentialPreview = (value: null | string | undefined): null | string => {
   if (!value?.startsWith('«redacted')) {
@@ -264,12 +264,12 @@ export function setNested(obj: MoorConfigRecord, path: string, value: unknown): 
 const LOCAL_SHOW_REASONING = 'display.platforms.cli.show_reasoning'
 
 /** The value a Settings field shows. A quoted Reasoning Blocks value reads as the gateway's `_norm_bool`. */
-export function configFieldValue(config: HermesConfigRecord, key: string): unknown {
+export function configFieldValue(config: MoorConfigRecord, key: string): unknown {
   if (key !== 'display.show_reasoning') {
     return getNested(config, key)
   }
 
-  const value = localShowReasoning((config as HermesConfig).display)
+  const value = localShowReasoning((config as MoorConfig).display)
 
   return typeof value === 'string' ? GATEWAY_TRUTHY.has(value.trim().toLowerCase()) : value
 }
@@ -277,14 +277,14 @@ export function configFieldValue(config: HermesConfigRecord, key: string): unkno
 const GATEWAY_TRUTHY = new Set(['true', '1', 'yes', 'on', 'raw', 'verbose'])
 
 /** The config after a Settings field edit. */
-export function setConfigField(config: HermesConfigRecord, key: string, value: unknown): HermesConfigRecord {
+export function setConfigField(config: MoorConfigRecord, key: string, value: unknown): MoorConfigRecord {
   const next = setNested(config, key, value)
 
   return key === 'display.show_reasoning' ? setNested(next, LOCAL_SHOW_REASONING, value) : next
 }
 
-function personalityOptions(config: HermesConfigRecord): string[] {
-  // The Python runtime (`hermes_cli.personality.available_personalities`) honours both
+function personalityOptions(config: MoorConfigRecord): string[] {
+  // The Python runtime (`moor_cli.personality.available_personalities`) honours both
   // the root-level `personalities` block and `agent.personalities` (agent wins on a name
   // clash). Read both so a root-registered persona the CLI/gateway resolve also appears in
   // the dropdown (#123297).

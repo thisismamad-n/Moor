@@ -7,10 +7,10 @@ import pytest
 
 from agent import i18n
 from agent.i18n import t
-from hermes_cli.commands import COMMAND_REGISTRY, CommandDef
-from hermes_cli import cli_info_mixin
-from hermes_cli.cli_chat_error_copy import agent_init_failure_message, chat_error_response
-from hermes_cli.cli_unknown_command import unknown_command_lines
+from moor_cli.commands import COMMAND_REGISTRY, CommandDef
+from moor_cli import cli_info_mixin
+from moor_cli.cli_chat_error_copy import agent_init_failure_message, chat_error_response
+from moor_cli.cli_unknown_command import unknown_command_lines
 
 
 @pytest.fixture(autouse=True)

@@ -265,10 +265,10 @@ def _stub_secondary_start(monkeypatch, runner):
     async def connect(adapter, platform):
         return True
 
-    monkeypatch.setattr("hermes_cli.env_loader.hydrate_profile_secret_sources", lambda h: {})
+    monkeypatch.setattr("moor_cli.env_loader.hydrate_profile_secret_sources", lambda h: {})
     monkeypatch.setattr(gateway_run, "_load_gateway_config", dict)
     monkeypatch.setattr(runner, "_snapshot_profile_busy_modes", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.plugins.discover_plugins", lambda: None)
+    monkeypatch.setattr("moor_cli.plugins.discover_plugins", lambda: None)
     monkeypatch.setattr(runner, "_connect_initial_adapter_with_timeout", connect)
 
 
@@ -348,7 +348,7 @@ class TestSecondaryProfileFatalRecovery:
         _install_secondary_reconnect_context(monkeypatch, runner, adapter)
         synced = []
         runner._sync_voice_mode_state_to_adapter = synced.append
-        monkeypatch.setattr("hermes_cli.env_loader.hydrate_profile_secret_sources", lambda h: {})
+        monkeypatch.setattr("moor_cli.env_loader.hydrate_profile_secret_sources", lambda h: {})
         monkeypatch.setattr(gateway_run, "_load_gateway_config", dict)
         monkeypatch.setattr(runner, "_snapshot_profile_busy_modes", lambda *a, **k: None)
         monkeypatch.setattr("moor_cli.plugins.discover_plugins", lambda: None)
@@ -1147,7 +1147,7 @@ class TestSecondaryProfileConfigHandling:
         assert factory_calls == ([Platform.WHATSAPP, Platform.DISCORD] if paired else [Platform.DISCORD])
         if not paired:
             assert statuses[-1][1]["error_code"] == "whatsapp_unpaired"
-            assert "hermes -p clientbot whatsapp" in statuses[-1][1]["error_message"]
+            assert "moor -p clientbot whatsapp" in statuses[-1][1]["error_message"]
 
 
 class TestSecondaryProfileHookRegistration:

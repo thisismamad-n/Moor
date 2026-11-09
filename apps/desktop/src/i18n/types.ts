@@ -647,7 +647,7 @@ export interface Translations extends NoticeTranslations {
         repoLabel: string
         verified: string
         unverified: string
-        reviewedByNous: string
+        reviewedByMoor: string
         installsAndEnables: (profile: string) => string
         installsOnly: (profile: string) => string
         advanced: string
@@ -1935,7 +1935,7 @@ export interface Translations extends NoticeTranslations {
         serverStates: {
           connected: string
           app_not_running: string
-          hermes_not_connected: string
+          moor_not_connected: string
           endpoint_unavailable: string
           no_interactive_session: string
           version_too_old: string
@@ -3956,7 +3956,7 @@ export interface Translations extends NoticeTranslations {
       errorAddCredits: string
       /** Error card button: opens Settings → Billing in-app (Keep going, buy credits). */
       errorOpenBillingSettings: string
-      /** Error card body when a Nous account is out of credits (its button opens Settings → Billing). */
+      /** Error card body when a Moor account is out of credits (its button opens Settings → Billing). */
       errorCompressConversation: string
       errorCompressFailed: string
       errorOpenMoorFolder: string

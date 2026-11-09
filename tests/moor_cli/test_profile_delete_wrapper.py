@@ -1,4 +1,4 @@
-"""`hermes profile delete` removes the profile's wrapper (#131753).
+"""`moor profile delete` removes the profile's wrapper (#131753).
 
 Windows wrappers are ``<alias>.bat``; delete used to look only for the bare name, so the
 ``.bat`` survived as an orphan alias. A Windows wrapper written before ``.bat`` (#34796) is
@@ -9,15 +9,15 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import profiles
-from hermes_cli.profiles import create_profile, create_wrapper_script, delete_profile
+from moor_cli import profiles
+from moor_cli.profiles import create_profile, create_wrapper_script, delete_profile
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    (tmp_path / ".hermes").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    (tmp_path / ".moor").mkdir()
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     for stub in ("_cleanup_gateway_service", "_maybe_unregister_gateway_service", "_stop_profile_backends"):
         monkeypatch.setattr(profiles, stub, lambda *a, **k: None)
     return tmp_path
@@ -42,5 +42,5 @@ def test_delete_removes_a_pre_bat_windows_wrapper(home):
     profile_dir = create_profile("imported", no_alias=True)
     wrapper = home / ".local" / "bin" / "imported"
     wrapper.parent.mkdir(parents=True, exist_ok=True)
-    wrapper.write_text("@echo off\r\nhermes -p imported %*\r\n", encoding="utf-8")
+    wrapper.write_text("@echo off\r\nmoor -p imported %*\r\n", encoding="utf-8")
     _delete_and_check(profile_dir, wrapper)

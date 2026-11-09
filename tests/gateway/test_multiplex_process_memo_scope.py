@@ -129,7 +129,7 @@ def test_routed_media_policy_bridge_never_writes_the_shared_env(two_homes, monke
     land in os.environ, where the launch profile's own deliveries and children read it."""
     a, b = two_homes
     from gateway import media_policy
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
 
     (b / "config.yaml").write_text(yaml.safe_dump(
         {"gateway": {"strict": False, "media_delivery_allow_dirs": ["/srv/b"]}}), encoding="utf-8")

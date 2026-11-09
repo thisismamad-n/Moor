@@ -85,9 +85,9 @@ def _print_tui_exit_summary(session_id: Optional[str], active_session_file: Opti
 
     db = None
     try:
-        from hermes_state import SessionDB
-        from hermes_cli.config import get_hermes_home
-        db = SessionDB(db_path=get_hermes_home() / "state.db", read_only=True)
+        from moor_state import SessionDB
+        from moor_cli.config import get_moor_home
+        db = SessionDB(db_path=get_moor_home() / "state.db", read_only=True)
         session = db.get_session(target)
         if not session:
             return
@@ -107,13 +107,13 @@ def _print_tui_exit_summary(session_id: Optional[str], active_session_file: Opti
         if db is not None:
             db.close()
 
-    # Sessions live under the profile's HERMES_HOME — mirror cli_session_mixin::_print_exit_summary.
-    from hermes_cli.profiles import get_active_profile_name
+    # Sessions live under the profile's MOOR_HOME — mirror cli_session_mixin::_print_exit_summary.
+    from moor_cli.profiles import get_active_profile_name
     active_profile = get_active_profile_name()
     profile_flag = "" if active_profile in ("default", "custom") else f" -p {active_profile}"
-    print(f"\n{t('cli.session.exit_resume_hint')}\n  hermes --tui --resume {resume_id}{profile_flag}")
+    print(f"\n{t('cli.session.exit_resume_hint')}\n  moor --tui --resume {resume_id}{profile_flag}")
     if title:
-        print(f'  hermes --tui -c "{title}"{profile_flag}')
+        print(f'  moor --tui -c "{title}"{profile_flag}')
     print(f"\nSession:        {resume_id}")
     if title:
         print(f"Title:          {title}")
@@ -386,10 +386,10 @@ def _setup_tui_worktree() -> dict:
 
             _threading.Thread(
                 target=_maintain_pack_health, args=(repo,), name="pack-maintenance", daemon=True).start()
-        from hermes_cli.config import get_hermes_home
+        from moor_cli.config import get_moor_home
         # The session's frozen cwd keeps this checkout; name the store from creation so a
         # launcher killed with its terminal still leaves the tree to its sessions.
-        wt_info = _setup_worktree(retain_db=get_hermes_home() / "state.db")
+        wt_info = _setup_worktree(retain_db=get_moor_home() / "state.db")
     except Exception as exc:
         print(f"✗ Failed to create TUI worktree: {exc}", file=sys.stderr)
     if not wt_info:
@@ -406,15 +406,15 @@ def _remove_idle_clean_tui_worktree(wt_info: dict) -> bool:
     still works in it; and by ``_cleanup_worktree`` when it is dirty, holds unpushed commits or
     something no branch keeps.
     """
-    from hermes_cli.config import get_hermes_home
-    from hermes_cli.worktree_exit import _still_in_use
-    from hermes_cli.worktree_ops import _retained_tree_is_live, _tree_still_served
+    from moor_cli.config import get_moor_home
+    from moor_cli.worktree_exit import _still_in_use
+    from moor_cli.worktree_ops import _retained_tree_is_live, _tree_still_served
 
     path = wt_info.get("path")
     if not path or not Path(path).is_dir():
         return False
     try:
-        db_path = str(get_hermes_home() / "state.db")
+        db_path = str(get_moor_home() / "state.db")
         if _retained_tree_is_live(db_path, path, pending_only=True):
             return False
         if _still_in_use(path):
@@ -435,11 +435,11 @@ def _require_bypass_model(env: dict, model: Optional[str], resume_session_id: Op
     refuses its session.create without one (bare invalid_params). Say so before the TUI starts,
     as classic chat does; a resume reuses the frozen route and needs none."""
     from utils import is_truthy_value
-    bypass = any(is_truthy_value(env.get(name)) for name in ("HERMES_SAFE_MODE", "HERMES_IGNORE_USER_CONFIG"))
-    if bypass and not resume_session_id and not (model or env.get("HERMES_MODEL", "").strip()):
-        print("Error: --safe-mode / --ignore-user-config (or HERMES_IGNORE_USER_CONFIG=1) read no profile "
+    bypass = any(is_truthy_value(env.get(name)) for name in ("MOOR_SAFE_MODE", "MOOR_IGNORE_USER_CONFIG"))
+    if bypass and not resume_session_id and not (model or env.get("MOOR_MODEL", "").strip()):
+        print("Error: --safe-mode / --ignore-user-config (or MOOR_IGNORE_USER_CONFIG=1) read no profile "
               "default model: pass --model explicitly.\n"
-              "  Example: hermes --tui --safe-mode --provider openrouter --model anthropic/claude-sonnet-4",
+              "  Example: moor --tui --safe-mode --provider openrouter --model anthropic/claude-sonnet-4",
               file=sys.stderr)
         raise SystemExit(1)
 
@@ -454,7 +454,7 @@ def _refuse_unforwarded_tui_flags(args) -> None:
     flags = [flag for name, flag in _TUI_UNFORWARDED.items() if getattr(args, name, None)]
     if flags:
         print(f"Error: Unsupported --tui options: {', '.join(flags)}. No session was started.\n"
-              f"  Use classic chat for this launch: hermes chat --cli {' '.join(flags)} ...\n"
+              f"  Use classic chat for this launch: moor chat --cli {' '.join(flags)} ...\n"
               "  Or set model.base_url / agent.reasoning_effort in config.yaml (/reasoning in the TUI).",
               file=sys.stderr)
         raise SystemExit(2)
@@ -478,11 +478,11 @@ def _launch_tui(
     env = build_subprocess_env(scrub_secrets=False, inherit_profile_home=True)
     _require_bypass_model(env, model, resume_session_id)
     # The directory this launch was invoked from is the source of truth. An inherited
-    # HERMES_CWD (exported by an outer `hermes --tui`, or by the user's own shell) merely
+    # MOOR_CWD (exported by an outer `moor --tui`, or by the user's own shell) merely
     # names *a* real directory, so the is_dir() repair in _apply_tui_python_env keeps it
     # and the gateway starts in last session's project. `--worktree` still wins below.
-    env["HERMES_CWD"] = _safe_tui_cwd(env)
-    from hermes_cli.shared_session_attach import configure_tui_attachment
+    env["MOOR_CWD"] = _safe_tui_cwd(env)
+    from moor_cli.shared_session_attach import configure_tui_attachment
     try:
         configure_tui_attachment(env, resume_session_id)
     except (ValueError, RuntimeError) as exc:
@@ -500,13 +500,13 @@ def _launch_tui(
     env.setdefault("NODE_ENV", "development" if tui_dev else "production")
     if native_mode is None:
         try:
-            from hermes_cli.config import load_config
+            from moor_cli.config import load_config
             from utils import is_truthy_value
             display = load_config().get("display", {})
             native_mode = is_truthy_value(display.get("tui_native", False)) if isinstance(display, dict) else False
         except Exception:
             native_mode = False
-    env["HERMES_TUI_NATIVE"] = "1" if native_mode else "0"
+    env["MOOR_TUI_NATIVE"] = "1" if native_mode else "0"
 
     wt_info = None
     if worktree:
@@ -516,18 +516,18 @@ def _launch_tui(
 
     # A local interactive session starts where the user launched (or in the --worktree), the
     # classic CLI's rule; terminal.cwd stays the default for gateway, cron and remote backends.
-    # HERMES_TUI_CWD is what the TUI sends on session.create, which beats the configured cwd (#84015).
+    # MOOR_TUI_CWD is what the TUI sends on session.create, which beats the configured cwd (#84015).
     if str(env.get("TERMINAL_ENV") or "local") == "local":
-        env["TERMINAL_CWD"] = env["HERMES_TUI_CWD"] = env["HERMES_CWD"]
+        env["TERMINAL_CWD"] = env["MOOR_TUI_CWD"] = env["MOOR_CWD"]
     else:
-        env.pop("HERMES_TUI_CWD", None)
+        env.pop("MOOR_TUI_CWD", None)
 
     _apply_tui_python_env(env)
     # This shell's allowlisted environment, sent as each session's ``client_env`` (LC-8, T3): taken from
     # the shell before the launcher's own edits (NODE_OPTIONS heap, TUI pins) so the session gets the
-    # PATH / venv / HERMES_* values the user exported.
-    from hermes_cli.gateway_chat import shell_client_env
-    env["HERMES_TUI_CLIENT_ENV"] = json.dumps(shell_client_env())
+    # PATH / venv / MOOR_* values the user exported.
+    from moor_cli.gateway_chat import shell_client_env
+    env["MOOR_TUI_CLIENT_ENV"] = json.dumps(shell_client_env())
 
     skills_value = ""
     if skills:
@@ -578,9 +578,9 @@ def _launch_tui(
         with contextlib.suppress(OSError):
             os.unlink(active_session_file)
         if wt_info and code in {0, 130}:
-            from hermes_cli.worktree_exit import ask_exit_choice
+            from moor_cli.worktree_exit import ask_exit_choice
             ask_exit_choice(wt_info)
-        from hermes_cli.worktree_exit import apply_exit_choice
+        from moor_cli.worktree_exit import apply_exit_choice
         if wt_info and apply_exit_choice(wt_info, print):
             wt_info = None  # archived or discarded at the user's request
         if wt_info and _remove_idle_clean_tui_worktree(wt_info):
@@ -591,10 +591,10 @@ def _launch_tui(
             if attached_session:
                 # The launch lock names this (exiting) pid; hand it to the session so a later
                 # launch's stale prune keeps the tree while the session is resumable.
-                from hermes_cli.config import get_hermes_home
-                from hermes_cli.worktree_ops import _retain_worktree_for_session
+                from moor_cli.config import get_moor_home
+                from moor_cli.worktree_ops import _retain_worktree_for_session
                 _retain_worktree_for_session(wt_info["repo_root"], wt_info["path"], attached_session,
-                                             get_hermes_home() / "state.db")
+                                             get_moor_home() / "state.db")
             print(f"Worktree retained for this session: {wt_info['path']}", file=sys.stderr)
 
     # Exit code 42 = TUI requested an update. Relaunch as `moor update`;

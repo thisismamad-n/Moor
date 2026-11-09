@@ -52,7 +52,7 @@ class TestUserSkins:
             "tool_prefix": "▸",
         }
         import moor_yaml as yaml
-        skin_file.write_text(yaml.safe_dump(skin_data))
+        skin_file.write_text(yaml.safe_dump(skin_data), encoding="utf-8")
 
         # Patch skins dir
         monkeypatch.setattr("moor_cli.skin_engine._skins_dir", lambda: skins_dir)
@@ -119,16 +119,16 @@ class TestCustomCSS:
     capped at 32 KiB, empty when the field is absent."""
 
     def _load(self, tmp_path, monkeypatch, **skin_data):
-        from hermes_cli.skin_engine import load_skin
+        from moor_cli.skin_engine import load_skin
 
         skins_dir = tmp_path / "skins"
         skins_dir.mkdir()
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
         data = {"name": "styled", "colors": {"background": "#101010"}}
         data.update(skin_data)
         (skins_dir / "styled.yaml").write_text(yaml.safe_dump(data))
-        monkeypatch.setattr("hermes_cli.skin_engine._skins_dir", lambda: skins_dir)
+        monkeypatch.setattr("moor_cli.skin_engine._skins_dir", lambda: skins_dir)
         return load_skin("styled")
 
     def test_user_skin_custom_css_passthrough(self, tmp_path, monkeypatch):
@@ -152,11 +152,11 @@ class TestCustomCSS:
         assert len(skin.custom_css) == 32768
 
     def test_builtin_skin_has_no_custom_css(self, tmp_path, monkeypatch):
-        from hermes_cli.skin_engine import load_skin
+        from moor_cli.skin_engine import load_skin
 
         skins_dir = tmp_path / "skins"
         skins_dir.mkdir()
-        monkeypatch.setattr("hermes_cli.skin_engine._skins_dir", lambda: skins_dir)
+        monkeypatch.setattr("moor_cli.skin_engine._skins_dir", lambda: skins_dir)
 
         assert load_skin("default").custom_css == ""
         assert load_skin("mono").custom_css == ""

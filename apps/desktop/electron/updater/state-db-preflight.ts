@@ -34,7 +34,7 @@ interface StateDbPreflight {
   home: string
   log: (message: string) => void
   /**
-   * The installation launcher of a PM-managed checkout (`.hermes/bin/hermes`).
+   * The installation launcher of a PM-managed checkout (`.moor/bin/moor`).
    * A managed checkout carries no venv of its own — the launcher owns
    * interpreter and generation selection there — so the snapshot runs through
    * it exactly like the update check does (`readSourceUpdate`).
@@ -57,7 +57,7 @@ export async function preflightStateDb({
       throw new Error('Python not found')
     }
 
-    const args: string[] = launcher ? ['--run-module', 'hermes_cli.backup_sqlite', home] : ['-I', '-S', script, home]
+    const args: string[] = launcher ? ['--run-module', 'moor_cli.backup_sqlite', home] : ['-I', '-S', script, home]
 
     // Node refuses direct .cmd execFile; an older published launcher can still
     // be one. Same fail-closed guard as the update check: shell:true would

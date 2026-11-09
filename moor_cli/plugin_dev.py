@@ -107,7 +107,7 @@ def _doctor_runtime(plugin_path: Path):
     try:
         manifests = manager._scan_directory(plugins_root, source="user")
         if not manifests:
-            raise _DoctorLoadError(f"Hermes discovery found no valid plugin manifest under {staging_root}")
+            raise _DoctorLoadError(f"Moor discovery found no valid plugin manifest under {staging_root}")
         if len(manifests) != 1:
             raise _DoctorLoadError(
                 f"Expected one plugin manifest, discovered {len(manifests)} under {staging_root}")
@@ -256,7 +256,7 @@ _STAGING_SKIPPED_DIRS = (".git", "__pycache__", ".pytest_cache")
 
 def _candidate_dirs(path: Path) -> list[Path]:
     """Subdirectories of *path* that could be plugins: not skipped by discovery or the staging copy."""
-    from hermes_cli.plugins_discovery import is_skipped_plugin_dir
+    from moor_cli.plugins_discovery import is_skipped_plugin_dir
 
     try:
         return sorted(
@@ -273,7 +273,7 @@ def _category_plugins(path: Path) -> list[Path]:
     """The plugin subdirectories of a manifest-less *path* when it is a category, else ``[]``.
 
     A category is a directory whose candidate subdirectories (:func:`_candidate_dirs`) all hold
-    a manifest. A plugin checkout next to other directories (``$HOME`` beside ``.hermes``, a repo
+    a manifest. A plugin checkout next to other directories (``$HOME`` beside ``.moor``, a repo
     root beside ``tests/``) is not a category."""
     children = _candidate_dirs(path)
     return children if children and all(_has_manifest(child) for child in children) else []
@@ -402,20 +402,20 @@ def _check_desktop_half_copy(report: DoctorReport, path: Path) -> None:
 
     Electron copies a unified package's desktop half to ``<root>/desktop-plugins/<name>/`` and loads
     THAT copy, so editing the package in place changes nothing on screen until the copy is refreshed.
-    The copy carries a ``.hermes-package.json`` marker whose ``source`` names the folder it came from.
+    The copy carries a ``.moor-package.json`` marker whose ``source`` names the folder it came from.
     """
-    from hermes_cli.desktop_plugin_halves import desktop_source
+    from moor_cli.desktop_plugin_halves import desktop_source
 
     source_dir = desktop_source(path)
     if source_dir is None:
         return
     source = source_dir / "plugin.js"
     shown = source.relative_to(path).as_posix()
-    from hermes_constants import get_default_hermes_root
+    from moor_constants import get_default_moor_root
 
-    app_root = get_default_hermes_root() / "desktop-plugins"
+    app_root = get_default_moor_root() / "desktop-plugins"
     try:
-        copies = sorted(app_root.glob("*/.hermes-package.json"))
+        copies = sorted(app_root.glob("*/.moor-package.json"))
     except OSError:
         return
     for marker_file in copies:
@@ -495,7 +495,7 @@ def doctor_plugin(target: str | os.PathLike[str] | None = None) -> DoctorReport:
         report.error(str(exc))
     except Exception as exc:
         report.error(f"unexpected validation failure: {type(exc).__name__}: {exc}")
-    # Outside the runtime sandbox: it swaps HERMES_HOME for a temp dir, and the copy lives in the real one.
+    # Outside the runtime sandbox: it swaps MOOR_HOME for a temp dir, and the copy lives in the real one.
     _check_desktop_half_copy(report, path)
     return report
 

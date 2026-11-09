@@ -534,7 +534,7 @@ class TestSendToPlatformChunking:
         (regression for #67279 / #57929 — long sends were rejected whole).
         """
         from plugins.platforms.signal.adapter import MAX_MESSAGE_LENGTH as SIGNAL_MAX
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         from gateway.platform_registry import platform_registry
 
         sent = []
@@ -1586,7 +1586,7 @@ class TestSendViaAdapterStandaloneFallback:
             return {"success": True, "platform": "fakeplatform", "chat_id": chat_id}
 
         monkeypatch.setattr("gateway.run._gateway_runner_ref", lambda: None)
-        monkeypatch.setattr("hermes_cli.plugins.discover_plugins",
+        monkeypatch.setattr("moor_cli.plugins.discover_plugins",
                             lambda *a, **k: platform_registry.register(self._make_entry(send)))
         try:
             result = await _send_via_adapter(_FakePlatform("fakeplatform"), SimpleNamespace(extra={}), "chat-1", "hi")

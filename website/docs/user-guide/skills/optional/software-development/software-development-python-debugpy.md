@@ -14,7 +14,7 @@ Debug Python: pdb REPL + debugpy remote (DAP).
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/software-development/python-debugpy` |
+| Source | Optional — install with `moor skills install official/software-development/python-debugpy` |
 | Path | `optional-skills/software-development/python-debugpy` |
 | Version | `1.0.0` |
 | Author | Moor Agent |

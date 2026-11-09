@@ -5,14 +5,14 @@ import pytest
 
 from gateway.session_authority import LiveSession, SessionAuthority
 from gateway.session_contract import Principal, SessionRef, Submission
-from hermes_state import SessionDB
-from hermes_state_runtime import RuntimeStoreError, begin_runtime_epoch, list_session_admissions
+from moor_state import SessionDB
+from moor_state_runtime import RuntimeStoreError, begin_runtime_epoch, list_session_admissions
 
 PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 8
 
 
 def _authority(tmp_path, monkeypatch):
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('MOOR_HOME', str(tmp_path))
     db = SessionDB(db_path=tmp_path / 'state.db')
     db.create_session('s', source='test')
     epoch = begin_runtime_epoch(db, instance_id='current')

@@ -442,8 +442,8 @@ class TestBuildCallKwargsMaxTokens:
         assert "max_tokens" not in kw3
 
 
-class TestNousTagsScoping:
-    def test_tags_injected_when_provider_is_nous(self):
+class TestMoorTagsScoping:
+    def test_tags_injected_when_provider_is_moor(self):
         import agent.auxiliary_client as aux
 
         kwargs = aux._build_call_kwargs(
@@ -454,12 +454,12 @@ class TestNousTagsScoping:
 
         assert kwargs["extra_body"]["tags"] == aux._moor_portal_tags()
 
-    def test_tags_not_injected_for_non_nous_provider_when_main_is_nous(self):
+    def test_tags_not_injected_for_non_moor_provider_when_main_is_moor(self):
         import agent.auxiliary_client as aux
 
         with aux.scoped_runtime_main({
-            "provider": "nous", "model": "Hermes-4",
-            "base_url": "https://inference-api.nousresearch.com/v1", "api_key": "nous-key",
+            "provider": "moor", "model": "Hermes-4",
+            "base_url": "https://inference-api.nousresearch.com/v1", "api_key": "moor-key",
         }):
             kwargs = aux._build_call_kwargs(
                 provider="gemini",
@@ -503,7 +503,7 @@ class TestResolveCodexCredentialToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _resolve_codex_credential_and_base()[0]
         assert result == "tok-123"
@@ -554,7 +554,7 @@ class TestResolveCodexCredentialToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("MOOR_HOME", str(moor_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _resolve_codex_credential_and_base()[0]
         assert result == valid_jwt
@@ -1155,7 +1155,7 @@ class TestGetTextAuxiliaryClient:
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-        with patch("agent.auxiliary_client._read_nous_auth", return_value=None), \
+        with patch("agent.auxiliary_client._read_moor_auth", return_value=None), \
              patch("agent.auxiliary_client._resolve_codex_credential_and_base",
                    return_value=(None, "https://chatgpt.com/backend-api/codex")), \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)):
@@ -4440,8 +4440,8 @@ class TestAuxUnhealthyCache:
              patch("agent.auxiliary_client._try_custom_endpoint") as custom_try, \
              patch("agent.auxiliary_client._resolve_api_key_provider", return_value=(None, None)):
             client, _model, label = _try_payment_fallback("openrouter", task="compression")
-        assert client is nous_client
-        assert label == "nous"
+        assert client is moor_client
+        assert label == "moor"
         # OR is skipped via skip_chain_labels (failed provider), custom via unhealthy cache.
         or_try.assert_not_called()
         custom_try.assert_not_called()
@@ -4843,7 +4843,7 @@ class TestCustomEndpointApiKeyInheritance:
             return MagicMock()
 
         with ac.scoped_runtime_main({"base_url": "https://gw.example.com/v1", "api_key": "sk-runtime-key"}), \
-             patch("hermes_cli.config.load_config", return_value={"model": {}}), patch("hermes_cli.config.load_config_readonly", return_value={"model": {}}), \
+             patch("moor_cli.config.load_config", return_value={"model": {}}), patch("moor_cli.config.load_config_readonly", return_value={"model": {}}), \
              patch.object(ac, "_create_openai_client", side_effect=_capture_create):
             _client, _model = resolve_provider_client(
                 "custom",
@@ -4898,20 +4898,20 @@ class TestCustomEndpointApiKeyInheritance:
         the main key; the identical origin (default port spelled out) still does. A live main
         runtime (a /model switch to a keyless local server, a key_cmd) is the anchor, and
         config.yaml's key belongs to config.yaml's base_url, never to the live endpoint.
-        Real config.yaml under a temp HERMES_HOME, resolved through the task route."""
-        import hermes_yaml as yaml
+        Real config.yaml under a temp MOOR_HOME, resolved through the task route."""
+        import moor_yaml as yaml
         from agent.auxiliary_client import reset_runtime_main, set_runtime_main
 
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".moor"
         home.mkdir()
         (home / "config.yaml").write_text(yaml.safe_dump({
             "model": {"provider": "custom", "base_url": "https://gw.example.com/v1",
                       "api_key": "sk-main-config-key", "default": "main-model"},
             "auxiliary": {"compression": {"provider": "custom", "base_url": aux_base_url, "model": "aux-model"}},
         }))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("MOOR_HOME", str(home))
         token = (None if live_key is None else
                  set_runtime_main("custom", "local-model", base_url="http://127.0.0.1:8080/v1", api_key=live_key))
         try:
@@ -5428,7 +5428,7 @@ class TestFastModelTier:
         consulted ``_get_named_custom_provider`` — so a configured
         named provider was still downgraded to ``"custom"`` whenever the
         built-in catalog failed to load. The user's repro path
-        (Hermes desktop on Windows with a partial / early-startup
+        (Moor desktop on Windows with a partial / early-startup
         catalog state) hits this branch.
         """
         import agent.auxiliary_client as ac
@@ -5443,10 +5443,10 @@ class TestFastModelTier:
             "model": "agnes-2.5-flash",
         }
         with patch(
-            "hermes_cli.runtime_provider._get_named_custom_provider",
+            "moor_cli.runtime_provider._get_named_custom_provider",
             return_value=fake_entry,
         ), patch(
-            "hermes_cli.providers.get_provider", side_effect=_catalog_raises,
+            "moor_cli.providers.get_provider", side_effect=_catalog_raises,
         ):
             resolved_provider, _model, base_url, _api_key, _api_mode = (
                 ac._resolve_task_provider_model(
@@ -5468,7 +5468,7 @@ class TestFastModelTier:
     def test_resolve_vision_provider_client_preserves_named_provider_via_config(self, tmp_path):
         """#76602 (review feedback) — integration test through the real
         ``resolve_vision_provider_client`` entry point with a real
-        ``HERMES_HOME`` config.yaml, mirroring the pattern from
+        ``MOOR_HOME`` config.yaml, mirroring the pattern from
         ``tests/agent/test_auxiliary_named_custom_providers.py``.
 
         Before the fix the repro in the issue body returned
@@ -5476,11 +5476,11 @@ class TestFastModelTier:
         after the fix the named provider is preserved and the inline
         ``api_key`` from the providers: entry reaches the client.
         """
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text(yaml.safe_dump({
             "model": {"default": "test-model"},
             "providers": {
                 "agnes-ai.cn": {
@@ -5492,8 +5492,8 @@ class TestFastModelTier:
             },
         }))
         import os
-        old_home = os.environ.get("HERMES_HOME")
-        os.environ["HERMES_HOME"] = str(hermes_home)
+        old_home = os.environ.get("MOOR_HOME")
+        os.environ["MOOR_HOME"] = str(moor_home)
         try:
             from agent.auxiliary_client import resolve_vision_provider_client
 
@@ -5505,9 +5505,9 @@ class TestFastModelTier:
             )
         finally:
             if old_home is None:
-                os.environ.pop("HERMES_HOME", None)
+                os.environ.pop("MOOR_HOME", None)
             else:
-                os.environ["HERMES_HOME"] = old_home
+                os.environ["MOOR_HOME"] = old_home
 
         assert resolved_provider == "agnes-ai.cn", (
             "resolve_vision_provider_client must preserve a named "
@@ -5524,7 +5524,7 @@ class TestFastModelTier:
 # defined in the ``providers:`` section of config.yaml plus an explicit
 # ``base_url`` was being silently downgraded to ``"custom"`` because
 # ``_preserve_provider_with_base_url`` only consulted the built-in
-# provider registry (``hermes_cli.providers.get_provider``). The
+# provider registry (``moor_cli.providers.get_provider``). The
 # downgrade routed the call through the bare-custom branch in
 # ``resolve_provider_client`` with no key, producing 401s from
 # auth-required providers (e.g. agnes-ai.cn, nvidia-nim with key_env).
@@ -5560,10 +5560,10 @@ class TestPreserveNamedCustomProviderWithBaseUrl:
             "model": "agnes-2.5-flash",
         }
         with patch(
-            "hermes_cli.runtime_provider._get_named_custom_provider",
+            "moor_cli.runtime_provider._get_named_custom_provider",
             return_value=fake_entry,
         ), patch(
-            "hermes_cli.providers.get_provider", return_value=None,
+            "moor_cli.providers.get_provider", return_value=None,
         ):
             resolved_provider, _model, base_url, _api_key, _api_mode = (
                 ac._resolve_task_provider_model(
@@ -5589,7 +5589,7 @@ class TestPreserveNamedCustomProviderWithBaseUrl:
         import agent.auxiliary_client as ac
 
         with patch(
-            "hermes_cli.providers.get_provider",
+            "moor_cli.providers.get_provider",
             return_value={"name": "Anthropic", "api_key": "sk-anthropic"},
         ):
             resolved_provider, _model, base_url, _api_key, _api_mode = (
@@ -5614,10 +5614,10 @@ class TestPreserveNamedCustomProviderWithBaseUrl:
         import agent.auxiliary_client as ac
 
         with patch(
-            "hermes_cli.runtime_provider._get_named_custom_provider",
+            "moor_cli.runtime_provider._get_named_custom_provider",
             return_value=None,
         ), patch(
-            "hermes_cli.providers.get_provider", return_value=None,
+            "moor_cli.providers.get_provider", return_value=None,
         ):
             resolved_provider, _model, base_url, _api_key, _api_mode = (
                 ac._resolve_task_provider_model(
@@ -5647,10 +5647,10 @@ class TestPreserveNamedCustomProviderWithBaseUrl:
             raise RuntimeError("catalog unavailable")
 
         with patch(
-            "hermes_cli.runtime_provider._get_named_custom_provider",
+            "moor_cli.runtime_provider._get_named_custom_provider",
             side_effect=_boom,
         ), patch(
-            "hermes_cli.providers.get_provider", side_effect=_boom,
+            "moor_cli.providers.get_provider", side_effect=_boom,
         ):
             resolved_provider, _model, _base_url, _api_key, _api_mode = (
                 ac._resolve_task_provider_model(

@@ -121,7 +121,7 @@ def _search_stdout_and_limit(result: ExecuteResult) -> tuple[str, Optional[str]]
 
 
 def _bundled_rg() -> Optional[str]:
-    """Hermes's pinned ripgrep, forward-slashed for the shell transports, or None."""
+    """Moor's pinned ripgrep, forward-slashed for the shell transports, or None."""
     import pm
 
     try:
@@ -535,7 +535,7 @@ class SearchMixin:
         from tools.environments.base import env_uses_host_filesystem
         from tools.environments.local import _IS_WINDOWS
 
-        # A host search is Hermes's own work, so it runs the pinned ripgrep, never the
+        # A host search is Moor's own work, so it runs the pinned ripgrep, never the
         # first rg on the terminal PATH, where the user's tools come first.
         on_host = env_uses_host_filesystem(self.env)
         bundled = _bundled_rg() if on_host else None
@@ -620,9 +620,9 @@ class SearchMixin:
         # Record the group at spawn, as LocalEnvironment._run_bash does: rg can exit between the
         # poll and the kill below, and on macOS a not-yet-reaped child has no pgid any more.
         with contextlib.suppress(ProcessLookupError):
-            proc._hermes_pgid = os.getpgid(proc.pid)
+            proc._moor_pgid = os.getpgid(proc.pid)
             from gateway.status import get_process_start_time
-            proc._hermes_pgid_start = get_process_start_time(proc.pid)
+            proc._moor_pgid_start = get_process_start_time(proc.pid)
 
         # Drain on a thread so a silent rg (huge tree, no hits yet) cannot pin the
         # caller past the deadline or past a /stop; the waiter below owns both.

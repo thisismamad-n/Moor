@@ -355,7 +355,7 @@ def test_a_ledgered_stray_is_reported_never_copied(homes, monkeypatch, status):
     The move used to copy such a row into the target and then fail the source delete on the FK,
     leaving the conversation in BOTH stores on every run. A row with ledger history (settled or
     live) is report-only, together with the stray lineage linked to it; unrelated strays move."""
-    monkeypatch.setattr("hermes_cli.sessions_cmd_repair_profiles.default_snapshot", lambda store: "snap")
+    monkeypatch.setattr("moor_cli.sessions_cmd_repair_profiles.default_snapshot", lambda store: "snap")
     root = SessionDB(homes["default"] / "state.db")
     try:
         _session(root, "led", "agent:acme:telegram:dm:230", profile="acme")
@@ -387,7 +387,7 @@ def test_a_ledgered_stray_is_reported_never_copied(homes, monkeypatch, status):
 def test_ledger_rows_that_appear_after_the_scan_still_block_the_copy(homes, monkeypatch):
     """The fence is re-checked at export: a scan that predates the row's first admission must
     not copy it (the source delete would then fail and strand a duplicate)."""
-    from hermes_cli.sessions_repair_profiles import scan_stores
+    from moor_cli.sessions_repair_profiles import scan_stores
     root = SessionDB(homes["default"] / "state.db")
     try:
         _session(root, "late", "agent:acme:telegram:dm:240", profile="acme")

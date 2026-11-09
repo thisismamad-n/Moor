@@ -584,14 +584,14 @@ class TestDuplicateNamesAgreeAcrossSurfaces:
             assert "LOCAL XDUP" in json.loads(skill_view(ident))["content"]
         _, loaded, missing = build_preloaded_skills_prompt(["dup-demo", "xdup", "a/one"])
         assert (loaded, missing) == (["xdup", "dup-demo"], [ambiguous])
-        from hermes_cli.oneshot import _build_preloaded_skills_prompt
+        from moor_cli.oneshot import _build_preloaded_skills_prompt
         with caplog.at_level("WARNING"):  # partial preload: the skip warning keeps the Ambiguous wording
             assert _build_preloaded_skills_prompt(["dup-demo", "xdup"])
         assert f"Skipping {ambiguous}. Continuing with: xdup" in caplog.text and "Unknown" not in caplog.text
         parts = _load_cron_skill_parts({"id": "j"}, ["dup-demo", "xdup"])
         assert ambiguous in parts[0] and "LOCAL XDUP" in "\n".join(parts)
 
-        # Disabling a duplicate by the exact path its row shows (what `hermes skills` / the web toggle
+        # Disabling a duplicate by the exact path its row shows (what `moor skills` / the web toggle
         # save) hides it from list and index and refuses the load — but not an unrelated, uniquely named
         # skill in another tier that merely sits at the same relative path.
         _make_skill(ext, "other", category="a", body="UNRELATED OTHER")

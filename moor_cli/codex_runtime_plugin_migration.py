@@ -377,8 +377,8 @@ def _looks_like_test_tempdir(path: str) -> bool:
     return bool(path) and any(needle in path.lower() for needle in _TEST_TEMPDIR_NEEDLES)
 
 
-def _build_hermes_tools_mcp_entry() -> dict:
-    """Codex stdio entry launching Hermes' own tool surface as an MCP server (web/vision/
+def _build_moor_tools_mcp_entry() -> dict:
+    """Codex stdio entry launching Moor' own tool surface as an MCP server (web/vision/
     image/skills/kanban call-backs).
 
     MOOR_HOME passes through only IF SET, read from os.environ (not get_moor_home()): when
@@ -407,8 +407,8 @@ def _build_hermes_tools_mcp_entry() -> dict:
     env["MOOR_REDACT_SECRETS"] = env.get("MOOR_REDACT_SECRETS", "true")
     return {
         "command": sys.executable,
-        # -P: codex starts this in the user's workspace, which must not shadow Hermes' own packages.
-        "args": ["-P", "-m", "agent.transports.hermes_tools_mcp_server"],
+        # -P: codex starts this in the user's workspace, which must not shadow Moor' own packages.
+        "args": ["-P", "-m", "agent.transports.moor_tools_mcp_server"],
         "env": env,
         # Generous timeouts — image_generate or delegate_task can take a while.
         "startup_timeout_sec": 30.0,

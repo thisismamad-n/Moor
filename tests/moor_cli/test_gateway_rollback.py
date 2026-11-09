@@ -3,8 +3,8 @@ the owner's ``rollback.*`` verbs and print main's text (the CLI process has no m
 import asyncio
 from contextlib import asynccontextmanager
 
-from hermes_cli import gateway_rollback
-from hermes_cli.gateway_connection import GatewayConnection
+from moor_cli import gateway_rollback
+from moor_cli.gateway_connection import GatewayConnection
 
 
 class _Client:

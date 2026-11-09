@@ -8,8 +8,8 @@ SHARED process, and every other profile's CLI could neither see nor discharge th
 — it simply armed its own and re-killed the same host process.
 
 The record therefore lives beside the host rendezvous record, in
-:func:`gateway.host_rendezvous.host_state_dir` (``$HERMES_GATEWAY_LOCK_DIR`` else
-``$XDG_STATE_HOME/hermes/gateway-locks``) — the one cross-profile, per-OS-user state root the
+:func:`gateway.host_rendezvous.host_state_dir` (``$MOOR_GATEWAY_LOCK_DIR`` else
+``$XDG_STATE_HOME/moor/gateway-locks``) — the one cross-profile, per-OS-user state root the
 tree already has. It is written once per host and installation (keyed by the checkout), read by
 every profile's CLI, and cleared once.
 
@@ -33,7 +33,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 logger = logging.getLogger("moor_cli.update_cmd")
 
@@ -42,7 +42,7 @@ logger = logging.getLogger("moor_cli.update_cmd")
 #: the upgrade; it names no install, so it keeps its old meaning: owed by whichever install reads it.
 HOST_OBLIGATION_NAME = "host-update-restart.json"
 
-#: The per-``HERMES_HOME`` breadcrumb an unwritable host record falls back to; every reader honours it.
+#: The per-``MOOR_HOME`` breadcrumb an unwritable host record falls back to; every reader honours it.
 PROFILE_MARKER_NAME = "fleet_restart_pending"
 
 _RECORD_VERSION = 1
@@ -58,7 +58,7 @@ def host_obligation_path() -> Path:
     # Not ``gateway.host_rendezvous.host_state_dir``: ``gateway.status`` imports ``utils`` -> ruamel,
     # absent from the historical interpreter an old updater's takeover arms this record in; the
     # recovery module's stdlib copy of the rule is drift-tested against the gateway resolver.
-    from hermes_cli.update_restart_recovery import _host_state_dir
+    from moor_cli.update_restart_recovery import _host_state_dir
 
     install = os.path.normcase(str(Path(__file__).resolve().parents[1]))
     key = hashlib.sha256(install.encode("utf-8")).hexdigest()[:16]
@@ -136,8 +136,8 @@ def arm_host_obligation(
 ) -> bool:
     """Arm the host record, else ``marker`` (the arming profile's per-home breadcrumb). Never raises.
 
-    The one fallback for every arm (``hermes update``'s commit point, a historical updater's
-    takeover). An unwritable host state dir (``HERMES_GATEWAY_LOCK_DIR`` on a read-only mount, a
+    The one fallback for every arm (``moor update``'s commit point, a historical updater's
+    takeover). An unwritable host state dir (``MOOR_GATEWAY_LOCK_DIR`` on a read-only mount, a
     container UID that does not own ``$HOME``) must never disarm the obligation (#117275), but the
     marker is visible to the arming profile only: it settles the debt only on an install PROVEN to
     have no other profile, and an unreadable profile roster proves nothing (review S2 residual).
@@ -168,7 +168,7 @@ def arm_host_obligation(
                  host_obligation_path(), hidden)
     # ASCII: a historical updater's takeover may print through a legacy console code page.
     print("  Warning: could not record the pending gateway-restart obligation where every profile sees it "
-          "(state dir not writable) - restart gateways with `hermes gateway restart` if this update is "
+          "(state dir not writable) - restart gateways with `moor gateway restart` if this update is "
           "interrupted.", file=sys.stderr)
     return False
 
@@ -178,12 +178,12 @@ def _named_profiles_exist() -> bool:
 
     ``profiles.list_profile_names`` suppresses enumeration errors and reads an unreadable roster as
     "default only"; here any error listing the roster or reading an entry's identity raises instead.
-    Same identity rule as ``hermes_constants.named_profile_is_live`` (stdlib only: see above).
+    Same identity rule as ``moor_constants.named_profile_is_live`` (stdlib only: see above).
     """
-    from hermes_constants import _PROFILE_IDENTITY_MARKERS, PROFILE_ID_RE, get_default_hermes_root, profile_tombstone_path
+    from moor_constants import _PROFILE_IDENTITY_MARKERS, PROFILE_ID_RE, get_default_moor_root, profile_tombstone_path
 
     try:
-        entries = list((get_default_hermes_root() / "profiles").iterdir())
+        entries = list((get_default_moor_root() / "profiles").iterdir())
     except (FileNotFoundError, NotADirectoryError):
         return False
     for home in entries:
@@ -274,11 +274,11 @@ def _marker_mutex():
     import importlib.util
     import sys
 
-    from hermes_cli import update_lock
+    from moor_cli import update_lock
 
     if hasattr(update_lock, "marker_mutex"):
         return update_lock.marker_mutex
-    name = "hermes_cli._update_lock_pulled"
+    name = "moor_cli._update_lock_pulled"
     pulled = sys.modules.get(name)
     if pulled is None:
         spec = importlib.util.spec_from_file_location(name, update_lock.__file__)

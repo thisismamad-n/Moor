@@ -2,14 +2,14 @@
 
 A bundled ``plugins/memory/<name>`` that becomes a standalone catalog plugin keeps the same provider
 name, the settings it already read, its data directory and tool names, so the migration is only
-"the code now lives under ``HERMES_HOME/plugins/<name>``". Two hooks call :func:`migrate_home`:
+"the code now lives under ``MOOR_HOME/plugins/<name>``". Two hooks call :func:`migrate_home`:
 
 * ``moor update`` — for every profile home that shares the venv (primary; runs where the venv was
   just rebuilt anyway).
 * agent init — when the configured provider cannot be found at all, once per process (Desktop
-  users update through the app and never run ``hermes update`` by hand). After a failed attempt,
+  users update through the app and never run ``moor update`` by hand). After a failed attempt,
   starts skip it for :data:`STARTUP_RETRY_SECONDS`, doubling with each further failure up to
-  :data:`STARTUP_RETRY_MAX_SECONDS` (``hermes update`` always retries): every ``hermes chat``, cron
+  :data:`STARTUP_RETRY_MAX_SECONDS` (``moor update`` always retries): every ``moor chat``, cron
   run and Desktop restart otherwise paid the network round trip again and showed the same failure.
 
 Both install the catalog entry at its reviewed pin through the normal plugin install path (kill
@@ -48,7 +48,7 @@ def _failure_stamp(home: Path, plugin: str) -> Path:
 
 
 def _failure_count(stamp: Path) -> int:
-    """Consecutive failures recorded in *stamp*; the empty stamp an older Hermes touched counts once."""
+    """Consecutive failures recorded in *stamp*; the empty stamp an older Moor touched counts once."""
     try:
         text = stamp.read_text(encoding="utf-8-sig").strip()
     except OSError:
@@ -108,7 +108,7 @@ def catalog_source(name: str) -> Optional[str]:
 
 
 def catalog_install_hint(name: str, *, category: Optional[str] = None) -> Optional[str]:
-    """``hermes [-p <profile>] plugins install <name>`` when this checkout's catalog ships plugin
+    """``moor [-p <profile>] plugins install <name>`` when this checkout's catalog ships plugin
     *name* (of *category*, when given), else None.
 
     Recovery copy for a provider that left core and is not installed (offline, lazy installs off, a
@@ -116,14 +116,14 @@ def catalog_install_hint(name: str, *, category: Optional[str] = None) -> Option
     error point at the one command that fixes it. In-tree catalog only, never the network — these run
     offline and on error paths."""
     try:
-        from hermes_cli.plugin_catalog import get_catalog_entry
+        from moor_cli.plugin_catalog import get_catalog_entry
         entry = get_catalog_entry(name) if name else None
     except Exception:
         return None
     if entry is None or (category is not None and entry.category != category):
         return None
-    from hermes_constants import get_hermes_home
-    return _install_command(name, get_hermes_home())
+    from moor_constants import get_moor_home
+    return _install_command(name, get_moor_home())
 
 
 def _pending_provider(home: Path, *, say: Callable[[str], None]) -> Optional[str]:
@@ -143,13 +143,13 @@ def _pending_provider(home: Path, *, say: Callable[[str], None]) -> Optional[str
 def _install_command(name: str, home: Path) -> str:
     """The exact command that installs *name* into *home*. ``-p`` is dropped only for the default
     home while no sticky profile is set: a bare command run from a shell targets the sticky
-    profile, never the home of the agent (Desktop, gateway, ``hermes -p``) that printed it."""
-    from hermes_cli.profiles import get_active_profile
-    from hermes_constants import profile_name_for_home
+    profile, never the home of the agent (Desktop, gateway, ``moor -p``) that printed it."""
+    from moor_cli.profiles import get_active_profile
+    from moor_constants import profile_name_for_home
     profile = profile_name_for_home(home)
     if profile is None or (profile == "default" and get_active_profile() == "default"):
-        return f"hermes plugins install {name}"
-    return f"hermes -p {profile} plugins install {name}"
+        return f"moor plugins install {name}"
+    return f"moor -p {profile} plugins install {name}"
 
 
 def _install_pending(home: Path, name: str, *, install: Callable[[str], dict],
@@ -161,7 +161,7 @@ def _install_pending(home: Path, name: str, *, install: Callable[[str], dict],
     if result.get("ok"):
         say(f"  ✓ Memory provider '{name}' moved out of core — installed its plugin from the catalog "
             f"(memory.provider and your stored memories are unchanged; check its settings with "
-            f"`hermes memory status`).")
+            f"`moor memory status`).")
         return True
     error = str(result.get("error") or "unknown error").rstrip(". ")
     say(f"  ⚠ Memory provider '{name}' moved out of core and could not be installed automatically: "
@@ -187,7 +187,7 @@ def _interactive() -> bool:
 
 
 def _unattended_consent() -> bool:
-    """Without a terminal (Desktop, gateway, ``hermes update`` from a script) nobody can answer the
+    """Without a terminal (Desktop, gateway, ``moor update`` from a script) nobody can answer the
     dependency prompt, so every provider that declares Python deps would fail to migrate. The
     configured ``memory.provider`` plus ``security.allow_lazy_installs`` (read for the active home,
     i.e. the one being migrated) is the same consent that let the bundled provider install its deps
@@ -198,12 +198,12 @@ def _unattended_consent() -> bool:
 
 
 def _home_consent(home: Path) -> bool:
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-    token = set_hermes_home_override(home)
+    from moor_constants import reset_moor_home_override, set_moor_home_override
+    token = set_moor_home_override(home)
     try:
         return _unattended_consent()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _install_into(home: Path, *, consent: Optional[bool] = None) -> Callable[[str], dict]:
@@ -221,13 +221,13 @@ def _install_into(home: Path, *, consent: Optional[bool] = None) -> Callable[[st
 
 
 def _home_label(home: Path) -> str:
-    from hermes_constants import profile_name_for_home
+    from moor_constants import profile_name_for_home
     profile = profile_name_for_home(home)
     return f"profile '{profile}'" if profile else str(home)
 
 
 def migrate_all_homes(*, say: Callable[[str], None] = print) -> list[str]:
-    """``hermes update`` hook: every profile home sharing this venv. Returns installed plugin names.
+    """``moor update`` hook: every profile home sharing this venv. Returns installed plugin names.
 
     Each line names the profile it is about. Homes missing the same provider share one environment,
     so they share one set of dependency answers (#125794): the first install asks, the rest reuse
@@ -237,7 +237,7 @@ def migrate_all_homes(*, say: Callable[[str], None] = print) -> list[str]:
     instead of failing (or re-prompting) one by one, and the other groups still migrate. Ctrl-C
     ends the migration with a message, not a traceback into the updater.
     """
-    from hermes_cli.plugins_cmd_install import shared_dependency_answers
+    from moor_cli.plugins_cmd_install import shared_dependency_answers
     from pm.plugins_state import dependency_homes
 
     def labelled(home: Path) -> Callable[[str], None]:
@@ -274,7 +274,7 @@ def migrate_all_homes(*, say: Callable[[str], None] = print) -> list[str]:
                     break
     except KeyboardInterrupt:
         say("  ⚠ Memory provider migration cancelled. Profiles already migrated keep their plugin; "
-            "run `hermes plugins install <name>` (with `-p <profile>`) for the rest.")
+            "run `moor plugins install <name>` (with `-p <profile>`) for the rest.")
     return installed
 
 
@@ -300,7 +300,7 @@ def recover_at_startup(name: str, *, say: Optional[Callable[[str], None]] = None
     from pm.install import lazy_installs_allowed
     if not lazy_installs_allowed():
         report(f"⚠ Memory provider '{name}' is not installed, so external memory is off for this session. "
-               f"security.allow_lazy_installs is off, so Hermes did not fetch it: "
+               f"security.allow_lazy_installs is off, so Moor did not fetch it: "
                f"run `{_install_command(name, home)}`.")
         return False
     # Agent init cannot answer a dependency prompt: under the CLI the prompt_toolkit input owns the
@@ -310,7 +310,7 @@ def recover_at_startup(name: str, *, say: Optional[Callable[[str], None]] = None
     if name not in _LEFT_CORE:
         if _pending_provider(home, say=report) == name:
             report(f"⚠ Memory provider '{name}' is not installed, so external memory is off for this session. "
-                   f"It never shipped with Hermes, so Hermes installs it only when you ask: "
+                   f"It never shipped with Moor, so Moor installs it only when you ask: "
                    f"run `{_install_command(name, home)}`.")
         return False
     if _failed_recently(home, name):

@@ -46,7 +46,7 @@ class LazyHeaders(dict[str, str]):
     """``default_headers`` whose callable values (a User-Agent carrying the release) run on first read.
 
     A source checkout resolves the release from git, and every CLI start imports all provider plugins
-    (``hermes_cli.config`` lists their env vars), so headers built at import made every command pay git
+    (``moor_cli.config`` lists their env vars), so headers built at import made every command pay git
     subprocesses for a request it may never send. Keys are stored up front, so ``in``/``len`` stay lazy,
     and the class stays a real ``dict``: plugins copy, merge, mutate and serialize ``default_headers``.
 
@@ -155,7 +155,7 @@ class ProviderProfile:
     # True when the provider is pre-release / not for public listing. Discovery surfaces (provider
     # pickers, the setup provider list, the dashboard accounts tab) skip it unless ``listed()``
     # says otherwise; resolution by name is untouched, so an explicit ``model.provider`` /
-    # ``hermes auth add <name>`` keeps working.
+    # ``moor auth add <name>`` keeps working.
     hidden: bool = False
 
     # ── Auth & endpoints ─────────────────────────────────────
@@ -271,7 +271,7 @@ class ProviderProfile:
     start_device_login: Callable[[], Any] | None = None
     poll_device_login: Callable[[Any], Any] | None = None
     save_device_login: Callable[[Any], None] | None = None
-    # ``model_setup_flow(config, current_model, args)``: this provider's own ``hermes model`` step
+    # ``model_setup_flow(config, current_model, args)``: this provider's own ``moor model`` step
     # (credential prompt, catalog, persist); None = the generic flow for its auth_type.
     model_setup_flow: Callable[[Any, str, Any], Any] | None = None
     # ``setup_reasoning_efforts(model) -> tuple | None``: levels the setup effort picker offers for
@@ -478,12 +478,12 @@ class ProviderProfile:
         """Whether discovery surfaces may offer this provider.
 
         Every non-``hidden`` profile is listed. A ``hidden`` (pre-release) one surfaces once the user
-        opted in by name (``hermes auth add <name>`` put a row in its credential pool), so the
+        opted in by name (``moor auth add <name>`` put a row in its credential pool), so the
         pickers can then offer it. Reads auth.json only: it runs on every picker build.
         """
         if not self.hidden:
             return True
-        from hermes_cli.auth import read_credential_pool  # lazy: providers/ must not import hermes_cli at load
+        from moor_cli.auth import read_credential_pool  # lazy: providers/ must not import moor_cli at load
         return bool(read_credential_pool(self.name))
 
     def create_client(self, **client_kwargs: Any) -> Any | None:
@@ -590,7 +590,7 @@ class ProviderProfile:
             with open_credentialed_url(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode())
             items = data if isinstance(data, list) else data.get("data", [])
-            from hermes_cli.chat_catalog import chat_catalog_ids
+            from moor_cli.chat_catalog import chat_catalog_ids
 
             return chat_catalog_ids(items)
         except Exception as exc:
@@ -601,7 +601,7 @@ class ProviderProfile:
     # Hosts (exact or any subdomain) that serve THIS provider's API, so a ``custom`` endpoint or an
     # auto-routed aux client at one of them is recognised as this provider (``providers.profile_for_host``).
     # It also makes ``reasoning_payload`` the reasoning gate there, except on hosts core gates itself
-    # (OpenRouter, Ollama Cloud, Nous Portal, Vercel AI Gateway, the ``lmstudio`` provider).
+    # (OpenRouter, Ollama Cloud, Moor Portal, Vercel AI Gateway, the ``lmstudio`` provider).
     hostnames: tuple = ()
     # Hosts that identify this provider's catalog for model metadata (context length, models.dev) but
     # take other credentials; matched only by ``profile_for_host(url, metadata=True)``.
@@ -638,13 +638,13 @@ class ProviderProfile:
     def seed_pool_credentials(self, *, suppressed_sources: frozenset[str],
                               explicitly_configured: bool) -> list[dict] | None:
         """Pool rows ``{source, access_token, base_url, label}`` this provider seeds itself; skip any source in
-        ``suppressed_sources`` (``hermes auth remove``). Plain data, so it crosses ``plugins.isolation: host``.
+        ``suppressed_sources`` (``moor auth remove``). Plain data, so it crosses ``plugins.isolation: host``.
         Overriding it replaces generic env seeding (that loop would overwrite exchanged tokens with the raw env
         value), so an override returns ``[]`` for none; only the base implementation keeps generic env seeding."""
         return None
 
     def remove_credential_source(self, source: str) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
-        """``hermes auth remove`` of *source*: ``(sources_to_suppress, hints)``; None = generic removal."""
+        """``moor auth remove`` of *source*: ``(sources_to_suppress, hints)``; None = generic removal."""
         return None
 
     def refresh_runtime_credentials(self, *, reason: str) -> tuple[str, str | None] | None:
@@ -730,13 +730,13 @@ class ProviderProfile:
     picker_group: tuple = ()  # (group_id, label, description): fold with same-group rows in interactive pickers
     catalog_aliases: bool = False  # ``aliases`` also normalize in the model catalog (``/model``, pickers)
     aggregator: bool = False  # catalog re-exposes many vendors' models (vendor/family ids, alias resolution)
-    # HermesOverlay fields (transport, auth_type, extra_env_vars, base_url_override, base_url_env_var) for
+    # MoorOverlay fields (transport, auth_type, extra_env_vars, base_url_override, base_url_env_var) for
     # the provider's models.dev-keyed definition, keyed by ``models_dev_id`` or ``name``; {} = none.
     provider_overlay: dict = field(default_factory=dict)
     # Extra names that normalize to the ``provider_overlay`` definition (its id, else ``name``); () = none.
     overlay_aliases: tuple = ()
 
-    # --- I2-auth: hermes-auth registry row mirrored from this profile (hermes_cli/auth_plugin_providers.py) ---
+    # --- I2-auth: moor-auth registry row mirrored from this profile (moor_cli/auth_plugin_providers.py) ---
     # auth_type of the registry row when credential resolution differs from the setup flow ``auth_type`` names
     # (an env-token provider with its own login); "" = ``auth_type``.
     registry_auth_type: str = ""

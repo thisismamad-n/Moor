@@ -69,18 +69,18 @@ def test_profile_liveness_is_the_shared_ladder(tmp_path, monkeypatch):
     assert calls == [(tmp_path / "gateway.pid", False)]
 
 
-# ``hermes serve`` is a substring of ``hermes server``: a terminal multiplexer started as
-# ``herdr --session hermes server`` was SIGTERMed by ``hermes update`` and its unit restarted (#121156).
-DECOY = "tool --name hermes server 30"
+# ``moor serve`` is a substring of ``moor server``: a terminal multiplexer started as
+# ``herdr --session moor server`` was SIGTERMed by ``moor update`` and its unit restarted (#121156).
+DECOY = "tool --name moor server 30"
 BACKENDS = [
-    "/opt/hermes/venv/bin/python -m hermes_cli.main serve --port 0",
-    "/usr/bin/python3 /opt/hermes/hermes_cli/main.py dashboard --no-open",
+    "/opt/moor/venv/bin/python -m moor_cli.main serve --port 0",
+    "/usr/bin/python3 /opt/moor/moor_cli/main.py dashboard --no-open",
 ]
 
 
 def test_dashboard_scan_selects_entrypoint_plus_subcommand_tokens_never_substrings(monkeypatch):
-    from hermes_cli import dashboard_procs
-    from hermes_cli import process_identity
+    from moor_cli import dashboard_procs
+    from moor_cli import process_identity
 
     monkeypatch.setattr(dashboard_procs, "_iter_process_table",
                         lambda: [(4242, DECOY), *((5000 + i, cmd) for i, cmd in enumerate(BACKENDS))])
@@ -89,9 +89,9 @@ def test_dashboard_scan_selects_entrypoint_plus_subcommand_tokens_never_substrin
 
 
 def test_dashboard_runtime_parse_refuses_the_decoy_and_reads_a_real_backend():
-    from hermes_cli.main_dashboard import _parse_dashboard_runtime
+    from moor_cli.main_dashboard import _parse_dashboard_runtime
 
     assert _parse_dashboard_runtime(DECOY) is None
     assert _parse_dashboard_runtime(BACKENDS[0]) == ("serve", "127.0.0.1", 0)
     # launchd ProgramArguments arrive ``shlex.join``ed: a quoted path with spaces is still the entry.
-    assert _parse_dashboard_runtime("'/Users/a b/venv/bin/hermes' dashboard --port 9200") == ("dashboard", "127.0.0.1", 9200)
+    assert _parse_dashboard_runtime("'/Users/a b/venv/bin/moor' dashboard --port 9200") == ("dashboard", "127.0.0.1", 9200)

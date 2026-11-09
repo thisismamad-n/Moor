@@ -73,7 +73,7 @@ def _git(args: list, cwd: str, timeout: int = 15) -> subprocess.CompletedProcess
     on nonzero, so a slow ``git cherry`` on a huge repo degrades to keep instead of aborting the
     audit mid-list. :func:`noninteractive_repo_git_env` because ``status`` executes the repo's
     ``core.fsmonitor`` and clean filters (GHSA-7x36-8jrh-v4pw)."""
-    from hermes_cli._subprocess_compat import FILTER_DISCOVERY_FAILED, noninteractive_repo_git_env
+    from moor_cli._subprocess_compat import FILTER_DISCOVERY_FAILED, noninteractive_repo_git_env
     env = noninteractive_repo_git_env(cwd)
     if env is None:
         return subprocess.CompletedProcess(args=["git", *args], returncode=1, stdout="",
@@ -88,8 +88,8 @@ def _git(args: list, cwd: str, timeout: int = 15) -> subprocess.CompletedProcess
 def _tree_size_mb(path: Path, timeout: int = 30) -> Optional[int]:
     """Cheap directory size via ``du -sm`` — best-effort, None on failure or timeout. Not
     ``subprocess.run``: its post-kill ``wait()`` never returns for a ``du`` stuck in uninterruptible
-    disk I/O, so the caller (a ``hermes -w`` launch, the cron prune thread) would hang with it."""
-    from hermes_cli._subprocess_compat import bounded_probe_run
+    disk I/O, so the caller (a ``moor -w`` launch, the cron prune thread) would hang with it."""
+    from moor_cli._subprocess_compat import bounded_probe_run
 
     try:
         result = bounded_probe_run(["du", "-sm", str(path)], timeout=timeout)
@@ -107,7 +107,7 @@ def _dirty_split(path: str) -> tuple[bool, list[str]]:
         lines = [line for line in result.stdout.splitlines() if line.strip()]
         untracked = [line[3:].strip() for line in lines if line.startswith("??")]
         if len(untracked) == len(lines):
-            from hermes_cli.worktree_retention import hidden_index_edits
+            from moor_cli.worktree_retention import hidden_index_edits
             if hidden_index_edits(path):  # skip-worktree / assume-unchanged edits
                 return True, []
         return len(untracked) != len(lines), untracked

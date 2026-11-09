@@ -95,7 +95,7 @@ class TestDetection:
         7a94b1fbf77, so a ``sys.executable`` child IS a venv holder by design. The base
         interpreter the venv was created from is the foreign python."""
         
-        from hermes_constants import project_venv_dir
+        from moor_constants import project_venv_dir
 
         base = getattr(sys, "_base_executable", None) or sys.executable
         venv_dir = project_venv_dir(PROJECT_ROOT)
@@ -159,7 +159,7 @@ class TestAncestorExclusion:
             encoding="utf-8",
         )
         # The parent's code lives in a FILE too: a ``python -c <src>`` command line is an
-        # interpreter running inline source and carries no readable Hermes identity (#107002),
+        # interpreter running inline source and carries no readable Moor identity (#107002),
         # so a ``-c`` parent would not be a gateway to any classifier.
         parent_file = tmp_path / "parent_gateway.py"
         parent_file.write_text(

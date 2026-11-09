@@ -132,14 +132,14 @@ async def _legacy_pump(ws: WebSocket, bridge) -> None:
         await asyncio.to_thread(bridge.close)
 
 
-from hermes_cli.web_server_boundary import _LOOPBACK_HOSTS
+from moor_cli.web_server_boundary import _LOOPBACK_HOSTS
 
 
 def _ws_client_reason(ws: WebSocket) -> Optional[str]:
     """Return a rejection reason token for the peer IP, or None when allowed
-    (:func:`hermes_cli.web_server_boundary.ws_client_reason` on the dashboard app state)."""
-    from hermes_cli.web_server import app
-    from hermes_cli.web_server_boundary import ws_client_reason
+    (:func:`moor_cli.web_server_boundary.ws_client_reason` on the dashboard app state)."""
+    from moor_cli.web_server import app
+    from moor_cli.web_server_boundary import ws_client_reason
     return ws_client_reason(ws, app.state)
 
 
@@ -150,9 +150,9 @@ def _ws_client_is_allowed(ws: WebSocket) -> bool:
 
 def _ws_host_origin_reason(ws: WebSocket) -> Optional[str]:
     """Return ``host_mismatch …`` / ``origin_mismatch …``, or None when allowed
-    (:func:`hermes_cli.web_server_boundary.ws_host_origin_reason` on the dashboard app state)."""
-    from hermes_cli.web_server import app
-    from hermes_cli.web_server_boundary import ws_host_origin_reason
+    (:func:`moor_cli.web_server_boundary.ws_host_origin_reason` on the dashboard app state)."""
+    from moor_cli.web_server import app
+    from moor_cli.web_server_boundary import ws_host_origin_reason
     return ws_host_origin_reason(ws, app.state)
 
 
@@ -166,7 +166,7 @@ def _ws_request_is_allowed(ws: WebSocket) -> bool:
     return _ws_host_origin_is_allowed(ws) and _ws_client_is_allowed(ws)
 
 
-from hermes_cli.web_server_boundary import (
+from moor_cli.web_server_boundary import (
     _GATEWAY_WS_PROTOCOL,
     _GATEWAY_WS_TICKET_PROTOCOL_PREFIX,
     _gateway_ws_ticket_from_subprotocol,
@@ -227,18 +227,18 @@ def _ws_auth_reason(ws: WebSocket, *, allow_internal: bool = False,
     must not grant access.
 
     Either mode: a local Desktop (no static token) presents the private one-use
-    ``X-Hermes-Gateway-Ticket`` grant its REST calls use (``authenticate_native_ws``).
+    ``X-moor-gateway-Ticket`` grant its REST calls use (``authenticate_native_ws``).
     A socket that sends that header is judged by it alone: on a core socket
     (``/api/ws``, ``/api/pty``, the audio streams) the grant is refused
     (``native_invalid``) even when a valid ``token`` query credential rides along.
     That is intended; only the plugin WebSocket gate accepts the grant. The audio
     streams instead take the ``interactive`` grant of the Desktop's ``/api/ws`` dial,
-    in its gateway subprotocol (``redeem_audio_ws``), stamped on ``_hermes_native_grant``.
+    in its gateway subprotocol (``redeem_audio_ws``), stamped on ``_moor_native_grant``.
     """
-    from hermes_cli.dashboard_auth.native_http import HEADER, authenticate_native_ws, redeem_audio_ws
-    from hermes_cli.web_server import _SESSION_TOKEN, app
-    from hermes_cli.browser_credential import generation_of
-    from hermes_cli.web_session_sockets import OWN_TICKET_SOCKETS, track
+    from moor_cli.dashboard_auth.native_http import HEADER, authenticate_native_ws, redeem_audio_ws
+    from moor_cli.web_server import _SESSION_TOKEN, app
+    from moor_cli.browser_credential import generation_of
+    from moor_cli.web_session_sockets import OWN_TICKET_SOCKETS, track
     auth_required = bool(getattr(app.state, "auth_required", False))
     # The Webapp's own rules (socket tickets on the loopback gate, the server's credential only where
     # its spawned clients dial) apply on its listener; the standalone dashboard and serve keep main's.
@@ -251,19 +251,19 @@ def _ws_auth_reason(ws: WebSocket, *, allow_internal: bool = False,
         grant = authenticate_native_ws(ws)
         if grant is None:
             return "native_invalid", "native"
-        ws._hermes_auth_identity = {"user_id": grant["subject"], "provider": "local"}
+        ws._moor_auth_identity = {"user_id": grant["subject"], "provider": "local"}
         return None, "native"
     grant = redeem_audio_ws(ws)
     if grant is not None:
-        ws._hermes_auth_identity = {"user_id": grant["subject"], "provider": "local"}
-        ws._hermes_native_grant = grant
-        ws._hermes_ws_subprotocol = _GATEWAY_WS_PROTOCOL
+        ws._moor_auth_identity = {"user_id": grant["subject"], "provider": "local"}
+        ws._moor_native_grant = grant
+        ws._moor_ws_subprotocol = _GATEWAY_WS_PROTOCOL
         return None, "native"
     if auth_required:
         # Lazy import — keeps this function importable in test harnesses
         # that don't bring in the dashboard_auth layer.
-        from hermes_cli.dashboard_auth.audit import AuditEvent, audit_log
-        from hermes_cli.dashboard_auth.ws_tickets import TicketInvalid, consume_internal_credential
+        from moor_cli.dashboard_auth.audit import AuditEvent, audit_log
+        from moor_cli.dashboard_auth.ws_tickets import TicketInvalid, consume_internal_credential
 
         _reject = functools.partial(_audit_ws_rejection, ws)
 
@@ -276,7 +276,7 @@ def _ws_auth_reason(ws: WebSocket, *, allow_internal: bool = False,
             ws._moor_auth_identity = {
                 "user_id": info.get("user_id"), "provider": info.get("provider")}
             if info.get("issuer"):
-                ws._hermes_auth_identity["issuer"] = info["issuer"]
+                ws._moor_auth_identity["issuer"] = info["issuer"]
 
         internal = ws.query_params.get("internal", "")
         if internal:
@@ -309,9 +309,9 @@ def _ws_auth_reason(ws: WebSocket, *, allow_internal: bool = False,
         # login's tokens work only as its cookies, which sign-out ends.
         token = ws.query_params.get("token", "")
         if token:
-            from hermes_cli import webapp_sign_in
-            from hermes_cli.dashboard_auth.base import ProviderError
-            from hermes_cli.dashboard_auth.middleware import _verify_access_token
+            from moor_cli import webapp_sign_in
+            from moor_cli.dashboard_auth.base import ProviderError
+            from moor_cli.dashboard_auth.middleware import _verify_access_token
 
             view = _ws_request_view(ws, app)
             try:
@@ -368,20 +368,20 @@ def _ignore_rejection(reason: str) -> None:
 
 def _audit_ws_rejection(ws: WebSocket, reason: str) -> None:
     """The gated gate's audit record of a refused upgrade credential."""
-    from hermes_cli.dashboard_auth.audit import AuditEvent, audit_log
+    from moor_cli.dashboard_auth.audit import AuditEvent, audit_log
     audit_log(AuditEvent.WS_TICKET_REJECTED, reason=reason, ip=(ws.client.host if ws.client else ""),
               path=ws.url.path)
 
 
 def _consume_ws_ticket(ws: WebSocket, reject, socket: Optional[str] = None, *,
                        auth_required: bool = False) -> Optional[tuple[Optional[str], str]]:
-    """A one-use ticket offered as the ``hermes-gateway-ticket.`` subprotocol or ``?ticket=``:
+    """A one-use ticket offered as the ``moor-gateway-ticket.`` subprotocol or ``?ticket=``:
     ``(reason, credential)`` once judged, or None when the upgrade presents none. An accepted ticket
     stamps the server-minted identity onto the socket; the client never supplies it through RPC
     params. *socket* is the route's socket (``web_session_sockets.ticket_refusal``); a socket a
     session-token ticket, or a Webapp login's ticket, opens is tracked so signing out closes it."""
-    from hermes_cli.dashboard_auth.ws_tickets import TicketInvalid, consume_ticket
-    from hermes_cli.web_session_sockets import admitted_with, ticket_refusal, track
+    from moor_cli.dashboard_auth.ws_tickets import TicketInvalid, consume_ticket
+    from moor_cli.web_session_sockets import admitted_with, ticket_refusal, track
     protocol_ticket, protocol_reason = _gateway_ws_ticket_from_subprotocol(ws)
     if protocol_reason == "invalid":
         return "ticket_invalid", "ticket-subprotocol"
@@ -403,18 +403,18 @@ def _consume_ws_ticket(ws: WebSocket, reject, socket: Optional[str] = None, *,
         reject("display ticket presented as a gateway login")
         return "ticket_invalid", "ticket"
     # Only identity fields are carried; bookkeeping such as ``minted_at`` is not part of it.
-    ws._hermes_auth_identity = {"user_id": info.get("user_id"), "provider": info.get("provider")}
+    ws._moor_auth_identity = {"user_id": info.get("user_id"), "provider": info.get("provider")}
     if info.get("issuer"):
-        ws._hermes_auth_identity["issuer"] = info["issuer"]
+        ws._moor_auth_identity["issuer"] = info["issuer"]
     if info.get("profile_home"):
-        ws._hermes_ticket_profile_home = info["profile_home"]
+        ws._moor_ticket_profile_home = info["profile_home"]
     if (admitted := admitted_with(info)) is not None:
         track(ws, admitted)
     if not protocol_ticket:
         return None, "ticket"
     # Select only the stable public protocol during accept. The ticket-bearing protocol is a
     # credential and must never be reflected back to the browser or retained after admission.
-    ws._hermes_ws_subprotocol = _GATEWAY_WS_PROTOCOL
+    ws._moor_ws_subprotocol = _GATEWAY_WS_PROTOCOL
     return None, "ticket-subprotocol"
 
 
@@ -425,7 +425,7 @@ def _ws_auth_ok(ws: WebSocket, *, allow_internal: bool = False, socket: Optional
 
 def _ws_auth_mode() -> str:
     """Short label for the active WS auth mode — logged on every connection."""
-    from hermes_cli.web_server import app
+    from moor_cli.web_server import app
     if getattr(app.state, "auth_required", False):
         return "gated"
     bound_host = (getattr(app.state, "bound_host", "") or "").strip().lower()
@@ -451,7 +451,7 @@ async def _ws_gate(ws: WebSocket, kind: str) -> Optional[tuple[str, str, str]]:
     mismatch, 4408 peer not allowed. Returns ``(peer, mode, cred)``
     once every gate passes, or None after closing the socket.
     """
-    from hermes_cli.web_server import _DASHBOARD_EMBEDDED_CHAT_ENABLED
+    from moor_cli.web_server import _DASHBOARD_EMBEDDED_CHAT_ENABLED
     peer = ws.client.host if ws.client else "?"
     if not _DASHBOARD_EMBEDDED_CHAT_ENABLED:
         _log.info("%s refused: embedded chat disabled peer=%s", kind, peer)
@@ -482,7 +482,7 @@ async def _ws_gate(ws: WebSocket, kind: str) -> Optional[tuple[str, str, str]]:
 async def _pty_fail(ws: WebSocket, exc: BaseException, *, surface: str = "Chat") -> None:
     """Tell the user why chat could not start, then close 1011 so the SPA renders
     "Start new session". The raw exception goes to the server log only."""
-    from hermes_cli.web_routers.chat_ws_errors import chat_start_failure_message
+    from moor_cli.web_routers.chat_ws_errors import chat_start_failure_message
     _log.warning("pty start failed: %s: %s", type(exc).__name__, exc)
     await ws.send_text(f"\r\n\x1b[31m{chat_start_failure_message(exc, surface=surface)}\x1b[0m\r\n")
     await ws.close(code=1011)
@@ -499,8 +499,8 @@ def _resolve_chat_argv(
     the newest descendant; ``MOOR_TUI_GATEWAY_URL`` attaches to this process's
     in-memory gateway but is SKIPPED for profile-scoped chats (that gateway runs
     under the dashboard's own profile, so a scoped chat attaches to its profile's gateway);
-    ``profile`` scopes the ENTIRE chat by pointing ``HERMES_HOME`` at the profile
-    dir, the same propagation ``hermes -p <name>`` performs. ``workspace_cwd``
+    ``profile`` scopes the ENTIRE chat by pointing ``MOOR_HOME`` at the profile
+    dir, the same propagation ``moor -p <name>`` performs. ``workspace_cwd``
     (an already-validated host directory, ``chat_workspaces.resolve_chat_cwd``)
     is the workspace the user picked for a FRESH chat: it becomes ``MOOR_CWD``
     (where a self-spawned gateway starts) and ``MOOR_TUI_CWD`` (what the TUI
@@ -572,7 +572,7 @@ def _resolve_chat_argv(
         env["MOOR_TUI_ACTIVE_SESSION_FILE"] = active_session_file
 
     # Without the attach URL, gatewayClient bootstraps through the profile's own
-    # gateway (ui-tui/scripts/gateway_bootstrap.py) under the HERMES_HOME set above;
+    # gateway (ui-tui/scripts/gateway_bootstrap.py) under the MOOR_HOME set above;
     # it never spawns a standalone `tui_gateway.entry` writer.
     if profile_dir is None and (gateway_ws_url := _build_gateway_ws_url()):
         env["MOOR_TUI_GATEWAY_URL"] = gateway_ws_url

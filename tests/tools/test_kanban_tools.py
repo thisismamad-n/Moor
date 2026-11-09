@@ -87,7 +87,7 @@ def test_show_bare_call_outside_worker_returns_orientation_not_error(monkeypatch
     themselves; with no dispatcher task in scope there is nothing to show, so the
     answer must be a pointer to kanban_list — not an error naming an env var no
     chat caller can set."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
     from tools import kanban_tools as kt
     out = json.loads(kt._handle_show({}))
     assert "error" not in out, out
@@ -98,30 +98,30 @@ def test_show_bare_call_outside_worker_returns_orientation_not_error(monkeypatch
 def test_comment_bare_call_outside_worker_names_kanban_list(monkeypatch, worker_env):
     """#91431 sibling: a comment cannot post without a target task, so a bare call
     stays an error — but the error must point at kanban_list instead of the env."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
     from tools import kanban_tools as kt
     out = json.loads(kt._handle_comment({"body": "hello"}))
     assert out.get("error"), out
     assert "kanban_list" in out["error"]
-    assert "set HERMES_KANBAN_TASK" not in out["error"]
+    assert "set MOOR_KANBAN_TASK" not in out["error"]
 
 
 def test_worker_tool_bare_call_outside_worker_error_is_actionable(monkeypatch, worker_env):
     """#91431 sibling: the mutation/lifecycle tools still require a target, but the
     rejection a non-worker receives must name what it can do (kanban_list), not the
     env var it cannot set."""
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
     from tools import kanban_tools as kt
     for handler, name in ((kt._handle_heartbeat, "kanban_heartbeat"),
                            (kt._handle_attachments, "kanban_attachments")):
         out = json.loads(handler({}))
         assert out.get("error"), (name, out)
         assert "kanban_list" in out["error"], (name, out)
-        assert "set HERMES_KANBAN_TASK" not in out["error"], (name, out)
+        assert "set MOOR_KANBAN_TASK" not in out["error"], (name, out)
 
 
 def test_kanban_task_id_descriptions_state_the_non_worker_case():
-    """#91431 contract: any task_id description that promises the HERMES_KANBAN_TASK
+    """#91431 contract: any task_id description that promises the MOOR_KANBAN_TASK
     default must also say the default only exists for dispatcher-spawned workers —
     an unqualified invite to omit the argument is what made chat profiles call bare."""
     from tools import kanban_tools_schemas as kts
@@ -131,7 +131,7 @@ def test_kanban_task_id_descriptions_state_the_non_worker_case():
         if not (attr.startswith("KANBAN_") and attr.endswith("_SCHEMA")):
             continue
         desc = (schema["parameters"]["properties"].get("task_id") or {}).get("description") or ""
-        if "HERMES_KANBAN_TASK" not in desc:
+        if "MOOR_KANBAN_TASK" not in desc:
             continue
         assert "worker" in desc, (
             schema["name"], "env default promised without the non-worker case (#91431)")
@@ -263,8 +263,8 @@ def test_request_review_rejects_unknown_reviewer_without_mutation(monkeypatch, w
     from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    (tmp_path / ".hermes" / "profiles" / "verifier").mkdir(parents=True)
-    (tmp_path / ".hermes" / "profiles" / "verifier" / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker
+    (tmp_path / ".moor" / "profiles" / "verifier").mkdir(parents=True)
+    (tmp_path / ".moor" / "profiles" / "verifier" / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker
     with kbc.connect() as conn:
         before = kb.get_task(conn, worker_env)
         before_events = kb.list_events(conn, worker_env)
@@ -284,8 +284,8 @@ def test_request_review_accepts_installed_profile(monkeypatch, worker_env, tmp_p
     from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
-    (tmp_path / ".hermes" / "profiles" / "verifier").mkdir(parents=True)
-    (tmp_path / ".hermes" / "profiles" / "verifier" / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker
+    (tmp_path / ".moor" / "profiles" / "verifier").mkdir(parents=True)
+    (tmp_path / ".moor" / "profiles" / "verifier" / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker
     with kbc.connect() as conn:
         monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(kb.get_task(conn, worker_env).current_run_id))
 
@@ -433,8 +433,8 @@ def test_block_happy_path(worker_env):
 
 
 def test_schedule_parks_current_worker_with_reason(worker_env):
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools
     from tools.registry import registry
 
@@ -458,8 +458,8 @@ def test_schedule_parks_current_worker_with_reason(worker_env):
 
 
 def test_schedule_rejects_invalid_reason_and_unowned_contexts(monkeypatch, worker_env):
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
     with kbc.connect() as conn:
@@ -557,8 +557,8 @@ def test_schedule_goal_mode_refused(monkeypatch, tmp_path):
     """``scheduled`` ends the goal loop like ``blocked``, so a goal_mode worker
     must not use kanban_schedule to exit without the completion judge."""
     from tools import kanban_tools as kt
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
 
     tid = _make_goal_mode_worker_env(monkeypatch, tmp_path)
     d = json.loads(kt._handle_schedule({"reason": "waiting for CI"}))
@@ -572,8 +572,8 @@ def test_schedule_goal_mode_refused(monkeypatch, tmp_path):
 
 
 def test_schedule_exposed_to_codex_runtime_workers():
-    """Codex app-server workers only reach Hermes tools named in EXPOSED_TOOLS."""
-    from agent.transports.hermes_tools_mcp_server import EXPOSED_TOOLS
+    """Codex app-server workers only reach Moor tools named in EXPOSED_TOOLS."""
+    from agent.transports.moor_tools_mcp_server import EXPOSED_TOOLS
 
     assert "kanban_schedule" in EXPOSED_TOOLS
 
@@ -655,8 +655,8 @@ def test_worker_the_dispatcher_never_recorded_keeps_its_claim_or_never_starts(mo
     pid. The worker registers itself, so the expired claim is extended, not handed to a second worker;
     a worker that starts only after its run was reclaimed is told not to work the card."""
     import os as _os
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
     assert kt.register_current_worker_from_env() is True
@@ -672,8 +672,8 @@ def test_worker_the_dispatcher_never_recorded_keeps_its_claim_or_never_starts(mo
         _expire_claim(conn, late)
         assert kb.release_stale_claims(conn) == 1
         kb.claim_task(conn, late)
-    monkeypatch.setenv("HERMES_KANBAN_TASK", late)
-    monkeypatch.setenv("HERMES_KANBAN_RUN_ID", str(stale_run))
+    monkeypatch.setenv("MOOR_KANBAN_TASK", late)
+    monkeypatch.setenv("MOOR_KANBAN_RUN_ID", str(stale_run))
     assert kt.register_current_worker_from_env() is False
     with kbc.connect_closing() as conn:
         assert kb.get_task(conn, late).worker_pid is None
@@ -682,8 +682,8 @@ def test_worker_the_dispatcher_never_recorded_keeps_its_claim_or_never_starts(mo
 def test_reclaim_loses_to_a_worker_registering_mid_sweep(monkeypatch, worker_env):
     """The worker registers between the stale-claim SELECT and its UPDATE: the claim stays its own."""
     import os as _os
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_connect as kbc
     from tools import kanban_tools as kt
 
     real_terminate = kb._terminate_reclaimed_worker
@@ -1188,11 +1188,11 @@ def test_create_does_not_subscribe_in_cli_session(monkeypatch, worker_env):
 
 
 def test_create_tui_subscription_binds_to_live_session_after_compaction_fork(monkeypatch, worker_env, tmp_path):
-    """#110068: the inherited HERMES_SESSION_KEY can name a session already superseded
+    """#110068: the inherited MOOR_SESSION_KEY can name a session already superseded
     by a compaction fork. Auto-subscribe must bind to the live continuation tip resolved
     from the session store, not the stale key the process was launched with."""
-    import hermes_state
-    from hermes_state import SessionDB
+    import moor_state
+    from moor_state import SessionDB
     from tools import kanban_tools as kt
 
     stale, live = "20260912_231110_stale", "20260913_000649_live"
@@ -1203,12 +1203,12 @@ def test_create_tui_subscription_binds_to_live_session_after_compaction_fork(mon
     db.create_session(live, source="tui", parent_session_id=stale)
     db.append_message(live, role="assistant", content="post-fork turn")
 
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
-    monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_CHAT_ID", raising=False)
-    monkeypatch.setenv("HERMES_SESSION_KEY", stale)
-    monkeypatch.delenv("HERMES_SESSION_ID", raising=False)
-    monkeypatch.setenv("HERMES_PROFILE", "default")
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
+    monkeypatch.delenv("MOOR_SESSION_PLATFORM", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_CHAT_ID", raising=False)
+    monkeypatch.setenv("MOOR_SESSION_KEY", stale)
+    monkeypatch.delenv("MOOR_SESSION_ID", raising=False)
+    monkeypatch.setenv("MOOR_PROFILE", "default")
 
     out = kt._handle_create({
         "title": "auto-sub tui post-fork",
@@ -1227,8 +1227,8 @@ def test_create_tui_subscription_binds_to_live_session_after_compaction_fork(mon
 def test_live_tui_session_key_uses_profile_store(monkeypatch, tmp_path):
     """A named-profile session's lineage lives in profiles/<x>/state.db, not the default
     store: resolution must open THAT store."""
-    from hermes_cli import profiles as profiles_mod
-    from hermes_state import SessionDB
+    from moor_cli import profiles as profiles_mod
+    from moor_state import SessionDB
     from tools import kanban_tools as kt
 
     stale, live = "stale-teamx", "live-teamx"
@@ -1249,7 +1249,7 @@ def test_live_tui_session_key_uses_profile_store(monkeypatch, tmp_path):
 def test_live_tui_session_key_fails_open_to_original_key(monkeypatch):
     """Store unavailability must degrade to current behaviour (subscribe to the inherited
     key), never fail the kanban_create call."""
-    import hermes_state_registry as registry
+    import moor_state_registry as registry
     from tools import kanban_tools as kt
 
     def _boom(db_path=None):
@@ -1259,7 +1259,7 @@ def test_live_tui_session_key_fails_open_to_original_key(monkeypatch):
     assert kt._live_tui_session_key("stale-key", "default") == "stale-key"
     assert kt._live_tui_session_key("stale-key", None) == "stale-key"
     # An unresolvable profile also falls through to the default store path.
-    import hermes_cli.profiles as profiles_mod
+    import moor_cli.profiles as profiles_mod
     monkeypatch.setattr(profiles_mod, "profile_exists", lambda name: False)
     assert kt._live_tui_session_key("stale-key", "ghost-profile") == "stale-key"
 
@@ -1468,13 +1468,13 @@ def test_attach_url_happy_path_public_host(worker_env, default_url_guard, monkey
 class TestDefaultTaskId:
     def test_numeric_task_id_is_coerced(self, monkeypatch):
         from tools import kanban_tools as kt
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
         assert kt._default_task_id(12345) == "12345"
         assert kt._default_task_id(0) == "0"
 
     def test_whitespace_task_id_is_stripped(self, monkeypatch):
         from tools import kanban_tools as kt
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
         assert kt._default_task_id("  task-99  ") == "task-99"
 
     def test_blank_task_id_falls_back(self, monkeypatch, worker_env):

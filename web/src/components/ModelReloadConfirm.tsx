@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
  *
  * Shared by the chat sidebar picker and the Models page so both behave
  * identically. `model` is the short model name awaiting confirmation, or null
- * when the dialog is closed. `notice`: the backend's switch warning (Nous window
+ * when the dialog is closed. `notice`: the backend's switch warning (Moor window
  * plans, Large model), shown under the body; absent for everyone else.
  */
 export function ModelReloadConfirm({

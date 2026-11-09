@@ -1,7 +1,7 @@
 """CLI session lookups must page by creating surface, not by a fixed local window.
 
 Gateway rows for Desktop, TUI and the classic CLI are stored as ``source='local'``
-with the real surface in ``created_source``. ``hermes -c``, in-chat ``/sessions``
+with the real surface in ``created_source``. ``moor -c``, in-chat ``/sessions``
 and ``/resume`` read those rows through ``SurfaceLabelReader``. A fixed over-fetch
 of every local row, filtered afterwards, dropped the CLI session once enough newer
 Desktop/TUI rows filled the window.
@@ -15,8 +15,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.gateway_session_store import SurfaceLabelReader
-from hermes_state import SessionDB
+from moor_cli.gateway_session_store import SurfaceLabelReader
+from moor_state import SessionDB
 
 
 def _populate(db: SessionDB, rows: list[tuple[str, str, str, float]]) -> None:
@@ -39,18 +39,18 @@ def _newer_locals(count: int, *, start: float, prefix: str) -> list[tuple[str, s
 
 
 def _resolve_cli(monkeypatch, home) -> str | None:
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr("hermes_cli.main._resolve_workspace_key", lambda: None)
-    from hermes_cli.main import _resolve_last_session
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    monkeypatch.setattr("moor_cli.main._resolve_workspace_key", lambda: None)
+    from moor_cli.main import _resolve_last_session
 
     return _resolve_last_session("cli")
 
 
 def _recent_cli_ids(db: SessionDB) -> tuple[list[str], list[str]]:
     """Ids from the shared listing helper and from ``/sessions`` / ``/resume`` (limit 10)."""
-    from hermes_cli.cli_session_mixin import CLISessionMixin
-    from hermes_cli.session_listing import query_session_listing
-    from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+    from moor_cli.cli_session_mixin import CLISessionMixin
+    from moor_cli.session_listing import query_session_listing
+    from moor_state_sessions import INTERNAL_LISTING_SOURCES
 
     reader = SurfaceLabelReader(db)
     listed = query_session_listing(
@@ -68,7 +68,7 @@ def _ids(reader, method: str, **kwargs) -> list[str]:
 
 
 def test_continue_and_sessions_find_cli_session_behind_newer_desktop_rows(tmp_path, monkeypatch):
-    """Bare ``hermes -c``, ``/sessions`` and ``/resume`` reach the CLI session behind 200 newer rows."""
+    """Bare ``moor -c``, ``/sessions`` and ``/resume`` reach the CLI session behind 200 newer rows."""
     db = SessionDB(db_path=tmp_path / "state.db")
     _populate(db, [("cli-session", "local", "cli", 1_000_000), *_newer_locals(200, start=2_000_000, prefix="d")])
     assert _recent_cli_ids(db) == (["cli-session"], ["cli-session"])
@@ -101,7 +101,7 @@ def test_surface_pages_are_exact_across_newer_local_rows(tmp_path):
         assert _ids(reader, method, source="cli", limit=10) == ["legacy-cli", "cli-a", "cli-b", "cli-c"]
         assert _ids(reader, method, source="cli", limit=1, offset=1) == ["cli-a"]
         assert _ids(reader, method, source="cli", limit=2, offset=2) == ["cli-b", "cli-c"]
-    # ``hermes -c`` asks for the CLI family (cli + oneshot), still paged in SQL.
+    # ``moor -c`` asks for the CLI family (cli + oneshot), still paged in SQL.
     assert _ids(reader, "search_sessions", source=["cli", "oneshot"], limit=1) == ["legacy-cli"]
     db.close()
 

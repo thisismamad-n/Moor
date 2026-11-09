@@ -52,7 +52,7 @@ def _spillover_retention_hours() -> int:
     days later must still find what the ``<persisted-output>`` pointer promises (#126351).
     Falls back to the legacy 24h cache age when the config is unreadable."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from moor_cli.config import load_config_readonly
         days = float((load_config_readonly().get("sessions") or {}).get("retention_days", 90))
         if not math.isfinite(days):  # YAML ``.inf`` / ``.nan`` parse as floats; int() would raise
             return SPILLOVER_MAX_AGE_HOURS
@@ -66,7 +66,7 @@ def _spillover_retention_hours() -> int:
 
 # How a spill archive is named inside transcript text: every pointer form — the host path,
 # the ``~``-relative translation, the in-container mounted path — carries the ``spillover/<name>``
-# segment. Sandbox-fallback pointers (``…/hermes-results/<name>``) do not, so their host-side
+# segment. Sandbox-fallback pointers (``…/moor-results/<name>``) do not, so their host-side
 # original stays unreferenced and is reclaimed by the orphan sweep, never by ownership.
 # Either separator: Windows host paths are backslashed (JSON-escaped as ``\\`` inside structured content).
 _SPILLOVER_NAME_RE = re.compile(r"spillover(?:/|\\+)([A-Za-z0-9_.-]+)")
@@ -74,7 +74,7 @@ _SPILLOVER_NAME_RE = re.compile(r"spillover(?:/|\\+)([A-Za-z0-9_.-]+)")
 SPILLOVER_SQL_FILTER = "(instr(content, 'spillover') > 0 OR instr(api_content, 'spillover') > 0)"
 
 
-_ARCHIVE_PATH_RE = re.compile(r"(?:^|[/\\])(?:spillover|hermes-results)[/\\][^/\\]+$")
+_ARCHIVE_PATH_RE = re.compile(r"(?:^|[/\\])(?:spillover|moor-results)[/\\][^/\\]+$")
 
 
 def expired_archive_fields(path: str) -> dict:

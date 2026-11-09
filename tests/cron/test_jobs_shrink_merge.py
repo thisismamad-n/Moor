@@ -169,7 +169,7 @@ def test_merge_does_not_mutate_caller_list(moor_env):
     assert my_payload == [], "caller's list was mutated in place by the merge"
 
 
-def test_save_over_corrupt_store_fails_closed(hermes_env):
+def test_save_over_corrupt_store_fails_closed(moor_env):
     """A merging save over an unreadable jobs.json must refuse (the jobs in it
     are unknown, so overwriting would drop them) and leave the bytes intact;
     ``replace=True`` stays available as the explicit recovery rewrite."""
@@ -211,7 +211,7 @@ def test_nested_create_survives_outer_stale_save(moor_env):
     assert seed["id"] in ids
 
 
-def test_symlinked_store_saves_by_rename_not_in_place_copy(hermes_env, tmp_path, monkeypatch):
+def test_symlinked_store_saves_by_rename_not_in_place_copy(moor_env, tmp_path, monkeypatch):
     """jobs.json symlinked into another dir (treated as another filesystem) must still be
     published by an atomic rename — never the EXDEV in-place copy fallback, which tears the
     store on a crash mid-copy."""
@@ -220,7 +220,7 @@ def test_symlinked_store_saves_by_rename_not_in_place_copy(hermes_env, tmp_path,
     real_dir = tmp_path / "elsewhere"
     real_dir.mkdir()
     (real_dir / "jobs.json").write_text('{"jobs": []}')
-    link = hermes_env / "cron" / "jobs.json"
+    link = moor_env / "cron" / "jobs.json"
     link.symlink_to(real_dir / "jobs.json")
 
     real_replace = os.replace

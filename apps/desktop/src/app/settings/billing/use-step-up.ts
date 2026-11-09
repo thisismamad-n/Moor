@@ -130,7 +130,7 @@ export function useStepUpFlow({ autoOpen = false }: { autoOpen?: boolean } = {})
         // The user just asked for this (clicked a control that needs it): open the approval page
         // right away, like sign-in does, instead of making them click a second button for it.
         if (autoOpen) {
-          void window.hermesDesktop?.openExternal?.(url)
+          void window.moorDesktop?.openExternal?.(url)
         }
       }) ?? null
 

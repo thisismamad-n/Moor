@@ -273,7 +273,7 @@ class CLIStatusBarMixin:
         except Exception:
             pass
         try:
-            from hermes_cli.gateway_tools import background_counts
+            from moor_cli.gateway_tools import background_counts
             snapshot.update(background_counts())
         except Exception:
             pass
@@ -641,7 +641,7 @@ class CLIStatusBarMixin:
             started = getattr(self, "_turn_summary_start", 0.0) or 0.0
             line = collector.render(max(0.0, time.monotonic() - started) if started else 0.0)
             if line and getattr(self, "_modern_layout", False):
-                from hermes_cli.cli_modern_layout import turn_footer
+                from moor_cli.cli_modern_layout import turn_footer
                 _cprint(turn_footer(line))
             elif line:
                 _cprint(f"  {_D}{line}{_RST}")
@@ -1137,7 +1137,7 @@ class CLIStatusBarMixin:
             or getattr(self, "_command_palette_state", None)):
             return []
         if getattr(self, "_modern_layout", False):
-            from hermes_cli.cli_modern_layout import status_line_fragments
+            from moor_cli.cli_modern_layout import status_line_fragments
             return status_line_fragments(self)
         try:
             snapshot = self._get_status_bar_snapshot()

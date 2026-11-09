@@ -22,7 +22,7 @@ from urllib.parse import parse_qs, urlparse
 from moor_cli.auth_constants import (
     AuthError, DEFAULT_MOOR_PORTAL_URL, DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS,
     DEVICE_CODE_GRANT_TYPE, OAUTH_OVER_SSH_DOCS_URL, httpx)
-from hermes_cli.auth_error_copy import DeviceCodeExpired
+from moor_cli.auth_error_copy import DeviceCodeExpired
 from utils import is_truthy_value
 
 # Log-record parity with the origin module (caplog tests pin "moor_cli.auth").
@@ -218,7 +218,7 @@ def _default_verify() -> bool | ssl.SSLContext:
     On macOS with Homebrew Python the system OpenSSL cannot find the system trust store, so pin
     certifi's bundle when importable; elsewhere defer to httpx's built-in default. The bundle is
     resolved through ``agent.ssl_verify``, the one place that re-derives a path an
-    install-environment rotation deleted: the Nous credential exchange builds its context here, and
+    install-environment rotation deleted: the Moor credential exchange builds its context here, and
     in a long-lived gateway it can be the first TLS client constructed after the rotation.
     """
     from agent.ssl_verify import certifi_bundle_path, platform_ssl_context
@@ -235,7 +235,7 @@ def _default_verify() -> bool | ssl.SSLContext:
 def _resolve_verify(
     *, insecure: Optional[bool] = None, ca_bundle: Optional[str] = None,
     auth_state: Optional[dict[str, Any]] = None) -> bool | ssl.SSLContext:
-    from hermes_cli.auth import _default_verify
+    from moor_cli.auth import _default_verify
     tls_state = auth_state.get("tls") if isinstance(auth_state, dict) else {}
     tls_state = tls_state if isinstance(tls_state, dict) else {}
     effective_insecure = (
@@ -342,7 +342,7 @@ def _poll_device_token_generic(
     on_non_json_error: Callable[[httpx.Response], Exception],
     on_error: Callable[[httpx.Response, dict[str, Any]], Exception],
     on_timeout: Callable[[], Exception], cancelled: Optional[Callable[[], bool]] = None) -> dict[str, Any]:
-    """RFC 8628 device-code polling loop shared by the Nous and xAI flows.
+    """RFC 8628 device-code polling loop shared by the Moor and xAI flows.
 
     ``authorization_pending`` sleeps and retries; ``slow_down`` grows the interval by 1s (cap 30s).
     A non-JSON 408/429/5xx, or a 403 carrying ``x-vercel-mitigated`` (edge/WAF mitigation, never a
@@ -399,7 +399,7 @@ def _poll_device_token_generic(
 def _poll_for_token(
     client: httpx.Client, portal_base_url: str, client_id: str, device_code: str,
     expires_in: int, poll_interval: int, cancelled: Optional[Callable[[], bool]] = None) -> dict[str, Any]:
-    """Poll the Nous token endpoint until the user approves or the code expires."""
+    """Poll the Moor token endpoint until the user approves or the code expires."""
     def _validate(payload: dict[str, Any]) -> None:
         if "access_token" not in payload:
             raise ValueError("Token response did not include access_token")
@@ -423,8 +423,8 @@ def _poll_for_token(
         on_non_json_error=lambda _r: RuntimeError(
             "Token endpoint returned a non-JSON error response"),
         # Enriched at the SOURCE so the CLI login and the dashboard/desktop poller
-        # (web_server_oauth._nous_sign_in_poller surfaces it to the UI) both inherit the guidance.
-        on_timeout=lambda: DeviceCodeExpired(_nous_device_auth_timeout_message(portal_base_url)),
+        # (web_server_oauth._moor_sign_in_poller surfaces it to the UI) both inherit the guidance.
+        on_timeout=lambda: DeviceCodeExpired(_moor_device_auth_timeout_message(portal_base_url)),
         cancelled=cancelled)
 
 

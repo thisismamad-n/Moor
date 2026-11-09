@@ -412,10 +412,10 @@ export const deOverrides = {
     copyDetailFailed: 'Notification-Detail konnte nicht kopiert werden',
     backendOutOfDateTitle: 'Backend veraltet',
     backendOutOfDateMessage:
-      'Ihr Hermes-Backend ist älter als dieser Desktop-Build und funktioniert möglicherweise nicht richtig. Aktualisieren Sie, um beide abzugleichen.',
-    desktopOutOfDateTitle: 'Hermes-App veraltet',
+      'Ihr moor-backend ist älter als dieser Desktop-Build und funktioniert möglicherweise nicht richtig. Aktualisieren Sie, um beide abzugleichen.',
+    desktopOutOfDateTitle: 'moor-app veraltet',
     desktopOutOfDateMessage:
-      'Diese Hermes-App ist älter als das verbundene Backend und funktioniert möglicherweise nicht richtig. Aktualisieren Sie die App, um beide abzugleichen.',
+      'Diese moor-app ist älter als das verbundene Backend und funktioniert möglicherweise nicht richtig. Aktualisieren Sie die App, um beide abzugleichen.',
     updateDesktopApp: 'App aktualisieren',
     installMethodUnsupportedTitle: 'Nicht unterstützte Installationsmethode',
     updateMoor: 'Moor aktualisieren',
@@ -837,7 +837,7 @@ export const deOverrides = {
           `${name} ist installiert, benötigt aber einen Schlüssel, um zu funktionieren: ${vars}. Fügen Sie ihn jetzt hinzu, sonst schlagen die Tools des Plugins fehl.`,
         verified: 'Verifiziert',
         unverified: 'Nicht verifiziert',
-        reviewedByNous: 'Von Nous geprüft.',
+        reviewedByMoor: 'Von Moor geprüft.',
         installsAndEnables: profile => `Wird für ${profile} installiert und sofort eingeschaltet.`,
         installsOnly: profile => `Wird für ${profile} installiert.`,
         advanced: 'Erweitert',
@@ -1848,9 +1848,9 @@ export const deOverrides = {
       sshErrPlatform:
         'Nicht unterstützte Remote-Plattform. Der Desktop-SSH-Modus von Moor unterstützt Linux-, macOS- und Windows-Remote-Hosts.',
       sshErrTimeout: 'SSH-Verbindung ist ausgelaufen. Der Host ist möglicherweise nicht erreichbar oder schläft.',
-      sshErrUpdateRequired: 'Aktualisieren Sie Hermes auf dem Remote-Host, bevor Sie sich mit Desktop-SSH verbinden.',
+      sshErrUpdateRequired: 'Aktualisieren Sie Moor auf dem Remote-Host, bevor Sie sich mit Desktop-SSH verbinden.',
       sshErrInteractiveAuth:
-        'Tailscale SSH erfordert eine interaktive Browser-Prüfung. Führen Sie im Terminal `ssh <host> true` aus, schließen Sie die Prüfung ab und versuchen Sie es erneut – Hermes führt SSH nicht interaktiv aus.',
+        'Tailscale SSH erfordert eine interaktive Browser-Prüfung. Führen Sie im Terminal `ssh <host> true` aus, schließen Sie die Prüfung ab und versuchen Sie es erneut – Moor führt SSH nicht interaktiv aus.',
       sshErrUnknown: 'SSH-Verbindung fehlgeschlagen.'
     },
     keys: {
@@ -2018,7 +2018,7 @@ export const deOverrides = {
       keepGoingOnCredits: {
         title: 'Mit Credits weitermachen',
         description:
-          'Nutzt Ihre Credits, wenn die enthaltene Nutzung aufgebraucht ist. Aus: Hermes wartet auf das Zurücksetzen.',
+          'Nutzt Ihre Credits, wenn die enthaltene Nutzung aufgebraucht ist. Aus: Moor wartet auf das Zurücksetzen.',
         approveInBrowser:
           'Bestätige Remote Spending im Browser, um das zu ändern. Es wird übernommen, sobald du bestätigst.',
         openAgain: 'Erneut öffnen',
@@ -2505,7 +2505,7 @@ export const deOverrides = {
       serverStates: {
         connected: 'verbunden',
         app_not_running: 'App läuft nicht',
-        hermes_not_connected: 'MCP-Verbindung fehlt',
+        moor_not_connected: 'MCP-Verbindung fehlt',
         endpoint_unavailable: 'Endpunkt nicht verfügbar',
         no_interactive_session: 'keine interaktive Session',
         version_too_old: 'Version zu alt',
@@ -3223,7 +3223,7 @@ export const deOverrides = {
     failedImport: 'Profil konnte nicht importiert werden',
     failedExport: 'Profil konnte nicht exportiert werden',
     exportNeedsHost: name =>
-      `Der Browser kann kein Profilarchiv speichern. Führe auf dem Hermes-Host aus: hermes profile export ${name}`,
+      `Der Browser kann kein Profilarchiv speichern. Führe auf dem moor-host aus: moor profile export ${name}`,
     allProfiles: 'Alle Profile',
     showAllProfiles: 'Alle Profile anzeigen',
     notServedHere: 'Hier nicht bereitgestellt',
@@ -3240,8 +3240,8 @@ export const deOverrides = {
       switchTo: (name, gateway) => `${name} auf ${gateway} öffnen`,
       deleteOn: gateway => ` auf ${gateway}`,
       localDevice:
-        'Dieses Gerät (lokales Backend — installiert Hermes, falls es fehlt, sonst öffnet es eine neue Sitzung)',
-      installDeviceTitle: 'Hermes auf diesem Gerät installieren?',
+        'Dieses Gerät (lokales Backend — installiert Moor, falls es fehlt, sonst öffnet es eine neue Sitzung)',
+      installDeviceTitle: 'Moor auf diesem Gerät installieren?',
       installDeviceDesc:
         'Moor wird lokal installiert und danach eine neue Sitzung auf diesem Computer geöffnet. Ohne Bestätigung startet keine Installation.',
       installDeviceConfirm: 'Lokal installieren',
@@ -4108,23 +4108,23 @@ export const deOverrides = {
     }
   },
   updates: {
-    discontinuedTitle: 'Dieser Hermes-Build wird nicht mehr unterstützt',
+    discontinuedTitle: 'Dieser moor-build wird nicht mehr unterstützt',
     discontinuedBody:
-      'Dieser Hermes-Build wird nicht mehr unterstützt und funktioniert möglicherweise nicht mehr — deinstallieren Sie ihn. Ihre Daten bleiben auf dem Datenträger.',
+      'Dieser moor-build wird nicht mehr unterstützt und funktioniert möglicherweise nicht mehr — deinstallieren Sie ihn. Ihre Daten bleiben auf dem Datenträger.',
     channels: { stable: 'Stabil', canary: 'Canary' },
     appName: 'Moor',
     availableBodyRelease: tag => `Version ${tag} ist bereit zur Installation.`,
     releaseAvailable: tag => `Version ${tag} ist verfügbar.`,
     checkingShort: 'Wird geprüft…',
     availableBodyAppInstaller:
-      'Eine neue Hermes-Version ist bereit. Hermes wird geschlossen, Windows schließt das Update ab und Hermes startet automatisch neu.',
+      'Eine neue moor-version ist bereit. Moor wird geschlossen, Windows schließt das Update ab und Moor startet automatisch neu.',
     applyingBodyAppInstaller:
-      'Hermes wird geschlossen und Windows schließt das Update ab. Danach startet Hermes automatisch neu.',
+      'Moor wird geschlossen und Windows schließt das Update ab. Danach startet Moor automatisch neu.',
     applyingCloseAppInstaller:
-      'Dieses Fenster schließt sich, Windows schließt das Update ab und Hermes startet automatisch neu.',
+      'Dieses Fenster schließt sich, Windows schließt das Update ab und Moor startet automatisch neu.',
     checkUnknownTitleAppInstaller: 'Update-Check fehlgeschlagen',
     checkUnknownBodyAppInstaller:
-      'Windows konnte gerade nicht nach Updates suchen. Updates werden auch beim Neustart von Hermes automatisch installiert.',
+      'Windows konnte gerade nicht nach Updates suchen. Updates werden auch beim Neustart von Moor automatisch installiert.',
     versionDetailsTitle: 'Versionsdetails',
     versionDetailsBody:
       'Diese Installation wird außerhalb der App verwaltet. Aktualisieren Sie sie auf dieselbe Weise, wie Sie sie installiert haben.',
@@ -4151,12 +4151,12 @@ export const deOverrides = {
     versionUnavailable: 'Version nicht verfügbar',
     bundleOutOfSync: 'App-Build ist veraltet',
     bundleOutOfSyncDesc:
-      'Die Hermes-Laufzeit wurde aktualisiert, die Desktop-App selbst ist aber noch ein älterer Build – neue Oberflächenfunktionen (wie der Bot-Modus) fehlen, bis sie aktualisiert wird. Führen Sie das Update unten aus, um die App neu zu bauen. Falls das die Warnung nicht behebt, installieren Sie den neuesten Desktop-Installer neu.',
+      'Die moor-laufzeit wurde aktualisiert, die Desktop-App selbst ist aber noch ein älterer Build – neue Oberflächenfunktionen (wie der Bot-Modus) fehlen, bis sie aktualisiert wird. Führen Sie das Update unten aus, um die App neu zu bauen. Falls das die Warnung nicht behebt, installieren Sie den neuesten Desktop-Installer neu.',
     bundleOutOfSyncAction: 'Installer herunterladen',
     bundleSwapPending: 'Neustart zum Abschließen des Updates',
     bundleSwapPendingDesc:
-      'Die aktualisierte App ist bereits installiert — Hermes muss nur noch neu gestartet werden, um sie zu laden. Chats und Einstellungen bleiben unberührt.',
-    bundleSwapPendingAction: 'Hermes neu starten',
+      'Die aktualisierte App ist bereits installiert — Moor muss nur noch neu gestartet werden, um sie zu laden. Chats und Einstellungen bleiben unberührt.',
+    bundleSwapPendingAction: 'Moor neu starten',
     checkNow: 'Jetzt prüfen',
     seeWhatsNew: 'Neuigkeiten ansehen',
     releaseNotes: 'Versionshinweise',
@@ -4212,10 +4212,10 @@ export const deOverrides = {
     manualTitle: 'Über Ihr Terminal aktualisieren',
     manualUnavailableTitle: 'Aktualisierung hier nicht möglich',
     manualBody:
-      'Sie haben Hermes über die Befehlszeile installiert, daher laufen Updates auch dort. Fügen Sie dies in Ihr Terminal ein:',
-    manualPickedUp: 'Hermes übernimmt die neue Version beim nächsten Start.',
+      'Sie haben Moor über die Befehlszeile installiert, daher laufen Updates auch dort. Fügen Sie dies in Ihr Terminal ein:',
+    manualPickedUp: 'Moor übernimmt die neue Version beim nächsten Start.',
     manualBodyBackend:
-      'Das Hermes-Backend wird außerhalb dieser App verwaltet. Führen Sie dies auf dem Server aus, der es hostet:',
+      'Das moor-backend wird außerhalb dieser App verwaltet. Führen Sie dies auf dem Server aus, der es hostet:',
     manualPickedUpBackend: 'Das Backend lädt die neue Version, sobald das Update abgeschlossen ist.',
     guiSkewTitle: 'Desktop-App aktualisieren',
     guiSkewBody:
@@ -4392,10 +4392,10 @@ export const deOverrides = {
     unreachableBody:
       'Moor konnte den Moor-Dienst nicht erreichen, um Ihre Anmeldung abzuschließen. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut. Ihre Session bleibt erhalten.',
     alreadySignedInHeading: 'Bereits angemeldet.',
-    alreadySignedInBody: 'Dieses Hermes ist bereits mit einem Nous-Konto angemeldet.',
+    alreadySignedInBody: 'Dieses Moor ist bereits mit einem Moor-Konto angemeldet.',
     offer: {
-      heading: 'Mit Hermes weitermachen',
-      body: 'Sie nutzen das kostenlose Kontingent. Wenn Sie Hermes weiter verwenden, stoßen Sie bald an Grenzen. Melden Sie sich mit einem kostenlosen Nous-Konto an, um ein größeres Kontingent zu erhalten.',
+      heading: 'Mit Moor weitermachen',
+      body: 'Sie nutzen das kostenlose Kontingent. Wenn Sie Moor weiter verwenden, stoßen Sie bald an Grenzen. Melden Sie sich mit einem kostenlosen Moor-Konto an, um ein größeres Kontingent zu erhalten.',
       signIn: 'Anmelden',
       notNow: 'Nicht jetzt'
     },
@@ -4899,11 +4899,11 @@ export const deOverrides = {
         timeout: {
           title: provider => `${provider} nicht erreichbar`,
           body: provider =>
-            `Hermes konnte ${provider} nicht erreichen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.`
+            `Moor konnte ${provider} nicht erreichen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.`
         },
         no_reply: {
           title: 'Die Antwort ist nicht angekommen',
-          body: 'Hermes hat diesen Durchlauf beendet, aber keine Antwort hat dieses Fenster erreicht. Versuchen Sie es erneut, um sie noch einmal zu senden.'
+          body: 'Moor hat diesen Durchlauf beendet, aber keine Antwort hat dieses Fenster erreicht. Versuchen Sie es erneut, um sie noch einmal zu senden.'
         },
         stream_drop: {
           title: 'Die Antwort wurde abgebrochen',
@@ -4970,23 +4970,23 @@ export const deOverrides = {
         agent_init_failed: {
           title: 'Chat konnte nicht starten',
           body: provider =>
-            `Hermes konnte für diesen Chat keine Verbindung zu ${provider} herstellen. Versuchen Sie es erneut; wenn es weiter fehlschlägt, prüfen Sie den Anbieter in den Einstellungen.`
+            `Moor konnte für diesen Chat keine Verbindung zu ${provider} herstellen. Versuchen Sie es erneut; wenn es weiter fehlschlägt, prüfen Sie den Anbieter in den Einstellungen.`
         },
         SESSION_NOT_OWNED: {
           title: 'Chat ist woanders geöffnet',
-          body: 'Dieser Chat ist in einem anderen Hermes-Fenster oder Terminal geöffnet. Starten Sie hier einen neuen Chat oder schließen Sie ihn zuerst dort.'
+          body: 'Dieser Chat ist in einem anderen moor-fenster oder Terminal geöffnet. Starten Sie hier einen neuen Chat oder schließen Sie ihn zuerst dort.'
         },
         disk_full: {
           title: 'Ihre Festplatte ist voll',
-          body: 'Hermes konnte dieses Gespräch nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.'
+          body: 'Moor konnte dieses Gespräch nicht speichern. Geben Sie Speicherplatz frei und versuchen Sie es erneut.'
         },
         free_tier_disabled: {
           title: 'Anmelden, um weiterzuchatten',
-          body: 'Melden Sie sich mit einem Nous-Konto an, um weiterzuschreiben – es ist kostenlos.'
+          body: 'Melden Sie sich mit einem Moor-Konto an, um weiterzuschreiben – es ist kostenlos.'
         },
         free_tier_rate_limited: {
           title: 'Kostenloses Kontingent aufgebraucht',
-          body: 'Es wird bald wieder aufgefüllt. Melden Sie sich mit einem Nous-Konto an, um ein größeres Kontingent zu erhalten – es ist kostenlos.'
+          body: 'Es wird bald wieder aufgefüllt. Melden Sie sich mit einem Moor-Konto an, um ein größeres Kontingent zu erhalten – es ist kostenlos.'
         },
         free_tier_at_capacity: {
           title: 'Kostenloser Zugang ist ausgelastet',
@@ -4994,11 +4994,11 @@ export const deOverrides = {
         },
         free_tier_model_not_free: {
           title: 'Dieses Modell erfordert Anmeldung',
-          body: 'Hermes verwendet vorerst das kostenlose Modell. Melden Sie sich mit einem Nous-Konto an, um mehr Modelle zu nutzen – es ist kostenlos.'
+          body: 'Moor verwendet vorerst das kostenlose Modell. Melden Sie sich mit einem Moor-Konto an, um mehr Modelle zu nutzen – es ist kostenlos.'
         },
         free_tier_route: {
           title: 'Kostenloses Modell nicht erreichbar',
-          body: 'Melden Sie sich mit einem Nous-Konto an – es ist kostenlos – oder prüfen Sie die Einstellung NOUS_INFERENCE_BASE_URL.'
+          body: 'Melden Sie sich mit einem Moor-Konto an – es ist kostenlos – oder prüfen Sie die Einstellung MOOR_INFERENCE_BASE_URL.'
         },
         free_tier_outage: {
           title: 'Kostenloses Modell hat Probleme',
@@ -5006,7 +5006,7 @@ export const deOverrides = {
         },
         free_tier_refused: {
           title: 'Anmelden, um weiterzuchatten',
-          body: 'Eine Anmeldung mit einem Nous-Konto ist kostenlos.'
+          body: 'Eine Anmeldung mit einem Moor-Konto ist kostenlos.'
         },
         usage_window: {
           title: 'Enthaltene Nutzung aufgebraucht',

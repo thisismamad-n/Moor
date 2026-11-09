@@ -62,7 +62,7 @@ function probeFlags(probe: SourceUpdateProbe): string[] {
  */
 export async function sourceUpdateEnvironment(
   updateRoot: string,
-  hermesHome: string,
+  moorHome: string,
   note?: (message: string) => void
 ): Promise<NodeJS.ProcessEnv> {
   const env: NodeJS.ProcessEnv = {
@@ -130,7 +130,7 @@ export async function readSourceUpdate(probe: SourceUpdateProbe): Promise<Source
       : args,
     hiddenWindowsChildOptions({
       cwd: probe.updateRoot,
-      env: await sourceUpdateEnvironment(probe.updateRoot, probe.hermesHome),
+      env: await sourceUpdateEnvironment(probe.updateRoot, probe.moorHome),
       encoding: 'utf8',
       timeout: 360000,
       maxBuffer: 1024 * 1024,

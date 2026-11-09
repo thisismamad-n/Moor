@@ -138,7 +138,7 @@ def _aux_task_cfg_for_display(cfg: dict, task: str) -> dict:
     shows its resolved route (base included), so the menu never reports "auto" while the task
     actually runs on the base's provider; every other task shows exactly what is stored."""
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import get_plugin_auxiliary_tasks
+        from moor_cli.plugins import get_plugin_auxiliary_tasks
         if any(e.get("key") == task and e.get("inherit_from") for e in get_plugin_auxiliary_tasks()):
             from agent.auxiliary_client import _get_auxiliary_task_config
             return _get_auxiliary_task_config(task)
@@ -198,8 +198,8 @@ def _prompt_aux_reasoning_effort(task: str, current: str) -> Optional[str]:
 
 def _reset_aux_to_auto() -> int:
     """Reset every known aux task (built-in + plugin) back to auto/empty. Returns number reset."""
-    from hermes_cli.config import load_config, save_config
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.config import load_config, save_config
+    from moor_cli.config_defaults import DEFAULT_CONFIG
     defaults = DEFAULT_CONFIG.get("auxiliary") or {}
 
     def _clear(entry: dict, auto: str, task: str = "") -> bool:
@@ -267,8 +267,8 @@ def _aux_config_menu() -> None:
 def _aux_select_for_task(task: str) -> None:
     """Pick a provider + model for one aux task and persist it. Rows come from
     ``build_aux_picker_rows()`` (shared substrate): only already-configured providers appear."""
-    from hermes_cli.config import load_config
-    from hermes_cli.inventory import build_aux_picker_rows, format_aux_picker_entries
+    from moor_cli.config import load_config
+    from moor_cli.inventory import build_aux_picker_rows, format_aux_picker_entries
     cfg = load_config()
     task_cfg = _aux_task_cfg(cfg, task)
     current_provider = str(task_cfg.get("provider") or "auto").strip() or "auto"
@@ -641,7 +641,7 @@ def _prompt_reasoning_effort_selection(efforts, current_effort="", *, default_la
 
 def _model_choice_save_count() -> int:
     """Snapshot taken by ``select_provider_and_model`` before a flow runs (see below)."""
-    from hermes_cli.auth_model_picker import model_choice_save_count
+    from moor_cli.auth_model_picker import model_choice_save_count
     return model_choice_save_count()
 
 
@@ -651,7 +651,7 @@ def _offer_reasoning_after_pick(model_before: str, saves_before: int) -> None:
     ``model.default`` changed) offer the effort for the saved model + provider, including a
     provider switch that keeps the same model ID or a re-pick of the current model. Cancel /
     "No change." never prompts."""
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
     model_cfg = load_config().get("model")
     if not isinstance(model_cfg, dict):
         return
@@ -662,7 +662,7 @@ def _offer_reasoning_after_pick(model_before: str, saves_before: int) -> None:
 
 
 def _prompt_main_reasoning_effort(model: str, provider: str) -> None:
-    """The effort step every ``hermes model`` flow shares: after a main-model pick, offer the
+    """The effort step every ``moor model`` flow shares: after a main-model pick, offer the
     model's supported levels (a profile may declare a per-model set via ``setup_reasoning_efforts``;
     everything else gets the full ladder) and persist ``agent.reasoning_effort``. Skipped when the catalog says the route has
     no reasoning control; "Skip" leaves the current value alone."""
@@ -910,8 +910,8 @@ def _build_provider_picker_rows(config: dict, active: str, provider_labels: dict
     fold into display groups (PROVIDER_GROUPS): a group row's ``members`` drive a sub-picker, leaf
     rows have ``members == []``; saved custom providers and trailing actions stay flat. Honors
     ``model_catalog.excluded_providers`` (slug or alias, case-insensitive) like the gateway/TUI."""
-    from hermes_cli.models import CANONICAL_PROVIDERS, _PROVIDER_ALIASES
-    from hermes_cli.models_catalog_static import group_providers, listed_canonical_providers, provider_group_for_slug
+    from moor_cli.models import CANONICAL_PROVIDERS, _PROVIDER_ALIASES
+    from moor_cli.models_catalog_static import group_providers, listed_canonical_providers, provider_group_for_slug
     canonical_descs = {p.slug: p.tui_desc for p in CANONICAL_PROVIDERS}
     listed = listed_canonical_providers()
     _cli_excluded = {
@@ -967,8 +967,8 @@ def _build_provider_picker_rows(config: dict, active: str, provider_labels: dict
         _add(key, f"{provider_info['name']} ({_short_url(provider_info['base_url'])}){model_hint}", [],
              bool(active) and key == active)
 
-    from hermes_cli.model_setup_flows_local import local_models_available
-    from hermes_cli.providers import LLAMACPP_ALIASES
+    from moor_cli.model_setup_flows_local import local_models_available
+    from moor_cli.providers import LLAMACPP_ALIASES
     if not _cli_excluded & set(LLAMACPP_ALIASES) and local_models_available():
         _add("llamacpp", "Local models (run open models on this machine — no account or API key)", [],
              active == "llamacpp")

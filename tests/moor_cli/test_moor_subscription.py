@@ -134,7 +134,7 @@ def _stub_browser_probes(monkeypatch, *, harness, chromium):
     monkeypatch.setattr(ns, "has_direct_modal_credentials", lambda: False)
     monkeypatch.setattr(ns, "is_managed_tool_gateway_ready", lambda vendor: False)
     monkeypatch.setattr(
-        "hermes_cli.browser_runtime.chromium_executable", lambda **_kw: "/pm/chromium/chrome" if chromium else None
+        "moor_cli.browser_runtime.chromium_executable", lambda **_kw: "/pm/chromium/chrome" if chromium else None
     )
 
 
@@ -165,7 +165,7 @@ def test_local_browser_unavailable_without_chromium(monkeypatch):
 def test_local_browser_availability_follows_engine_and_chromium(monkeypatch, harness, chromium, engine, available):
     _stub_browser_probes(monkeypatch, harness=harness, chromium=chromium)
 
-    features = ns.get_nous_subscription_features(
+    features = ns.get_moor_subscription_features(
         {"browser": {"cloud_provider": "local", "engine": engine}}
     )
 
@@ -213,9 +213,9 @@ def test_logged_in_entitled_account_yields_a_state_for_every_feature(monkeypatch
 @pytest.mark.parametrize(
     "image_cfg, partner",
     [
-        ({"provider": "nous", "model": "krea-2-medium"}, "Krea"),
+        ({"provider": "moor", "model": "krea-2-medium"}, "Krea"),
         ({"model": FAL_DEFAULT_MODEL}, "FAL"),
-        ({"provider": "nous", "model": "openai/gpt-image-2"}, "Nous Portal"),
+        ({"provider": "moor", "model": "openai/gpt-image-2"}, "Moor Portal"),
         ({"model": "openai/gpt-image-2"}, "FAL"),
         ({"use_gateway": True, "model": "openai/gpt-image-2"}, "FAL"),  # managed-model routing ignores legacy use_gateway
         ({"provider": "openai", "model": "gpt-image-2"}, None),
@@ -224,7 +224,7 @@ def test_logged_in_entitled_account_yields_a_state_for_every_feature(monkeypatch
 def test_managed_image_partner_follows_the_stored_model(image_cfg, partner):
     """The partner is the gateway the runtime dispatcher routes to (tools.image_generation_managed.
     managed_route): the stored model decides under the managed pick, Portal ids only with an
-    explicit ``nous``; a direct vendor owns its model id."""
+    explicit ``moor``; a direct vendor owns its model id."""
     assert ns.managed_image_partner({"image_gen": image_cfg}) == partner
 
 
@@ -426,32 +426,32 @@ def test_apply_moor_managed_defaults_writes_video_gen_config(monkeypatch):
 
 
 def _defaults_for(monkeypatch, account, config):
-    monkeypatch.setattr(tool_backend_helpers, "managed_nous_tools_enabled", lambda **kw: True)
+    monkeypatch.setattr(tool_backend_helpers, "managed_moor_tools_enabled", lambda **kw: True)
     monkeypatch.delenv("FAL_KEY", raising=False)
     monkeypatch.setattr(ns, "fal_key_is_configured", lambda: False)
-    monkeypatch.setattr(ns, "get_nous_portal_account_info", lambda **kw: account)
-    ns.apply_nous_managed_defaults(config, enabled_toolsets=["image_gen"])
+    monkeypatch.setattr(ns, "get_moor_portal_account_info", lambda **kw: account)
+    ns.apply_moor_managed_defaults(config, enabled_toolsets=["image_gen"])
     return config["image_gen"]
 
 
 def test_paid_account_defaults_to_the_krea_image_model(monkeypatch):
-    section = _defaults_for(monkeypatch, _account(logged_in=True, paid=True), {"model": {"provider": "nous"}})
-    assert section == {"provider": "nous", "model": ns.MANAGED_IMAGE_DEFAULT_KREA_MODEL}
+    section = _defaults_for(monkeypatch, _account(logged_in=True, paid=True), {"model": {"provider": "moor"}})
+    assert section == {"provider": "moor", "model": ns.MANAGED_IMAGE_DEFAULT_KREA_MODEL}
 
 
 def test_pool_account_keeps_the_fal_image_default(monkeypatch):
-    section = _defaults_for(monkeypatch, _pool_account(), {"model": {"provider": "nous"}})
-    assert section["provider"] == "nous"
+    section = _defaults_for(monkeypatch, _pool_account(), {"model": {"provider": "moor"}})
+    assert section["provider"] == "moor"
     assert "model" not in section
 
 
 def test_first_run_gateway_acceptance_writes_the_krea_image_model():
-    """`hermes setup --portal` stores selections through apply_gateway_defaults, not the managed-defaults
+    """`moor setup --portal` stores selections through apply_gateway_defaults, not the managed-defaults
     pass, so the Krea default must apply there too; an existing model and the free pool are left on FAL."""
     paid, pool = _account(logged_in=True, paid=True), _pool_account()
     fresh = {}
     ns.apply_gateway_defaults(fresh, ["image_gen"], paid)
-    assert fresh["image_gen"] == {"provider": "nous", "model": ns.MANAGED_IMAGE_DEFAULT_KREA_MODEL}
+    assert fresh["image_gen"] == {"provider": "moor", "model": ns.MANAGED_IMAGE_DEFAULT_KREA_MODEL}
     pooled = {}
     ns.apply_gateway_defaults(pooled, ["image_gen"], pool)
     assert "model" not in pooled["image_gen"]
@@ -461,7 +461,7 @@ def test_first_run_gateway_acceptance_writes_the_krea_image_model():
 
 
 def test_configured_image_section_is_left_alone(monkeypatch):
-    config = {"model": {"provider": "nous"}, "image_gen": {"provider": "nous", "model": FAL_DEFAULT_MODEL}}
+    config = {"model": {"provider": "moor"}, "image_gen": {"provider": "moor", "model": FAL_DEFAULT_MODEL}}
     section = _defaults_for(monkeypatch, _account(logged_in=True, paid=True), config)
     assert section["model"] == FAL_DEFAULT_MODEL
 

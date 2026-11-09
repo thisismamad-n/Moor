@@ -1,7 +1,7 @@
 """Test that overlay providers with mismatched models.dev keys resolve correctly.
 
-HERMES_OVERLAYS keys may be models.dev IDs (e.g. "kimi-for-coding") while
-_PROVIDER_MODELS and config.yaml use Hermes IDs ("kimi-coding").  The slug
+MOOR_OVERLAYS keys may be models.dev IDs (e.g. "kimi-for-coding") while
+_PROVIDER_MODELS and config.yaml use Moor IDs ("kimi-coding").  The slug
 resolution in list_authenticated_providers() Section 2 must bridge this gap.
 
 Covers: #5223, #6492
@@ -17,7 +17,7 @@ from moor_cli.model_switch import list_authenticated_providers
 # -- Overlay slug resolution (env var path) ----------------------------------
 
 @patch.dict(os.environ, {"KIMI_API_KEY": "fake-kimi"}, clear=False)
-def test_overlay_provider_uses_hermes_slug():
+def test_overlay_provider_uses_moor_slug():
     """kimi-for-coding overlay should resolve to slug='kimi-coding' with curated models."""
     providers = list_authenticated_providers(current_provider="kimi-coding")
 

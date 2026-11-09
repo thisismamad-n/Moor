@@ -232,7 +232,7 @@ def test_ledger_entries_filters_dead_reused_and_foreign(tmp_path):
 
 @pytest.mark.platforms("posix")
 def test_ledger_entries_excludes_a_killed_but_unreaped_process(tmp_path):
-    """A zombie is dead even though it keeps its create_time until reaped: ``hermes update``
+    """A zombie is dead even though it keeps its create_time until reaped: ``moor update``
     books the stopped dashboard gone, then must not find it again as a pre-update survivor."""
     import psutil
 
@@ -403,7 +403,7 @@ def test_reclaim_spares_unprovable_spawner():
 
 
 def test_reclaim_reaps_null_spawner_orphan_to_init():
-    from hermes_cli import dashboard_procs
+    from moor_cli import dashboard_procs
 
     with patch.object(dashboard_procs, "_process_ppid", return_value=1), \
          patch.object(dashboard_procs, "_lock_owned_serve_pids", return_value=set()):
@@ -414,7 +414,7 @@ def test_reclaim_reaps_null_spawner_orphan_to_init():
 
 
 def test_reclaim_spares_null_spawner_with_live_parent():
-    from hermes_cli import dashboard_procs
+    from moor_cli import dashboard_procs
 
     with patch.object(dashboard_procs, "_process_ppid", return_value=1234):
         result, kills = _reap(procs={555: 55.0})
@@ -424,7 +424,7 @@ def test_reclaim_spares_null_spawner_with_live_parent():
 
 def test_reclaim_spares_lock_claimed_orphan():
     """A valid backend.lock.json claims the PID: another session owns it, never kill."""
-    from hermes_cli import dashboard_procs
+    from moor_cli import dashboard_procs
 
     with patch.object(dashboard_procs, "_process_ppid", return_value=1), \
          patch.object(dashboard_procs, "_lock_owned_serve_pids", return_value={555}):
@@ -453,7 +453,7 @@ def test_reclaim_ignores_unknown_pid_and_never_raises():
 _CONCURRENT_WRITER = r"""
 import os, subprocess, sys, time
 sys.path.insert(0, sys.argv[1])
-from hermes_cli.process_identity import register_child
+from moor_cli.process_identity import register_child
 start_at, n = float(sys.argv[2]), int(sys.argv[3])
 kids = [subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"], stdin=subprocess.DEVNULL)
         for _ in range(n)]
@@ -476,7 +476,7 @@ def test_concurrent_processes_never_drop_each_others_ledger_rows(tmp_path):
     from pathlib import Path
 
     repo = str(Path(__file__).resolve().parents[2])
-    env = {**os.environ, "HERMES_HOME": str(tmp_path / "home")}
+    env = {**os.environ, "MOOR_HOME": str(tmp_path / "home")}
     start_at = time.time() + 2.0
     writers = [subprocess.Popen([sys.executable, "-c", _CONCURRENT_WRITER, repo, str(start_at), "15"],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, env=env)
@@ -502,7 +502,7 @@ def test_a_stalled_ledger_lock_holder_never_blocks_register_child(tmp_path, monk
     import logging
     import threading
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(pi, "_LEDGER_LOCK_TIMEOUT_S", 0.3)
     monkeypatch.setattr(pi, "_ledger_lock_warned", False)
     caplog.set_level(logging.DEBUG, logger=pi.logger.name)

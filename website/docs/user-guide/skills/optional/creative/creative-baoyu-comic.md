@@ -185,7 +185,7 @@ Input → Analyze → [Check Existing?] → [Confirm: Style + Reviews] → Story
 
 ### User Questions
 
-Use the `clarify` tool to confirm options. Put independent questions in one `questions` array (up to 5); ask separately any question whose options depend on an earlier answer. See [references/workflow.md](https://github.com/NousResearch/hermes-agent/blob/main/optional-skills/creative/baoyu-comic/references/workflow.md) for the full Step 2 question set.
+Use the `clarify` tool to confirm options. Put independent questions in one `questions` array (up to 5); ask separately any question whose options depend on an earlier answer. See [references/workflow.md](https://github.com/thisismamad-n/Moor/blob/main/optional-skills/creative/baoyu-comic/references/workflow.md) for the full Step 2 question set.
 
 **Timeout handling (CRITICAL)**: `clarify` can return `"outcome": "timed_out"` with responses marked `"status": "unanswered"` — this is NOT user consent to default everything.
 

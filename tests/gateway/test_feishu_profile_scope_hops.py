@@ -97,13 +97,13 @@ def test_drive_comment_agent_turn_binds_the_unscoped_launch_profile(tmp_path):
 
     @contextmanager
     def _launch_scope():
-        home_token = set_hermes_home_override(str(launch_home))
+        home_token = set_moor_home_override(str(launch_home))
         secret_token = set_secret_scope({"FEISHU_PROBE_TOKEN": "launch-value"})
         try:
             yield
         finally:
             reset_secret_scope(secret_token)
-            reset_hermes_home_override(home_token)
+            reset_moor_home_override(home_token)
 
     def _fake_agent(prompt, client, session_key=""):
         seen["turn"] = _observe(launch_home)
@@ -142,7 +142,7 @@ def test_drive_comment_on_the_launch_adapter_reads_the_launch_env_through_the_re
     launch_home = tmp_path / "launch"
     launch_home.mkdir()
     (launch_home / ".env").write_text("FEISHU_PROBE_TOKEN=launch-env-value\n")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     seen = {}
 
     def _fake_agent(prompt, client, session_key=""):
@@ -233,7 +233,7 @@ def test_an_unscoped_comment_from_a_secondary_adapter_fails_closed(tmp_path, mon
     launch_home = tmp_path / "launch"
     launch_home.mkdir()
     (launch_home / ".env").write_text("FEISHU_PROBE_TOKEN=launch-env-value\n")
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("MOOR_HOME", str(launch_home))
     ran = []
     event = SimpleNamespace(event={
         "comment_id": "c1", "reply_id": "", "is_mentioned": True, "timestamp": "1",

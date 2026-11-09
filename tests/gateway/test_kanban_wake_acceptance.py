@@ -96,7 +96,7 @@ async def test_push_receipt_requires_real_admission_without_displacing_user(raft
 
 @pytest.mark.asyncio
 async def test_notifier_retries_unaccepted_wake_without_repeating_pings(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(tmp_path / "board.db"))
+    monkeypatch.setenv("MOOR_KANBAN_DB", str(tmp_path / "board.db"))
     runner, adapter, _source, key = setup_route()
     conn = kbc.connect()
     tids = {}

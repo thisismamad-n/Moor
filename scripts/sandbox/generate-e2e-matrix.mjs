@@ -282,7 +282,7 @@ const ROUTE_OSES = /** @type {Record<string, Os[]>} */ ({
 });
 
 /**
- * The pull_request subset: the script install updated by `hermes update`, on every OS,
+ * The pull_request subset: the script install updated by `moor update`, on every OS,
  * from the two starts that catch a regression before it ships -- the newest release
  * updating to the PR (the jump every user makes next) and the PR updating to a synthetic
  * NEXT (the updater the PR itself ships). One leg per {os, start} worth its runner:
@@ -298,7 +298,7 @@ const PR_SUBSET = [
 
 /** @param {Os} os @param {MatrixEntry} entry */
 function inPrSubset(os, entry) {
-  return entry.install_method === 'installer-script' && entry.update_method === 'hermes-update' &&
+  return entry.install_method === 'installer-script' && entry.update_method === 'moor-update' &&
     PR_SUBSET.some((leg) => leg.os === os && leg.to === entry.update_ref);
 }
 

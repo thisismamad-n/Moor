@@ -140,16 +140,16 @@ The file is still written. The model reads the warning in the next turn's tool m
 
 ### Langfuse (moved to the plugin catalog)
 
-Langfuse tracing is no longer bundled with Hermes. It ships as the official
-[`langfuse`](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse) catalog plugin, with the same hooks, `HERMES_LANGFUSE_*`
+Langfuse tracing is no longer bundled with Moor. It ships as the official
+[`langfuse`](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse) catalog plugin, with the same hooks, `MOOR_LANGFUSE_*`
 environment variables and capture modes:
 
 ```bash
-hermes plugins install langfuse
+moor plugins install langfuse
 ```
 
 Profiles that had `observability/langfuse` enabled get the plugin installed and
-enabled automatically by `hermes update` (or on the first start after updating),
+enabled automatically by `moor update` (or on the first start after updating),
 and keep tracing to the same Langfuse project. Setup, tuning and capture modes
 are documented in the [plugin's README](https://github.com/NousResearch/hermes-official-plugins/tree/main/langfuse).
 
@@ -157,9 +157,9 @@ are documented in the [plugin's README](https://github.com/NousResearch/hermes-o
 
 NeMo Relay is no longer a bundled Moor plugin. Do not run `moor plugins enable observability/nemo_relay`; Moor core now owns the Relay session, turn, LLM, and tool lifecycles.
 
-Configure Relay middleware or exporters through a standard Relay `plugins.toml`. Hermes loads Relay's user configuration (`~/.config/nemo-relay/plugins.toml`) and then its machine-wide system configuration (`/etc/nemo-relay/plugins.toml`, or `%ProgramData%\nemo-relay\plugins.toml` on Windows). Set `HERMES_NEMO_RELAY_PLUGINS_TOML` before starting Hermes only when you want an explicit file to replace the user configuration; the system configuration still has higher precedence. The policy is process-wide for every profile hosted by that Hermes process. Run `hermes doctor` to see which files apply. See the [NeMo Relay observability configuration](https://docs.nvidia.com/nemo/relay/configure-plugins/observability/about) for ATOF, ATIF, and OpenTelemetry options.
+Configure Relay middleware or exporters through a standard Relay `plugins.toml`. Moor loads Relay's user configuration (`~/.config/nemo-relay/plugins.toml`) and then its machine-wide system configuration (`/etc/nemo-relay/plugins.toml`, or `%ProgramData%\nemo-relay\plugins.toml` on Windows). Set `MOOR_NEMO_RELAY_PLUGINS_TOML` before starting Moor only when you want an explicit file to replace the user configuration; the system configuration still has higher precedence. The policy is process-wide for every profile hosted by that Moor process. Run `moor doctor` to see which files apply. See the [NeMo Relay observability configuration](https://docs.nvidia.com/nemo/relay/configure-plugins/observability/about) for ATOF, ATIF, and OpenTelemetry options.
 
-The old `HERMES_NEMO_RELAY_ATOF_*` and `HERMES_NEMO_RELAY_ATIF_*` settings no longer configure exporters. When `HERMES_NEMO_RELAY_PLUGINS_TOML` is unset, the gateway warns about remaining legacy variables and `hermes doctor` reports them. Independently discovered Relay user or system exporters still apply.
+The old `MOOR_NEMO_RELAY_ATOF_*` and `MOOR_NEMO_RELAY_ATIF_*` settings no longer configure exporters. When `MOOR_NEMO_RELAY_PLUGINS_TOML` is unset, the gateway warns about remaining legacy variables and `moor doctor` reports them. Independently discovered Relay user or system exporters still apply.
 
 **Automatic migration.** `moor update` (and `moor migrate relay`, or `moor migrate relay --all-profiles` for every profile home) converts the legacy variables into `<moor home>/relay-plugins.toml`, sets `MOOR_NEMO_RELAY_PLUGINS_TOML` in that profile's `.env`, and comments the legacy lines out (nothing is deleted). Under a multiplexed gateway every profile home gets its own file. The generated file is validated through Relay before it is written; this is the shape it produces (note the `type = "file"` sink discriminator — a sink without it is rejected):
 

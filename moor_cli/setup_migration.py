@@ -1,4 +1,4 @@
-"""Post-import section-skip logic: after ``hermes setup`` imported another agent's settings, each
+"""Post-import section-skip logic: after ``moor setup`` imported another agent's settings, each
 section that is already configured shows its summary and offers to skip (setup.py re-exports the
 names it uses; setup helpers are imported lazily so test patches apply)."""
 
@@ -107,7 +107,7 @@ _SECTION_SUMMARIES = {
 
 def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]:
     """Short summary if a setup section is already configured (post-import skip detection), else
-    None. ``get_env_value`` is reached through hermes_cli.setup so test patches
+    None. ``get_env_value`` is reached through moor_cli.setup so test patches
     on ``setup_mod.get_env_value`` apply."""
     summarize = _SECTION_SUMMARIES.get(section_key)
     return summarize(config) if summarize else None

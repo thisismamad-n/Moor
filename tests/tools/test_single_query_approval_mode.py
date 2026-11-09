@@ -309,14 +309,14 @@ class TestSingleQueryModeInteractions:
 
 class TestDaemonOneshotTurns:
     """Over the daemon, `-q` and `-z` are both finite, but only `-z` keeps the legacy
-    oneshot auto-approve (oneshot.py set HERMES_YOLO_MODE: nobody can answer a prompt)."""
+    oneshot auto-approve (oneshot.py set MOOR_YOLO_MODE: nobody can answer a prompt)."""
 
     def test_unattended_finite_turn_approves_execute_code_but_plain_finite_stays_single_query(self, monkeypatch):
         from unittest.mock import patch as mock_patch
         from gateway.session_finite import admit_finite, finite_turn_scope
-        from hermes_state_runtime import RuntimeStoreError
+        from moor_state_runtime import RuntimeStoreError
 
-        for key in ("HERMES_SINGLE_QUERY_SESSION", "HERMES_GATEWAY_SESSION", "HERMES_EXEC_ASK", "HERMES_YOLO_MODE"):
+        for key in ("MOOR_SINGLE_QUERY_SESSION", "MOOR_GATEWAY_SESSION", "MOOR_EXEC_ASK", "MOOR_YOLO_MODE"):
             monkeypatch.delenv(key, raising=False)
         assert admit_finite({"finite": True, "unattended": True}) == {"finite": True, "unattended": True}
         assert admit_finite({"finite": True, "unattended": False}) == {"finite": True}

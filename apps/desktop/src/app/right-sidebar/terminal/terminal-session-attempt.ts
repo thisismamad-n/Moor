@@ -1,14 +1,14 @@
 import type { Terminal } from '@xterm/xterm'
 import type { RefObject } from 'react'
 
-import type { HermesTerminalSession } from '@/global'
+import type { MoorTerminalSession } from '@/global'
 import { translateNow } from '@/i18n'
 import { hostHas } from '@/lib/host-capabilities'
 
 import { defaultTerminalGateway, runsOverSsh, terminalGatewayOf } from './terminal-gateway'
 import { $terminals, adoptTerminalGateway, markTerminalPersistent, removeExitedTerminal } from './terminals'
 
-type TerminalApi = Window['hermesDesktop']['terminal']
+type TerminalApi = Window['moorDesktop']['terminal']
 
 export type TerminalStatus = 'closed' | 'open' | 'starting' | 'reconnecting'
 
@@ -19,7 +19,7 @@ const TERMINAL_EXIT_MESSAGES: Record<string, string> = {
   superseded: 'Terminal is attached in another window. Press Enter to take it back.',
   denied: 'Terminal access denied. Check your sign-in and profile, then press Enter to retry.',
   capacity: 'Terminal capacity reached. Close another terminal, then press Enter to retry.',
-  'signed-out': 'Signed out of Hermes. Sign this browser in again, then press Enter to reconnect.'
+  'signed-out': 'Signed out of Moor. Sign this browser in again, then press Enter to reconnect.'
 }
 
 const TERMINAL_UNAVAILABLE_KEYS = {
@@ -52,7 +52,7 @@ interface SessionAttemptOptions {
   /** True while restored local history is parsing; its query replies must not reach the shell. */
   isReplayingHistory: () => boolean
   /** The attempt adopted a live session: seed size, shell name and selection. */
-  onStarted: (session: HermesTerminalSession) => void
+  onStarted: (session: MoorTerminalSession) => void
   /** Cwd for the next shell; read at each start so a retry follows a `cd`. */
   resolveCwd: () => string
   /** Runs once start metadata says whether the server replays history itself. */

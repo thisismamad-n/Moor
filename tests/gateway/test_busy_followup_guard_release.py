@@ -273,7 +273,7 @@ async def test_reconnect_during_busy_admission_runs_accepted_followup_once(
     """A reconnect can replace the delivery adapter while the busy handler awaits, either
     before it stores the follow-up (it lands in the replacement's slot) or after (it stays in
     the old adapter's slot).  Either way the accepted follow-up must run exactly once."""
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "true")
+    monkeypatch.setenv("MOOR_GATEWAY_BUSY_ACK_ENABLED", "true")
     held = _HeldRead(asyncio.get_running_loop())
     adapter, turns, key = _gateway(tmp_path, monkeypatch, _stock_interrupt, held)
     runner = adapter.gateway_runner

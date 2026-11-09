@@ -1,13 +1,13 @@
 import type { TranslationOverrides } from './define-locale'
 
 export const frOnboarding: TranslationOverrides['onboarding'] = {
-  headerTitle: 'Configurons Hermes Agent pour vous',
+  headerTitle: 'Configurons Moor Agent pour vous',
   headerDesc:
     'Connectez un fournisseur de modèles pour commencer à discuter. La plupart des options nécessitent un clic.',
-  preparingInstall: "Hermes finalise l'installation. Cela prend généralement moins d'une minute au premier lancement.",
-  starting: 'Démarrage de Hermes…',
+  preparingInstall: "Moor finalise l'installation. Cela prend généralement moins d'une minute au premier lancement.",
+  starting: 'Démarrage de Moor…',
   setupSlowTitle: 'La configuration prend plus de temps que d’habitude.',
-  setupSlowBody: 'Hermes est toujours en cours de démarrage en arrière-plan.',
+  setupSlowBody: 'Moor est toujours en cours de démarrage en arrière-plan.',
   continueWithoutSetup: 'Continuer sans configuration',
   lookingUpProviders: 'Recherche des fournisseurs...',
   collapse: 'Réduire',
@@ -16,7 +16,7 @@ export const frOnboarding: TranslationOverrides['onboarding'] = {
   chooseLater: 'Je choisirai un fournisseur plus tard',
   recommended: 'Recommandé',
   connected: 'Connecté',
-  featuredPitch: 'Un abonnement, 300+ modèles de pointe — la méthode recommandée pour exécuter Hermes',
+  featuredPitch: 'Un abonnement, 300+ modèles de pointe — la méthode recommandée pour exécuter Moor',
   fireworksPitch: 'API de modèles directe — modèles de pointe hébergés par Fireworks',
   localModelsTitle: 'Exécuter des modèles en local',
   localModelsPitch: 'Aucun compte requis — téléchargez un modèle et exécutez-le sur cette machine',
@@ -46,7 +46,7 @@ export const frOnboarding: TranslationOverrides['onboarding'] = {
     local: {
       short: 'auto-hébergé',
       description:
-        'Pointez Hermes vers un point de terminaison local ou auto-hébergé compatible OpenAI (vLLM, llama.cpp, Ollama, etc).'
+        'Pointez Moor vers un point de terminaison local ou auto-hébergé compatible OpenAI (vLLM, llama.cpp, Ollama, etc).'
     }
   },
   backToSignIn: 'Retour à la connexion',
@@ -60,7 +60,7 @@ export const frOnboarding: TranslationOverrides['onboarding'] = {
   update: 'Mettre à jour',
   flowSubtitles: {
     pkce: 'Ouvre votre navigateur pour vous connecter, puis continue ici',
-    device_code: 'Ouvre une page de vérification dans votre navigateur — Hermes se connecte automatiquement',
+    device_code: 'Ouvre une page de vérification dans votre navigateur — Moor se connecte automatiquement',
     external: 'Connectez-vous une fois dans votre terminal, puis revenez discuter'
   },
   startingSignIn: provider => `Démarrage de la connexion pour ${provider}...`,
@@ -77,8 +77,8 @@ export const frOnboarding: TranslationOverrides['onboarding'] = {
   errorDetails: 'Détails',
   pickDifferentProvider: 'Choisissez un autre fournisseur',
   signInWith: provider => `Se connecter avec ${provider}`,
-  openedBrowser: provider => `Nous avons ouvert ${provider} dans votre navigateur.`,
-  authorizeThere: 'Autorisez Hermes là-bas.',
+  openedBrowser: provider => `Moor avons ouvert ${provider} dans votre navigateur.`,
+  authorizeThere: 'Autorisez Moor là-bas.',
   copyAuthCode: "Copiez le code d'autorisation et collez-le ci-dessous.",
   pasteAuthCode: "Coller le code d'autorisation",
   reopenAuthPage: "Rouvrir la page d'autorisation",
@@ -86,7 +86,7 @@ export const frOnboarding: TranslationOverrides['onboarding'] = {
   externalPending: provider =>
     `${provider} se connecte via sa propre CLI. Exécutez cette commande dans un terminal, puis revenez et choisissez « Je me suis connecté » :`,
   signedIn: 'Je me suis connecté',
-  deviceCodeOpened: provider => `Nous avons ouvert ${provider} dans votre navigateur. Entrez ce code là-bas :`,
+  deviceCodeOpened: provider => `Moor avons ouvert ${provider} dans votre navigateur. Entrez ce code là-bas :`,
   reopenVerification: 'Rouvrir la page de vérification',
   copy: 'Copier',
   defaultModel: 'Modèle par défaut',

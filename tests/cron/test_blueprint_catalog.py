@@ -120,9 +120,9 @@ class TestRenderers:
 def isolated_home(tmp_path, monkeypatch):
     home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    import moor_constants
+    importlib.reload(moor_constants)
     from cron import jobs
     importlib.reload(jobs)
     return jobs

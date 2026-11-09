@@ -22,11 +22,11 @@ import threading
 import time
 import urllib.parse
 
-from hermes_cli.install_identity import get_install_id as _shared_get_install_id
-from hermes_cli.process_identity import is_desktop_owned_backend
-from hermes_cli.pty_session import run_reaper
-from hermes_cli import web_server_file_tickets as _file_tickets
-from hermes_cli.web_server_session_token import resolve_session_token
+from moor_cli.install_identity import get_install_id as _shared_get_install_id
+from moor_cli.process_identity import is_desktop_owned_backend
+from moor_cli.pty_session import run_reaper
+from moor_cli import web_server_file_tickets as _file_tickets
+from moor_cli.web_server_session_token import resolve_session_token
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -35,9 +35,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from hermes_constants import WEBAPP_ATTACHMENT_MAX_BYTES
-from hermes_cli.config import load_config
-from hermes_cli.version_info import get_version_info
+from moor_constants import WEBAPP_ATTACHMENT_MAX_BYTES
+from moor_cli.config import load_config
+from moor_cli.version_info import get_version_info
 
 try:
     from fastapi import FastAPI, HTTPException, Request
@@ -65,7 +65,7 @@ WEB_DIST = Path(os.environ["MOOR_WEB_DIST"]) if "MOOR_WEB_DIST" in os.environ el
 _log = logging.getLogger(__name__)
 
 
-from hermes_cli.web_server_lifecycle import (
+from moor_cli.web_server_lifecycle import (
     PORT_IN_USE_EXIT_CODE,
     _dashboard_forwarded_allow_ips,
     _eager_reconcile_own_session_db,
@@ -85,7 +85,7 @@ def _gateway_owns_cron(name: str, home) -> bool:
     """A gateway already ticks this profile's store with live adapters: its OWN process, or the
     live default multiplexer (a served satellite has no gateway.pid of its own). Winning the
     tick-lock race here would deliver through the standalone path (#52202, #100489, #107485)."""
-    from hermes_cli.profiles import _check_gateway_running, _served_by_running_multiplexer
+    from moor_cli.profiles import _check_gateway_running, _served_by_running_multiplexer
 
     return _check_gateway_running(Path(home)) or (
         name != "default" and _served_by_running_multiplexer(name))
@@ -108,10 +108,10 @@ def _start_desktop_cron_ticker(stop_event: threading.Event, interval: int = 60) 
     ("tasks on the sleeping profile could be idle" — community report, Aug 2026).
     """
     from cron.scheduler_provider import InProcessCronScheduler, resolve_cron_scheduler
-    from hermes_constants import get_hermes_home, profile_name_for_home
+    from moor_constants import get_moor_home, profile_name_for_home
 
     provider = resolve_cron_scheduler()
-    own_home = Path(get_hermes_home())
+    own_home = Path(get_moor_home())
     own_name = profile_name_for_home(own_home) or "default"
     # Ownership is re-checked every tick, not once at startup, so Desktop takes over when the
     # gateway stops (#126822).
@@ -120,7 +120,7 @@ def _start_desktop_cron_ticker(stop_event: threading.Event, interval: int = 60) 
     start_kwargs: dict = {"interval": interval}
     if isinstance(provider, InProcessCronScheduler):
         try:
-            from hermes_cli.profiles import profiles_to_serve
+            from moor_cli.profiles import profiles_to_serve
 
             # Same served set as the multiplexer: default + every live profile under profiles/.
             # The ticker re-enumerates this callable every cycle. Passing a
@@ -134,7 +134,7 @@ def _start_desktop_cron_ticker(stop_event: threading.Event, interval: int = 60) 
                 # Desktop races its dedicated gateway for the same cron store.
                 start_kwargs["profile_homes"] = profile_homes
                 start_kwargs["profile_gate"] = profile_gate
-                from hermes_logging import enable_profile_log_routing
+                from moor_logging import enable_profile_log_routing
 
                 enable_profile_log_routing(initial_profile_homes)
                 _log.info(
@@ -162,7 +162,7 @@ def _start_desktop_cron_ticker(stop_event: threading.Event, interval: int = 60) 
 
         if _owned():
             _log.info(
-                "Desktop cron scheduler waiting: live gateway owns cron on this HERMES_HOME; "
+                "Desktop cron scheduler waiting: live gateway owns cron on this MOOR_HOME; "
                 "the gateway ticks with live adapters (re-probing every %ds)", interval,
             )
             while True:
@@ -180,7 +180,7 @@ def _start_desktop_cron_ticker(stop_event: threading.Event, interval: int = 60) 
 _DESKTOP_MCP_DISCOVERY_DELAY_S = 1.0
 
 
-from hermes_cli.web_server_app import app_lifespan
+from moor_cli.web_server_app import app_lifespan
 
 
 def _app_state_default(app: FastAPI, name: str, factory):
@@ -205,16 +205,16 @@ def _get_pty_active_session_files(app: FastAPI) -> dict[str, Path]:
     return _app_state_default(app, "pty_active_session_files", dict)
 
 
-app = FastAPI(title="Hermes Agent", version=get_version_info().base_version, lifespan=app_lifespan)
+app = FastAPI(title="Moor Agent", version=get_version_info().base_version, lifespan=app_lifespan)
 
-from hermes_cli.dashboard_auth.body_limit import AuthBodyLimitMiddleware
+from moor_cli.dashboard_auth.body_limit import AuthBodyLimitMiddleware
 
 # Register first (innermost): auth gates run before this, JSON parsing after it.
 app.add_middleware(AuthBodyLimitMiddleware)
 
 
 # Memory-provider OAuth connect routes live in the memory layer, not here.
-from hermes_cli.memory_oauth import router as _memory_oauth_router
+from moor_cli.memory_oauth import router as _memory_oauth_router
 
 app.include_router(_memory_oauth_router)
 
@@ -222,7 +222,7 @@ app.include_router(_memory_oauth_router)
 # web_server_session_token sibling; it dies with the process and is injected
 # into the SPA HTML so only the web UI can use it.
 _SESSION_TOKEN = resolve_session_token()
-_SESSION_HEADER_NAME = "X-Hermes-Session-Token"
+_SESSION_HEADER_NAME = "X-moor-session-Token"
 _SSH_OWNER_NONCE: Optional[str] = None
 _SSH_RUNTIME_PURELIB: Optional[tuple[str, int, int]] = None
 _SSH_RUNTIME_MARKER: Optional[str] = None
@@ -282,7 +282,7 @@ def _ssh_runtime_intact() -> bool:
 # share one testable seam.
 _DASHBOARD_EMBEDDED_CHAT_ENABLED = True
 
-from hermes_cli.web_upload_limit import ChatFileUploadLimitMiddleware
+from moor_cli.web_upload_limit import ChatFileUploadLimitMiddleware
 
 # Inside every auth/Host middleware: those checks run before body ingestion,
 # and the receive limit runs before FastAPI can spool a multipart attachment.
@@ -350,7 +350,7 @@ def _require_token(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
-from hermes_cli.web_server_boundary import (  # re-exported: web_server.<name> stays the public seam
+from moor_cli.web_server_boundary import (  # re-exported: web_server.<name> stays the public seam
     _DESKTOP_ATTACHMENT_WS_MAX_BYTES,
     _LOOPBACK_HOST_VALUES,
     _dashboard_public_hosts,
@@ -401,10 +401,10 @@ async def host_header_middleware(request: Request, call_next):
 # groups. Not an import cycle: web_server_dashboard reaches back into this module only inside
 # functions, so the position is not load-bearing. What is load-bearing is the middleware
 # registration order below (the HTTP gate before the auth middlewares, so it runs after them).
-from hermes_cli.web_server_dashboard import (
+from moor_cli.web_server_dashboard import (
     PluginApiWebSocketGate, _plugin_api_name, _plugin_api_request_refused,
 )
-from hermes_cli.web_server_plugin_profiles import forward_secondary_plugin_request, plugin_request_scope
+from moor_cli.web_server_plugin_profiles import forward_secondary_plugin_request, plugin_request_scope
 
 
 @app.middleware("http")
@@ -482,8 +482,8 @@ async def _token_auth_seam(request: Request, call_next):
     + ``token_authenticated`` so downstream gates skip enforcement. Non-token
     routes pass through untouched.
     """
-    from hermes_cli.dashboard_auth.native_http import authenticate_native_http, native_profile_scope
-    from hermes_cli.dashboard_auth.token_auth import token_auth_middleware
+    from moor_cli.dashboard_auth.native_http import authenticate_native_http, native_profile_scope
+    from moor_cli.dashboard_auth.token_auth import token_auth_middleware
     rejection = await authenticate_native_http(request)
     if rejection is not None:
         return rejection
@@ -613,11 +613,11 @@ async def _dashboard_selftest_loop() -> None:
 
 # Action registries/spawner are owned by web_server_gateway; routers and tests reach them
 # there, so this module reads them through the module too (one patch seam).
-from hermes_cli import web_server_gateway as _gateway_mod
-from hermes_cli.web_server_gateway import _ACTION_LOG_FILES, _terminate_desktop_managed_gateway
-from hermes_cli.web_server_sessions import _auto_archive_ticker_loop
-from hermes_cli.web_server_chat import PTY_REGISTRY
-from hermes_cli.web_server_dashboard import (
+from moor_cli import web_server_gateway as _gateway_mod
+from moor_cli.web_server_gateway import _ACTION_LOG_FILES, _terminate_desktop_managed_gateway
+from moor_cli.web_server_sessions import _auto_archive_ticker_loop
+from moor_cli.web_server_chat import PTY_REGISTRY
+from moor_cli.web_server_dashboard import (
     _discover_dashboard_plugins, _mount_plugin_api_routes, mount_spa,
 )
 
@@ -685,7 +685,7 @@ _LAST_GATEWAY_RESTART: Optional[tuple[float, subprocess.Popen, tuple[str, ...]]]
 
 
 def _spawn_gateway_restart(profile: Optional[str] = None, *, interrupt: bool = False) -> tuple[subprocess.Popen, bool]:
-    """Spawn ``hermes gateway restart``, reusing an in-flight or recent restart.
+    """Spawn ``moor gateway restart``, reusing an in-flight or recent restart.
 
     Concurrent children race each other on the kill-and-start path, so a live
     child is reused; requests within ``GATEWAY_RESTART_COOLDOWN_SECONDS`` for the
@@ -754,7 +754,7 @@ _dashboard_plugins_cache: Optional[list] = None
 def _get_dashboard_plugins(force_rescan: bool = False) -> list:
     """The active scope's dashboard plugins: a secondary profile's are its own (PLG-3)."""
     global _dashboard_plugins_cache
-    from hermes_cli.web_server_plugin_profiles import profile_dashboard_plugins, secondary_profile_home
+    from moor_cli.web_server_plugin_profiles import profile_dashboard_plugins, secondary_profile_home
     home = secondary_profile_home()
     if home is not None:
         return profile_dashboard_plugins(home, force_rescan)
@@ -768,7 +768,7 @@ def _get_dashboard_plugins(force_rescan: bool = False) -> list:
 
 # Router mounting. ORDER IS ROUTE-MATCHING ORDER: literal paths must land before
 # templated siblings (e.g. /api/sessions/bulk-delete before /api/sessions/{id}).
-from hermes_cli.web_routers import (
+from moor_cli.web_routers import (
     files as _files_routes,
     git as _git_routes,
     local_models as _local_models_routes,
@@ -799,10 +799,10 @@ from hermes_cli.web_routers import (
     ui_preferences as _ui_preferences_routes,
 )
 
-import hermes_cli.web_routers.desktop_plugins as _desktop_plugin_routes
-import hermes_cli.web_routers.uploads as _upload_routes
+import moor_cli.web_routers.desktop_plugins as _desktop_plugin_routes
+import moor_cli.web_routers.uploads as _upload_routes
 from fastapi import Depends as _Depends
-from hermes_cli.web_server_surface import route_on as _route_on
+from moor_cli.web_server_surface import route_on as _route_on
 
 app.include_router(_files_routes.router)
 # The Webapp's routes exist only on the surfaces whose policy names them (404 elsewhere).
@@ -847,7 +847,7 @@ app.include_router(_ui_preferences_routes.router, dependencies=[_Depends(_route_
 # mount before the SPA catch-all so /{full_path:path} doesn't swallow them. Auth
 # routes are always mounted — the gate middleware decides enforcement.
 _mount_plugin_api_routes()
-from hermes_cli.dashboard_auth.routes import router as _dashboard_auth_router
+from moor_cli.dashboard_auth.routes import router as _dashboard_auth_router
 
 app.include_router(_dashboard_auth_router)
 mount_spa(app)
@@ -879,7 +879,7 @@ def _no_auth_provider_message(host: str) -> str:
         public_url = own_url or ""
         if own_url is None:
             try:
-                from hermes_cli.dashboard_auth.prefix import resolve_public_url
+                from moor_cli.dashboard_auth.prefix import resolve_public_url
 
                 public_url = resolve_public_url()
             except Exception:
@@ -893,7 +893,7 @@ def _no_auth_provider_message(host: str) -> str:
         fix_hint = (
             "If this dashboard should be LOCAL-ONLY (no reverse "
             f"proxy), remove {setting} from config.yaml "
-            + ("(and unset HERMES_DASHBOARD_PUBLIC_URL) " if own_url is None else "")
+            + ("(and unset MOOR_DASHBOARD_PUBLIC_URL) " if own_url is None else "")
             + "to restore the unauthenticated loopback mode.\n"
         )
     else:
@@ -909,7 +909,7 @@ def _no_auth_provider_message(host: str) -> str:
         "print(hash_password('your-password'))\")\n"
         "  • OAuth: run `moor dashboard register` (Moor Portal) or "
         "install a DashboardAuthProvider plugin.\n"
-        "  • Deployment token: provision HERMES_DASHBOARD_SESSION_TOKEN "
+        "  • Deployment token: provision MOOR_DASHBOARD_SESSION_TOKEN "
         "(a literal token, or 'file:<path>' naming a secret-manager-decrypted "
         "token file) — the bundled session-token provider then authorizes "
         "bearer REST + /api/ws ?token= for token-mode clients such as the "
@@ -1094,7 +1094,7 @@ def _reclaim_host_from_orphaned_owner(role: str) -> bool:
     False and the caller stays observe-only. Never raises.
     """
     from gateway import host_rendezvous as hr
-    from hermes_cli.process_identity import reap_orphaned_backend_owner
+    from moor_cli.process_identity import reap_orphaned_backend_owner
 
     try:
         owner = hr.read_record(role)
@@ -1229,13 +1229,13 @@ def _on_server_started(
         # outlives the handoff, #99859), so it retires itself (between turns) when the install
         # moves on. The retirement fence closes admission process-wide before the exit, so a
         # connected Desktop just sees its next request reconnect-respawn the backend on new code.
-        from hermes_cli.web_server_skew_exit import start_code_skew_watchdog
+        from moor_cli.web_server_skew_exit import start_code_skew_watchdog
 
         start_code_skew_watchdog(server)
     if getattr(app.state, "ssh_isolated_clients", None) is not None and ssh_lock_path and _SSH_OWNER_NONCE:
         # A reconnect that cannot prove this pid is its own drops the lock without signalling us
         # and spawns a new nonce (#132034); retire (between turns) once the lock names that spawn.
-        from hermes_cli.web_server_owner_exit import start_owner_watchdog
+        from moor_cli.web_server_owner_exit import start_owner_watchdog
 
         start_owner_watchdog(server, lock_path=ssh_lock_path, nonce=_SSH_OWNER_NONCE)
 
@@ -1270,23 +1270,23 @@ def _on_server_started(
     # Port-discovery sentinel parsed by the Desktop spawn. Written to fd 1:
     # tui_gateway.server redirects sys.stdout to stderr at import, and the
     # Desktop watches child.stdout (#96282). A headless `serve` announces the
-    # neutral token FIRST and the legacy HERMES_DASHBOARD_READY one after it:
+    # neutral token FIRST and the legacy MOOR_DASHBOARD_READY one after it:
     # a packaged Desktop artifact whose parser predates the neutral token
     # (#60772) still matches the legacy sentinel, while current parsers match
     # either. The legacy `dashboard` backend keeps its own single token.
     if headless:
-        _write_machine_sentinel_line(f"HERMES_BACKEND_READY port={actual_port}")
-        _write_machine_sentinel_line(f"HERMES_DASHBOARD_READY port={actual_port}")
+        _write_machine_sentinel_line(f"MOOR_BACKEND_READY port={actual_port}")
+        _write_machine_sentinel_line(f"MOOR_DASHBOARD_READY port={actual_port}")
     else:
-        _write_machine_sentinel_line(f"HERMES_DASHBOARD_READY port={actual_port}")
+        _write_machine_sentinel_line(f"MOOR_DASHBOARD_READY port={actual_port}")
     if headless:
         # Auth-gated JSON-RPC/WS only — announce the bind, not a URL. flush:
         # a piped stdout otherwise surfaces this minutes after the sentinel.
         print(f"  Moor backend listening on {host}:{actual_port}", flush=True)
     else:
-        from hermes_cli.url_utils import format_url_host
+        from moor_cli.url_utils import format_url_host
 
-        print(f"  Hermes Web UI → http://{format_url_host(host)}:{actual_port}")
+        print(f"  Moor Web UI → http://{format_url_host(host)}:{actual_port}")
     _maybe_open_browser(host, actual_port, open_browser, initial_profile)
 
     if start_mcp_discovery_after_bind:
@@ -1407,7 +1407,7 @@ def start_server(
 
     ``initial_profile`` is appended to the auto-opened URL as ``?profile=<name>``
     (profile alias ``<profile> dashboard``). ``headless`` is the ``serve`` path:
-    JSON-RPC/WS backend, no UI build, no SPA mount (``HERMES_SERVE_HEADLESS``).
+    JSON-RPC/WS backend, no UI build, no SPA mount (``MOOR_SERVE_HEADLESS``).
     ``isolated`` (``--isolated``) is recorded in the spawn ledger so attach-first
     discovery never adopts this process.
     ``ssh_session_token``/``ssh_owner_nonce`` are process-local Desktop SSH
@@ -1417,7 +1417,7 @@ def start_server(
     until the ready sentinel is written so its SDK import can't hold the GIL
     against the pre-bind path.
     """
-    from hermes_cli.update_proxy_env import restore_user_proxy_env
+    from moor_cli.update_proxy_env import restore_user_proxy_env
     restore_user_proxy_env()  # a backend an update replayed keeps the user's proxy env, not the update's
     _apply_ssh_session_token(ssh_session_token or "")
     _apply_ssh_owner_nonce(ssh_owner_nonce)
@@ -1505,7 +1505,7 @@ def start_server(
                 ssh_lock_path=ssh_lock_path,
             )
             if headless:
-                from hermes_cli.observability.shared_metrics_startup import record_process_ready
+                from moor_cli.observability.shared_metrics_startup import record_process_ready
                 record_process_ready("serve_boot", background=True)
 
             await server.main_loop()

@@ -22,7 +22,7 @@ def worker_setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path,
     root.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
     profile.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     workspace = tmp_path / "candidate-worktree"
@@ -83,10 +83,10 @@ def test_managed_gateway_worker_is_spawned_in_restart_safe_scope(
     assert captured_cmd[unit_index + 1] == "moor-worker-kanban-t_candidate_restart-run-23"
     assert "MemoryMax=536870912" in captured_cmd
     separator = captured_cmd.index("--")
-    assert captured_cmd[separator + 1 :] == [sys.executable, "-m", "hermes_cli.kanban_worker_client"]
+    assert captured_cmd[separator + 1 :] == [sys.executable, "-m", "moor_cli.kanban_worker_client"]
     assert task.assignee is not None
-    assert captured_env["HERMES_PROFILE"] == task.assignee
-    assert captured_env["HERMES_HOME"] == str(workspace.parent / ".hermes" / "profiles" / task.assignee)
+    assert captured_env["MOOR_PROFILE"] == task.assignee
+    assert captured_env["MOOR_HOME"] == str(workspace.parent / ".moor" / "profiles" / task.assignee)
     assert captured_cwd == str(workspace)
     assert captured_env["MOOR_KANBAN_TASK"] == task.id
     assert captured_env["MOOR_KANBAN_RUN_ID"] == "23"
@@ -143,7 +143,7 @@ def test_standalone_dispatcher_keeps_direct_worker_spawn(
     )
 
     assert kbd._default_spawn(task, str(workspace)) == 4243
-    assert captured_cmd == [sys.executable, "-m", "hermes_cli.kanban_worker_client"]
+    assert captured_cmd == [sys.executable, "-m", "moor_cli.kanban_worker_client"]
 
 
 @pytest.mark.platforms("linux")
@@ -182,7 +182,7 @@ def test_oneshot_unit_dispatcher_scope_wraps_or_warns_never_dooms_silently(
     with caplog.at_level("WARNING", logger=process_registry.logger.name):
         kbd._default_spawn(task, str(workspace))
     # Unwrapped: the bare worker argv (the profile owner executes; this client waits for its receipt).
-    assert spawned[-1] == [sys.executable, "-m", "hermes_cli.kanban_worker_client"]
+    assert spawned[-1] == [sys.executable, "-m", "moor_cli.kanban_worker_client"]
     warned = [r.getMessage() for r in caplog.records if "KILLED when the unit exits" in r.getMessage()]
     assert len(warned) == 1 and "KillMode=process" in warned[0]
 
@@ -207,7 +207,7 @@ def test_real_user_systemd_scope_preserves_worker_context(
     from uuid import uuid4
     # User-manager transient units outlive pytest's temporary directories.
     task = replace(task, id=f"t_candidate_{uuid4().hex}")
-    unit = f"hermes-worker-kanban-{task.id}-run-{task.current_run_id}.scope"
+    unit = f"moor-worker-kanban-{task.id}-run-{task.current_run_id}.scope"
     # Only this freshly named scope is test-owned; the live-system guard still refuses every other unit.
     request.node.live_system_guard_owned_units = {unit}
     receipt = workspace / "worker-receipt.json"
@@ -216,20 +216,20 @@ def test_real_user_systemd_scope_preserves_worker_context(
         "p = pathlib.Path(sys.argv[1]); t = p.with_suffix('.tmp'); "
         "t.write_text(json.dumps({"
         "'pid': os.getpid(), 'cwd': os.getcwd(), "
-        "'task': os.environ.get('HERMES_KANBAN_TASK'), "
-        "'run': os.environ.get('HERMES_KANBAN_RUN_ID'), "
-        "'claim': os.environ.get('HERMES_KANBAN_CLAIM_LOCK'), "
-        "'board': os.environ.get('HERMES_KANBAN_BOARD'), "
-        "'home': os.environ.get('HERMES_HOME'), "
-        "'profile': os.environ.get('HERMES_PROFILE'), "
-        "'source': os.environ.get('HERMES_SESSION_SOURCE'), "
+        "'task': os.environ.get('MOOR_KANBAN_TASK'), "
+        "'run': os.environ.get('MOOR_KANBAN_RUN_ID'), "
+        "'claim': os.environ.get('MOOR_KANBAN_CLAIM_LOCK'), "
+        "'board': os.environ.get('MOOR_KANBAN_BOARD'), "
+        "'home': os.environ.get('MOOR_HOME'), "
+        "'profile': os.environ.get('MOOR_PROFILE'), "
+        "'source': os.environ.get('MOOR_SESSION_SOURCE'), "
         "'terminal_cwd': os.environ.get('TERMINAL_CWD'), "
         "'cgroup': pathlib.Path('/proc/self/cgroup').read_text()})); os.replace(t, p); time.sleep(0.5)"
     )
     # Replace only the worker payload; keep real scope creation and env handoff.
     monkeypatch.setattr(
         kbd, "_worker_argv",
-        lambda task, profile_arg, hermes_home: [sys.executable, "-c", script, str(receipt)],
+        lambda task, profile_arg, moor_home: [sys.executable, "-c", script, str(receipt)],
     )
     monkeypatch.setenv("INVOCATION_ID", "managed-gateway-test")
     monkeypatch.setattr(process_registry, "_is_supervised_gateway_process", lambda: True)
@@ -249,12 +249,12 @@ def test_real_user_systemd_scope_preserves_worker_context(
         assert payload["run"] == "23"
         assert payload["claim"] == task.claim_lock
         assert payload["board"] == kb.get_current_board()
-        assert payload["home"] == str(workspace.parent / '.hermes' / 'profiles' / task.assignee)
+        assert payload["home"] == str(workspace.parent / '.moor' / 'profiles' / task.assignee)
         assert payload["profile"] == task.assignee
         assert payload["source"] == 'kanban'
         assert payload["terminal_cwd"] == str(workspace)
         assert unit in payload["cgroup"]
-        assert "hermes-gateway.service" not in payload["cgroup"]
+        assert "moor-gateway.service" not in payload["cgroup"]
         import psutil
         assert psutil.Process(pid).wait(timeout=5) == 0
     finally:

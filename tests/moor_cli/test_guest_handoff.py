@@ -1,6 +1,6 @@
-"""The guest handoff step: a Nous account replacing the free tier moves the free tier's apps into it.
+"""The guest handoff step: a Moor account replacing the free tier moves the free tier's apps into it.
 
-Driven end to end through Hermes' real writers, stores and HTTP client against a fake account
+Driven end to end through Moor' real writers, stores and HTTP client against a fake account
 service (``anon_portal.FakePortal`` plus the claim and token-refresh routes).
 """
 
@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from tests.hermes_cli.anon_portal import PORTAL, FakePortal, install_portal, make_jwt
+from tests.moor_cli.anon_portal import PORTAL, FakePortal, install_portal, make_jwt
 
 DESTINATION = "user_acct_1"
 
@@ -22,9 +22,9 @@ DESTINATION = "user_acct_1"
 def _account(sub: str = DESTINATION, refresh: str = "rt_1") -> dict:
     expires = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
     return {
-        "auth_method": "oauth_device_code", "portal_base_url": PORTAL, "client_id": "hermes-cli",
+        "auth_method": "oauth_device_code", "portal_base_url": PORTAL, "client_id": "moor-cli",
         "inference_base_url": "https://inference-api.nousresearch.com/v1", "scope": "inference:invoke",
-        "token_type": "Bearer", "access_token": make_jwt(sub=sub, client_id="hermes-cli", account_tier="standard"),
+        "token_type": "Bearer", "access_token": make_jwt(sub=sub, client_id="moor-cli", account_tier="standard"),
         "refresh_token": refresh, "obtained_at": datetime.now(UTC).isoformat(), "expires_at": expires,
         "expires_in": 3600}
 
@@ -59,15 +59,15 @@ class ClaimPortal(FakePortal):
         if request.url.path == "/api/oauth/token":
             self.refreshes += 1
             return httpx.Response(200, json={
-                "access_token": make_jwt(sub=DESTINATION, client_id="hermes-cli", account_tier="standard",
+                "access_token": make_jwt(sub=DESTINATION, client_id="moor-cli", account_tier="standard",
                                          rotation=self.refreshes),
                 "refresh_token": f"rt_{self.refreshes + 1}", "expires_in": 3600, "token_type": "Bearer"})
         return super().handler(request)
 
 
 def holds_auth_locks() -> bool:
-    from hermes_cli import auth, auth_nous
-    if getattr(auth_nous._nous_shared_lock_holder, "depth", 0):
+    from moor_cli import auth, auth_moor
+    if getattr(auth_moor._moor_shared_lock_holder, "depth", 0):
         return True
     with auth._auth_target_lock_holders_guard:
         holders = list(auth._auth_target_lock_holders.values())
@@ -78,19 +78,19 @@ def holds_auth_locks() -> bool:
 def portal(monkeypatch, tmp_path):
     fake = install_portal(monkeypatch, tmp_path, ClaimPortal())
     # The settle reads the recommended default from the Portal; that is not under test here.
-    monkeypatch.setattr("hermes_cli.anon_auth.settle_after_upgrade", lambda _s: {"model": "", "changed": False})
+    monkeypatch.setattr("moor_cli.anon_auth.settle_after_upgrade", lambda _s: {"model": "", "changed": False})
     return fake
 
 
 def _mint_guest() -> str:
-    from hermes_cli import anon_auth
+    from moor_cli import anon_auth
     state = anon_auth.ensure_portal_identity(explicit=True)
     assert anon_auth.is_guest_state(state)
     return state["anon_token"]
 
 
 def _records() -> dict:
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     return guest_handoff._load(guest_handoff._records_path())["records"]
 
 
@@ -103,54 +103,54 @@ def _only_record() -> dict:
 # --- Writer coverage: every way an account replaces the guest records the move -------------------
 
 def _save(account):
-    from hermes_cli.auth import persist_nous_credentials
-    persist_nous_credentials(account)
+    from moor_cli.auth import persist_moor_credentials
+    persist_moor_credentials(account)
 
 
 def _persist(account):
     """A surface's save: the account, then the handoff outside the locks."""
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     _save(account)
     guest_handoff.drain()
 
 
 def _step_up(account, monkeypatch):
-    from hermes_cli import auth
-    monkeypatch.setattr(auth, "_nous_device_code_login", lambda **_kw: account)
-    auth.step_up_nous_billing_scope(open_browser=False)
+    from moor_cli import auth
+    monkeypatch.setattr(auth, "_moor_device_code_login", lambda **_kw: account)
+    auth.step_up_moor_billing_scope(open_browser=False)
 
 
-def _login_nous(account, monkeypatch):
-    from hermes_cli import auth, auth_nous
-    monkeypatch.setattr(auth, "_nous_device_code_login", lambda **_kw: account)
-    monkeypatch.setattr(auth_nous, "_pick_nous_model_after_login", lambda *_a: None)
-    auth_nous._login_nous(SimpleNamespace(), auth.PROVIDER_REGISTRY["nous"])
+def _login_moor(account, monkeypatch):
+    from moor_cli import auth, auth_moor
+    monkeypatch.setattr(auth, "_moor_device_code_login", lambda **_kw: account)
+    monkeypatch.setattr(auth_moor, "_pick_moor_model_after_login", lambda *_a: None)
+    auth_moor._login_moor(SimpleNamespace(), auth.PROVIDER_REGISTRY["moor"])
 
 
 def _subscription_login(account, monkeypatch):
-    from hermes_cli import auth, nous_subscription
-    monkeypatch.setattr(auth, "_nous_device_code_login", lambda **_kw: account)
-    monkeypatch.setattr(nous_subscription, "_confirm", lambda _p: True)
-    assert nous_subscription._run_nous_portal_login_only(capability="Web search")
+    from moor_cli import auth, moor_subscription
+    monkeypatch.setattr(auth, "_moor_device_code_login", lambda **_kw: account)
+    monkeypatch.setattr(moor_subscription, "_confirm", lambda _p: True)
+    assert moor_subscription._run_moor_portal_login_only(capability="Web search")
 
 
 def _sibling_adoption(account, monkeypatch, tmp_path):
     """Another profile signed in (account in the shared store); this one adopts it on next use."""
     import os
-    from hermes_cli import anon_auth, auth_nous
-    mine, sibling = os.environ["HERMES_HOME"], tmp_path / "sibling-profile"
+    from moor_cli import anon_auth, auth_moor
+    mine, sibling = os.environ["MOOR_HOME"], tmp_path / "sibling-profile"
     sibling.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(sibling))
-    auth_nous._write_shared_nous_state(account, renewal=False)
-    monkeypatch.setenv("HERMES_HOME", mine)
+    monkeypatch.setenv("MOOR_HOME", str(sibling))
+    auth_moor._write_shared_moor_state(account, renewal=False)
+    monkeypatch.setenv("MOOR_HOME", mine)
     anon_auth.ensure_portal_identity(explicit=True)
 
 
 WRITERS = {
-    "persist_nous_credentials": lambda a, mp, tp: _persist(a),
-    "step_up_nous_billing_scope": lambda a, mp, tp: _step_up(a, mp),
-    "_login_nous": lambda a, mp, tp: _login_nous(a, mp),
-    "nous_subscription_login": lambda a, mp, tp: _subscription_login(a, mp),
+    "persist_moor_credentials": lambda a, mp, tp: _persist(a),
+    "step_up_moor_billing_scope": lambda a, mp, tp: _step_up(a, mp),
+    "_login_moor": lambda a, mp, tp: _login_moor(a, mp),
+    "moor_subscription_login": lambda a, mp, tp: _subscription_login(a, mp),
     "shared_store_adoption": _sibling_adoption,
 }
 
@@ -165,7 +165,7 @@ def test_every_writer_that_replaces_the_guest_hands_it_over(portal, monkeypatch,
     assert portal.locks_held_during_claim == [False]
     record = _only_record()
     assert record["state"] == "claimed" and "anon_token" not in record
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     assert guest_handoff.handoff_status()["moved_toolkits"] == ["gmail"]
 
 
@@ -215,13 +215,13 @@ def test_each_claim_answer_lands_in_its_state(portal, answer, state, probably_mo
 
 
 def _later(monkeypatch, seconds: float) -> None:
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     now = guest_handoff._now() + seconds
     monkeypatch.setattr(guest_handoff, "_now", lambda: now)
 
 
 def test_lost_success_then_unknown_token_reads_as_probably_moved(portal, monkeypatch):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     portal.claim_answers = [httpx.ReadTimeout("lost"), _err(404, "unknown_token")]
     _mint_guest()
     _persist(_account())
@@ -242,7 +242,7 @@ def test_account_token_refreshes_only_when_the_cohort_carried(portal, carried, r
 
 
 def test_transient_failures_retry_a_few_times_then_stop(portal, monkeypatch):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     attempts = len(guest_handoff._RETRY_DELAYS_SECONDS) + 1
     portal.claim_answers = [_err(503, "temporarily_disabled")] * (attempts + 1)
     _mint_guest()
@@ -255,7 +255,7 @@ def test_transient_failures_retry_a_few_times_then_stop(portal, monkeypatch):
 
 
 def test_a_retry_not_yet_due_sends_nothing(portal):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     portal.claim_answers = [_err(503, "temporarily_disabled")]
     _mint_guest()
     _persist(_account())
@@ -265,18 +265,18 @@ def test_a_retry_not_yet_due_sends_nothing(portal):
 # --- Sharing, durability --------------------------------------------------------------------------
 
 def test_two_profiles_sharing_one_guest_claim_once(portal, monkeypatch, tmp_path):
-    from hermes_cli import anon_auth, guest_handoff
+    from moor_cli import anon_auth, guest_handoff
     import os
-    first = os.environ["HERMES_HOME"]
+    first = os.environ["MOOR_HOME"]
     second = tmp_path / "second-profile"
     second.mkdir()
     anon = _mint_guest()
-    monkeypatch.setenv("HERMES_HOME", str(second))
+    monkeypatch.setenv("MOOR_HOME", str(second))
     assert anon_auth.ensure_portal_identity(explicit=True)["anon_token"] == anon   # adopts the guest
 
-    monkeypatch.setenv("HERMES_HOME", first)
+    monkeypatch.setenv("MOOR_HOME", first)
     _persist(_account())
-    monkeypatch.setenv("HERMES_HOME", str(second))
+    monkeypatch.setenv("MOOR_HOME", str(second))
     anon_auth.ensure_portal_identity(explicit=True)      # adopts the account, replacing the guest
 
     assert len(portal.claims) == 1
@@ -285,7 +285,7 @@ def test_two_profiles_sharing_one_guest_claim_once(portal, monkeypatch, tmp_path
 
 
 def test_a_crash_between_save_and_claim_is_claimed_on_the_next_run(portal):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     anon = _mint_guest()
     _save(_account())                                    # the process dies before the claim
     assert portal.claims == [] and _only_record()["state"] == "pending"
@@ -296,7 +296,7 @@ def test_a_crash_between_save_and_claim_is_claimed_on_the_next_run(portal):
 
 
 def test_a_claimed_record_is_never_reopened(portal):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     _mint_guest()
     _persist(_account())
     record = _only_record()
@@ -306,7 +306,7 @@ def test_a_claimed_record_is_never_reopened(portal):
 
 
 def test_a_late_answer_never_reopens_a_finished_move(portal, monkeypatch):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     _mint_guest()
     _save(_account())
     # A's answer is lost; while A hangs past its lease, B hears unknown_token and finishes the move.
@@ -324,7 +324,7 @@ def test_a_late_answer_never_reopens_a_finished_move(portal, monkeypatch):
 
 
 def test_a_busy_store_lock_leaves_the_move_for_a_later_run(portal, monkeypatch):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     _mint_guest()
     _save(_account())
     real_bearer = guest_handoff._bearer
@@ -339,7 +339,7 @@ def test_a_busy_store_lock_leaves_the_move_for_a_later_run(portal, monkeypatch):
 def test_the_retry_worker_binds_the_launch_profile(portal, monkeypatch):
     import threading
     from agent.secret_scope import current_secret_scope, is_multiplex_active, set_multiplex_active
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     ticked, scopes = threading.Event(), []
     monkeypatch.setattr(guest_handoff, "_WORKER_FIRST_TICK_SECONDS", 0.0)
     monkeypatch.setattr(guest_handoff, "drain", lambda: (scopes.append(current_secret_scope()), ticked.set()))
@@ -355,7 +355,7 @@ def test_the_retry_worker_binds_the_launch_profile(portal, monkeypatch):
 
 
 def test_a_run_while_an_attempt_is_in_flight_sends_nothing(portal):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     _mint_guest()
     _save(_account())
     portal.on_claim = lambda: portal.__dict__.setdefault("inner", guest_handoff.drain())
@@ -365,14 +365,14 @@ def test_a_run_while_an_attempt_is_in_flight_sends_nothing(portal):
 
 @pytest.mark.parametrize("code", ["client_not_allowed", "account_locked", "invalid_request", "some_new_code", None])
 def test_failure_copy_never_prints_a_server_code(code):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     lines = guest_handoff.status_lines({"state": "failed", "error": code})
     assert lines and lines[0].startswith("Your free-tier apps could not be moved.")
     assert code is None or code not in " ".join(lines)
 
 
 def test_a_claim_answer_without_connectors_reads_as_neutral(portal):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     portal.claim_answers = [httpx.Response(200, json={
         "status": "claimed", "destination_org_id": "org_1", "account_email": "sid@example.com"})]
     _mint_guest()
@@ -382,7 +382,7 @@ def test_a_claim_answer_without_connectors_reads_as_neutral(portal):
 
 
 def test_gone_on_a_first_attempt_reads_as_neutral(portal):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     portal.claim_answers = [_err(404, "unknown_token")]
     _mint_guest()
     _persist(_account())
@@ -390,41 +390,41 @@ def test_gone_on_a_first_attempt_reads_as_neutral(portal):
 
 
 def test_a_long_lived_process_with_a_guest_still_runs_the_handoff_worker(portal, monkeypatch):
-    from hermes_cli import guest_handoff, nous_auth_keepalive
-    monkeypatch.setattr(nous_auth_keepalive, "get_provider_auth_state",
+    from moor_cli import guest_handoff, moor_auth_keepalive
+    monkeypatch.setattr(moor_auth_keepalive, "get_provider_auth_state",
                         lambda _p: {"auth_method": "anonymous", "anon_token": "anon_x"})
     try:
-        nous_auth_keepalive.start_nous_auth_keepalive()
+        moor_auth_keepalive.start_moor_auth_keepalive()
         assert guest_handoff._worker_thread is not None and guest_handoff._worker_thread.is_alive()
     finally:
-        nous_auth_keepalive.stop_nous_auth_keepalive()
+        moor_auth_keepalive.stop_moor_auth_keepalive()
     assert guest_handoff._worker_thread is None
 
 
 def test_a_guest_token_still_cached_from_a_connector_call_does_not_skip_the_move(portal):
-    from hermes_cli import auth
-    from hermes_constants import hermes_home_key
+    from moor_cli import auth
+    from moor_constants import moor_home_key
     _mint_guest()
-    auth._RESOLVE_TOKEN_CACHE[hermes_home_key()] = (time.monotonic(), make_jwt())   # the guest's own token
+    auth._RESOLVE_TOKEN_CACHE[moor_home_key()] = (time.monotonic(), make_jwt())   # the guest's own token
     _persist(_account())
     assert len(portal.claims) == 1 and _only_record()["state"] == "claimed"
 
 
 def test_auth_status_shows_what_moved(portal, capsys):
-    from hermes_cli import auth_commands
+    from moor_cli import auth_commands
     _mint_guest()
     _persist(_account())
     capsys.readouterr()
-    auth_commands.auth_status_command(SimpleNamespace(provider="nous"))
+    auth_commands.auth_status_command(SimpleNamespace(provider="moor"))
     out = capsys.readouterr().out
-    assert "nous: logged in" in out and "Your apps moved to sid@example.com: Gmail." in out
+    assert "moor: logged in" in out and "Your apps moved to sid@example.com: Gmail." in out
 
 
 @pytest.mark.parametrize("kind", ["moved", "swapped"])
 def test_a_move_with_no_named_apps_reads_as_nothing_moved(portal, kind):
     """A free tier that only read its connectors gets a vendor id row on the service, so the claim
     answers ``moved``/``swapped`` with an empty list; that empty list is the truth."""
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     portal.claim_answers = [httpx.Response(200, json={
         **CLAIMED, "connectors": {"kind": kind, "moved_toolkits": [], "dropped_toolkits": []}})]
     _mint_guest()
@@ -434,7 +434,7 @@ def test_a_move_with_no_named_apps_reads_as_nothing_moved(portal, kind):
 
 
 def test_status_copy_never_names_the_mechanism(portal):
-    from hermes_cli import guest_handoff
+    from moor_cli import guest_handoff
     for status in (
         {"state": "claimed", "connectors_kind": "moved", "moved_toolkits": [], "account_email": "a@b.c"},
         {"state": "claimed", "connectors_kind": "conflict", "dropped_toolkits": ["notion"]},

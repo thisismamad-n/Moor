@@ -10,12 +10,12 @@ import tempfile
 
 
 def child(repo, case, account):
-    home = account / '.hermes'
+    home = account / '.moor'
     home.mkdir()
     os.environ['HOME'] = str(account)
-    os.environ['HERMES_HOME'] = str(home)
+    os.environ['MOOR_HOME'] = str(home)
     sys.path.insert(0, str(repo))
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     import tools.session_search_tool as search
     from tools.registry import registry
 
@@ -66,9 +66,9 @@ def main():
         import hashlib
         source_hash = hashlib.sha256((repo / 'tools/session_search_tool.py').read_bytes()).hexdigest()
         for case in ['empty', 'foreign', 'existing']:
-            with tempfile.TemporaryDirectory(prefix='hermes-reader-ab-') as tmp:
+            with tempfile.TemporaryDirectory(prefix='moor-reader-ab-') as tmp:
                 env = {'PATH': os.environ.get('PATH', ''), 'LANG': 'C.UTF-8', 'TZ': 'UTC',
-                       'HOME': tmp, 'HERMES_HOME': str(Path(tmp) / '.hermes'),
+                       'HOME': tmp, 'MOOR_HOME': str(Path(tmp) / '.moor'),
                        'PYTHONDONTWRITEBYTECODE': '1'}
                 proc = subprocess.run([sys.executable, str(Path(__file__).resolve()), '--child', str(repo),
                                        '--case', case, '--account', tmp], cwd=repo, env=env,

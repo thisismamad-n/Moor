@@ -25,14 +25,14 @@ import types
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from cli import HermesCLI, _ChatTurn
+from cli import MoorCLI, _ChatTurn
 
 
 class _StreamingTTSArming:
-    """Drive ``HermesCLI._chat_setup_turn_audio`` without a real CLI instance."""
+    """Drive ``MoorCLI._chat_setup_turn_audio`` without a real CLI instance."""
 
     def make_cli(self):
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = MoorCLI.__new__(MoorCLI)
         cli._voice_mode = False
         cli._voice_continuous = False
         cli._voice_tts = True

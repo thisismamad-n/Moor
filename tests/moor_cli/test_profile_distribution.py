@@ -477,7 +477,7 @@ class TestUpdate:
 
     def test_an_owned_category_keeps_skills_the_installer_added_to_it(self, profile_env):
         """``distribution_owned: [skills/research/]`` owns the author's research skills, not the
-        category: ``hermes skills install`` and agent-created skills land in ``skills/<category>/``
+        category: ``moor skills install`` and agent-created skills land in ``skills/<category>/``
         too. The category was replaced wholesale, deleting them (the #25120 loss, still live for
         the explicit form the docs show)."""
         staged, plan = self._owned_category(profile_env, "rb")
@@ -501,7 +501,7 @@ class TestUpdate:
         assert (research / "DESCRIPTION.md").read_text(encoding="utf-8") == "research skills\n"
         assert (research / "README.md").read_text(encoding="utf-8") == "about research\n"
         # A dir inside a skill is part of that skill: owning ``web-search/scripts`` replaces it whole.
-        from hermes_cli.profile_distribution import _merges_per_root
+        from moor_cli.profile_distribution import _merges_per_root
         scripts = staged / "skills" / "research" / "web-search" / "scripts"
         scripts.mkdir()
         assert not _merges_per_root(scripts, ("skills", "research", "web-search", "scripts"))

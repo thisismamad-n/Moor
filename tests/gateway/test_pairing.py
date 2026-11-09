@@ -510,7 +510,7 @@ class TestRevoke:
             assert store.is_approved("telegram", "user1") is False
 
     def test_revoke_from_other_store_is_not_undone_by_inflight_approval(self, tmp_path, monkeypatch):
-        """Dashboard requests and the ``hermes pairing`` CLI each build their own store, so
+        """Dashboard requests and the ``moor pairing`` CLI each build their own store, so
         an approval that read approved.json before a revoke landed must not write it back."""
         with patch("gateway.pairing.PAIRING_DIR", tmp_path), \
                 patch("gateway.pairing._sync_allowlist_add"), patch("gateway.pairing._sync_allowlist_remove"):

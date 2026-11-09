@@ -4,7 +4,7 @@ A partial clone downloads objects when git first needs them, and git asks for th
 the server what it already has, so the same trees (and, for history downloads, commits) land again
 and again, each download as its own packfile that nothing removes: ``.git`` reached 39 GiB on a
 ~1 GiB repository. A full ``git gc`` over that is all-or-nothing and on a big checkout runs for tens
-of minutes, so ``hermes update`` instead spends at most ``TIDY_BUDGET_SECONDS`` per run and every
+of minutes, so ``moor update`` instead spends at most ``TIDY_BUDGET_SECONDS`` per run and every
 unit of work it finishes is kept:
 
 1. Erase promisor packs whose every object is also in another promisor pack. Nothing is lost, and
@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional
 
-from hermes_cli._subprocess_compat import (
+from moor_cli._subprocess_compat import (
     NO_LAZY_FETCH_ENV,
     noninteractive_git_env,
     windows_hide_flags,
@@ -48,10 +48,10 @@ _MERGE_BATCH_BYTES = 256 * 1024 * 1024
 # Kept in .git/: packs proven to hold an object no other pack has (valid until a new pack appears,
 # since removing packs never adds copies) and the merge batch size, halved after a merge that ran out
 # of time. Remembering both is what guarantees progress: no update repeats work an earlier one finished.
-_STATE_FILE = "hermes-pack-tidy.json"
+_STATE_FILE = "moor-pack-tidy.json"
 _STATE_VERSION = 2  # v1 could record a pack as unique after comparing it with only some packs
 # Two tidies at once could each erase a pack because the other still has its copies.
-_LOCK_FILE = "hermes-pack-tidy.lock"
+_LOCK_FILE = "moor-pack-tidy.lock"
 # Payload first: git loads a pack only when both .idx and .pack exist, so once .pack is gone the pack is
 # gone for git, and a failure on .pack itself (a reader still maps it on Windows) changes nothing.
 _PACK_SUFFIXES = (".pack", ".idx", ".rev", ".bitmap", ".mtimes", ".promisor", ".keep")
@@ -272,7 +272,7 @@ def _merge_git(repo_root: Path, staging: Path, batch: list[Path], timeout: float
 
     ``None`` when it ran out of time or could not start; a custody refusal propagates, so an update
     stops the way it does for any updater git Windows will not bind."""
-    from hermes_cli.update_custody import CustodyRefused, run_git
+    from moor_cli.update_custody import CustodyRefused, run_git
 
     try:
         return run_git(
@@ -289,7 +289,7 @@ def _merge_git(repo_root: Path, staging: Path, batch: list[Path], timeout: float
 def _merge_smallest_packs(repo_root: Path, pack_dir: Path, deadline: float, result: TidyResult,
                           state: dict) -> None:
     """Merge the smallest promisor packs, a batch at a time, until the count is under target."""
-    staging = pack_dir.parent.parent / "hermes-tidy-staging"  # outside objects/: git counts strays there as garbage
+    staging = pack_dir.parent.parent / "moor-tidy-staging"  # outside objects/: git counts strays there as garbage
     cutoff = time.time() - _MIN_PACK_AGE_SECONDS
     while True:
         packs = sorted((p.stat().st_size, p) for p in _promisor_packs(pack_dir) if not _pinned(p, cutoff))
@@ -358,7 +358,7 @@ def _take_lock(git_dir: Path) -> Optional[int]:
 
 def tidy_partial_clone_packs(repo_root: Path, *, budget_seconds: float = TIDY_BUDGET_SECONDS) -> TidyResult:
     """Spend at most ``budget_seconds`` erasing redundant and merging small promisor packs. Never raises."""
-    from hermes_cli.gitlock import _partial_clone_filter
+    from moor_cli.gitlock import _partial_clone_filter
 
     result = TidyResult()
     pack_dir = Path(repo_root) / ".git" / "objects" / "pack"

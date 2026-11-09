@@ -629,7 +629,7 @@ def blueprint_slash_command(blueprint: AutomationBlueprint, values: Optional[dic
 
 
 def blueprint_deeplink(blueprint: AutomationBlueprint, values: Optional[dict[str, Any]] = None) -> str:
-    """Build the ``hermes://blueprint/<key>?slot=val`` deep-link URL."""
+    """Build the ``moor://blueprint/<key>?slot=val`` deep-link URL."""
     from urllib.parse import quote, urlencode
 
     values = values or {}

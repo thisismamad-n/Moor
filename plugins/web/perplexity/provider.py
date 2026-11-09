@@ -23,7 +23,7 @@ Env vars::
 
 No anonymous tier at Perplexity itself. The managed route serves search through
 ``perplexity-gateway.<TOOL_GATEWAY_DOMAIN>`` as ``search_type: "fast"``, which the
-gateway serves to any Nous identity (paid, unpaid or anonymous guest); a direct key
+gateway serves to any Moor identity (paid, unpaid or anonymous guest); a direct key
 takes precedence.
 Managed extract stays on Firecrawl.
 
@@ -43,7 +43,7 @@ from urllib.parse import urlparse
 import httpx
 
 from agent.web_search_provider import WebSearchProvider
-from hermes_cli.version_info import hermes_user_agent
+from moor_cli.version_info import moor_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +56,9 @@ _KEY_URL = "https://www.perplexity.ai/account/api"
 def _headers() -> dict[str, str]:
     return {
         "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-        "X-Title": "Hermes Agent",
-        "User-Agent": hermes_user_agent("HermesAgent"),
-        "X-Pplx-Integration": "hermes-agent",
+        "X-Title": "Moor Agent",
+        "User-Agent": moor_user_agent("MoorAgent"),
+        "X-Pplx-Integration": "moor-agent",
     }
 
 
@@ -95,8 +95,8 @@ def _perplexity_request(endpoint: str, payload: dict[str, Any], gateway=None) ->
     api_key = get_provider_env("PERPLEXITY_API_KEY")
     headers = _headers()
     if gateway is not None:
-        # Nous-owned key behind the gateway: identify the harness only, not a per-user integration.
-        base_url, api_key, headers = gateway.gateway_origin.rstrip("/"), gateway.nous_user_token, {"User-Agent": headers["User-Agent"]}
+        # Moor-owned key behind the gateway: identify the harness only, not a per-user integration.
+        base_url, api_key, headers = gateway.gateway_origin.rstrip("/"), gateway.moor_user_token, {"User-Agent": headers["User-Agent"]}
     elif api_key:
         base_url = (get_provider_env("PERPLEXITY_BASE_URL") or _DEFAULT_BASE_URL).rstrip("/")
     else:
@@ -219,10 +219,10 @@ class PerplexityWebSearchProvider(WebSearchProvider):
             managed = False if direct else _managed_web_search()
             gateway = resolve_free_search_gateway() if managed else None
             if gateway is None and managed:
-                from tools.tool_backend_helpers import NOUS_MANAGED_PROVIDER, selection_error
+                from tools.tool_backend_helpers import MOOR_MANAGED_PROVIDER, selection_error
 
                 raise ValueError(selection_error(
-                    "web", NOUS_MANAGED_PROVIDER, "there is no usable Nous identity (sign in with `/login`)"))
+                    "web", MOOR_MANAGED_PROVIDER, "there is no usable Moor identity (sign in with `/login`)"))
             logger.info("Perplexity search: '%s' (limit=%d%s)", query, limit, ", managed" if gateway else "")
             payload = {
                 "query": query,

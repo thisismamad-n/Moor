@@ -71,7 +71,7 @@ PORTABLE_MANIFEST = """\
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "portable-demo",
   "version": "1.0.0",
-  "extensions": {"com.nousresearch.hermes": {"config_schema": {
+  "extensions": {"com.moorinc.moor": {"config_schema": {
     "show_chip": {"type": "bool", "default": true},
     "api_key": {"type": "secret", "env": "PORTABLE_DEMO_KEY"}
   }}}
@@ -81,7 +81,7 @@ PORTABLE_MANIFEST = """\
 
 def test_portable_plugin_json_schema_lists_and_saves_like_a_native_one(plugins_home, monkeypatch):
     """Agent Plugins v1 forbids unknown top-level fields, so a portable package declares its form under
-    ``extensions.com.nousresearch.hermes.config_schema``; it must get the same list + save path, and a
+    ``extensions.com.moorinc.moor.config_schema``; it must get the same list + save path, and a
     save tells the plugin's Desktop half (``plugin.<id>.settings.changed``) so it applies without polling."""
     sent = []
     monkeypatch.setattr(server, "_broadcast_global_event", lambda name, payload: sent.append((name, payload)))
@@ -95,7 +95,7 @@ def test_portable_plugin_json_schema_lists_and_saves_like_a_native_one(plugins_h
 
     resp = _manage(action="settings", key="portable-demo", values={"show_chip": False})
     assert resp["result"]["written"] == ["show_chip"]
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
     assert load_config_readonly()["plugins"]["entries"]["portable-demo"]["settings"] == {"show_chip": False}
     assert sent == [("plugin.portable-demo.settings.changed", {"written": ["show_chip"]})]
     assert _manage(action="settings", key="portable-demo", values={"api_key": "leak"})["error"]["code"] == 4021

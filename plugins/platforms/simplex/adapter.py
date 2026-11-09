@@ -29,7 +29,7 @@ from gateway.platforms._shared import (
     platform_gate_env as _platform_gate_env, seed_extra_from_env as _seed_extra_from_env, send_error
 )
 from gateway.config import Platform, PlatformConfig
-from hermes_constants import hermes_home_key
+from moor_constants import moor_home_key
 from gateway.platforms.base import BasePlatformAdapter, SendResult, cache_image_from_url
 from gateway.platforms.helpers import cancel_task
 from gateway.platforms.event import MessageEvent, MessageType
@@ -54,7 +54,7 @@ def _parse_comma_list(value: str) -> list[str]:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
-# (hermes home key, names) already warned about. Module-level: every reconnect builds a FRESH adapter
+# (moor home key, names) already warned about. Module-level: every reconnect builds a FRESH adapter
 # (gateway/run_adapters.py), so an instance flag would re-warn on every retry while the daemon is down.
 _NAME_ALLOWLIST_WARNED: set = set()
 
@@ -69,7 +69,7 @@ def _warn_name_allowlist_entries() -> None:
     names = [u for u in entries if u and u != "*" and not u.isdigit()]
     if not names:
         return
-    key = (hermes_home_key(), frozenset(names))
+    key = (moor_home_key(), frozenset(names))
     if key in _NAME_ALLOWLIST_WARNED:
         return
     _NAME_ALLOWLIST_WARNED.add(key)
@@ -698,7 +698,7 @@ def interactive_setup() -> None:
 def register(ctx) -> None:
     ctx.register_platform(
         name="simplex", label="SimpleX Chat", adapter_factory=lambda cfg: SimplexAdapter(cfg),
-        dashboard_description="Talk to Hermes over SimpleX Chat via a local simplex-chat daemon.",
+        dashboard_description="Talk to Moor over SimpleX Chat via a local simplex-chat daemon.",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex",
         check_fn=check_requirements, validate_config=validate_config, is_connected=is_connected,
         required_env=["SIMPLEX_WS_URL"],

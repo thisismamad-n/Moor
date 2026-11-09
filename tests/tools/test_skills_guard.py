@@ -569,7 +569,7 @@ class TestContentHash:
 # ---------------------------------------------------------------------------
 
 
-# Real lines that blocked third-party hub skills in a random sample of the hermes-index (each a
+# Real lines that blocked third-party hub skills in a random sample of the moor-index (each a
 # community install refused), next to the attack each relaxed rule must keep refusing. Run through
 # the real community install gate, not a single pattern, so a sibling rule still counts.
 _AKIA = "AKIA"  # concatenated so no contiguous key-shaped literal exists in this file

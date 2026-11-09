@@ -168,7 +168,7 @@ def ensure_message_agent_tool(agent: Any) -> bool:
 
 
 def _resolve_local_name(target: str, roster: list[str], root: Path | None = None) -> Optional[str]:
-    """Map a target to a local profile FOLDER id: 'hermes' → 'default' unless a real 'hermes'
+    """Map a target to a local profile FOLDER id: 'moor' → 'default' unless a real 'moor'
     profile holds that handle (``_profile_for_handle``); an exact folder id
     (case-insensitive); else — when ``root`` is given — a friendly name or its Desktop @-slug
     (profile.yaml ``display_name`` / Bot Mode title: 'Scribe', '@scribe', 'Dr. Foo' → 'foo').
@@ -209,7 +209,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
             BOT_CHAT_TITLE, _display_name, _handle, _moor_root, _peers, _profile_name as _self_profile_name,
             _roster, is_bot_mode_managed,
         )
-        from tools.bot_relay import _hermes_cli
+        from tools.bot_relay import _moor_cli
 
         if _session_title(agent) != BOT_CHAT_TITLE:
             return _err("message_agent is only available in a Bot Mode 'Bot Chat' session. "
@@ -219,8 +219,8 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
                         "message_agent is unavailable. Do not retry.")
     except Exception as exc:  # pragma: no cover — defensive
         return _err(f"Bot Mode gate check failed: {exc}")
-    from hermes_cli.observability.shared_metrics_signals import record_feature_used
-    record_feature_used("bot_mode", hermes_home=home)
+    from moor_cli.observability.shared_metrics_signals import record_feature_used
+    record_feature_used("bot_mode", moor_home=home)
 
     root, me = _moor_root(Path(home)), _self_profile_name(Path(home))
     roster_homes = dict(_roster(root))
@@ -296,7 +296,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
                            "(roles are listed in your system prompt).")
     # Local teammates are admitted through the profile authority; the argv only names the
     # profile for the runner's lock/home lookups and is never executed.
-    return _start_delivery([_hermes_cli(), "-p", resolved], content, f"@{_handle(resolved, roster)}",
+    return _start_delivery([_moor_cli(), "-p", resolved], content, f"@{_handle(resolved, roster)}",
                            stdin_file=False, profile_home=roster_homes[resolved], author=author, **delivery)
 
 
@@ -307,7 +307,7 @@ def _try_relay_delivery(root: Path, raw_target: str, content: str, me: str, *,
     to drain; a background waiter is spawned immediately so the relayed reply wakes
     the sender through the standard completion-notification path."""
     try:
-        from tools.bot_mode_probe import _handle, _hermes_root, _roster, local_taken_forms
+        from tools.bot_mode_probe import _handle, _moor_root, _roster, local_taken_forms
         from tools.bot_relay import (
             EnvelopeRefusedError, _target_aliases, enqueue_envelope, read_remote_roster, remote_target_forms,
             resolve_remote_target, waiter_command,
@@ -324,7 +324,7 @@ def _try_relay_delivery(root: Path, raw_target: str, content: str, me: str, *,
             return _err(f"'{raw_target}' exists on several connected machines — disambiguate with one of: {forms}.")
         try:
             envelope = enqueue_envelope(root, target=match, message=content, sender_profile=me,
-                                       sender_handle=_handle(me, [n for n, _d in _roster(_hermes_root(root))]))
+                                       sender_handle=_handle(me, [n for n, _d in _roster(_moor_root(root))]))
         except EnvelopeRefusedError as exc:
             # Fail fast: target definitively offline — nothing was queued.
             # Structured refusal so the agent can distinguish it from a resolution error ('runtime_offline'
@@ -523,7 +523,7 @@ def _admit_live_dm(profile_home: Path | None, dm_file: str, author: Optional[dic
     home = intent["owner"]["profile_home"]
     record = read_delivery_result(home, intent["delivery_id"])
     if record is None or intent["owner"].get("canonical"):
-        from hermes_cli.gateway_client import GatewayRPCError
+        from moor_cli.gateway_client import GatewayRPCError
         from tools.bot_failure_reasons import HELD_NOT_SENT
         from tools.bot_live_delivery import settle_held_delivery
 
@@ -616,7 +616,7 @@ def _live_outcome_unknown(dm_file: str, cause: object) -> str:
 def _runner_argv(args: list[str]) -> tuple[Optional[str], str, str, list[str]] | None:
     """Split ``--run-delivery [--author <json>] <mode> <dm_file> <argv…>`` into
     ``(author_json, mode, dm_file, argv)``; None when malformed. Stdlib only: the boot-failure
-    report runs it when no Hermes import is available."""
+    report runs it when no Moor import is available."""
     if args[:1] != ["--run-delivery"]:
         return None
     rest, author = args[1:], None
@@ -916,13 +916,13 @@ def _session_title(agent: Any) -> str:
 if __name__ == "__main__":  # pragma: no cover - exercised as a background process
     # Spawned as a script with the sender's sys.executable, which under PM is the bare store
     # interpreter (dependencies are activated in-process, never inherited), so boot like every
-    # entry point before the lazy Hermes imports. Run as a path, sys.path[0] is tools/.
+    # entry point before the lazy Moor imports. Run as a path, sys.path[0] is tools/.
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     # Only the delivery lane boots: the reply waiter is stdlib only and its stdout is the
-    # sender's wake-up, and any other argv exits 2 before a Hermes import.
+    # sender's wake-up, and any other argv exits 2 before a Moor import.
     if sys.argv[1:2] == ["--run-delivery"]:
         try:
-            import hermes_bootstrap
+            import moor_bootstrap
         except (Exception, SystemExit) as exc:
             # A pinned live intent means the sender may already have admitted this DM and was
             # told not to resend; a bare repair hint would read as "NOT delivered". Without an
@@ -932,6 +932,6 @@ if __name__ == "__main__":  # pragma: no cover - exercised as a background proce
             parsed = _runner_argv(sys.argv[1:])
             if not booted and parsed and os.path.exists(_live_intent_file(parsed[2])):
                 print(_live_outcome_unknown(parsed[2], "the delivery runner could not activate "
-                                                       "Hermes dependencies (see stderr)"))
+                                                       "Moor dependencies (see stderr)"))
             raise
     raise SystemExit(_delivery_main(sys.argv[1:]))

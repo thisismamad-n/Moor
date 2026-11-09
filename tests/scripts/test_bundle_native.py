@@ -255,9 +255,9 @@ def test_bundle_stages_git_tree_and_runs_native_children_before_manifest(tmp_pat
     from pm.install import venv_is_current
     with monkeypatch.context() as patch:
         # The desktop app points the bundled backend's store at the payload's tools dir.
-        patch.setenv("HERMES_RUNTIME_DIR", str(output / "tools"))
-        patch.setattr("pm.paths.repo_root", lambda: output / "hermes-agent")
-        assert venv_is_current(project_root=output / "hermes-agent")
+        patch.setenv("MOOR_RUNTIME_DIR", str(output / "tools"))
+        patch.setattr("pm.paths.repo_root", lambda: output / "moor-agent")
+        assert venv_is_current(project_root=output / "moor-agent")
     for name in stale:
         assert facts.get(name) is None
         assert not (output / "tools" / f"cached-{name}").exists()
@@ -288,8 +288,8 @@ def test_bundle_stages_git_tree_and_runs_native_children_before_manifest(tmp_pat
         assert run.stdout.strip() == "1.0"
         from pm import runtime as runtime_api, paths
         with monkeypatch.context() as patch:
-            patch.setattr(paths, "repo_root", lambda: moved / "hermes-agent")
-            run = subprocess.run(runtime_api.runtime_command(moved / "hermes-agent/pm/launch.py", ["status"]),
+            patch.setattr(paths, "repo_root", lambda: moved / "moor-agent")
+            run = subprocess.run(runtime_api.runtime_command(moved / "moor-agent/pm/launch.py", ["status"]),
                                  cwd=tmp_path, env=runtime_api.runtime_environment(), capture_output=True, text=True, timeout=30, check=False)
         assert run.returncode == 0, run.stderr
         assert "no pm sync receipt" in run.stdout

@@ -34,7 +34,7 @@ const { clearBotAttentionMock, hostMock, noteBotAttentionMock, UnboundedCache } 
     pluginDecisions: {
       get: () => {
         try {
-          const raw = window.localStorage.getItem('hermes.desktop.pluginDecisions.v2')
+          const raw = window.localStorage.getItem('moor.desktop.pluginDecisions.v2')
 
           return raw ? (JSON.parse(raw) as Record<string, boolean>) : {}
         } catch {

@@ -10,7 +10,7 @@ import sys
 
 import pytest
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def test_second_host_gateway_is_refused_with_75_naming_the_owner_and_the_migrate
     from gateway.run import _claim_host_gateway_role
     from moor_cli.gateway_migrate import MIGRATE_COMMAND
 
-    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default", "coder"), home=str(get_hermes_home()))
+    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default", "coder"), home=str(get_moor_home()))
     owner = hr.read_record(hr.ROLE_GATEWAY, include_stale=True)
     assert owner is not None
     handle = _hold_host_lock_from_another_description(hr)
@@ -73,7 +73,7 @@ def test_force_still_starts_a_second_gateway_and_an_unusable_lock_dir_is_not_a_r
     from gateway import host_rendezvous as hr
     from gateway.run import _claim_host_gateway_role
 
-    hr.publish_record(hr.ROLE_GATEWAY, profiles=(), home=str(get_hermes_home()))
+    hr.publish_record(hr.ROLE_GATEWAY, profiles=(), home=str(get_moor_home()))
     handle = _hold_host_lock_from_another_description(hr)
     try:
         _claim_host_gateway_role(force=True)  # no SystemExit
@@ -106,7 +106,7 @@ def test_an_unmigrated_standalone_fleet_starts_beside_the_owner_instead_of_spinn
     from gateway import host_rendezvous as hr
     from gateway.run import _claim_host_gateway_role
 
-    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default",), home=str(get_hermes_home()))
+    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default",), home=str(get_moor_home()))
     owner = hr.read_record(hr.ROLE_GATEWAY, include_stale=True)
     assert owner is not None
     # The owner answers the rescan the way a STANDALONE gateway does: "I do not multiplex."
@@ -141,7 +141,7 @@ def test_a_multiplexing_owner_is_still_refused(host_lock_dir, monkeypatch):
     from gateway.restart import GATEWAY_SERVICE_RESTART_EXIT_CODE
     from gateway.run import _claim_host_gateway_role
 
-    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default", "coder"), home=str(get_hermes_home()))
+    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default", "coder"), home=str(get_moor_home()))
     owner = hr.read_record(hr.ROLE_GATEWAY, include_stale=True)
     assert owner is not None
     # Another process holds the record (our own pid would short-circuit _owner_is_standalone before
@@ -178,7 +178,7 @@ def test_standalone_lock_loss_uses_profile_discovery_when_host_probe_is_empty(
         return HostAttachDecision(START, "")
 
     monkeypatch.setattr("gateway.host_attach.standalone_attach_decision", standalone_decision)
-    monkeypatch.setattr("hermes_cli.profiles.profile_is_standalone", lambda home: True)
+    monkeypatch.setattr("moor_cli.profiles.profile_is_standalone", lambda home: True)
     monkeypatch.setattr("gateway.host_attach.host_gateway", lambda **kw: None)
     handle = _hold_host_lock_from_another_description(hr)
     try:
@@ -231,7 +231,7 @@ async def test_a_replace_unit_that_replaced_nothing_is_still_refused_when_it_los
     # patch this used to carry was unreachable (_owner_is_standalone short-circuits on our own pid).
     monkeypatch.setattr("gateway.run._owner_is_standalone", lambda: False)
 
-    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default",), home=str(get_hermes_home()))
+    hr.publish_record(hr.ROLE_GATEWAY, profiles=("default",), home=str(get_moor_home()))
     handle = _hold_host_lock_from_another_description(hr)
     try:
         with pytest.raises(SystemExit) as exc:

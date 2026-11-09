@@ -8,7 +8,7 @@ import threading
 import time
 
 from agent.i18n import t
-from hermes_cli.gateway_client import GatewayClientError
+from moor_cli.gateway_client import GatewayClientError
 from rich.markup import escape as _escape
 
 
@@ -68,7 +68,7 @@ def _goal_blocks_loop_tick(mgr) -> bool:
     is the gateway's (it reads the goal row and its barrier where they live)."""
     if hasattr(mgr, "goal_blocks_tick"):
         return mgr.goal_blocks_tick()
-    from hermes_cli.loops import goal_blocks_loop_tick
+    from moor_cli.loops import goal_blocks_loop_tick
     return goal_blocks_loop_tick(mgr.session_id)
 
 
@@ -127,7 +127,7 @@ class CLILoopsMixin:
         # The banner plan startup uses (show_banner): a gateway session's banner is the new
         # session's snapshot (its tools, MCP included, and main's short label), never this
         # process's registry.
-        from hermes_cli.cli_info_mixin import banner_plan
+        from moor_cli.cli_info_mixin import banner_plan
         plan = banner_plan(self, cc)
         if plan.banner_kw is None:
             cc.print(_build_compact_banner())
@@ -211,7 +211,7 @@ class CLILoopsMixin:
     def _record_model_friction(self, signal: str, turns: int = 1) -> None:
         # The TUI slash worker's shadow CLI has no metrics surface: tui_gateway counts what it executes.
         if self._slash_metrics_surface:
-            from hermes_cli.observability.shared_metrics_model import record_model_friction
+            from moor_cli.observability.shared_metrics_model import record_model_friction
             record_model_friction(
                 signal, session_id=getattr(self, "session_id", None), agent=getattr(self, "agent", None),
                 provider=getattr(self, "provider", None), model=getattr(self, "model", None), turns=turns)
@@ -297,15 +297,15 @@ class CLILoopsMixin:
             if not user_entries:
                 print(t("cli.plugins.none_installed"))
                 print(f"  {t('cli.plugins.install_hint')}")
-                print(f"  {t('cli.plugins.drop_dir_hint', path=f'{display_hermes_home()}/plugins/')}")
+                print(f"  {t('cli.plugins.drop_dir_hint', path=f'{display_moor_home()}/plugins/')}")
                 if bundled_count:
                     print(f"  {t('cli.plugins.bundled_available', count=bundled_count)}")
                 return
-            from hermes_cli import gateway_plugin_commands
+            from moor_cli import gateway_plugin_commands
             loaded = gateway_plugin_commands.loaded(self)  # the gateway's; None off the gateway
             if loaded is None:
                 try:  # loaded-plugin details (tools/hooks/commands counts, errors) by name
-                    from hermes_cli.plugins import get_plugin_manager
+                    from moor_cli.plugins import get_plugin_manager
                     loaded = {p["name"]: p for p in get_plugin_manager().list_plugins()}
                 except Exception:
                     loaded = {}
@@ -351,7 +351,7 @@ class CLILoopsMixin:
 
     def _gateway_queue_store(self):
         """The gateway session store when this CLI is a viewer of the gateway's session, else None."""
-        from hermes_cli.gateway_tools_notify import gateway_store
+        from moor_cli.gateway_tools_notify import gateway_store
         return gateway_store(self) if getattr(self, "session_id", None) else None
 
     def _queue_items(self) -> list:
@@ -360,7 +360,7 @@ class CLILoopsMixin:
         items: list = []
         store = self._gateway_queue_store()
         if store is not None:
-            from hermes_cli import gateway_queue
+            from moor_cli import gateway_queue
             items = list(gateway_queue.queued_rows(self, store))
         return items + [(None, item) for item in self._pending_input_items()]
 
@@ -371,7 +371,7 @@ class CLILoopsMixin:
         if store is not None:
             # #134889 N5: the gateway's durable FIFO holds it (committed at accept, kept across an owner
             # restart, run once after the current turn), never this process.
-            from hermes_cli import gateway_queue
+            from moor_cli import gateway_queue
             try:
                 gateway_queue.submit_queued(self, store, payload)
             except gateway_queue.QueueOutcomeUnknown as exc:  # sent, no answer: it may be queued
@@ -399,8 +399,8 @@ class CLILoopsMixin:
     def _queue_gateway_call(self, verb, index, *args):
         """One owner verb on queued item ``index``; its refusal is printed (in its own words), never raised."""
         from cli import _cprint
-        from hermes_cli import gateway_queue
-        from hermes_cli.gateway_client import GatewayRPCError
+        from moor_cli import gateway_queue
+        from moor_cli.gateway_client import GatewayRPCError
         try:
             return getattr(gateway_queue, verb)(self, self._gateway_queue_store(), *args)
         except GatewayRPCError as exc:
@@ -588,10 +588,10 @@ class CLILoopsMixin:
 
     def _automation_connection(self):
         """``(gateway, connection)``: on a gateway session store the managers are the gateway's
-        (``hermes_cli.gateway_automation``), and none exists until the gateway session is open, so this
+        (``moor_cli.gateway_automation``), and none exists until the gateway session is open, so this
         process never opens state.db read-write nor calls the goal judge. Off the gateway (tests, the
         TUI slash worker's shadow CLI) main's in-process managers apply."""
-        from hermes_cli.gateway_session_store import GatewaySessionStore
+        from moor_cli.gateway_session_store import GatewaySessionStore
         store = getattr(self, "_session_db", None)
         if not isinstance(store, GatewaySessionStore):
             return False, None
@@ -612,7 +612,7 @@ class CLILoopsMixin:
     def _get_goal_manager(self):
         """GoalManager bound to the current session_id (see ``_session_bound_manager``)."""
         def max_turns():
-            from hermes_cli.config import load_config
+            from moor_cli.config import load_config
             try:
                 goals_cfg = (load_config() or {}).get("goals") or {}
                 return int(goals_cfg.get("max_turns", 20) or 20)
@@ -620,11 +620,11 @@ class CLILoopsMixin:
                 return 20
 
         def load():
-            from hermes_cli.goals import GoalManager
+            from moor_cli.goals import GoalManager
             return lambda sid: GoalManager(session_id=sid, default_max_turns=max_turns())
 
         def remote(sid, connection):
-            from hermes_cli.gateway_automation import GatewayGoalManager
+            from moor_cli.gateway_automation import GatewayGoalManager
             return GatewayGoalManager(sid, connection)
         return self._automation_manager("_goal_manager", "goal manager", load, remote)
 
@@ -635,7 +635,7 @@ class CLILoopsMixin:
             return lambda sid: HeartbeatManager(session_id=sid)
 
         def remote(sid, connection):
-            from hermes_cli.gateway_automation import GatewayHeartbeatManager
+            from moor_cli.gateway_automation import GatewayHeartbeatManager
             return GatewayHeartbeatManager(sid, connection)
         return self._automation_manager("_heartbeat_manager", "heartbeat manager", load, remote)
 
@@ -646,7 +646,7 @@ class CLILoopsMixin:
             return lambda sid: LoopManager(session_id=sid)
 
         def remote(sid, connection):
-            from hermes_cli.gateway_automation import GatewayLoopManager
+            from moor_cli.gateway_automation import GatewayLoopManager
             return GatewayLoopManager(sid, connection)
         return self._automation_manager("_loop_manager", "loop manager", load, remote)
 
@@ -658,8 +658,8 @@ class CLILoopsMixin:
         if getattr(self, "_heartbeat_watchdog_started", False):
             return
         self._heartbeat_watchdog_started = True
-        from hermes_cli.gateway_automation import GatewayHeartbeatManager
-        from hermes_cli.heartbeat import POLL_SECONDS
+        from moor_cli.gateway_automation import GatewayHeartbeatManager
+        from moor_cli.heartbeat import POLL_SECONDS
 
         def _loop():
             try:

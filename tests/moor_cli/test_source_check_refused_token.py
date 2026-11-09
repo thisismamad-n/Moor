@@ -10,7 +10,7 @@ import urllib.error
 
 import pytest
 
-from hermes_cli import source_check
+from moor_cli import source_check
 
 
 class _Api(http.server.BaseHTTPRequestHandler):
@@ -49,4 +49,4 @@ def test_a_spent_rate_limit_still_fails(api, monkeypatch):
     monkeypatch.setattr(_Api, "spent", True)
     with pytest.raises(urllib.error.HTTPError) as caught:
         source_check._request(api)
-    assert caught.value.code == 403 and caught.value.hermes_authenticated is True
+    assert caught.value.code == 403 and caught.value.moor_authenticated is True

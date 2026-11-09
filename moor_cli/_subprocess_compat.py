@@ -27,7 +27,7 @@ __all__ = [
     "noninteractive_git_env",
     "noninteractive_repo_git_env",
     "pid_exists_stdlib",
-    "pid_is_hermes",
+    "pid_is_moor",
     "resolve_node_command",
     "restore_ambient_pythonpath",
     "selected_git_env",
@@ -404,7 +404,7 @@ def expose_pm_git(project_root: Path) -> None:
 
     install.ps1 stages the pinned Git for Windows into PM's store for its own
     process only, and PM's facts never record it, so every later bare ``git``
-    (``hermes update``, the source-completion stamp, plugin installs, doctor)
+    (``moor update``, the source-completion stamp, plugin installs, doctor)
     died with ``[WinError 2]``. A git found under PM's store is that unrecorded
     copy inherited from the installer, so it is recorded too. Callers are
     explicit user actions (like ``ensure_tools_for_sync``), so acquire PM's git
@@ -414,7 +414,7 @@ def expose_pm_git(project_root: Path) -> None:
     """
     if sys.platform != "win32" or not (Path(project_root) / ".git").exists():
         return
-    from hermes_platform.resolver import locate_command
+    from moor_platform.resolver import locate_command
     from pm.paths import store_root
 
     found = locate_command("git").command

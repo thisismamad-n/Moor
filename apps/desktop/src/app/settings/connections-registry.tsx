@@ -267,7 +267,7 @@ export function ConnectionsRegistrySection() {
 
   remoteAuthModeRef.current = remote.credentials.authMode
 
-  const bridge = window.hermesDesktop?.connections
+  const bridge = window.moorDesktop?.connections
 
   const hasLocal = Boolean(registry?.connections.some(c => c.kind === 'local'))
 

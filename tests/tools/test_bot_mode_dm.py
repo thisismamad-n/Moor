@@ -355,7 +355,7 @@ def test_local_delivery_admits_canonically_and_acks(tmp_path, monkeypatch):
     mode, dm_file, transport_argv, profile_home = _runner_parts(command)
     assert mode == "query-file"
     assert Path(profile_home) == target.resolve()
-    assert transport_argv[:3] == ["hermes", "-p", "researcher"]
+    assert transport_argv[:3] == ["moor", "-p", "researcher"]
     # message body rides the temp file, never the command line
     assert "PAYLOAD_SENTINEL_7A91" not in command
     assert "$(" not in command
@@ -590,7 +590,7 @@ def test_delivery_pins_the_moor_entrypoint_beside_this_interpreter(tmp_path, mon
     assert result["status"] == "queued"
     mode, _dm_file, transport_argv, _profile_home = _runner_parts(calls[0]["command"])
     assert mode == "query-file"
-    assert Path(transport_argv[0]) == hermes_entry
+    assert Path(transport_argv[0]) == moor_entry
     # Local delivery is admitted through the authority; the argv only names the profile.
     assert transport_argv[1:] == ["-p", "researcher"]
 
@@ -600,7 +600,7 @@ def test_delivery_pins_the_moor_entrypoint_beside_this_interpreter(tmp_path, mon
     assert result2["status"] == "queued"
     mode, _dm_file, transport_argv, _profile_home = _runner_parts(calls[1]["command"])
     assert mode == "stdin"
-    assert Path(transport_argv[0]) == hermes_entry
+    assert Path(transport_argv[0]) == moor_entry
     assert transport_argv[1:] == ["-p", "default", "peer", "dm", "spark"]
 
 
@@ -634,7 +634,7 @@ def test_renamed_primary_signs_with_its_friendly_name_and_is_reachable_by_it(tmp
     result = json.loads(bot_mode_dm.message_agent_tool(target="coder", message="hi", agent=_FakeAgent(home)))
     assert result["status"] == "queued"
     _mode, dm_file, _argv, _home = _runner_parts(calls[0]["command"])
-    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia (@hermes): ")
+    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia (@moor): ")
 
     coder = _FakeAgent(home / "profiles" / "coder")
     for target in ("maia", "@maia", "@moor"):
@@ -648,7 +648,7 @@ def test_renamed_primary_signs_with_its_friendly_name_and_is_reachable_by_it(tmp
     )
     json.loads(bot_mode_dm.message_agent_tool(target="coder", message="hi", agent=_FakeAgent(home)))
     _mode, dm_file, _argv, _home = _runner_parts(calls[-1]["command"])
-    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia Prime (@hermes): ")
+    assert Path(dm_file).read_text(encoding="utf-8").startswith("Message from 🤖 Maia Prime (@moor): ")
 
 
 def test_named_profile_sender_prefix(tmp_path, monkeypatch):
@@ -733,15 +733,15 @@ def test_live_dm_admitted_before_waiter_failure(tmp_path, monkeypatch):
     assert record is not None
     assert record["delivery_id"] == result["delivery_id"]
     assert record["profile_home"] == str(target.resolve())
-    assert authority.records[result["delivery_id"]]["message"] == "Message from 🤖 hermes (@hermes): hello"
-    assert authority.calls[0][1]["author"] == {"id": "bot:default", "name": "hermes", "is_bot": True}
+    assert authority.records[result["delivery_id"]]["message"] == "Message from 🤖 moor (@moor): hello"
+    assert authority.calls[0][1]["author"] == {"id": "bot:default", "name": "moor", "is_bot": True}
     assert "notification_error" in result
 
 
 def test_live_dm_runner_retry_never_reexecutes_failed_admission(tmp_path, monkeypatch, capsys):
     home = _managed_home(tmp_path)
     target = home / "profiles" / "researcher"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     authority = _canonical_target(monkeypatch, target)
     # The authority still holds the admission, so the runner waits to its absolute deadline.
     monkeypatch.setattr(bot_mode_dm, "_LIVE_WAIT_SECONDS", 0.01)
@@ -876,7 +876,7 @@ def test_local_delivery_runner_surfaces_refusal_and_retains_payload(tmp_path, mo
     dm_file.write_text("hi", encoding="utf-8")
     monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("no local inference fallback"))
 
-    returncode = bot_mode_dm._run_delivery(["hermes", "-p", "ops"], str(dm_file), stdin_file=False)
+    returncode = bot_mode_dm._run_delivery(["moor", "-p", "ops"], str(dm_file), stdin_file=False)
 
     assert returncode == 1
     payload = json.loads(capsys.readouterr().out)
@@ -932,7 +932,7 @@ def test_local_runner_sends_only_argv_author_to_authority(tmp_path, monkeypatch,
     waited = []
     monkeypatch.setattr(bot_mode_dm, "_wait_live_dm", lambda home, key, **_kw: waited.append((home, key)) or 0)
     command = bot_mode_dm._delivery_command(
-        ["hermes", "-p", "researcher"], str(dm_file), stdin_file=False,
+        ["moor", "-p", "researcher"], str(dm_file), stdin_file=False,
         profile_home=target, author=author,
     )
     assert bot_mode_dm._delivery_main(shlex.split(command)[2:]) == 0
@@ -990,7 +990,7 @@ def test_delivery_main_local_refusal_retains_payload(tmp_path, monkeypatch, caps
     dm_file = tmp_path / "message.txt"
     dm_file.write_text("secret", encoding="utf-8")
     monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("no local inference fallback"))
-    assert bot_mode_dm._delivery_main(["--run-delivery", "query-file", str(dm_file), "hermes", "-p", "ghost"]) == 1
+    assert bot_mode_dm._delivery_main(["--run-delivery", "query-file", str(dm_file), "moor", "-p", "ghost"]) == 1
     assert json.loads(capsys.readouterr().out)["reason"] == "runtime_unavailable"
     assert dm_file.read_text(encoding="utf-8") == "secret"
 

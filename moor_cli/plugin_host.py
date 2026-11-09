@@ -2,18 +2,18 @@
 
 With ``plugins.isolation: host`` the loader hands a general Python plugin to :class:`PluginHost`
 instead of importing it. The host process imports it and runs ``register(ctx)``; every ``ctx`` call
-arrives here and is replayed on the plugin's real :class:`~hermes_cli.plugins.PluginContext`, with
+arrives here and is replayed on the plugin's real :class:`~moor_cli.plugins.PluginContext`, with
 the plugin's callables and provider objects swapped for proxies that call back into the host. From
-then on the rest of Hermes sees ordinary registrations — the registry, hook dispatch, the ledger,
-unload and ``hermes plugins list`` do not know the plugin lives elsewhere, and neither does the
+then on the rest of Moor sees ordinary registrations — the registry, hook dispatch, the ledger,
+unload and ``moor plugins list`` do not know the plugin lives elsewhere, and neither does the
 plugin: its code is unchanged and never learns which process or tenant it serves.
 
-Requests the host makes while Hermes is waiting on it (a tool handler calling ``ctx.dispatch_tool``)
+Requests the host makes while Moor is waiting on it (a tool handler calling ``ctx.dispatch_tool``)
 run in the caller's context — same profile home, secret scope and session — via the wire's
 ``origin`` field; spontaneous ones (a ``spawn_task`` loop) run bound to this profile's home.
 
 When the host dies every proxy raises :class:`PluginHostUnavailable`: tool calls return an error,
-hooks fail like any raising callback, and Hermes itself keeps running. A fresh host is then started
+hooks fail like any raising callback, and Moor itself keeps running. A fresh host is then started
 and its plugins reloaded (bounded restarts; a plugin that killed the host while loading stays out).
 """
 
@@ -36,14 +36,14 @@ import weakref
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-from hermes_cli.plugin_host_wire import (
+from moor_cli.plugin_host_wire import (
     Channel, Opaque, PluginHostUnavailable, PluginHostUnsupported, declared_return, decode, encode, restore,
     signature_from,
 )
 
-logger = logging.getLogger("hermes_cli.plugins")
+logger = logging.getLogger("moor_cli.plugins")
 
-_HOST_MODULE = "hermes_cli.plugin_host_child"
+_HOST_MODULE = "moor_cli.plugin_host_child"
 _START_TIMEOUT_SECS = 30.0
 _SHUTDOWN_GRACE_SECS = 3.0
 # A host that dies is restarted (its plugins reloaded) at most this many times per window; a plugin
@@ -57,7 +57,7 @@ def _hosted_ambient_credentials(home: Path) -> dict[str, str]:
     child-env scrub always strips), read the way that provider reads them in-process: ``get_secret``
     under the home's scope, so the launch home keeps its shell value and a routed home never gets it."""
     from agent.secret_scope import build_profile_secret_scope, get_secret, reset_secret_scope, set_secret_scope
-    from hermes_cli.plugin_host_profiles import is_hosted_profile
+    from moor_cli.plugin_host_profiles import is_hosted_profile
     from providers import list_providers
     names = {name for p in list_providers() if p.ambient_credentials and is_hosted_profile(p) for name in p.env_vars}
     if not names:
@@ -70,7 +70,7 @@ def _hosted_ambient_credentials(home: Path) -> dict[str, str]:
 
 
 class PluginHost:
-    """One host process for one :class:`~hermes_cli.plugins.PluginManager` (one profile home)."""
+    """One host process for one :class:`~moor_cli.plugins.PluginManager` (one profile home)."""
 
     def __init__(self, manager: Any):
         self._manager = manager
@@ -111,8 +111,8 @@ class PluginHost:
         context = contextvars.Context()
 
         def bind() -> None:
-            from hermes_constants import set_hermes_home_override
-            set_hermes_home_override(self._home)
+            from moor_constants import set_moor_home_override
+            set_moor_home_override(self._home)
             from agent.secret_scope import build_profile_secret_scope, is_multiplex_active, set_secret_scope
             if is_multiplex_active():
                 set_secret_scope(build_profile_secret_scope(self._home), profile_home=str(self._home))
@@ -121,7 +121,7 @@ class PluginHost:
         return context
 
     def _argv(self) -> list:
-        from hermes_cli.plugin_isolation import host_launcher
+        from moor_cli.plugin_isolation import host_launcher
         return [*host_launcher(), sys.executable, "-m", _HOST_MODULE]
 
     def _env(self) -> dict[str, str]:
@@ -130,8 +130,8 @@ class PluginHost:
         env.update(self._base_context.run(_hosted_ambient_credentials, self._home))
         repo_root = str(Path(__file__).resolve().parents[1])
         env["PYTHONPATH"] = os.pathsep.join(p for p in (repo_root, env.get("PYTHONPATH", "")) if p)
-        env.setdefault("HERMES_PLUGIN_HOST_LOG_LEVEL", "WARNING")
-        from hermes_cli.plugin_isolation import HOST_PROCESS_ENV
+        env.setdefault("MOOR_PLUGIN_HOST_LOG_LEVEL", "WARNING")
+        from moor_cli.plugin_isolation import HOST_PROCESS_ENV
         env[HOST_PROCESS_ENV] = "1"
         return env
 
@@ -169,7 +169,7 @@ class PluginHost:
                 code = proc.wait(timeout=0.5)  # the pipe closes a moment before the exit status lands
             except subprocess.TimeoutExpired:
                 pass
-        return (f"the plugin host for this profile exited (code {code}); Hermes restarts it and reloads "
+        return (f"the plugin host for this profile exited (code {code}); Moor restarts it and reloads "
                 f"its plugins automatically" if code is not None else "the plugin host is not running")
 
     def _on_channel_close(self, generation: int, reason: str) -> None:
@@ -225,7 +225,7 @@ class PluginHost:
     # -- loading ------------------------------------------------------------------------------------
     def load(self, manifest: Any, ctx: Any, *, module_name: Optional[str], entrypoint: bool) -> str:
         """Import ``manifest``'s plugin in the host and replay its registrations onto ``ctx``."""
-        from hermes_cli.plugins import PluginContext, manifest_key
+        from moor_cli.plugins import PluginContext, manifest_key
         channel = self.ensure_started()
         plugin_key = manifest_key(manifest)
         self._contexts[plugin_key] = ctx
@@ -280,7 +280,7 @@ class PluginHost:
         plugin_key = f"{capture}:{Path(plugin_dir).name}"
         if ctx is not None:
             self._contexts[plugin_key] = ctx
-        from hermes_cli.plugins import PluginContext
+        from moor_cli.plugins import PluginContext
         params = {
             "plugin_key": plugin_key, "plugin_id": getattr(ctx, "plugin_id", Path(plugin_dir).name),
             "name": Path(plugin_dir).name, "path": str(plugin_dir), "module_name": module_name,
@@ -398,7 +398,7 @@ class PluginHost:
         return ctx
 
     def _serve_ctx(self, params: dict[str, Any]) -> Any:
-        from hermes_cli.plugin_isolation import (
+        from moor_cli.plugin_isolation import (
             HOST_OBJECT_BASES, HOST_SKIPPED_CTX_METHODS, HOST_UNSUPPORTED_CTX_METHODS,
         )
         ctx = self._plugin_ctx(params)
@@ -414,7 +414,7 @@ class PluginHost:
         return self._encode_for_host(result)
 
     def _serve_facade(self, params: dict[str, Any]) -> Any:
-        from hermes_cli.plugin_isolation import HOST_REMOTE_FACADES
+        from moor_cli.plugin_isolation import HOST_REMOTE_FACADES
         ctx = self._plugin_ctx(params)
         facade, method = str(params.get("facade") or ""), str(params.get("method") or "")
         if facade not in HOST_REMOTE_FACADES or method.startswith("_"):
@@ -432,7 +432,7 @@ class PluginHost:
         return self._encode_for_host(result)
 
     def _encode_for_host(self, value: Any) -> Any:
-        from hermes_cli.plugins_ledger import PluginRegistration
+        from moor_cli.plugins_ledger import PluginRegistration
 
         def refs(obj: Any) -> Optional[dict]:
             if isinstance(obj, PluginRegistration):
@@ -479,13 +479,13 @@ class PluginHost:
         proxy.__qualname__ = str(ref.get("qualname") or proxy.__name__)
         # Tool override policy and hook attribution key on the defining module.
         proxy.__module__ = str(ref.get("module") or __name__)
-        proxy.__hermes_plugin_host_ref__ = ref_id  # type: ignore[attr-defined]
+        proxy.__moor_plugin_host_ref__ = ref_id  # type: ignore[attr-defined]
         return proxy
 
     def _object_proxy(self, ref: dict[str, Any], base: type,
                       reload: Optional[Callable[[], dict[str, Any]]] = None) -> Any:
         """An instance of ``base`` whose methods and public attributes live in the host. Attributes
-        Hermes assigns go to the plugin's object when they can cross; live handles stay local."""
+        Moor assigns go to the plugin's object when they can cross; live handles stay local."""
         host = self
         slot = _ObjectSlot(self, ref, reload)
         live = set(ref.get("live") or ())
@@ -515,7 +515,7 @@ class PluginHost:
             object.__setattr__(self_, name, value)
 
         namespace.update(__getattribute__=__getattribute__, __getattr__=__getattr__, __setattr__=__setattr__,
-                         __module__=__name__, __hermes_plugin_host_ref__=slot,
+                         __module__=__name__, __moor_plugin_host_ref__=slot,
                          __repr__=lambda self_: f"<plugin-host {ref.get('type')} #{slot.ref}>")
         cls = type(f"Hosted{ref.get('type') or base.__name__}", (base,), namespace)
         cls.__abstractmethods__ = frozenset()
@@ -568,7 +568,7 @@ def is_hosted_object(obj: Any) -> bool:
     """``obj`` is a proxy for a plugin object whose code runs in the plugin host (``plugins.isolation:
     host``): its methods run there and anything they return that is not plain data arrives as an
     :class:`Opaque` placeholder."""
-    return "__hermes_plugin_host_ref__" in vars(type(obj))
+    return "__moor_plugin_host_ref__" in vars(type(obj))
 
 
 def _run_on_gateway_loop(coro: Any) -> Any:
@@ -605,7 +605,7 @@ def _method_proxy(host: PluginHost, slot: _ObjectSlot, name: str, meta: dict[str
 
 def _host_object_base(hint: Any) -> Optional[type]:
     """``hint`` when it is a provider ABC a hosted object may stand in for (``HOST_OBJECT_BASES``)."""
-    from hermes_cli.plugin_isolation import HOST_OBJECT_BASES
+    from moor_cli.plugin_isolation import HOST_OBJECT_BASES
     if isinstance(hint, type) and f"{hint.__module__}:{hint.__qualname__}" in HOST_OBJECT_BASES.values():
         return hint
     return None
@@ -617,7 +617,7 @@ def _import_ref(ref: str) -> type:
 
 
 def _pump_stderr(proc: subprocess.Popen, label: str) -> None:
-    """Plugin output and host logs go to the Hermes log, tagged with the host's profile."""
+    """Plugin output and host logs go to the Moor log, tagged with the host's profile."""
     stream = proc.stderr
     if stream is None:
         return

@@ -1,4 +1,4 @@
-"""``HermesCLI._session_db`` backed by the shared gateway session (CALLMAP §3.5).
+"""``MoorCLI._session_db`` backed by the shared gateway session (CALLMAP §3.5).
 
 Main's classic CLI holds a ``SessionDB`` writer. Rewired, the gateway is the single writer:
 
@@ -22,8 +22,8 @@ import re
 import sys
 import uuid
 
-from hermes_cli.gateway_client import GatewayClientError
-from hermes_cli.gateway_connection import RESUME_REFUSALS, GatewayConnection
+from moor_cli.gateway_client import GatewayClientError
+from moor_cli.gateway_connection import RESUME_REFUSALS, GatewayConnection
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ _GATEWAY_OWNED = frozenset({
     "update_session_model", "patch_session_model_config", "maybe_auto_archive",
     "maybe_auto_prune_and_vacuum", "set_meta", "update_token_counts", "close",
 })
-# Mutations the owner refuses without the execution generation they were read at (hermes_state_runtime).
+# Mutations the owner refuses without the execution generation they were read at (moor_state_runtime).
 _GENERATION_FENCED = frozenset({"delete", "rewind", "reset", "branch", "model", "compress", "workspace"})
 _COUNTED_REPAIRS = frozenset({"prune_empty_ghost_sessions", "finalize_orphaned_compression_sessions"})
 # Launch options main's ``cli.main`` takes that are creation policy on the gateway session.
@@ -85,12 +85,12 @@ class GatewaySessionStore:
         """The read-only reader, opened on first use. No state.db yet (the gateway creates it on its
         first start, after the CLI's startup maintenance probe) is retried on the next read."""
         if self._reader is None:
-            from hermes_constants import get_hermes_home
-            path = get_hermes_home() / "state.db"
+            from moor_constants import get_moor_home
+            path = get_moor_home() / "state.db"
             if not path.exists():
                 return None
             try:
-                from hermes_state import SessionDB
+                from moor_state import SessionDB
                 self._reader = SurfaceLabelReader(SessionDB(db_path=path, read_only=True))
             except Exception as exc:  # health: allow BLE001 -- reads find nothing; retried on the next read
                 logger.debug("read-only state.db unavailable: %s", exc)
@@ -101,7 +101,7 @@ class GatewaySessionStore:
             raise AttributeError(name)
         if name in _READS:
             if name in {"sanitize_title", "session_yolo_enabled"}:
-                from hermes_state import SessionDB
+                from moor_state import SessionDB
                 return getattr(SessionDB, name)
             db = self._db()
             if db is None:
@@ -182,7 +182,7 @@ class GatewaySessionStore:
 
     def client_env(self):
         """This shell's ``client_env`` when the gateway takes it (one ``runtime.describe`` per store)."""
-        from hermes_cli.gateway_chat import client_env_policy
+        from moor_cli.gateway_chat import client_env_policy
         if self._create_parameters is None:
             described = self.call("runtime.describe")
             contract = described.get("session_create") if isinstance(described, dict) else None
@@ -233,7 +233,7 @@ class GatewaySessionStore:
         from agent.context_compressor import history_before_user_originated_turn, retryable_user_text
         from agent.message_content import flatten_message_text
         from agent.session_persistence import _is_ephemeral_scaffolding
-        from hermes_state_rewind import (
+        from moor_state_rewind import (
             _HISTORY_CHANGED, RewindOutcome, RewindTargetUnavailableError, _comparison_content, _user_indices)
         snapshot = self.call("session.resume", session_id=session_id)
         durable = [m for m in snapshot.get("messages") or [] if not m.get("archived")]  # the live rows
@@ -475,7 +475,7 @@ def session_label(session_id):
 def _creation_policy(launch):
     """The explicit launch flags as ``session.create`` policy (the thin client's own mapping);
     unset flags leave the gateway to resolve the profile default, as main's CLI did."""
-    from hermes_cli.gateway_chat import _requested_policy, env_launch_flags
+    from moor_cli.gateway_chat import _requested_policy, env_launch_flags
     fields = {key: launch.get(key) for key in _LAUNCH_POLICY}
     if isinstance(fields.get("toolsets"), (list, tuple)):
         fields["toolsets"] = ",".join(str(item) for item in fields["toolsets"])
@@ -493,7 +493,7 @@ def _launch_cwd():
     ``-w`` tree (a vanished tree is then refused as on main, not swapped for the checkout); otherwise
     it is a path inside the sandbox, so the launch dir is sent and the backend keeps its own cwd
     (``terminal_uses_host_cwd``). A tree no longer selected (a later /resume moved away) never decides.
-    ``hermes -w`` records the tree in the imported ``cli`` module, ``python cli.py -w`` in ``__main__``."""
+    ``moor -w`` records the tree in the imported ``cli`` module, ``python cli.py -w`` in ``__main__``."""
     terminal_cwd = os.getenv("TERMINAL_CWD")
     trees = (getattr(sys.modules.get(name), "_active_worktree", None) for name in ("cli", "__main__"))
     recorded = {os.path.realpath(tree["path"]) for tree in trees if tree and tree.get("path")}
@@ -520,7 +520,7 @@ _RESUME_CHECKED = _LAUNCH_POLICY
 def _check_resume_launch(launch, snapshot):
     """Explicit launch flags on ``--resume`` / ``-c`` against the session's frozen route, as the thin
     client checks them: the same flags again are fine, a different value is refused, never dropped."""
-    from hermes_cli.gateway_chat import check_resume_policy, resume_policy_error
+    from moor_cli.gateway_chat import check_resume_policy, resume_policy_error
     fields = {key: launch.get(key) for key in _RESUME_CHECKED}
     if isinstance(fields.get("toolsets"), (list, tuple)):
         fields["toolsets"] = ",".join(str(item) for item in fields["toolsets"])
@@ -538,11 +538,11 @@ def move_cli_workspace(cli, wt_info):
     quit removes it when clean and a resume recreates it (N8). Then this process's cwd and TERMINAL_CWD
     follow, so a later /new creates its session from the tree; a chdir OSError leaves both where they
     were (the gateway session has moved by then)."""
-    from hermes_cli.gateway_automation import gateway_connection
+    from moor_cli.gateway_automation import gateway_connection
     cwd = wt_info["path"]
     if gateway_connection(cli) is not None:
         cli._session_db._mutate(cli.session_id, "workspace", {"cwd": cwd})
-        from hermes_cli.tui_worktree_resume import record_tui_worktree
+        from moor_cli.tui_worktree_resume import record_tui_worktree
         record_tui_worktree(wt_info)
     os.chdir(cwd)
     os.environ["TERMINAL_CWD"] = cwd
@@ -560,7 +560,7 @@ def create_titled_session(title):
     "could not be created" copy)."""
     params = _creation_policy({})
     params["cwd"] = _launch_cwd()
-    params["source"] = "cli"  # main's titled row is `cli` (hermes_cli.main._create_titled_session)
+    params["source"] = "cli"  # main's titled row is `cli` (moor_cli.main._create_titled_session)
     params["row_cwd"] = ""
     try:
         store = session_store()

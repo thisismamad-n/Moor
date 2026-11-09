@@ -27,7 +27,7 @@ def publish_plugin(staged: Path, target: Path, old_metadata: dict, new_metadata:
     from pm.store import tree_digest
 
     if require_consent and not assume_consent:
-        from hermes_cli import plugins_cmd
+        from moor_cli import plugins_cmd
         from pm.workspace import enabled_plugin_dirs
 
         if target.resolve() in enabled_plugin_dirs(installing=target):
@@ -37,7 +37,7 @@ def publish_plugin(staged: Path, target: Path, old_metadata: dict, new_metadata:
                 outcome = ("Reinstall declined: {}. The installed plugin and active environment are unchanged."
                            if target.exists() else "Install declined: {}. Nothing was installed.")
                 # The refusal carries its closed class (plugins_cmd_install._ConsentRefusal).
-                from hermes_cli.observability.shared_metrics_fields import tagged_failure_class
+                from moor_cli.observability.shared_metrics_fields import tagged_failure_class
 
                 raise plugins_cmd.PluginOperationError(
                     outcome.format(reason), failure_class=tagged_failure_class(reason) or "other")

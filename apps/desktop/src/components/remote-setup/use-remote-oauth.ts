@@ -94,8 +94,8 @@ export function useRemoteOAuth(options: RemoteOAuthOptions): RemoteOAuth {
       const identity = oauthLoginIdentity?.()
 
       const result = identity
-        ? await window.hermesDesktop.oauthLoginConnectionConfig(url, identity)
-        : await window.hermesDesktop.oauthLoginConnectionConfig(url)
+        ? await window.moorDesktop.oauthLoginConnectionConfig(url, identity)
+        : await window.moorDesktop.oauthLoginConnectionConfig(url)
 
       if (!current()) {
         return

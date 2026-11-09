@@ -80,8 +80,8 @@ def test_products_and_desktop_stages_share_the_completion_tail(tmp_path: Path, s
                f'source "$1" --manifest >/dev/null; INSTALL_DIR="$2"; INCLUDE_DESKTOP={flag}; '
                'bootstrap_python() { boot_py="$PYTHON_FOR_TEST"; }; "stage_$3"',
                'test', str(ROOT / 'scripts/install.sh'), str(install), stage]
-    env = {**os.environ, 'HOME': str(tmp_path), 'HERMES_HOME': str(tmp_path / 'home'),
-           'HERMES_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls), 'PYTHON_FOR_TEST': sys.executable}
+    env = {**os.environ, 'HOME': str(tmp_path), 'MOOR_HOME': str(tmp_path / 'home'),
+           'MOOR_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls), 'PYTHON_FOR_TEST': sys.executable}
     result = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=20, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     argv = json.loads(calls.read_text())

@@ -3,7 +3,7 @@
  * surfaces it as an ambient pill, and orchestrates the apply flow.
  */
 
-import { updateDebt } from '@hermes/shared'
+import { updateDebt } from '@moor/shared'
 import { atom } from 'nanostores'
 
 import { CANONICAL_GATEWAY_PROTOCOL } from '@/api/canonical-protocol'
@@ -24,7 +24,7 @@ import { $connectionsRegistry, refreshConnectionsRegistry } from '@/store/connec
 import { reconnectGateway } from '@/store/gateway-reconnect'
 import { dismissNotification, notify } from '@/store/notifications'
 import { $connection } from '@/store/session'
-import type { BackendUpdateCheckResponse, UpdateReceiptSummary } from '@/types/hermes'
+import type { BackendUpdateCheckResponse, UpdateReceiptSummary } from '@/types/moor'
 
 /** Keyed per retired-channel revision: a new retirement (or a revision bump on
  *  the same channel) re-shows the notice, a plain re-check never does. */
@@ -191,8 +191,8 @@ const GUI_SKEW_TOAST_ID = 'gui-contract-skew'
 // right after they closed it. Mirror the update toast: persist a cooldown when
 // the user dismisses it. It still reminds again after the window if the skew
 // persists, and clears immediately once the two sides align.
-const SKEW_TOAST_SNOOZE_KEY = 'hermes:backend-skew-toast-snooze-until'
-const GUI_SKEW_TOAST_SNOOZE_KEY = 'hermes:gui-skew-toast-snooze-until'
+const SKEW_TOAST_SNOOZE_KEY = 'moor:backend-skew-toast-snooze-until'
+const GUI_SKEW_TOAST_SNOOZE_KEY = 'moor:gui-skew-toast-snooze-until'
 const SKEW_TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 function snoozeSkewToast(): void {
@@ -274,7 +274,7 @@ export function reportBackendContract(contract: number | undefined, protocol?: s
 
     notify({
       action: {
-        label: translateNow('notifications.updateHermes'),
+        label: translateNow('notifications.updateMoor'),
         onClick: () => {
           snoozeSkewToast()
           void applyBackendUpdate()
@@ -554,7 +554,7 @@ export async function refreshDesktopVersion(): Promise<DesktopVersionInfo | null
   try {
     const seq = ++versionRequestSeq
     const scope = versionScopeKey()
-    const next = await window.hermesDesktop?.getVersion?.({ ...connectionScoped(), ...profileScoped() })
+    const next = await window.moorDesktop?.getVersion?.({ ...connectionScoped(), ...profileScoped() })
 
     // Superseded, or the scope moved while in flight: the scope listener has
     // already asked again for the new target.
@@ -646,7 +646,7 @@ export async function checkBackendUpdates({
   $backendUpdateChecking.set(true)
 
   try {
-    const status = mapBackendCheck(await checkHermesUpdate(force))
+    const status = mapBackendCheck(await checkMoorUpdate(force))
 
     if (connectionKey($connection.get()) === requestKey) {
       $backendUpdateStatus.set(status)
@@ -768,7 +768,7 @@ export function sourceUpdateChannel(status: DesktopUpdateStatus | null): SourceU
  * An unreachable release still returns a status naming the saved channel.
  */
 export async function setUpdateChannel(channel: SourceUpdateChannel): Promise<DesktopUpdateStatus> {
-  const setChannel = window.hermesDesktop?.updates?.setChannel
+  const setChannel = window.moorDesktop?.updates?.setChannel
 
   if (!setChannel) {
     throw new Error('This installation cannot change its update channel.')
@@ -1085,7 +1085,7 @@ async function runBackendUpdate(): Promise<DesktopUpdateApplyResult> {
       // An empty update_command is the backend saying "there is no command to
       // run here" (managed container, commit build) — render the message-only
       // view. Only a field absent from an older backend falls back.
-      const command = ((started as { update_command?: string | null }).update_command ?? 'hermes update') || null
+      const command = ((started as { update_command?: string | null }).update_command ?? 'moor update') || null
       $backendUpdateApply.set({ ...IDLE, applying: false, stage: 'manual', message, command })
 
       return { ok: false, error: 'manual', manual: true, message, command: command ?? undefined }
@@ -1397,7 +1397,7 @@ let lastVersionScopeKey: string | undefined
 // the mode doesn't. Pooled profiles share a baseUrl, so the profile joins
 // the key: the update check is profile-scoped (per-profile overrides can
 // pin a different channel/branch).
-function connectionKey(conn: HermesConnection | null): string {
+function connectionKey(conn: MoorConnection | null): string {
   if (conn?.mode !== 'remote') {
     return String(conn?.mode)
   }
@@ -1442,7 +1442,7 @@ export function startUpdatePoller(): void {
   // backend check above sees mode≠remote and no-ops. Re-check once the
   // connection resolves to remote, and again whenever the remote target
   // itself changes (switching between two remote profiles).
-  connectionUnsub = $connection.subscribe((conn: HermesConnection | null): void => {
+  connectionUnsub = $connection.subscribe((conn: MoorConnection | null): void => {
     const key = connectionKey(conn)
 
     if (key === lastConnectionKey) {

@@ -220,7 +220,7 @@ def _present_with_selected_transport(*, command: str, description: str, pattern_
 
     try:
         from agent.redact import redact_approval_display
-        from hermes_cli.approval_transport import ApprovalRequest, invoke_approval_transport
+        from moor_cli.approval_transport import ApprovalRequest, invoke_approval_transport
 
         timeout_seconds = _ctx._get_approval_timeout()
         request = ApprovalRequest.create(
@@ -349,7 +349,7 @@ def request_elicitation_consent(message: str, description: str, *,
             return "cancel"  # nobody answered (timeout / prompt withdrawn) — not a user refusal
         return _remembered_consent(session_key, decision.get("choice"), remember_key, "decline")
 
-    # Nobody can answer a -q, cron or unattended-platform worker. A `hermes chat -q` turn still has the CLI's
+    # Nobody can answer a -q, cron or unattended-platform worker. A `moor chat -q` turn still has the CLI's
     # panel callback registered, which would wait the full approval timeout before failing closed.
     if _ctx._no_user_can_answer():
         logger.info("Elicitation consent (%s) declined: no user can answer in this session", surface)

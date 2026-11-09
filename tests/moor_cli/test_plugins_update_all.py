@@ -1,18 +1,18 @@
-"""`hermes plugins update` with no name: offer every plugin that has an update, never move one silently."""
+"""`moor plugins update` with no name: offer every plugin that has an update, never move one silently."""
 from __future__ import annotations
 
 import argparse
 
 import pytest
 
-from hermes_cli.plugins_updates import CheckResult
+from moor_cli.plugins_updates import CheckResult
 
 
 def _parse(argv):
-    from hermes_cli.plugins_cmd import plugins_command
-    from hermes_cli.subcommands.plugins import build_plugins_parser
+    from moor_cli.plugins_cmd import plugins_command
+    from moor_cli.subcommands.plugins import build_plugins_parser
 
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="moor")
     build_plugins_parser(parser.add_subparsers(dest="command"), cmd_plugins=plugins_command)
     return parser.parse_args(["plugins", *argv])
 
@@ -20,7 +20,7 @@ def _parse(argv):
 @pytest.fixture
 def fleet(monkeypatch, tmp_path):
     """Four installed rows: two the update path can move, a PyPI row it never upgrades (#132494) and a pin."""
-    from hermes_cli import plugins_cmd, plugins_cmd_update, plugins_updates
+    from moor_cli import plugins_cmd, plugins_cmd_update, plugins_updates
 
     rows = [
         CheckResult("cat", "catalog", current="a" * 40, latest="b" * 40, update_available=True),
@@ -36,7 +36,7 @@ def fleet(monkeypatch, tmp_path):
             raise TimeoutError("catalog pin refused")  # not a typed refusal: the batch must still go on
         return True
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr(plugins_updates, "run_checks", lambda plugins_dir, **kw: rows)
     monkeypatch.setattr(plugins_cmd, "_user_installed_plugin_dir", lambda name: tmp_path / name)
     monkeypatch.setattr(plugins_cmd_update, "update_one", fake_update)
@@ -44,7 +44,7 @@ def fleet(monkeypatch, tmp_path):
 
 
 def test_no_terminal_refuses_without_yes_and_updates_only_movable_rows_with_it(fleet, monkeypatch, capsys):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     monkeypatch.setattr(plugins_cmd, "_is_tty", lambda: False)
     args = _parse(["update"])
@@ -65,7 +65,7 @@ def test_no_terminal_refuses_without_yes_and_updates_only_movable_rows_with_it(f
 
 
 def test_terminal_asks_once_and_cancel_moves_nothing(fleet, monkeypatch, capsys):
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
 
     monkeypatch.setattr(plugins_cmd, "_is_tty", lambda: True)
     prompts = []

@@ -50,12 +50,12 @@ The server issues `session:operator` only at these existing trusted boundaries:
   legacy session token when that authentication path is enabled. With `webapp.enabled`, that
   session token is the browser-hosted Desktop's credential: the gateway keeps it in its home so
   Webapp tabs survive a restart, hands it out only through a one-use link minted for a same-user
-  control-socket peer, and replaces it on `hermes webapp --sign-out` and whenever the Webapp's
+  control-socket peer, and replaces it on `moor webapp --sign-out` and whenever the Webapp's
   listener fails to start, since its port then belongs to someone else. Behind the sign-in gate a
-  Webapp login is bound to that token by the `hermes_webapp_signin_<gateway>` cookie (HMAC-SHA256 of
+  Webapp login is bound to that token by the `moor_webapp_signin_<gateway>` cookie (HMAC-SHA256 of
   `webapp-sign-in` keyed with the token), so replacing it ends those logins too; sign-out closes
   every socket the token or a bound login opened, Bot Desktop viewers included. The Webapp's listener
-  names every sign-in cookie it sets that way (`hermes_session_at_<gateway>` and the rest; `<gateway>`
+  names every sign-in cookie it sets that way (`moor_session_at_<gateway>` and the rest; `<gateway>`
   comes from a digest of the gateway home), so two gateways' Webapps on one hostname keep their own
   logins, whatever their sign-in providers, and leave the standalone dashboard's cookies alone. The provider tokens
   such a login keeps in its cookies never work there on their own: the Webapp's listener accepts a
@@ -90,7 +90,7 @@ listener keeps working.
   The native local routing identity remains server-owned `Platform.LOCAL`; source never
   grants messaging/native trust. Default TUI selection folds in `project`; GUI folds in
   the client-surface toolsets (`project`, `desktop_ui`, `catalog`). GUI policy is
-  independent of `HERMES_DESKTOP` and of the attaching viewer's identity. Without explicit
+  independent of `MOOR_DESKTOP` and of the attaching viewer's identity. Without explicit
   `toolsets`, the gateway applies the coding posture (`agent.coding_context: focus` in a
   code workspace, `agent/coding_context.py`) from the `cwd` a `session.create` names,
   decided once at creation; clients never send it as a pick. Only `session.create` applies
@@ -172,7 +172,7 @@ fixtures described below provide separate coverage; their results must not be pr
 a new end-to-end cross-authentication gateway-crash test.
 
 `tests/gateway/test_local_session.py` launches a disposable process with temporary HOME
-and HERMES_HOME, the production composed HTTP/WS listener, real single-use authenticated
+and MOOR_HOME, the production composed HTTP/WS listener, real single-use authenticated
 tickets, a loopback OpenAI-compatible model, the real TurnRunner/AIAgent, and the real
 terminal tool. It proves persisted identity and same-agent reattachment; closes both
 viewers while approval is pending; reconnects and consents before deleting only an owned

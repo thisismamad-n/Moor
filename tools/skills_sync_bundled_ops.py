@@ -83,7 +83,7 @@ def ensure_bundled_skill(name: str) -> dict:
     ``hub_shadowed`` (a hub install owns the name; it is the user's to remove, never overwritten).
     A restore into a leftover dir only adds the missing files (a user file is never overwritten) and
     the manifest records the bundled hash, so a dest that kept user files reads as user-modified and
-    ``hermes update`` leaves it alone: intended, the user's data wins."""
+    ``moor update`` leaves it alone: intended, the user's data wins."""
     from tools import skill_usage
     ss, manifest, bundled_dir, bundled_by_name = _bundled_state()
     src = bundled_by_name[name]
@@ -91,8 +91,8 @@ def ensure_bundled_skill(name: str) -> dict:
     if skill_usage.is_hub_installed(name):
         return {"ok": True, "action": "hub_shadowed", "path": None, "message": (
             f"'{name}' is a built-in skill, but a skill installed from the hub uses the same name and "
-            f"shadows it. To get the built-in back: `hermes skills uninstall {name}`, then "
-            f"`hermes skills install {name}`.")}
+            f"shadows it. To get the built-in back: `moor skills uninstall {name}`, then "
+            f"`moor skills install {name}`.")}
     # The rglob walk does not descend a symlinked category the loader follows, so the canonical
     # SKILL.md counts as present too.
     skill_md = dest / "SKILL.md"
@@ -127,7 +127,7 @@ def ensure_bundled_skill(name: str) -> dict:
 
 
 def list_user_modified_bundled_skills() -> list[dict]:
-    """Bundled skills ``hermes update`` keeps because the user edited them (same test the sync
+    """Bundled skills ``moor update`` keeps because the user edited them (same test the sync
     loop uses). Name-sorted ``{"name", "dest", "bundled_src"}`` dicts."""
     ss = _ss()
     if not (manifest := ss._read_manifest()):

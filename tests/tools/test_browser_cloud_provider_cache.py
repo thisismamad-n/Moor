@@ -14,7 +14,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from hermes_constants import hermes_home_key
+from moor_constants import moor_home_key
 from tools import browser_session_cloud as bs_cloud
 
 
@@ -26,7 +26,7 @@ def _reset_resolver_state(monkeypatch):
 
 def _resolution_cached() -> bool:
     """Whether the active profile has a cached provider resolution."""
-    scope = hermes_home_key()
+    scope = moor_home_key()
     return any(key[0] == scope for key in bs_cloud._cached_providers)
 
 
@@ -39,7 +39,7 @@ class TestCloudProviderCachePolicy:
         )
 
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {"cloud_provider": "profile-provider"}},
         )
         providers = {}
@@ -74,9 +74,9 @@ class TestCloudProviderCachePolicy:
     ):
         from agent.browser_provider import BrowserProvider
         from agent import browser_registry
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
         class Provider(BrowserProvider):
@@ -103,11 +103,11 @@ class TestCloudProviderCachePolicy:
         first = Provider("first")
         second = Provider("second")
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {"cloud_provider": "cache-replacement"}},
         )
         monkeypatch.setattr("tools.browser_session_cloud._ensure_browser_plugins_loaded", lambda: None)
-        token = set_hermes_home_override(home)
+        token = set_moor_home_override(home)
         try:
             browser_registry.register_provider(first, scope=home)
             assert bs_cloud.get_cloud_provider() is first
@@ -131,9 +131,9 @@ class TestCloudProviderCachePolicy:
 
         from agent.browser_provider import BrowserProvider
         from agent import browser_registry
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
         class Provider(BrowserProvider):
@@ -174,7 +174,7 @@ class TestCloudProviderCachePolicy:
             return resolved
 
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {"cloud_provider": "cache-race"}},
         )
         monkeypatch.setattr("tools.browser_session_cloud._ensure_browser_plugins_loaded", lambda: None)
@@ -207,7 +207,7 @@ class TestCloudProviderCachePolicy:
     def test_explicit_local_caches_permanently(self, monkeypatch):
         """`cloud_provider: local` is a positive choice and must stick."""
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {"cloud_provider": "local"}},
         )
 
@@ -216,7 +216,7 @@ class TestCloudProviderCachePolicy:
 
         # Even if config later changes, the cache stays.
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {"cloud_provider": "browser-use"}},
         )
         assert bs_cloud.get_cloud_provider() is None
@@ -225,7 +225,7 @@ class TestCloudProviderCachePolicy:
     def test_no_credentials_yet_does_not_cache_none(self, monkeypatch):
         """Auto-detect path with no creds: must NOT poison the cache."""
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {}},
         )
 
@@ -262,7 +262,7 @@ class TestCloudProviderCachePolicy:
         monkeypatch.setattr("tools.browser_session_cloud._ensure_browser_plugins_loaded", lambda: None)
         monkeypatch.setattr("agent.browser_registry.get_provider", exploding_factory)
         monkeypatch.setattr(
-            "hermes_cli.config_effective.load_user_config_effective",
+            "moor_cli.config_effective.load_user_config_effective",
             lambda: {"browser": {"cloud_provider": "browser-use"}},
         )
 

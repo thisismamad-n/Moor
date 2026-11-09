@@ -388,7 +388,7 @@ def _park_attempt(home, name="linear", session_key="s1", profile_key="stamped"):
     """Close a runner whose operation parked one approved OAuth attempt, the way
     ``_Runner.close`` does at the end of a tool call bound to ``home``."""
     from tools.connectors import mcp
-    from hermes_constants import hermes_home_key
+    from moor_constants import moor_home_key
     from tools.connectors.operation import ConnectionOperation
 
     attempt = FakeAttempt("https://auth.example/linear")
@@ -460,7 +460,7 @@ def test_late_attempt_keyed_by_detached_path_uses_calling_profile(tmp_path):
 
     from moor_constants import moor_home_key
     with _as_home(home_a):
-        assert list(mcp._LATE_ATTEMPTS) == [(hermes_home_key(), "s1")]
+        assert list(mcp._LATE_ATTEMPTS) == [(moor_home_key(), "s1")]
     adopted, _registered, _ = _adopt_as(home_b)
     assert adopted == []
     adopted, _registered, _ = _adopt_as(home_a)

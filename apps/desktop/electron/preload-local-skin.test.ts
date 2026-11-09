@@ -27,7 +27,7 @@ test('the preload carries the local skin across before the renderer starts', asy
 
   assert.deepEqual(bridge.localSkin, skin)
   assert.equal(
-    electron.ipcRenderer.sendSync.mock.calls.some(([channel]) => channel === 'hermes:skin:local'),
+    electron.ipcRenderer.sendSync.mock.calls.some(([channel]) => channel === 'moor:skin:local'),
     true
   )
 })

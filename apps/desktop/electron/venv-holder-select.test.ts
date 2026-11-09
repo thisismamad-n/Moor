@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 
 import { test } from 'vitest'
 
-import { hasWindowsPathPrefix, isExternalVenvHolder, isHermesOwnedVenvDaemon } from './venv-holder-select'
+import { hasWindowsPathPrefix, isExternalVenvHolder, isMoorOwnedVenvDaemon } from './venv-holder-select'
 
 const SCRIPTS = 'C:\\Moor\\venv\\Scripts'
 
@@ -58,56 +58,56 @@ test('null/undefined fields never match', () => {
 
 // --- isExternalVenvHolder (#62311) ------------------------------------------
 
-test('matches the autostart gateway shim (hermes.exe under venv Scripts)', () => {
+test('matches the autostart gateway shim (moor.exe under venv Scripts)', () => {
   assert.equal(
     isExternalVenvHolder(
-      'C:\\Hermes\\venv\\Scripts\\hermes.exe',
-      '"C:\\Hermes\\venv\\Scripts\\hermes.exe" gateway run --external-supervisor',
+      'C:\\Moor\\venv\\Scripts\\moor.exe',
+      '"C:\\Moor\\venv\\Scripts\\moor.exe" gateway run --external-supervisor',
       SCRIPTS
     ),
     true
   )
 })
 
-test('matches the dashboard scheduled task (python -m hermes_cli / -m hermes)', () => {
+test('matches the dashboard scheduled task (python -m moor_cli / -m moor)', () => {
   assert.equal(
     isExternalVenvHolder(
-      'C:\\Hermes\\venv\\Scripts\\python.exe',
-      '"C:\\Hermes\\venv\\Scripts\\python.exe" -m hermes_cli.main dashboard',
+      'C:\\Moor\\venv\\Scripts\\python.exe',
+      '"C:\\Moor\\venv\\Scripts\\python.exe" -m moor_cli.main dashboard',
       SCRIPTS
     ),
     true
   )
   assert.equal(
-    isExternalVenvHolder('C:\\Hermes\\venv\\Scripts\\pythonw.exe', 'pythonw.exe -m hermes serve', SCRIPTS),
+    isExternalVenvHolder('C:\\Moor\\venv\\Scripts\\pythonw.exe', 'pythonw.exe -m moor serve', SCRIPTS),
     true
   )
 })
 
 test('never matches an unrelated process that merely borrows the venv interpreter', () => {
-  // a user's own script running on the venv python — NOT Hermes, must NOT be killed
+  // a user's own script running on the venv python — NOT Moor, must NOT be killed
   assert.equal(
-    isExternalVenvHolder('C:\\Hermes\\venv\\Scripts\\python.exe', 'python C:\\tools\\import.py', SCRIPTS),
+    isExternalVenvHolder('C:\\Moor\\venv\\Scripts\\python.exe', 'python C:\\tools\\import.py', SCRIPTS),
     false
   )
-  // hindsight daemon is selected by isHermesOwnedVenvDaemon, not here
+  // hindsight daemon is selected by isMoorOwnedVenvDaemon, not here
   assert.equal(
-    isExternalVenvHolder('C:\\Hermes\\venv\\Scripts\\pythonw.exe', 'pythonw -m hindsight_api.main --daemon', SCRIPTS),
+    isExternalVenvHolder('C:\\Moor\\venv\\Scripts\\pythonw.exe', 'pythonw -m hindsight_api.main --daemon', SCRIPTS),
     false
   )
 })
 
-test('never matches a process outside the venv, even with hermes in the cmdline', () => {
+test('never matches a process outside the venv, even with moor in the cmdline', () => {
   // an editor / shell whose command line mentions the install root (#62445 regression guard)
   assert.equal(
-    isExternalVenvHolder('C:\\Windows\\System32\\cmd.exe', 'cmd /c cd C:\\Hermes\\venv\\Scripts && dir', SCRIPTS),
+    isExternalVenvHolder('C:\\Windows\\System32\\cmd.exe', 'cmd /c cd C:\\Moor\\venv\\Scripts && dir', SCRIPTS),
     false
   )
-  assert.equal(isExternalVenvHolder('C:\\Other\\hermes.exe', 'hermes gateway run', SCRIPTS), false)
+  assert.equal(isExternalVenvHolder('C:\\Other\\moor.exe', 'moor gateway run', SCRIPTS), false)
 })
 
 test('sibling-dir and boundary safety for the external selector', () => {
-  assert.equal(isExternalVenvHolder('C:\\Hermes\\venv\\ScriptsX\\hermes.exe', 'hermes gateway run', SCRIPTS), false)
-  assert.equal(isExternalVenvHolder(null, 'hermes gateway run', SCRIPTS), false)
-  assert.equal(isExternalVenvHolder('C:\\Hermes\\venv\\Scripts\\hermes.exe', null, SCRIPTS), false)
+  assert.equal(isExternalVenvHolder('C:\\Moor\\venv\\ScriptsX\\moor.exe', 'moor gateway run', SCRIPTS), false)
+  assert.equal(isExternalVenvHolder(null, 'moor gateway run', SCRIPTS), false)
+  assert.equal(isExternalVenvHolder('C:\\Moor\\venv\\Scripts\\moor.exe', null, SCRIPTS), false)
 })

@@ -2,9 +2,9 @@
 
 import pytest
 
-from hermes_cli import plugins
-from hermes_cli.middleware import apply_llm_request_middleware, apply_tool_request_middleware
-from hermes_cli.plugins import PluginManager
+from moor_cli import plugins
+from moor_cli.middleware import apply_llm_request_middleware, apply_tool_request_middleware
+from moor_cli.plugins import PluginManager
 
 _REQUEST_KINDS = [
     ("llm_request", apply_llm_request_middleware),
@@ -39,7 +39,7 @@ def seen(tmp_path, monkeypatch):
     (plugin / "plugin.yaml").write_text("name: request_chain\nversion: 0.1.0\n")
     (plugin / "__init__.py").write_text(_PLUGIN)
     (home / "config.yaml").write_text("plugins:\n  enabled: [request_chain]\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     manager = PluginManager()
     manager.discover_and_load()
     monkeypatch.setattr(plugins, "get_plugin_manager", lambda: manager)

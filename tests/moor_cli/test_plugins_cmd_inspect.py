@@ -12,9 +12,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import plugins_cmd, plugins_cmd_catalog, plugins_cmd_inspect
-from hermes_cli.plugins_cmd import PluginOperationError
-from hermes_cli.plugins_cmd_inspect import detect_components, inspect_plugin_source
+from moor_cli import plugins_cmd, plugins_cmd_catalog, plugins_cmd_inspect
+from moor_cli.plugins_cmd import PluginOperationError
+from moor_cli.plugins_cmd_inspect import detect_components, inspect_plugin_source
 
 # Shared with native Desktop's detector (apps/desktop/electron/desktop-plugin-install.test.ts).
 _DETECTION_CASES = json.loads((Path(__file__).resolve().parents[1] / "fixtures/plugin_component_detection.json")
@@ -149,7 +149,7 @@ def test_kill_listed_source_is_refused_before_cloning(tmp_path, sentinel, monkey
         seen.append(candidates)
         raise PluginOperationError("removed from the catalog")
     monkeypatch.setattr(plugins_cmd_catalog, "raise_if_removed", refuse)
-    monkeypatch.setattr("hermes_cli.plugins_cmd._clone_plugin_repo", lambda *a, **k: pytest.fail("cloned"))
+    monkeypatch.setattr("moor_cli.plugins_cmd._clone_plugin_repo", lambda *a, **k: pytest.fail("cloned"))
 
     result = inspect_plugin_source(repo.as_uri())
 
@@ -171,7 +171,7 @@ def test_catalog_entry_is_inspected_at_its_reviewed_pin(tmp_path, sentinel, monk
     assert (pinned["ok"], pinned["agent"], pinned["desktop"]) == (True, True, False)
     assert pinned["sha"] == pin
     assert unknown == {"ok": False, "agent": False, "desktop": False, "warnings": [], "insecure": False,
-                       "error": "'missing' is not in the Hermes plugin catalog."}
+                       "error": "'missing' is not in the Moor plugin catalog."}
 
 
 def test_the_reported_sha_is_the_commit_read_even_after_the_source_moves(tmp_path, sentinel, monkeypatch):
@@ -201,7 +201,7 @@ def test_detection_matches_the_shared_cases(tmp_path, case):
 def test_inspection_writes_nothing_into_the_profile(tmp_path, sentinel, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     repo = _repo(tmp_path, _agent_files(sentinel))
 
     assert inspect_plugin_source(repo.as_uri())["ok"] is True
@@ -257,7 +257,7 @@ def test_another_profile_never_reads_this_profiles_answer(tmp_path, sentinel, cl
     repo = _repo(tmp_path, _agent_files(sentinel))
     for home in ("a", "b"):
         (tmp_path / home).mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / home))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / home))
         assert inspect_plugin_source(repo.as_uri())["ok"] is True
 
     assert clones.count == 2

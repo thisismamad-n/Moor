@@ -1,6 +1,6 @@
 """Every old local row the native resume adopts also takes a sidebar edit (#106742).
 
-The resume adopts main's ``desktop`` chats (including those stamped with the signed-in Nous
+The resume adopts main's ``desktop`` chats (including those stamped with the signed-in Moor
 account) and ``oneshot``/``tool`` CLI runs, but ``authorize_history`` (pin/archive/hide/rename)
 only knew ``cli``/``tui``/``gui``, so the same rows answered ``permission_denied`` on every
 sidebar edit. A served remote backend's login label (``basic:alice``) is that login's ownership,
@@ -11,10 +11,10 @@ import json
 import pytest
 
 from gateway.session_contract import Principal
-from hermes_state import SessionDB
-from hermes_state_local_migration import validate_legacy_row
-from hermes_state_mutation_binding import authorize_history, same_history_owner
-from hermes_state_runtime import RuntimeStoreError
+from moor_state import SessionDB
+from moor_state_local_migration import validate_legacy_row
+from moor_state_mutation_binding import authorize_history, same_history_owner
+from moor_state_runtime import RuntimeStoreError
 
 
 def _login(user, issuer=''):
@@ -26,18 +26,18 @@ def test_rows_the_resume_adopts_take_sidebar_edits(tmp_path):
     db = SessionDB(db_path=tmp_path / 'state.db')
     try:
         for sid, source, user_id in (('old-desktop', 'desktop', None), ('old-oneshot', 'oneshot', None),
-                                     ('old-desktop-nous', 'desktop', 'nous:account'),
+                                     ('old-desktop-moor', 'desktop', 'moor:account'),
                                      ('old-desktop-foreign', 'desktop', 'telegram:42'),
-                                     ('old-cli-nous', 'cli', 'nous:account'), ('api-row', 'api_server', None)):
+                                     ('old-cli-moor', 'cli', 'moor:account'), ('api-row', 'api_server', None)):
             db.create_session(sid, source=source, user_id=user_id)
         actor = Principal('uid:1', str(tmp_path), frozenset({'session:read', 'session:create'}), 'native-http:x')
         with db._read_ctx() as conn:
-            for sid in ('old-desktop', 'old-oneshot', 'old-desktop-nous'):
+            for sid in ('old-desktop', 'old-oneshot', 'old-desktop-moor'):
                 validate_legacy_row(db, db.get_session(sid))  # the resume adopts it ...
                 assert authorize_history(conn, actor, sid) is True, sid  # ... so it takes an edit.
-            assert same_history_owner(conn, 'old-desktop', 'old-desktop-nous') is True
-            # A real foreign identity, a Nous stamp on a non-Desktop row and API rows stay refused.
-            for sid in ('old-desktop-foreign', 'old-cli-nous'):
+            assert same_history_owner(conn, 'old-desktop', 'old-desktop-moor') is True
+            # A real foreign identity, a Moor stamp on a non-Desktop row and API rows stay refused.
+            for sid in ('old-desktop-foreign', 'old-cli-moor'):
                 try:
                     authorize_history(conn, actor, sid)
                 except Exception as exc:
@@ -127,7 +127,7 @@ async def test_editing_ones_own_branch_leaves_another_logins_parent_alone(tmp_pa
     from gateway.session_authority import SessionAuthority
     from gateway.session_contract import SessionRef
     from gateway.session_mutations import mutate_session
-    from hermes_state_runtime import begin_runtime_epoch
+    from moor_state_runtime import begin_runtime_epoch
     from tui_gateway.methods_session import _persist_branch
 
     caps = frozenset({'session:read', 'session:control', 'session:create', 'session:operator'})
@@ -172,7 +172,7 @@ async def test_renaming_ones_own_branch_leaves_another_logins_parent_title_alone
     from gateway.session_authority import SessionAuthority
     from gateway.session_contract import SessionRef
     from gateway.session_mutations import mutate_session
-    from hermes_state_runtime import begin_runtime_epoch
+    from moor_state_runtime import begin_runtime_epoch
     from tui_gateway.methods_session import _persist_branch
 
     caps = frozenset({'session:read', 'session:control', 'session:create', 'session:operator'})

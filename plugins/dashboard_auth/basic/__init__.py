@@ -198,8 +198,8 @@ def _load_config_basic_auth_section() -> dict:
 # these (nor a space), and everyone who copied the same line would share the same key.
 _UNEXPANDED_SHELL_MARKERS = ("$(", "`", "openssl rand")
 
-# The error above only reaches the log files, not the console of ``hermes serve`` /
-# ``hermes dashboard``; one stderr line per process makes it visible there too.
+# The error above only reaches the log files, not the console of ``moor serve`` /
+# ``moor dashboard``; one stderr line per process makes it visible there too.
 _shell_text_secret_reported = False
 
 
@@ -208,7 +208,7 @@ def _resolve_secret(cfg_section: dict) -> bytes:
     a random per-process secret (sessions then don't survive a restart or span multiple
     workers — logged at INFO). A value holding unexpanded shell text is never used as the
     key: it is logged as an error and replaced by a random per-process secret."""
-    raw = resolve_env_or_cfg("HERMES_DASHBOARD_BASIC_AUTH_SECRET", cfg_section.get("secret"))
+    raw = resolve_env_or_cfg("MOOR_DASHBOARD_BASIC_AUTH_SECRET", cfg_section.get("secret"))
     if not raw:
         logger.info(
             "dashboard-auth-basic: no 'secret' configured; generating a random "
@@ -221,13 +221,13 @@ def _resolve_secret(cfg_section: dict) -> bytes:
             "dashboard-auth-basic: the configured signing secret contains unexpanded shell "
             "text (such as '$(openssl rand -base64 32)') instead of a random value, so it "
             "is ignored and a random per-process signing key is used. Set "
-            "HERMES_DASHBOARD_BASIC_AUTH_SECRET (or dashboard.basic_auth.secret) to the "
+            "MOOR_DASHBOARD_BASIC_AUTH_SECRET (or dashboard.basic_auth.secret) to the "
             "output of 'openssl rand -base64 32' to keep sessions across restarts.")
         global _shell_text_secret_reported
         if not _shell_text_secret_reported:
             _shell_text_secret_reported = True
             print(
-                "hermes: dashboard login: HERMES_DASHBOARD_BASIC_AUTH_SECRET (or "
+                "moor: dashboard login: MOOR_DASHBOARD_BASIC_AUTH_SECRET (or "
                 "dashboard.basic_auth.secret) holds shell text instead of a random value; "
                 "using a per-process key, so sessions end on restart. Replace it with the "
                 "output of: openssl rand -base64 32", file=sys.stderr, flush=True)

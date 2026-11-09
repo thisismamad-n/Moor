@@ -185,7 +185,7 @@ describe('I18nProvider', () => {
   })
 
   it('mirrors a registered language’s direction onto the document', async () => {
-    const dispose = registerAppLocale('he', { endonym: 'עברית', rtl: true }, 'plugin:hermes-lang-he')
+    const dispose = registerAppLocale('he', { endonym: 'עברית', rtl: true }, 'plugin:moor-lang-he')
 
     try {
       render(

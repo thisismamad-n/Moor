@@ -26,7 +26,7 @@ from xml.etree import ElementTree
 from xml.sax.saxutils import escape
 
 from agent.deadline import poll_until
-from hermes_cli._subprocess_compat import (
+from moor_cli._subprocess_compat import (
     _WINDOWS_GATEWAY_BREAKAWAY_ENV,
     windows_detach_flags,
     windows_detach_flags_without_breakaway,
@@ -227,7 +227,7 @@ def _is_running_as_admin() -> bool:
     """Return True when the current Windows process is elevated (the shared ``TokenElevation``
     probe; ``IsUserAnAdmin`` is deprecated and answered the same question a second way)."""
     _assert_windows()
-    from hermes_dir_acl import process_is_elevated
+    from moor_dir_acl import process_is_elevated
     return process_is_elevated()
 
 
@@ -487,11 +487,11 @@ def _atomic_write(path: Path, content: str, tmp: Path, *, encoding: str = "utf-8
 
     The staging file is removed even when the rename fails: the Startup-folder caller stages
     inside the Startup folder itself, and Windows opens every file there at login — a leftover
-    ``Hermes_Gateway.tmp`` pops up in Notepad after every sign-in (#114093).
+    ``Moor_Gateway.tmp`` pops up in Notepad after every sign-in (#114093).
 
     ``.vbs`` launchers pass ``utf-16`` (BOM included): Windows Script Host decodes a BOM-less script
     with the ANSI code page, so a non-ASCII install path reached python as mojibake, ``PYTHONPATH``
-    no longer imported ``hermes_cli`` and every task or Startup start died before logging a line.
+    no longer imported ``moor_cli`` and every task or Startup start died before logging a line.
     """
     try:
         tmp.write_text(content, encoding=encoding, newline="")
@@ -746,7 +746,7 @@ def windowless_gateway_restart_spec(run_argv: list[str], home: str | None = None
     every console-subsystem child allocated a visible conhost). This helper now only normalizes the
     interpreter via ``_resolve_detached_python`` and supplies the stable cwd + env overlay (MOOR_HOME,
     VIRTUAL_ENV, PYTHONPATH) so the respawn doesn't depend on the watcher's transient working directory.
-    ``HERMES_HOME`` is ``home`` when given: a replayed selectorless argv runs on whatever home its
+    ``MOOR_HOME`` is ``home`` when given: a replayed selectorless argv runs on whatever home its
     environment names, so the paused runtime's home, not the updater's, must come back.
     """
     if not run_argv or sys.platform != "win32":
@@ -759,7 +759,7 @@ def windowless_gateway_restart_spec(run_argv: list[str], home: str | None = None
         return run_argv, "", {}
 
     try:
-        hermes_home = str(Path(home or _hermes_home()).resolve())
+        moor_home = str(Path(home or _moor_home()).resolve())
     except Exception:
         moor_home = ""
     env_overlay: dict[str, str] = {"PYTHONIOENCODING": "utf-8", "MOOR_GATEWAY_DETACHED": "1", "VIRTUAL_ENV": str(venv_dir)}
@@ -788,7 +788,7 @@ def _spawn_detached(script_path: Path | None = None, home: Path | None = None) -
     from tools.environments.local import served_profile_child_env
     # home=None is this process's own gateway, not a forced jump to the default root.
     # served_profile_child_env overlays that home's secrets instead of os.environ.copy().
-    target = home if home is not None else _hermes_home()
+    target = home if home is not None else _moor_home()
     env = {**served_profile_child_env(target_home=target, inherit_credentials=True), **env_overlay}
 
     # Stray print()/native stderr goes to a sidecar log; real gateway logs still land in gateway.log
@@ -895,7 +895,7 @@ def _install_startup_fallback(script_path: Path, start_now: bool, detail: str) -
         # An earlier task survives (UAC declined, access denied on re-create) and still fires at
         # logon; adding the fallback beside it would start the gateway twice (#80569).
         print("⚠ Scheduled Task is still registered — skipped the Startup fallback to avoid a duplicate autostart.")
-        print("  If that task is disabled or broken, run 'hermes gateway uninstall', then install again.")
+        print("  If that task is disabled or broken, run 'moor gateway uninstall', then install again.")
     else:
         entry = _install_startup_entry(script_path)
         print(f"✓ Installed Windows login item: {entry}")
@@ -1024,7 +1024,7 @@ def _live_gateway_pids(
         pid = get_running_pid(home / "gateway.pid", cleanup_stale=False)
         pids = [pid] if pid else []
     else:
-        from hermes_cli.gateway import find_gateway_pids
+        from moor_cli.gateway import find_gateway_pids
         pids = list(find_gateway_pids(all_profiles=all_profiles))
     return list(pid_filter(pids)) if pid_filter is not None else pids
 
@@ -1405,12 +1405,12 @@ _TASK_PROBE_TIMEOUT_S = 5
 
 
 def registered_task_launchers() -> list[str]:
-    """The scripts this OS user's ``Hermes_Gateway*`` Scheduled Tasks start (``install_state``). A task
+    """The scripts this OS user's ``Moor_Gateway*`` Scheduled Tasks start (``install_state``). A task
     install removes the Startup-folder entries, so for a custom home the task is all that still names
     it. Empty off Windows, and when Task Scheduler does not answer, as for an unreadable Startup entry."""
     if sys.platform != "win32":
         return []
-    from hermes_cli.gateway_service_owner import service_definition_launchers
+    from moor_cli.gateway_service_owner import service_definition_launchers
 
     code, listing, _err = _exec_schtasks(["/Query", "/FO", "CSV", "/NH"], timeout=_TASK_PROBE_TIMEOUT_S)
     names = re.findall(rf'^"\\({_TASK_NAME_DEFAULT}[^"\\]*)"', listing, flags=re.MULTILINE) if code == 0 else []

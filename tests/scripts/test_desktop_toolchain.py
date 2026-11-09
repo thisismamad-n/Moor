@@ -342,7 +342,7 @@ def test_native_cache_is_stable_without_a_developer_environment(tmp_path, monkey
     version_file.parent.mkdir(parents=True)
     version_file.write_text("\ufeff14.44.35207\n", encoding="utf-8")  # Visual Studio writes a BOM
     vswhere = json.dumps([{"installationPath": str(install), "installationVersion": "17.14.1"}])
-    # vswhere is never on PATH; hermes_platform finds it in the installer directory.
+    # vswhere is never on PATH; moor_platform finds it in the installer directory.
     installer = tmp_path / "Program Files (x86)/Microsoft Visual Studio/Installer"
     installer.mkdir(parents=True)
     (installer / "vswhere.exe").write_bytes(b"")

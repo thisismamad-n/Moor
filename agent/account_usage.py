@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 import httpx
 
 from agent.anthropic_credentials import _is_oauth_token, resolve_anthropic_token
-from hermes_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
-from hermes_cli.auth_codex import _codex_pool_route_base_url
-from hermes_cli.runtime_provider import resolve_runtime_provider
-from hermes_time import safe_strftime
+from moor_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
+from moor_cli.auth_codex import _codex_pool_route_base_url
+from moor_cli.runtime_provider import resolve_runtime_provider
+from moor_time import safe_strftime
 
 from agent.usage_gauges import BP_FULL
 
@@ -26,8 +26,8 @@ _DEPLETED_LINE = "Status: access depleted — top up to restore"
 # Usage-window plans: allowances are shown as percent used.
 _WINDOW_TOP_TIER_USED_UP = "Monthly large-model usage is used up."
 _WINDOW_PAUSED_LINE = ("Status: included usage paused. Your subscription payment failed. Update your card to restore it. "
-                       "Until then, Hermes uses your credits.")
-_WINDOW_PAUSED_OTHER_LINE = "Status: included usage paused. See Billing in the Portal. Until then, Hermes uses your credits."
+                       "Until then, Moor uses your credits.")
+_WINDOW_PAUSED_OTHER_LINE = "Status: included usage paused. See Billing in the Portal. Until then, Moor uses your credits."
 
 
 def _utc_now() -> datetime:
@@ -116,7 +116,7 @@ def _reset_phrase(dt: Optional[datetime]) -> str:
     if not dt:
         return "resets soon"
     try:
-        from hermes_cli.model_picker_usage import format_resets_in
+        from moor_cli.model_picker_usage import format_resets_in
         return format_resets_in(int(dt.timestamp() * 1000))
     except Exception:
         logger.debug("Reset phrase formatting failed", exc_info=True)
@@ -163,7 +163,7 @@ def _render_usage_window_lines(snapshot: AccountUsageSnapshot) -> list[str]:
         else:
             used = max(0.0, min(100.0, float(window.used_percent))) / 100.0
             try:
-                from hermes_cli.model_picker_usage import format_percent_used, render_bar
+                from moor_cli.model_picker_usage import format_percent_used, render_bar
                 bar, pct = render_bar(used), format_percent_used(used)
             except Exception:
                 logger.debug("Usage bar rendering failed", exc_info=True)
@@ -193,12 +193,12 @@ def _is_finite_num(v: Any) -> TypeGuard[float]:
     return _is_num(v) and not isinstance(v, bool) and math.isfinite(v)
 
 
-def _nous_snapshot(windows: list, details: list, tail: list, *, source: str, plan: Optional[str] = None,
+def _moor_snapshot(windows: list, details: list, tail: list, *, source: str, plan: Optional[str] = None,
                    usage_window: bool = False) -> Optional[AccountUsageSnapshot]:
-    """Nous snapshot with *tail* lines appended, or None when there is nothing to show."""
+    """Moor snapshot with *tail* lines appended, or None when there is nothing to show."""
     if not windows and not details:
         return None
-    return _snapshot("nous", source, windows, details + tail, title="Nous credits", plan=plan, usage_window=usage_window)
+    return _snapshot("moor", source, windows, details + tail, title="Moor credits", plan=plan, usage_window=usage_window)
 
 
 def _bp_window(label: str, used_bp: Any, resets_at_ms: Any) -> Optional[AccountUsageWindow]:
@@ -224,7 +224,7 @@ def _window_top_tier_line(reset_at: Optional[datetime], keep_going_on_credits: A
     return f"{_WINDOW_TOP_TIER_USED_UP}{resets}{tail}"
 
 
-_WINDOW_KEEP_GOING_OFF_LINE = "Keep going on credits: off. Hermes waits for the reset (turn on in /topup)."
+_WINDOW_KEEP_GOING_OFF_LINE = "Keep going on credits: off. Moor waits for the reset (turn on in /topup)."
 _WINDOW_KEEP_GOING_ON_LINE = "Keep going on credits: on. Uses your credits when included usage runs out."
 
 
@@ -260,8 +260,8 @@ def _usage_window_rows(gauges: Any, *, paused_reason: Any,
     return out, lines
 
 
-def build_nous_credits_snapshot(account_info) -> Optional[AccountUsageSnapshot]:
-    """NousPortalAccountInfo → /usage snapshot: dollar magnitudes + renewal date + portal CTA, plus a ``% used``
+def build_moor_credits_snapshot(account_info) -> Optional[AccountUsageSnapshot]:
+    """MoorPortalAccountInfo → /usage snapshot: dollar magnitudes + renewal date + portal CTA, plus a ``% used``
     gauge when the portal supplies ``monthly_credits``. A usage-window account (``usage_window`` present) shows
     its allowances as percent used, the large-model line and its top-up balance instead. Fail-open → None."""
     try:
@@ -288,7 +288,7 @@ def build_nous_credits_snapshot(account_info) -> Optional[AccountUsageSnapshot]:
             if sub is not None and (period_end := getattr(sub, "current_period_end", None)):
                 from agent.billing_usage import format_renews
                 details.append(f"Renews: {format_renews(period_end) or period_end}")
-            return _nous_snapshot(windows, details, ["Top up via /topup"], source="portal-account",
+            return _moor_snapshot(windows, details, ["Top up via /topup"], source="portal-account",
                                   plan=getattr(sub, "plan", None) if sub is not None else None, usage_window=True)
         # Gauge needs a positive cap AND a finite remaining <= cap (numeric fields, NOT a server *_usd); used =
         # cap - remaining clamped [0,100] so debt reads 100%. NaN/Inf (json.loads accepts bare NaN → "$nan") and
@@ -400,16 +400,16 @@ def apply_header_gauge(snapshot: Optional[AccountUsageSnapshot], credits_state: 
     return replace(snapshot, windows=tuple(windows), details=details)
 
 
-def nous_credits_lines(*, markdown: bool = False, timeout: float = 10.0, credits_state: Any = None) -> list[str]:
-    """Rendered Nous-credits /usage lines, or [] when there's nothing to show. Independent of any live agent
+def moor_credits_lines(*, markdown: bool = False, timeout: float = 10.0, credits_state: Any = None) -> list[str]:
+    """Rendered Moor-credits /usage lines, or [] when there's nothing to show. Independent of any live agent
     (logged-in gate, then a bounded portal fetch); shared by CLI ``_show_usage`` and the TUI ``session.usage`` RPC.
-    Fail-open: any hiccup or timeout → []. HERMES_DEV_CREDITS_FIXTURE renders from the fixture instead of the portal.
+    Fail-open: any hiccup or timeout → []. MOOR_DEV_CREDITS_FIXTURE renders from the fixture instead of the portal.
     ``credits_state`` is the last response's header gauge; when it is ahead of the portal, the bars use it."""
-    return nous_credits_view(markdown=markdown, timeout=timeout, credits_state=credits_state)[0]
+    return moor_credits_view(markdown=markdown, timeout=timeout, credits_state=credits_state)[0]
 
 
-def nous_credits_view(*, markdown: bool = False, timeout: float = 10.0, credits_state: Any = None) -> tuple[list[str], bool]:
-    """``nous_credits_lines`` plus whether they are the usage-window layout (callers keep today's
+def moor_credits_view(*, markdown: bool = False, timeout: float = 10.0, credits_state: Any = None) -> tuple[list[str], bool]:
+    """``moor_credits_lines`` plus whether they are the usage-window layout (callers keep today's
     presentation for everyone else). Fail-open → ``([], False)``."""
     try:
         from agent.credits_tracker import dev_fixture_credits_state
@@ -420,11 +420,11 @@ def nous_credits_view(*, markdown: bool = False, timeout: float = 10.0, credits_
     if fixture is not None:
         snapshot = _snapshot_from_credits_state(fixture)
         return render_account_usage_lines(snapshot, markdown=markdown), bool(snapshot and snapshot.usage_window)
-    if not _nous_logged_in():
+    if not _moor_logged_in():
         return [], False
     try:
         snapshot = apply_header_gauge(
-            build_nous_credits_snapshot(_fetch_portal_account(timeout)), credits_state,
+            build_moor_credits_snapshot(_fetch_portal_account(timeout)), credits_state,
         )
         return render_account_usage_lines(snapshot, markdown=markdown), bool(snapshot and snapshot.usage_window)
     except Exception:
@@ -433,11 +433,11 @@ def nous_credits_view(*, markdown: bool = False, timeout: float = 10.0, credits_
         return [], False
 
 
-def nous_credits_usage_fields(agent: Any = None) -> dict[str, Any]:
-    """The ``session.usage`` fields for the Nous credits block: ``credits_lines`` (when there are any) and
+def moor_credits_usage_fields(agent: Any = None) -> dict[str, Any]:
+    """The ``session.usage`` fields for the Moor credits block: ``credits_lines`` (when there are any) and
     ``credits_usage_window`` for the usage-window layout. Reads *agent*'s live credits headers. Never raises."""
     try:
-        lines, is_window = nous_credits_view(credits_state=getattr(agent, "_credits_state", None) if agent else None)
+        lines, is_window = moor_credits_view(credits_state=getattr(agent, "_credits_state", None) if agent else None)
     except Exception:
         logger.debug("credits ▸ /usage fields unavailable", exc_info=True)
         return {}
@@ -462,7 +462,7 @@ def _snapshot_from_credits_state(state) -> Optional[AccountUsageSnapshot]:
                 details.append(f"Top-up credits: ${state.purchased_usd}")
             if getattr(state, "paid_access", True) is False and not window_lines:
                 details.append(_DEPLETED_LINE)
-            return _nous_snapshot(windows, details, ["(dev fixture — HERMES_DEV_CREDITS_FIXTURE)"], source="dev-fixture",
+            return _moor_snapshot(windows, details, ["(dev fixture — MOOR_DEV_CREDITS_FIXTURE)"], source="dev-fixture",
                                   usage_window=True)
         uf = getattr(state, "used_fraction", None)
         sub_usd = getattr(state, "subscription_usd", None)
@@ -512,7 +512,7 @@ def build_credits_view(*, markdown: bool = False, timeout: float = 10.0) -> Cred
     from moor_cli.moor_account import moor_portal_topup_url
     balance_lines = [
         line
-        for line in render_account_usage_lines(build_nous_credits_snapshot(account), markdown=markdown)
+        for line in render_account_usage_lines(build_moor_credits_snapshot(account), markdown=markdown)
         if not line.lstrip().startswith(("Top up:", "Top up via", "(or run"))
     ]
     who = [str(v) for v in (getattr(account, "email", None),) if v]

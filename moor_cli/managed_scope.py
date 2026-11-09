@@ -107,7 +107,7 @@ def _load_managed_file(name: str, cache: dict[str, tuple], parse) -> dict:
 def load_managed_config() -> dict:
     """Parsed managed config.yaml, or {} when absent/malformed (fail-open). Always {} under a config
     backend that takes config and locks from elsewhere (remote mode, D18; boot warns about the file)."""
-    from hermes_cli.config_backend import get_config_backend
+    from moor_cli.config_backend import get_config_backend
 
     if not get_config_backend().honors_managed_config():
         return {}

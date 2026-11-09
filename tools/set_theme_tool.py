@@ -1,4 +1,4 @@
-"""Set the Hermes desktop app's accent colour, light/dark mode and layout, or show a picker card.
+"""Set the Moor desktop app's accent colour, light/dark mode and layout, or show a picker card.
 
 The renderer applies the values and answers with what it applied, so the model reports what the user
 sees: an unknown layout preset, a session that is not on screen and an absent desktop window all come
@@ -12,7 +12,7 @@ from typing import Callable, Optional
 
 from tools.registry import registry, tool_error
 
-ACCENT_SWATCHES = ("mono", "green", "cyan", "nous", "violet", "pink", "red", "orange")
+ACCENT_SWATCHES = ("mono", "green", "cyan", "moor", "violet", "pink", "red", "orange")
 # The theme's own accent; the renderer stores it as "no accent pick".
 THEME_ACCENT = "theme"
 MODES = ("light", "dark", "system")
@@ -36,7 +36,7 @@ def set_theme_tool(accent: Optional[str] = None, mode: Optional[str] = None, lay
                    picker: Optional[str] = None, callback: Optional[Callable[[dict], dict]] = None) -> str:
     """Apply the given appearance values, or show one picker card and wait for the pick."""
     if callback is None:
-        return tool_error("set_theme is only available in the Hermes desktop app.")
+        return tool_error("set_theme is only available in the Moor desktop app.")
     values = {key: value.strip() for key, value in (("accent", accent), ("mode", mode), ("layout", layout))
               if isinstance(value, str) and value.strip()}
     if picker is not None:
@@ -58,7 +58,7 @@ def set_theme_tool(accent: Optional[str] = None, mode: Optional[str] = None, lay
 SET_THEME_SCHEMA = {
     "name": "set_theme",
     "description": (
-        "Change how the Hermes desktop app looks: accent colour, light/dark mode, layout. Pass the values "
+        "Change how the Moor desktop app looks: accent colour, light/dark mode, layout. Pass the values "
         "to apply them now; the result says what was applied. Pass picker instead to show the user an "
         "accent or layout picker card in the chat and wait for their pick. To reveal ONE pane, use "
         "focus_pane instead."

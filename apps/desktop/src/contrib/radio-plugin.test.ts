@@ -88,7 +88,7 @@ describe('bundled Radio plugin', () => {
   })
 
   it('survives external pause without destroying the stream or blocking resume', async () => {
-    $pluginDecisions.set({ accent: false, kanban: false, 'hermes-bots': false })
+    $pluginDecisions.set({ accent: false, kanban: false, 'moor-bots': false })
     discoverBundledPlugins()
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
@@ -119,7 +119,7 @@ describe('bundled Radio plugin', () => {
   })
 
   it('resumes the preserved stream when dictation text lands in an editable field (#108113)', async () => {
-    $pluginDecisions.set({ accent: false, kanban: false, 'hermes-bots': false })
+    $pluginDecisions.set({ accent: false, kanban: false, 'moor-bots': false })
     discoverBundledPlugins()
     const playMock = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
@@ -152,7 +152,7 @@ describe('bundled Radio plugin', () => {
   })
 
   it('keeps the plugin Pause destructive: no paste resume, and Play reconnects (#108113)', async () => {
-    $pluginDecisions.set({ accent: false, kanban: false, 'hermes-bots': false })
+    $pluginDecisions.set({ accent: false, kanban: false, 'moor-bots': false })
     discoverBundledPlugins()
     const playMock = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})

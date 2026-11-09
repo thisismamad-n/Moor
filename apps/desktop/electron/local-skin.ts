@@ -204,11 +204,11 @@ interface LocalSkinIpcMain {
  */
 export function registerLocalSkinIpc(
   ipcMain: LocalSkinIpcMain,
-  hermesHome: string,
+  moorHome: string,
   windowProfile: (senderId: number) => null | string | undefined,
   primaryProfile: () => null | string | undefined
 ): void {
-  ipcMain.on('hermes:skin:local', event => {
-    event.returnValue = readLocalSkinPayload(hermesHome, windowProfile(event.sender.id), primaryProfile())
+  ipcMain.on('moor:skin:local', event => {
+    event.returnValue = readLocalSkinPayload(moorHome, windowProfile(event.sender.id), primaryProfile())
   })
 }

@@ -14,7 +14,7 @@
 
 import type { ReadableAtom } from 'nanostores'
 
-import { pluginRest, type PluginRestOptions, pluginSocket } from '@/hermes'
+import { pluginRest, type PluginRestOptions, pluginSocket } from '@/moor'
 import { createPluginI18n, type PluginI18n } from '@/i18n'
 import {
   listPluginAppActions,
@@ -40,8 +40,8 @@ export type { PluginPreview } from './plugin-preview'
 import type { Contribution } from './types'
 
 export type { PluginSettingsPage, PluginSettingsSubpage } from './settings-pages'
-export type { PluginRestOptions } from '@/hermes'
-export type { HermesOpenTarget } from '@/lib/hermes-open-target'
+export type { PluginRestOptions } from '@/moor'
+export type { MoorOpenTarget } from '@/lib/moor-open-target'
 export type { PluginAppActionId, PluginAppActionInfo, PluginRunActionResult } from '@/lib/keybinds/plugin-actions'
 export type { PluginNativeNotificationInput, PluginNotificationAction } from '@/store/native-notifications'
 export type { PetMessageTone, PetSayOptions } from '@/store/pet-plugin-messages'
@@ -184,7 +184,7 @@ export interface PluginContext {
   storage: PluginStorage
   /** Folder-scoped file access: this plugin's own data folder plus folders
    *  the user grants it through the app's picker, by relative path. The app
-   *  checks every call; nothing outside those folders (or inside Hermes'
+   *  checks every call; nothing outside those folders (or inside Moor'
    *  own data) is reachable. Feature-detect on older hosts: `ctx.files?.…`. */
   files: PluginFiles
   /** Plugin-scoped i18n: ship + register locale bundles under this plugin,
@@ -362,7 +362,7 @@ function createPluginLifetime(track: (dispose: () => void) => () => void) {
 }
 
 /** The declared capabilities of a plugin export, strings only. */
-export function declaredCapabilities(plugin: Pick<HermesPlugin, 'capabilities'>): string[] {
+export function declaredCapabilities(plugin: Pick<MoorPlugin, 'capabilities'>): string[] {
   return Array.isArray(plugin.capabilities)
     ? plugin.capabilities.filter((entry): entry is string => typeof entry === 'string')
     : []

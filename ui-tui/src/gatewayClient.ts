@@ -99,7 +99,7 @@ const redactUrl = (raw: string): string => {
 
 // Reconnects after the first launch are discovery-only, except that a bounded number per window
 // re-ensure an owner that is not ready (gateway_bootstrap.py --recover): crashed, idle-exited,
-// stopped with `hermes gateway stop` while this TUI is open, or an older Hermes's gateway. Main's
+// stopped with `moor gateway stop` while this TUI is open, or an older Moor's gateway. Main's
 // TUI owned its sidecar, so an open TUI comes back on its own; the budget keeps a crash-looping
 // owner from being respawned without pause.
 export const OWNER_RECOVERY_LIMIT = 3
@@ -189,7 +189,7 @@ export class GatewayClient extends EventEmitter {
   private publishWire(ev: AnyGatewayEvent) {
     if (!this.isCanonical && ev.type === 'gateway.ready' && this.attachUrl !== null &&
         (ev as { payload?: { session_authority?: boolean } }).payload?.session_authority === true) {
-      // An explicit HERMES_TUI_GATEWAY_URL endpoint whose session verbs belong to an authority:
+      // An explicit MOOR_TUI_GATEWAY_URL endpoint whose session verbs belong to an authority:
       // negotiate the canonical wire exactly like a local grant, keeping the listener's skin.
       return this.adoptCanonicalAttach(ev as GatewayEvent<'gateway.ready'>)
     }
@@ -581,7 +581,7 @@ export class GatewayClient extends EventEmitter {
       } })
       this.channel.detach(this.bootstrapError)
 
-      // The helper's interpreter cannot load Hermes (gateway_bootstrap.py `gateway unavailable:`):
+      // The helper's interpreter cannot load Moor (gateway_bootstrap.py `gateway unavailable:`):
       // no reconnect fixes that, so report it once instead of retrying every 30 s forever (#138878).
       if (isTerminalBootstrapFailure(this.bootstrapError.message)) {
         this.lifecycle(`[lifecycle] gateway bootstrap cannot start; not retrying: ${this.bootstrapError.message.match(/^gateway unavailable: .*$/m)?.[0]}`)

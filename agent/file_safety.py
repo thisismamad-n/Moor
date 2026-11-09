@@ -12,7 +12,7 @@ from pathlib import Path
 from contextlib import suppress
 from typing import Optional
 
-from hermes_cli.home_data_layout import SECRET_CACHE_STORES
+from moor_cli.home_data_layout import SECRET_CACHE_STORES
 
 
 def _constants_path(getter_name: str) -> Path:
@@ -207,7 +207,7 @@ def build_write_denied_paths(home: str) -> set[str]:
     return {os.path.realpath(p) for p in paths}
 
 
-# Home-relative credential directories (POSIX paths). Also dropped from profile exports (hermes_cli.profiles).
+# Home-relative credential directories (POSIX paths). Also dropped from profile exports (moor_cli.profiles).
 HOME_CREDENTIAL_DIRS = (".ssh", ".aws", ".gnupg", ".kube", ".docker", ".azure", ".config/gh", ".config/gcloud")
 
 
@@ -248,7 +248,7 @@ def build_write_approval_paths(home: str) -> set[str]:
 # browser credential and its grants to native apps) hold credential material.
 # Control files (auth.json, config.yaml, webhook_subscriptions.json) are
 # deliberately NOT here (#45947): read-denied, but the user may ask to edit them.
-_HERMES_PROTECTED_SUBPATHS = (
+_MOOR_PROTECTED_SUBPATHS = (
     "state.db", "sessions", "mcp-tokens", "pairing", "vault", "browser-profile", "webapp")
 
 
@@ -362,13 +362,13 @@ _READ_DENIED_DIRS = (
      "is inside the Moor real-profile browser snapshot (copied cookies/logins) and cannot be read directly."),
     # vault.key + vault.json.enc sit side by side; key + ciphertext = plaintext, so the whole dir is one credential.
     ("vault",
-     "is the Hermes credential vault directory and cannot be read directly (secrets are filled server-side by browser_vault).",
-     "is inside the Hermes credential vault (encrypted secrets + local key) and cannot be read directly (browser_vault resolves them server-side)."),
+     "is the Moor credential vault directory and cannot be read directly (secrets are filled server-side by browser_vault).",
+     "is inside the Moor credential vault (encrypted secrets + local key) and cannot be read directly (browser_vault resolves them server-side)."),
     # session-token is the Webapp's browser credential (a bare token no redaction pattern masks); the
     # rest are its grants to native apps and its Web Access registration.
     ("webapp",
-     "is the Hermes Webapp sign-in directory and cannot be read directly.",
-     "is a Hermes Webapp sign-in file (the browser credential or its sign-in records) and cannot be read directly."),
+     "is the Moor Webapp sign-in directory and cannot be read directly.",
+     "is a Moor Webapp sign-in file (the browser credential or its sign-in records) and cannot be read directly."),
 )
 
 
@@ -376,7 +376,7 @@ def get_read_block_error(path: str) -> Optional[str]:
     """Return an error message when a read targets a denied Moor path.
 
     Blocked: internal skill-hub caches (prompt-injection carriers), credential
-    stores under HERMES_HOME and the global root (exact files, plus anything
+    stores under MOOR_HOME and the global root (exact files, plus anything
     under ``mcp-tokens/``, ``browser-profile/``, ``vault/`` and ``webapp/``), and project-local ``.env``
     files anywhere on disk (``.env.example`` is the documented-shape substitute).
 

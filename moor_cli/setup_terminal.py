@@ -1,5 +1,5 @@
 """Terminal-backend setup wizard (local/docker/modal/daytona/vercel/ssh/plugin).
-setup.py names are resolved through the module object so test patches on ``hermes_cli.setup.<name>``
+setup.py names are resolved through the module object so test patches on ``moor_cli.setup.<name>``
 take effect; setup.py re-exports the public entry points."""
 
 import json
@@ -12,7 +12,7 @@ from moor_cli import moor_subscription
 
 logger = logging.getLogger("moor_cli.setup")
 
-from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as _SANDBOX_IMAGE, DEFAULT_VERCEL_IMAGE
+from moor_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as _SANDBOX_IMAGE, DEFAULT_VERCEL_IMAGE
 _RUN_KW = dict(capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
@@ -277,7 +277,7 @@ def setup_terminal_backend(config: dict):
                  f"   Guide: {_setup._DOCS_BASE}/user-guide/configuration#terminal-backend-configuration", None)
     current_backend = _setup.cfg_get(config, "terminal", "backend", default="local")
     backends = list(_BUILTIN_TERMINAL_BACKENDS)
-    # Plugin-registered backends (~/.hermes/plugins/). Fail-soft: a broken plugin must not take
+    # Plugin-registered backends (~/.moor/plugins/). Fail-soft: a broken plugin must not take
     # the wizard down.
     plugin_backend_names = []
     try:
@@ -312,4 +312,4 @@ def setup_terminal_backend(config: dict):
     _setup.print_success(f"Terminal backend set to: {selected_backend}")
 
 
-import hermes_cli.setup as _setup
+import moor_cli.setup as _setup

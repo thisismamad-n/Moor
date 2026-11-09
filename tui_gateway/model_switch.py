@@ -52,7 +52,7 @@ def _restore_agent_model_runtime(agent, snapshot: dict | None) -> None:
 
 
 def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True) -> _TurnScopes:
-    """Bind HERMES_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
+    """Bind MOOR_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
     return the reset tokens. The launch profile's SECRET scope is always bound — its ``.env`` over
     the launch env (live while single-profile, frozen at activation afterwards; never live
     ``os.environ`` once a secondary context may have written to it, #107422) — so the credential
@@ -144,14 +144,14 @@ def _session_profile_runtime_scope(session: dict, *, hydrate_secrets: bool = Tru
 def _session_default_route(session: dict) -> tuple[str, str]:
     """``(model, provider)`` a not-yet-built session of its OWN profile will run on. Bare
     ``_resolve_startup_runtime()`` reads the LAUNCH profile's config, so a secondary session's reply or
-    first state.db row carried the launch profile's model id. On the Nous free tier the agent build pins
-    ``nous/welcome`` (``pin_model_for_route``), so the configured default (often the silent default,
+    first state.db row carried the launch profile's model id. On the Moor free tier the agent build pins
+    ``moor/welcome`` (``pin_model_for_route``), so the configured default (often the silent default,
     with no provider) is not what the session runs; report the pinned route instead."""
-    from hermes_cli.anon_auth import GUEST_MODEL, free_tier_route
+    from moor_cli.anon_auth import GUEST_MODEL, free_tier_route
     with _session_profile_runtime_scope({"profile_home": session.get("profile_home") or None},
                                         hydrate_secrets=False):
         if not _resolve_startup_runtime()[1] and free_tier_route():
-            return GUEST_MODEL, "nous"
+            return GUEST_MODEL, "moor"
         # Off the free tier, the model id alone: the provider is resolved when the agent is built.
         return _resolve_model(), ""
 
@@ -236,7 +236,7 @@ def _switch_away_provider(agent, explicit_provider: str, current_provider: str) 
     ``custom``."""
     if agent or not explicit_provider:
         return current_provider
-    if env_provider := os.environ.get("HERMES_TUI_PROVIDER", "").strip():
+    if env_provider := os.environ.get("MOOR_TUI_PROVIDER", "").strip():
         return env_provider
     if _env_model_seed():
         return None
@@ -314,7 +314,7 @@ def _apply_model_switch(
     persist_override: bool | None = None, count_switch: bool = True) -> dict:
     """``count_switch=False``: an internal swap (config adoption, MoA one-shot and its restore), not a
     user's /model pick, so it stays out of the shared-metrics switch count."""
-    from hermes_cli.model_switch import parse_model_switch_args, switch_model
+    from moor_cli.model_switch import parse_model_switch_args, switch_model
     if parsed_flags is None:
         parsed_flags = parse_model_switch_args(raw_input)
     if getattr(parsed_flags, "is_reset", False):
@@ -381,7 +381,7 @@ def _apply_model_switch(
     if reasoning_effort:
         _apply_switch_reasoning(sid, session, agent, reasoning_effort, persist_global=persist_global, one_turn=one_turn)
     if count_switch:
-        from hermes_cli.observability.shared_metrics_events import record_model_switch
+        from moor_cli.observability.shared_metrics_events import record_model_switch
 
         record_model_switch(
             from_provider=_switch_away_provider(agent, explicit_provider, current_provider),
@@ -546,7 +546,7 @@ def _pending_switch_selection_warning(model: str, provider: str, agent: Any = No
     if not model:
         return None
     try:
-        from hermes_cli.model_selection_guards import (
+        from moor_cli.model_selection_guards import (
             combined_selection_warning, selection_context_for_agent)
         warning = combined_selection_warning(
             model, provider=provider or None, selection_context=selection_context_for_agent(agent))

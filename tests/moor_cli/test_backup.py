@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-import hermes_cli.gateway_setup_service as service_setup
+import moor_cli.gateway_setup_service as service_setup
 
 
 # ---------------------------------------------------------------------------
@@ -795,14 +795,14 @@ class TestImport:
         run_import(args)
 
         # Live runtime files are untouched; the backup's foreign ones never land.
-        assert (hermes_home / "gateway.pid").read_text() == "4242"
-        assert (hermes_home / "processes.json").read_text() == '{"live": true}'
+        assert (moor_home / "gateway.pid").read_text() == "4242"
+        assert (moor_home / "processes.json").read_text() == '{"live": true}'
         # No foreign runtime file is installed. Maintenance creates a local lock
         # inode which must remain after release, or concurrent openers can split ownership.
-        assert not (hermes_home / "cron.pid").exists()
-        lock = json.loads((hermes_home / "gateway.lock").read_text())
+        assert not (moor_home / "cron.pid").exists()
+        lock = json.loads((moor_home / "gateway.lock").read_text())
         from gateway.runtime_ownership import canonical_home  # the identity the lock stores (normcase)
-        assert lock["hermes_home"] == str(canonical_home(hermes_home))
+        assert lock["moor_home"] == str(canonical_home(moor_home))
 
 
 
@@ -926,8 +926,8 @@ class TestBackupEdgeCases:
         """A negative keep slices away the NEWEST archives/snapshots, so both the
         ``backup --keep`` parser and ``/snapshot prune N`` refuse it."""
         import argparse
-        from hermes_cli.cli_commands_mixin import CLICommandsMixin
-        from hermes_cli.subcommands.backup import build_backup_parser
+        from moor_cli.cli_commands_mixin import CLICommandsMixin
+        from moor_cli.subcommands.backup import build_backup_parser
 
         parser = argparse.ArgumentParser()
         build_backup_parser(parser.add_subparsers(dest="command"), cmd_backup=lambda args: None)
@@ -937,7 +937,7 @@ class TestBackupEdgeCases:
             assert exc.value.code == 2
         assert [parser.parse_args(["backup", *a]).keep for a in (["--keep", "0"], ["-k", "1"], [])] == [0, 1, 3]
 
-        with patch("hermes_cli.backup.prune_quick_snapshots") as prune:
+        with patch("moor_cli.backup.prune_quick_snapshots") as prune:
             CLICommandsMixin._snapshot_prune(object(), ["/snapshot", "prune", "-1"])
             prune.assert_not_called()
             CLICommandsMixin._snapshot_prune(object(), ["/snapshot", "prune", "2"])
@@ -1821,16 +1821,16 @@ def _fail_zip_write_after(monkeypatch, member: str, byte_count: int = 120_000) -
 
 class TestFailedZipMemberRecovery:
     def test_automatic_backup_omits_crc_valid_partial_member(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
-        (hermes_home / "flaky.bin").write_bytes(os.urandom(300_000))
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text("model: test\n")
+        (moor_home / "flaky.bin").write_bytes(os.urandom(300_000))
         archive = tmp_path / "automatic.zip"
         _fail_zip_write_after(monkeypatch, "flaky.bin")
 
-        from hermes_cli.backup import _write_full_zip_backup
+        from moor_cli.backup import _write_full_zip_backup
 
-        assert _write_full_zip_backup(archive, hermes_home) is None
+        assert _write_full_zip_backup(archive, moor_home) is None
         assert not archive.exists()
         salvage = tmp_path / "automatic.incomplete.zip"
         # A streaming reader scans local headers, so the dropped member's bytes must be gone too.
@@ -1841,24 +1841,24 @@ class TestFailedZipMemberRecovery:
             assert zf.testzip() is None
 
     def test_incomplete_pre_update_backup_does_not_rotate_last_complete(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text("model: test\n")
+        moor_home = tmp_path / ".moor"
+        moor_home.mkdir()
+        (moor_home / "config.yaml").write_text("model: test\n")
 
-        from hermes_cli.backup import create_pre_update_backup
+        from moor_cli.backup import create_pre_update_backup
 
-        good = create_pre_update_backup(hermes_home=hermes_home, keep=2)
+        good = create_pre_update_backup(moor_home=moor_home, keep=2)
         assert good is not None and good.exists()
 
         real_write = zipfile.ZipFile.write
-        (hermes_home / "flaky.bin").write_bytes(os.urandom(300_000))
+        (moor_home / "flaky.bin").write_bytes(os.urandom(300_000))
         _fail_zip_write_after(monkeypatch, "flaky.bin")
         for _ in range(2):
             _advance_backup_clock()
-            assert create_pre_update_backup(hermes_home=hermes_home, keep=2) is None
+            assert create_pre_update_backup(moor_home=moor_home, keep=2) is None
 
         assert good.exists(), "an incomplete generation rotated out the last complete backup"
-        backup_dir = hermes_home / "backups"
+        backup_dir = moor_home / "backups"
         salvages = list(backup_dir.glob("pre-update-*.incomplete.zip"))
         assert len(salvages) == 1, "repeated incomplete runs must not pile up"
         with zipfile.ZipFile(salvages[0]) as zf:
@@ -1868,9 +1868,9 @@ class TestFailedZipMemberRecovery:
 
         # Salvage archives must not count toward retention on the next complete run.
         monkeypatch.setattr(zipfile.ZipFile, "write", real_write)
-        (hermes_home / "flaky.bin").unlink()
+        (moor_home / "flaky.bin").unlink()
         _advance_backup_clock()
-        newest = create_pre_update_backup(hermes_home=hermes_home, keep=2)
+        newest = create_pre_update_backup(moor_home=moor_home, keep=2)
         assert newest is not None and newest.exists()
         assert good.exists(), "a complete run pruned complete backups in favour of salvage"
         assert len(list(backup_dir.glob("pre-update-*.incomplete.zip"))) == 1
@@ -2041,12 +2041,12 @@ class TestRunPreUpdateBackup:
 
 
 # ---------------------------------------------------------------------------
-# Pre-migration backup (safety net for agent imports, e.g. hermes import-agent openclaw)
+# Pre-migration backup (safety net for agent imports, e.g. moor import-agent openclaw)
 # ---------------------------------------------------------------------------
 
 class TestPreMigrationBackup:
     """Tests for create_pre_migration_backup — the auto-backup
-    ``hermes import-agent openclaw`` runs before mutating ~/.hermes/."""
+    ``moor import-agent openclaw`` runs before mutating ~/.moor/."""
 
     @pytest.fixture
     def moor_home(self, tmp_path):
@@ -2167,21 +2167,21 @@ class TestRestoreCronPromptFieldsIfDegraded:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"jobs": jobs}))
 
-    def _make_snapshot(self, hermes_home: Path, label="pre-update"):
-        from hermes_cli.backup import create_quick_snapshot
-        return create_quick_snapshot(label=label, hermes_home=hermes_home, keep=5)
+    def _make_snapshot(self, moor_home: Path, label="pre-update"):
+        from moor_cli.backup import create_quick_snapshot
+        return create_quick_snapshot(label=label, moor_home=moor_home, keep=5)
 
     def test_restores_prompts_when_count_unchanged_but_clobbered(self, tmp_path):
         """The reported incident: 6 jobs before, 6 after, every prompt == name."""
-        from hermes_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
-        hermes_home = tmp_path / ".hermes"
-        jobs_path = hermes_home / "cron" / "jobs.json"
+        from moor_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
+        moor_home = tmp_path / ".moor"
+        jobs_path = moor_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [
             {"id": f"job-{i}", "name": f"Morning brief {i}",
              "prompt": f"Read the news and write brief {i}."}
             for i in range(6)
         ])
-        snap_id = self._make_snapshot(hermes_home)
+        snap_id = self._make_snapshot(moor_home)
         assert snap_id
 
         # The mutation window clobbers prompts to the name; count unchanged.
@@ -2191,7 +2191,7 @@ class TestRestoreCronPromptFieldsIfDegraded:
             for i in range(6)
         ])
 
-        result = restore_cron_prompt_fields_if_degraded(snap_id, hermes_home=hermes_home)
+        result = restore_cron_prompt_fields_if_degraded(snap_id, moor_home=moor_home)
         assert result is not None
         assert result["restored"] is True
         assert result["prompts"] == 6
@@ -2205,30 +2205,30 @@ class TestRestoreCronPromptFieldsIfDegraded:
 
     def test_blank_prompt_is_restored_too(self, tmp_path):
         """Missing/blank prompt on a live agent job is equally unusable."""
-        from hermes_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
-        hermes_home = tmp_path / ".hermes"
-        jobs_path = hermes_home / "cron" / "jobs.json"
+        from moor_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
+        moor_home = tmp_path / ".moor"
+        jobs_path = moor_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [{"id": "a", "name": "Cleanup", "prompt": "Clean the tmp dir."}])
-        snap_id = self._make_snapshot(hermes_home)
+        snap_id = self._make_snapshot(moor_home)
         assert snap_id
 
         self._seed_jobs(jobs_path, [{"id": "a", "name": "Cleanup", "prompt": ""}])
 
-        result = restore_cron_prompt_fields_if_degraded(snap_id, hermes_home=hermes_home)
+        result = restore_cron_prompt_fields_if_degraded(snap_id, moor_home=moor_home)
         assert result is not None
         assert result["prompts"] == 1
         assert json.loads(jobs_path.read_text())["jobs"][0]["prompt"] == "Clean the tmp dir."
 
     def test_no_agent_jobs_are_untouched(self, tmp_path):
         """Script jobs have no prompt — never restored, never stomped."""
-        from hermes_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
-        hermes_home = tmp_path / ".hermes"
-        jobs_path = hermes_home / "cron" / "jobs.json"
+        from moor_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
+        moor_home = tmp_path / ".moor"
+        jobs_path = moor_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [
             {"id": "agent", "name": "Brief", "prompt": "Write the brief."},
             {"id": "script", "name": "Backup", "no_agent": True, "script": "echo hi", "prompt": "Backup"},
         ])
-        snap_id = self._make_snapshot(hermes_home)
+        snap_id = self._make_snapshot(moor_home)
         assert snap_id
 
         self._seed_jobs(jobs_path, [
@@ -2236,7 +2236,7 @@ class TestRestoreCronPromptFieldsIfDegraded:
             {"id": "script", "name": "Backup", "no_agent": True, "script": "echo hi", "prompt": "Backup"},
         ])
 
-        result = restore_cron_prompt_fields_if_degraded(snap_id, hermes_home=hermes_home)
+        result = restore_cron_prompt_fields_if_degraded(snap_id, moor_home=moor_home)
         assert result is not None
         assert result["prompts"] == 1
         assert result["job_ids"] == ["agent"]
@@ -2247,43 +2247,43 @@ class TestRestoreCronPromptFieldsIfDegraded:
     def test_a_legitimate_user_edit_is_not_stomped(self, tmp_path):
         """Only prompt==name or blank restores — a genuinely different prompt
         is the user's edit during the window, not degradation."""
-        from hermes_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
-        hermes_home = tmp_path / ".hermes"
-        jobs_path = hermes_home / "cron" / "jobs.json"
+        from moor_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
+        moor_home = tmp_path / ".moor"
+        jobs_path = moor_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [{"id": "a", "name": "Old", "prompt": "Old prompt text."}])
-        snap_id = self._make_snapshot(hermes_home)
+        snap_id = self._make_snapshot(moor_home)
         assert snap_id
 
         self._seed_jobs(jobs_path, [{"id": "a", "name": "New name", "prompt": "Deliberately rewritten prompt."}])
 
-        result = restore_cron_prompt_fields_if_degraded(snap_id, hermes_home=hermes_home)
+        result = restore_cron_prompt_fields_if_degraded(snap_id, moor_home=moor_home)
         assert result is None
         assert json.loads(jobs_path.read_text())["jobs"][0]["prompt"] == "Deliberately rewritten prompt."
 
     def test_a_legit_prompt_equal_to_name_stays(self, tmp_path):
         """A user may legitimately set prompt == name; a blank SNAPSHOT prompt
         means the snapshot has nothing better — restore nothing."""
-        from hermes_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
-        hermes_home = tmp_path / ".hermes"
-        jobs_path = hermes_home / "cron" / "jobs.json"
+        from moor_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
+        moor_home = tmp_path / ".moor"
+        jobs_path = moor_home / "cron" / "jobs.json"
         # Snapshot job had a blank prompt (hand-edited oddity).
         self._seed_jobs(jobs_path, [{"id": "a", "name": "Ping", "prompt": ""}])
-        snap_id = self._make_snapshot(hermes_home)
+        snap_id = self._make_snapshot(moor_home)
         assert snap_id
 
         # Live prompt collapsed to the name — but the snapshot has nothing to give back.
         self._seed_jobs(jobs_path, [{"id": "a", "name": "Ping", "prompt": "Ping"}])
 
-        result = restore_cron_prompt_fields_if_degraded(snap_id, hermes_home=hermes_home)
+        result = restore_cron_prompt_fields_if_degraded(snap_id, moor_home=moor_home)
         assert result is None
 
     def test_unknown_job_ids_are_left_alone(self, tmp_path):
         """Jobs the snapshot does not know are new since the snapshot — theirs."""
-        from hermes_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
-        hermes_home = tmp_path / ".hermes"
-        jobs_path = hermes_home / "cron" / "jobs.json"
+        from moor_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
+        moor_home = tmp_path / ".moor"
+        jobs_path = moor_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [{"id": "a", "name": "A", "prompt": "A prompt."}])
-        snap_id = self._make_snapshot(hermes_home)
+        snap_id = self._make_snapshot(moor_home)
         assert snap_id
 
         self._seed_jobs(jobs_path, [
@@ -2291,19 +2291,19 @@ class TestRestoreCronPromptFieldsIfDegraded:
             {"id": "new", "name": "New", "prompt": "New"},  # created during the window
         ])
 
-        result = restore_cron_prompt_fields_if_degraded(snap_id, hermes_home=hermes_home)
+        result = restore_cron_prompt_fields_if_degraded(snap_id, moor_home=moor_home)
         assert result is None
 
     def test_healthy_file_is_untouched(self, tmp_path):
-        from hermes_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
-        hermes_home = tmp_path / ".hermes"
-        jobs_path = hermes_home / "cron" / "jobs.json"
+        from moor_cli.backup_cron_prompts import restore_cron_prompt_fields_if_degraded
+        moor_home = tmp_path / ".moor"
+        jobs_path = moor_home / "cron" / "jobs.json"
         self._seed_jobs(jobs_path, [{"id": "a", "name": "A", "prompt": "A prompt."}])
-        snap_id = self._make_snapshot(hermes_home)
+        snap_id = self._make_snapshot(moor_home)
         assert snap_id
         before = jobs_path.read_text()
 
-        result = restore_cron_prompt_fields_if_degraded(snap_id, hermes_home=hermes_home)
+        result = restore_cron_prompt_fields_if_degraded(snap_id, moor_home=moor_home)
         assert result is None
         assert jobs_path.read_text() == before
 
@@ -2620,7 +2620,7 @@ class TestImportHonorsMoorHomeOverride:
 
         calls = []
         monkeypatch.setattr(
-            "hermes_cli.gateway_setup_service.ensure_gateway_service",
+            "moor_cli.gateway_setup_service.ensure_gateway_service",
             lambda *a, **kw: calls.append(kw),
         )
         monkeypatch.setattr(
@@ -2654,7 +2654,7 @@ class TestImportHonorsMoorHomeOverride:
 
         calls = []
         monkeypatch.setattr(
-            "hermes_cli.gateway_setup_service.ensure_gateway_service",
+            "moor_cli.gateway_setup_service.ensure_gateway_service",
             lambda *a, **kw: calls.append(kw),
         )
         monkeypatch.setattr(

@@ -15,8 +15,8 @@ import subprocess
 from unittest.mock import patch
 
 
-from hermes_cli import doctor_tools
-from hermes_cli.doctor_report import Finding
+from moor_cli import doctor_tools
+from moor_cli.doctor_report import Finding
 
 
 def _audit_json(critical=0, high=0, moderate=0):
@@ -53,13 +53,13 @@ def test_root_remedy_never_prescribes_local_audit_fix(capsys):
 
 def test_npm_audit_only_finding_does_not_offer_doctor_fix(capsys):
     """npm lockfile findings need an upstream image or lockfile update (#136806)."""
-    from hermes_cli import doctor
+    from moor_cli import doctor
 
     doctor._print_summary(False, Finding(manual_issues=["web workspace has 1 npm vulnerability"]))
 
     out = capsys.readouterr().out
     assert "web workspace has 1 npm vulnerability" in out
-    assert "hermes doctor --fix" not in out
+    assert "moor doctor --fix" not in out
 
 
 
@@ -73,7 +73,7 @@ def test_clean_tree_reports_no_known_vulnerabilities(capsys):
 def test_root_audit_row_is_not_mislabeled_as_agent_browser(monkeypatch, tmp_path, capsys):
     """The root package.json row (js-yaml, semver, eslint tooling) names itself, not a browser
     driver it never audits (#122223)."""
-    import hermes_cli.doctor as doctor_mod
+    import moor_cli.doctor as doctor_mod
     from gateway.platforms import whatsapp_common
 
     project = tmp_path / "project"

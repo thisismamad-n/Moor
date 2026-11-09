@@ -123,27 +123,27 @@ $env:PYTHONIOENCODING = "utf-8"
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 $OutputEncoding = [Console]::OutputEncoding
 
-# One PM tool store per leg. setup-pm exports HERMES_RUNTIME_DIR (its own
-# store) and HERMES_PYTHON for this job's tooling. A user's machine has one
-# store, <HERMES_HOME>\tools, and the desktop smoke already launches the app
-# that way (smoke-env.mjs drops every HERMES_* override). When install.ps1
-# and `hermes update` saw the job's store while the smoke did not, a leg
+# One PM tool store per leg. setup-pm exports MOOR_RUNTIME_DIR (its own
+# store) and MOOR_PYTHON for this job's tooling. A user's machine has one
+# store, <MOOR_HOME>\tools, and the desktop smoke already launches the app
+# that way (smoke-env.mjs drops every MOOR_* override). When install.ps1
+# and `moor update` saw the job's store while the smoke did not, a leg
 # settled onto two stores and the update rewrote its own running launcher
 # ("source launcher publication failed"). No product step (installer, app,
 # update, chat) sees the job's variables; the driver keeps setup-pm only
 # through $DriverPython. PATH keeps setup-pm's tools, as older installers
 # expect uv/ripgrep there.
-$DriverPython = if ($env:HERMES_PYTHON) { $env:HERMES_PYTHON } else { (Get-Command python.exe -ErrorAction Stop).Source }
-foreach ($jobOnly in @('HERMES_RUNTIME_DIR', 'HERMES_PYTHON', 'VIRTUAL_ENV')) {
+$DriverPython = if ($env:MOOR_PYTHON) { $env:MOOR_PYTHON } else { (Get-Command python.exe -ErrorAction Stop).Source }
+foreach ($jobOnly in @('MOOR_RUNTIME_DIR', 'MOOR_PYTHON', 'VIRTUAL_ENV')) {
     if (Test-Path -LiteralPath "env:$jobOnly") { Remove-Item -LiteralPath "env:$jobOnly" }
 }
 
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 }
-# The workflow's HERMES_E2E_WORKROOT is "<workspace>\..\hermes-desktop-gui-e2e".
-# Everything below derives HERMES_HOME (and so the PM store) from it, and a
-# user's HERMES_HOME has no ".." segment. With one, Windows reports the store
+# The workflow's MOOR_E2E_WORKROOT is "<workspace>\..\moor-desktop-gui-e2e".
+# Everything below derives MOOR_HOME (and so the PM store) from it, and a
+# user's MOOR_HOME has no ".." segment. With one, Windows reports the store
 # Python's sys.executable normalized while PM names it with the "..", and
 # prepare_launch() relaunched into the same interpreter forever (#122513).
 $WorkRoot = [System.IO.Path]::GetFullPath($WorkRoot)
@@ -179,7 +179,7 @@ function Invoke-DesktopCheckpoint([string]$ChatPhase, [string]$Commit, [string]$
     # The app must be able to detach its gateway, as from a user's launch (see Invoke-OutsideRunnerJob).
     $chatExit = Invoke-OutsideRunnerJob "desktop-$ChatPhase" $WorkRoot $DriverNode @(
         (Join-Path $AssetsDir 'source-desktop-smoke.mjs'),
-        '--root', $InstallDir, '--home', $HermesHome, '--user-data', $env:HERMES_DESKTOP_USER_DATA_DIR,
+        '--root', $InstallDir, '--home', $MoorHome, '--user-data', $env:MOOR_DESKTOP_USER_DATA_DIR,
         '--out', $ProofRoot, '--phase', $ChatPhase, '--expect-commit', $Commit, '--desktop', $script:ExpectedDesktop, '--method', $Method)
     if ($chatExit -ne 0) { throw "Mandatory desktop chat $ChatPhase failed (exit $chatExit)" }
     $script:ChatFailure = $false
@@ -257,7 +257,7 @@ function Set-GitRedirect {
     $env:GIT_CONFIG_GLOBAL = $gitCfg
     # serve.git publishes commits on main, not releases: HEAD's installer would otherwise
     # install the latest stable release its tags name. Older installers ignore the variable.
-    $env:HERMES_INSTALL_CHANNEL = 'main'
+    $env:MOOR_INSTALL_CHANNEL = 'main'
 
     # check it worked
     $actualGitUrl = Invoke-Git @("-C", $RepoRoot, "remote", "get-url", "origin")
@@ -431,7 +431,7 @@ function Test-MoorRuns([string]$Label) {
         Write-Host "  first startup after the update ran (exit $startupExit); the checks below assert the launcher it must have published"
         $moorExe = Get-SourceMoor $InstallDir
     }
-    & $DriverPython -B (Join-Path $AssetsDir 'source_driver.py') --root $InstallDir --launcher $hermesExe --desktop $script:ExpectedDesktop
+    & $DriverPython -B (Join-Path $AssetsDir 'source_driver.py') --root $InstallDir --launcher $moorExe --desktop $script:ExpectedDesktop
     Assert-True ($LASTEXITCODE -eq 0) "$Label -- read-only install verification (no repair)"
     $prevLazy = $env:MOOR_DISABLE_LAZY_INSTALLS
     $prevBytecode = $env:PYTHONDONTWRITEBYTECODE
@@ -542,15 +542,15 @@ function Invoke-MoorUpdate {
         $ErrorActionPreference = $prevEap
         Stop-HangWatchdog $watchdog
     }
-    Write-LogGroup "hermes update transcript" $log
+    Write-LogGroup "moor update transcript" $log
     if (Test-Path -LiteralPath $hangLog) {
-        Write-LogGroup "hermes update hang evidence (process table, Python stacks)" $hangLog
-        throw "E2E ASSERTION FAILED: hermes update was still running after $UpdateDeadlineMinutes minutes (its output pipe never closed); the process table above shows which process held it"
+        Write-LogGroup "moor update hang evidence (process table, Python stacks)" $hangLog
+        throw "E2E ASSERTION FAILED: moor update was still running after $UpdateDeadlineMinutes minutes (its output pipe never closed); the process table above shows which process held it"
     }
-    Assert-True ($updateExit -eq 0) "hermes update exited $updateExit (expected 0)"
+    Assert-True ($updateExit -eq 0) "moor update exited $updateExit (expected 0)"
 }
 
-# install.ps1 (with -IncludeDesktop) and `hermes update` normally finish in
+# install.ps1 (with -IncludeDesktop) and `moor update` normally finish in
 # under 25 minutes. Past these deadlines the watchdog records every process
 # (pid, parent, start time, command line) plus a py-spy stack of each Python
 # process, then stops this leg's processes, so a hang fails with evidence --
@@ -563,7 +563,7 @@ function Start-HangWatchdog([int]$Minutes, [string]$EvidencePath) {
     if (Test-Path -LiteralPath $EvidencePath) { Remove-Item -LiteralPath $EvidencePath -Force }
     $exclude = @()
     if ($script:ChatMock) { $exclude += $script:ChatMock.Id }
-    $homes = @($HermesHome, [System.IO.Path]::GetFullPath($HermesHome)) | Select-Object -Unique
+    $homes = @($MoorHome, [System.IO.Path]::GetFullPath($MoorHome)) | Select-Object -Unique
     # py-spy is installed next to the driver's Python by the workflow.
     $pyspy = Join-Path (Split-Path $DriverPython) 'py-spy.exe'
     Start-Job -ArgumentList $PID, $Minutes, $EvidencePath, $homes, $exclude, $pyspy -ScriptBlock {
@@ -584,12 +584,12 @@ function Start-HangWatchdog([int]$Minutes, [string]$EvidencePath) {
         })
         $lines = @("still running after $minutes minutes", '', "== descendants of the driver (pid $driverPid) ==")
         $lines += @($tree | ForEach-Object { & $row $_ })
-        $lines += @('', "== processes naming this leg's HERMES_HOME ==")
+        $lines += @('', "== processes naming this leg's MOOR_HOME ==")
         $lines += @($leg | ForEach-Object { & $row $_ })
         $lines += @('', '== every process, oldest first ==')
         $lines += @($all | Sort-Object CreationDate | ForEach-Object { & $row $_ })
         if (Test-Path -LiteralPath $pyspy) {
-            foreach ($p in (@($tree) + @($leg) | Where-Object { $_.Name -match '^(python|pythonw|hermes)' } | Sort-Object ProcessId -Unique)) {
+            foreach ($p in (@($tree) + @($leg) | Where-Object { $_.Name -match '^(python|pythonw|moor)' } | Sort-Object ProcessId -Unique)) {
                 $lines += @('', "== py-spy dump --pid $($p.ProcessId) ($($p.Name)) ==")
                 $lines += @(& $pyspy dump --pid $p.ProcessId --nonblocking 2>&1 | ForEach-Object { "$_" })
             }
@@ -689,14 +689,14 @@ function Invoke-MoorDesktopAppUpdate([string]$TargetSha) {
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
     Push-Location $InstallDir
     try {
-        if ($hermesExe.StartsWith((Join-Path $InstallDir '.hermes'), [StringComparison]::OrdinalIgnoreCase)) {
+        if ($moorExe.StartsWith((Join-Path $InstallDir '.moor'), [StringComparison]::OrdinalIgnoreCase)) {
             # The PM launcher runs its interpreter with -I, so PYTHONPATH never
             # imports sitecustomize. Same as installer-script-e2e.sh: ask the
             # launcher for its own isolated command and inject the hook into it.
-            & $DriverPython -I (Join-Path $capDir 'pm-launch.py') $hermesExe $spec 2>&1 | Add-TsPrefix | Out-File -Encoding UTF8 $log
+            & $DriverPython -I (Join-Path $capDir 'pm-launch.py') $moorExe $spec 2>&1 | Add-TsPrefix | Out-File -Encoding UTF8 $log
         } else {
             # Pre-PM venv console scripts load sitecustomize from PYTHONPATH.
-            & $hermesExe desktop 2>&1 | Add-TsPrefix | Out-File -Encoding UTF8 $log
+            & $moorExe desktop 2>&1 | Add-TsPrefix | Out-File -Encoding UTF8 $log
         }
         $capExit = $LASTEXITCODE
     } finally {
@@ -721,8 +721,8 @@ function Invoke-MoorDesktopAppUpdate([string]$TargetSha) {
         # runs the historical venv->PM takeover plus a full Desktop rebuild
         # (9m43s measured), like the 35 min open-app-update wait below.
         & $node (Join-Path $AssetsDir "launch-from-spec.mjs") --spec $spec `
-            --old-sha (Read-State).old --chat-out $chatOut --mock-url $env:HERMES_E2E_MOCK_URL `
-            --result (Join-Path $HermesHome ".hermes-update-result.json") `
+            --old-sha (Read-State).old --chat-out $chatOut --mock-url $env:MOOR_E2E_MOCK_URL `
+            --result (Join-Path $MoorHome ".moor-update-result.json") `
             --expect-sha $TargetSha --repo-dir $InstallDir --timeout-ms 1800000 2>&1 |
             ForEach-Object { Write-Host "  pw| $_" }
         $driveExit = $LASTEXITCODE
@@ -1008,12 +1008,12 @@ function Invoke-PhaseInstallGui {
     # relative to the script dir).
     Copy-Item -Path (Join-Path $AssetsDir "install-and-launch.ahk"), (Join-Path $AssetsDir "install-button.png"), (Join-Path $AssetsDir "launch-button.png") -Destination $AhkDir -Force
 
-    $env:HERMES_HOME = $HermesHome
-    New-Item -ItemType Directory -Path $HermesHome -Force | Out-Null
+    $env:MOOR_HOME = $MoorHome
+    New-Item -ItemType Directory -Path $MoorHome -Force | Out-Null
     # The installer launches the app, and a fresh desktop install opens the first-run
     # onboarding chat with a live model turn that can hold the window open past the
     # close below. This journey tests install and update: record onboarding as done.
-    $rootConfig = Join-Path $HermesHome 'config.yaml'
+    $rootConfig = Join-Path $MoorHome 'config.yaml'
     if (-not (Test-Path -LiteralPath $rootConfig)) {
         Set-Content -LiteralPath $rootConfig -Value "onboarding:`n  run: false" -Encoding ascii
     }
@@ -1286,7 +1286,7 @@ function Invoke-GuiUpdateDesktopRoute([string]$TargetSha) {
 # after install, verified after update.
 function Seed-PreservationFixtures {
     $external = Join-Path $WorkRoot "external-mnemosyne-runtime"
-    & $DriverPython (Join-Path $AssetsDir "verify-plugin-preservation.py") seed --home $HermesHome --external $external
+    & $DriverPython (Join-Path $AssetsDir "verify-plugin-preservation.py") seed --home $MoorHome --external $external
     if ($LASTEXITCODE -ne 0) { throw "could not seed fresh preservation fixtures (exit $LASTEXITCODE)" }
 }
 
@@ -1294,7 +1294,7 @@ function Invoke-PreserveSnapshot {
     $out = Join-Path $WorkRoot "plugin-preservation-snapshot.json"
     if (Test-Path -LiteralPath $out) { throw "refusing to overwrite an existing preservation snapshot" }
     Seed-PreservationFixtures
-    & $DriverPython (Join-Path $AssetsDir "verify-plugin-preservation.py") snapshot --home $HermesHome --out $out
+    & $DriverPython (Join-Path $AssetsDir "verify-plugin-preservation.py") snapshot --home $MoorHome --out $out
     if ($LASTEXITCODE -ne 0) { throw "plugin preservation snapshot failed (exit $LASTEXITCODE)" }
 
     Write-Host "  pre-upgrade plugin snapshot: $out"
@@ -1303,7 +1303,7 @@ function Invoke-PreserveSnapshot {
 function Invoke-PreserveVerify {
     $snap = Join-Path $WorkRoot "plugin-preservation-snapshot.json"
     if (-not (Test-Path -LiteralPath $snap)) { throw "no pre-upgrade plugin snapshot at $snap; cannot verify preservation" }
-    & $DriverPython (Join-Path $AssetsDir "verify-plugin-preservation.py") verify --home $HermesHome --snapshot $snap `
+    & $DriverPython (Join-Path $AssetsDir "verify-plugin-preservation.py") verify --home $MoorHome --snapshot $snap `
         --report (Join-Path $WorkRoot "logs\plugin-preservation-report.json")
     if ($LASTEXITCODE -ne 0) { throw "plugin preservation violated by the upgrade (exit $LASTEXITCODE); see the report for deleted/modified entries" }
     Write-Host "  plugins/** and profile plugin trees survived the upgrade intact"
@@ -1331,7 +1331,7 @@ except Exception:
 '@ | Set-Content -LiteralPath $probe -Encoding ASCII
     }
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-    try { $value = (& $DriverPython $probe (Join-Path $HermesHome 'state.db') 2>$null | Out-String).Trim() }
+    try { $value = (& $DriverPython $probe (Join-Path $MoorHome 'state.db') 2>$null | Out-String).Trim() }
     finally { $ErrorActionPreference = $prevEap }
     if ($value -match '^-?\d+$') { return [int]$value }
     return -1
@@ -1369,7 +1369,7 @@ function Invoke-UserStateActions {
         # a console screen buffer: piping the CLI's stdout into the log takes that away
         # and the turn dies with NoConsoleScreenBufferError. Run it under a real
         # pseudoconsole (pty-run.py) and keep the capture.
-        & $DriverPython -B (Join-Path $AssetsDir 'pty-run.py') --out $log --timeout 300 -- $hermes chat -q "Reply with the single word: ok" @oneshot
+        & $DriverPython -B (Join-Path $AssetsDir 'pty-run.py') --out $log --timeout 300 -- $moor chat -q "Reply with the single word: ok" @oneshot
         $chatExit = $LASTEXITCODE
         Write-LogGroup 'first real chat turn' $log
         if ($chatExit -eq 124) {
@@ -1454,7 +1454,7 @@ function Invoke-UserStateActions {
 function Invoke-UserStateSnapshot {
     $snap = Join-Path $WorkRoot 'user-state-snapshot.json'
     if (Test-Path -LiteralPath $snap) { throw 'refusing to overwrite an existing user-state snapshot' }
-    & $DriverPython (Join-Path $AssetsDir 'verify-user-state.py') snapshot --home $HermesHome --out $snap
+    & $DriverPython (Join-Path $AssetsDir 'verify-user-state.py') snapshot --home $MoorHome --out $snap
     if ($LASTEXITCODE -ne 0) { throw "user-state snapshot failed (exit $LASTEXITCODE)" }
     Write-Host "  pre-upgrade user-state snapshot: $snap"
 }
@@ -1467,7 +1467,7 @@ function Invoke-UserStateVerify {
     $report = Join-Path $WorkRoot 'logs\user-state-report.json'
     $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     try {
-        & $DriverPython (Join-Path $AssetsDir 'verify-user-state.py') verify --home $HermesHome `
+        & $DriverPython (Join-Path $AssetsDir 'verify-user-state.py') verify --home $MoorHome `
             --snapshot $snap --report $report
         $code = $LASTEXITCODE
     }
@@ -1679,7 +1679,7 @@ function Invoke-PhaseVerifyStamp {
     $head = Get-InstalledHead
     Assert-True ($head -match '^[0-9a-f]{40}$') "installed HEAD readable: '$head'"
     Write-Host "  install HEAD: $($head.Substring(0, 12))"
-    $stampPath = Join-Path $InstallDir '.hermes-bootstrap-complete'
+    $stampPath = Join-Path $InstallDir '.moor-bootstrap-complete'
     # FAIL lines go to stderr; under "Stop", PowerShell 5.1 would throw on the first one.
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
@@ -1690,12 +1690,12 @@ function Invoke-PhaseVerifyStamp {
     } finally { $ErrorActionPreference = $prevEap }
     $verdict | ForEach-Object { Write-Host $_ }
     if ($verifyExit -eq 0) { return }
-    # Permanent legacy shape, not a pending fix: the released Hermes-Setup.exe
+    # Permanent legacy shape, not a pending fix: the released moor-setup.exe
     # replaces install.ps1's receipt with its own (#124949): "completedAtUnix"
     # (epoch seconds) instead of "completedAt", and a null pinnedCommit when git
     # is not on PATH. #125053 fixed the writer, but the installer .exe is not
     # rebuilt, so every Desktop-installer machine carries this receipt until the
-    # next `hermes update` rewrites it (hermes_cli/source_stamp.py). No reader
+    # next `moor update` rewrites it (moor_cli/source_stamp.py). No reader
     # depends on those two fields: Desktop's launch gate is runtime usability,
     # and the receipt's other readers check only that it exists. So the contract
     # for that shape is: exactly those two FAIL lines, an integer
@@ -1707,10 +1707,10 @@ function Invoke-PhaseVerifyStamp {
     $setupExeReceipt = $receipt -and ($receipt.PSObject.Properties.Name -contains 'completedAtUnix')
     if ($setupExeReceipt -and $fails.Count -and -not @($fails | Where-Object { $_ -notmatch $legacyOnly }).Count) {
         $unix = $receipt.completedAtUnix
-        Assert-True ((($unix -is [int]) -or ($unix -is [long])) -and $unix -gt 0) "Hermes-Setup.exe receipt completedAtUnix is epoch seconds: '$unix'"
+        Assert-True ((($unix -is [int]) -or ($unix -is [long])) -and $unix -gt 0) "moor-setup.exe receipt completedAtUnix is epoch seconds: '$unix'"
         # The receipt cannot vouch for the commit, so the checkout must.
         Assert-True ($head -eq $state.current) "installed checkout is at the expected commit ($($state.current.Substring(0, 12)))"
-        $note = "Hermes-Setup.exe legacy receipt accepted (#124949; the released exe is not rebuilt): $($fails -join '; ')"
+        $note = "moor-setup.exe legacy receipt accepted (#124949; the released exe is not rebuilt): $($fails -join '; ')"
         Write-Host "  $note"
         if ($env:GITHUB_STEP_SUMMARY) { Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value $note -Encoding UTF8 }
         return

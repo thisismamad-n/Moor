@@ -138,7 +138,7 @@ class _KanbanDispatcher:
         return _board_slugs(self.kb)
 
     def board_db_fingerprint(self, slug: str) -> tuple[str, int | None, int | None]:
-        from hermes_cli import kanban_db as _kb
+        from moor_cli import kanban_db as _kb
         with _kb.pin_first_board_resolution():
             path = self.kb.kanban_db_path(slug)
         try:
@@ -188,9 +188,9 @@ class _KanbanDispatcher:
             # No explicit init_db(): connect() runs the migration once per
             # process (see the matching note in the notifier collector).
             # Pin-first: the tick is machine flow — on a box whose env pins
-            # HERMES_KANBAN_DB every enumerated slug must resolve to the pinned
+            # MOOR_KANBAN_DB every enumerated slug must resolve to the pinned
             # file, or the dispatcher reads per-slug DBs nobody writes.
-            from hermes_cli import kanban_db as _kb
+            from moor_cli import kanban_db as _kb
             with _kb.pin_first_board_resolution():
                 conn = _kbc().connect(board=slug)
                 return _kbd().dispatch_once(conn, board=slug, **kwargs)
@@ -228,7 +228,7 @@ class _KanbanDispatcher:
         """
         kbd = _kbd()
         _review_probe = kbd.review_dispatch_enabled()
-        from hermes_cli import kanban_db as _kb
+        from moor_cli import kanban_db as _kb
         with _kb.pin_first_board_resolution():
             for slug in self._board_slugs():
                 conn = None
@@ -257,7 +257,7 @@ class _KanbanDispatcher:
             return 0
         attempted = 0
         successes = 0
-        from hermes_cli import kanban_db as _kb
+        from moor_cli import kanban_db as _kb
         with _default_profile_secret_scope(), _kb.pin_first_board_resolution():
             for slug in self._board_slugs():
                 if attempted >= auto_decompose_per_tick:
@@ -313,13 +313,13 @@ def _default_profile_secret_scope():
     from that same home. No-op for single-profile gateways.
     """
     from agent.secret_scope import is_multiplex_active, reset_secret_scope, set_secret_scope
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from tui_gateway.launch_profile_policy import owner_secret_scope
 
     if not is_multiplex_active():
         yield
         return
-    token = set_secret_scope(owner_secret_scope(Path(get_hermes_home())), profile_home=str(get_hermes_home()))
+    token = set_secret_scope(owner_secret_scope(Path(get_moor_home())), profile_home=str(get_moor_home()))
     try:
         yield
     finally:

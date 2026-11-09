@@ -21,7 +21,7 @@ def test_usage_slash_shows_account_limits_before_first_turn_inside_session_scope
     from tui_gateway import server
 
     # Fresh chat whose composer picked Codex under an OpenRouter-default profile.
-    session = {"agent": None, "profile_home": "/nonexistent/hermes-profiles/coder", "history": [],
+    session = {"agent": None, "profile_home": "/nonexistent/moor-profiles/coder", "history": [],
                "running": False, "session_key": "sess-usage",
                "model_override": {"model": "gpt-5.3-codex", "provider": "openai-codex"}}
     fetched: list[str] = []
@@ -41,19 +41,19 @@ def test_usage_slash_shows_account_limits_before_first_turn_inside_session_scope
         return _snapshot()
 
     def _credits(**kw):
-        assert scoped == ["enter"], scoped  # the profile's own Nous login, not the launch profile's
-        return ["Nous credits: 100 remaining"]
+        assert scoped == ["enter"], scoped  # the profile's own Moor login, not the launch profile's
+        return ["Moor credits: 100 remaining"]
 
     with (
         patch.object(server, "_session_usage_snapshot", return_value={}),
         patch.object(server, "_session_profile_runtime_scope", lambda sess, **kw: _Scope()),
         patch.object(server, "_config_model_target", lambda: ("openai/gpt-5-mini", "openrouter")),
         patch("agent.account_usage.fetch_account_usage", _fetch),
-        patch("agent.account_usage.nous_credits_lines", _credits),
+        patch("agent.account_usage.moor_credits_lines", _credits),
     ):
         out = server._live_slash_command_output("sid-usage", session, "usage", "")
 
     assert scoped == ["enter", "exit"]
     assert fetched == ["openai-codex"]
-    assert "Account limits" in out and "Nous credits: 100 remaining" in out, out
+    assert "Account limits" in out and "Moor credits: 100 remaining" in out, out
     assert "send a message first" not in out

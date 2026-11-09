@@ -4,7 +4,7 @@ import { act, cleanup, renderHook } from '@testing-library/react'
 import { useRef } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-import type { HermesGateway } from '@/api/client'
+import type { MoorGateway } from '@/api/client'
 import { reconcileActiveTranscript } from '@/app/contrib/hooks/use-background-sync'
 import { getLatestSessionMessages } from '@/moor'
 import { chatMessageText, toChatMessages } from '@/lib/chat-messages'
@@ -139,7 +139,7 @@ async function mountWithPendingReplay() {
   })
 
   // The store types the primary as the desktop subclass; the barrier under test lives on the shared base.
-  setPrimaryGateway(client as unknown as HermesGateway)
+  setPrimaryGateway(client as unknown as MoorGateway)
   client.onEvent(gatewayEvent => hook.result.current.stream.handleGatewayEvent(gatewayEvent))
 
   const connect = async () => {

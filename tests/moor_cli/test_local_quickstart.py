@@ -142,7 +142,7 @@ def test_quickstart_runs_all_three_legs(client, capable_hardware, monkeypatch, t
 
     # Supply the same supported backend to preflight and the stubbed install;
     # host auto-detection may select a GPU backend this test host cannot install.
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
 
     config = load_config()
     config.setdefault("local_runtime", {})["backend"] = "cpu"
@@ -295,9 +295,9 @@ def test_assign_default_reaches_model_assignment(monkeypatch):
 def test_quickstart_prices_after_installing_the_engine(client, monkeypatch):
     """A Vulkan/HIP card's size comes from the installed engine's own device probe, so the model the
     job downloads and makes default is the one priced AFTER the install, not the preflight guess."""
-    import hermes_cli.web_routers.local_models as lm
-    from hermes_cli.local_runtime.catalog import CATALOG, VariantChoice
-    from hermes_cli.local_runtime.estimator import HardwareBudget
+    import moor_cli.web_routers.local_models as lm
+    from moor_cli.local_runtime.catalog import CATALOG, VariantChoice
+    from moor_cli.local_runtime.estimator import HardwareBudget
 
     gib = 1 << 30
     as_ram = HardwareBudget(usable_vram_bytes=50 * gib, total_device_bytes=50 * gib,

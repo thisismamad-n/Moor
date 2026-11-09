@@ -199,7 +199,7 @@ def _background_review_delete_guard(name: str, skill_dir: Path) -> Optional[dict
             return _refusal(
                 f"{refuse} skill '{name}': the skill is not "
                 f"curator-managed ({_detail}). Only curator-managed skills may be archived "
-                f"autonomously. Run `hermes curator adopt {name}` to opt it in.")
+                f"autonomously. Run `moor curator adopt {name}` to opt it in.")
     except Exception:
         logger.warning("owned skill guard lookup failed for %s", name, exc_info=True)
         return _refusal(
@@ -222,7 +222,7 @@ def _background_review_read_before_write_guard(
 
 
 def _locked_guard(name: str, action: str) -> Optional[dict[str, Any]]:
-    """Refuse every mutating ``skill_manage`` action on a skill the user locked (``hermes curator
+    """Refuse every mutating ``skill_manage`` action on a skill the user locked (``moor curator
     lock`` / the Desktop lock switch), whoever asks: foreground turns, the background review and the
     curator pass alike. ``create`` is exempt (the collision check already refuses a name that resolves
     anywhere). An unreadable sidecar fails CLOSED for the autonomous passes (silently relaxing a
@@ -245,7 +245,7 @@ def _locked_guard(name: str, action: str) -> Optional[dict[str, Any]]:
         return _refusal(
             f"Refusing {action} for skill '{name}': its lock state could not be verified because the "
             f"skills/.usage.json sidecar is unreadable. Leave the skill alone and tell the user; they "
-            f"can repair the sidecar or run `hermes curator unlock {name}`.", _locked=True)
+            f"can repair the sidecar or run `moor curator unlock {name}`.", _locked=True)
     if locked:
         from tools.skill_lock import skill_refusal
         return _refusal(f"Refusing {action}: {skill_refusal(locked)}", _locked=True)

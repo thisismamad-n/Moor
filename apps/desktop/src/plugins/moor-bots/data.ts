@@ -323,7 +323,7 @@ interface ProfilesConfigureResult {
   }
 }
 
-/** The bot's `hermes-bots` namespace as its OWN backend holds it right now. */
+/** The bot's `moor-bots` namespace as its OWN backend holds it right now. */
 interface ServerBotMeta {
   meta: StoredBotMeta
   /** Per-key CAS revision; null on gateways that predate `ui_meta_revisions`. */
@@ -354,12 +354,12 @@ async function readServerBotMeta(
     return null
   }
 
-  const meta = row.ui_meta?.['hermes-bots']
+  const meta = row.ui_meta?.['moor-bots']
   const revisions = row.ui_meta_revisions
 
   return {
     meta: meta && typeof meta === 'object' && !Array.isArray(meta) ? (meta as StoredBotMeta) : {},
-    revision: revisions && typeof revisions === 'object' ? Math.max(0, Number(revisions['hermes-bots'] || 0)) : null
+    revision: revisions && typeof revisions === 'object' ? Math.max(0, Number(revisions['moor-bots'] || 0)) : null
   }
 }
 
@@ -388,7 +388,7 @@ async function persistBotMetaPatch(
     const params: Record<string, unknown> = {
       name,
       ui_meta: {
-        'hermes-bots': {
+        'moor-bots': {
           ...base,
           ...fields
         }
@@ -397,7 +397,7 @@ async function persistBotMetaPatch(
 
     if (server.revision !== null) {
       params.ui_meta_expected_revisions = {
-        'hermes-bots': server.revision
+        'moor-bots': server.revision
       }
     }
 
@@ -1177,36 +1177,36 @@ export function mergeMultiSourceRoster(
 /** The @handle users tag a bot with. Multi-source rosters precompute the
  *  handle (bare name, or name-device when the profile exists on several
  *  registered sources) — prefer it when present. The primary profile's
- *  callable alias is 'hermes' — the mention middleware resolves it back to
+ *  callable alias is 'moor' — the mention middleware resolves it back to
  *  'default' — so the word 'default' never surfaces in the UI, unless a real
- *  `hermes` profile on the same source holds that handle (`claimDefaultHandles`). */
+ *  `moor` profile on the same source holds that handle (`claimDefaultHandles`). */
 export function botHandle(name: string, bot?: Partial<RosterRow> | null): string {
-  if (bot?.handle && bot.handle !== name && !(bot.hermesHandleTaken && bot.handle === 'hermes')) {
+  if (bot?.handle && bot.handle !== name && !(bot.moorHandleTaken && bot.handle === 'moor')) {
     return bot.handle
   }
 
-  return (name || '').trim().toLowerCase() === 'default' && !bot?.hermesHandleTaken ? 'hermes' : name
+  return (name || '').trim().toLowerCase() === 'default' && !bot?.moorHandleTaken ? 'moor' : name
 }
 
-/** The row's own `handle` as a mention form, lowercased. A stale 'hermes'
- *  handle on a default row whose source has a real 'hermes' profile is that
+/** The row's own `handle` as a mention form, lowercased. A stale 'moor'
+ *  handle on a default row whose source has a real 'moor' profile is that
  *  profile's tag, not this row's (same rule as `botHandle`). */
 function claimableRowHandle(bot: Partial<RosterRow>): string {
-  return bot.handle && !(bot.hermesHandleTaken && bot.handle === 'hermes') ? String(bot.handle).toLowerCase() : ''
+  return bot.handle && !(bot.moorHandleTaken && bot.handle === 'moor') ? String(bot.handle).toLowerCase() : ''
 }
 
-/** Mark each default row whose source also lists a real `hermes` profile, so
- *  that profile keeps @hermes and the roster never shows two (the backend's
+/** Mark each default row whose source also lists a real `moor` profile, so
+ *  that profile keeps @moor and the roster never shows two (the backend's
  *  `tools/bot_mode_probe._handle` applies the same rule). Rows group by
  *  connection; rows without one are the active source. */
 export function claimDefaultHandles<T extends Partial<RosterRow>>(rows: T[]): T[] {
   const taken = new Set(
-    rows.filter(row => String(row?.name || '').trim() === 'hermes').map(row => String(row?.connectionId || ''))
+    rows.filter(row => String(row?.name || '').trim() === 'moor').map(row => String(row?.connectionId || ''))
   )
 
   return rows.map(row =>
     String(row?.name || '').trim() === 'default' && taken.has(String(row?.connectionId || ''))
-      ? { ...row, hermesHandleTaken: true }
+      ? { ...row, moorHandleTaken: true }
       : row
   )
 }

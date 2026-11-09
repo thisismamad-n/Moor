@@ -2,7 +2,7 @@
 
 The wait cuts every socket opened before it so their clients go to the NEXT owner. A worker that
 redials into the wait and keeps polling ``prompt.receipt`` stays alive, so ``_watch_submitter``
-never ends the card's turn and the restart (``hermes update``) is held until
+never ends the card's turn and the restart (``moor update``) is held until
 ``agent.restart_after_turn_timeout``. The wait still admits interactive clients (#139041).
 """
 
@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import gateway_client, gateway_runtime, kanban_worker_client
+from moor_cli import gateway_client, gateway_runtime, kanban_worker_client
 from gateway.drain_control import RESTART_WAIT_REASON
 
 GUE = gateway_client.GatewayUnavailableError
@@ -20,7 +20,7 @@ GUE = gateway_client.GatewayUnavailableError
 
 @pytest.fixture(autouse=True)
 def _env(monkeypatch):
-    monkeypatch.delenv("HERMES_TUI_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("MOOR_TUI_GATEWAY_URL", raising=False)
 
 
 def _restart_wait_verdict(*_, **__):
@@ -122,8 +122,8 @@ def _owner_rig(tmp_path, monkeypatch, *, old_owner=False):
     from gateway.control_socket import GatewayControlServer
     from gateway.run_api import GatewayRuntimeAPI
     from gateway.runtime_bootstrap import TicketStore
-    from hermes_cli import web_server as web
-    from hermes_cli import web_server_chat
+    from moor_cli import web_server as web
+    from moor_cli import web_server_chat
 
     profile = str(tmp_path)
     tickets = TicketStore("owner", [profile])

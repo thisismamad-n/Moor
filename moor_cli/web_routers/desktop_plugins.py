@@ -5,7 +5,7 @@ Native Desktop reads that folder from its own disk (``desktopPluginsRoot`` in El
 browser bridge asks here instead, and the same runtime loader scans, loads and polls it.
 
 The routes answer only what the loader reads: the root, its plugin folders, and each folder's
-``plugin.js`` and ``.hermes-package.json``. Containment is checked on the path as written, then
+``plugin.js`` and ``.moor-package.json``. Containment is checked on the path as written, then
 symlinks are followed as Electron's ``readDir`` does, so ``desktop-plugins/foo -> ~/src/foo`` loads
 here too. They never go through ``/api/fs``, which follows the profile's SSH workspace and truncates
 at the preview cap. Like Electron, resolving the root first copies agent+desktop packages' desktop
@@ -22,14 +22,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from hermes_cli.desktop_plugin_halves import reconcile_desktop_halves, reconcile_desktop_halves_report
-from hermes_cli.desktop_plugin_install import DESKTOP_PLUGINS_DIR, desktop_plugins_root
-from hermes_constants import get_default_hermes_root
+from moor_cli.desktop_plugin_halves import reconcile_desktop_halves, reconcile_desktop_halves_report
+from moor_cli.desktop_plugin_install import DESKTOP_PLUGINS_DIR, desktop_plugins_root
+from moor_constants import get_default_moor_root
 
 router = APIRouter()
 
 #: The files the loader reads in a plugin folder: its entry and the unified-package marker.
-_READABLE_FILES = frozenset({"plugin.js", ".hermes-package.json"})
+_READABLE_FILES = frozenset({"plugin.js", ".moor-package.json"})
 #: Electron's ``PLUGIN_SOURCE_MAX_BYTES``: a plugin loads whole or not at all, never truncated.
 PLUGIN_SOURCE_MAX_BYTES = 16 * 1024 * 1024
 #: Never follow a final link where the OS can refuse one, and never block on a FIFO.
@@ -63,7 +63,7 @@ def _list(raw: str) -> dict:
 
 
 def _read(raw: str) -> dict:
-    from hermes_cli.web_routers.files import _is_sensitive_path
+    from moor_cli.web_routers.files import _is_sensitive_path
 
     target, parts = _inside_root(raw)
     not_found = HTTPException(status_code=404, detail="Not a desktop plugin file")
@@ -102,7 +102,7 @@ def _root_reconciled() -> str:
     ``desktopPluginsRoot`` does before every scan. On a host native Desktop only reaches over SSH,
     nothing else ever makes that copy."""
     root = desktop_plugins_root()
-    reconcile_desktop_halves(get_default_hermes_root(), root)
+    reconcile_desktop_halves(get_default_moor_root(), root)
     return str(root)
 
 
@@ -116,7 +116,7 @@ async def reconcile_desktop_plugins() -> dict:
     """Electron's ``reconcileDesktopPluginsReport``: re-run the copy after an install, update or removal, and
     name each package whose desktop half it refused and no later profile published, so the install tab does not
     report it as installed."""
-    return await asyncio.to_thread(reconcile_desktop_halves_report, get_default_hermes_root(), desktop_plugins_root())
+    return await asyncio.to_thread(reconcile_desktop_halves_report, get_default_moor_root(), desktop_plugins_root())
 
 
 @router.get("/api/desktop-plugins/list")

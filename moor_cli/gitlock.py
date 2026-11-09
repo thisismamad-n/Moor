@@ -13,13 +13,13 @@ import time
 from pathlib import Path
 from typing import Callable, Iterable, List, Optional
 
-from hermes_cli._subprocess_compat import (
+from moor_cli._subprocess_compat import (
     NO_LAZY_FETCH_ENV,
     bounded_probe_run,
     noninteractive_git_env,
     windows_hide_flags,
 )
-from hermes_cli.update_custody import run_git
+from moor_cli.update_custody import run_git
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ STALE_TMP_PACK_MIN_AGE_SECONDS = STALE_LOCK_MIN_AGE_SECONDS
 # ``shallow.lock`` is the one observed in the wild; the others are the same class of failure
 # (interrupted git operation). Locks held by a live git process are protected by the process guard.
 LOCK_NAMES = ("shallow.lock", "index.lock", "HEAD.lock", "MERGE_HEAD.lock")
-# Object-store indexes a killed git (Hermes kills git trees on timeout) leaves locked. Each lock fails
+# Object-store indexes a killed git (Moor kills git trees on timeout) leaves locked. Each lock fails
 # every later write of that file, so the commit-graph that keeps ``git tag --merged`` and ancestry
 # walks fast stops refreshing for good (one sat on a real checkout for two months).
 OBJECT_STORE_LOCK_NAMES = (
@@ -70,7 +70,7 @@ def _git_proc_running() -> bool:
             pass
         else:
             return _psutil_git_running(psutil)
-    from hermes_cli._early_recovery import _git_program
+    from moor_cli._early_recovery import _git_program
 
     try:
         # One shared spawn for both probes: the argv is the platform fork, the
@@ -89,7 +89,7 @@ def _git_proc_running() -> bool:
 
 
 def _psutil_git_running(psutil) -> bool:
-    from hermes_cli._early_recovery import _git_program
+    from moor_cli._early_recovery import _git_program
 
     try:
         for proc in psutil.process_iter():
@@ -155,7 +155,7 @@ def clear_stale_git_locks(repo_root: Path, *, min_age_seconds: Optional[int] = N
 
 def clear_stale_object_store_locks(git_dir: Path) -> list[str]:
     """``OBJECT_STORE_LOCK_NAMES`` only, under ``git_dir`` itself (a linked worktree's or submodule's
-    common dir), for repos Hermes does not own: index.lock / HEAD.lock there are the user's git's."""
+    common dir), for repos Moor does not own: index.lock / HEAD.lock there are the user's git's."""
     return _sweep_locks(Path(git_dir), OBJECT_STORE_LOCK_NAMES, None)
 
 
@@ -164,7 +164,7 @@ def release_dead_index_lock(repo_root: Path) -> bool:
 
     A git killed while it held the index lock (an update's tree killed by the user, a probe killed
     by its own timeout) leaves it behind, and every later merge/stash/reset refuses with "File
-    exists". The age floor above keeps such a lock for 10 minutes, so the next ``hermes update``
+    exists". The age floor above keeps such a lock for 10 minutes, so the next ``moor update``
     died at its fast-forward (#132089; the Windows crash cell ``mid_fetch``).
 
     Two conditions, both required. A killed update run must be behind the lock
@@ -177,7 +177,7 @@ def release_dead_index_lock(repo_root: Path) -> bool:
     with psutil (:func:`_windows_git_in_checkout`). Whatever cannot be read keeps the lock. An
     interrupted tree move owns its own lock judgement, so its marker defers to that repair.
     """
-    from hermes_cli._early_recovery import _git_dir, _release_dead_index_lock, interrupted_pull_marker
+    from moor_cli._early_recovery import _git_dir, _release_dead_index_lock, interrupted_pull_marker
 
     root = Path(repo_root)
     git_dir = _git_dir(root)
@@ -210,7 +210,7 @@ def _killed_update_owns(lock: Path) -> bool:
     """
     import json
 
-    from hermes_cli import update_receipt
+    from moor_cli import update_receipt
 
     try:
         written = lock.stat().st_mtime
@@ -252,11 +252,11 @@ def _windows_git_in_checkout(root: Path) -> bool | None:
     """Whether any git (``git.exe``, a dashed ``git-<sub>.exe``) works in ``root``; None when unknowable.
 
     Works in: its cwd, a path argument or a ``GIT_DIR``-style variable is inside the checkout or
-    its git dir, compared by path components (``hermes-backup`` is not inside ``hermes``). Scoped to
+    its git dir, compared by path components (``moor-backup`` is not inside ``moor``). Scoped to
     the checkout: a system-wide check would keep the lock whenever any editor or terminal elsewhere
     runs git, which on Windows is most of the time. A git whose cwd cannot be read keeps the lock.
     """
-    from hermes_cli._early_recovery import _NEVER_LOCKS, _checkout_places, _git_dir, _git_program, \
+    from moor_cli._early_recovery import _NEVER_LOCKS, _checkout_places, _git_dir, _git_program, \
         _git_subcommand_of, git_works_in
 
     try:
@@ -661,7 +661,7 @@ def prune_stale_shallow_grafts(repo_root: Path) -> int:
                         cwd=str(repo_root), capture_output=True, timeout=10,
                         creationflags=windows_hide_flags(),
                     )
-            _write_shallow(shallow_path, "\n".join(sorted(keep)) + "\n", suffix=".hermes-prune")
+            _write_shallow(shallow_path, "\n".join(sorted(keep)) + "\n", suffix=".moor-prune")
             # Fail-safe: if any reachable walk now crosses a boundary we wrongly
             # removed, put the grafts back — a growing file beats a broken repo.
             # Runs under the same lock hold (rev-list never takes shallow.lock) so
@@ -852,7 +852,7 @@ def convert_treeless_checkout_first(repo_root: Path) -> None:
     downloads trees again (#129514: 434 GB, disk full mid-update). Runs in the dependency-free
     bootstrap interpreter.
     """
-    from hermes_cli._subprocess_compat import no_prompt_git_kwargs
+    from moor_cli._subprocess_compat import no_prompt_git_kwargs
 
     try:
         if convert_treeless_checkout(repo_root, **no_prompt_git_kwargs()):

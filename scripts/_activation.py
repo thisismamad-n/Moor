@@ -23,7 +23,7 @@ Activating from the shebang
 
 A POSIX script can run itself in the environment, so ``./scripts/foo.py`` works
 from any cwd with no manual ``source``: its shebang hands the file to
-``scripts/run-in-hermes-env`` (the line, staleness rules and portability limits
+``scripts/run-in-moor-env`` (the line, staleness rules and portability limits
 are documented there). Windows keeps using ``python scripts\\foo.py`` with the
 guard.
 """

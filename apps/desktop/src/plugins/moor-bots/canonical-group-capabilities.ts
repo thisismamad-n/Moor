@@ -1,4 +1,4 @@
-import { gatewayActivationEpoch, host, useGatewayActivationEpoch, useValue } from '@hermes/plugin-sdk'
+import { gatewayActivationEpoch, host, useGatewayActivationEpoch, useValue } from '@moor/plugin-sdk'
 import { useEffect, useState } from 'react'
 
 import { canonicalGroupRequest } from './canonical-groups'

@@ -13,7 +13,7 @@ from argparse import Namespace
 
 import pytest
 
-from hermes_cli import sessions_cmd
+from moor_cli import sessions_cmd
 
 pytestmark = pytest.mark.platforms("posix")  # holder scan is unavailable on Windows
 
@@ -29,12 +29,12 @@ _HOLDER = (
 
 @pytest.fixture
 def state_db(monkeypatch, tmp_path):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db_path = tmp_path / "state.db"
     # cmd_sessions opens the ACTIVE home's store by explicit path (a served-profile process has
-    # no single default store), so the home is the seam, not hermes_state's default resolver.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # no single default store), so the home is the seam, not moor_state's default resolver.
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     seed = SessionDB(db_path=db_path)
     seed.create_session("seed", "cli")
     seed.append_message("seed", "user", "hello")

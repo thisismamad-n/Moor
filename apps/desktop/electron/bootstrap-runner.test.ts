@@ -168,7 +168,7 @@ test('resolveInstallScript downloads fallback stamps by branch instead of zero c
     const result = await resolveInstallScript({
       installStamp: { commit: ZERO_COMMIT, branch: 'main' },
       sourceRepoRoot: null,
-      hermesHome: home,
+      moorHome: home,
       emit: () => {},
       _download: async (ref, destPath) => {
         refs.push(ref)
@@ -203,7 +203,7 @@ test('resolveInstallScript refreshes the live branch for an existing checkout', 
     const result = await resolveInstallScript({
       installStamp: { commit, branch: 'main' },
       sourceRepoRoot: null,
-      hermesHome: home,
+      moorHome: home,
       emit: () => {},
       pinCommit: false,
       _download: async (ref, destPath) => {
@@ -238,7 +238,7 @@ test('resolveInstallScript refreshes an immutable-pin cache on a fresh install',
     const result = await resolveInstallScript({
       installStamp: { commit, branch: 'main' },
       sourceRepoRoot: null,
-      hermesHome: home,
+      moorHome: home,
       emit: () => {},
       _download: async (ref, destPath) => {
         refs.push(ref)
@@ -263,7 +263,7 @@ test('resolveInstallScript fails closed instead of executing an installed stale 
 
   try {
     const commit = 'a'.repeat(40)
-    const scriptsDir = path.join(home, 'hermes-agent', 'scripts')
+    const scriptsDir = path.join(home, 'moor-agent', 'scripts')
     fs.mkdirSync(scriptsDir, { recursive: true })
     fs.writeFileSync(path.join(scriptsDir, SCRIPT_NAME), 'stale installed script\n')
 

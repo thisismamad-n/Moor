@@ -101,28 +101,28 @@ class TestIsSafePath:
         assert dg.is_safe_path(p) is True
 
     @pytest.mark.platforms("macos")
-    def test_track_accepts_tmp_hermes_path_after_platform_resolution(self, _isolate_env):
+    def test_track_accepts_tmp_moor_path_after_platform_resolution(self, _isolate_env):
         dg = _load_lib()
-        temporary = Path(tempfile.mkdtemp(prefix="hermes-disk-cleanup-", dir="/tmp"))
+        temporary = Path(tempfile.mkdtemp(prefix="moor-disk-cleanup-", dir="/tmp"))
         try:
             assert dg.track(str(temporary), "temp", silent=True) is True
         finally:
             shutil.rmtree(temporary)
 
-    def test_rejects_outside_hermes_home(self, _isolate_env):
+    def test_rejects_outside_moor_home(self, _isolate_env):
         dg = _load_lib()
         assert dg.is_safe_path(Path("/etc/passwd")) is False
 
     @pytest.mark.skipif(sys.platform == "win32", reason="POSIX /tmp path contract")
     def test_rejects_tmp_traversal_and_near_prefixes(self, _isolate_env):
         dg = _load_lib()
-        assert dg.is_safe_path(Path("/tmp/hermes-safe/../not-hermes/file")) is False
-        assert dg.is_safe_path(Path("/tmp-near/hermes-safe/file")) is False
+        assert dg.is_safe_path(Path("/tmp/moor-safe/../not-moor/file")) is False
+        assert dg.is_safe_path(Path("/tmp-near/moor-safe/file")) is False
 
     @pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlink contract")
     def test_rejects_final_and_nested_symlink_escapes(self, _isolate_env):
         dg = _load_lib()
-        temporary = Path(tempfile.mkdtemp(prefix="hermes-disk-cleanup-", dir="/tmp"))
+        temporary = Path(tempfile.mkdtemp(prefix="moor-disk-cleanup-", dir="/tmp"))
         outside_dir = Path(tempfile.mkdtemp(prefix="disk-cleanup-outside-", dir="/tmp"))
         outside_file = outside_dir / "file.txt"
         outside_file.write_text("outside", encoding="utf-8")
@@ -342,9 +342,9 @@ class TestGitWorktreeFilesNeverCleaned:
         assert dg.load_tracked() == [], "stale entry is dropped from tracking, not kept"
 
     def test_scratch_outside_git_trees_still_cleaned(self, _isolate_env):
-        """Control: root-level test_* scratch is still auto-deleted — even when HERMES_HOME
-        itself lives inside a git checkout (dotfiles repo); a bare .git at or above HERMES_HOME
-        does not make untracked scratch git-owned — only a .git strictly below HERMES_HOME, or
+        """Control: root-level test_* scratch is still auto-deleted — even when MOOR_HOME
+        itself lives inside a git checkout (dotfiles repo); a bare .git at or above MOOR_HOME
+        does not make untracked scratch git-owned — only a .git strictly below MOOR_HOME, or
         git actually tracking the file, does."""
         dg = _load_lib()
         (_isolate_env.parent / ".git").mkdir()
@@ -357,12 +357,12 @@ class TestGitWorktreeFilesNeverCleaned:
         assert not scratch.exists()
         assert result["deleted"] == 1
 
-    def test_tracked_file_in_hermes_home_checkout_is_never_disposable(self, _isolate_env, monkeypatch):
-        """HERMES_HOME itself is a git checkout: a file git TRACKS is Git-owned, so a
+    def test_tracked_file_in_moor_home_checkout_is_never_disposable(self, _isolate_env, monkeypatch):
+        """MOOR_HOME itself is a git checkout: a file git TRACKS is Git-owned, so a
         ``test_*``/``tmp_*`` name must not classify it as disposable.
 
-        Observed live: ``~/.hermes`` is the userfiles repo, so ``~/.hermes/scripts/`` sits
-        inside a worktree but is not *below* HERMES_HOME — the parent-chain probe found no
+        Observed live: ``~/.moor`` is the userfiles repo, so ``~/.moor/scripts/`` sits
+        inside a worktree but is not *below* MOOR_HOME — the parent-chain probe found no
         ``.git`` and the bundled disk-cleanup plugin deleted two committed regression tests
         (``scripts/test_analyze_upstream_opportunities.py``,
         ``scripts/test_customization_protocol_v2.py``), committing the deletion."""
@@ -370,7 +370,7 @@ class TestGitWorktreeFilesNeverCleaned:
 
         dg = _load_lib()
         subprocess.run(["git", "init", "-q", str(_isolate_env)], check=True)
-        (dg.get_hermes_home() / "scripts").mkdir()
+        (dg.get_moor_home() / "scripts").mkdir()
         tracked = _isolate_env / "scripts" / "test_committed.py"
         tracked.write_text("x")
         scratch = _isolate_env / "test_untracked.py"
@@ -404,14 +404,14 @@ class TestGitWorktreeFilesNeverCleaned:
         subprocess.run(["git", "-C", str(_isolate_env), "add", "test_untracked.py"], check=True)
         assert dg.guess_category(scratch) is None
 
-        # HERMES_HOME nested in an enclosing repo (a ~/.git dotfiles repo) that tracks it.
+        # MOOR_HOME nested in an enclosing repo (a ~/.git dotfiles repo) that tracks it.
         outer = _isolate_env.parent / "outer"
-        (outer / ".hermes" / "scripts").mkdir(parents=True)
+        (outer / ".moor" / "scripts").mkdir(parents=True)
         subprocess.run(["git", "init", "-q", str(outer)], check=True)
-        nested = outer / ".hermes" / "scripts" / "test_x.py"
+        nested = outer / ".moor" / "scripts" / "test_x.py"
         nested.write_text("x")
         subprocess.run(["git", "-C", str(outer), "add", "."], check=True)
-        monkeypatch.setenv("HERMES_HOME", str(outer / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(outer / ".moor"))
         assert dg.guess_category(nested) is None
 
 
@@ -684,7 +684,7 @@ class TestBundledDiscovery:
     def test_disabled_beats_enabled(self, _isolate_env):
         """plugins.disabled wins even if the plugin is also in plugins.enabled — and the
         contradiction is surfaced (#131980), not absorbed as a plain disable."""
-        import hermes_yaml as yaml
+        import moor_yaml as yaml
         cfg_path = _isolate_env / "config.yaml"
         cfg_path.write_text(yaml.safe_dump({
             "plugins": {

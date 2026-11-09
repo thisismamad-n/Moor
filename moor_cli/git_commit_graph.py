@@ -1,7 +1,7 @@
-"""Keep a checkout's commit-graph fresh: the ``hermes -w`` pass and every ``hermes update``.
+"""Keep a checkout's commit-graph fresh: the ``moor -w`` pass and every ``moor update``.
 
 Generation numbers in the commit-graph keep ``git tag --merged HEAD`` (the version lookup) and
-ancestry checks off a full history walk: on hermes-agent a graph two months behind cost 0.33 s
+ancestry checks off a full history walk: on moor-agent a graph two months behind cost 0.33 s
 per lookup, a fresh one 0.04 s. Partial clones have git's own graph writers switched off
 (gitlock._TREE0_MAINTENANCE_OFF, #127711), so nothing else refreshes it there. Without Bloom data
 the write reads commits only, never trees, so it cannot start that lazy-fetch loop, and it costs
@@ -24,7 +24,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Optional, Sequence
 
-from hermes_cli._subprocess_compat import (
+from moor_cli._subprocess_compat import (
     IS_WINDOWS,
     NO_LAZY_FETCH_ENV,
     bounded_probe_run,
@@ -40,15 +40,15 @@ _WRITE = ("commit-graph", "write", "--reachable", "--split", "--no-changed-paths
 _MAX_AGE = 24 * 3600
 _TIMEOUT = 600
 _MIN_INTERVAL = 6 * 3600
-_LOCK = "hermes-commit-graph.lock"
+_LOCK = "moor-commit-graph.lock"
 # A write with no new commits leaves git's files untouched; this stamp records that it succeeded,
 # so an idle repo is not rewritten on every slot.
-_FRESH_STAMP = "hermes-commit-graph.fresh"
+_FRESH_STAMP = "moor-commit-graph.fresh"
 # git deletes its lock and tmp files on SIGTERM; a SIGKILLed writer strands commit-graph-chain.lock
 # and tmp_graph_*, and that lock fails every later write until the stale-lock sweep removes it.
 _KILL_GRACE = 5.0
 _CHILD = ("import sys; sys.path.insert(0, sys.argv[1]); "
-          "from hermes_cli.git_commit_graph import refresh_in_child; refresh_in_child(*sys.argv[2:])")
+          "from moor_cli.git_commit_graph import refresh_in_child; refresh_in_child(*sys.argv[2:])")
 
 
 @contextmanager
@@ -117,7 +117,7 @@ def run_bounded_git(repo_root: str, args: Sequence[str], timeout: float, env: Op
     git can delete its own lock and tmp files, and the owner-death supervisor kills the group when we
     are SIGKILLed or OOM-killed mid-repack.
     """
-    from hermes_cli.process_identity import release_process_group_once_empty, spawn_owned
+    from moor_cli.process_identity import release_process_group_once_empty, spawn_owned
 
     cmd = ["git", *args]
     if os.name == "posix":
@@ -185,7 +185,7 @@ def _commit_graph_disabled(repo_root: str) -> bool:
 def common_git_dir(repo_root: str | Path) -> Optional[Path]:
     """The git dir holding the object store: ``.git`` itself, or the dir a linked worktree's or
     submodule's ``.git`` file leads to. None when ``repo_root`` is no checkout."""
-    from hermes_cli.update_lock import _git_common_dir
+    from moor_cli.update_lock import _git_common_dir
 
     return _git_common_dir(Path(repo_root))
 
@@ -194,12 +194,12 @@ def refresh_commit_graph(repo_root: str, git_dir: Path) -> None:
     """Clear what a killed writer stranded, then write the graph (bounded, niced, never lazy-fetching).
 
     ``git_dir`` is the common git dir (:func:`common_git_dir`): objects, debris and stamp live there."""
-    from hermes_cli.gitlock import clear_stale_object_store_locks, clear_stale_tmp_packs
+    from moor_cli.gitlock import clear_stale_object_store_locks, clear_stale_tmp_packs
 
     if _commit_graph_disabled(repo_root):
         logger.info("core.commitGraph=false in %s; not writing a commit-graph", repo_root)
         return
-    # Object-store debris only: ``hermes -w`` runs this in whatever repo it was launched from, where
+    # Object-store debris only: ``moor -w`` runs this in whatever repo it was launched from, where
     # index.lock / HEAD.lock belong to the user's own git.
     clear_stale_object_store_locks(git_dir)
     clear_stale_tmp_packs(git_dir)
@@ -231,10 +231,10 @@ class _LogDirOnFailureHandler(logging.FileHandler):
 
     def emit(self, record: logging.LogRecord) -> None:
         if self.stream is None:
-            from hermes_constants import mkdir_under_hermes_home
+            from moor_constants import mkdir_under_moor_home
 
             try:
-                mkdir_under_hermes_home(Path(self.baseFilename).parent)
+                mkdir_under_moor_home(Path(self.baseFilename).parent)
                 self.stream = self._open()
             except OSError:  # a missing/deleted named profile is FileNotFoundError
                 self.handleError(record)
@@ -260,19 +260,19 @@ def refresh_in_child(repo_root: str, git_dir: str, log_file: str) -> None:
 def spawn_commit_graph_refresh(repo_root: Path) -> bool:
     """Start the bounded commit-graph refresh in a detached child when it is due; never waits.
 
-    ``hermes update`` is the one regular git pass an install checkout gets (``hermes -w`` is
+    ``moor update`` is the one regular git pass an install checkout gets (``moor -w`` is
     rarely launched from it), so without this its version lookups never get a graph. Detached
     because the write takes seconds and must neither delay the update nor die with it. A spawn that
     fails gives the slot back, so the next update retries instead of waiting out the interval.
     """
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     git_dir = common_git_dir(repo_root)
     if git_dir is None or not (git_dir / "objects").is_dir() or not claim_commit_graph_refresh(git_dir):
         return False
     code_root = Path(__file__).resolve().parents[1]
     argv = [sys.executable, "-c", _CHILD, str(code_root), str(repo_root), str(git_dir),
-            str(get_hermes_home() / "logs" / "agent.log")]
+            str(get_moor_home() / "logs" / "agent.log")]
     kwargs: dict = dict(cwd=str(repo_root), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL, close_fds=True)
     try:

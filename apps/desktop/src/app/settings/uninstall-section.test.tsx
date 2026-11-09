@@ -20,8 +20,8 @@ function summary(allowed: boolean): DesktopUninstallSummary {
     code_removal_allowed: allowed,
     native_removal_instructions: allowed
       ? null
-      : 'Quit the app and drag Hermes Agent.app from /Applications to the Trash.',
-    hermes_home: '/test/home',
+      : 'Quit the app and drag Moor Agent.app from /Applications to the Trash.',
+    moor_home: '/test/home',
     agent_installed: true,
     gui_installed: true,
     source_built_artifacts: [],
@@ -115,7 +115,7 @@ it('shows native removal steps, data location, and Apps settings on a managed Wi
   const run: ReturnType<typeof vi.fn> = vi.fn()
   const openAppsSettings: ReturnType<typeof vi.fn> = vi.fn().mockResolvedValue(undefined)
 
-  vi.stubGlobal('hermesDesktop', {
+  vi.stubGlobal('moorDesktop', {
     uninstall: {
       summary: async (): Promise<DesktopUninstallSummary> => ({
         ...summary(false),

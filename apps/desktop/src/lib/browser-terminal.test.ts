@@ -7,7 +7,7 @@ import { clearWebappSession, seedWebappSession } from '@/test/webapp-session'
 
 import { installBrowserDesktopBridge } from './browser-desktop-bridge'
 
-const META = '\u0000HERMES_TERMINAL_META:'
+const META = '\u0000MOOR_TERMINAL_META:'
 
 class Socket {
   static OPEN = 1
@@ -47,11 +47,11 @@ class Socket {
 }
 
 function install() {
-  Reflect.deleteProperty(window, 'hermesDesktop')
-  Object.assign(window, { __HERMES_AUTH_REQUIRED__: true, __HERMES_BASE_PATH__: '/one' })
+  Reflect.deleteProperty(window, 'moorDesktop')
+  Object.assign(window, { __MOOR_AUTH_REQUIRED__: true, __MOOR_BASE_PATH__: '/one' })
   installBrowserDesktopBridge()
 
-  return window.hermesDesktop!.terminal
+  return window.moorDesktop!.terminal
 }
 
 beforeEach(() => {
@@ -67,9 +67,9 @@ beforeEach(() => {
 
 afterEach(() => {
   window.dispatchEvent(new Event('beforeunload'))
-  Reflect.deleteProperty(window, 'hermesDesktop')
-  Reflect.deleteProperty(window, '__HERMES_AUTH_REQUIRED__')
-  Reflect.deleteProperty(window, '__HERMES_BASE_PATH__')
+  Reflect.deleteProperty(window, 'moorDesktop')
+  Reflect.deleteProperty(window, '__MOOR_AUTH_REQUIRED__')
+  Reflect.deleteProperty(window, '__MOOR_BASE_PATH__')
   $connection.set(null)
   vi.useRealTimers()
   vi.unstubAllGlobals()
@@ -305,10 +305,10 @@ describe('persistent browser terminals', () => {
   it('does not share persisted terminals between installations behind different proxy prefixes', async () => {
     await install().start({ cwd: '/original', restoreKey: 'tab-one' })
     window.dispatchEvent(new Event('beforeunload'))
-    Reflect.deleteProperty(window, 'hermesDesktop')
-    Object.assign(window, { __HERMES_BASE_PATH__: '/two' })
+    Reflect.deleteProperty(window, 'moorDesktop')
+    Object.assign(window, { __MOOR_BASE_PATH__: '/two' })
     installBrowserDesktopBridge()
-    await window.hermesDesktop!.terminal.start({ cwd: '/original', restoreKey: 'tab-one' })
+    await window.moorDesktop!.terminal.start({ cwd: '/original', restoreKey: 'tab-one' })
     expect(Socket.instances.at(-1)!.url.searchParams.has('attach')).toBe(false)
   })
 })
@@ -316,12 +316,12 @@ describe('persistent browser terminals', () => {
 describe('host terminal after sign-out', () => {
   /** A Webapp tab on the loopback bind, signed in by its launch link. */
   function installWebapp() {
-    Reflect.deleteProperty(window, 'hermesDesktop')
-    Object.assign(window, { __HERMES_AUTH_REQUIRED__: false, __HERMES_BASE_PATH__: '/one' })
+    Reflect.deleteProperty(window, 'moorDesktop')
+    Object.assign(window, { __MOOR_AUTH_REQUIRED__: false, __MOOR_BASE_PATH__: '/one' })
     seedWebappSession('launch-link-session')
     installBrowserDesktopBridge()
 
-    return window.hermesDesktop!.terminal
+    return window.moorDesktop!.terminal
   }
 
   const signedOutTicket = () =>
@@ -332,7 +332,7 @@ describe('host terminal after sign-out', () => {
     $desktopBoot.set({ ...$desktopBoot.get(), error: null, visible: false })
   })
 
-  // `hermes webapp --sign-out` closes the tab's sockets with 4401. That is final: redialing only
+  // `moor webapp --sign-out` closes the tab's sockets with 4401. That is final: redialing only
   // hits a ticket route that answers 401, so the terminal stops at once and the tab shows the
   // sign-in view the chat shows.
   it('stops on a 4401 close without redialing and shows the Webapp sign-in view', async () => {

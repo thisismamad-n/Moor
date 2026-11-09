@@ -76,7 +76,7 @@ class WakeWordInUse(RuntimeError):
 # frames via wake.feed), or "auto" (local when a device exists, else client).
 _DEFAULTS: dict[str, Any] = {
     "enabled": False, "surface": "auto", "input_device": None, "capture": "auto",
-    "provider": "auto", "phrase": "hey hermes", "sensitivity": 0.6,
+    "provider": "auto", "phrase": "hey moor", "sensitivity": 0.6,
     # detached-spawn: ok — not a spawn: the wake-word config key (fresh chat session on wake)
     "confirmation_frames": _DEFAULT_CONFIRMATION_FRAMES, "start_new_session": True,
 }

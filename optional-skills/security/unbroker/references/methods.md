@@ -203,7 +203,7 @@ actually sends depends on `email_mode`:
 1. **browser mode (no password, autonomous):** the command returns a recipient-locked `compose`
    payload (`to`/`subject`/`body`). Compose a NEW message in the operator's **logged-in webmail** via
    `browser_exec` (paste `compose.body` exactly, disclosing nothing beyond it) and send. No credentials
-   stored. Requires the inbox signed in in the browser Hermes uses.
+   stored. Requires the inbox signed in in the browser Moor uses.
 2. **programmatic mode (SMTP creds):** the command SMTP-sends it directly, no human.
 3. **draft_only fallback:** `pdd.py render-email <subject> <broker> --listing <url>`; a digest entry
    tells the operator to send it, and the agent records `submitted --channel email` afterward.
@@ -326,9 +326,9 @@ run stalling in Phase 2.
   multi-step flows that matter (e.g. PeopleConnect guided-mode, whose verify link is session- and
   device-bound to the browser that opens it - a cloud browser both fails the challenge and breaks the
   binding).
-- **How to drive the operator's browser (CDP).** Point Hermes's browser (`browser_exec`) at the
+- **How to drive the operator's browser (CDP).** Point Moor's browser (`browser_exec`) at the
   operator's real Chrome over the DevTools protocol: launch
-  `chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.hermes/chrome-debug"` and attach Hermes
+  `chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.moor/chrome-debug"` and attach Moor
   with `/browser connect` (or `browser.cdp_url` / `BROWSER_CDP_URL`) to `127.0.0.1:9222`. Use a **dedicated debug profile** (`chrome-debug`), NOT the
   operator's Default Chrome profile, and have the operator sign into their webmail (and any needed
   broker accounts) in that profile once. That single browser then carries residential IP + real
@@ -338,7 +338,7 @@ run stalling in Phase 2.
   binary, starts it detached on the dedicated profile, waits for the debug port, and prints the CDP
   endpoint (`webSocketDebuggerUrl`). `pdd.py cdp --check` reports whether a debug browser is already
   live (and never launches a second one); `pdd.py cdp --print` just emits the exact command for the
-  operator to run themselves. Attach Hermes's browser to the `endpoint` it returns (`/browser connect`).
+  operator to run themselves. Attach Moor's browser to the `endpoint` it returns (`/browser connect`).
 - **Always-available fallback:** if no CDP browser is wired up, use the operator-in-the-loop path
   (scan ladder 3b) - hand over paste-ready URLs and field-by-field least-disclosure guidance, pausing
   before submit. It never fails; it just needs a human present.

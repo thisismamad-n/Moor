@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.local_runtime import catalog, hardware
+from moor_cli.local_runtime import catalog, hardware
 
 
 @pytest.mark.platforms("windows")

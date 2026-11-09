@@ -20,10 +20,10 @@ def managed_moor_tools_enabled(*, force_fresh: bool = False) -> bool:
     pool). Fails closed on unknown/error — never blocks startup. Callers narrow per category
     via ``tool_gateway_entitled_for``; ``force_fresh`` is for flows needing a just-bought grant."""
     try:
-        from hermes_cli.nous_account import get_nous_portal_account_info
+        from moor_cli.moor_account import get_moor_portal_account_info
         # Branched call, not ``force_fresh=force_fresh``: tests stub the reader with zero-arg lambdas.
-        account_info = (get_nous_portal_account_info(force_fresh=True) if force_fresh
-                        else get_nous_portal_account_info())
+        account_info = (get_moor_portal_account_info(force_fresh=True) if force_fresh
+                        else get_moor_portal_account_info())
         return bool(account_info.logged_in) and account_info.tool_gateway_entitled
     except Exception:
         return False
@@ -196,7 +196,7 @@ MOOR_MANAGED_PROVIDER = "moor"
 # Per-capability keys that also count as "this category has been configured".
 _EXTRA_SELECTION_KEYS = {"web": ("search_backend", "extract_backend")}
 _DEFAULT_NAME_KEYS = ("provider", "backend", "cloud_provider")
-# Key(s) carrying each category's provider selection: one entry per `hermes tools` / Tool Gateway
+# Key(s) carrying each category's provider selection: one entry per `moor tools` / Tool Gateway
 # category read_selection() serves. A leftover ``browser.backend`` (the pre-v52 driver choice) is
 # not the cloud provider — excluded.
 _SELECTION_NAME_KEYS = {
@@ -249,9 +249,9 @@ def read_selection(section: str) -> str | None:
 
 def read_web_capability_selection(capability: Optional[str] = None) -> str | None:
     """Stored selection that decides ONE web capability (``"search"`` / ``"extract"``):
-    ``web.<capability>_backend`` when set (``"nous"`` = managed gateway, a vendor name =
+    ``web.<capability>_backend`` when set (``"moor"`` = managed gateway, a vendor name =
     that vendor direct), else the shared :func:`read_selection`. Lets search and extract
-    each choose between the user's own key and the Nous Tool Gateway."""
+    each choose between the user's own key and the Moor Tool Gateway."""
     if capability:
         raw = _raw_section("web") or {}
         pin = str(raw.get(f"{capability}_backend") or "").strip().lower()

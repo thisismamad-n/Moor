@@ -33,7 +33,7 @@ const registry = (ids: string[]): DesktopConnectionsRegistry => ({
 let stop: () => void = () => undefined
 
 function installProbe(bootstrapNeeded: boolean): void {
-  ;(window as unknown as { hermesDesktop: unknown }).hermesDesktop = {
+  ;(window as unknown as { moorDesktop: unknown }).moorDesktop = {
     probeLocalBackend: vi.fn(async () => ({ bootstrapNeeded }))
   }
 }
@@ -51,7 +51,7 @@ beforeEach(() => {
 afterEach(() => {
   stop()
   vi.useRealTimers()
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
 })
 
 it('keeps every registered gateway the primary socket does not serve connected, and lets a removed one go', () => {
@@ -77,7 +77,7 @@ it('keeps every registered gateway the primary socket does not serve connected, 
   expect(keepRoute).toHaveBeenCalledTimes(2)
 })
 
-it('with a remote primary, keeps This device only where Hermes is installed (never starts the installer)', async () => {
+it('with a remote primary, keeps This device only where Moor is installed (never starts the installer)', async () => {
   $primaryGatewayRoute.set({ connectionId: 'homelab', mode: 'remote' })
   installProbe(true)
   stop = startPersistentGateways()

@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from tests.hermes_cli import test_gateway_agent
-from tests.hermes_cli.test_gateway_agent import SID
+from tests.moor_cli import test_gateway_agent
+from tests.moor_cli.test_gateway_agent import SID
 
 make_agent = test_gateway_agent.make_agent  # the shared fixture, bound here so pytest finds it
 
@@ -62,13 +62,13 @@ def test_cli_compress_prints_the_gateways_noop_report_and_changes_nothing(make_a
     prints the owner's report, keeps its history (an aborted ``here N`` tail is not doubled or lost),
     counts no compression and leaves the status-bar estimate alone."""
     from agent.manual_compression_feedback import summarize_manual_compression
-    from cli import HermesCLI
+    from cli import MoorCLI
     agent, client = make_agent([])
     history = six_rows()
     report = summarize_manual_compression(history, history, 90, 90, compression_state=SimpleNamespace(**flags))
     client.mutate_replies.append({"session_id": SID, "operation": "compress", "status": "noop", "summary": report})
     agent.context_compressor.last_prompt_tokens = 229
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli.conversation_history, cli.agent, cli.session_id = six_rows(), agent, SID
     cli._busy_command = lambda *_a, **_k: nullcontext()
     cli._manual_compress(command)
@@ -86,7 +86,7 @@ def test_manual_compress_reports_the_gateways_committed_summary(make_agent):
     CLI's compressor view cannot know."""
     fallback = {"noop": False, "aborted": False, "refused_would_grow": False, "fallback_used": True,
                 "headline": "Compressed with fallback: 6 → 2 messages", "token_line": "Approx request size: ~90 → ~30 tokens",
-                "note": "Summary generation failed; Hermes used limited fallback context and removed 4 message(s)."}
+                "note": "Summary generation failed; Moor used limited fallback context and removed 4 message(s)."}
     agent, _, result = _compress_with_mutate_reply(
         make_agent, {"session_id": SID, "operation": "compress", "revision": 10, "summary": fallback})
     assert result.summary == fallback

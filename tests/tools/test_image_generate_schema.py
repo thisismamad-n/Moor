@@ -123,7 +123,7 @@ class TestDynamicParamGating(unittest.TestCase):
         """A managed Krea model renders exactly the controls the Krea plugin declares; FAL renders none."""
         from plugins.image_gen.krea import KreaImageGenProvider
 
-        with patch.object(ig, "_read_configured_image_provider", return_value="nous"), \
+        with patch.object(ig, "_read_configured_image_provider", return_value="moor"), \
              patch.object(ig, "_read_configured_image_model", return_value="krea-2-medium"):
             props = _build_dynamic_image_schema()["parameters"]["properties"]
         declared = KreaImageGenProvider().capabilities()["creative_controls"]
@@ -134,7 +134,7 @@ class TestDynamicParamGating(unittest.TestCase):
 
     def test_style_reference_backend_describes_image_inputs_as_style_not_edit(self):
         """A backend declaring source_image_role "style" gets the style wording; FAL keeps the edit wording."""
-        with patch.object(ig, "_read_configured_image_provider", return_value="nous"), \
+        with patch.object(ig, "_read_configured_image_provider", return_value="moor"), \
              patch.object(ig, "_read_configured_image_model", return_value="krea-2-medium"):
             krea = _build_dynamic_image_schema()
         fal = self._schema_for(self._edit_multi_ref())
@@ -151,9 +151,9 @@ class TestDynamicParamGating(unittest.TestCase):
         from plugins.image_gen.krea import KreaImageGenProvider
 
         # The tool and the plugin read the same stored selection, no env override needed.
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["MOOR_HOME"])
         home.mkdir(parents=True, exist_ok=True)
-        (home / "config.yaml").write_text("image_gen:\n  provider: nous\n  model: krea-3\n")
+        (home / "config.yaml").write_text("image_gen:\n  provider: moor\n  model: krea-3\n")
         props = _build_dynamic_image_schema()["parameters"]["properties"]
         cap = KreaImageGenProvider().capabilities()["max_reference_images"]
         self.assertIs(props["image_url"], ig._IMAGE_URL_PARAM)

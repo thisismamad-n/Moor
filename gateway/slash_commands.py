@@ -30,7 +30,7 @@ from gateway.slash_commands_model import GatewayModelCommandsMixin
 from gateway.slash_commands_session import GatewaySessionCommandsMixin
 from gateway.slash_commands_login import GatewayLoginCommandsMixin
 from gateway.slash_commands_status import GatewayStatusCommandsMixin, history_unreadable
-from hermes_cli.config import atomic_config_write, cfg_get
+from moor_cli.config import atomic_config_write, cfg_get
 from utils import atomic_json_write, is_truthy_value
 
 logger = logging.getLogger("gateway.run")
@@ -138,8 +138,8 @@ def _spawn_detached_update(moor_cmd, output_path, exit_code_path) -> None:
         from moor_cli._subprocess_compat import windows_detach_popen_kwargs
         subprocess.Popen(
             [sys.executable, "-c", _WINDOWS_UPDATE_HELPER, str(output_path), str(exit_code_path),
-             sys.executable, "-m", "hermes_cli.main", "update", "--gateway"],
-            # detached-spawn: ok — /update runs `hermes update`, which must outlive the gateway it restarts
+             sys.executable, "-m", "moor_cli.main", "update", "--gateway"],
+            # detached-spawn: ok — /update runs `moor update`, which must outlive the gateway it restarts
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **windows_detach_popen_kwargs())
         return
     moor_cmd_str = " ".join(shlex.quote(part) for part in moor_cmd)
@@ -155,7 +155,7 @@ def _spawn_detached_update(moor_cmd, output_path, exit_code_path) -> None:
     # calls os.setsid() in the child.
     setsid_bin = shutil.which("setsid")
     argv = [setsid_bin, "bash", "-c", update_cmd] if setsid_bin else ["bash", "-c", update_cmd]
-    # detached-spawn: ok — /update runs `hermes update`, which must outlive the gateway it restarts
+    # detached-spawn: ok — /update runs `moor update`, which must outlive the gateway it restarts
     subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
 
@@ -602,7 +602,7 @@ class GatewaySlashCommandsMixin(
 
     async def _handle_autoprune_command(self, event: MessageEvent) -> str:
         """Handle /autoprune — the low-disk auto-prune decision (same text as the CLI)."""
-        from hermes_cli.prune_advisor import answered
+        from moor_cli.prune_advisor import answered
         reply = _execute("autoprune", args=event.get_command_args()).text
         if event.get_command_args().strip() and answered():  # a failed save or `status` keeps it
             from gateway.run_housekeeping_disk import clear_local_auto_prune_notice
@@ -947,7 +947,7 @@ class GatewaySlashCommandsMixin(
     async def _handle_approvals_command(self, event: MessageEvent) -> str:
         """Show or persist the profile-wide dangerous-command approval mode."""
         from gateway.slash_access import policy_for_runner_source
-        from hermes_cli.approval_mode import run_approval_mode_command
+        from moor_cli.approval_mode import run_approval_mode_command
         requested = event.get_command_args().strip() or None
         # This mutates profile-wide security policy. The central slash gate can allow selected
         # commands to non-admin users, so enforce admin again at this side-effect boundary.
@@ -1009,7 +1009,7 @@ class GatewaySlashCommandsMixin(
             return f"{description}\n" + t("gateway.verbose.save_failed", error=e)
 
     async def _handle_busy_command(self, event: MessageEvent) -> str | EphemeralReply:
-        """Handle /busy — control what happens when messaging while Hermes is working."""
+        """Handle /busy — control what happens when messaging while Moor is working."""
         from gateway.session_setting_commands import local_live, session_busy_mode
         arg = event.get_command_args().strip().lower()
         live = local_live(self, event.source)
@@ -1250,12 +1250,12 @@ class GatewaySlashCommandsMixin(
         return await self._deliver_approval_confirmation(event, confirmation_text, "deny")
 
     async def _handle_curator_command(self, event: MessageEvent) -> str:
-        """Handle /curator — the ``hermes curator`` handler set (status by default), as main's CLI ran
+        """Handle /curator — the ``moor curator`` handler set (status by default), as main's CLI ran
         it in-process; its printed report is the reply. Runs in the executor with the session's
         context so the profile's skills tree and curator state are the ones read and written."""
         import io
         from contextlib import redirect_stderr, redirect_stdout
-        from hermes_cli.curator import cli_main
+        from moor_cli.curator import cli_main
         tokens = shlex.split(event.get_command_args() or "") or ["status"]
 
         def _run() -> str:
@@ -1277,7 +1277,7 @@ class GatewaySlashCommandsMixin(
         from moor_cli.debug import (_GATEWAY_PRIVACY_NOTICE, _best_effort_sweep_expired_pastes,
                                       _capture_dump, _is_dpaste_url, _schedule_auto_delete,
                                       collect_debug_report, upload_to_pastebin)
-        from hermes_cli.debug_redaction import redact_debug_support_text
+        from moor_cli.debug_redaction import redact_debug_support_text
 
         wants_local = "local" in {w.lower() for w in (event.get_command_args() or "").split()}
         if wants_local and getattr(event.source, "platform", None) != Platform.LOCAL:
@@ -1288,7 +1288,7 @@ class GatewaySlashCommandsMixin(
             # A local session's `/debug local` (main's CLI form) asks for the report on this machine:
             # return the redacted report for the client to show, with no network call at all (not
             # even the expired-paste sweep). Uploading stays on the explicit `/debug` form (T7).
-            from hermes_cli.debug import collect_share_bundle
+            from moor_cli.debug import collect_share_bundle
 
             def _collect_local():
                 return collect_share_bundle(log_lines=200)["report"]

@@ -179,7 +179,7 @@ def test_init_env_args_uses_active_profile_for_forwarded_env(monkeypatch):
 
     env = _make_execute_only_env(forward_env=["SERVICE_TOKEN"])
     monkeypatch.setenv("SERVICE_TOKEN", "token-for-default")
-    monkeypatch.setattr(docker_env, "_load_hermes_env_vars", dict)
+    monkeypatch.setattr(docker_env, "_load_moor_env_vars", dict)
     ss.set_multiplex_active(True)
     token = ss.set_secret_scope({"SERVICE_TOKEN": "token-for-routed-profile"})
     try:
@@ -199,7 +199,7 @@ def test_init_env_args_omits_missing_scoped_forwarded_env(monkeypatch):
 
     env = _make_execute_only_env(forward_env=["SERVICE_TOKEN"])
     monkeypatch.setenv("SERVICE_TOKEN", "token-for-default")
-    monkeypatch.setattr(docker_env, "_load_hermes_env_vars", dict)
+    monkeypatch.setattr(docker_env, "_load_moor_env_vars", dict)
     ss.set_multiplex_active(True)
     token = ss.set_secret_scope({})
     try:
@@ -219,7 +219,7 @@ def test_runtime_exec_tracks_scope_and_clears_missing_value(monkeypatch):
 
     env = _make_execute_only_env(forward_env=["SERVICE_TOKEN"])
     monkeypatch.setenv("SERVICE_TOKEN", "token-for-default")
-    monkeypatch.setattr(docker_env, "_load_hermes_env_vars", dict)
+    monkeypatch.setattr(docker_env, "_load_moor_env_vars", dict)
     calls = []
     monkeypatch.setattr(
         docker_env,
@@ -268,7 +268,7 @@ def test_wrapped_exec_scopes_explicit_forward_env_across_profiles(monkeypatch, t
         encoding="utf-8",
     )
     monkeypatch.setenv("EXPLICIT_TOKEN", "token-for-default")
-    monkeypatch.setattr(docker_env, "_load_hermes_env_vars", dict)
+    monkeypatch.setattr(docker_env, "_load_moor_env_vars", dict)
 
     def _run_fake_docker_exec(cmd, stdin_data=None, **kwargs):
         """Execute the generated docker exec command in a real local bash."""
@@ -378,7 +378,7 @@ def test_forward_env_overrides_docker_env_in_init_args(monkeypatch):
     env._env = {"MY_KEY": "static_value"}
 
     monkeypatch.setenv("MY_KEY", "dynamic_value")
-    monkeypatch.setattr(docker_env, "_load_hermes_env_vars", dict)
+    monkeypatch.setattr(docker_env, "_load_moor_env_vars", dict)
 
     args = env._build_init_env_args()
 
@@ -562,33 +562,33 @@ def test_label_sanitizer_rejects_invalid_characters():
 
 
 def test_reuse_environment_fingerprint_tracks_immutable_configuration():
-    """Containers with different images, mounts, or Hermes homes must not
+    """Containers with different images, mounts, or Moor homes must not
     share the label used for cross-process reuse."""
     base = docker_env._reuse_environment_fingerprint(
         image="python:3.11",
         mount_args=["-v", "volume-a:/workspace"],
-        hermes_home="/profiles/alpha",
+        moor_home="/profiles/alpha",
     )
 
     assert base == docker_env._reuse_environment_fingerprint(
         image="python:3.11",
         mount_args=["-v", "volume-a:/workspace"],
-        hermes_home="/profiles/alpha",
+        moor_home="/profiles/alpha",
     )
     assert base != docker_env._reuse_environment_fingerprint(
         image="python:3.12",
         mount_args=["-v", "volume-a:/workspace"],
-        hermes_home="/profiles/alpha",
+        moor_home="/profiles/alpha",
     )
     assert base != docker_env._reuse_environment_fingerprint(
         image="python:3.11",
         mount_args=["-v", "volume-b:/workspace"],
-        hermes_home="/profiles/alpha",
+        moor_home="/profiles/alpha",
     )
     assert base != docker_env._reuse_environment_fingerprint(
         image="python:3.11",
         mount_args=["-v", "volume-a:/workspace"],
-        hermes_home="/profiles/beta",
+        moor_home="/profiles/beta",
     )
 
 
@@ -603,23 +603,23 @@ def test_reuse_environment_fingerprint_ignores_volatile_temp_mounts(tmp_path, mo
     stable_source = str(tmp_path / "data")
     process_a = docker_env._reuse_environment_fingerprint(
         image="python:3.11",
-        mount_args=["-v", f"{temp_root}/hermes-skills-safe-a1b2c3:/root/.hermes/skills:ro",
+        mount_args=["-v", f"{temp_root}/moor-skills-safe-a1b2c3:/root/.moor/skills:ro",
                     "-v", f"{stable_source}:/data:ro"],
-        hermes_home="/profiles/alpha",
+        moor_home="/profiles/alpha",
     )
     process_b = docker_env._reuse_environment_fingerprint(
         image="python:3.11",
-        mount_args=["-v", f"{temp_root}/hermes-skills-safe-d4e5f6:/root/.hermes/skills:ro",
+        mount_args=["-v", f"{temp_root}/moor-skills-safe-d4e5f6:/root/.moor/skills:ro",
                     "-v", f"{stable_source}:/data:ro"],
-        hermes_home="/profiles/alpha",
+        moor_home="/profiles/alpha",
     )
     assert process_a == process_b
     # A real mount change still forces a fresh container.
     assert process_a != docker_env._reuse_environment_fingerprint(
         image="python:3.11",
-        mount_args=["-v", f"{temp_root}/hermes-skills-safe-a1b2c3:/root/.hermes/skills:ro",
+        mount_args=["-v", f"{temp_root}/moor-skills-safe-a1b2c3:/root/.moor/skills:ro",
                     "-v", f"{tmp_path}/other-data:/data:ro"],
-        hermes_home="/profiles/alpha",
+        moor_home="/profiles/alpha",
     )
 
 
@@ -752,30 +752,30 @@ def test_symlinked_skills_tree_reuses_container_across_processes(monkeypatch, tm
     installed packages / filesystem state of their long-lived sandbox."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "default")
-    hermes_home = tmp_path / "alpha"
-    skills_dir = hermes_home / "skills"
+    moor_home = tmp_path / "alpha"
+    skills_dir = moor_home / "skills"
     (skills_dir / "some-skill").mkdir(parents=True)
     (skills_dir / "some-skill" / "SKILL.md").write_text("# skill")
     (skills_dir / "link").symlink_to(tmp_path / "outside")  # forces the safe-copy path
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
     _mock_subprocess_run(monkeypatch)
 
     config = {"image": "python:3.11", "volumes": ["volume-a:/workspace"]}
     first = _make_dummy_env(**config)
     second = _make_dummy_env(**config)
-    assert first._labels["hermes-environment"] == second._labels["hermes-environment"]
+    assert first._labels["moor-environment"] == second._labels["moor-environment"]
     # The safe copy really is per-construction volatile: proof the stability above
     # comes from canonicalization, not from the mount happening to be stable.
     mounts = []
     for entry in docker_env._readonly_skill_mount_args():
-        if entry not in ("-v",) and ":/root/.hermes/skills" in entry:
+        if entry not in ("-v",) and ":/root/.moor/skills" in entry:
             mounts.append(entry)
     assert mounts, "expected a skills mount from the symlink-safe copy"
 
     # A real (non-tempdir) mount change must still start a fresh container.
     changed = dict(config, volumes=["volume-b:/workspace"])
     third = _make_dummy_env(**changed)
-    assert third._labels["hermes-environment"] != first._labels["hermes-environment"]
+    assert third._labels["moor-environment"] != first._labels["moor-environment"]
 
 
 def test_labels_attribute_populated_after_init(monkeypatch):
@@ -789,22 +789,22 @@ def test_labels_attribute_populated_after_init(monkeypatch):
     env = _make_dummy_env(task_id="abc")
 
     labels = dict(env._labels)
-    environment_label = labels.pop("hermes-environment")
+    environment_label = labels.pop("moor-environment")
     assert labels == {
-        "hermes-agent": "1",
-        "hermes-task-id": "abc",
-        "hermes-profile": "default",
-        "hermes-egress": "off",
+        "moor-agent": "1",
+        "moor-task-id": "abc",
+        "moor-profile": "default",
+        "moor-egress": "off",
     }
     assert re.fullmatch(r"[0-9a-f]{24}", environment_label)
 
 
-@pytest.mark.parametrize("changed_setting", ["image", "volumes", "hermes_home"])
+@pytest.mark.parametrize("changed_setting", ["image", "volumes", "moor_home"])
 def test_reuse_probe_filters_on_environment_fingerprint(monkeypatch, tmp_path, changed_setting):
     """Reuse and recovery must select the requested configuration, not stale mounts."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "default")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "alpha"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "alpha"))
     # Keep the auto-mounted skills directory present from the first startup.
     for name in ("alpha", "beta"):
         (tmp_path / name / "skills").mkdir(parents=True)
@@ -824,15 +824,15 @@ def test_reuse_probe_filters_on_environment_fingerprint(monkeypatch, tmp_path, c
     _make_dummy_env(**config)
     assert reuse_filters() == original_filters
 
-    if changed_setting == "hermes_home":
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "beta"))
+    if changed_setting == "moor_home":
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / "beta"))
     else:
         config[changed_setting] = {"image": "python:3.12", "volumes": ["volume-b:/workspace"]}[changed_setting]
     calls.clear()
     env = _make_dummy_env(**config)
     changed_filters = reuse_filters()
     assert changed_filters != original_filters
-    assert f"label=hermes-environment={env._labels['hermes-environment']}" in changed_filters
+    assert f"label=moor-environment={env._labels['moor-environment']}" in changed_filters
     assert set(f.removeprefix("label=") for f in changed_filters) <= _labels_in_run_args(_run_args_from_calls(calls))
 
     calls.clear()
@@ -846,10 +846,10 @@ def test_shared_container_key_replaces_profile_identity(monkeypatch, tmp_path):
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "research")
     _mock_subprocess_run(monkeypatch)
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "research"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "research"))
     a = _make_dummy_env(task_id="abc", shared_container_key="team/workspace")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "coding")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "coding"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "coding"))
     b = _make_dummy_env(
         task_id="abc", shared_container_key="team/workspace",
         image="python:3.12", volumes=["team-volume:/workspace"],
@@ -857,9 +857,9 @@ def test_shared_container_key_replaces_profile_identity(monkeypatch, tmp_path):
 
     # Deterministic across processes/profiles, not the profile label, and
     # digest-suffixed (label sanitization alone is lossy).
-    assert a._labels["hermes-profile"] == b._labels["hermes-profile"]
-    assert a._labels["hermes-profile"] != "research"
-    assert a._labels["hermes-profile"].startswith("team_workspace-")
+    assert a._labels["moor-profile"] == b._labels["moor-profile"]
+    assert a._labels["moor-profile"] != "research"
+    assert a._labels["moor-profile"].startswith("team_workspace-")
     # Explicit sharing retains the first creator's immutable settings.
     assert a._labels == b._labels
 
@@ -1845,7 +1845,7 @@ def test_forwarded_secret_values_never_in_argv(monkeypatch):
     secret = "s3cr3t-gitlab-token-value"
     env = _make_execute_only_env(["GITLAB_TOKEN"])
     monkeypatch.setenv("GITLAB_TOKEN", secret)
-    monkeypatch.setattr(docker_env, "_load_hermes_env_vars", dict)
+    monkeypatch.setattr(docker_env, "_load_moor_env_vars", dict)
 
     # init path
     init_args = env._build_init_env_args()
@@ -1902,7 +1902,7 @@ def test_docker_env_warnings_never_echo_values(caplog):
 @pytest.mark.parametrize("base", ["default", "profile:research-assistant-for-the-quarterly-ops"])
 def test_workspace_container_labels_identify_it_to_the_orphan_reaper(monkeypatch, base):
     """The orphan reaper must recognise an idle-STOPPED workspace container from the labels the
-    create path actually stamps. ``hermes-task-id`` is truncated to 63 chars, so a profile name of
+    create path actually stamps. ``moor-task-id`` is truncated to 63 chars, so a profile name of
     36+ chars cut the ``_ws_<digest>`` suffix and the next sweep ``docker rm``-ed the container,
     losing everything installed outside the mounts."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")

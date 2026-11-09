@@ -126,10 +126,10 @@ def test_cli_run_uses_moor_session_id_env(moor_home, capsys, monkeypatch):
     assert verification_status(session_id="sess-42", cwd=project)["status"] == "passed"
 
 
-def test_cli_verify_clears_stale_on_editing_session(hermes_home, capsys):
-    """Standalone ``hermes verify`` records under default; the editing session
+def test_cli_verify_clears_stale_on_editing_session(moor_home, capsys):
+    """Standalone ``moor verify`` records under default; the editing session
     must still see a pass (#103271)."""
-    project = _workspace(hermes_home, manifest_recipe={"name": "Fake", "test": ["echo ok"]})
+    project = _workspace(moor_home, manifest_recipe={"name": "Fake", "test": ["echo ok"]})
     changed = str(project / "src" / "app.ts")
     edit_session = "20260717_230325_f2d00d"
     mark_workspace_edited(session_id=edit_session, cwd=project, paths=[changed])

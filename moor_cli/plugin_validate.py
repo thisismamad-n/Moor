@@ -23,11 +23,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_cli.plugin_validate_core_override import check_core_override
-from hermes_cli.plugin_validate_desktop import check_desktop_surface
-from hermes_cli.plugin_validate_private_imports import check_private_imports
-from hermes_cli.plugin_validate_locales import check_language_packs
-from hermes_cli.plugins_manifest import _CONFIG_SCHEMA_TYPES
+from moor_cli.plugin_validate_core_override import check_core_override
+from moor_cli.plugin_validate_desktop import check_desktop_surface
+from moor_cli.plugin_validate_private_imports import check_private_imports
+from moor_cli.plugin_validate_locales import check_language_packs
+from moor_cli.plugins_manifest import _CONFIG_SCHEMA_TYPES
 
 _UPPER_SNAKE_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 # Admission accepts exactly the ``config_schema`` types the loader type-checks at load time (and the
@@ -186,9 +186,9 @@ def _check_requires_env(report: ValidationReport, manifest: dict) -> None:
 
 
 def _check_oauth(report: ValidationReport, manifest: dict, plugin_dir: Path) -> None:
-    """``oauth:`` clients (hermes_cli.plugin_oauth): shape, https and declared variables fail admission; a
+    """``oauth:`` clients (moor_cli.plugin_oauth): shape, https and declared variables fail admission; a
     host outside the IdP's domains and plugin code that names a token URL are reviewer warnings."""
-    from hermes_cli.plugin_oauth import oauth_admission_problems, oauth_admission_warnings
+    from moor_cli.plugin_oauth import oauth_admission_problems, oauth_admission_warnings
 
     if manifest.get("oauth") in (None, []):
         report.add("oauth", True, "not declared")
@@ -351,9 +351,9 @@ def _run_capability_probe(
     is the ``{tools, hooks, middleware, commands, providers}`` dict on
     success, and *error* is a human-readable failure description otherwise.
     """
-    with tempfile.TemporaryDirectory(prefix="hermes-validate-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="moor-validate-") as scratch:
         env = dict(probe[1] if probe else os.environ)
-        env["HERMES_HOME"] = scratch
+        env["MOOR_HOME"] = scratch
         # The probe imports this tree's ``providers``; name the tree instead of relying on the cwd.
         repo_root = str(Path(__file__).resolve().parents[1])
         env["PYTHONPATH"] = os.pathsep.join(p for p in (repo_root, env.get("PYTHONPATH", "")) if p)
@@ -361,7 +361,7 @@ def _run_capability_probe(
         try:
             result = subprocess.run(
                 [
-                    # -P: ``-c`` would put the user's cwd ahead of Hermes and the plugin's imports.
+                    # -P: ``-c`` would put the user's cwd ahead of Moor and the plugin's imports.
                     python, "-P", *options,
                     "-c",
                     _PROBE_SCRIPT,
@@ -559,7 +559,7 @@ def validate_plugin_dir(
     check_private_imports(report, plugin_dir)
     check_desktop_surface(report, plugin_dir)
     check_language_packs(report, manifest, plugin_dir)
-    from hermes_cli.plugin_isolation_audit import audit_plugin_dir
+    from moor_cli.plugin_isolation_audit import audit_plugin_dir
     report.isolation = audit_plugin_dir(plugin_dir, manifest).to_dict()
     return report
 
@@ -579,7 +579,7 @@ _LOADABLE_ENTRYPOINTS = ("__init__.py", "desktop/plugin.js", "plugin.json")
 
 
 def _check_loadable(report: ValidationReport, plugin_dir: Path, manifest: Optional[dict] = None) -> None:
-    """A plugin.yaml with nothing beside it that Hermes can load (no ``register()`` module, no
+    """A plugin.yaml with nothing beside it that Moor can load (no ``register()`` module, no
     desktop bundle, no portable manifest, no declared language pack) installs "successfully" and does
     nothing — a pip-layout repo whose code lives under ``src/`` behind an entry point is the usual shape."""
     present = [rel for rel in _LOADABLE_ENTRYPOINTS if (plugin_dir / rel).is_file()]
@@ -666,12 +666,12 @@ def _validate_portable_plugin(report: ValidationReport, plugin_dir: Path) -> Val
         bool(name),
         "name present" if name else "plugin.json missing required 'name'",
     )
-    from hermes_cli.agent_plugins import manifest_config_schema
+    from moor_cli.agent_plugins import manifest_config_schema
     _check_config_spec(report, {"config_schema": manifest_config_schema(manifest)})
     for server_name, config in package.mcp_servers.items():
         if config.get("trust") == "untrusted":
             report.add(f"server trust: {server_name}", True,
-                       "untrusted (Hermes asks before every write-capable tool call)")
+                       "untrusted (Moor asks before every write-capable tool call)")
         if config.get("tool_costs"):
             limit = config.get("spend_limit") or 0
             report.add(f"server costs: {server_name}", True,
@@ -688,6 +688,6 @@ def _validate_portable_plugin(report: ValidationReport, plugin_dir: Path) -> Val
         report.add(f"server availability: {server_name}", True, detail)
     _check_security_scan(report, plugin_dir)
     check_desktop_surface(report, plugin_dir)
-    from hermes_cli.plugin_isolation_audit import audit_plugin_dir
+    from moor_cli.plugin_isolation_audit import audit_plugin_dir
     report.isolation = audit_plugin_dir(plugin_dir, manifest).to_dict()
     return report

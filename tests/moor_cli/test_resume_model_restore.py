@@ -307,11 +307,11 @@ def test_restore_session_model_recovers_route_from_billing_columns(monkeypatch):
     """#136323 end-to-end: a CLI session that never ran /model has only the model column plus the
     billing class/endpoint. Resume must run it on the custom entry that endpoint belongs to, not
     the ambient default."""
-    import hermes_cli.runtime_provider as rp
+    import moor_cli.runtime_provider as rp
     monkeypatch.setattr(rp, "canonical_custom_identity",
                         lambda base_url=None, model=None: "custom:glm")
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda **kw: {"base_url": "http://127.0.0.1:1234/v1", "api_key": "sk-glm"})
     meta = _row(model="GLM-5.3")
     meta["billing_provider"] = "custom"
@@ -328,7 +328,7 @@ def test_restore_session_model_recovers_route_from_billing_columns(monkeypatch):
 def test_restore_session_model_billing_custom_without_configured_entry_keeps_ambient(monkeypatch):
     """The billing endpoint no longer matches any configured entry — the heal resolves nothing, so
     the stored model is restored but the route stays ambient (the first turn surfaces the error)."""
-    import hermes_cli.runtime_provider as rp
+    import moor_cli.runtime_provider as rp
     monkeypatch.setattr(rp, "canonical_custom_identity",
                         lambda base_url=None, model=None: None)
     meta = _row(model="GLM-5.3")
@@ -492,7 +492,7 @@ def _billing_only_meta():
 
 
 def _custom_config(monkeypatch, *entries):
-    import hermes_cli.runtime_provider as rp
+    import moor_cli.runtime_provider as rp
     config = {"model": {"provider": "anthropic", "default": "claude-opus-5-5"}, "custom_providers": list(entries)}
     monkeypatch.setattr(rp, "load_config", lambda: config)
     monkeypatch.setattr(rp, "_get_model_config", lambda: config["model"])
@@ -501,7 +501,7 @@ def _custom_config(monkeypatch, *entries):
 def test_stored_session_route_follows_a_custom_entry_that_moved(monkeypatch):
     """The entry serving the chat's model now lives at a new URL: resume runs on the entry, which
     resolves its own endpoint, not on the URL the chat last billed."""
-    from hermes_cli.cli_model_switch_mixin import stored_session_route
+    from moor_cli.cli_model_switch_mixin import stored_session_route
     _custom_config(monkeypatch, {"name": "glm", "base_url": GLM_NEW, "api_key": "glm-key", "model": "GLM-5.3"})
 
     route = stored_session_route(_billing_only_meta(), current_model="claude-opus-5-5", current_provider="anthropic")
@@ -511,7 +511,7 @@ def test_stored_session_route_follows_a_custom_entry_that_moved(monkeypatch):
 
 
 def test_stored_session_route_drops_an_endpoint_no_entry_serves(monkeypatch):
-    from hermes_cli.cli_model_switch_mixin import stored_session_route
+    from moor_cli.cli_model_switch_mixin import stored_session_route
     _custom_config(monkeypatch)
 
     route = stored_session_route(_billing_only_meta(), current_model="claude-opus-5-5", current_provider="anthropic")

@@ -1902,7 +1902,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
             ref={hostRef}
             role="region"
             aria-label="Chat terminal"
-            className="hermes-chat-xterm-host min-h-0 min-w-0 flex-1"
+            className="moor-chat-xterm-host min-h-0 min-w-0 flex-1"
           />
 
           {showReconnectOverlay && (

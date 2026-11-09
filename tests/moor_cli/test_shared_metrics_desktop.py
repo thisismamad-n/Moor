@@ -1,4 +1,4 @@
-"""v5 desktop: hermes.desktop.{feature_use,friction,onboarding,dislike,mode_use,action_use}.
+"""v5 desktop: moor.desktop.{feature_use,friction,onboarding,dislike,mode_use,action_use}.
 
 Every value the Desktop sends collapses onto a closed code-defined set, the backend latches again (durably,
 in the profile's store, for feature use and the daily report) so a replay, a second window or a backend
@@ -13,10 +13,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.observability import relay_shared_metrics
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_desktop as desktop
-from hermes_cli.observability.shared_metrics import SharedMetricsStore
+from moor_cli.observability import relay_shared_metrics
+from moor_cli.observability import shared_metrics_contract as contract
+from moor_cli.observability import shared_metrics_desktop as desktop
+from moor_cli.observability.shared_metrics import SharedMetricsStore
 from tui_gateway import server
 
 TODAY = "2026-09-27"
@@ -28,7 +28,7 @@ def marks(tmp_path, monkeypatch):
     policy = {"on": True}
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(relay_shared_metrics, "enabled", lambda: policy["on"])
     monkeypatch.setattr(relay_shared_metrics, "record_process_mark", lambda mark, data: captured.append((mark, data)))
     store = {"saves": True}
@@ -72,7 +72,7 @@ def test_feature_use_counts_each_area_once_per_day_and_collapses_unknown_areas(m
 def test_friction_detail_is_checked_against_its_own_kind_and_capped_per_day(marks):
     _rpc("shared_metrics.desktop_friction", kind="renderer_crash", detail="oom")
     _rpc("shared_metrics.desktop_friction", kind="renderer_crash", detail="network")  # a disconnect word
-    _rpc("shared_metrics.desktop_friction", kind="error_toast", detail="ENOSPC: /home/alice/.hermes is full")
+    _rpc("shared_metrics.desktop_friction", kind="error_toast", detail="ENOSPC: /home/alice/.moor is full")
     _rpc("shared_metrics.desktop_friction", kind="made_up", detail="crash")
     for _ in range(desktop.FRICTION_DAILY_CAP + 5):
         _rpc("shared_metrics.desktop_friction", kind="slow_frame", detail="1s_to_5s")
@@ -204,9 +204,9 @@ def test_setting_change_sends_only_the_schema_key_and_the_backend_decides_the_di
 
 
 def test_v3_schema_accepts_exactly_the_desktop_contract_values():
-    from hermes_cli import observability
+    from moor_cli import observability
 
-    schema = json.loads((Path(observability.__file__).parent / "schemas/hermes.shared_metrics.v4.schema.json").read_text())
+    schema = json.loads((Path(observability.__file__).parent / "schemas/moor.shared_metrics.v4.schema.json").read_text())
     by_name = {d["properties"]["name"]["const"]: d for d in schema["$defs"].values() if "properties" in d}
     for metric in (contract.DESKTOP_FEATURE_USE_METRIC, contract.DESKTOP_FRICTION_METRIC,
                    contract.DESKTOP_ONBOARDING_METRIC, contract.DESKTOP_MODE_USE_METRIC,

@@ -28,7 +28,7 @@ def main():
         os.environ.update(HOME=home, MOOR_HOME=home)
         sys.path.insert(0, str(checkout))
         from cron import jobs, scheduler
-        from hermes_cli.cli_cron_lines import cron_list_lines
+        from moor_cli.cli_cron_lines import cron_list_lines
         from openai import OpenAI
         from tools.cronjob_job_args import _format_job
 

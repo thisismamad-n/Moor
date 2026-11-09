@@ -1,8 +1,8 @@
 """Join authority-owned worker receipts with main's exit classification."""
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_dispatch as dispatch
+from moor_cli import kanban_db as kb
+from moor_cli import kanban_db_dispatch as dispatch
 
 
 @pytest.mark.parametrize(

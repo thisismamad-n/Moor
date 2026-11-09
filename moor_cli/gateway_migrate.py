@@ -204,33 +204,33 @@ class MigrationPlan:
 
 @contextlib.contextmanager
 def _home_env(home: Path) -> Iterator[None]:
-    """Run service-manager helpers as if ``home`` were the active HERMES_HOME. Both the contextvar
-    override (``get_hermes_home``) and ``os.environ`` (``gateway.status`` identity files, unit
+    """Run service-manager helpers as if ``home`` were the active MOOR_HOME. Both the contextvar
+    override (``get_moor_home``) and ``os.environ`` (``gateway.status`` identity files, unit
     generation) are switched, then restored.
 
-    The process keeps its LAUNCH identity while swapped (``pin_process_hermes_home``): ``os.environ``
+    The process keeps its LAUNCH identity while swapped (``pin_process_moor_home``): ``os.environ``
     still holds the launch profile's ``.env``, so a child spawned in here for ``home`` must see it as
     a routed home and take only ``home``'s own secrets — with the env var swapped, the routed-home
     checks read ``home`` as the launch profile and handed the launch profile's credentials to the
     default gateway."""
-    from hermes_constants import (
-        get_routing_process_hermes_home, pin_process_hermes_home, process_hermes_home_is_pinned,
-        reset_hermes_home_override, set_hermes_home_override,
+    from moor_constants import (
+        get_routing_process_moor_home, pin_process_moor_home, process_moor_home_is_pinned,
+        reset_moor_home_override, set_moor_home_override,
     )
-    import hermes_constants
-    previous = os.environ.get("HERMES_HOME")
-    pinned_here = not process_hermes_home_is_pinned()
+    import moor_constants
+    previous = os.environ.get("MOOR_HOME")
+    pinned_here = not process_moor_home_is_pinned()
     if pinned_here:
-        pin_process_hermes_home(get_routing_process_hermes_home())
-    token = set_hermes_home_override(str(home))
-    os.environ["HERMES_HOME"] = str(home)
-    hermes_constants._default_hermes_root_memo = None
+        pin_process_moor_home(get_routing_process_moor_home())
+    token = set_moor_home_override(str(home))
+    os.environ["MOOR_HOME"] = str(home)
+    moor_constants._default_moor_root_memo = None
     try:
         yield
     finally:
         if pinned_here:
-            pin_process_hermes_home(None)
-        reset_hermes_home_override(token)
+            pin_process_moor_home(None)
+        reset_moor_home_override(token)
         if previous is None:
             os.environ.pop("MOOR_HOME", None)
         else:
@@ -441,8 +441,8 @@ def _profile_gateway_config(home: Path):
     """
     from gateway.config import load_gateway_config
     from gateway.run import _profile_runtime_scope
-    from hermes_cli.plugins_discovery import suppress_plugin_discovery
-    from hermes_cli.profiles import profile_is_parked
+    from moor_cli.plugins_discovery import suppress_plugin_discovery
+    from moor_cli.profiles import profile_is_parked
     scope = suppress_plugin_discovery() if profile_is_parked(home) else contextlib.nullcontext()
     with _profile_runtime_scope(home), scope:
         return load_gateway_config()
@@ -578,7 +578,7 @@ def _listener_url(default_cfg, platform_value: str, profile: str) -> str:
     host = extra.get("host") or host
     port = extra.get("port") or port
     tail = {"api_server": "/v1/...", "webhook": "/webhooks/<route>"}.get(platform_value, "/...")
-    from hermes_cli.url_utils import format_url_host
+    from moor_cli.url_utils import format_url_host
 
     return f"http://{format_url_host(host)}:{port}/p/{profile}{tail}"
 
@@ -1273,7 +1273,7 @@ def maybe_auto_migrate_after_update() -> None:
     resuming = plan.manifest is not None
     if not plan.standalone_secondaries and not resuming:
         return
-    from hermes_cli.gateway_migrate_guards import masked_default_unit
+    from moor_cli.gateway_migrate_guards import masked_default_unit
     masked = None if resuming else masked_default_unit(plan.default_home)
     if masked is not None:
         print(f"\n  ℹ Per-profile gateways kept: the default gateway unit is masked ({masked}).\n"

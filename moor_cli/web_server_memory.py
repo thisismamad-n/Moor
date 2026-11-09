@@ -47,7 +47,7 @@ def _string_list(value: Any) -> list[str]:
 
 
 def _memory_provider_setup_manifest(name: str) -> tuple[dict, dict]:
-    from hermes_cli.memory_setup import memory_provider_dependency_inputs
+    from moor_cli.memory_setup import memory_provider_dependency_inputs
     from plugins.memory import find_provider_dir
     from pm.plugin_declarations import read_python_declaration
 
@@ -209,9 +209,9 @@ def _read_memory_provider_existing_values(name: str) -> dict[str, Any]:
     """Best-effort read of existing provider config across legacy/native stores."""
     from moor_cli.config import get_moor_home, load_config
 
-    hermes_home = get_hermes_home()
+    moor_home = get_moor_home()
     values: dict[str, Any] = {}
-    for path in (hermes_home / f"{name}.json", hermes_home / name / "config.json"):
+    for path in (moor_home / f"{name}.json", moor_home / name / "config.json"):
         values.update(_read_json_file(path))
 
     try:
@@ -333,7 +333,7 @@ def _memory_provider_status(row: dict[str, Any], setup: dict[str, Any], configur
 
 
 def _discover_memory_provider_statuses() -> list[dict[str, Any]]:
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
     discovered: dict[str, dict[str, Any]] = {}
     try:
         from plugins.memory import discover_memory_providers

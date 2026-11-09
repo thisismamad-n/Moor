@@ -221,8 +221,8 @@ def test_explicit_launch_key_wins_over_named_provider_pool(tmp_path, monkeypatch
     ``providers.<key>`` pool must not silently replace it (live and frozen-config paths)."""
     _write_keyed_provider_home(tmp_path, monkeypatch)
 
-    from hermes_cli import runtime_provider as rp
-    from hermes_cli.runtime_provider_custom import _resolve_named_custom_runtime
+    from moor_cli import runtime_provider as rp
+    from moor_cli.runtime_provider_custom import _resolve_named_custom_runtime
 
     frozen = rp.load_config()
     for resolved in (rp.resolve_runtime_provider(requested="b-ai", explicit_api_key="sk-launch-explicit"),
@@ -237,7 +237,7 @@ def test_named_provider_pool_requires_matching_endpoint(tmp_path, monkeypatch):
     _write_keyed_provider_home(tmp_path, monkeypatch)
 
     from agent.credential_pool import custom_provider_pool_key_candidates
-    from hermes_cli import runtime_provider as rp
+    from moor_cli import runtime_provider as rp
 
     assert custom_provider_pool_key_candidates("https://elsewhere.example/v1", "b-ai") == []
     assert custom_provider_pool_key_candidates(ENDPOINT + "/", "b-ai")[0] == "b-ai"

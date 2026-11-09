@@ -68,7 +68,7 @@ class TestProviderPersistsAfterModelSave:
             assert data["model"]["default"] == "some-old-model"
             raise OSError("simulated atomic write failure")
 
-        with patch("hermes_cli.auth.atomic_config_replace", side_effect=_boom) as mock_write:
+        with patch("moor_cli.auth.atomic_config_replace", side_effect=_boom) as mock_write:
             with pytest.raises(OSError, match="simulated atomic write failure"):
                 _update_config_for_provider(
                     "moor",

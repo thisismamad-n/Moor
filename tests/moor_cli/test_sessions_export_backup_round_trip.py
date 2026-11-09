@@ -1,4 +1,4 @@
-"""`hermes sessions export` JSONL — the documented backup format — must round-trip a compacted
+"""`moor sessions export` JSONL — the documented backup format — must round-trip a compacted
 session: import restores the turns in-place compaction archived, still archived (#122679 fixed
 only the console export; the primary CLI kept the live-only projection). That backup materializes
 every stored row in memory, so it is bounded per session by ``sessions.max_export_messages``, as the
@@ -9,8 +9,8 @@ import sys
 
 import pytest
 
-import hermes_cli.main as main_mod
-from hermes_state import SessionDB
+import moor_cli.main as main_mod
+from moor_state import SessionDB
 
 SID = "20260929_120000_abcdef"
 
@@ -33,7 +33,7 @@ def _seed_compacted_session() -> SessionDB:
 
 
 def _export(monkeypatch, backup, *selection):
-    monkeypatch.setattr(sys, "argv", ["hermes", "sessions", "export", str(backup), *selection])
+    monkeypatch.setattr(sys, "argv", ["moor", "sessions", "export", str(backup), *selection])
     main_mod.main()
 
 
@@ -65,7 +65,7 @@ def test_jsonl_backup_refuses_a_session_over_max_export_messages(tmp_path, monke
     materializes, so a small live tail over a large archive cannot slip past it. ``limit-0``: a
     disabled guard writes the backup without the guard's own full-session scan (export_all's is
     the only one)."""
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
 
     src = _seed_compacted_session()
     live = len(_shape(src))

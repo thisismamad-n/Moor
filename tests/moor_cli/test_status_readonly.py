@@ -8,10 +8,10 @@ import pytest
 
 @pytest.mark.parametrize("legacy", [False, True])
 def test_session_status_does_not_create_database(tmp_path, monkeypatch, capsys, legacy):
-    from hermes_cli import status
+    from moor_cli import status
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(status, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.setattr(status, "get_moor_home", lambda: tmp_path)
     if legacy:
         directory = tmp_path / "sessions"
         directory.mkdir()

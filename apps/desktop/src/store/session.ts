@@ -4,7 +4,7 @@ import { atom, computed } from 'nanostores'
 import { setApiRequestLocalMode } from '@/api/client'
 import { lastVisibleMessageIsUser } from '@/app/chat/thread-loading'
 import type { ContextSuggestion } from '@/app/types'
-import type { HermesConnection } from '@/global'
+import type { MoorConnection } from '@/global'
 import { browserPageBasePath, readBrowserDefaultProjectDir } from '@/lib/browser-settings'
 import type { ChatMessage } from '@/lib/chat-messages'
 import {
@@ -24,7 +24,7 @@ import {
   storedString,
   writeJson
 } from '@/lib/storage'
-import type { SessionInfo, UsageStats } from '@/types/hermes'
+import type { SessionInfo, UsageStats } from '@/types/moor'
 
 import { $removedSessionIds, isSessionRemovalPending, tombstoneRowIds } from './session-removal'
 import type { SessionOwnerRoute, SessionOwnerScope } from './session-request-router'
@@ -41,12 +41,12 @@ const WORKSPACE_CWD_KEY = 'moor.desktop.workspace-cwd'
 // Model/provider/source are scoped to the remote (connection, profile) owner so
 // a provider authenticated on one profile cannot contaminate another profile's
 // session.create. Local/single-backend users retain the historical bare keys.
-const COMPOSER_MODEL_KEY = 'hermes.desktop.composer.model'
-const COMPOSER_PROVIDER_KEY = 'hermes.desktop.composer.provider'
-const COMPOSER_MODEL_SOURCE_KEY = 'hermes.desktop.composer.model-source'
-const COMPOSER_EFFORT_KEY = 'hermes.desktop.composer.reasoning-effort'
-const COMPOSER_FAST_KEY = 'hermes.desktop.composer.fast'
-const COMPOSER_SERVICE_TIER_KEY = 'hermes.desktop.composer.service-tier'
+const COMPOSER_MODEL_KEY = 'moor.desktop.composer.model'
+const COMPOSER_PROVIDER_KEY = 'moor.desktop.composer.provider'
+const COMPOSER_MODEL_SOURCE_KEY = 'moor.desktop.composer.model-source'
+const COMPOSER_EFFORT_KEY = 'moor.desktop.composer.reasoning-effort'
+const COMPOSER_FAST_KEY = 'moor.desktop.composer.fast'
+const COMPOSER_SERVICE_TIER_KEY = 'moor.desktop.composer.service-tier'
 
 // Unlike presentation-oriented $connection, this scope is published from the
 // gateway activation coordinate before profile-change effects can reseed the
@@ -338,7 +338,7 @@ export function setRememberedRoute(path: null | string, profile: string): void {
 
 let configuredDefaultProjectDir = ''
 
-function workspaceCwdKey(connection: HermesConnection | null = $connection.get()): string {
+function workspaceCwdKey(connection: MoorConnection | null = $connection.get()): string {
   const profile = connection?.profile?.trim() || 'default'
 
   if (connection?.mode !== 'remote') {
@@ -971,7 +971,7 @@ export function applySessionTitle(storedSessionId: string | null | undefined, ti
   setUnlistedSessionOwnerRows(patch)
 }
 
-export const $connection = atom<HermesConnection | null>(null)
+export const $connection = atom<MoorConnection | null>(null)
 export const $gatewayState = atom<ConnectionState>('idle')
 export const $sessions = atom<SessionInfo[]>([])
 // Cron-job sessions (source === 'cron') are fetched as their own list so the

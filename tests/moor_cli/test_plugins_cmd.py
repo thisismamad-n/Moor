@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from tests.pm._fixtures import client, isolated_python
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
 from moor_cli.plugins_cmd import (
     PluginOperationError,
@@ -26,13 +26,13 @@ from moor_cli.plugins_cmd_install import _refuse_unavailable_portable_plugin
 
 
 def _write_portable_app_plugin(root: Path, app: Path, os_key: str | None = None) -> None:
-    from hermes_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
-    from hermes_platform.host.facts import os_family
+    from moor_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
+    from moor_platform.host.facts import os_family
 
     (root / "plugin.json").write_text(json.dumps({
         "$schema": PLUGIN_SCHEMA_V1,
         "name": "example-plugin",
-        "extensions": {"com.nousresearch.hermes": {"servers": {"worker": {
+        "extensions": {"com.moorinc.moor": {"servers": {"worker": {
             "app": {os_key or os_family(): {"presence": "executable", "location": str(app)}},
             "requires": {"app": True},
         }}}},
@@ -55,7 +55,7 @@ def test_portable_install_gate_accepts_present_app_and_refuses_missing(tmp_path:
 
 
 def test_portable_install_gate_on_undeclared_os_does_not_say_install(tmp_path: Path) -> None:
-    from hermes_platform.host.facts import os_family
+    from moor_platform.host.facts import os_family
 
     other = next(o for o in ("linux", "darwin", "win32") if o != os_family())
     _write_portable_app_plugin(tmp_path, tmp_path / "example-app", os_key=other)

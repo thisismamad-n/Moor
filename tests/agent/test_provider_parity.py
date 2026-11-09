@@ -365,7 +365,7 @@ class TestBuildApiKwargsMoorPortal:
     ])
     def test_connector_data_use_asks_for_a_no_training_route_and_never_reaches_the_wire(
             self, monkeypatch, data_use, provider):
-        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.nousresearch.com/v1", model="gpt-5")
+        agent = _make_agent(monkeypatch, "moor", base_url="https://inference-api.nousresearch.com/v1", model="gpt-5")
         tool = {"role": "tool", "tool_call_id": "c1", "content": "inbox"}
         messages = [
             {"role": "user", "content": "read my mail"},
@@ -387,12 +387,12 @@ class TestBuildApiKwargsMoorPortal:
         assert "provider" not in kwargs.get("extra_body", {})
         assert "data_use" not in kwargs["messages"][-1]
 
-    def test_auxiliary_nous_call_carrying_a_connector_result_asks_for_a_no_training_route(self):
+    def test_auxiliary_moor_call_carrying_a_connector_result_asks_for_a_no_training_route(self):
         from agent.auxiliary_client import _build_call_kwargs
 
         messages = [{"role": "user", "content": "title this"},
                     {"role": "tool", "tool_call_id": "c1", "content": "inbox", "data_use": ["no_training"]}]
-        kwargs = _build_call_kwargs(provider="nous", model="hermes-4", messages=messages)
+        kwargs = _build_call_kwargs(provider="moor", model="hermes-4", messages=messages)
         assert kwargs["extra_body"]["provider"] == {"data_collection": "deny"}
 
 
@@ -761,11 +761,11 @@ class TestAuxiliaryClientProviderPriority:
             "access_token": _fake_invoke_jwt(),
             "scope": "inference:invoke",
         }
-        with patch("agent.auxiliary_client._read_nous_auth", return_value=nous_auth), \
+        with patch("agent.auxiliary_client._read_moor_auth", return_value=moor_auth), \
              patch("agent.auxiliary_client.OpenAI"), \
-             patch("hermes_cli.models.get_nous_recommended_aux_model", return_value=None):
+             patch("moor_cli.models.get_moor_recommended_aux_model", return_value=None):
             _client, model = get_text_auxiliary_client()
-        assert model == _NOUS_MODEL
+        assert model == _MOOR_MODEL
 
     def test_custom_endpoint_when_no_moor(self, monkeypatch):
         """Custom endpoint is used when no OpenRouter/Moor keys are available.
@@ -797,7 +797,7 @@ class TestAuxiliaryClientProviderPriority:
         monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         from agent.auxiliary_client import get_text_auxiliary_client
-        with patch("agent.auxiliary_client._read_nous_auth", return_value=None), \
+        with patch("agent.auxiliary_client._read_moor_auth", return_value=None), \
              patch("agent.auxiliary_client._resolve_codex_credential_and_base",
                    return_value=("codex-tok", "https://chatgpt.com/backend-api/codex")), \
              patch("agent.auxiliary_client.OpenAI"):

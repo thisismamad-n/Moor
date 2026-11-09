@@ -13,7 +13,7 @@ class _Bridge:
         self.connection, self.events = connection, asyncio.Queue()
 
     async def rpc(self, method, **params):
-        from hermes_cli.gateway_client import GatewayClientError
+        from moor_cli.gateway_client import GatewayClientError
         reply = await self.connection.dispatch({'id': 1, 'method': method, 'params': params})
         if 'error' in reply:
             raise GatewayClientError(reply['error']['message'])
@@ -35,11 +35,11 @@ async def test_retry_refuses_an_unresendable_turn_before_rewinding(tmp_path, mon
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
-    from hermes_cli.gateway_chat_commands import run_command
-    from hermes_cli.gateway_client import GatewayClientError
-    from hermes_cli.gateway_mutations import PreparedMutations
+    from moor_cli.gateway_chat_commands import run_command
+    from moor_cli.gateway_client import GatewayClientError
+    from moor_cli.gateway_mutations import PreparedMutations
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('MOOR_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': {'cli': []}})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store._db, adapters={}, _draining=False,

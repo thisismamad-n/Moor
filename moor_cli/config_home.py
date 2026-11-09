@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 
 class HomeInitializationError(RuntimeError):
@@ -81,7 +81,7 @@ def initialize_home(home: Path, subdirs: tuple[str, ...], ensured: set[str]) -> 
 
 
 def config_load_issue(exc: Exception):
-    from hermes_cli.config_issues import ConfigIssue
+    from moor_cli.config_issues import ConfigIssue
 
     if isinstance(exc, (HomeInitializationError, OSError)):
         return ConfigIssue(

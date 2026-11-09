@@ -1,4 +1,4 @@
-import { isOfficialSkillSource } from '@hermes/shared'
+import { isOfficialSkillSource } from '@moor/shared'
 
 import curation from '../../../../../shared/src/catalog-curation.json'
 
@@ -55,7 +55,7 @@ export type PluginTier = 'official' | 'verified' | 'community'
 export const PLUGIN_TIER_ORDER: readonly PluginTier[] = ['official', 'verified', 'community']
 
 /** Catalog tier straight from the feed (`tier` in plugin-catalog/*.yaml):
- *  official and bundled are Nous, verified is granted by Nous to plugins from
+ *  official and bundled are Moor, verified is granted by Moor to plugins from
  *  the company behind the integration, everything else is community —
  *  including installed-only values (`user`, `git`, desktop kinds). */
 export function pluginTier(entry: { source: string }): PluginTier {

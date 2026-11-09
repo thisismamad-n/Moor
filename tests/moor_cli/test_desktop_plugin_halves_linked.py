@@ -11,13 +11,13 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.desktop_plugin_halves import PACKAGE_MARKER, reconcile_desktop_halves
+from moor_cli.desktop_plugin_halves import PACKAGE_MARKER, reconcile_desktop_halves
 
 pytestmark = pytest.mark.platforms("posix")
 
 
 def _checkout(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     checkout = tmp_path / "src" / "radar"
     checkout.mkdir(parents=True)
     (checkout / "plugin.yaml").write_text("name: radar\n", encoding="utf-8")
@@ -67,7 +67,7 @@ def test_a_copy_that_kept_the_checkout_link_is_replaced_then_pruned_without_touc
 
 
 def test_a_plugin_the_user_linked_into_the_app_root_is_never_stamped(tmp_path):
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     own = tmp_path / "src" / "pkg"
     own.mkdir(parents=True)
     (own / "plugin.js").write_text("same", encoding="utf-8")

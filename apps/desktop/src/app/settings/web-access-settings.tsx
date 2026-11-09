@@ -14,7 +14,7 @@ import {
   type WebAccessChange,
   type WebAccessMode,
   type WebAccessStatus
-} from '@/hermes'
+} from '@/moor'
 import { useI18n } from '@/i18n'
 import type { WebAccessTranslations } from '@/i18n/types_gateway_host'
 import { ExternalLink } from '@/lib/external-link'
@@ -28,7 +28,7 @@ import { ListRow, Pill, SectionHeading, SettingsContent, SettingsSection, Settin
 
 const RESTART_POLL_MS = 1500
 const RESTART_TIMEOUT_MS = 90_000
-// `hermes config set webapp.*` and a gateway restarted elsewhere change the status behind the pane's
+// `moor config set webapp.*` and a gateway restarted elsewhere change the status behind the pane's
 // back: re-read it when the window regains focus or comes back into view, and on a slow poll while
 // it is visible (react-query pauses the interval in the background).
 const STATUS_POLL_MS = 10_000
@@ -221,7 +221,7 @@ function WebAccessForm({ queryKey, status, w }: FormProps): ReactElement {
   const phase = phaseOf(status)
   const lanUrl = status.lan_address ? `http://${status.lan_address}:${status.port}` : null
   const url = phase === 'off' ? chosenAddress(status, lanUrl, mode, publicUrl) : addressOf(status, lanUrl)
-  const ready = status.nous_signed_in && (mode === 'lan' ? Boolean(lanUrl) : publicUrl.trim().startsWith('https://'))
+  const ready = status.moor_signed_in && (mode === 'lan' ? Boolean(lanUrl) : publicUrl.trim().startsWith('https://'))
 
   const apply = (next: WebAccessStatus): void => {
     queryClient.setQueryData(queryKey, next)
@@ -324,7 +324,7 @@ function WhereRow({ lanUrl, locked, mode, onMode, onPublicUrl, port, publicUrl, 
             className={`${CONTROL_TEXT} mt-3 max-w-sm`}
             disabled={locked}
             onChange={event => onPublicUrl(event.target.value)}
-            placeholder="https://hermes.example.com"
+            placeholder="https://moor.example.com"
             value={publicUrl}
           />
         )
@@ -367,7 +367,7 @@ function pillLabel(phase: Phase, busy: Busy, w: WebAccessTranslations): string {
 
 function describe(phase: Phase, status: WebAccessStatus, w: WebAccessTranslations): string {
   const descriptions: Record<Phase, string> = {
-    off: status.nous_signed_in ? w.notRunningDetail : w.needsNous,
+    off: status.moor_signed_in ? w.notRunningDetail : w.needsMoor,
     pendingOff: w.pendingOff,
     pendingOn: w.pendingOn,
     serving: status.mode === 'public' ? w.runningPublic : status.mode === 'local' ? w.runningLocal : w.runningLan,

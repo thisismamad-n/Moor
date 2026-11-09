@@ -1,6 +1,6 @@
 """TUI approval labels and modal hints are catalog lookups at render time, not import-time text.
 
-A language pack registered (or ``display.language`` changed) after ``hermes_cli.cli_tui_mixin``
+A language pack registered (or ``display.language`` changed) after ``moor_cli.cli_tui_mixin``
 was imported must still reach the approval panel and the hint row; a module-level dict of
 English strings would freeze the first language forever.
 """
@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from agent import i18n
-from cli import HermesCLI
+from cli import MoorCLI
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def swapped_catalog(tmp_path, monkeypatch):
 
 
 def _cli_with_approval():
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = MoorCLI.__new__(MoorCLI)
     cli._approval_lock = threading.Lock()
     cli._sudo_state = cli._secret_state = cli._slash_confirm_state = cli._connection_state = None
     cli._clarify_state = None
@@ -75,7 +75,7 @@ def test_approval_panel_and_hint_follow_the_live_catalog(swapped_catalog, monkey
 
 
 def test_unknown_choice_id_renders_verbatim():
-    from hermes_cli.cli_tui_mixin import _approval_choice_label
+    from moor_cli.cli_tui_mixin import _approval_choice_label
 
     assert _approval_choice_label("custom-id") == "custom-id"
     assert _approval_choice_label("deny") == i18n.t("cli.tui.approval_deny")

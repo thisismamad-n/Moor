@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ConfirmHost } from '@/components/confirm-host'
 import { $confirmRequest } from '@/store/confirm'
-import type { OAuthProvider } from '@/types/hermes'
+import type { OAuthProvider } from '@/types/moor'
 
 import { ProvidersSettings } from './providers-settings'
 
@@ -15,7 +15,7 @@ const runInTerminal = vi.fn()
 const notify = vi.fn()
 const notifyError = vi.fn()
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   setApiRequestProfile: vi.fn(),
   getProfiles: async () => ({ profiles: [] }),
   disconnectOAuthProvider: (...args: unknown[]) => disconnectOAuthProvider(...args),
@@ -56,8 +56,8 @@ function connectedExternal(patch: Partial<OAuthProvider> = {}): OAuthProvider {
 
 beforeEach(() => {
   listOAuthProviders.mockResolvedValue({ providers: [connectedExternal()] })
-  disconnectOAuthProvider.mockResolvedValue({ ok: false, provider: 'nous' })
-  Object.defineProperty(window, 'hermesDesktop', {
+  disconnectOAuthProvider.mockResolvedValue({ ok: false, provider: 'moor' })
+  Object.defineProperty(window, 'moorDesktop', {
     configurable: true,
     value: { terminal: {} }
   })
@@ -97,19 +97,19 @@ describe('connected external provider row', () => {
     listOAuthProviders.mockResolvedValue({
       providers: [
         {
-          cli_command: 'hermes auth add nous',
+          cli_command: 'moor auth add moor',
           disconnectable: true,
           docs_url: '',
           flow: 'device_code',
-          id: 'nous',
-          name: 'Nous Portal',
+          id: 'moor',
+          name: 'Moor Portal',
           status: { logged_in: true }
         }
       ]
     })
 
     await renderAccounts()
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove Nous Portal' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove Moor Portal' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Disconnect' }))
 
     await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalled())

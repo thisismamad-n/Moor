@@ -177,7 +177,7 @@ class TestLongWaitRule:
         assert recorded == []
 
 
-_ANON = SimpleNamespace(provider="nous", api_key=make_jwt())
+_ANON = SimpleNamespace(provider="moor", api_key=make_jwt())
 
 
 class TestOutageCopy:
@@ -185,7 +185,7 @@ class TestOutageCopy:
                                         FailoverReason.server_error])
     def test_a_spent_transport_failure_on_the_welcome_host_reads_as_one_sentence(self, reason):
         from agent.turn_recovery import _welcome_outage_copy
-        from hermes_cli.anon_auth import FREE_TIER_OUTAGE_COPY
+        from moor_cli.anon_auth import FREE_TIER_OUTAGE_COPY
         assert _welcome_outage_copy(_ANON, WELCOME, SimpleNamespace(reason=reason)) == FREE_TIER_OUTAGE_COPY
 
     def test_other_routes_and_other_reasons_keep_the_technical_summary(self):
@@ -195,7 +195,7 @@ class TestOutageCopy:
         # ``unknown`` is the catch-all for status-less local failures, not the free model's trouble.
         assert _welcome_outage_copy(_ANON, WELCOME, SimpleNamespace(reason=FailoverReason.unknown)) == ""
         # A named account's outage is its provider's trouble, not the free model's.
-        named = SimpleNamespace(provider="nous", api_key=make_jwt(account_tier="free"))
+        named = SimpleNamespace(provider="moor", api_key=make_jwt(account_tier="free"))
         assert _welcome_outage_copy(named, WELCOME, SimpleNamespace(reason=FailoverReason.timeout)) == ""
 
 
@@ -280,7 +280,7 @@ class TestFreeTierCooldownCutoff:
 
     @pytest.fixture(autouse=True)
     def _no_inherited_source(self, monkeypatch):
-        for name in ("HERMES_SESSION_SOURCE", "HERMES_SINGLE_QUERY_SESSION", "HERMES_SESSION_SOURCE_EXPLICIT"):
+        for name in ("MOOR_SESSION_SOURCE", "MOOR_SINGLE_QUERY_SESSION", "MOOR_SESSION_SOURCE_EXPLICIT"):
             monkeypatch.delenv(name, raising=False)
 
     def test_an_attended_desktop_session_ends_the_turn_and_names_the_reset(self):
@@ -290,8 +290,8 @@ class TestFreeTierCooldownCutoff:
         result = max_retries_exhausted_result(
             TestTerminalResultsCarryTheFreeTierBlock._terminal_agent(), err, _classify(err), attempts=1,
             is_rate_limited=True, error_msg="429", api_kwargs=None, api_messages=[], messages=[],
-            conversation_history=[], api_call_count=1, approx_tokens=10, provider="nous", base_url=WELCOME,
-            model="nous/welcome")
+            conversation_history=[], api_call_count=1, approx_tokens=10, provider="moor", base_url=WELCOME,
+            model="moor/welcome")
         assert "refreshes in about 2 minutes" in result["final_response"]
         assert result["free_tier"]["kind"] == "rate_limited"
 
@@ -306,7 +306,7 @@ class TestFreeTierCooldownCutoff:
             clear_session_vars(tokens)
 
     def test_a_gateway_admitted_finite_cli_turn_keeps_waiting(self):
-        """``hermes chat -q`` over the daemon carries its one-shot fact on the admission, not in env."""
+        """``moor chat -q`` over the daemon carries its one-shot fact on the admission, not in env."""
         from agent.turn_recovery import free_tier_cooldown_ends_turn
         from gateway.session_finite import finite_turn_scope
         with finite_turn_scope(True):
@@ -320,7 +320,7 @@ class TestFreeTierCooldownCutoff:
         agent = _backoff_agent(platform=platform)
         assert free_tier_cooldown_ends_turn(agent, err, WELCOME) is False
         compute_error_backoff(agent, err, retry_count=1, max_retries=3, is_rate_limited=True,
-                              is_zai_coding_overload=False, base_url=WELCOME, model="nous/welcome")
+                              is_zai_coding_overload=False, base_url=WELCOME, model="moor/welcome")
         assert "Resets in ~" in agent.buffered[0]
 
     def test_a_paid_long_wait_stays_buffered_with_mains_attempt_numbers(self):

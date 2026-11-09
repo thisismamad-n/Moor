@@ -4,24 +4,24 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.config import (
+from moor_cli.config import (
     DEFAULT_CONFIG,
     atomic_config_write,
     get_compatible_custom_providers,
     read_user_config_raw,
 )
-from hermes_cli.profiles import create_profile
-from hermes_cli.profile_model_seed import launch_model_seed, merge_endpoint_seed
-from hermes_cli import runtime_provider
+from moor_cli.profiles import create_profile
+from moor_cli.profile_model_seed import launch_model_seed, merge_endpoint_seed
+from moor_cli import runtime_provider
 
 
 @pytest.fixture
 def create_from_launch(tmp_path, monkeypatch):
     """Write *source* as the launch config, create a fresh profile, return its raw config."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
 
     def _create(source: dict) -> dict:
         atomic_config_write(
@@ -180,7 +180,7 @@ def test_model_seed_matches_env_referenced_endpoint_names(monkeypatch, schema, e
 
 
 def test_model_seed_uses_supplied_config_without_reading_credentials(monkeypatch):
-    import hermes_cli.runtime_provider_custom as custom_runtime
+    import moor_cli.runtime_provider_custom as custom_runtime
 
     def unexpected_read(*args, **kwargs):
         pytest.fail(

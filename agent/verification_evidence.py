@@ -630,7 +630,7 @@ def last_unattributed_run(
     *, session_id: str | None, root: str | None, since: str | None = None,
 ) -> Optional[str]:
     """The latest verify-command run in ``root`` whose own exit status could not be read,
-    unless evidence recorded at ``since`` came after it. ``hermes verify`` usually records
+    unless evidence recorded at ``since`` came after it. ``moor verify`` usually records
     from its own process, so this process's memory alone cannot know about that run.
     """
     run = _UNATTRIBUTED_RUNS.get((str(session_id or "default"), str(root)))
@@ -688,7 +688,7 @@ def _insert_evidence(evidence: VerificationEvidence) -> dict[str, Any]:
             " changed_paths_json = '[]'",
             (e.session_id, e.root, event_id),
         )
-        # A full passing ``hermes verify`` proves the workspace. Partial or
+        # A full passing ``moor verify`` proves the workspace. Partial or
         # failed runs must not wipe another session's edit record (#103650).
         if e.kind == "verify" and e.status == "passed" and e.scope == "full":
             conn.execute(
@@ -743,7 +743,7 @@ def mark_workspace_edited(
 def _newest_workspace_verify(
     conn: sqlite3.Connection, *, root: str, since: str | None
 ) -> Optional[sqlite3.Row]:
-    """Latest full passing ``hermes verify`` for ``root``, optionally not older than ``since``."""
+    """Latest full passing ``moor verify`` for ``root``, optionally not older than ``since``."""
     if since:
         return conn.execute(
             "SELECT * FROM verification_events"
@@ -764,7 +764,7 @@ def verification_status(*, session_id: str | None, cwd: str | Path | None) -> di
     """Return the best known verification state for a session/workspace.
 
     Evidence recorded before the latest edit is reported as ``stale``. A
-    ``hermes verify`` event for the same ``root`` that is at least as new as
+    ``moor verify`` event for the same ``root`` that is at least as new as
     that edit satisfies the guard even if another session recorded it.
     """
     if not _ledger_enabled():

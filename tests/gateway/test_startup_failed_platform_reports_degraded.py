@@ -65,7 +65,7 @@ class _HealthyAdapter(BasePlatformAdapter):
 
 
 def _runner(monkeypatch, tmp_path, platforms, create_adapter) -> GatewayRunner:
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     # Only the bundled bluebubbles plugin counts as registered here, so a None adapter elsewhere is the
     # "plugin never registered" case and a None bluebubbles adapter is "registered but failed".
     monkeypatch.setattr("gateway.platform_registry.platform_registry.is_registered",
@@ -179,7 +179,7 @@ async def test_last_platform_lost_non_retryably_mid_run_keeps_the_gateway_up_deg
         stop.assert_not_awaited()
         assert any(
             record.levelno >= logging.ERROR and "telegram" in record.getMessage()
-            and "hermes gateway restart" in record.getMessage()
+            and "moor gateway restart" in record.getMessage()
             for record in caplog.records
         )
         assert await flush_runtime_status_async()

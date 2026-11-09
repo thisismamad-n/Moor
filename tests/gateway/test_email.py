@@ -1445,7 +1445,7 @@ def test_oversized_cron_output_is_delivered_as_one_whole_email():
     from gateway.config import GatewayConfig, PlatformConfig
     from gateway.delivery import DeliveryRouter
 
-    with patch.dict(os.environ, {"EMAIL_ADDRESS": "hermes@test.com", "EMAIL_PASSWORD": "secret",
+    with patch.dict(os.environ, {"EMAIL_ADDRESS": "moor@test.com", "EMAIL_PASSWORD": "secret",
                                  "EMAIL_IMAP_HOST": "imap.test.com", "EMAIL_SMTP_HOST": "smtp.test.com"}):
         from plugins.platforms.email.adapter import EmailAdapter
         adapter = EmailAdapter(PlatformConfig(enabled=True))

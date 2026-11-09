@@ -13,10 +13,10 @@ import sys
 import threading
 import types
 
-from hermes_cli import mcp_startup
-from hermes_cli import web_server
-from hermes_cli import web_server_lifecycle
-from tests.hermes_cli.test_dashboard_auth_gate import _stub_uvicorn_run
+from moor_cli import mcp_startup
+from moor_cli import web_server
+from moor_cli import web_server_lifecycle
+from tests.moor_cli.test_dashboard_auth_gate import _stub_uvicorn_run
 
 
 def _reset_discovery_state(monkeypatch):
@@ -112,8 +112,8 @@ def test_standalone_dashboard_boot_arms_discovery_without_starting_it(monkeypatc
 def test_first_gateway_ws_client_starts_the_armed_discovery_once(monkeypatch):
     import asyncio
 
-    from hermes_cli.web_routers import chat_ws
-    from hermes_cli.web_session_sockets import GATEWAY_SOCKET
+    from moor_cli.web_routers import chat_ws
+    from moor_cli.web_session_sockets import GATEWAY_SOCKET
 
     _reset_discovery_state(monkeypatch)
     calls: list[str] = []

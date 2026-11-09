@@ -471,7 +471,7 @@ def test_matrix_pairing_revoke_purges_live_allowlist_snapshot(store, monkeypatch
     """A live Matrix adapter must not retain an allowlist entry removed by pairing revoke."""
     from gateway.config import PlatformConfig
     import gateway.run as gateway_run
-    import hermes_cli.config as cfg
+    import moor_cli.config as cfg
     from plugins.platforms.matrix.adapter import MatrixAdapter
 
     owner_id = "@owner:example.org"

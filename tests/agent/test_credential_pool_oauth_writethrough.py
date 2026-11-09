@@ -29,8 +29,8 @@ from agent.credential_pool import (
     PooledCredential,
     load_pool,
 )
-from hermes_cli import auth as A
-from hermes_cli import auth_codex
+from moor_cli import auth as A
+from moor_cli import auth_codex
 
 
 def _write_store(path, store):

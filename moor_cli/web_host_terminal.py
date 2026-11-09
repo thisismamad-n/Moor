@@ -7,14 +7,14 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Optional
 
-META_PREFIX = "\0HERMES_TERMINAL_META:"
+META_PREFIX = "\0MOOR_TERMINAL_META:"
 
 
 def request_allowed() -> bool:
     """Allow host shells only for Webapp on loopback or behind authentication."""
-    from hermes_cli.web_server import app
-    from hermes_cli.web_server_chat import _LOOPBACK_HOSTS
-    from hermes_cli.web_server_surface import policy
+    from moor_cli.web_server import app
+    from moor_cli.web_server_chat import _LOOPBACK_HOSTS
+    from moor_cli.web_server_surface import policy
 
     if not policy(app.state).host_terminal:
         return False
@@ -29,7 +29,7 @@ def shell_command(candidate: str) -> Optional[str]:
     A relative path is refused: the PTY chdirs into the workspace before exec,
     so it would name a different file than the one checked here.
     """
-    from hermes_platform.resolver import locate_command
+    from moor_platform.resolver import locate_command
 
     raw = (candidate or "").strip()
     found = locate_command(raw).command if raw else ()
@@ -41,8 +41,8 @@ def shell_spec() -> tuple[list[str], str]:
 
     POSIX honours ``$SHELL``, then /bin/zsh, /bin/bash, /bin/sh. Windows ignores ``$SHELL``
     (usually a stray MSYS/Git path) and takes PowerShell 7, Windows PowerShell, ``COMSPEC``,
-    then cmd.exe. Electron's ``HERMES_DESKTOP_SHELL`` override is not read here: settings do
-    not ride on ``HERMES_*`` environment variables.
+    then cmd.exe. Electron's ``MOOR_DESKTOP_SHELL`` override is not read here: settings do
+    not ride on ``MOOR_*`` environment variables.
     """
     if os.name == "nt":
         system_root = os.environ.get("SystemRoot") or os.environ.get("windir") or r"C:\Windows"
@@ -102,19 +102,19 @@ def resolve_argv(
 ) -> tuple[list[str], str, dict[str, str], str]:
     """Return argv/cwd/env/name for Webapp's authenticated host terminal in ``home``."""
     from gateway.run import _profile_runtime_scope
-    from hermes_cli import __version__
-    from hermes_cli.config import TERMINAL_CONFIG_ENV_MAP
-    from hermes_constants import (
-        get_process_hermes_home, reset_hermes_home_override, set_hermes_home_override,
+    from moor_cli import __version__
+    from moor_cli.config import TERMINAL_CONFIG_ENV_MAP
+    from moor_constants import (
+        get_process_moor_home, reset_moor_home_override, set_moor_home_override,
     )
-    from hermes_platform.host.facts import os_family
+    from moor_platform.host.facts import os_family
     from tools.environments.local import build_subprocess_env, served_profile_child_env
     from tools.terminal_scope import enforce_no_refusal, get_terminal_scope
     from tui_gateway.launch_profile_policy import (
         activate_multi_profile_hosting, launch_profile_runtime_scope,
     )
 
-    if home.resolve() != get_process_hermes_home().resolve():
+    if home.resolve() != get_process_moor_home().resolve():
         activate_multi_profile_hosting()
         scope = _profile_runtime_scope(home)
     else:
@@ -122,7 +122,7 @@ def resolve_argv(
     # The startup eager-multiplex guard applies even before a secondary's first
     # request. Home alone cannot authorize passthrough reads; both shell paths
     # need the same complete scope, including the frozen launch environment.
-    override_token = set_hermes_home_override(str(home))
+    override_token = set_moor_home_override(str(home))
     try:
         with scope:
             enforce_no_refusal()
@@ -134,7 +134,7 @@ def resolve_argv(
             base_env.update(terminal_scope)
             env = build_subprocess_env(base=base_env, scrub_secrets=True)
     finally:
-        reset_hermes_home_override(override_token)
+        reset_moor_home_override(override_token)
 
     for key in list(env):
         if key == "npm_config_prefix" or key.startswith(("npm_config_", "npm_package_")):
@@ -143,9 +143,9 @@ def resolve_argv(
         env.pop(key, None)
     env["COLORTERM"] = "truecolor"
     env["TERM"] = "xterm-256color"
-    env["TERM_PROGRAM"] = "Hermes"
+    env["TERM_PROGRAM"] = "Moor"
     env["TERM_PROGRAM_VERSION"] = __version__
-    env["HERMES_DESKTOP_TERMINAL"] = "1"
+    env["MOOR_DESKTOP_TERMINAL"] = "1"
     if lc_ctype := terminal_lc_ctype(env, os_family()):
         env["LC_CTYPE"] = lc_ctype
 

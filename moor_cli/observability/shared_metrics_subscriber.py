@@ -8,7 +8,7 @@ import threading
 from typing import Any
 
 from agent.relay_runtime import RUNTIME_INSTANCE_KEY
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 
 from . import shared_metrics_engagement as engagement
 from . import shared_metrics_signals as signals
@@ -89,7 +89,7 @@ class SharedMetricsSubscriber:
         self._features_done: set[str] = set(store.recorded_features())
         self._saved_tickets: dict[str, int] = {}
         # Events arrive on the Relay thread, which carries no profile binding.
-        self._hermes_home = get_hermes_home()
+        self._moor_home = get_moor_home()
 
     def deactivate(self) -> None:
         """Stop accepting events before telemetry is disabled or torn down."""
@@ -109,7 +109,7 @@ class SharedMetricsSubscriber:
             return
         from .shared_metrics_snapshot import install_age_bucket
 
-        age = install_age_bucket(self._hermes_home)
+        age = install_age_bucket(self._moor_home)
         for milestone in reached:
             self.store.record_milestone(milestone, age, self._client_resource)
             self._milestones_done.add(milestone)
@@ -125,7 +125,7 @@ class SharedMetricsSubscriber:
             try:
                 engagement.record(self.store, self._client_resource, surface=surface, route=route)
             except Exception:
-                logger.warning("Unable to update the Hermes engagement rollup", exc_info=True)
+                logger.warning("Unable to update the Moor engagement rollup", exc_info=True)
 
     def _persist(self, metric_name: str, dimensions: dict, amount: int) -> None:
         store, resource = self.store, self._client_resource
@@ -145,7 +145,7 @@ class SharedMetricsSubscriber:
         reached = [f for f in signals.features_for(metric_name, dimensions) if f not in self._features_done]
         if not reached:
             return
-        age = signals.days_since_install_bucket(self._hermes_home)
+        age = signals.days_since_install_bucket(self._moor_home)
         for feature in reached:
             try:
                 self.store.record_feature_adoption(feature, age, self._client_resource)
@@ -182,7 +182,7 @@ class SharedMetricsSubscriber:
                 except Exception:
                     saved = False
                     logger.warning(
-                        "Unable to persist the Hermes shared metric: %s", metric_name, exc_info=True
+                        "Unable to persist the Moor shared metric: %s", metric_name, exc_info=True
                     )
         if ticket and saved:
             with self._lock:

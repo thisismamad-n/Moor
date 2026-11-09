@@ -40,7 +40,7 @@ def create_overrides(params: dict) -> tuple:
     reasoning_override = None
     if effort := str(params.get("reasoning_effort") or "").strip():
         with contextlib.suppress(Exception):
-            from hermes_constants import parse_reasoning_effort
+            from moor_constants import parse_reasoning_effort
             reasoning_override = parse_reasoning_effort(effort)
     service_tier_override = None
     if params.get("service_tier") is not None:

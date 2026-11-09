@@ -1,6 +1,6 @@
 """Provider error bodies observed in real sessions, through the real SDK exception types.
 
-Every row is a body Hermes actually received (relay traces + agent.log, scrubbed of request ids
+Every row is a body Moor actually received (relay traces + agent.log, scrubbed of request ids
 and account data), raised as the exception class the OpenAI SDK / httpx raises for it, so a
 classifier change is checked against what providers really send rather than hand-written
 strings. Add a row whenever a new production body shows up in a bug report or trace.
@@ -42,27 +42,27 @@ NOT_MULTIMODAL_400 = {"error": {"message": "glm-5.2-fp8 is not a multimodal mode
 # (id, provider, exception, expected reason, retryable, should_fallback)
 OBSERVED = [
     ("connection-error", "custom", openai.APIConnectionError(request=_REQUEST), FailoverReason.timeout, True, False),
-    ("broken-pipe", "nous", httpx.ReadError("[Errno 32] Broken pipe", request=_REQUEST),
+    ("broken-pipe", "moor", httpx.ReadError("[Errno 32] Broken pipe", request=_REQUEST),
      FailoverReason.timeout, True, False),
     ("peer-closed-mid-body", "custom", httpx.RemoteProtocolError(
         "peer closed connection without sending complete message body (incomplete chunked read)", request=_REQUEST),
      FailoverReason.timeout, True, False),
-    ("request-timeout", "nous", openai.APITimeoutError(request=_REQUEST), FailoverReason.timeout, True, False),
-    ("nous-404-no-credits", "nous", _status(openai.NotFoundError, 404, {"status": 404, "message": (
+    ("request-timeout", "moor", openai.APITimeoutError(request=_REQUEST), FailoverReason.timeout, True, False),
+    ("moor-404-no-credits", "moor", _status(openai.NotFoundError, 404, {"status": 404, "message": (
         "Model 'anthropic/claude-opus-5' requires available credits. Your account balance is too low to use paid "
         "models — add credits at https://portal.nousresearch.com or pick a free model.")}),
      FailoverReason.billing, False, True),
-    ("nous-401-invalid-key", "nous", _status(openai.AuthenticationError, 401, {"status": 401, "message": (
+    ("moor-401-invalid-key", "moor", _status(openai.AuthenticationError, 401, {"status": 401, "message": (
         "Your API key is invalid, blocked or out of funds. Please go visit the portal to sort that out: "
         "https://portal.nousresearch.com ")}),
      FailoverReason.auth, False, True),
-    ("cloudflare-502", "nous", _status(openai.InternalServerError, 502, {
+    ("cloudflare-502", "moor", _status(openai.InternalServerError, 502, {
         "type": "https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/"
                 "error-502/", "title": "Error 502: Bad gateway", "status": 502,
         "detail": "The origin web server returned an invalid or incomplete response to Cloudflare.",
         "error_code": 502, "error_name": "origin_bad_gateway", "error_category": "origin"}),
      FailoverReason.server_error, True, False),
-    ("nous-500-unexpected", "nous", _status(openai.InternalServerError, 500, {"status": 500, "message": (
+    ("moor-500-unexpected", "moor", _status(openai.InternalServerError, 500, {"status": 500, "message": (
         "Something unexpected happened while processing your request. Please try again in a moment, or contact us "
         "if the issue persists.")}),
      FailoverReason.server_error, True, False),

@@ -89,15 +89,15 @@ def is_idle(*, active_work_count: int, seconds_since_last_inbound: float,
             and seconds_since_last_inbound >= idle_timeout_seconds)
 
 
-def dashboard_client_heartbeat_path(hermes_home: Optional[os.PathLike | str] = None):
-    """Path of the dashboard-client liveness marker under the process's own HERMES_HOME.
+def dashboard_client_heartbeat_path(moor_home: Optional[os.PathLike | str] = None):
+    """Path of the dashboard-client liveness marker under the process's own MOOR_HOME.
 
     One marker per process, never per profile scope: the gateway's idle watcher reads it with no
     override, so a socket served in a secondary profile's scope must stamp the same file."""
-    if hermes_home is None:
-        from hermes_constants import get_process_hermes_home
-        hermes_home = get_process_hermes_home()
-    return Path(hermes_home) / DASHBOARD_CLIENT_HEARTBEAT_REL
+    if moor_home is None:
+        from moor_constants import get_process_moor_home
+        moor_home = get_process_moor_home()
+    return Path(moor_home) / DASHBOARD_CLIENT_HEARTBEAT_REL
 
 
 def touch_dashboard_client_heartbeat(path: Optional[os.PathLike | str] = None) -> bool:

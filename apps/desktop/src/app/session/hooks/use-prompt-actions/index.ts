@@ -1,10 +1,10 @@
 import type { AppendMessage, ThreadMessage } from '@assistant-ui/react'
-import { isUndeliveredCorrectionRefusal, JsonRpcGatewayError } from '@hermes/shared'
-import { stripAnsi } from '@hermes/shared/ansi'
+import { isUndeliveredCorrectionRefusal, JsonRpcGatewayError } from '@moor/shared'
+import { stripAnsi } from '@moor/shared/ansi'
 import { useStore } from '@nanostores/react'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 
-import { type ResolvedOwner, transcribeAudio } from '@/hermes'
+import { type ResolvedOwner, transcribeAudio } from '@/moor'
 import { useI18n } from '@/i18n'
 import { attachmentPathNeedsUpload } from '@/lib/attachment-upload-policy'
 import { type ChatMessage, textPart } from '@/lib/chat-messages'
@@ -138,7 +138,7 @@ export async function uploadComposerAttachment(
   // source descriptor here. Absence means an older browser backend/native file
   // and retains the existing byte-upload rules.
   const stagedUpload = attachment.kind === 'file'
-    ? attachment.stagedUpload ?? window.hermesDesktop?.getStagedFileForAttach?.(path)
+    ? attachment.stagedUpload ?? window.moorDesktop?.getStagedFileForAttach?.(path)
     : undefined
 
   if (stagedUpload && stagedUpload.path !== path) {

@@ -110,7 +110,7 @@ def test_update_cleanup_spares_backend_owned_by_valid_ssh_lock(tmp_path, monkeyp
         assert pid in exclude_pids
         return []
 
-    # ``restart_managed`` first probes for a managed hermes-dashboard unit; unstubbed, that
+    # ``restart_managed`` first probes for a managed moor-dashboard unit; unstubbed, that
     # probe found the developer's real unit and restarted it.
     calls: list[list[str]] = []
 
@@ -119,7 +119,7 @@ def test_update_cleanup_spares_backend_owned_by_valid_ssh_lock(tmp_path, monkeyp
         return MagicMock(returncode=0, stdout="", stderr="")
 
     with patch("subprocess.run", side_effect=fake_run), patch(
-        "hermes_cli.main_dashboard._find_stale_dashboard_pids",
+        "moor_cli.main_dashboard._find_stale_dashboard_pids",
         side_effect=assert_owned_pid_is_excluded,
     ):
         result = _kill_stale_dashboard_processes(restart_managed=True)
@@ -379,7 +379,7 @@ class TestSupervisedBackendRestart:
         backend supervises it; any other unit is not restarted and the backend is respawned from
         its argv instead."""
         live = self._live()
-        argv = ["hermes", "dashboard", "--port", "8300"]
+        argv = ["moor", "dashboard", "--port", "8300"]
         unit_cgroup = "/system.slice/hosted-compute-agent.service"
         probes: list[list[str]] = []
 
@@ -397,7 +397,7 @@ class TestSupervisedBackendRestart:
              patch.object(main_dashboard, "_pid_unified_cgroup_entries", lambda pid: iter([unit_cgroup])), \
              patch.object(main_dashboard, "_run_probe", side_effect=fake_probe), \
              patch.object(main_dashboard, "_dashboard_cmdline_for_pid", return_value=argv), \
-             patch("hermes_cli.dashboard_procs._hermes_home_for_pid", return_value=None), \
+             patch("moor_cli.dashboard_procs._moor_home_for_pid", return_value=None), \
              patch.object(live, "_respawn_dashboard_processes", return_value=[]) as respawn, \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
@@ -528,7 +528,7 @@ class TestManualBackendRespawn:
 
         with patch.object(live.subprocess, "Popen", side_effect=OSError("no such file")), \
              patch.object(live.time, "sleep"):
-            failed = live._respawn_dashboard_processes([["hermes", "serve"]])
+            failed = live._respawn_dashboard_processes([["moor", "serve"]])
 
         assert failed == [["moor", "serve"]]
 
@@ -537,7 +537,7 @@ class TestManualBackendRespawn:
         this install's launcher command instead of being replayed verbatim after the PM
         takeover rewrote the launcher into a shell shim (#124778)."""
         live = self._live()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         spawned: list[list[str]] = []
 
         class _FakePopen:
@@ -548,11 +548,11 @@ class TestManualBackendRespawn:
                 return None
 
         captured = [
-            "/old/venv/bin/python", "/home/u/.local/bin/hermes",
+            "/old/venv/bin/python", "/home/u/.local/bin/moor",
             "dashboard", "--no-open", "--host", "127.0.0.1", "--port", "34553",
         ]
-        from hermes_cli import _launchers
-        from hermes_cli._launchers import runtime_command
+        from moor_cli import _launchers
+        from moor_cli._launchers import runtime_command
 
         with patch.object(live.subprocess, "Popen", _FakePopen), \
              patch.object(live.time, "sleep"), \
@@ -569,7 +569,7 @@ class TestManualBackendRespawn:
         must surface as a failure, never as ``✓ restarted`` (#124778), reported with the
         caller's argv so it matches the stopped PID's cmdline (#109290)."""
         live = self._live()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
 
         class _DyingPopen:
             returncode = 1
@@ -582,10 +582,10 @@ class TestManualBackendRespawn:
 
         with patch.object(live.subprocess, "Popen", _DyingPopen), \
              patch.object(live.time, "sleep"):
-            failed = live._respawn_dashboard_processes([["hermes", "dashboard", "--port", "8300"]])
+            failed = live._respawn_dashboard_processes([["moor", "dashboard", "--port", "8300"]])
 
         out = capsys.readouterr().out
-        assert failed == [["hermes", "dashboard", "--port", "8300"]]
+        assert failed == [["moor", "dashboard", "--port", "8300"]]
         assert "✓ restarted" not in out
         assert "✗ failed to restart" in out
 

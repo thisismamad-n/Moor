@@ -7,7 +7,7 @@ import json
 import pytest
 from websockets.exceptions import ConnectionClosedError
 
-from hermes_cli.gateway_client import GatewayClient, GatewayClientError
+from moor_cli.gateway_client import GatewayClient, GatewayClientError
 
 
 @pytest.mark.asyncio
@@ -34,7 +34,7 @@ async def test_idle_composer_exits_with_unknown_outcome_when_owner_dies_without_
     unknown-outcome hint; the pending line read is cancelled rather than awaited forever."""
     from websockets.asyncio.server import serve
 
-    from hermes_cli import gateway_chat
+    from moor_cli import gateway_chat
 
     snapshot = {"stored_session_id": "stored", "execution_generation": 1, "pending": []}
     attached = asyncio.Event()
@@ -62,7 +62,7 @@ async def test_idle_composer_exits_with_unknown_outcome_when_owner_dies_without_
     monkeypatch.setattr("prompt_toolkit.patch_stdout.patch_stdout", nullcontext)
     async with serve(peer, "127.0.0.1", 0) as server:
         port = server.sockets[0].getsockname()[1]
-        monkeypatch.setenv("HERMES_TUI_GATEWAY_URL", f"ws://127.0.0.1:{port}")
+        monkeypatch.setenv("MOOR_TUI_GATEWAY_URL", f"ws://127.0.0.1:{port}")
         viewer = asyncio.create_task(gateway_chat.run_gateway_chat(argparse.Namespace(resume="stored")))
         await asyncio.wait_for(attached.wait(), 5)
         server.close(close_connections=True)

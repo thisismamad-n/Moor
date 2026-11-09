@@ -20,8 +20,8 @@ def local_route(tmp_path, monkeypatch):
     monkeypatch.setattr(endpoint, "_state_endpoint", lambda: route)
     monkeypatch.setattr(endpoint, "resolve_llamacpp_endpoint", lambda **kw: route)
     monkeypatch.setattr(server, "_probe_credentials", lambda agent: None)
-    monkeypatch.setattr("hermes_cli.banner.get_update_result", lambda **kw: None)
-    monkeypatch.setattr("hermes_cli.banner.get_available_skills", dict)
+    monkeypatch.setattr("moor_cli.banner.get_update_result", lambda **kw: None)
+    monkeypatch.setattr("moor_cli.banner.get_available_skills", dict)
     return route, {"cwd": str(tmp_path), "session_key": "local-identity"}
 
 
@@ -93,8 +93,8 @@ def test_session_info_recovers_identity_from_the_owning_profile(tmp_path, monkey
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(server, "_moor_home", launch)
     monkeypatch.setattr(server, "_probe_credentials", lambda agent: None)
-    monkeypatch.setattr("hermes_cli.banner.get_update_result", lambda **kw: None)
-    monkeypatch.setattr("hermes_cli.banner.get_available_skills", dict)
+    monkeypatch.setattr("moor_cli.banner.get_update_result", lambda **kw: None)
+    monkeypatch.setattr("moor_cli.banner.get_available_skills", dict)
     agent = SimpleNamespace(model="same-model", provider="custom", base_url=url,
                             reasoning_config=None, service_tier=None, session_id="profile-identity")
     session = {"cwd": str(tmp_path), "session_key": "profile-identity", "profile_home": str(secondary)}

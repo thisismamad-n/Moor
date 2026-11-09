@@ -425,7 +425,7 @@ no API server is enabled); it serves three kinds of profile-prefixed paths:
   `/p/<profile>/<the adapter's usual path>` to it. See
   [Inbound-port platforms under the multiplexer](#inbound-port-platforms-under-the-multiplexer).
 - **WhatsApp (bridge) runs per paired profile.** Pair each secondary with
-  `hermes -p work whatsapp`. Each profile uses its own session and bridge port;
+  `moor -p work whatsapp`. Each profile uses its own session and bridge port;
   an unpaired profile is skipped with `whatsapp_unpaired` and a pairing remedy.
   See [WhatsApp multi-profile setup](messaging/whatsapp.md#multiple-profiles).
 - **Relay remains shared ingress owned by the default profile.** Enable and
@@ -567,7 +567,7 @@ parent conversation.
 
 #### 5. One PID/lock and one status surface
 
-There is a single process-level PID and lock (the multiplexer, under the default home). `hermes status --full` on the default profile reports the multiplexer and lists the profiles it serves (`Serves: coder, research`). `hermes -p coder status` and `hermes -p coder gateway status` report "running via the default-profile multiplexer" instead of "stopped". The dashboard's `/api/status?profile=coder` / Channels page report the multiplexer as coder's running gateway, with coder's own adapters as its platforms. The single `gateway_state.json` lives under the default home: secondary adapters appear there as `<profile>:<platform>` entries beside `served_profiles`; no per-profile gateway status file is written.
+There is a single process-level PID and lock (the multiplexer, under the default home). `moor status --full` on the default profile reports the multiplexer and lists the profiles it serves (`Serves: coder, research`). `moor -p coder status` and `moor -p coder gateway status` report "running via the default-profile multiplexer" instead of "stopped". The dashboard's `/api/status?profile=coder` / Channels page report the multiplexer as coder's running gateway, with coder's own adapters as its platforms. The single `gateway_state.json` lives under the default home: secondary adapters appear there as `<profile>:<platform>` entries beside `served_profiles`; no per-profile gateway status file is written.
 
 `moor -p coder cron status` names the single host gateway and the profiles it serves — `Scheduler host: the host gateway (PID 4211) serving profiles default, coder` — then checks coder's own ticker heartbeat and last successful tick. A missing or stale heartbeat produces a warning rather than an unconditional running verdict. `cron list` and `cron create` also warn when a served profile has no fresh heartbeat. `cron status` adds tick-failure details that those lightweight checks do not read.
 
@@ -677,7 +677,7 @@ profile and never shares with the default or any sibling:
 | Working directory of a turn (unset `terminal.cwd`) | Same rule as a standalone gateway: `$HOME` for the local backend, sandbox default otherwise | Never the directory the multiplexer process was launched from |
 | Command approvals (`command_allowlist`, "always" choices) | The profile's own `config.yaml` | A default-profile "always" never pre-approves a secondary's command; a secondary's choice is saved to its own config |
 | Sandbox credential-file mounts (`terminal.credential_files`), `security.redact_secrets`, `browser.*` engine/headed flags, `lsp.*`, auxiliary-provider health marks, `logs/mcp-stderr.log` | The profile's own `config.yaml` / `.env` | Documented default — never the launch profile's cached value |
-| Cloud-SDK credential clients (Bedrock boto3 clients + model discovery, Azure Entra credential), credential-fetched catalogs (DeepInfra, plugin-provider context limits, Nous reasoning caps, Ramp Router efforts, xAI / OpenRouter image models, custom-endpoint `/models`), computer-use aux-vision routing, remote-backend probe text, learned image token costs, `display.skin`, guest-mint back-off, banner skills, Yuanbao "active" adapter, Langfuse client | The profile's own `.env` / `config.yaml` / `<home>/cache` | Documented default — never the launch profile's cached value or its credentials |
+| Cloud-SDK credential clients (Bedrock boto3 clients + model discovery, Azure Entra credential), credential-fetched catalogs (DeepInfra, plugin-provider context limits, Moor reasoning caps, Ramp Router efforts, xAI / OpenRouter image models, custom-endpoint `/models`), computer-use aux-vision routing, remote-backend probe text, learned image token costs, `display.skin`, guest-mint back-off, banner skills, Yuanbao "active" adapter, Langfuse client | The profile's own `.env` / `config.yaml` / `<home>/cache` | Documented default — never the launch profile's cached value or its credentials |
 | Session-search knobs (`sessions.cjk_fts`, `sessions.search_slow_ms`) | The profile's `config.yaml` | Documented default — never the default profile's bridged value |
 | RoomLink capability catalog and the signed execution policy it advertises to a remote Bot (`approvals.mode`, `agent.max_turns`, `platform_toolsets.api_server`) | The served profile named by the request (`/p/<profile>/v1/room-members/...`, the RPC `profile` param); `target_profile` is **required** on every catalog — there is no `MOOR_PROFILE` fallback | Invitation/capabilities fail with the offending `target_profile` named; a profile that does not exist is refused, never resolved from the launch profile's config |
 | Platform proxies (`TELEGRAM_PROXY`, `DISCORD_PROXY`, `HTTPS_PROXY`, …) | The profile's own `.env` | Direct connection — never the default profile's proxy |
@@ -739,11 +739,11 @@ hot-added profile that reuses another profile's token is parked with a
 
 Hot-serving also grows the multiplexer's **profile reservation**: the new
 profile's `gateway.lock` is taken and its own session authority is built, so
-`hermes -p <name>` finds the multiplexer as its owner (no stray per-profile
-daemon) and the next `hermes gateway restart` reserves the whole set cleanly.
+`moor -p <name>` finds the multiplexer as its owner (no stray per-profile
+daemon) and the next `moor gateway restart` reserves the whole set cleanly.
 A profile whose `state.db` cannot be opened is **parked** — logged as
 `Profile '<name>' not served`, left out of `served_profiles` — and every other
-profile keeps booting; fix the store and re-run `hermes profile create` or wait
+profile keeps booting; fix the store and re-run `moor profile create` or wait
 for the periodic rescan.
 
 ### Routing shared-bot chats to profiles (`profile_routes`)
@@ -1193,14 +1193,14 @@ behaviour described above.
 
 The same setting covers a gateway that booted with only the default profile.
 Normally, once you create a second profile (Desktop's New Agent or
-`hermes profile create`), that gateway starts serving every profile in place,
+`moor profile create`), that gateway starts serving every profile in place,
 with no restart. With `auto_multiplex_migration: false` it keeps serving only
 its own profile, and the new profile is refused with that reason until you run
-`hermes gateway migrate --multiplex` or set the key back to `true`. The key is
+`moor gateway migrate --multiplex` or set the key back to `true`. The key is
 re-read on every profile rescan, so setting it back takes effect within about
 30 seconds, with no restart.
 
-The explicit command is different: `hermes gateway migrate --multiplex` with
+The explicit command is different: `moor gateway migrate --multiplex` with
 two or more profiles and **no** standalone secondary gateway still applies the
 one remaining step — it sets `gateway.multiplex_profiles: true` and (re)starts
 the default gateway. You asked for multiplex; you get multiplex.

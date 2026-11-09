@@ -3,12 +3,12 @@
 they install; the dashboard looks a hub hit up by its id and, for ClawHub, its card id.
 
 ClawHub records ``@owner/slug`` in the lock, a catalog card installs ``clawhub/<slug>``,
-and the hermes-index / hub search list the bare slug."""
+and the moor-index / hub search list the bare slug."""
 
 import asyncio
 
-from hermes_cli.web_routers.skills import search_skills_hub
-from hermes_cli.web_server_profiles import _installed_hub_identifiers
+from moor_cli.web_routers.skills import search_skills_hub
+from moor_cli.web_server_profiles import _installed_hub_identifiers
 from tools.skills_hub import HubLockFile
 from tools.skills_hub_models import SkillMeta
 

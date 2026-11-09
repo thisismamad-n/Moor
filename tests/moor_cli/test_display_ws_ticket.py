@@ -68,7 +68,7 @@ def _viewer_app(monkeypatch):
     from fastapi import FastAPI
     from starlette.testclient import TestClient
 
-    from hermes_cli import web_server
+    from moor_cli import web_server
 
     async def watch(ws, _info):
         while (await ws.receive())["type"] != "websocket.disconnect":
@@ -85,15 +85,15 @@ def _viewer_app(monkeypatch):
 
 def _viewer_ticket(**extra):
     return ws_tickets.mint_ticket(user_id="display:v", provider="bot-desktop",
-                                  extra={"hermes_home": "/srv/hermes/bot-a", "viewer_id": "v", **extra})
+                                  extra={"moor_home": "/srv/moor/bot-a", "viewer_id": "v", **extra})
 
 
 def test_signing_out_closes_a_screen_viewer_a_browser_tab_opened(monkeypatch):
     """A viewer opened from a signed-in tab watches, and while it holds the lease drives, the agent's
     screen: it closes with the tab's other sockets when the browser signs out. A viewer a native
     client opened (no browser credential on its ticket) stays."""
-    from hermes_cli import browser_credential, web_server, web_session_sockets
-    from tests.hermes_cli.test_webapp_sign_out_sockets import _close_code
+    from moor_cli import browser_credential, web_server, web_session_sockets
+    from tests.moor_cli.test_webapp_sign_out_sockets import _close_code
 
     ws_tickets._reset_for_tests()
     client = _viewer_app(monkeypatch)
@@ -109,8 +109,8 @@ def test_signing_out_closes_a_screen_viewer_a_browser_tab_opened(monkeypatch):
 
 
 def test_a_screen_viewer_ticket_from_a_signed_out_tab_opens_nothing(monkeypatch):
-    from hermes_cli import browser_credential, web_server
-    from tests.hermes_cli.test_webapp_sign_out_sockets import _close_code
+    from moor_cli import browser_credential, web_server
+    from tests.moor_cli.test_webapp_sign_out_sockets import _close_code
 
     ws_tickets._reset_for_tests()
     client = _viewer_app(monkeypatch)

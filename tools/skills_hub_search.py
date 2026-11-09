@@ -167,9 +167,9 @@ def _index_miss_fallback_sources(
     provider filter every source's results are narrowed before they are
     counted and merged, so callers need no provider logic of their own.
     """
-    if not query.strip() or provider_filter or not any(src.source_id() == "hermes-index" for src in active):
+    if not query.strip() or provider_filter or not any(src.source_id() == "moor-index" for src in active):
         return []
-    if source_counts.get("hermes-index") != 0:
+    if source_counts.get("moor-index") != 0:
         return []
     return [src for src in sources if src.source_id() in _INDEX_MISS_FALLBACK_IDS and src not in active]
 

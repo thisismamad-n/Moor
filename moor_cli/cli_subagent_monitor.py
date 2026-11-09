@@ -10,8 +10,8 @@ import time
 from prompt_toolkit.utils import get_cwidth
 
 from agent.i18n import t
-from hermes_cli import cli_process_dock as procs
-from hermes_cli import cli_session_dock as session_rows
+from moor_cli import cli_process_dock as procs
+from moor_cli import cli_session_dock as session_rows
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class SubagentMonitor:
     def subagents(self):
         """The subagent backend: the gateway session's view when its children run there (CLI-12),
         else this process's own registry; both answer the same ``subagent_*`` calls."""
-        from hermes_cli.gateway_tools import LocalSubagents, process_view
+        from moor_cli.gateway_tools import LocalSubagents, process_view
         view = process_view()
         if view is not None:
             return view

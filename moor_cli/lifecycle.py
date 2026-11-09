@@ -22,7 +22,7 @@ def _observe(hook_name: str, **kwargs: Any) -> None:
 
 
 def _plugin_hooks(hook_name: str, **kwargs: Any) -> list[Any]:
-    from hermes_cli import plugins
+    from moor_cli import plugins
 
     return plugins.invoke_hook(hook_name, **kwargs)
 

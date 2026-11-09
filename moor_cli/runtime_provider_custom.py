@@ -11,7 +11,7 @@ import logging
 import os
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from hermes_cli.providers import custom_provider_aliases, custom_provider_slug
+from moor_cli.providers import custom_provider_aliases, custom_provider_slug
 from agent.custom_entry_pool import custom_entry_for_endpoint, entry_declares_credential, entry_scoped_pool
 from agent.secret_scope import get_secret_str
 from utils import base_url_hostname
@@ -37,7 +37,7 @@ def _normalize_base_url_for_match(value) -> str:
 
 def _route_key(value) -> str:
     """An endpoint compared for identity: scheme and host fold case, the path does not."""
-    from hermes_cli.route_identity import normalize_route_base_url
+    from moor_cli.route_identity import normalize_route_base_url
     return normalize_route_base_url(_clean(value))
 
 
@@ -149,7 +149,7 @@ def _match_new_style_provider(
     requested_norm: str, providers: dict[str, Any], *, resolve_credentials: bool = True,
 ) -> Optional[tuple[dict[str, Any], Any]]:
     """Scan ``providers:`` (new-style, keyed) for ``requested_norm``; ``(entry, config key)``."""
-    from hermes_cli.config import is_provider_enabled
+    from moor_cli.config import is_provider_enabled
     rp = _rp()
     for ep_name, entry in providers.items():
         # ``providers.<name>.enabled: false`` entries stay in config but are invisible here.
@@ -260,7 +260,7 @@ def _select_named_custom_provider(
 def _compatible_entry_path(config: dict[str, Any], entry: dict[str, Any]) -> Optional[tuple]:
     """Where a ``get_compatible_custom_providers`` entry lives in *config*. The view keeps the first
     of identical legacy entries, so the first raw entry normalizing to it is its source."""
-    from hermes_cli.config_providers import _normalize_custom_provider_entry
+    from moor_cli.config_providers import _normalize_custom_provider_entry
     providers = config.get("providers")
     key = entry.get("provider_key")
     if key and isinstance(providers, dict):
@@ -304,7 +304,7 @@ def _find_custom_identity(matches: Callable[[dict[str, Any]], bool],
     holds (*prefer* when it is one of them), as its canonical ``custom:<name>`` slug. A legacy entry
     whose slug a ``providers:`` entry with an endpoint owns never matches: runtime resolution runs that one.
     *config* defaults to the active profile's."""
-    from hermes_cli.config import is_provider_enabled
+    from moor_cli.config import is_provider_enabled
     rp = _rp()
     try:
         config = rp.load_config() if config is None else config
@@ -395,7 +395,7 @@ def _endpoint_identity(base_url: str) -> Optional[str]:
         return identity
     # The managed server has no custom-provider config entry. Recover its menu key
     # from the ownership-checked endpoint, never from a model name or a fixed port.
-    from hermes_cli.local_runtime.endpoint import _state_endpoint
+    from moor_cli.local_runtime.endpoint import _state_endpoint
     endpoint = _state_endpoint()
     if endpoint and _route_key(base_url) == _route_key(endpoint["base_url"]):
         return "llamacpp"
@@ -621,8 +621,8 @@ def _resolve_llamacpp_runtime(requested_provider: str, explicit_api_key: Optiona
                                            "model with /model.", retryable=True)
     # Every chat surface (messaging, TUI, Webapp) shows this sentence, so it names both places a
     # user can start the server and no Desktop-only pane; the Desktop client links its pane itself.
-    raise LocalRuntimeUnavailableError("The local model server is turned off. Start it from the Hermes "
-                                       "desktop app or `hermes model` → Local models, or switch to "
+    raise LocalRuntimeUnavailableError("The local model server is turned off. Start it from the Moor "
+                                       "desktop app or `moor model` → Local models, or switch to "
                                        "another model with /model.")
 
 
@@ -730,7 +730,7 @@ def _resolve_named_custom_runtime(*, requested_provider: str, explicit_api_key: 
     if not base_url:
         return None
     explicit_key = (explicit_api_key or "").strip()
-    # The credential pool is the profile's auth store (``hermes auth add``), not config: a frozen
+    # The credential pool is the profile's auth store (``moor auth add``), not config: a frozen
     # config snapshot still owes a pooled ``providers:`` entry its keys, or the turn ships the
     # ``no-key-required`` placeholder to a host that wants one (C11 pool rows). An explicit launch
     # key is the operator's credential for this route and wins over the pool (R2-M1). An entry

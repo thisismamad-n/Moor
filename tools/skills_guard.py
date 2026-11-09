@@ -291,7 +291,7 @@ THREAT_PATTERNS = [
      r'|(?:tmp|var/tmp|dev/shm|run|var/lib/apt/lists|var/cache/(?:apt|apk|yum|dnf))/(?:[^/\s]*/)*\.\.(?=/|[\s;&|]|$))',
      "destructive_root_rm", "critical", "destructive", "recursive delete from root"),
     # ``rm`` / ``rmdir`` need a left boundary that excludes letters/digits: without it the ``rm`` in
-    # English prose (``the platfoRM rOute to ~/.hermes/config.yaml``) matched a recursive home delete.
+    # English prose (``the platfoRM rOute to ~/.moor/config.yaml``) matched a recursive home delete.
     (r'(?<![A-Za-z0-9])rm\s+(-[^\s]*)?r.*(?:\$HOME|~[/\s*]|~$)|(?<![A-Za-z0-9])rmdir\s+.*(?:\$HOME|~[/\s*]|~$)',
      "destructive_home_rm", "critical", "destructive", "recursive delete targeting home directory ($HOME or ~)"),
     (r'chmod\s+777', "insecure_perms", "medium", "destructive", "sets world-writable permissions"),
@@ -433,7 +433,7 @@ THREAT_PATTERNS = [
     # invocation: any client plugin that relays Moor' secure prompts has to name them, and a bare
     # `\bsudo\b` made every such plugin `caution`. A dotted event name is never a shell `sudo`.
     # ``sudo.request`` / ``sudo.respond`` / ``sudo.expire`` are gateway wire events (the masked
-    # sudo-password prompt lifecycle), not an invocation: any client plugin that relays Hermes' secure
+    # sudo-password prompt lifecycle), not an invocation: any client plugin that relays Moor' secure
     # prompts has to name them, and a bare ``\bsudo\b`` made every such plugin ``caution``. A dotted
     # event name (``sudo.<verb>``) is never a shell ``sudo``.
     (r'\bsudo\b(?!\.\w)',

@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 
 from agent.azure_identity_adapter import is_token_provider
 from agent.secret_scope import get_secret_str
-from hermes_constants import OPENROUTER_BASE_URL
+from moor_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, base_url_origin
 
 
@@ -158,18 +158,18 @@ def _resolve_openrouter_runtime(
     )
     # A bare ``custom`` route to a URL a ``providers:`` entry owns, when that entry declares a credential:
     # the entry's key replaces the implicit env keys (on its built-in's host those are another account's).
-    from hermes_cli.runtime_provider_custom import _model_cfg_key_env_for, _owning_entry_credential
+    from moor_cli.runtime_provider_custom import _model_cfg_key_env_for, _owning_entry_credential
     declared, entry_key = _owning_entry_credential(rp, base_url) if requested_norm == "custom" else (False, "")
     if is_openrouter_context:
         # Same read order as the credential pool and _resolve_api_key_provider_secret
         # (.env, then scope-aware os.environ, raw op:// references yielding to the resolved
         # scoped value). get_secret_str sees os.environ only, so a key living solely in
-        # ~/.hermes/.env was lost once the pool entry went exhausted/benched (#117667).
+        # ~/.moor/.env was lost once the pool entry went exhausted/benched (#117667).
         # OPENAI_API_KEY is a legacy home for an OpenRouter key. When OPENAI_BASE_URL binds it, it
         # goes only to that origin: another scheme or port on the same host is another endpoint.
         # Unbound, openrouter.ai gets it only when it is OpenRouter-shaped (sk-or-), so a real OpenAI
         # key never reaches a third party.
-        from hermes_cli.config import get_env_value_prefer_dotenv
+        from moor_cli.config import get_env_value_prefer_dotenv
         openai_key = get_env_value_prefer_dotenv("OPENAI_API_KEY") or ""
         openai_base_url = get_secret_str("OPENAI_BASE_URL", "").strip()
         if base_url_hostname(openai_base_url):

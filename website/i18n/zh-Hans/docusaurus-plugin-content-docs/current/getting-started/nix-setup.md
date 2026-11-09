@@ -658,16 +658,16 @@ services.moor-agent.extraPythonPackages = [
 
 ### 可选依赖组（`extraDependencyGroups`）
 
-对于已在 hermes-agent 的 `pyproject.toml` 中声明、但所选包尚未附带的可选 extras，使用 `extraDependencyGroups` 在构建时将其包含到封闭的 venv 中：
+对于已在 moor-agent 的 `pyproject.toml` 中声明、但所选包尚未附带的可选 extras，使用 `extraDependencyGroups` 在构建时将其包含到封闭的 venv 中：
 
 ```nix
 # 在包已附带的组之上添加 Google Meet 支持
-services.hermes-agent.extraDependencyGroups = [ "google-meet" ];
+services.moor-agent.extraDependencyGroups = [ "google-meet" ];
 ```
 
 这由 uv 与核心依赖在单次解析中完成——不需要 PYTHONPATH 补丁，没有冲突风险。可用的组与 `pyproject.toml` 中 `[project.optional-dependencies]` 的键对应（例如 `"google-meet"`、`"voice"`、`"matrix"`、`"mistral"`、`"bedrock"`）。
 
-`extraDependencyGroups` 和 `extraPythonPackages` 是在所选包已附带的组之上**追加**，从不替换它们。`default` 包已附带 `messaging`、`voice`、`exa` 等组，因此再写这些组不会有任何变化；`pkgs.hermes-agent.override { extraDependencyGroups = [ ... ]; }` 同理。如需更小的构建，请从更小的包开始：`package = inputs.hermes-agent.packages.${system}.minimal;`（或 `#messaging`），或使用 `.override { defaultDependencyGroups = [ ]; }` 去掉附带的组，只列出你需要的组。
+`extraDependencyGroups` 和 `extraPythonPackages` 是在所选包已附带的组之上**追加**，从不替换它们。`default` 包已附带 `messaging`、`voice`、`exa` 等组，因此再写这些组不会有任何变化；`pkgs.moor-agent.override { extraDependencyGroups = [ ... ]; }` 同理。如需更小的构建，请从更小的包开始：`package = inputs.moor-agent.packages.${system}.minimal;`（或 `#messaging`），或使用 `.override { defaultDependencyGroups = [ ]; }` 去掉附带的组，只列出你需要的组。
 
 **何时使用哪个：**
 
@@ -700,10 +700,10 @@ services.moor-agent = {
   outputs = { moor-agent, nixpkgs, ... }: {
     nixpkgs.overlays = [ moor-agent.overlays.default ];
     # 然后：
-    #   pkgs.hermes-agent.override { extraPythonPackages = [...]; }
-    #   pkgs.hermes-agent.override { extraDependencyGroups = [ "google-meet" ]; }
+    #   pkgs.moor-agent.override { extraPythonPackages = [...]; }
+    #   pkgs.moor-agent.override { extraDependencyGroups = [ "google-meet" ]; }
     # 两者都是在 default 包附带的组之上追加。要去掉附带的组：
-    #   pkgs.hermes-agent.override { defaultDependencyGroups = [ ]; }
+    #   pkgs.moor-agent.override { defaultDependencyGroups = [ ]; }
   };
 }
 ```

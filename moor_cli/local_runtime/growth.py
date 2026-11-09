@@ -70,13 +70,13 @@ def maybe_grow_window(model_id: str, *, base_url: str, session_tokens: int,
     re-prefill growth is safe at any call: the next request rebuilds server state in the larger
     window — nothing rewinds.
     """
-    from hermes_cli.local_runtime.bootstrap import (
+    from moor_cli.local_runtime.bootstrap import (
         _launch_budget, get_supervisor, refresh_local_runtime, staged_models)
-    from hermes_cli.local_runtime.context_policy import growth_decision
-    from hermes_cli.local_runtime.estimator import as_loaded, profile_from_gguf
-    from hermes_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
-    from hermes_cli.local_runtime.hardware import probe_budget
-    from hermes_cli.local_runtime.presets import (
+    from moor_cli.local_runtime.context_policy import growth_decision
+    from moor_cli.local_runtime.estimator import as_loaded, profile_from_gguf
+    from moor_cli.local_runtime.gguf import model_id_from_stem, read_gguf_header
+    from moor_cli.local_runtime.hardware import probe_budget
+    from moor_cli.local_runtime.presets import (
         preset_for_model, read_preset_decisions, resident_footprint)
 
     sup = get_supervisor()

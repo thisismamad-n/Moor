@@ -1,5 +1,5 @@
-"""External-tool checks for hermes doctor: terminal backends, git/rg, Node + Chromium, npm audit, tool availability.
-Split out of ``hermes_cli/doctor.py``, which re-exports every name so ``hermes_cli.doctor.<name>`` keeps resolving (and monkeypatching)."""
+"""External-tool checks for moor doctor: terminal backends, git/rg, Node + Chromium, npm audit, tool availability.
+Split out of ``moor_cli/doctor.py``, which re-exports every name so ``moor_cli.doctor.<name>`` keeps resolving (and monkeypatching)."""
 
 from __future__ import annotations
 
@@ -314,7 +314,7 @@ def _check_terminal_backend(should_fix: bool, f: Finding) -> None:
 def _chromium_not_needed_reason() -> str:
     """Why this profile's config needs no local Chromium (``""`` when it does). Config-only, no I/O: a CDP
     override attaches to the user's browser, Lightpanda is its own engine, and a cloud provider hosts one."""
-    from hermes_cli.config import cfg_get, load_config_readonly
+    from moor_cli.config import cfg_get, load_config_readonly
 
     config = load_config_readonly()
     if os.environ.get("BROWSER_CDP_URL") or cfg_get(config, "browser", "cdp_url"):
@@ -329,7 +329,7 @@ def _check_chromium(should_fix: bool) -> None:
     """The Chromium browser_exec launches for a local session (``chromium_executable()``: browser.executable_path,
     pm, the Docker image's baked build, a Termux system build). Only --fix may acquire it through PM."""
     import pm
-    from hermes_cli.browser_runtime import chromium_executable, chromium_missing_hint
+    from moor_cli.browser_runtime import chromium_executable, chromium_missing_hint
 
     found = chromium_executable()
     if not found and should_fix and not _is_termux():
@@ -378,7 +378,7 @@ def _check_node_and_browser(should_fix: bool, f: Finding) -> None:
     elif _is_termux():
         check_info("Node.js not found (optional; install on Termux with: pkg install nodejs)")
     else:
-        check_warn("Node.js not found", "(optional; run: hermes pm install node)")
+        check_warn("Node.js not found", "(optional; run: moor pm install node)")
     _check_chromium(should_fix)
     _check_lightpanda()
 
@@ -399,12 +399,12 @@ def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], manual
     prescribes a local mutating fix command. See #116774.
     """
     import json
-    from hermes_constants import with_hermes_node_path
+    from moor_constants import with_moor_node_path
     try:
         # Resolved absolute path so Windows can execute npm.cmd (CreateProcessW can't run bare .cmd names).
         audit_result = subprocess.run([npm_bin, "audit", "--json", *audit_extra], cwd=str(npm_dir),
                                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30,
-                                      env=with_hermes_node_path(), check=False)
+                                      env=with_moor_node_path(), check=False)
         audit_data = json.loads(audit_result.stdout) if audit_result.stdout.strip() else {}
         counts = audit_data.get("metadata", {}).get("vulnerabilities", {})
         critical, high, moderate = (counts.get(k, 0) for k in ("critical", "high", "moderate"))
@@ -439,7 +439,7 @@ def _check_npm_audit(should_fix: bool, f: Finding) -> None:
     resolved for a routine check; web and ui-tui via --workspace. The WhatsApp bridge may live under a writable
     MOOR_HOME mirror rather than the (possibly read-only) Docker install tree, hence the shared resolver.
     """
-    from hermes_cli.doctor import PROJECT_ROOT
+    from moor_cli.doctor import PROJECT_ROOT
     staged = _pm_tool_path("npm")
     npm_bin = str(staged) if staged else (_safe_which("npm") if _is_termux() else None)
     if npm_bin:
@@ -497,15 +497,15 @@ def _check_tool_availability(should_fix: bool, f: Finding) -> None:
     # disabled toolsets may warn above but must not pollute it.
     api_disabled = _missing_api_key_toolsets_for_summary(unavailable)
     if api_disabled or any(status != "ok" for status, _, _ in web_rows):
-        f.issues.append("Run 'hermes setup' to configure missing API keys for full tool access")
+        f.issues.append("Run 'moor setup' to configure missing API keys for full tool access")
     _warn_partially_stripped_toolsets(f)
 
 
 def _warn_partially_stripped_toolsets(f: Finding) -> None:
     """An enabled CLI toolset that agent.disabled_toolsets cuts down still reads as available above;
     name the missing tools and the entry removing them (#134593)."""
-    from hermes_cli.config import load_config
-    from hermes_cli.tools_config import _get_platform_tools, toolsets_partially_stripped
+    from moor_cli.config import load_config
+    from moor_cli.tools_config import _get_platform_tools, toolsets_partially_stripped
     config = load_config() or {}
     for ts, (tools, by, hint) in toolsets_partially_stripped(config, _get_platform_tools(config, "cli")).items():
         check_warn(f"{ts} (partly disabled)", f"({', '.join(tools)} removed by agent.disabled_toolsets: {', '.join(by)})")

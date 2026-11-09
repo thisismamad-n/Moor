@@ -1,4 +1,4 @@
-"""v5 signals: hermes.tool_unavailable.count, hermes.provider_setup.count, hermes.feature_adoption.count."""
+"""v5 signals: moor.tool_unavailable.count, moor.provider_setup.count, moor.feature_adoption.count."""
 
 from __future__ import annotations
 
@@ -11,18 +11,18 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.observability import relay_shared_metrics
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_setup as setup_metrics
-from hermes_cli.observability import shared_metrics_signals as signals
-from hermes_cli.observability.shared_metrics import SharedMetricsStore
+from moor_cli.observability import relay_shared_metrics
+from moor_cli.observability import shared_metrics_contract as contract
+from moor_cli.observability import shared_metrics_setup as setup_metrics
+from moor_cli.observability import shared_metrics_signals as signals
+from moor_cli.observability.shared_metrics import SharedMetricsStore
 
 
 @pytest.fixture
 def marks(tmp_path, monkeypatch):
     captured: list[tuple[str, dict]] = []
     policy = {"on": True}
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(relay_shared_metrics, "enabled", lambda: policy["on"])
     monkeypatch.setattr(relay_shared_metrics, "record_process_mark", lambda mark, data: captured.append((mark, data)))
 
@@ -78,7 +78,7 @@ def test_deferred_builtins_and_cron_narrowing_are_not_unavailable(monkeypatch):
 
 
 def test_turn_validation_reports_disabled_builtin_once_and_unknown_names_never(marks, monkeypatch):
-    from hermes_cli.observability.shared_metrics_model import record_tool_call_quality
+    from moor_cli.observability.shared_metrics_model import record_tool_call_quality
 
     monkeypatch.setattr("tools.skill_provenance.is_background_review", lambda: False)
     agent = SimpleNamespace(provider="openrouter", model="anthropic/claude-sonnet-4", valid_tool_names={"memory"},
@@ -104,8 +104,8 @@ def test_counter_rows_map_to_features():
     assert signals.features_for(contract.FEATURE_USED_MARK, {"feature": "bot_mode"}) == ("bot_mode",)
 
 
-def test_hermes_internal_work_never_latches_adoption():
-    from hermes_cli.observability.shared_metrics_fields import milestones_for
+def test_moor_internal_work_never_latches_adoption():
+    from moor_cli.observability.shared_metrics_fields import milestones_for
 
     curator = {"archived_bucket": "0", "created_bucket": "0", "merged_bucket": "0", "patched_bucket": "0",
                "outcome": "success"}
@@ -123,7 +123,7 @@ def test_unreadable_first_session_reads_unknown(monkeypatch, tmp_path):
     def text_stamp(home):
         return float("yesterday")
 
-    monkeypatch.setattr("hermes_cli.observability.shared_metrics_snapshot._first_session_started_at", text_stamp)
+    monkeypatch.setattr("moor_cli.observability.shared_metrics_snapshot._first_session_started_at", text_stamp)
     assert signals.days_since_install_bucket(tmp_path) == "unknown"
 
 
@@ -132,13 +132,13 @@ def test_unreadable_first_session_reads_unknown(monkeypatch, tmp_path):
     (200 * 86_400, "gte_90d"),
 ])
 def test_days_since_install_bucket(monkeypatch, tmp_path, age_s, bucket):
-    monkeypatch.setattr("hermes_cli.observability.shared_metrics_snapshot._first_session_started_at",
+    monkeypatch.setattr("moor_cli.observability.shared_metrics_snapshot._first_session_started_at",
                         lambda home: time.time() - age_s)
     assert signals.days_since_install_bucket(tmp_path) == bucket
 
 
 def test_feature_adoption_latches_once_per_install(tmp_path):
-    resource = {"hermes_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
+    resource = {"moor_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
     store = SharedMetricsStore(tmp_path / "m.sqlite3", tmp_path / "outbox")
     assert store.record_feature_adoption("memory", "same_day", resource) is True
     again = SharedMetricsStore(tmp_path / "m.sqlite3", tmp_path / "outbox")
@@ -194,7 +194,7 @@ def test_dead_or_stale_marker_is_abandoned_at_the_next_start_and_live_waits(mark
     parent = os.getppid()
     live = directory / f"tui-{parent}-2.json"
     live.write_text(json.dumps({"pid": parent, "start_time": get_process_start_time(parent), "started_at": now,
-                                "surface": "tui", "provider": "nous"}))
+                                "surface": "tui", "provider": "moor"}))
     (directory / f"dashboard-{parent}-3.json").write_text(json.dumps(
         {"pid": parent, "start_time": get_process_start_time(parent), "started_at": now - 2 * setup_metrics.STALE_AFTER_S,
          "surface": "dashboard", "provider": "xai"}))
@@ -220,7 +220,7 @@ def test_cli_flow_classifies_landed_backed_out_failed_and_raised(marks, monkeypa
             setup_metrics.note_provider_setup_saved()
         with setup_metrics.cli_provider_setup("anthropic"):
             pass  # returned without saving: backed out
-        with setup_metrics.cli_provider_setup("nous"):
+        with setup_metrics.cli_provider_setup("moor"):
             setup_metrics.note_provider_setup_failure("no_models")
         with setup_metrics.cli_provider_setup("gemini"):
             route["v"] = ("gemini", "g", None)  # route changed without the save helper
@@ -235,14 +235,14 @@ def test_cli_flow_classifies_landed_backed_out_failed_and_raised(marks, monkeypa
     ends = [r for r in _setup_rows(marks.rows) if r[2] != "started"]
     assert ends == [
         ("cli_setup", "anthropic", "completed", "none"), ("cli_setup", "anthropic", "abandoned", "none"),
-        ("cli_setup", "nous", "failed", "no_models"), ("cli_setup", "gemini", "completed", "none"),
+        ("cli_setup", "moor", "failed", "no_models"), ("cli_setup", "gemini", "completed", "none"),
         ("cli_setup", "xai", "abandoned", "none"), ("cli_setup", "xai", "failed", "network"),
     ]
     setup_metrics.note_provider_setup_saved()  # outside a flow: inert
 
 
 def test_cli_setup_navigation_esc_cancels_and_back_resumes_one_flow(marks, monkeypatch):
-    from hermes_cli.setup import _SetupCancelled, _SetupGoBack
+    from moor_cli.setup import _SetupCancelled, _SetupGoBack
 
     monkeypatch.setattr(setup_metrics, "_model_route", lambda: ("openrouter", "a", None))
 
@@ -259,7 +259,7 @@ def test_cli_setup_navigation_esc_cancels_and_back_resumes_one_flow(marks, monke
             attempt("anthropic", _SetupGoBack(1))  # Back to the provider menu, then the same provider
         attempt("anthropic")
         with pytest.raises(_SetupGoBack):
-            attempt("nous", _SetupGoBack(1))  # Back, then another provider
+            attempt("moor", _SetupGoBack(1))  # Back, then another provider
         attempt("gemini")
     with pytest.raises(_SetupGoBack):  # a wizard section replay keeps the flow open across the surface
         with setup_metrics.provider_setup_surface("cli_setup"):
@@ -269,7 +269,7 @@ def test_cli_setup_navigation_esc_cancels_and_back_resumes_one_flow(marks, monke
     assert _setup_rows(marks.rows) == [
         ("cli_model", "xai", "started", "none"), ("cli_model", "xai", "abandoned", "none"),
         ("cli_model", "anthropic", "started", "none"), ("cli_model", "anthropic", "completed", "none"),
-        ("cli_model", "nous", "started", "none"), ("cli_model", "nous", "abandoned", "none"),
+        ("cli_model", "moor", "started", "none"), ("cli_model", "moor", "abandoned", "none"),
         ("cli_model", "gemini", "started", "none"), ("cli_model", "gemini", "completed", "none"),
         ("cli_setup", "xai", "started", "none"), ("cli_setup", "xai", "abandoned", "none"),
     ]
@@ -286,7 +286,7 @@ def test_cli_setup_navigation_esc_cancels_and_back_resumes_one_flow(marks, monke
 ])
 def test_oauth_session_endings(marks, monkeypatch, sess, ending):
     monkeypatch.setattr(setup_metrics, "web_setup_surface", lambda: "desktop")
-    flow = setup_metrics.begin_oauth_setup("nous", None)
+    flow = setup_metrics.begin_oauth_setup("moor", None)
     setup_metrics.attach_oauth_setup(sess, flow)
     setup_metrics.settle_oauth_setup(sess)
     setup_metrics.settle_oauth_setup(sess)
@@ -298,19 +298,19 @@ def test_cancel_or_lapsed_code_is_never_a_failure_and_poller_errors_keep_their_c
     poller's exception keeps its closed class instead of the bare session ``error`` -> ``other``."""
     import httpx
 
-    from hermes_cli.auth_constants import _codex_err, _xai_err
-    from hermes_cli.auth_device_flow import _poll_for_token
-    from hermes_cli.auth_error_copy import device_flow_error
-    from hermes_cli.web_server_oauth import _oauth_poller, _oauth_sessions
+    from moor_cli.auth_constants import _codex_err, _xai_err
+    from moor_cli.auth_device_flow import _poll_for_token
+    from moor_cli.auth_error_copy import device_flow_error
+    from moor_cli.web_server_oauth import _oauth_poller, _oauth_sessions
 
     monkeypatch.setattr(setup_metrics, "web_setup_surface", lambda: "desktop")
     with setup_metrics.provider_setup_surface("cli_model"):  # CLI: Ctrl-C mid sign-in
-        with pytest.raises(KeyboardInterrupt), setup_metrics.cli_provider_setup("nous"):
+        with pytest.raises(KeyboardInterrupt), setup_metrics.cli_provider_setup("moor"):
             raise KeyboardInterrupt
     flow = setup_metrics.begin_oauth_setup("openai-codex", None)  # web start route: cancelled pre-response
     setup_metrics.finish_provider_setup(flow, "failed", setup_metrics.setup_failure_class(KeyboardInterrupt()))
 
-    class Pending:  # the real Nous poll loop running out of time on authorization_pending
+    class Pending:  # the real Moor poll loop running out of time on authorization_pending
         status_code = 400
 
         def json(self):
@@ -321,10 +321,10 @@ def test_cancel_or_lapsed_code_is_never_a_failure_and_poller_errors_keep_their_c
     dropped = _xai_err("xAI OIDC discovery failed", "xai_discovery_failed")
     dropped.__cause__ = httpx.ConnectError("down")
     for provider, exc in [
-        ("nous", lapsed.value), ("xai-oauth", _xai_err("Timed out", "device_code_timeout")),
+        ("moor", lapsed.value), ("xai-oauth", _xai_err("Timed out", "device_code_timeout")),
         ("openai-codex", _codex_err("Login timed out after 15 minutes.", "device_code_timeout")),
-        ("nous", device_flow_error("access_denied", "declined")), ("xai-oauth", dropped),
-        ("nous", device_flow_error("invalid_client", "nope")),
+        ("moor", device_flow_error("access_denied", "declined")), ("xai-oauth", dropped),
+        ("moor", device_flow_error("invalid_client", "nope")),
     ]:
         sess = {"status": "pending", "profile": None}
         _oauth_sessions["probe"] = sess
@@ -338,10 +338,10 @@ def test_cancel_or_lapsed_code_is_never_a_failure_and_poller_errors_keep_their_c
         setup_metrics.settle_oauth_setup(sess)
     _oauth_sessions.pop("probe", None)
     assert [r for r in _setup_rows(marks.rows) if r[2] != "started"] == [
-        ("cli_model", "nous", "abandoned", "none"), ("desktop", "openai-codex", "abandoned", "none"),
-        ("desktop", "nous", "abandoned", "none"), ("desktop", "xai-oauth", "abandoned", "none"),
-        ("desktop", "openai-codex", "abandoned", "none"), ("desktop", "nous", "abandoned", "none"),
-        ("desktop", "xai-oauth", "failed", "network"), ("desktop", "nous", "failed", "auth"),
+        ("cli_model", "moor", "abandoned", "none"), ("desktop", "openai-codex", "abandoned", "none"),
+        ("desktop", "moor", "abandoned", "none"), ("desktop", "xai-oauth", "abandoned", "none"),
+        ("desktop", "openai-codex", "abandoned", "none"), ("desktop", "moor", "abandoned", "none"),
+        ("desktop", "xai-oauth", "failed", "network"), ("desktop", "moor", "failed", "auth"),
     ]
 
 
@@ -360,13 +360,13 @@ def _wire(status, body):
 def _poll(provider, status, body):
     """The real device-code poll loop on a fake clock (each sleep advances it)."""
     def run(monkeypatch):
-        from hermes_cli import auth_device_flow
-        from hermes_cli.auth_xai import _xai_oauth_poll_device_token
+        from moor_cli import auth_device_flow
+        from moor_cli.auth_xai import _xai_oauth_poll_device_token
 
         clock = [0.0]
         fake_time = SimpleNamespace(monotonic=lambda: clock[0], sleep=lambda s: clock.__setitem__(0, clock[0] + max(s, 1)))
         monkeypatch.setattr(auth_device_flow, "time", fake_time)
-        if provider == "nous":
+        if provider == "moor":
             return auth_device_flow._poll_for_token(_wire(status, body), "https://p", "c", "d", 30, 1)
         return _xai_oauth_poll_device_token(
             _wire(status, body), token_endpoint="https://x/token", device_code="d", expires_in=30, poll_interval=1)
@@ -379,13 +379,13 @@ def _guest_sign_in(token_status, token_body):
     def run(monkeypatch):
         import httpx
 
-        from hermes_cli import anon_auth, auth_device_flow
-        from hermes_cli.web_server_oauth import _record_sign_in_state
+        from moor_cli import anon_auth, auth_device_flow
+        from moor_cli.web_server_oauth import _record_sign_in_state
 
         clock = [0.0]
         fake_time = SimpleNamespace(monotonic=lambda: clock[0], sleep=lambda s: clock.__setitem__(0, clock[0] + max(s, 1)))
         monkeypatch.setattr(auth_device_flow, "time", fake_time)
-        monkeypatch.setattr(anon_auth, "current_nous_state", lambda: {
+        monkeypatch.setattr(anon_auth, "current_moor_state", lambda: {
             "auth_method": anon_auth.ANON_AUTH_METHOD, "anon_token": "t", "portal_base_url": "https://p"})
         monkeypatch.setattr(anon_auth, "_anon_headers", dict)
         replies = {
@@ -408,7 +408,7 @@ def _codex_start(status, body):
     def run(monkeypatch):
         import asyncio
 
-        import hermes_cli.web_routers.oauth as routes
+        import moor_cli.web_routers.oauth as routes
 
         client = _wire(status, body)
         monkeypatch.setattr(routes, "_codex_post", lambda _httpx, url, **kw: client.post(url, **kw))
@@ -417,8 +417,8 @@ def _codex_start(status, body):
 
 
 @pytest.mark.parametrize("producer, ending", [
-    (_poll("nous", 400, {"error": "authorization_pending"}), ("abandoned", "none")),  # code left unapproved
-    (_poll("nous", 503, "<html>503 unavailable</html>"), ("failed", "network")),  # outage until it ran out
+    (_poll("moor", 400, {"error": "authorization_pending"}), ("abandoned", "none")),  # code left unapproved
+    (_poll("moor", 503, "<html>503 unavailable</html>"), ("failed", "network")),  # outage until it ran out
     (_poll("xai", 400, {"error": "access_denied"}), ("abandoned", "none")),  # consent declined
     (_poll("xai", 400, {"error": "expired_token"}), ("abandoned", "none")),  # the server let the code lapse
     (_poll("xai", 400, {"error": "invalid_client"}), ("failed", "auth")),
@@ -427,7 +427,7 @@ def _codex_start(status, body):
     (_codex_start(503, "<html>503</html>"), ("failed", "network")),
     (_guest_sign_in(400, {"error": "authorization_pending"}), ("abandoned", "none")),
     (_guest_sign_in(503, "<html>503 unavailable</html>"), ("failed", "network")),
-], ids=["nous-pending", "nous-503", "xai-denied", "xai-expired", "xai-refused", "codex-401", "codex-down",
+], ids=["moor-pending", "moor-503", "xai-denied", "xai-expired", "xai-refused", "codex-401", "codex-down",
         "codex-503", "guest-pending", "guest-503"])
 def test_wire_failures_keep_the_producers_class_to_the_recorded_end(marks, monkeypatch, producer, ending):
     """Real poll loops / start route / free-tier sign-in against wire responses: a lapse or a decline
@@ -435,10 +435,10 @@ def test_wire_failures_keep_the_producers_class_to_the_recorded_end(marks, monke
     sign-in state -> session boundaries too."""
     import asyncio
 
-    import hermes_cli.web_routers.oauth as routes
+    import moor_cli.web_routers.oauth as routes
 
     monkeypatch.setattr(setup_metrics, "web_setup_surface", lambda: "desktop")
-    flow = setup_metrics.begin_oauth_setup("nous", None)
+    flow = setup_metrics.begin_oauth_setup("moor", None)
     try:
         sess = producer(monkeypatch)
     except Exception as exc:
@@ -465,8 +465,8 @@ def test_api_key_env_maps_to_provider_only():
 
 
 def test_web_forms_count_only_a_new_provider_key_or_endpoint(marks, monkeypatch):
-    from hermes_cli.web_models import CustomEndpointUpdate
-    from hermes_cli.web_routers import config_env
+    from moor_cli.web_models import CustomEndpointUpdate
+    from moor_cli.web_routers import config_env
 
     done: list[str] = []
     monkeypatch.setattr(setup_metrics, "record_provider_setup_done", lambda _s, provider, **_k: done.append(provider))
@@ -486,7 +486,7 @@ def test_web_forms_count_only_a_new_provider_key_or_endpoint(marks, monkeypatch)
 
 # ---- feature disabled ----
 
-from hermes_cli.observability import shared_metrics_disabled as disabled_metrics
+from moor_cli.observability import shared_metrics_disabled as disabled_metrics
 
 
 def _settle_disabled() -> None:
@@ -494,7 +494,7 @@ def _settle_disabled() -> None:
     import threading
 
     for thread in threading.enumerate():
-        if thread.name == "hermes-feature-disabled":
+        if thread.name == "moor-feature-disabled":
             thread.join(10)
 
 
@@ -521,7 +521,7 @@ def test_settings_skills_plugins_transitions_only_count_moves_from_and_back_to_d
 
 
 def test_toolset_transitions_use_the_real_resolver():
-    from hermes_cli.tools_config import _get_platform_tools
+    from moor_cli.tools_config import _get_platform_tools
 
     default = sorted(_get_platform_tools({}, "cli", include_default_mcp_servers=False))
     assert "memory" in default
@@ -549,7 +549,7 @@ def test_record_config_saved_needs_a_surface_and_collection(marks, monkeypatch):
 
 
 def test_store_counts_feature_disabled_once_per_day(tmp_path):
-    resource = {"hermes_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
+    resource = {"moor_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
     store = SharedMetricsStore(tmp_path / "m.sqlite3", tmp_path / "outbox")
     dims = {"event": "disabled", "kind": "toolset", "name": "memory", "surface": "cli_tools"}
     assert store.record_counter_once_per_day(contract.FEATURE_DISABLED_METRIC, dims, resource) is True
@@ -560,7 +560,7 @@ def test_store_counts_feature_disabled_once_per_day(tmp_path):
 
 
 def test_real_config_writes_report_the_move_away_from_default(marks, monkeypatch):
-    from hermes_cli.config import load_config, save_config, set_config_value
+    from moor_cli.config import load_config, save_config, set_config_value
 
     marks.home.mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(disabled_metrics, "_process_surface", "cli_config")
@@ -575,13 +575,13 @@ def test_real_config_writes_report_the_move_away_from_default(marks, monkeypatch
 
 
 def test_migrations_and_env_templates_are_not_user_disables(marks, monkeypatch):
-    from hermes_cli.config import _persist_migration, load_config, save_config
+    from moor_cli.config import _persist_migration, load_config, save_config
 
     marks.home.mkdir(parents=True, exist_ok=True)
     monkeypatch.setattr(disabled_metrics, "_process_surface", "cli_config")
     config = load_config()
     config.setdefault("memory", {})["memory_enabled"] = False
-    _persist_migration(config)  # e.g. `hermes config migrate` / profile create in the dashboard
+    _persist_migration(config)  # e.g. `moor config migrate` / profile create in the dashboard
     # A ``${VAR}`` template on the raw side vs its expanded value: nothing moved.
     monkeypatch.setenv("MEM_ON", "false")
     (marks.home / "config.yaml").write_text("compression:\n  enabled: ${MEM_ON}\n")
@@ -595,7 +595,7 @@ def test_migrations_and_env_templates_are_not_user_disables(marks, monkeypatch):
 def test_diff_and_record_run_off_the_callers_lock_in_the_owning_profile(marks, monkeypatch, tmp_path):
     import threading
 
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import get_moor_home, reset_moor_home_override, set_moor_home_override
 
     monkeypatch.setattr(disabled_metrics, "_process_surface", "cli_config")
     gate, seen = threading.Event(), []
@@ -603,17 +603,17 @@ def test_diff_and_record_run_off_the_callers_lock_in_the_owning_profile(marks, m
 
     def slow(old, new):
         gate.wait(5)
-        seen.append(str(get_hermes_home()))
+        seen.append(str(get_moor_home()))
         return real(old, new)
 
     monkeypatch.setattr(disabled_metrics, "config_transitions", slow)
-    token = set_hermes_home_override(str(tmp_path / "b"))
+    token = set_moor_home_override(str(tmp_path / "b"))
     try:
         with threading.Lock():  # noqa: PLW2101 -- inert on purpose: a stand-in for the caller's _CONFIG_MUTATION_LOCK, which record_config_saved documents running outside of; the caller's write lock (the dashboard's _CONFIG_MUTATION_LOCK)
             disabled_metrics.record_config_saved({}, {"memory": {"memory_enabled": False}})
             assert marks.rows == []  # returned without diffing
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     gate.set()
     _settle_disabled()
     assert seen == [str(tmp_path / "b")] and [m for m, _ in marks.rows] == [contract.FEATURE_DISABLED_MARK]
@@ -622,10 +622,10 @@ def test_diff_and_record_run_off_the_callers_lock_in_the_owning_profile(marks, m
 def test_off_thread_setup_records_in_the_owning_profile(marks, tmp_path, monkeypatch):
     seen: list[str] = []
     monkeypatch.setattr(relay_shared_metrics, "record_process_marks_saved", lambda rows: (
-        seen.append(str(__import__("hermes_constants").get_hermes_home())), len(rows))[1])
+        seen.append(str(__import__("moor_constants").get_moor_home())), len(rows))[1])
     home_a, home_b = tmp_path / "a", tmp_path / "b"
     for home in (home_a, home_b, home_a):
-        flow = setup_metrics.begin_provider_setup("dashboard", "xai", hermes_home=home)
+        flow = setup_metrics.begin_provider_setup("dashboard", "xai", moor_home=home)
         assert flow.marker.parent == setup_metrics.markers_dir(home)
         setup_metrics.finish_provider_setup(flow, "completed")
     assert seen == [str(h) for h in (home_a, home_a, home_b, home_b, home_a, home_a)]

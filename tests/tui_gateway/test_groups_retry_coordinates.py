@@ -16,12 +16,12 @@ from tui_gateway.hosted_room_service import HostedRoomService
 
 
 def _deferred_room(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-    (tmp_path / ".hermes" / "profiles" / "reviewer").mkdir(parents=True)
-    (tmp_path / ".hermes" / "profiles" / "reviewer" / "config.yaml").write_text("{}\n")
+    (tmp_path / ".moor" / "profiles" / "reviewer").mkdir(parents=True)
+    (tmp_path / ".moor" / "profiles" / "reviewer" / "config.yaml").write_text("{}\n")
     server = SimpleNamespace(_methods={}, _sessions={}, _sessions_lock=threading.Lock())
-    service = HostedRoomService(server, db_path=tmp_path / ".hermes" / "state.db")
+    service = HostedRoomService(server, db_path=tmp_path / ".moor" / "state.db")
     service.create_room(room_id="room", name="Room", members=[
         {"member_id": "worker", "profile": "default", "handle": "worker"},
         {"member_id": "reviewer", "profile": "reviewer", "handle": "reviewer"}])

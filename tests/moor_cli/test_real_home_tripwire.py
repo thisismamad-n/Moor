@@ -87,23 +87,23 @@ def test_rename_cannot_overwrite_a_protected_destination(protected_home, tmp_pat
 def test_installed_desktop_app_can_be_read_but_never_changed(tmp_path, monkeypatch):
     from tests import conftest
 
-    app = tmp_path / "Applications" / "Hermes.app"
+    app = tmp_path / "Applications" / "Moor.app"
     (app / "Contents").mkdir(parents=True)
     plist = app / "Contents" / "Info.plist"
     plist.write_text("unchanged", encoding="utf-8")
-    replacement = tmp_path / "Hermes.app.new"
+    replacement = tmp_path / "Moor.app.new"
     replacement.mkdir()
     changes = [lambda: shutil.rmtree(app), plist.unlink, lambda: replacement.replace(app),
                lambda: plist.write_text("clobbered", encoding="utf-8")]
     try:  # Windows without Developer Mode cannot create symlinks
         (tmp_path / "linked").symlink_to(app.parent, target_is_directory=True)
-        changes.append(lambda: shutil.rmtree(tmp_path / "linked" / "Hermes.app"))
+        changes.append(lambda: shutil.rmtree(tmp_path / "linked" / "Moor.app"))
     except OSError:
         pass
     monkeypatch.setattr(conftest, "_REAL_INSTALLED_GUI_APPS", [os.path.normcase(os.path.realpath(app))])
     assert plist.read_text(encoding="utf-8") == "unchanged"
     for change in changes:
-        with pytest.raises(pytest.fail.Exception, match="REAL installed Hermes desktop app"):
+        with pytest.raises(pytest.fail.Exception, match="REAL installed Moor desktop app"):
             change()
     assert plist.read_text(encoding="utf-8") == "unchanged"
 
@@ -187,8 +187,8 @@ def test_relative_path_metadata_exemption_tracks_working_directory(protected_hom
 
 
 def test_resolving_a_path_entry_under_the_home_is_command_lookup(protected_home, monkeypatch):
-    """Command resolution realpath()s a PATH entry under the home (``~/.hermes/tools/<tool>``)
-    to tell Hermes-managed bin dirs apart; that lstats the entry and each of its ancestors."""
+    """Command resolution realpath()s a PATH entry under the home (``~/.moor/tools/<tool>``)
+    to tell moor-managed bin dirs apart; that lstats the entry and each of its ancestors."""
     from tests.home_io_guard import HomeIOGuard
 
     entry = protected_home / "tools" / "npm" / "bin"
@@ -196,13 +196,13 @@ def test_resolving_a_path_entry_under_the_home_is_command_lookup(protected_home,
     monkeypatch.setenv("PATH", str(entry))
     guard.check(entry, metadata=True)
     guard.check(entry.parent, metadata=True)
-    with pytest.raises(AssertionError, match="REAL hermes home"):
+    with pytest.raises(AssertionError, match="REAL moor home"):
         guard.check(protected_home / "tools" / "other", metadata=True)
-    with pytest.raises(AssertionError, match="REAL hermes home"):
+    with pytest.raises(AssertionError, match="REAL moor home"):
         guard.check(entry.parent, metadata=False)
 
 
-def test_checkout_inside_a_guarded_root_is_not_hermes_state():
+def test_checkout_inside_a_guarded_root_is_not_moor_state():
     """The default install checks the repo out INSIDE the home (install.sh:
     INSTALL_DIR=$MOOR_HOME/moor-agent): the checkout, its .venv and test
     data are exempt even when the guarded root contains them; siblings under
@@ -219,11 +219,11 @@ def test_checkout_inside_a_guarded_root_is_not_hermes_state():
 @pytest.mark.parametrize("kind", ["environments", "test-environment"])
 def test_pm_generation_dir_around_the_running_venv_is_the_interpreter(tmp_path, kind):
     """scripts/run_tests.sh runs ``<home>/installs/<key>/<kind>/<gen>/venv`` with HOME pointed at the
-    run's fake home, so that venv sits under the guarded root. `hermes update` probes
-    ``<venv>/../hermes_cli/main.py`` (update_owning_install) and must not trip the guard."""
+    run's fake home, so that venv sits under the guarded root. `moor update` probes
+    ``<venv>/../moor_cli/main.py`` (update_owning_install) and must not trip the guard."""
     from tests.home_io_guard import _pm_generation_dirs
 
-    generation = tmp_path / ".hermes" / "installs" / "0123456789abcdef" / kind / "gen-1"
+    generation = tmp_path / ".moor" / "installs" / "0123456789abcdef" / kind / "gen-1"
     venv = generation / "venv"
     venv.mkdir(parents=True)
     assert _pm_generation_dirs([venv]) == {generation.resolve()}
@@ -231,9 +231,9 @@ def test_pm_generation_dir_around_the_running_venv_is_the_interpreter(tmp_path, 
     assert _pm_generation_dirs([tmp_path / "checkout" / ".venv", tmp_path / "other" / "venv"]) == set()
 
 
-def test_hermes_exported_scratch_tmp_is_not_the_test_temp_root(tmp_path):
-    """A Hermes-launched shell hands pytest TMPDIR=<home>/cache/scratch (tagged by
-    HERMES_SCRATCH_DIR). With that home guarded, honoring it would put the session
+def test_moor_exported_scratch_tmp_is_not_the_test_temp_root(tmp_path):
+    """A moor-launched shell hands pytest TMPDIR=<home>/cache/scratch (tagged by
+    MOOR_SCRATCH_DIR). With that home guarded, honoring it would put the session
     sandbox, basetemp and every tempfile default inside the guarded root; the
     conftest must drop Moor' own export before anything allocates temp space."""
     home = tmp_path / "home"

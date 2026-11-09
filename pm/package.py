@@ -95,9 +95,9 @@ class Package:
 
     def latest_versions(self, target: str, locked: Optional[str] = None) -> list[str]:
         """Newest-first candidate versions for `target` — the "how do I find
-        latest" hook for `hermes pm update`. Empty list = this package has
+        latest" hook for `moor pm update`. Empty list = this package has
         no auto-update source (chromium is bumped by hand with
-        `hermes pm lock --bump`; venv is a state).
+        `moor pm lock --bump`; venv is a state).
 
         Subclasses resolve their upstream's real release index here; the
         update driver intersects across targets (per version_style) and
@@ -159,7 +159,7 @@ class Package:
         """Install-time remediation for a failed staged verification.
 
         verify() is also used by read-only inspection paths such as
-        hermes pm doctor and must stay side-effect free. The installer
+        moor pm doctor and must stay side-effect free. The installer
         calls this hook only after a freshly staged entry fails verification.
         Return (remaining reason, remedy): an empty reason when remediation
         made the staged entry usable; an empty remedy keeps InstallError's.

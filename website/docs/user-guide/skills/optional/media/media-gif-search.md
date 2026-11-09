@@ -14,7 +14,7 @@ Search/download GIFs from Tenor via curl + jq.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/media/gif-search` |
+| Source | Optional — install with `moor skills install official/media/gif-search` |
 | Path | `optional-skills/media/gif-search` |
 | Version | `1.1.0` |
 | Author | Moor Agent |
@@ -103,4 +103,4 @@ Each result has multiple formats under `.media_formats`:
 
 - URL-encode the query: spaces as `+`, special chars as `%XX`
 - For sending in chat, `tinygif` URLs are lighter weight
-- GIF URLs can be used directly in markdown: `![alt](https://github.com/NousResearch/hermes-agent/blob/main/optional-skills/media/gif-search/url)`
+- GIF URLs can be used directly in markdown: `![alt](https://github.com/thisismamad-n/Moor/blob/main/optional-skills/media/gif-search/url)`

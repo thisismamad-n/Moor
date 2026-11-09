@@ -40,7 +40,7 @@ _sleep = time.sleep
 _monotonic = time.monotonic
 
 _SYNC_INTERVAL_SECONDS = 5.0
-_FORCE_SYNC_ENV = "HERMES_FORCE_FILE_SYNC"
+_FORCE_SYNC_ENV = "MOOR_FORCE_FILE_SYNC"
 # Synced-state key no stat result equals (see _plan_sync): forces a content check next sync.
 _RACY_SYNC_KEY = (-1, -1, -1, -1)
 

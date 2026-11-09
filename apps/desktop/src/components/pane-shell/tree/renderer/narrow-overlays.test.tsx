@@ -61,8 +61,8 @@ afterEach(() => {
   $connection.set(null)
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
-  delete window.document.documentElement.dataset.hermesDesktopHost
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete window.document.documentElement.dataset.moorDesktopHost
+  delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
   disposers.splice(0).forEach(dispose => dispose())
 })
 
@@ -76,12 +76,12 @@ const overlayTab = (paneId: string) => document.querySelector<HTMLElement>(`[dat
 
 // The page the browser-hosted Desktop serves (its bridge writes this marker).
 const asBrowserHost = () => {
-  window.document.documentElement.dataset.hermesDesktopHost = 'browser'
+  window.document.documentElement.dataset.moorDesktopHost = 'browser'
 }
 
 // Native Desktop: the Electron preload's bridge exists and no browser marker is set.
 const asNativeDesktop = () => {
-  ;(window as unknown as { hermesDesktop?: unknown }).hermesDesktop = {}
+  ;(window as unknown as { moorDesktop?: unknown }).moorDesktop = {}
 }
 
 describe('narrow overlay in native Desktop', () => {
@@ -159,7 +159,7 @@ describe('narrow overlay of a stacked zone', () => {
   })
 
   it('reserves the browser touch titlebar above overlay tabs', () => {
-    window.document.documentElement.dataset.hermesDesktopHost = 'browser'
+    window.document.documentElement.dataset.moorDesktopHost = 'browser'
 
     const overlayInset = (touch: boolean) => {
       vi.stubGlobal(
@@ -212,7 +212,7 @@ describe('narrow overlay of a stacked zone', () => {
     // lights on a narrow window" (#110033). The overlay starts at the
     // viewport's top edge, so without a reservation its tab strip sits under
     // the native controls.
-    Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: {} })
+    Object.defineProperty(window, 'moorDesktop', { configurable: true, value: {} })
     $connection.set({ windowButtonPosition: { x: 24, y: 0 } } as never)
     // jsdom has no layout: the overlay fills the viewport's top-left corner.
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({

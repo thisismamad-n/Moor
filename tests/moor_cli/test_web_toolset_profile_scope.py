@@ -6,7 +6,7 @@ Real plugin directories, real loader, real config files under a temp home.
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 import pytest
 
 pytest.importorskip("fastapi")
@@ -23,9 +23,9 @@ def register(ctx):
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    from hermes_cli import plugins as plugins_mod
+    from moor_cli import plugins as plugins_mod
 
-    root = tmp_path / "hermes_home"
+    root = tmp_path / "moor_home"
     work = root / "profiles" / "work"
     plugin_dir = work / "plugins" / "worktools"
     plugin_dir.mkdir(parents=True)
@@ -35,7 +35,7 @@ def homes(tmp_path, monkeypatch):
     (root / "config.yaml").write_text(yaml.safe_dump({"model": {"default": "gpt-5"}}), encoding="utf-8")
     empty_bundled = tmp_path / "bundled"
     empty_bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("MOOR_HOME", str(root))
     monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
     from agent import secret_scope
     from tui_gateway import launch_profile_policy as lpp
@@ -48,7 +48,7 @@ def homes(tmp_path, monkeypatch):
 
 @pytest.fixture
 def client(homes):
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
     c = TestClient(app)
     c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return c

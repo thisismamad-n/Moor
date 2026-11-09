@@ -562,7 +562,7 @@ describe('useStatusSnapshot', () => {
 
     const requestGateway = vi.fn(async (method: string) => {
       if (method === 'setup.runtime_check') {
-        return (healthy ? { ok: true } : { error: 'No usable credentials found for nous.', ok: false }) as never
+        return (healthy ? { ok: true } : { error: 'No usable credentials found for moor.', ok: false }) as never
       }
 
       return { provider_configured: healthy } as never
@@ -573,7 +573,7 @@ describe('useStatusSnapshot', () => {
     await flushAsync()
     expect(result.current.inferenceStatus).toMatchObject({ ready: false, source: 'runtime_check' })
 
-    // User leaves Hermes for the browser to complete OAuth; no focus event fires.
+    // User leaves Moor for the browser to complete OAuth; no focus event fires.
     vi.mocked(document.hasFocus).mockReturnValue(false)
     healthy = true
 
@@ -581,7 +581,7 @@ describe('useStatusSnapshot', () => {
     await act(async () => {
       $desktopOnboarding.set({
         ...$desktopOnboarding.get(),
-        flow: { status: 'success', provider: { id: 'nous', name: 'Nous' } as never }
+        flow: { status: 'success', provider: { id: 'moor', name: 'Moor' } as never }
       })
       await vi.advanceTimersByTimeAsync(0)
     })
@@ -606,7 +606,7 @@ describe('useStatusSnapshot', () => {
     await act(async () => {
       $desktopOnboarding.set({
         ...$desktopOnboarding.get(),
-        flow: { status: 'starting', provider: { id: 'nous', name: 'Nous' } as never }
+        flow: { status: 'starting', provider: { id: 'moor', name: 'Moor' } as never }
       })
       await vi.advanceTimersByTimeAsync(0)
     })

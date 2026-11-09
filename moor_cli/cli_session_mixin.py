@@ -13,8 +13,8 @@ import shutil
 import sys
 
 from agent.i18n import t
-from hermes_constants import get_hermes_home
-from hermes_state_ids import new_session_id
+from moor_constants import get_moor_home
+from moor_state_ids import new_session_id
 from pathlib import Path
 from rich.console import Console
 from rich.markup import escape as _escape
@@ -141,13 +141,13 @@ def _print_save_refusal(error) -> None:
 
 
 def _export_on_gateway(connection, session_id, fmt, filename, redact):
-    """The owner's ``/save`` rendering of its stored row (``session.export``: the snapshot ``hermes
+    """The owner's ``/save`` rendering of its stored row (``session.export``: the snapshot ``moor
     sessions export`` writes, with title, metadata and archived rows), never this process's
     in-memory history. Nothing is written on the gateway host, so a remote owner's disk is never
     taken for this machine's. None when refused (printed), and also None when an older gateway
     without ``session.export`` was handed to ``_save_on_older_gateway`` (which may save on the
     gateway host and prints its own outcome)."""
-    from hermes_cli.gateway_client import GatewayClientError, GatewayRPCError
+    from moor_cli.gateway_client import GatewayClientError, GatewayRPCError
     try:
         content = (connection.call("session.export", session_id=session_id, format=fmt,
                                    redact=redact) or {}).get("content")
@@ -166,7 +166,7 @@ def _export_on_gateway(connection, session_id, fmt, filename, redact):
 def _save_on_older_gateway(connection, session_id, fmt, filename, redact):
     """An owner without ``session.export``: its ``session.save`` writes default-named, unredacted
     JSON on the gateway host, so only a plain ``/save json`` may use it (as Desktop does)."""
-    from hermes_cli.gateway_client import GatewayClientError
+    from moor_cli.gateway_client import GatewayClientError
     if redact or fmt != "json" or filename:
         print("(._.) This gateway predates this CLI: only a plain /save json works until it restarts "
               "(it saves on the gateway host).")
@@ -182,9 +182,9 @@ def _save_on_older_gateway(connection, session_id, fmt, filename, redact):
 
 def _write_save(session_id, fmt, filename, render):
     """Write a ``/save`` export on this machine: ``filename`` as typed (relative to the cwd), else
-    ``sessions/saved/hermes_conversation_<ts>.<fmt>`` under this CLI's home."""
+    ``sessions/saved/moor_conversation_<ts>.<fmt>`` under this CLI's home."""
     from cli import datetime
-    saved_dir = get_hermes_home() / "sessions" / "saved"
+    saved_dir = get_moor_home() / "sessions" / "saved"
     try:
         saved_dir.mkdir(parents=True, exist_ok=True)
     except OSError as e:
@@ -196,7 +196,7 @@ def _write_save(session_id, fmt, filename, render):
             path = Path.cwd() / path
     else:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        path = saved_dir / f"hermes_conversation_{timestamp}.{fmt}"
+        path = saved_dir / f"moor_conversation_{timestamp}.{fmt}"
 
     try:
         content = render()
@@ -245,7 +245,7 @@ class CLISessionMixin:
 
     def _restore_session_yolo(self, session_meta: dict, *, quiet: bool = False) -> None:
         """Re-arm the session row's persisted /yolo on every resume path (``tools.approval_yolo``)."""
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         from tools.approval_yolo import restore_session_yolo
         if restore_session_yolo(self.session_id or "default", SessionDB.session_yolo_enabled(session_meta)):
             _dim_notice(self, t("cli.session.yolo_restored"), quiet)
@@ -277,11 +277,11 @@ class CLISessionMixin:
     def _show_status(self):
         """Show compact startup status line."""
         from cli import get_tool_definitions
-        from hermes_cli.gateway_tools_notify import gateway_store
+        from moor_cli.gateway_tools_notify import gateway_store
         store = gateway_store(self)  # a gateway session's tools are the gateway's: never enumerated here
         inventory = store.banner_inventory() if store is not None else None
         # Avoid pulling the full tool registry into the bare Termux prompt path.
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") == "1" or (store is not None and inventory is None):
+        if os.environ.get("MOOR_DEFER_AGENT_STARTUP") == "1" or (store is not None and inventory is None):
             tool_status = t("cli.session.status_tools_deferred")
         elif inventory is not None:
             tool_status = t("cli.session.status_tools_count", count=len(inventory["tools"] or []))
@@ -481,7 +481,7 @@ class CLISessionMixin:
                 continue
 
             _cli_visible_print(
-                f"\n  {t('cli.session.history_assistant_header', agent_name='Hermes', index=visible_index)}{_ts_suffix(msg)}")
+                f"\n  {t('cli.session.history_assistant_header', agent_name='Moor', index=visible_index)}{_ts_suffix(msg)}")
             n_calls = len(msg.get("tool_calls") or [])
             if not content_text:
                 suffix = ""
@@ -506,7 +506,7 @@ class CLISessionMixin:
                 "reason": "new_session" if event_type == "on_session_reset" else "session_boundary"}
             if event_type == "on_session_finalize":
                 from cli import _cli_visible_print
-                from hermes_cli.lifecycle import session_end_messages
+                from moor_cli.lifecycle import session_end_messages
                 for message in session_end_messages(finalize_session(**context)):
                     _cli_visible_print(message)
             else:
@@ -573,7 +573,7 @@ class CLISessionMixin:
                 # rotation) so /new never blocks on the LLM-bound call.
                 _boundary_snapshot = self._launch_session_boundary_memory_flush(
                     list(self.conversation_history), session_id=old_session_id)
-            from hermes_cli.cli_shutdown import _gateway_owns_session_end
+            from moor_cli.cli_shutdown import _gateway_owns_session_end
             if not _gateway_owns_session_end(self.agent):  # the gateway finalizes at end_session below
                 self._notify_session_boundary("on_session_finalize")
 
@@ -656,7 +656,7 @@ class CLISessionMixin:
                     _mm.on_session_switch(
                         self.session_id, parent_session_id=old_session_id or "",
                         reset=True, reason="new_session")
-            from hermes_cli.cli_shutdown import _gateway_owns_session_end
+            from moor_cli.cli_shutdown import _gateway_owns_session_end
             if not _gateway_owns_session_end(self.agent):  # the gateway resets when end_session closes it
                 self._notify_session_boundary("on_session_reset")
 
@@ -701,7 +701,7 @@ class CLISessionMixin:
         the live session stays resumable regardless. ``redact`` runs the force-mode secret
         redaction pass before writing.
         """
-        from hermes_cli.session_export import (
+        from moor_cli.session_export import (
             SAVE_USAGE, load_save_snapshot, normalize_save_format, render_session_for_save)
 
         parts = cmd.split()[1:]
@@ -718,7 +718,7 @@ class CLISessionMixin:
             print(SAVE_USAGE)
             return
         filename = parts[1] if len(parts) > 1 else None
-        from hermes_cli.gateway_tools_notify import gateway_store
+        from moor_cli.gateway_tools_notify import gateway_store
         store = gateway_store(self)
         if store is not None:  # the gateway owns the session: it renders its stored row, this machine writes it
             if not self.conversation_history:  # as Ink: nothing said yet, nothing exported
@@ -735,7 +735,7 @@ class CLISessionMixin:
         _db = getattr(self, "_session_db", None)
         _sid = getattr(self, "session_id", None)
         if _db and _sid:
-            from hermes_state import SessionExportTooLargeError
+            from moor_state import SessionExportTooLargeError
             try:
                 session_data = load_save_snapshot(_db, _sid, fmt)
             except SessionExportTooLargeError as e:
@@ -927,7 +927,7 @@ class CLISessionMixin:
         key, so the bypass applies to the very next dangerous command.
         """
         from cli import _cprint
-        from hermes_cli.colors import Colors as _Colors
+        from moor_cli.colors import Colors as _Colors
         from tools.approval import _YOLO_MODE_FROZEN
 
         # A frozen process-level bypass short-circuits the approval gate ahead of the session
@@ -1021,7 +1021,7 @@ class CLISessionMixin:
                     print(f"     {summary['note']}")
             except Exception as e:
                 finalize_context_engine_compression_notification(self.agent, committed=False)
-                from hermes_cli.cli_chat_error_copy import refusal_text
+                from moor_cli.cli_chat_error_copy import refusal_text
                 print(f"  {t('cli.session.compress_failed', error=refusal_text(e))}")
 
     def _persist_prompt_summary(self, icon: str, label: str, detail: str, outcome: str) -> None:
@@ -1175,7 +1175,7 @@ class CLISessionMixin:
         msg_count = len(self.conversation_history)
         if not msg_count:
             try:
-                from hermes_cli.skin_engine import get_active_goodbye
+                from moor_cli.skin_engine import get_active_goodbye
                 goodbye = get_active_goodbye(t("cli.session.goodbye"))
             except Exception:
                 goodbye = t("cli.session.goodbye")

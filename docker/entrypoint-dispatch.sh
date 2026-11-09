@@ -23,7 +23,7 @@ if [ "$$" -eq 1 ]; then
         export S6_LOGGING="${S6_LOGGING:-2}"
         export S6_CMD_USE_TERMINAL="${S6_CMD_USE_TERMINAL:-1}"
     fi
-    exec /init /opt/hermes/docker/main-wrapper.sh "$@"
+    exec /init /opt/moor/docker/main-wrapper.sh "$@"
 fi
 
 echo "[moor] WARNING: container entrypoint is not PID 1; skipping s6-overlay /init and falling back to direct bootstrap. Supervised services are unavailable in this runtime, but the requested command will still run." >&2

@@ -46,9 +46,9 @@ Rules for tool code:
   web_search"). Those tools may be unavailable (missing key, disabled toolset) and the model
   hallucinates calls to them. Cross-references are added dynamically in `get_tool_definitions()` in
   `model_tools.py` — see the `browser_cdp` / `execute_code` post-processing blocks.
-- **Paths in schema descriptions use `display_hermes_home()`** (schema is built at import; under
-  multiplex it shows the launch home, which is display-only). **State files use `get_hermes_home()`**
-  at call time, never `Path.home()/.hermes` and never a module constant, so each served profile gets
+- **Paths in schema descriptions use `display_moor_home()`** (schema is built at import; under
+  multiplex it shows the launch home, which is display-only). **State files use `get_moor_home()`**
+  at call time, never `Path.home()/.moor` and never a module constant, so each served profile gets
   its own state.
 - **No `offset`/`limit` on instructional tools** (skills, prompts, playbooks) — models read page 1
   and skip the rest (root rubric).
@@ -73,7 +73,7 @@ Single `TOOLSETS` dict. Keys today: `browser, clarify, code_execution, cronjob, 
 delegation, discord, discord_admin, feishu_doc, feishu_drive, file, image_gen,
 kanban, memory, messaging, moa, rl, safe, search, session_search, skills, terminal, todo,
 tts, video, vision, web, yuanbao` (don't assert the list in tests). Per-platform enable/disable via
-`hermes tools` (curses) or `tools.<platform>.enabled/disabled` in config.yaml. `browser_exec` is the
+`moor tools` (curses) or `tools.<platform>.enabled/disabled` in config.yaml. `browser_exec` is the
 one core browser tool (beside `browser_cdp` / `browser_dialog` / `browser_vault`, all CDP).
 
 ## Browser runtime
@@ -86,7 +86,7 @@ real profile (consented) > Lightpanda > the packaged Chromium from `browser_laun
 (one browser per cache key, `--remote-debugging-port=0` + `DevToolsActivePort`). State lives in
 `browser_session.py`; siblings late-import it inside functions. Every launched Chromium is stopped
 parent-first and recorded in a private 0700 dir (a throwaway profile's in
-`<HERMES_HOME>/cache/browser/chromium-records`; a persistent profile's per OS user under the host lock dir,
+`<MOOR_HOME>/cache/browser/chromium-records`; a persistent profile's per OS user under the host lock dir,
 one for every home pinning it) so a later process reaps a crashed owner's browser after checking pid + start
 time + its `--user-data-dir` argv token; the reaper walks every served home and every shared profile.
 `browser_tool.py` and `browser_tool_install.py` are frozen old-updater stubs only (see their
@@ -180,27 +180,27 @@ interrupted entry's `summary` is the child's last real assistant text (`_build_r
 `tests/tools/`. Test the handler through the registry (real dispatch), not the bare function only;
 assert contracts ("every registered tool has a toolset", "no schema description names a tool from
 another toolset") rather than tool counts. Approval/security-boundary tools are E2E'd with real
-imports against a temp `HERMES_HOME` (see `tests/tools/test_approval_config_readonly.py`).
+imports against a temp `MOOR_HOME` (see `tests/tools/test_approval_config_readonly.py`).
 
 ## Surface capability is a property of the SESSION, never of the process env
 
 A tool that works only because of *who is on the other end* (desktop panes, in-app browser,
 message reactions, Projects) must resolve availability from the **session's own source**, not
 from an env var on the backend. Client and backend are separate machines: the desktop app may
-drive a locally spawned backend, one over SSH, one behind URL + token, or Hermes Cloud, and
-only the first two carry `HERMES_DESKTOP=1`. An env-keyed gate is a silent no-op on the other
+drive a locally spawned backend, one over SSH, one behind URL + token, or Moor Cloud, and
+only the first two carry `MOOR_DESKTOP=1`. An env-keyed gate is a silent no-op on the other
 topologies — the tool is stripped from the schema while the platform hint tells the model it
-is "inside the Hermes desktop app". The pattern:
+is "inside the Moor desktop app". The pattern:
 
-- **The toolset is the surface gate.** Keep such tools off `_HERMES_CORE_TOOLS` and in a named
+- **The toolset is the surface gate.** Keep such tools off `_MOOR_CORE_TOOLS` and in a named
   toolset (`desktop_ui`, `project`); the GUI gateway's `_load_enabled_toolsets(platform)`
   folds it in when the session's platform says GUI. One resolver, every topology.
 - **`check_fn` answers reachability or opt-in, not surface.** "Is the bridge wired?" — fine.
   "Was I spawned by Electron?" — not. `check_fn` results are TTL-cached process-wide
   (`tools/registry.py`); a per-session answer does not belong there.
-- **Ask which identity you mean.** `HERMES_DESKTOP=1` legitimately means "this backend was
+- **Ask which identity you mean.** `MOOR_DESKTOP=1` legitimately means "this backend was
   spawned by the app" (cron ticker, web-dist handling). It does NOT mean "a GUI is watching";
-  the embedded terminal pane (`hermes --tui` against that backend) is the counterexample.
+  the embedded terminal pane (`moor --tui` against that backend) is the counterexample.
 
 Test: if the capability still makes sense with the client on another machine, it is
 session-scoped. Assert the GUI session gets the tool **with the env var absent**.

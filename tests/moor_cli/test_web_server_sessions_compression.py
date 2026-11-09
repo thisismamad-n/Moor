@@ -10,21 +10,21 @@ import pytest
 
 
 class _SessionsCompressionEndpoints:
-    """Shared harness: TestClient pair against the isolated HERMES_HOME store."""
+    """Shared harness: TestClient pair against the isolated MOOR_HOME store."""
 
     @pytest.fixture(autouse=True)
-    def _setup_test_client(self, monkeypatch, _isolate_hermes_home):
+    def _setup_test_client(self, monkeypatch, _isolate_moor_home):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import hermes_state
-        from hermes_constants import get_hermes_home
-        from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+        import moor_state
+        from moor_constants import get_moor_home
+        from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
         monkeypatch.setattr(
-            hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db"
+            moor_state, "DEFAULT_DB_PATH", get_moor_home() / "state.db"
         )
         self.client = TestClient(app)
         self.auth_client = TestClient(app)
@@ -38,7 +38,7 @@ class TestSessionStatsCompressionChildren(_SessionsCompressionEndpoints):
         """Stats counts every physical row while the paired list collapses each
         chain to one row — total/active_store/archived were inflated by the
         hidden chain links and never matched the listed rows."""
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB()
         try:
@@ -83,10 +83,10 @@ class TestDeleteSessionCompressionChain(_SessionsCompressionEndpoints):
         from types import SimpleNamespace
 
         from gateway.session_authority import LiveSession, SessionAuthority
-        from hermes_cli.web_server import app
-        from hermes_constants import get_hermes_home
-        from hermes_state import SessionDB
-        from hermes_state_runtime import begin_runtime_epoch
+        from moor_cli.web_server import app
+        from moor_constants import get_moor_home
+        from moor_state import SessionDB
+        from moor_state_runtime import begin_runtime_epoch
 
         db = SessionDB()
         try:
@@ -97,7 +97,7 @@ class TestDeleteSessionCompressionChain(_SessionsCompressionEndpoints):
             )
             # The dashboard never opens a second writer: DELETE admits through the owner.
             authority = SessionAuthority(
-                SimpleNamespace(_draining=False), profile_id=str(get_hermes_home()),
+                SimpleNamespace(_draining=False), profile_id=str(get_moor_home()),
                 instance_id="owner", db=db, epoch=begin_runtime_epoch(db, instance_id="owner"))
             authority.sessions["conv_tip"] = LiveSession(None, "route")
             monkeypatch.setattr(app.state, "session_authority", authority, raising=False)
@@ -124,7 +124,7 @@ class TestBulkDeleteCompressionChain(_SessionsCompressionEndpoints):
         chain — otherwise the root resurfaces as the previous link on the next
         reload and the user sees the delete "not work". ``deleted`` counts
         selected rows, and other lineages / standalone rows survive untouched."""
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         db = SessionDB()
         try:

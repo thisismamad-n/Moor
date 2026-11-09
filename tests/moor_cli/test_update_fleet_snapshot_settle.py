@@ -12,10 +12,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from hermes_cli import update_cmd
-from hermes_cli import update_cmd_fleet
-import hermes_cli.update_cmd_fleet_verify as fleet_verify
-from hermes_constants import get_hermes_home
+from moor_cli import update_cmd
+from moor_cli import update_cmd_fleet
+import moor_cli.update_cmd_fleet_verify as fleet_verify
+from moor_constants import get_moor_home
 
 
 class _FakeClock:
@@ -64,7 +64,7 @@ def test_snapshot_stops_waiting_once_the_restarted_unit_is_dead(monkeypatch) -> 
         lambda cmd, *, timeout: SimpleNamespace(
             stdout="LoadState=loaded\nActiveState=failed\n", stderr="", returncode=0))
 
-    restart = SimpleNamespace(pre_restart_gateway_pids=[101], restarted_scoped_units={"user/hermes-gateway.service"})
+    restart = SimpleNamespace(pre_restart_gateway_pids=[101], restarted_scoped_units={"user/moor-gateway.service"})
     assert fleet_verify._collect_fleet_snapshot(restart, rows_expected=True) == []
     assert clock.now < 30.0
 
@@ -86,9 +86,9 @@ def test_snapshot_keeps_waiting_when_the_unit_is_unknown_to_the_asked_scope(monk
             stderr="", returncode=0)
 
     monkeypatch.setattr(update_cmd_fleet, "_systemctl", systemctl)
-    assert fleet_verify._restarted_units_gone(("system/hermes-gateway.service",)) is False
+    assert fleet_verify._restarted_units_gone(("system/moor-gateway.service",)) is False
 
-    restart = SimpleNamespace(pre_restart_gateway_pids=[101], restarted_scoped_units={"system/hermes-gateway.service"})
+    restart = SimpleNamespace(pre_restart_gateway_pids=[101], restarted_scoped_units={"system/moor-gateway.service"})
     assert fleet_verify._collect_fleet_snapshot(restart, rows_expected=True) == []
     assert clock.now >= fleet_verify._FLEET_PROBE_SETTLE_TIMEOUT_SECONDS
 

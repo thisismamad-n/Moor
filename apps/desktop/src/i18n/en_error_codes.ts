@@ -35,7 +35,7 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
   },
   timeout: {
     title: provider => `Can't reach ${provider}`,
-    body: provider => `Hermes couldn't reach ${provider}. Check your connection, then retry.`
+    body: provider => `Moor couldn't reach ${provider}. Check your connection, then retry.`
   },
   stream_drop: {
     title: 'The reply was cut off',
@@ -43,7 +43,7 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
   },
   no_reply: {
     title: "The reply didn't arrive",
-    body: 'Hermes finished this turn, but no reply reached this window. Retry to send it again.'
+    body: 'Moor finished this turn, but no reply reached this window. Retry to send it again.'
   },
   upstream_blocked: {
     title: provider => `${provider} blocked this request`,
@@ -98,11 +98,11 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
     body: provider => `${provider} returned nothing for this message. Retry in a moment.`
   },
   loop_error: {
-    title: "Hermes couldn't finish this step",
+    title: "Moor couldn't finish this step",
     body: 'Something went wrong handling the reply. Retry; if it happens again, send diagnostics from the details.'
   },
   SESSION_OWNER_BUSY: {
-    title: 'Hermes is busy in this chat',
+    title: 'Moor is busy in this chat',
     body: 'Another turn is running here and your message could not join its queue. Nothing was sent. Retry once that turn ends.'
   },
   cron_session_read_only: {
@@ -111,7 +111,7 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
   },
   session_read_only: {
     title: 'This chat is read-only',
-    body: 'It is stored history Hermes can show but not continue, so your message was not run. Start a new chat to send it.'
+    body: 'It is stored history Moor can show but not continue, so your message was not run. Start a new chat to send it.'
   },
   workspace_unavailable: {
     title: "This chat's folder is gone",
@@ -125,7 +125,7 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
     title: "Can't reach the local model server",
     body: "The local model server isn't serving yet: it may still be starting. Retry in a moment, or switch to another model.",
     bodyNoRetry:
-      'The local model server is turned off. Start it from the Hermes desktop app or `hermes model` in a terminal, or switch to another model.'
+      'The local model server is turned off. Start it from the Moor desktop app or `moor model` in a terminal, or switch to another model.'
   },
   SESSION_OWNER_UNCONFIRMED: {
     title: 'Your message may already be queued',
@@ -134,25 +134,25 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
   agent_init_failed: {
     title: "Couldn't start this chat",
     body: provider =>
-      `Hermes couldn't connect to ${provider} for this chat. Retry; if it keeps failing, check the provider in Settings.`
+      `Moor couldn't connect to ${provider} for this chat. Retry; if it keeps failing, check the provider in Settings.`
   },
   SESSION_NOT_OWNED: {
     title: 'Chat open somewhere else',
-    body: 'This chat is open in another Hermes window or terminal. Start a new chat here, or close it there first.'
+    body: 'This chat is open in another Moor window or terminal. Start a new chat here, or close it there first.'
   },
   disk_full: {
     title: 'Your disk is full',
-    body: "Hermes couldn't save this conversation. Free up space, then retry."
+    body: "Moor couldn't save this conversation. Free up space, then retry."
   },
-  // Nous free tier. The body is normally the backend's own sentence (it names the wait
+  // Moor free tier. The body is normally the backend's own sentence (it names the wait
   // and the way forward); these bodies stand in for an older backend that sent none.
   free_tier_disabled: {
     title: 'Sign in to keep chatting',
-    body: "Sign in with a Nous account to keep chatting, it's free."
+    body: "Sign in with a Moor account to keep chatting, it's free."
   },
   free_tier_rate_limited: {
     title: 'Free allowance used up',
-    body: "It refreshes shortly. Sign in with a Nous account for a bigger allowance, it's free."
+    body: "It refreshes shortly. Sign in with a Moor account for a bigger allowance, it's free."
   },
   free_tier_at_capacity: {
     title: 'Free tier is busy',
@@ -160,11 +160,11 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
   },
   free_tier_model_not_free: {
     title: 'This model needs a sign-in',
-    body: "Hermes uses the free model for now. Sign in with a Nous account for more models, it's free."
+    body: "Moor uses the free model for now. Sign in with a Moor account for more models, it's free."
   },
   free_tier_route: {
     title: "Can't reach the free model",
-    body: "Sign in with a Nous account, it's free, or check the NOUS_INFERENCE_BASE_URL setting."
+    body: "Sign in with a Moor account, it's free, or check the MOOR_INFERENCE_BASE_URL setting."
   },
   free_tier_outage: {
     title: 'Free model is having trouble',
@@ -172,7 +172,7 @@ export const enErrorCodes: ThreadCopy['errorCodes'] = {
   },
   free_tier_refused: {
     title: 'Sign in to keep chatting',
-    body: 'Signing in with a Nous account is free.'
+    body: 'Signing in with a Moor account is free.'
   },
   usage_window: {
     title: 'Included usage used up',

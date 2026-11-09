@@ -62,8 +62,8 @@ def _tick_failing(job, tmp_path, deliveries, error="boom unrelated", *, settle=F
     with cron_jobs.use_cron_store(tmp_path), \
          patch("cron.scheduler._moor_home", tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("hermes_cli.env_loader.load_hermes_dotenv"), \
-         patch("hermes_cli.env_loader.reset_secret_source_cache"), \
+         patch("moor_cli.env_loader.load_moor_dotenv"), \
+         patch("moor_cli.env_loader.reset_secret_source_cache"), \
          patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
          patch("moor_cli.runtime_provider.resolve_runtime_provider",
                return_value={
@@ -109,11 +109,11 @@ def test_incidents_list_newest_instant_first_across_dst_fall_back(monkeypatch, t
     inc = _point_db(monkeypatch, tmp_path)
     new_york = ZoneInfo("America/New_York")
     monkeypatch.setattr(
-        inc, "_hermes_now", lambda: datetime(2026, 11, 1, 1, 50, tzinfo=new_york, fold=0)
+        inc, "_moor_now", lambda: datetime(2026, 11, 1, 1, 50, tzinfo=new_york, fold=0)
     )
     earlier, _ = inc.upsert_incident("job-1", "first failure")
     monkeypatch.setattr(
-        inc, "_hermes_now", lambda: datetime(2026, 11, 1, 1, 10, tzinfo=new_york, fold=1)
+        inc, "_moor_now", lambda: datetime(2026, 11, 1, 1, 10, tzinfo=new_york, fold=1)
     )
     later, _ = inc.upsert_incident("job-2", "second failure")
 

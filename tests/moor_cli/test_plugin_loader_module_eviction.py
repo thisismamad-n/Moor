@@ -9,7 +9,7 @@ from collections.abc import Iterator
 
 import pytest
 
-from hermes_cli import plugins_loader
+from moor_cli import plugins_loader
 
 # Enough entries that the filtering pass spans several GIL switches.
 _MODULE_COUNT = 5000
@@ -54,15 +54,15 @@ def fast_thread_switching() -> Iterator[None]:
 
 
 def test_evict_modules_drops_module_and_submodules(isolated_modules: dict) -> None:
-    for name in ("hermes_plugins.aop", "hermes_plugins.aop.client", "hermes_plugins.aop_other"):
+    for name in ("moor_plugins.aop", "moor_plugins.aop.client", "moor_plugins.aop_other"):
         isolated_modules[name] = types.ModuleType(name)
 
-    plugins_loader._evict_modules("hermes_plugins.aop")
+    plugins_loader._evict_modules("moor_plugins.aop")
 
-    assert "hermes_plugins.aop" not in isolated_modules
-    assert "hermes_plugins.aop.client" not in isolated_modules
+    assert "moor_plugins.aop" not in isolated_modules
+    assert "moor_plugins.aop.client" not in isolated_modules
     # A sibling sharing the prefix without the dot boundary must survive.
-    assert "hermes_plugins.aop_other" in isolated_modules
+    assert "moor_plugins.aop_other" in isolated_modules
 
 
 def test_evict_modules_tolerates_concurrent_imports(
@@ -92,7 +92,7 @@ def test_evict_modules_tolerates_concurrent_imports(
     def evict() -> None:
         try:
             for i in range(_EVICTIONS):
-                name = f"hermes_plugins.victim_{i}"
+                name = f"moor_plugins.victim_{i}"
                 isolated_modules[name] = None
                 isolated_modules[f"{name}.sub"] = None
                 plugins_loader._evict_modules(name)
@@ -115,5 +115,5 @@ def test_evict_modules_tolerates_concurrent_imports(
     # the eviction running against a mapping it has to itself, which is the case the fix is
     # not about. A silent pass here would mean the regression stopped being covered at all.
     assert churn_rounds > 0, "churn thread never ran — the race window was never opened"
-    leftover = [name for name in isolated_modules if name.startswith("hermes_plugins.victim_")]
+    leftover = [name for name in isolated_modules if name.startswith("moor_plugins.victim_")]
     assert not leftover, f"eviction left entries behind: {leftover[:5]}"

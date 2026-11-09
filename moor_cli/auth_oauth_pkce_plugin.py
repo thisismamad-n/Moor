@@ -100,8 +100,8 @@ def validate_config(provider: str, cfg: OAuthPKCEConfig) -> None:
 def _post_token(provider: str, cfg: OAuthPKCEConfig, data: dict[str, str], *, code: str) -> dict[str, Any]:
     """POST the token endpoint (or the plugin's broker) and return the rotated pool fields; the payload
     is never logged."""
-    from hermes_cli.auth import _default_verify
-    from hermes_cli.auth_constants import httpx
+    from moor_cli.auth import _default_verify
+    from moor_cli.auth_constants import httpx
 
     if cfg.token_request is not None:
         return _token_fields(provider, cfg.token_request(dict(data)), data, code)
@@ -120,7 +120,7 @@ def _post_token(provider: str, cfg: OAuthPKCEConfig, data: dict[str, str], *, co
 
 def _token_fields(provider: str, payload: Mapping[str, Any], data: dict[str, str], code: str) -> dict[str, Any]:
     """Pool fields from a token-endpoint payload; a response without ``refresh_token`` keeps the old one."""
-    from hermes_cli.auth import _coerce_ttl_seconds, _utc_now_z
+    from moor_cli.auth import _coerce_ttl_seconds, _utc_now_z
 
     access_token = str(payload.get("access_token") or "").strip()
     if not access_token:

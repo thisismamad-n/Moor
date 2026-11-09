@@ -140,19 +140,19 @@ it('flashes an unfocused source window until it regains focus, and leaves a focu
 
   const notify = host.handle.mock.calls[0][1] as (
     event: IpcMainInvokeEvent,
-    payload: HermesNotification
+    payload: MoorNotification
   ) => Promise<boolean>
 
   const event = { sender: source.webContents } as unknown as IpcMainInvokeEvent
 
-  await notify(event, { kind: 'turnDone', sessionId: 'a', title: 'Hermes finished' })
-  await notify(event, { kind: 'turnDone', sessionId: 'b', title: 'Hermes finished' })
+  await notify(event, { kind: 'turnDone', sessionId: 'a', title: 'Moor finished' })
+  await notify(event, { kind: 'turnDone', sessionId: 'b', title: 'Moor finished' })
   expect(source.flashFrame.mock.calls).toEqual([[true]])
 
   source.emit('focus')
   expect(source.flashFrame.mock.calls).toEqual([[true], [false]])
 
   source.isFocused.mockReturnValue(true)
-  await notify(event, { kind: 'turnDone', sessionId: 'c', title: 'Hermes finished' })
+  await notify(event, { kind: 'turnDone', sessionId: 'c', title: 'Moor finished' })
   expect(source.flashFrame).toHaveBeenCalledTimes(2)
 })

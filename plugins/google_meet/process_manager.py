@@ -19,7 +19,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from plugins.google_meet._jsonfile import say_queue_lock
 
 from utils import atomic_json_write

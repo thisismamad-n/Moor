@@ -7,7 +7,7 @@ import { SystemActionsProvider } from "./contexts/SystemActions";
 import { I18nProvider } from "./i18n";
 import { exposePluginSDK } from "./plugins";
 import { ThemeProvider } from "./themes";
-import { HERMES_BASE_PATH } from "./lib/api";
+import { MOOR_BASE_PATH } from "./lib/api";
 import { startChunkLoadRecovery } from "./lib/chunk-load-recovery";
 
 // Before the first render, so the first lazy route is covered too. The dev

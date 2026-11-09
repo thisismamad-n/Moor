@@ -74,7 +74,7 @@ def plugin_activation_summary(manager: Any, plugin_key: str) -> dict[str, Any]:
     summary = {"name": name, "key": plugin_key, "activated_now": now, "deferred": deferred}
     # Read in the process that loaded the plugin (for a gateway answer, the gateway): a dependency
     # installed after it booted is not importable there until it restarts.
-    from hermes_cli.plugins_loader import missing_python_dependencies
+    from moor_cli.plugins_loader import missing_python_dependencies
     if missing := missing_python_dependencies(manifest):
         summary["missing_dependencies"] = missing
     return summary
@@ -96,7 +96,7 @@ def dependency_blocked_summaries(manager: Any) -> list[dict[str, Any]]:
     plugin importing a just-installed dependency at load time fails in a process booted before the
     install; without this entry the caller would read "loaded nothing, needs nothing" instead of
     "restart". Never part of the ``on_plugin_loaded`` payload: nothing of these plugins loaded."""
-    from hermes_cli.plugins_loader import missing_python_dependencies
+    from moor_cli.plugins_loader import missing_python_dependencies
     out = []
     for key, loaded in list(manager._plugins.items()):
         manifest = getattr(loaded, "manifest", None)
@@ -130,10 +130,10 @@ def activate_plugin_now(name: str, *, in_process: bool = True) -> dict[str, Any]
     (``activation.missing_dependencies``; ``activation.missing_in`` names which: ``gateway`` and/or
     ``backend``, the Desktop / dashboard process): a running process never switches to the dependency
     generation an enable just installed, so only restarting that process loads them."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     activation: Optional[dict[str, Any]] = load_and_go_live(name) if in_process else None
     if not in_process:
-        activation = (notify_serve_backend(name, Path(get_hermes_home())) or {}).get("activation")
+        activation = (notify_serve_backend(name, Path(get_moor_home())) or {}).get("activation")
     answer = reload_running_gateway()
     reloaded = bool(answer and answer.get("reloaded"))
     gateway_activation = find_activation((answer or {}).get("activations"), name) if reloaded else None
@@ -155,8 +155,8 @@ def reload_running_gateway() -> Optional[dict[str, Any]]:
     gateway now. The ``reload-plugins`` answer, or None when no gateway answered."""
     try:
         from gateway.control_socket import reload_gateway_plugins
-        from hermes_constants import get_default_hermes_root, get_hermes_home
-        home = Path(get_hermes_home())
+        from moor_constants import get_default_moor_root, get_moor_home
+        home = Path(get_moor_home())
         answer = reload_gateway_plugins(home)
         if answer is None:
             root = Path(get_default_moor_root())
@@ -174,13 +174,13 @@ def gateway_reload_hint(answer: Optional[dict[str, Any]], name: str) -> str:
     wired into platform adapters outlive a reload (the plugin guide), so a restart still ends those."""
     if answer and answer.get("reloaded"):
         return (f"The running gateway reloaded its plugins and unloaded {name}; platform hooks it already "
-                "wired up stay until a gateway restart (hermes gateway restart).")
+                "wired up stay until a gateway restart (moor gateway restart).")
     if answer is not None:  # a gateway answered and refused: say so, with its reason
         return (f"The running gateway refused to reload its plugins: {answer.get('error') or 'no reason given'}.\n"
                 "Only the saved config changed; restart the gateway serving this profile to apply it:\n"
-                "  hermes gateway restart")
+                "  moor gateway restart")
     return ("No running gateway answered. If one is running, restart it for this to take effect:\n"
-            "  hermes gateway restart")
+            "  moor gateway restart")
 
 
 def load_and_go_live(name: str) -> Optional[dict[str, Any]]:
@@ -199,7 +199,7 @@ def load_and_go_live(name: str) -> Optional[dict[str, Any]]:
 
 
 def _go_live(name: str) -> Optional[dict[str, Any]]:
-    from hermes_cli.plugins_activation_live import connect_plugin_mcp, live_notice, plugin_skills
+    from moor_cli.plugins_activation_live import connect_plugin_mcp, live_notice, plugin_skills
     try:
         from moor_cli.plugins import _join_background_discovery, get_plugin_manager
         _join_background_discovery()
@@ -226,7 +226,7 @@ def _go_live(name: str) -> Optional[dict[str, Any]]:
     if server is not None and (servers or note):
         from moor_constants import get_moor_home
         try:
-            server.refresh_plugin_sessions(Path(get_hermes_home()), activation["key"], note)
+            server.refresh_plugin_sessions(Path(get_moor_home()), activation["key"], note)
         except Exception:
             logger.warning("open chats were not refreshed after activating %r", name, exc_info=True)
     return activation
@@ -243,13 +243,13 @@ def _serve_backend_record():
 
 
 def notify_serve_backend(name: str, home: Path) -> Optional[dict[str, Any]]:
-    """Ask the running dashboard / Desktop backend (``hermes serve``, found through its host record) to
+    """Ask the running dashboard / Desktop backend (``moor serve``, found through its host record) to
     run :func:`load_and_go_live` for ``name`` in ``home``. None when no backend answers. Never raises."""
     try:
         import json
         import urllib.request
         from gateway import host_rendezvous as hr
-        from hermes_cli.url_utils import format_url_host
+        from moor_cli.url_utils import format_url_host
         record = _serve_backend_record()
         if record is None:
             return None
@@ -258,7 +258,7 @@ def notify_serve_backend(name: str, home: Path) -> Optional[dict[str, Any]]:
             f"http://{format_url_host(hr.dial_host(record))}:{record.port}"
             "/api/dashboard/agent-plugins/activate",
             data=json.dumps({"name": name, "home": str(home)}).encode("utf-8"), method="POST",
-            headers={"Content-Type": "application/json", "X-Hermes-Session-Token": token})
+            headers={"Content-Type": "application/json", "X-moor-session-Token": token})
         with urllib.request.urlopen(request, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except Exception:
@@ -270,28 +270,28 @@ def _gateway_present() -> bool:
     """A gateway runs for this profile (its own, or the multiplexer serving it from the root), or a
     gateway service is installed for it."""
     from gateway.status import get_running_pid
-    from hermes_cli.gateway import _installed_service_kind
-    from hermes_constants import get_default_hermes_root, get_hermes_home
-    homes = {Path(get_hermes_home()).resolve(), Path(get_default_hermes_root()).resolve()}
+    from moor_cli.gateway import _installed_service_kind
+    from moor_constants import get_default_moor_root, get_moor_home
+    homes = {Path(get_moor_home()).resolve(), Path(get_default_moor_root()).resolve()}
     return (any(get_running_pid(home / "gateway.pid", cleanup_stale=False) for home in homes)
             or _installed_service_kind() is not None)
 
 
-_RESTART_LINES = {"gateway": "  hermes gateway restart",
-                  "backend": "  quit and reopen the Hermes desktop app (or restart hermes dashboard)"}
+_RESTART_LINES = {"gateway": "  moor gateway restart",
+                  "backend": "  quit and reopen the Moor desktop app (or restart moor dashboard)"}
 
 
 def dependency_restart_hint(missing: list[str], processes: list[str]) -> str:
     """What to do when running processes cannot import a plugin's dependencies: one restart line per
     process that reported the gap (``gateway`` / ``backend``), never one that can already import them."""
-    from hermes_cli.plugins_loader import installed_in_selected_environment
+    from moor_cli.plugins_loader import installed_in_selected_environment
     deps = ", ".join(missing)
     restart = "\n".join(_RESTART_LINES[p] for p in processes)
     if installed_in_selected_environment(missing):
         return (f"Its Python dependencies ({deps}) were installed after the running gateway or dashboard "
                 "started, and a running process never switches dependency environments. Restart them to "
                 f"load the plugin:\n{restart}")
-    return f"Its Python dependencies ({deps}) are not installed. Run hermes pm repair, then restart:\n{restart}"
+    return f"Its Python dependencies ({deps}) are not installed. Run moor pm repair, then restart:\n{restart}"
 
 
 def report_activation(console, name: str) -> None:

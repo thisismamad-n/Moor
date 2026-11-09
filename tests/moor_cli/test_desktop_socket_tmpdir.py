@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import main_desktop
+from moor_cli import main_desktop
 
 
 def _launch_env(tmp_path) -> dict:
@@ -33,7 +33,7 @@ def _bind_singleton_socket(tmpdir: str) -> None:
 def test_long_scratch_tmpdir_hosts_the_singleton_socket_and_is_kept_for_children(monkeypatch, tmp_path):
     scratch = tmp_path / ("long-home-" * 8) / "cache" / "scratch"
     scratch.mkdir(parents=True)
-    for key in ("TMPDIR", "TMP", "TEMP", "HERMES_SCRATCH_DIR"):
+    for key in ("TMPDIR", "TMP", "TEMP", "MOOR_SCRATCH_DIR"):
         monkeypatch.setenv(key, str(scratch))
     monkeypatch.setattr(tempfile, "tempdir", None)
 
@@ -41,12 +41,12 @@ def test_long_scratch_tmpdir_hosts_the_singleton_socket_and_is_kept_for_children
 
     _bind_singleton_socket(env["TMPDIR"])
     # Electron main restores this for the backend, so the agent keeps writing to scratch.
-    assert env["HERMES_DESKTOP_TMPDIR"] == str(scratch)
+    assert env["MOOR_DESKTOP_TMPDIR"] == str(scratch)
 
 
 @pytest.mark.platforms("linux")
 def test_tmpdir_that_fits_the_socket_budget_is_passed_through(monkeypatch, tmp_path):
-    from hermes_constants import socket_safe_tmpdir
+    from moor_constants import socket_safe_tmpdir
 
     with tempfile.TemporaryDirectory(prefix="dt-", dir=socket_safe_tmpdir()) as root:
         # Longest TMPDIR whose scoped_dirXXXXXX/SingletonSocket still fits sun_path.
@@ -60,4 +60,4 @@ def test_tmpdir_that_fits_the_socket_budget_is_passed_through(monkeypatch, tmp_p
         env = _launch_env(tmp_path)
 
         assert env["TMPDIR"] == tmpdir
-        assert "HERMES_DESKTOP_TMPDIR" not in env
+        assert "MOOR_DESKTOP_TMPDIR" not in env

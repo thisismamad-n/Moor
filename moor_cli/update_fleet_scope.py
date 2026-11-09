@@ -58,10 +58,10 @@ def _ledger_gateway_home(pid: int) -> str | None:
     only for an exact live ``(pid, create_time)`` match. Proof for a gateway whose environment is
     unreadable (elevated, or another account's service) while its create time still is."""
     with suppress(Exception):
-        from hermes_cli.process_identity import ledger_entries
+        from moor_cli.process_identity import ledger_entries
         for entry in ledger_entries(verified_only=True):
             if entry.get("pid") == pid and entry.get("purpose") == "gateway":
-                return entry.get("hermes_home") or None
+                return entry.get("moor_home") or None
     return None
 
 
@@ -69,9 +69,9 @@ def gateway_pid_home(pid: int) -> str | None:
     """The home gateway *pid* runs on: its live environment, else the exact-birth ledger witness;
     ``None`` when neither proves one. Discovery, the Windows pause record and its readiness check
     share it, so the home discovery proved is the home the restart debt keeps."""
-    from hermes_cli.dashboard_procs import _hermes_home_for_pid
+    from moor_cli.dashboard_procs import _moor_home_for_pid
     try:
-        home = _hermes_home_for_pid(pid)
+        home = _moor_home_for_pid(pid)
     except Exception:  # health: allow BLE001 -- tri-state resolver: any environment-read failure is "unknown" and the ledger witness decides
         home = None
     return home or _ledger_gateway_home(pid)
@@ -164,8 +164,8 @@ def launchd_label_foreign_home(label: str, scope: set[Path] | None = None) -> st
 def describe_skipped_runtime(kind: str, name: str, home: str | None) -> str:
     """One notice line for a runtime the update leaves alone (foreign home or unreadable ownership)."""
     if home is None:
-        return f"  ↷ {name}: {kind} whose Hermes home could not be read — left alone (not restarted)"
-    return f"  ↷ {name}: {kind} of another Hermes home ({home}) — left alone (not restarted)"
+        return f"  ↷ {name}: {kind} whose Moor home could not be read — left alone (not restarted)"
+    return f"  ↷ {name}: {kind} of another Moor home ({home}) — left alone (not restarted)"
 
 
 def announce_skipped_runtime(kind: str, name: str, home: str | None) -> None:
@@ -175,7 +175,7 @@ def announce_skipped_runtime(kind: str, name: str, home: str | None) -> None:
     and the restart phase runs in a fresh completion process, so only the run's receipt (handed to
     that process) knows what the pause already announced. No open receipt: every call prints.
     """
-    from hermes_cli import update_receipt
+    from moor_cli import update_receipt
     entry = [kind, name, home]
     current = update_receipt._current.get()
     announced = list((current.data if current is not None else {}).get("runtimes_left_alone") or [])

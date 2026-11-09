@@ -23,7 +23,7 @@ We value contributions in this order:
 ## Contribution rubric
 
 The project's intent layer, summarised in the root `AGENTS.md`; this is the long form with the
-examples. Hermes ships a lot: most merges are bug fixes and the product surface (platforms,
+examples. Moor ships a lot: most merges are bug fixes and the product surface (platforms,
 providers, models, desktop/TUI features) expands on purpose. The restraint targets the core agent
 and the model tool schema, where every addition is paid for on every API call: expansive at the
 edges, conservative at the waist.
@@ -34,7 +34,7 @@ edges, conservative at the waist.
   where it manifests, and fix the whole bug class — sibling call paths included.
 - **Expand reach at the edges.** New adapters, channels, providers, models, desktop/TUI/
   dashboard features land routinely, including large ones — as long as they integrate with
-  the existing setup/config UX (`hermes tools`, `hermes setup`, auto-install) rather than
+  the existing setup/config UX (`moor tools`, `moor setup`, auto-install) rather than
   bolting on a raw env var.
 - **Refactor god-files into clean modules.** Huge mechanical `+N/-N` extraction PRs are
   wanted work. "Every line traces to the request" applies to *feature* PRs; a declared
@@ -50,7 +50,7 @@ edges, conservative at the waist.
   freeze a current value (see `tests/AGENTS.md`).
 - **E2E validation, not just green unit mocks.** Anything touching resolution chains, config
   propagation, security boundaries, remote backends, or file/network I/O must exercise the
-  real path with real imports against a temp `HERMES_HOME` — two of them (A→B→A) when the
+  real path with real imports against a temp `MOOR_HOME` — two of them (A→B→A) when the
   change touches profile scope. Mocks hide integration bugs.
 - **Cache-, alternation-, and invariant-safe.** Preserve prompt caching, strict role
   alternation (never two same-role messages in a row; never a synthetic user message injected
@@ -63,7 +63,7 @@ edges, conservative at the waist.
 - **Speculative infrastructure.** Hooks/callbacks/extension points with no concrete consumer.
   Adding a hook is easy; removing one after plugins depend on it is hard. A hook with a real,
   stated use case is NOT speculative even if the consumer ships separately.
-- **New `HERMES_*` env vars for non-secret config.** `.env` is for secrets only. Behavioral
+- **New `MOOR_*` env vars for non-secret config.** `.env` is for secrets only. Behavioral
   settings (timeouts, thresholds, flags, display prefs) go in `config.yaml`; bridge to an
   internal env var in code if the mechanism needs one. Reject "set X in your .env" docs
   unless X is a credential.
@@ -76,15 +76,15 @@ edges, conservative at the waist.
   (`git log -p -S`) before restricting behavior; find a fix that preserves the feature.
 - **Outbound telemetry / usage attribution without opt-in gating.** No analytics,
   third-party identifier tagging, or attribution tags until a generic user-facing opt-in
-  (config gate + setup prompt + `hermes tools` toggle) exists. Park behind a label.
+  (config gate + setup prompt + `moor tools` toggle) exists. Park behind a label.
 - **Change-detector tests, cache-breaking mid-conversation, dead code wired in without E2E
   proof, plugins that touch core files.** Plugins work within the ABCs/hooks we provide; if
   one needs more, widen the generic plugin surface, never special-case it in core.
 - **Third-party products integrated into the core tree.** Observability backends, vendor
   SaaS connectors, analytics dashboards, and other "someone else's product" plugins do NOT
   land under `plugins/` — every one becomes our burden against a fast-moving core for a
-  backend we don't own. Ship as a **standalone plugin repo** (`~/.hermes/plugins/` or pip
-  entry point), promoted in the Nous Research Discord `#plugins-skills-and-skins`. This is a
+  backend we don't own. Ship as a **standalone plugin repo** (`~/.moor/plugins/` or pip
+  entry point), promoted in the Moor inc. Discord `#plugins-skills-and-skins`. This is a
   coupling decision, not a quality bar; such PRs are closed with a pointer to publish.
 
 ### Before you call it a bug — verify the premise (and when NOT to close)
@@ -122,14 +122,14 @@ Choose the highest (least-footprint) rung that correctly solves the problem:
 
 1. **Extend existing code** — a variation of something that exists. Zero new surface.
 2. **CLI command + skill** — config/state/infra expressible as shell commands; the agent runs
-   `hermes <subcommand>` guided by a skill. Default for subscriptions, scheduled tasks,
-   service setup (`hermes webhook`, `hermes cron`, `hermes tools`).
+   `moor <subcommand>` guided by a skill. Default for subscriptions, scheduled tasks,
+   service setup (`moor webhook`, `moor cron`, `moor tools`).
 3. **Service-gated tool (`check_fn`)** — needs structured params/returns AND only appears when
    a prerequisite is configured (Home Assistant tools, memory-provider tools). This rung gates
    reachability/opt-in process-wide; a capability that varies per SESSION (who is watching) is
    a named toolset folded in by the toolset resolver, not a `check_fn` — see `tools/AGENTS.md` § "Surface
    capability is a property of the SESSION".
-4. **Plugin** — third-party/niche/user-specific; lives in `~/.hermes/plugins/` or a pip
+4. **Plugin** — third-party/niche/user-specific; lives in `~/.moor/plugins/` or a pip
    package, discovered at runtime.
 5. **MCP server (in the catalog)** — genuinely a tool but not core-fundamental. Zero permanent
    core-schema footprint, reusable by any MCP host, reached via the built-in MCP client.
@@ -351,7 +351,7 @@ refactor/description   # Code restructuring
 2. **Test manually**: Run `moor` and exercise the code path you changed
 3. **Check cross-platform impact**: Consider macOS, Linux, WSL2, and native Windows. If you touch file I/O, process management, terminal handling, subprocesses, or signals, run `scripts/check-windows-footguns.py`.
 4. **Keep PRs focused**: One logical change per PR
-5. **Prompt or tool-schema changes**: if `tests/ci/test_prompt_surface.py` fails, your change alters the system prompt or a tool schema that every session sends. Regenerate with `scripts/run-in-hermes-env python scripts/ci/prompt_surface.py render` and commit the snapshot. Changes there need a maintainer approval (see [Prompt Assembly](./prompt-assembly.md#reviewing-changes-to-the-prompt-surface)).
+5. **Prompt or tool-schema changes**: if `tests/ci/test_prompt_surface.py` fails, your change alters the system prompt or a tool schema that every session sends. Regenerate with `scripts/run-in-moor-env python scripts/ci/prompt_surface.py render` and commit the snapshot. Changes there need a maintainer approval (see [Prompt Assembly](./prompt-assembly.md#reviewing-changes-to-the-prompt-surface)).
 6. **New config keys or slash commands**: if `tests/ci/test_docs_drift.py` fails, a `DEFAULT_CONFIG` key or slash command you added has no docs. Mention the dotted key (`agent.max_turns`) or show it in a YAML example under `website/docs/` (usually `user-guide/configuration.md`), and add slash commands to `reference/slash-commands.md`. If a key really should stay undocumented, `python scripts/ci/check_docs_drift.py --update` adds it to `scripts/ci/docs_drift_baseline.json` where reviewers see it. Keys that were undocumented when the check landed are already baselined; documenting one never fails.
 
 ### PR Description

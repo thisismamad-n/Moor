@@ -20,15 +20,15 @@ import pytest
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    """Point HERMES_HOME at a temp dir so session creation stays isolated. The gateway is the single
+    """Point MOOR_HOME at a temp dir so session creation stays isolated. The gateway is the single
     writer: ``session.create {title}`` is played by a stand-in that writes the row the owner would."""
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "moor_home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    from hermes_cli import gateway_session_store
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    from moor_cli import gateway_session_store
 
     def create_titled(title):
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         db = SessionDB()
         try:
             sid = "local-" + "ab" * 32
@@ -151,8 +151,8 @@ class TestChatCFailLoudlyOnStderr:
         """--create-if-missing resolves to a new session id on args.resume. The classic CLI's
         gateway is the single writer: the titled session is the gateway's ``session.create`` (with
         ``title``), and this process writes no state.db row."""
-        import hermes_cli.main as main_mod
-        import hermes_cli.gateway_session_store as store_mod
+        import moor_cli.main as main_mod
+        import moor_cli.gateway_session_store as store_mod
 
         created = []
         monkeypatch.setattr(store_mod, "create_titled_session",
@@ -175,7 +175,7 @@ class TestChatCFailLoudlyOnStderr:
 
     def test_tui_create_if_missing_keeps_the_local_titled_row(self, isolated_home):
         """The TUI launch is unchanged: main's titled row, then the TUI resumes it."""
-        import hermes_cli.main as main_mod
+        import moor_cli.main as main_mod
 
         args = type("Args", (), {"continue_last": "Bot Chat", "resume": None, "create_if_missing": True})()
         main_mod._resolve_continue_arg(args, use_tui=True)

@@ -14,8 +14,8 @@ from moor_cli.config import (
     find_provider_entry,
     read_raw_config,
 )
-from hermes_cli.config_backend import refusing_locked_omissions
-from hermes_cli.web_server_memory import _normalize_memory_provider_name
+from moor_cli.config_backend import refusing_locked_omissions
+from moor_cli.web_server_memory import _normalize_memory_provider_name
 from tools.transcription_common import STT_MODEL_CATALOG
 from tools.wake_word import _PROVIDER_PREFERENCE
 
@@ -194,7 +194,7 @@ _SCHEMA_OVERRIDES: dict[str, dict[str, Any]] = {
 
 # Small categories fold into a bigger tab to avoid one-field orphan tabs. Several sources
 # (models_dev, onboarding, mcp, computer_use, telemetry, plugins, doctor, runtime, session,
-# nous, telegram) currently surface a single schema field each.
+# moor, telegram) currently surface a single schema field each.
 _CATEGORY_MERGE: dict[str, str] = {
     "privacy": "security",
     "context": "agent",
@@ -555,8 +555,8 @@ def _apply_main_model_assignment(model_cfg: Any, result: "ModelSwitchResult", ap
     dropped so a stale secret cannot shadow it.
 
     Returns a new dict."""
-    from hermes_cli.config_backend import supports_file_tooling
-    from hermes_cli.model_switch import apply_model_selection, remote_model_selection_guard
+    from moor_cli.config_backend import supports_file_tooling
+    from moor_cli.model_switch import apply_model_selection, remote_model_selection_guard
 
     before = model_cfg
     # Remote Config: the caller saves the effective block as a whole document, so a cleared
@@ -573,9 +573,9 @@ def drop_model_key(model_cfg: dict, key: str) -> None:
     """Remove *key* from a ``model`` block an assignment is building. Under Remote Config the block
     is the EFFECTIVE one, so a key it holds may be inherited from an upper level that a profile
     removal cannot reach (contract §5.4); store null ("no value") instead, the same mask
-    :func:`hermes_cli.model_switch.apply_model_selection` applies. A key the block lacks stays
+    :func:`moor_cli.model_switch.apply_model_selection` applies. A key the block lacks stays
     absent. File backend: a plain removal."""
-    from hermes_cli.config_backend import supports_file_tooling
+    from moor_cli.config_backend import supports_file_tooling
     if key not in model_cfg:
         return
     if supports_file_tooling():
@@ -605,7 +605,7 @@ def _normalize_config_for_web(config: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 # Canonical auxiliary task slots. Keep in sync with DEFAULT_CONFIG["auxiliary"]
-# in hermes_cli/config.py — listed here for deterministic ordering in the UI.
+# in moor_cli/config.py — listed here for deterministic ordering in the UI.
 _AUX_TASK_SLOTS: tuple[str, ...] = (
     "vision", "compression", "skills_hub", "approval", "mcp", "title_generation", "review", "voice_chat",
     "triage_specifier", "kanban_decomposer", "profile_describer", "curator",
@@ -614,7 +614,7 @@ _AUX_TASK_SLOTS: tuple[str, ...] = (
 
 def _plugin_aux_tasks() -> list[dict[str, Any]]:
     """Auxiliary tasks registered by plugins (``PluginContext.register_auxiliary_task``) for the
-    Hermes home active in this context.
+    Moor home active in this context.
 
     Callers run inside ``_profile_scope`` / ``_config_profile_scope``, and ``get_plugin_manager()``
     keys its manager on the same context-local home, so a request for profile B enumerates
@@ -622,7 +622,7 @@ def _plugin_aux_tasks() -> list[dict[str, Any]]:
     fail-soft: the built-in slots must keep working without plugins.
     """
     try:
-        from hermes_cli.plugins import get_plugin_auxiliary_tasks
+        from moor_cli.plugins import get_plugin_auxiliary_tasks
         return [dict(entry) for entry in get_plugin_auxiliary_tasks()
                 if entry.get("key") and entry["key"] not in _AUX_TASK_SLOTS]
     except Exception:  # health: allow BLE001 -- plugin discovery must never break the built-in slots
@@ -632,7 +632,7 @@ def _plugin_aux_tasks() -> list[dict[str, Any]]:
 
 def _aux_task_slots() -> tuple[str, ...]:
     """Every auxiliary slot the dashboard may read or assign: built-ins first (UI order), then
-    plugin-registered keys. The picker in ``hermes model`` (``main_provider_setup._all_aux_tasks``)
+    plugin-registered keys. The picker in ``moor model`` (``main_provider_setup._all_aux_tasks``)
     folds plugin tasks in the same way; the dashboard must not disagree with it."""
     return _AUX_TASK_SLOTS + tuple(entry["key"] for entry in _plugin_aux_tasks())
 
@@ -746,7 +746,7 @@ def _endpoint_known_to_config(cfg: dict, base_url: str) -> bool:
 
 def _register_custom_endpoint(base_url: str, api_key: str, model: str) -> None:
     """Register a named ``custom_providers`` entry for a custom/local endpoint (mirrors the
-    ``hermes model`` custom flow) so the picker gets a proper ready row instead of a "needs
+    ``moor model`` custom flow) so the picker gets a proper ready row instead of a "needs
     setup" dead-end. Dedups by base_url; never blocks the already-persisted assignment.
 
     SKIPPED when the endpoint is already a fact in the config (#76324): the CLI gateway setup
@@ -820,8 +820,8 @@ def _prepare_main_assignment(cfg: dict, provider: str, model: str, base_url: str
 
 def _apply_main_assignment_sync(cfg: dict, provider: str, model: str, base_url: str, api_key: str,
                                 prepared: "Optional[tuple[str, ModelSwitchResult]]" = None) -> dict:
-    from hermes_cli.config import save_config
-    from hermes_cli.free_tier_bootstrap import reconcile_record
+    from moor_cli.config import save_config
+    from moor_cli.free_tier_bootstrap import reconcile_record
     # Recorded from the SUBMITTED args, before preparation fills a URL from a named entry.
     explicit_endpoint = _is_explicit_custom_endpoint(provider, base_url)
     base_url, result = prepared or _prepare_main_assignment(cfg, provider, model, base_url, api_key)
@@ -843,7 +843,7 @@ def _apply_main_assignment_sync(cfg: dict, provider: str, model: str, base_url: 
     cfg["model"] = model_cfg
 
     new_provider = provider.strip().lower()
-    gateway_tools = _apply_nous_gateway_defaults(cfg) if new_provider == "nous" else []
+    gateway_tools = _apply_moor_gateway_defaults(cfg) if new_provider == "moor" else []
     # One route: a model.* key locked by the time the save runs (even after the preflight guard
     # above, or on its CAS retry) refuses the whole save instead of being omitted from it.
     with refusing_locked_omissions("model"):
@@ -885,7 +885,7 @@ def _normalize_aux_reasoning_effort(value: Optional[str]) -> Optional[str]:
 
 
 def _aux_default_effort(slot: str) -> str:
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from moor_cli.config_defaults import DEFAULT_CONFIG
     block = (DEFAULT_CONFIG.get("auxiliary") or {}).get(slot)
     return str(block.get("reasoning_effort") or "") if isinstance(block, dict) else ""
 

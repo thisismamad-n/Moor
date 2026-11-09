@@ -451,7 +451,7 @@ class TestUpdatePublication:
             release.set()
             slow.join(5)
             server._sessions.pop(other_sid, None)
-            from hermes_cli.goals import GoalManager
+            from moor_cli.goals import GoalManager
             GoalManager(other_key).clear()
 
     @pytest.mark.parametrize("name,arg", [("goal", "pause"), ("loop", "pause")])

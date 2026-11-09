@@ -66,7 +66,7 @@ def _credit_error():
 
 class _FakeClient:
     api_key = "sk-test"
-    base_url = f"https://{NOUS_HOST}/v1"
+    base_url = f"https://{MOOR_HOST}/v1"
 
 
 class _ExplicitProviderClient:
@@ -74,7 +74,7 @@ class _ExplicitProviderClient:
     base_url = "https://vertex.example/v1"
 
 
-def _ladder(base_info=(f"https://{NOUS_HOST}/v1"), resolved_provider="nous"):
+def _ladder(base_info=(f"https://{MOOR_HOST}/v1"), resolved_provider="moor"):
     return aux._aux_recovery_ladder(
         _auth_error(),
         client=_FakeClient(),
@@ -121,7 +121,7 @@ def test_post_refresh_retry_owns_the_ladder_outcome(
     if rung == "moor":
         monkeypatch.setattr(aux, "_refresh_moor_auxiliary_client",
                             lambda **kwargs: (_FakeClient(), AUX_MODEL))
-        expected_step, expected_base = "call", (f"https://{NOUS_HOST}/v1")
+        expected_step, expected_base = "call", (f"https://{MOOR_HOST}/v1")
     else:
         monkeypatch.setattr(aux, "_auth_refresh_provider_for_route",
                             lambda *a, **kw: "codex")
@@ -276,8 +276,8 @@ def moor_ladder_endpoint(monkeypatch):
             host = "127.0.0.1"
         return resolve_address(host, *args, **kwargs)
 
-    monkeypatch.setattr(socket, "getaddrinfo", local_nous_address)
-    monkeypatch.setenv("NO_PROXY", f"127.0.0.1,localhost,{NOUS_HOST}")
+    monkeypatch.setattr(socket, "getaddrinfo", local_moor_address)
+    monkeypatch.setenv("NO_PROXY", f"127.0.0.1,localhost,{MOOR_HOST}")
 
     class Handler(BaseHTTPRequestHandler):
         def _send(self, status, payload):
@@ -330,7 +330,7 @@ def moor_ladder_endpoint(monkeypatch):
     )
     thread.start()
     try:
-        yield f'http://{NOUS_HOST}:{server.server_port:d}', requests
+        yield f'http://{MOOR_HOST}:{server.server_port:d}', requests
     finally:
         aux.shutdown_cached_clients()
         server.shutdown()
@@ -341,9 +341,9 @@ def moor_ladder_endpoint(monkeypatch):
 def test_auth_refresh_retry_failure_reaches_the_configured_chain_over_http(
         tmp_path, monkeypatch, moor_ladder_endpoint):
     """End to end: the configured chain must serve the retry the refresh could not."""
-    host_url, requests = nous_ladder_endpoint
+    host_url, requests = moor_ladder_endpoint
     local_url = "http://127.0.0.1:{}".format(host_url.rsplit(":", 1)[1])
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setenv("AUX_FB_KEY", "fallback-test-key")
     config = {
         "model": {"provider": "moor", "default": AUX_MODEL},

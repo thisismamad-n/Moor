@@ -215,7 +215,7 @@ class _Relay:
         self.events.append(("subscribers.flush",))
 
 
-_EXPORT_WORKER = "hermes-shared-metrics-flush"
+_EXPORT_WORKER = "moor-shared-metrics-flush"
 
 
 def _join_export_workers() -> None:
@@ -424,30 +424,30 @@ def test_direct_runtime_records_without_enabling_a_plugin(direct_runtime, tmp_pa
     package = json.loads(packages[0].read_text(encoding="utf-8"))
     metrics = {metric["name"]: metric for metric in package["metrics"]}
     assert set(metrics) == {
-        "hermes.client.active",
-        "hermes.install.milestone",
-        "hermes.install.snapshot",
-        "hermes.model_route.count",
-        "hermes.task_cost.count",
-        "hermes.task_run.duration",
-        "hermes.task_run.finished",
-        "hermes.task_run.started",
-        "hermes.tool.usage.count",
-        "hermes.tool_approval.count",
-        "hermes.tool_call.count",
-        "hermes.tool_call.latency",
+        "moor.client.active",
+        "moor.install.milestone",
+        "moor.install.snapshot",
+        "moor.model_route.count",
+        "moor.task_cost.count",
+        "moor.task_run.duration",
+        "moor.task_run.finished",
+        "moor.task_run.started",
+        "moor.tool.usage.count",
+        "moor.tool_approval.count",
+        "moor.tool_call.count",
+        "moor.tool_call.latency",
     }
-    assert metrics["hermes.tool.usage.count"]["dimensions"] == {
+    assert metrics["moor.tool.usage.count"]["dimensions"] == {
         "error_class": "none", "outcome": "success", "tool_name": "terminal",
     }
-    assert metrics["hermes.install.snapshot"]["value"] == 1
-    assert metrics["hermes.client.active"] == {
-        "name": "hermes.client.active",
+    assert metrics["moor.install.snapshot"]["value"] == 1
+    assert metrics["moor.client.active"] == {
+        "name": "moor.client.active",
         "type": "counter",
         "dimensions": {},
         "value": 1,
     }
-    assert metrics["hermes.model_route.count"]["dimensions"] == {
+    assert metrics["moor.model_route.count"]["dimensions"] == {
         "call_role": "primary",
         # The call recovered from an unclassified provider error before succeeding.
         "error_class": "unknown",
@@ -467,11 +467,11 @@ def test_direct_runtime_records_without_enabling_a_plugin(direct_runtime, tmp_pa
         },
         "value": 1,
     }
-    assert metrics["hermes.tool_call.latency"]["dimensions"] == {
+    assert metrics["moor.tool_call.latency"]["dimensions"] == {
         "latency_bucket": "250ms_to_500ms", "retry_count_bucket": "0", "tool_category": "terminal",
     }
-    assert metrics["hermes.tool_approval.count"] == {
-        "name": "hermes.tool_approval.count",
+    assert metrics["moor.tool_approval.count"] == {
+        "name": "moor.tool_approval.count",
         "type": "counter",
         "dimensions": {
             "attribution": "tool_call",
@@ -489,7 +489,7 @@ def test_direct_runtime_records_without_enabling_a_plugin(direct_runtime, tmp_pa
         },
         "value": 1,
     }
-    assert metrics["hermes.task_run.finished"]["dimensions"] == {
+    assert metrics["moor.task_run.finished"]["dimensions"] == {
         "end_reason": "completed",
         "entrypoint": "interactive",
         "execution_surface": "cli",
@@ -498,7 +498,7 @@ def test_direct_runtime_records_without_enabling_a_plugin(direct_runtime, tmp_pa
         "platform": "none",
         "termination": "none",
     }
-    duration = metrics["hermes.task_run.duration"]["dimensions"]
+    duration = metrics["moor.task_run.duration"]["dimensions"]
     assert duration["duration_bucket"] in {
         "lt_1s",
         "1s_to_5s",
@@ -511,8 +511,8 @@ def test_direct_runtime_records_without_enabling_a_plugin(direct_runtime, tmp_pa
         "execution_surface": "cli", "outcome": "success", "retry_count_bucket": "1",
     }
     # Per-task call counts ride on the task cost row now.
-    assert metrics["hermes.task_cost.count"]["dimensions"]["api_calls_bucket"] == "1"
-    assert metrics["hermes.task_cost.count"]["dimensions"]["tool_calls_bucket"] == "1"
+    assert metrics["moor.task_cost.count"]["dimensions"]["api_calls_bucket"] == "1"
+    assert metrics["moor.task_cost.count"]["dimensions"]["tool_calls_bucket"] == "1"
 
 
 def test_real_binding_drives_lifecycle_aggregation_export_and_snapshot(
@@ -666,7 +666,7 @@ def test_real_binding_drives_lifecycle_aggregation_export_and_snapshot(
     from moor_cli.observability.shared_metrics import SharedMetricsStore
 
     _join_export_workers()
-    root = tmp_path / "hermes-home" / "telemetry" / "shared_metrics"
+    root = tmp_path / "moor-home" / "telemetry" / "shared_metrics"
     store = SharedMetricsStore(root / "metrics.sqlite3", root / "outbox")
     tomorrow = datetime.now(UTC) + timedelta(days=1)
     monkeypatch.setattr(
@@ -679,14 +679,14 @@ def test_real_binding_drives_lifecycle_aggregation_export_and_snapshot(
     for counter in snapshot:
         by_metric.setdefault(counter["metric_name"], []).append(counter)
 
-    assert by_metric["hermes.client.active"][0]["dimensions"] == {}
-    assert by_metric["hermes.client.active"][0]["value"] == 1
-    assert len(by_metric["hermes.task_run.started"]) == 1
-    assert by_metric["hermes.task_run.started"][0]["value"] == 3
+    assert by_metric["moor.client.active"][0]["dimensions"] == {}
+    assert by_metric["moor.client.active"][0]["value"] == 1
+    assert len(by_metric["moor.task_run.started"]) == 1
+    assert by_metric["moor.task_run.started"][0]["value"] == 3
     # v3: one route row per terminal outcome; an unclassified failed call reports `unknown`.
     route_by_outcome = {
         counter["dimensions"]["outcome"]: counter
-        for counter in by_metric["hermes.model_route.count"]
+        for counter in by_metric["moor.model_route.count"]
     }
     assert set(route_by_outcome) == {"success", "failed", "cancelled"}
     for outcome, error_class in (
@@ -705,7 +705,7 @@ def test_real_binding_drives_lifecycle_aggregation_export_and_snapshot(
         assert route_by_outcome[outcome]["value"] == 1
     assert {
         (c["dimensions"]["tool_name"], c["dimensions"]["outcome"], c["dimensions"]["error_class"])
-        for c in by_metric["hermes.tool.usage.count"]
+        for c in by_metric["moor.tool.usage.count"]
     } == {
         ("terminal", "success", "none"),
         ("read_file", "failed", "unknown"),
@@ -736,14 +736,14 @@ def test_real_binding_drives_lifecycle_aggregation_export_and_snapshot(
     }
     assert {
         tuple(counter["dimensions"][f] for f in ("tool_category", "latency_bucket", "retry_count_bucket"))
-        for counter in by_metric["hermes.tool_call.latency"]
+        for counter in by_metric["moor.tool_call.latency"]
     } == {
         ("terminal", "100ms_to_250ms", "0"),
         ("file", "500ms_to_1s", "unknown"),
         ("browser", "gte_30s", "unknown"),
     }
-    assert len(by_metric["hermes.tool_approval.count"]) == 1
-    approval_counter = by_metric["hermes.tool_approval.count"][0]
+    assert len(by_metric["moor.tool_approval.count"]) == 1
+    approval_counter = by_metric["moor.tool_approval.count"][0]
     assert approval_counter["dimensions"] == {
         "attribution": "tool_call",
         "outcome": "approved",
@@ -757,7 +757,7 @@ def test_real_binding_drives_lifecycle_aggregation_export_and_snapshot(
     assert set(terminal_by_outcome) == {"success", "failed", "cancelled"}
     duration_by_outcome = {
         counter["dimensions"]["outcome"]: counter["dimensions"]
-        for counter in by_metric["hermes.task_run.duration"]
+        for counter in by_metric["moor.task_run.duration"]
     }
     assert set(duration_by_outcome) == {"success", "failed", "cancelled"}
     assert duration_by_outcome["success"]["retry_count_bucket"] == "1"
@@ -785,7 +785,7 @@ def test_real_binding_drives_lifecycle_aggregation_export_and_snapshot(
         json.loads(package.read_text(encoding="utf-8")) for package in packages
     ]
     for package in package_payloads:
-        assert package["schema_version"] == "hermes.shared_metrics.v4"
+        assert package["schema_version"] == "moor.shared_metrics.v4"
         for metric in package["metrics"]:
             key = (metric["name"], tuple(sorted(metric["dimensions"].items())))
             package_values[key] = package_values.get(key, 0) + metric["value"]
@@ -882,7 +882,7 @@ def test_real_binding_correlates_plugin_approval_denial_to_tool_metric(
     lifecycle.finalize_session(session_id=base["session_id"])
 
     _join_export_workers()
-    root = tmp_path / "hermes-home" / "telemetry" / "shared_metrics"
+    root = tmp_path / "moor-home" / "telemetry" / "shared_metrics"
     store = SharedMetricsStore(root / "metrics.sqlite3", root / "outbox")
     snapshot = store.counter_snapshot()
     tool_metrics = [
@@ -897,7 +897,7 @@ def test_real_binding_correlates_plugin_approval_denial_to_tool_metric(
         "tool_category": "file",
     }
     assert [
-        counter["dimensions"] for counter in snapshot if counter["metric_name"] == "hermes.tool_call.latency"
+        counter["dimensions"] for counter in snapshot if counter["metric_name"] == "moor.tool_call.latency"
     ] == [{"latency_bucket": "lt_100ms", "retry_count_bucket": "unknown", "tool_category": "file"}]
     approval_metrics = [
         counter
@@ -962,7 +962,7 @@ def test_real_binding_aggregates_tool_and_approval_timeouts(
     lifecycle.finalize_session(session_id=base["session_id"])
 
     _join_export_workers()
-    root = tmp_path / "hermes-home" / "telemetry" / "shared_metrics"
+    root = tmp_path / "moor-home" / "telemetry" / "shared_metrics"
     snapshot = SharedMetricsStore(
         root / "metrics.sqlite3",
         root / "outbox",
@@ -978,7 +978,7 @@ def test_real_binding_aggregates_tool_and_approval_timeouts(
         "tool_category": "terminal",
     }
     assert [
-        counter["dimensions"] for counter in snapshot if counter["metric_name"] == "hermes.tool_call.latency"
+        counter["dimensions"] for counter in snapshot if counter["metric_name"] == "moor.tool_call.latency"
     ] == [{"latency_bucket": "gte_30s", "retry_count_bucket": "unknown", "tool_category": "terminal"}]
     [approval_metric] = [
         counter
@@ -1327,10 +1327,10 @@ def test_disabling_shared_metrics_stops_collection_and_shutdown_export(
     root = profile / "telemetry" / "shared_metrics"
     store = SharedMetricsStore(root / "metrics.sqlite3", root / "outbox")
     assert [row["metric_name"] for row in store.counter_snapshot()] == [
-        "hermes.client.active",
-        "hermes.install.milestone",
-        "hermes.install.snapshot",
-        "hermes.task_run.started"
+        "moor.client.active",
+        "moor.install.milestone",
+        "moor.install.snapshot",
+        "moor.task_run.started"
     ]
     assert list((root / "outbox").glob("*.json")) == []
     relay_runtime._reset_for_tests()
@@ -2531,7 +2531,7 @@ def _finish_desktop_task(session_id: str, task_id: str) -> None:
 def parked_flush(direct_runtime, monkeypatch):
     """A flush that blocks like the real barrier does while another session's tool runs."""
     monkeypatch.setattr(
-        "hermes_cli.observability.shared_metrics._utc_now",
+        "moor_cli.observability.shared_metrics._utc_now",
         lambda: datetime(2026, 7, 28, 9, tzinfo=UTC),
     )
     state = SimpleNamespace(attempts=0, entered=threading.Event(), release=threading.Event())
@@ -2552,7 +2552,7 @@ def test_task_ends_do_not_wait_on_the_process_wide_flush_barrier(parked_flush, t
 
     # The turn thread is back while the barrier is still parked, so nothing is exported yet.
     assert parked_flush.entered.wait(3)
-    outbox = tmp_path / "hermes-home" / "telemetry" / "shared_metrics" / "outbox"
+    outbox = tmp_path / "moor-home" / "telemetry" / "shared_metrics" / "outbox"
     assert list(outbox.glob("*.json")) == []
 
     # Task ends behind the parked barrier coalesce into one more pass, not one each.
@@ -2567,21 +2567,21 @@ def test_task_ends_do_not_wait_on_the_process_wide_flush_barrier(parked_flush, t
 def test_background_flush_runs_under_the_finishing_turns_profile(
     direct_runtime, tmp_path, monkeypatch
 ):
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import get_moor_home, reset_moor_home_override, set_moor_home_override
 
     seen: list[Any] = []
     monkeypatch.setattr(
         relay_shared_metrics._Runtime,
         "_export",
-        lambda self: seen.append(get_hermes_home()),
+        lambda self: seen.append(get_moor_home()),
     )
     profile_home = tmp_path / "other-profile"
-    token = set_hermes_home_override(profile_home)
+    token = set_moor_home_override(profile_home)
     try:
         _finish_desktop_task("s1", "t1")
         _join_export_workers()
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
     assert seen == [profile_home]
 
@@ -2789,9 +2789,9 @@ def test_real_binding_concurrent_task_close_skips_pop_under_sibling_scope(
 
 
 def _stored_counters(tmp_path) -> dict[str, list[dict[str, Any]]]:
-    from hermes_cli.observability.shared_metrics import SharedMetricsStore
+    from moor_cli.observability.shared_metrics import SharedMetricsStore
 
-    root = tmp_path / "hermes-home" / "telemetry" / "shared_metrics"
+    root = tmp_path / "moor-home" / "telemetry" / "shared_metrics"
     by_metric: dict[str, list[dict[str, Any]]] = {}
     for counter in SharedMetricsStore(root / "metrics.sqlite3", root / "outbox").counter_snapshot():
         by_metric.setdefault(counter["metric_name"], []).append(counter["dimensions"])
@@ -2800,7 +2800,7 @@ def _stored_counters(tmp_path) -> dict[str, list[dict[str, Any]]]:
 
 def test_v3_failure_dimensions_never_export_third_party_identifiers(direct_runtime, tmp_path):
     """Plugin tool names, exception class names, plugin platforms and raw exit reasons collapse
-    to closed classes, while Hermes's own vocabularies pass through."""
+    to closed classes, while Moor's own vocabularies pass through."""
     base = {
         "session_id": "s1", "task_id": "t1", "api_request_id": "r1", "platform": "telegram",
         "provider": "anthropic", "model": "claude-sonnet",
@@ -2825,12 +2825,12 @@ def test_v3_failure_dimensions_never_export_third_party_identifiers(direct_runti
 
     counters = _stored_counters(tmp_path)
     assert "acme" not in json.dumps(counters).lower()
-    assert {(d["tool_name"], d["error_class"]) for d in counters["hermes.tool.usage.count"]} == {
+    assert {(d["tool_name"], d["error_class"]) for d in counters["moor.tool.usage.count"]} == {
         ("plugin", "exception"), ("terminal", "timeout"),
     }
-    [route] = counters["hermes.model_route.count"]
+    [route] = counters["moor.model_route.count"]
     assert (route["outcome"], route["error_class"]) == ("failed", "rate_limit")
-    [finished] = counters["hermes.task_run.finished"]
+    [finished] = counters["moor.task_run.finished"]
     assert (finished["platform"], finished["failure_class"]) == ("telegram", "rate_limit")
 
 
@@ -2838,7 +2838,7 @@ def test_install_snapshot_is_daily_and_carries_only_bucketed_counts(
     direct_runtime, tmp_path, monkeypatch,
 ):
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config_readonly",
+        "moor_cli.config.read_raw_config_readonly",
         lambda: {
             "telemetry": {"shared_metrics": {"enabled": True}},
             "memory": {"provider": "acme-private-memory"},
@@ -2857,7 +2857,7 @@ def test_install_snapshot_is_daily_and_carries_only_bucketed_counts(
     lifecycle.invoke_hook("pre_llm_call", **event)
     lifecycle.finalize_session(session_id="t3")
 
-    [snapshot] = _stored_counters(tmp_path)["hermes.install.snapshot"]
+    [snapshot] = _stored_counters(tmp_path)["moor.install.snapshot"]
     assert snapshot == {
         "cron_job_count_bucket": "0", "display_language": "en", "install_age_bucket": snapshot["install_age_bucket"],
         "main_provider": "none", "mcp_server_count_bucket": "1", "memory_provider": "plugin",
@@ -2869,9 +2869,9 @@ def test_install_snapshot_is_daily_and_carries_only_bucketed_counts(
 
 
 def _stored_values(tmp_path, metric: str) -> list[tuple[dict[str, Any], int]]:
-    from hermes_cli.observability.shared_metrics import SharedMetricsStore
+    from moor_cli.observability.shared_metrics import SharedMetricsStore
 
-    root = tmp_path / "hermes-home" / "telemetry" / "shared_metrics"
+    root = tmp_path / "moor-home" / "telemetry" / "shared_metrics"
     return [
         (counter["dimensions"], counter["value"])
         for counter in SharedMetricsStore(root / "metrics.sqlite3", root / "outbox").counter_snapshot()
@@ -2891,11 +2891,11 @@ def test_sessions_summarize_on_close_and_milestones_latch_once_per_install(direc
             )
         lifecycle.finalize_session(session_id=session_id)
 
-    sessions = _stored_values(tmp_path, "hermes.session.count")
+    sessions = _stored_values(tmp_path, "moor.session.count")
     assert sorted((d["turn_count_bucket"], d["last_outcome"], v) for d, v in sessions) == [
         ("1", "success", 1), ("3_to_5", "success", 1),
     ]
-    milestones = {d["milestone"]: v for d, v in _stored_values(tmp_path, "hermes.install.milestone")}
+    milestones = {d["milestone"]: v for d, v in _stored_values(tmp_path, "moor.install.milestone")}
     assert milestones["first_task_started"] == 1
     assert milestones["first_task_success"] == 1
 
@@ -2903,8 +2903,8 @@ def test_sessions_summarize_on_close_and_milestones_latch_once_per_install(direc
 def test_user_named_providers_and_models_never_reach_counters(direct_runtime, tmp_path):
     """A custom endpoint's name (``custom:<key>``), its model id and loopback-server models read
     ``custom``; shipped providers and their public model ids stay readable."""
-    from hermes_cli.observability import shared_metrics_events as events
-    from hermes_cli.observability.shared_metrics import SharedMetricsStore
+    from moor_cli.observability import shared_metrics_events as events
+    from moor_cli.observability.shared_metrics import SharedMetricsStore
 
     events.record_setup_completed(surface="cli", provider="custom:acme-secret-llm")
     events.record_model_switch(from_provider="custom:acme-secret-llm", to_provider="lmstudio", surface="cli")
@@ -2917,10 +2917,10 @@ def test_user_named_providers_and_models_never_reach_counters(direct_runtime, tm
         })
     runtime.relay.subscribers.flush()
 
-    root = tmp_path / "hermes-home" / "telemetry" / "shared_metrics"
+    root = tmp_path / "moor-home" / "telemetry" / "shared_metrics"
     stored = json.dumps(SharedMetricsStore(root / "metrics.sqlite3", root / "outbox").counter_snapshot())
     assert not any(leak in stored for leak in ("acme", "bob", "users"))
-    tokens = {(d["provider"], d["model"]) for d, _ in _stored_values(tmp_path, "hermes.model_tokens.sum")}
+    tokens = {(d["provider"], d["model"]) for d, _ in _stored_values(tmp_path, "moor.model_tokens.sum")}
     assert tokens == {("custom", "custom"), ("lmstudio", "custom"), ("openrouter", "custom"),
                       ("openrouter", "anthropic/claude-sonnet")}
 
@@ -2931,9 +2931,9 @@ def test_milestone_install_age_is_the_subscriber_profile_not_the_relay_thread(tm
     import sqlite3 as _sqlite3
     import time
 
-    from hermes_cli.observability.shared_metrics import SharedMetricsStore
-    from hermes_cli.observability.shared_metrics_subscriber import SharedMetricsSubscriber
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_cli.observability.shared_metrics import SharedMetricsStore
+    from moor_cli.observability.shared_metrics_subscriber import SharedMetricsSubscriber
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     launch, other = tmp_path / "A", tmp_path / "B"
     for home in (launch, other):
@@ -2941,15 +2941,15 @@ def test_milestone_install_age_is_the_subscriber_profile_not_the_relay_thread(tm
     with _sqlite3.connect(other / "state.db") as con:
         con.execute("CREATE TABLE sessions (id TEXT, started_at REAL)")
         con.execute("INSERT INTO sessions VALUES ('s1', ?)", (time.time() - 120 * 86400,))
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    token = set_hermes_home_override(str(other))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
+    token = set_moor_home_override(str(other))
     try:
         subscriber = SharedMetricsSubscriber(SharedMetricsStore(), "1.0")
     finally:
-        reset_hermes_home_override(token)
-    subscriber._record_milestones("hermes.setup.completed", {"provider": "nous", "surface": "cli"})
+        reset_moor_home_override(token)
+    subscriber._record_milestones("moor.setup.completed", {"provider": "moor", "surface": "cli"})
     ages = [c["dimensions"]["install_age_bucket"] for c in subscriber.store.counter_snapshot()
-            if c["metric_name"] == "hermes.install.milestone"]
+            if c["metric_name"] == "moor.install.milestone"]
     assert ages == ["gte_90d"]
 
 
@@ -2973,7 +2973,7 @@ def test_token_usage_is_summed_per_model_and_auxiliary_task(direct_runtime, tmp_
 
     sums = {
         (d["call_role"], d["aux_task"], d["token_type"]): v
-        for d, v in _stored_values(tmp_path, "hermes.model_tokens.sum")
+        for d, v in _stored_values(tmp_path, "moor.model_tokens.sum")
     }
     assert sums == {
         ("primary", "none", "input"): 200, ("primary", "none", "output"): 20,
@@ -2984,9 +2984,9 @@ def test_token_usage_is_summed_per_model_and_auxiliary_task(direct_runtime, tmp_
 
 
 def test_recovered_rows_report_saved_only_once_the_store_holds_them(real_binding_runtime, monkeypatch):
-    from hermes_cli.observability.shared_metrics import SharedMetricsStore
+    from moor_cli.observability.shared_metrics import SharedMetricsStore
 
-    row = ("hermes.process.exit", {"crash_class": "none", "exit_kind": "killed", "process_kind": "gateway"})
+    row = ("moor.process.exit", {"crash_class": "none", "exit_kind": "killed", "process_kind": "gateway"})
     real_store_write = SharedMetricsStore.record_counter
 
     def locked(*args, **kwargs):
@@ -2997,7 +2997,7 @@ def test_recovered_rows_report_saved_only_once_the_store_holds_them(real_binding
     monkeypatch.setattr(SharedMetricsStore, "record_counter", real_store_write)
     assert relay_shared_metrics.record_process_marks_saved([row]) == 1
     saved = [(r["metric_name"], r["dimensions"], r["value"]) for r in SharedMetricsStore().counter_snapshot()]
-    assert saved == [("hermes.process.exit", row[1], 1)]
+    assert saved == [("moor.process.exit", row[1], 1)]
 
 
 def _cli_turn(session_id: str, parent_session_id: str = "") -> None:
@@ -3007,33 +3007,33 @@ def _cli_turn(session_id: str, parent_session_id: str = "") -> None:
 
 
 def test_finite_cli_runs_report_their_own_entrypoint(direct_runtime, tmp_path, monkeypatch):
-    """`hermes -z` / `chat -q` / `-Q` runs (HERMES_SINGLE_QUERY_SESSION) report `one_shot`, a
+    """`moor -z` / `chat -q` / `-Q` runs (MOOR_SINGLE_QUERY_SESSION) report `one_shot`, a
     dispatcher-spawned one (kanban worker, A2A forward) `background`; the REPL stays `interactive`,
     and a delegated child or a non-CLI surface keeps its own entrypoint inside a finite run."""
-    monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_SESSION_SOURCE", raising=False)
+    monkeypatch.delenv("MOOR_SINGLE_QUERY_SESSION", raising=False)
+    monkeypatch.delenv("MOOR_SESSION_SOURCE", raising=False)
     _cli_turn("repl")
-    monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")
+    monkeypatch.setenv("MOOR_SINGLE_QUERY_SESSION", "1")
     _cli_turn("oneshot")
     _cli_turn("child", parent_session_id="oneshot")
     _finish_desktop_task("desktop", "desktop-t")
-    monkeypatch.setenv("HERMES_SESSION_SOURCE", "kanban")
+    monkeypatch.setenv("MOOR_SESSION_SOURCE", "kanban")
     _cli_turn("kanban")
     for session_id in ("repl", "oneshot", "child", "desktop", "kanban"):
         lifecycle.finalize_session(session_id=session_id)
     _join_export_workers()
 
     started = sorted((d["entrypoint"], d["execution_surface"], v)
-                     for d, v in _stored_values(tmp_path, "hermes.task_run.started"))
+                     for d, v in _stored_values(tmp_path, "moor.task_run.started"))
     assert started == [
         ("background", "cli", 1), ("delegated", "cli", 1), ("interactive", "cli", 1),
         ("interactive", "desktop", 1), ("one_shot", "cli", 1),
     ]
-    finished = {d["entrypoint"] for d, _ in _stored_values(tmp_path, "hermes.task_run.finished")}
+    finished = {d["entrypoint"] for d, _ in _stored_values(tmp_path, "moor.task_run.finished")}
     assert finished == {"background", "delegated", "interactive", "one_shot"}
     # Delegated children are not sessions of their own.
     sessions = sorted((d["entrypoint"], d["execution_surface"], d["turn_count_bucket"])
-                      for d, _ in _stored_values(tmp_path, "hermes.session.count"))
+                      for d, _ in _stored_values(tmp_path, "moor.session.count"))
     assert sessions == [
         ("background", "cli", "1"), ("interactive", "cli", "1"), ("interactive", "desktop", "1"),
         ("one_shot", "cli", "1"),
@@ -3041,15 +3041,15 @@ def test_finite_cli_runs_report_their_own_entrypoint(direct_runtime, tmp_path, m
 
 
 def test_oneshot_hard_exit_cleanup_records_the_session_summary(direct_runtime, tmp_path, monkeypatch):
-    """`hermes -z` leaves through os._exit, past the atexit hook that closes the metrics session; its
+    """`moor -z` leaves through os._exit, past the atexit hook that closes the metrics session; its
     pre-exit cleanup must write the run's session.count itself."""
-    from hermes_cli import main as hermes_main
+    from moor_cli import main as moor_main
 
-    monkeypatch.setenv("HERMES_SINGLE_QUERY_SESSION", "1")
-    monkeypatch.setattr(hermes_main, "_oneshot_cleanup_done", False)
+    monkeypatch.setenv("MOOR_SINGLE_QUERY_SESSION", "1")
+    monkeypatch.setattr(moor_main, "_oneshot_cleanup_done", False)
     _cli_turn("z-run")
-    hermes_main._cleanup_oneshot_runtime()
+    moor_main._cleanup_oneshot_runtime()
     _join_export_workers()
 
-    sessions = _stored_values(tmp_path, "hermes.session.count")
+    sessions = _stored_values(tmp_path, "moor.session.count")
     assert [(d["entrypoint"], d["turn_count_bucket"], v) for d, v in sessions] == [("one_shot", "1", 1)]

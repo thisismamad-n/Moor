@@ -26,8 +26,8 @@ _PROFILE_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
 
 # The @handle Bot Mode shows for a host's default profile, and the body of the 404 a peer returns for
 # a /p/<profile>/ prefix naming no profile it has (UNKNOWN_PROFILE_ERROR in
-# gateway/platforms/api_server_profile_prefix.py; a 'hermes' profile it has but does not serve differs).
-DEFAULT_PROFILE_HANDLE = "hermes"
+# gateway/platforms/api_server_profile_prefix.py; a 'moor' profile it has but does not serve differs).
+DEFAULT_PROFILE_HANDLE = "moor"
 _UNKNOWN_PROFILE_ERROR = "Unknown or unconfigured profile"
 
 # One synchronous agent turn can legitimately take minutes.
@@ -116,11 +116,11 @@ def _peer_lacks_profile(exc: Exception) -> bool:
 
 
 def _resolve_base(peer: dict, profile: str | None, key: str, peer_name: str = "") -> str:
-    """The mirror a target addresses. Bot Mode shows a peer's default profile as @hermes
-    (#118076); an upgraded peer aliases ``/p/hermes`` to its default itself, unless it has a real
-    pre-reservation profile named ``hermes``, which keeps the handle. The client never reroutes on
+    """The mirror a target addresses. Bot Mode shows a peer's default profile as @moor
+    (#118076); an upgraded peer aliases ``/p/moor`` to its default itself, unless it has a real
+    pre-reservation profile named ``moor``, which keeps the handle. The client never reroutes on
     its own: an older peer answers the same generic 404 for "no such profile" and for a real
-    ``hermes`` profile it does not serve (parked, standalone), so guessing ``/p/default`` there
+    ``moor`` profile it does not serve (parked, standalone), so guessing ``/p/default`` there
     delivers into the wrong agent. That ambiguous answer becomes an error naming the explicit
     ``<peer>/default`` address instead."""
     base = _base_url(peer, profile)
@@ -197,9 +197,9 @@ def _parse_target(target: str) -> tuple[str, str | None]:
     if profile and not _PROFILE_RE.match(profile):
         raise ValueError(f"Invalid agent/profile name: {profile!r}")
     if profile:
-        # Profile ids are lowercase (normalize_profile_name); 'box/Hermes' must address the
-        # peer's real 'hermes' profile on every peer, including those that compare prefixes exactly.
-        from hermes_cli.profiles import normalize_profile_name
+        # Profile ids are lowercase (normalize_profile_name); 'box/Moor' must address the
+        # peer's real 'moor' profile on every peer, including those that compare prefixes exactly.
+        from moor_cli.profiles import normalize_profile_name
         profile = normalize_profile_name(profile)
     return peer, profile
 

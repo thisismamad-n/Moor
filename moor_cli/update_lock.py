@@ -2,7 +2,7 @@
 
 Two artifacts, one authority each:
 
-* The update marker ``<root hermes home>/.hermes-update-in-progress`` (contract C1, format v2)
+* The update marker ``<root moor home>/.moor-update-in-progress`` (contract C1, format v2)
   is shared with the Tauri updater (``UpdateMarkerGuard`` in
   ``apps/bootstrap-installer/src-tauri/src/update.rs``), the Electron gate
   (``electron/update-marker.ts``) and the Desktop hand-off scripts. Body::
@@ -11,8 +11,8 @@ Two artifacts, one authority each:
 
   An owner is live while its pid is alive and its creation time still matches: never by age
   (the 20-minute ceiling only ages out v1 markers, which carry no creation time).
-* The checkout lock ``<git common dir>/hermes-update.lock`` (``<install root>/.hermes-update.lock``
-  for a ZIP install with no ``.git``) — a kernel lock (flock / msvcrt) that ``hermes update``
+* The checkout lock ``<git common dir>/moor-update.lock`` (``<install root>/.moor-update.lock``
+  for a ZIP install with no ``.git``) — a kernel lock (flock / msvcrt) that ``moor update``
   holds for its whole process tree, so two updates of one checkout started from different
   homes exclude each other and a killed updater whose completion child still runs keeps the
   checkout locked until that child exits. In the git dir it is never a worktree file: no
@@ -56,9 +56,9 @@ _WHOLE_SECOND_CT = 1.0
 # empty marker this young is a claim in flight, not a dead one (contract A3).
 EMPTY_MARKER_GRACE_SECONDS = 5.0
 
-MARKER_NAME = ".hermes-update-in-progress"
-CHECKOUT_LOCK_NAME = ".hermes-update.lock"
-GIT_CHECKOUT_LOCK_NAME = "hermes-update.lock"
+MARKER_NAME = ".moor-update-in-progress"
+CHECKOUT_LOCK_NAME = ".moor-update.lock"
+GIT_CHECKOUT_LOCK_NAME = "moor-update.lock"
 
 # Set by an orchestrating updater (Tauri `moor-setup --update`) to its own pid before
 # spawning `moor update` as a child stage; the parent holds the marker for its whole run,
@@ -91,17 +91,17 @@ _FILETIME_UNIX_EPOCH = 116444736000000000
 def update_marker_path() -> Path:
     """Path of the shared update marker: always the profile-tree ROOT home.
 
-    A sticky or ``-p`` profile re-homes ``HERMES_HOME`` to ``<root>/profiles/<p>``; the Desktop,
+    A sticky or ``-p`` profile re-homes ``MOOR_HOME`` to ``<root>/profiles/<p>``; the Desktop,
     the hand-off scripts and the Tauri updater all look at the root, so a profile-scoped marker
     would be one the other owners never see.
     """
     try:
-        from hermes_constants import get_default_hermes_root
+        from moor_constants import get_default_moor_root
     except ImportError:  # a partial tree (an -I -S completion child of a stubbed checkout)
-        home = Path(os.environ.get("HERMES_HOME") or Path.home() / ".hermes")
+        home = Path(os.environ.get("MOOR_HOME") or Path.home() / ".moor")
         root = home.parent.parent if home.parent.name == "profiles" else home
         return root / MARKER_NAME
-    return get_default_hermes_root() / MARKER_NAME
+    return get_default_moor_root() / MARKER_NAME
 
 
 def _default_install_root() -> Path:
@@ -469,10 +469,10 @@ def _stdlib_parent_pid(pid: int) -> int | None:
 def _is_ancestor_pid(pid: int) -> bool:
     """True when ``pid`` is a live ancestor of this process.
 
-    The orchestrating updater spawns ``hermes update`` as a (grand)child, so a live marker
+    The orchestrating updater spawns ``moor update`` as a (grand)child, so a live marker
     owned by one of our ancestors can only be the claim we are already running under — an
     unrelated concurrent updater is never in our parent chain. This heals the fleet of staged
-    ``hermes-setup`` binaries that predate the HANDOFF_PID_ENV export and can never send it.
+    ``moor-setup`` binaries that predate the HANDOFF_PID_ENV export and can never send it.
 
     The chain is walked one link at a time and each ancestor is tested as it is
     discovered. ``psutil.Process.parents()`` cannot be used here: it builds the
@@ -535,19 +535,19 @@ def _is_ancestor_pid(pid: int) -> bool:
 
 
 def _is_runtime_host(cmdline: list[str]) -> bool:
-    """A long-lived Hermes host (``gateway run`` / ``serve`` / ``dashboard``), by the canonical
-    command-line matchers (profile flags, ``hermes_cli/main.py`` paths, inline bootstraps)."""
+    """A long-lived Moor host (``gateway run`` / ``serve`` / ``dashboard``), by the canonical
+    command-line matchers (profile flags, ``moor_cli/main.py`` paths, inline bootstraps)."""
     from gateway.status import looks_like_gateway_command_line
-    from hermes_cli.update_cmd_windows import _hermes_holder_subcommand
+    from moor_cli.update_cmd_windows import _moor_holder_subcommand
     line = " ".join(cmdline)
-    return looks_like_gateway_command_line(line) or _hermes_holder_subcommand(line) in ("serve", "dashboard")
+    return looks_like_gateway_command_line(line) or _moor_holder_subcommand(line) in ("serve", "dashboard")
 
 
 def _runtime_host_below(holder_pid: int) -> bool:
-    """True when a Hermes gateway/serve/dashboard sits between us and *holder_pid* (or anywhere
+    """True when a Moor gateway/serve/dashboard sits between us and *holder_pid* (or anywhere
     above us when the holder is not reached).
 
-    Such a host is relaunched BY an update and outlives its stages; a ``hermes update`` its agent
+    Such a host is relaunched BY an update and outlives its stages; a ``moor update`` its agent
     or ``/update`` starts is an independent update that must not run under the first one's claim
     (cli §7 V9). Unreadable command lines count as not-a-host (the legacy adoption stands).
     """
@@ -971,7 +971,7 @@ def _reclaim_dead(path: Path, install_root: Path | str | None = None) -> str:
 
 
 def legacy_profile_claims(root: Path | None = None) -> list[UpdateHolder]:
-    """Live claims in pre-root-marker ``<root>/profiles/<p>/.hermes-update-in-progress`` files (R11).
+    """Live claims in pre-root-marker ``<root>/profiles/<p>/.moor-update-in-progress`` files (R11).
 
     Before the marker moved to the profile-tree root, an update under a named profile claimed
     its PROFILE home and never took the checkout lock. During the transition such an update can
@@ -1000,7 +1000,7 @@ def describe_holder(holder: UpdateHolder | None) -> str:
             "  Updating without the lock could let two updates corrupt the install, or run\n"
             "  under a Desktop app, gateway or installer that cannot see it. Make that path\n"
             "  writable (fix its owner or permissions, or remount a read-only filesystem\n"
-            "  read-write), or run `hermes update` as the user that owns the install."
+            "  read-write), or run `moor update` as the user that owns the install."
         )
     minutes, seconds = divmod(int(max(0 if holder is None else holder.age_seconds, 0)), 60)
     elapsed = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
@@ -1019,7 +1019,7 @@ def describe_holder(holder: UpdateHolder | None) -> str:
 # --- the checkout lock -------------------------------------------------------------------
 
 # This process's hold on the checkout lock: {"path", "fd", "owned", "depth"}. "owned" means
-# we opened and locked it; otherwise the fd was inherited from the `hermes update` that holds
+# we opened and locked it; otherwise the fd was inherited from the `moor update` that holds
 # it (pass_fds) and belongs to the whole tree — it is never unlocked or closed here.
 _HELD: dict | None = None
 _JOBS: list = []
@@ -1154,7 +1154,7 @@ def _lock_holder(fd_or_path) -> UpdateHolder:
 
 def _open_lock_file(path: Path) -> tuple[int | None, object]:
     """``(fd, True)`` read-write; ``(fd, False)`` read-only for an existing lock file we may not
-    write (left root-owned by a ``sudo hermes update``: the kernel lock works on a read-only fd,
+    write (left root-owned by a ``sudo moor update``: the kernel lock works on a read-only fd,
     contract A5; POSIX only — a Windows owner needs its record); ``(None, reason)`` when neither opens."""
     # Never follow a link planted at the name: the holder record is written into this file.
     binary = getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
@@ -1252,7 +1252,7 @@ def _lock_with_contention_wait(fd: int, path: Path) -> bool:
 
 def _held_by_our_windows_ancestor(path: Path) -> bool:
     """Windows: the checkout lock's holder record names a LIVE incarnation of one of our
-    ancestors (the ``hermes update`` whose completion/build children we are)."""
+    ancestors (the ``moor update`` whose completion/build children we are)."""
     if sys.platform != "win32":
         return False
     record = _parse_marker(_read_bytes(path) or b"")

@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerTerminalContextMenu } from '@/app/right-sidebar/terminal/terminal-context-menu'
-import { setApiRequestConnection, setApiRequestProfile } from '@/hermes'
+import { setApiRequestConnection, setApiRequestProfile } from '@/moor'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import { adoptNewSessionDraft, stashSessionDraft, takeSessionDraft } from '@/store/composer'
 import { $confirmRequest, runConfirm, settleConfirm } from '@/store/confirm'
@@ -101,12 +101,12 @@ describe('useDesktopIntegrations', () => {
       signalDeepLinkReady: vi.fn(),
       onClosePreviewRequested: vi.fn(),
       onOpenFolderRequested: vi.fn(),
-      // getSession() rides hermesDesktop.api; tests that exercise the
+      // getSession() rides moorDesktop.api; tests that exercise the
       // remembered-session resolution stub this per-test.
       api: vi.fn(async () => {
         throw new Error('no api stub for this test')
       })
-    } as unknown as Window['hermesDesktop']
+    } as unknown as Window['moorDesktop']
   })
 
   afterEach(() => {
@@ -249,15 +249,15 @@ describe('useDesktopIntegrations', () => {
       // must boot into its own blank fresh-draft chat, not the session the
       // primary window has open.
       peerWindowMock.mockReturnValue(true)
-      window.localStorage.setItem('hermes.desktop.lastRoute.profile.default', '/remembered-session')
-      window.localStorage.setItem('hermes.desktop.lastSessionId.profile.default', 'remembered-session')
+      window.localStorage.setItem('moor.desktop.lastRoute.profile.default', '/remembered-session')
+      window.localStorage.setItem('moor.desktop.lastSessionId.profile.default', 'remembered-session')
 
       render({ profileReady: true, sessions: [session({ id: 'remembered-session', profile: 'default' })] })
 
       expect(navigate).not.toHaveBeenCalled()
       // The remembered values stay intact for the primary window's next boot.
-      expect(window.localStorage.getItem('hermes.desktop.lastRoute.profile.default')).toBe('/remembered-session')
-      expect(window.localStorage.getItem('hermes.desktop.lastSessionId.profile.default')).toBe('remembered-session')
+      expect(window.localStorage.getItem('moor.desktop.lastRoute.profile.default')).toBe('/remembered-session')
+      expect(window.localStorage.getItem('moor.desktop.lastSessionId.profile.default')).toBe('remembered-session')
     })
   })
 
@@ -310,7 +310,7 @@ describe('useDesktopIntegrations', () => {
 
   describe('delegate subagent sessions', () => {
     const stubGetSession = (row: Partial<SessionInfo>) => {
-      vi.mocked(desktopWindow.hermesDesktop!.api as ReturnType<typeof vi.fn>).mockImplementation(
+      vi.mocked(desktopWindow.moorDesktop!.api as ReturnType<typeof vi.fn>).mockImplementation(
         async (request: { path?: string }) => {
           if (request.path?.startsWith('/api/sessions/')) {
             return session({ profile: 'default', ...row })
@@ -323,7 +323,7 @@ describe('useDesktopIntegrations', () => {
 
     it('repairs a remembered delegate child to its parent on restore', async () => {
       // Written by an older build (or a list slice that served the child).
-      window.localStorage.setItem('hermes.desktop.lastSessionId.profile.default', 'delegate-child')
+      window.localStorage.setItem('moor.desktop.lastSessionId.profile.default', 'delegate-child')
       stubGetSession({ id: 'delegate-child', parent_session_id: 'parent-session', source: 'subagent' })
 
       const sessions = [session({ id: 'parent-session', profile: 'default' })]
@@ -331,7 +331,7 @@ describe('useDesktopIntegrations', () => {
       render({ profileReady: true, sessions })
 
       await waitFor(() => expect(navigate).toHaveBeenCalledWith('/parent-session', { replace: true }))
-      expect(window.localStorage.getItem('hermes.desktop.lastSessionId.profile.default')).toBe('parent-session')
+      expect(window.localStorage.getItem('moor.desktop.lastSessionId.profile.default')).toBe('parent-session')
     })
 
     // Pins the reachability contract of the by-id resolve branch: the
@@ -342,14 +342,14 @@ describe('useDesktopIntegrations', () => {
     // finds the row — an id absent from the list is cleared before the
     // repair, it never reaches it (evidence for the #97809 review reply).
     it('clears an unlisted remembered id instead of restoring it', async () => {
-      window.localStorage.setItem('hermes.desktop.lastSessionId.profile.default', 'unlisted-session')
+      window.localStorage.setItem('moor.desktop.lastSessionId.profile.default', 'unlisted-session')
       stubGetSession({ connection_id: 'ssh-proxmox', id: 'unlisted-session', profile: 'default' })
       setSessionOwnerHint('unlisted-session', { connectionId: 'ssh-proxmox', profile: 'default' })
 
       render({ profileReady: true, sessions: [session({ id: 'other-session', profile: 'default' })] })
 
       await waitFor(() =>
-        expect(window.localStorage.getItem('hermes.desktop.lastSessionId.profile.default')).toBeNull()
+        expect(window.localStorage.getItem('moor.desktop.lastSessionId.profile.default')).toBeNull()
       )
       expect(navigate).not.toHaveBeenCalledWith('/unlisted-session', { replace: true })
     })
@@ -358,7 +358,7 @@ describe('useDesktopIntegrations', () => {
       // The delegate child resolves to its parent, and the parent row (listed,
       // untagged) is what the repair consults: an explicit `local` hint is
       // stale, exactly as on the click path.
-      window.localStorage.setItem('hermes.desktop.lastSessionId.profile.default', 'delegate-child')
+      window.localStorage.setItem('moor.desktop.lastSessionId.profile.default', 'delegate-child')
       stubGetSession({ id: 'delegate-child', parent_session_id: 'parent-session', source: 'subagent' })
       setSessionOwnerHint('parent-session', { connectionId: 'local', profile: 'default' })
 
@@ -377,8 +377,8 @@ describe('useDesktopIntegrations', () => {
 
       render({ locationPathname: '/delegate-child', profileReady: true, routedSessionId: 'delegate-child', sessions })
 
-      expect(window.localStorage.getItem('hermes.desktop.lastSessionId.profile.default')).toBe('parent-session')
-      expect(window.localStorage.getItem('hermes.desktop.lastRoute.profile.default')).toBe('/parent-session')
+      expect(window.localStorage.getItem('moor.desktop.lastSessionId.profile.default')).toBe('parent-session')
+      expect(window.localStorage.getItem('moor.desktop.lastRoute.profile.default')).toBe('/parent-session')
     })
 
     it('keeps remembering a /branch child: source, not parenthood, is the discriminator', () => {
@@ -388,15 +388,15 @@ describe('useDesktopIntegrations', () => {
 
       render({ locationPathname: '/branch-child', profileReady: true, routedSessionId: 'branch-child', sessions })
 
-      expect(window.localStorage.getItem('hermes.desktop.lastSessionId.profile.default')).toBe('branch-child')
-      expect(window.localStorage.getItem('hermes.desktop.lastRoute.profile.default')).toBe('/branch-child')
+      expect(window.localStorage.getItem('moor.desktop.lastSessionId.profile.default')).toBe('branch-child')
+      expect(window.localStorage.getItem('moor.desktop.lastRoute.profile.default')).toBe('/branch-child')
     })
   })
 
   describe('resume-exhausted write barrier (#98467)', () => {
     it('does not re-persist an exhausted session on a session-list refresh', () => {
-      window.localStorage.setItem('hermes.desktop.lastRoute.profile.default', '/exhausted-session')
-      window.localStorage.setItem('hermes.desktop.lastSessionId.profile.default', 'exhausted-session')
+      window.localStorage.setItem('moor.desktop.lastRoute.profile.default', '/exhausted-session')
+      window.localStorage.setItem('moor.desktop.lastSessionId.profile.default', 'exhausted-session')
 
       const sessions = [session({ id: 'exhausted-session', profile: 'default' })]
 
@@ -425,8 +425,8 @@ describe('useDesktopIntegrations', () => {
         sessions: [...sessions, session({ id: 'other-session', profile: 'default' })]
       })
 
-      expect(window.localStorage.getItem('hermes.desktop.lastSessionId.profile.default')).toBeNull()
-      expect(window.localStorage.getItem('hermes.desktop.lastRoute.profile.default')).toBeNull()
+      expect(window.localStorage.getItem('moor.desktop.lastSessionId.profile.default')).toBeNull()
+      expect(window.localStorage.getItem('moor.desktop.lastRoute.profile.default')).toBeNull()
     })
   })
 
@@ -471,7 +471,7 @@ describe('useDesktopIntegrations', () => {
       // no connection tag (the legacy primary-SSH path). At click time
       // openStoredSession clears it; the boot auto-restore must too, or the
       // pathname-driven resume routes a remote session to the Mac backend.
-      window.localStorage.setItem('hermes.desktop.lastSessionId.profile.default', 'ssh-session')
+      window.localStorage.setItem('moor.desktop.lastSessionId.profile.default', 'ssh-session')
       setSessionOwnerHint('ssh-session', { connectionId: 'local', profile: 'default' })
 
       const sessions = [session({ id: 'ssh-session', profile: 'default' })]
@@ -575,14 +575,14 @@ describe('useDesktopIntegrations', () => {
     let closeRequested: (() => void) | undefined
 
     function mountWithCloseIpc() {
-      desktopWindow.hermesDesktop = {
-        ...desktopWindow.hermesDesktop,
+      desktopWindow.moorDesktop = {
+        ...desktopWindow.moorDesktop,
         onClosePreviewRequested: (cb: () => void) => {
           closeRequested = cb
 
           return () => undefined
         }
-      } as unknown as Window['hermesDesktop']
+      } as unknown as Window['moorDesktop']
 
       render({ profileReady: true, sessions: [] })
     }
@@ -890,7 +890,7 @@ describe('useDesktopIntegrations', () => {
     function listen() {
       render({ profileReady: true, resumeLastSession: false })
 
-      return vi.mocked(window.hermesDesktop.onDeepLink!).mock.calls[0]![0]
+      return vi.mocked(window.moorDesktop.onDeepLink!).mock.calls[0]![0]
     }
 
     afterEach(() => {
@@ -928,7 +928,7 @@ describe('useDesktopIntegrations', () => {
         return {}
       })
 
-      desktopWindow.hermesDesktop = { ...desktopWindow.hermesDesktop, api } as unknown as Window['hermesDesktop']
+      desktopWindow.moorDesktop = { ...desktopWindow.moorDesktop, api } as unknown as Window['moorDesktop']
       const deepLink = listen()
       const installs = () => api.mock.calls.filter(([r]) => r.path === '/api/skills/hub/install')
       const identifier = 'skills-sh/owner/repo/skill'

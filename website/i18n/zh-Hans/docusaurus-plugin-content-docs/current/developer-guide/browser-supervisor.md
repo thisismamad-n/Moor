@@ -19,14 +19,14 @@
 
 | 后端 | 对话框检测 | 对话框响应 | 框架树 | OOPIF `Runtime.evaluate`（通过 `browser_cdp(frame_id=...)`） |
 |---|---|---|---|---|
-| 本地 Chromium（由 Hermes 为 `browser_exec` 启动）/ `/browser connect` | ✓ | ✓ 完整流程 | ✓ | ✓ |
+| 本地 Chromium（由 Moor 为 `browser_exec` 启动）/ `/browser connect` | ✓ | ✓ 完整流程 | ✓ | ✓ |
 | Browserbase | ✓（通过 bridge） | ✓ 完整流程（通过 bridge） | ✓ | ✓（`document.title = "Example Domain"` 已在真实跨域 iframe 上验证） |
 
 **Browserbase 响应的工作原理。** Browserbase 的 CDP 代理在内部使用 Playwright，并在约 10ms 内自动关闭原生对话框，因此 `Page.handleJavaScriptDialog` 无法跟上。为解决此问题，supervisor 通过 `Page.addScriptToEvaluateOnNewDocument` 注入一个 bridge 脚本，将 `window.alert`/`confirm`/`prompt` 覆盖为向魔法主机（`moor-dialog-bridge.invalid`）发起的同步 XHR。`Fetch.enable` 在这些 XHR 触达网络之前将其拦截——对话框变成 supervisor 捕获的 `Fetch.requestPaused` 事件，`respond_to_dialog` 通过 `Fetch.fulfillRequest` 以 JSON 响应体完成请求，注入的脚本对其进行解码。
 
 最终效果：从页面角度看，`prompt()` 仍然返回 agent 提供的字符串。从 agent 角度看，无论哪种方式，都是同一套 `browser_dialog(action=...)` API。已针对真实 Browserbase 会话进行端到端测试——4/4（alert/prompt/confirm-accept/confirm-dismiss）全部通过，包括值回传到页面 JS 的验证。
 
-Camofox 目录插件（`hermes plugins install camofox`）驱动的是仅支持 REST、没有 CDP 接口的浏览器，因此 supervisor 不适用于它。
+Camofox 目录插件（`moor plugins install camofox`）驱动的是仅支持 REST、没有 CDP 接口的浏览器，因此 supervisor 不适用于它。
 
 ## 架构
 
@@ -127,10 +127,10 @@ supervisor 附加期间，`CDPSupervisor.snapshot()` 包含三个字段：
 
 ### 修改
 
-- `toolsets.py` — 在 `browser`、`hermes-acp`、`hermes-api-server`、核心工具集中注册 `browser_dialog`（通过 CDP 可达性门控）
+- `toolsets.py` — 在 `browser`、`moor-acp`、`moor-api-server`、核心工具集中注册 `browser_dialog`（通过 CDP 可达性门控）
 - `tools/browser_session_cdp.py` — `ensure_cdp_supervisor` / `stop_cdp_supervisor`、`/browser connect` 重新附加、对话框策略配置
 - `tools/browser_session_lifecycle.py` — 按会话拆除（先停止 supervisor）
-- `hermes_cli/config.py` — 向 `DEFAULT_CONFIG` 添加 `browser.dialog_policy` 和 `browser.dialog_timeout_s`
+- `moor_cli/config.py` — 向 `DEFAULT_CONFIG` 添加 `browser.dialog_policy` 和 `browser.dialog_timeout_s`
 - 文档：`website/docs/user-guide/features/browser.md`、`website/docs/reference/tools-reference.md`、`website/docs/reference/toolsets-reference.md`
 
 ## 非目标

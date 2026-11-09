@@ -171,19 +171,19 @@ DEFAULT_AGENT_IDENTITY = (
 MOOR_AGENT_HELP_GUIDANCE = (
     # Injected only when skill_view exists AND the moor-agent skill is installed (system_prompt.py slot
     # resolution). No "when the two differ" clause: docs-are-authoritative already carries the precedence.
-    # Names Hermes Agent without restating identity: SOUL.md line 1 already says who you are, while a custom
-    # persona (no Hermes identity line) still learns from "Hermes Agent itself" + "your own features" what it runs on.
-    "For help with Hermes Agent itself — configuring, setting up, using, extending, or troubleshooting it — "
+    # Names Moor Agent without restating identity: SOUL.md line 1 already says who you are, while a custom
+    # persona (no Moor identity line) still learns from "Moor Agent itself" + "your own features" what it runs on.
+    "For help with Moor Agent itself — configuring, setting up, using, extending, or troubleshooting it — "
     "or to understand your own features, tools, or capabilities, the documentation at "
     "https://hermes-agent.nousresearch.com/docs is your "
-    "authoritative reference and always holds the latest, most up-to-date information. The `hermes-agent` "
-    "skill has the actual commands and proven workflows — load it with skill_view(name='hermes-agent') "
-    "before configuring, modifying, or troubleshooting Hermes so you don't guess or invent workarounds."
+    "authoritative reference and always holds the latest, most up-to-date information. The `moor-agent` "
+    "skill has the actual commands and proven workflows — load it with skill_view(name='moor-agent') "
+    "before configuring, modifying, or troubleshooting Moor so you don't guess or invent workarounds."
 )
 
 # Variant for sessions without the skills toolset (e.g. Blank Slate): naming skill_view() there would dangle.
-HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS = (
-    "For help with Hermes Agent itself — configuring, setting up, using, extending, or troubleshooting it — "
+MOOR_AGENT_HELP_GUIDANCE_NO_SKILLS = (
+    "For help with Moor Agent itself — configuring, setting up, using, extending, or troubleshooting it — "
     "or to understand your own features, tools, or capabilities, the documentation at "
     "https://hermes-agent.nousresearch.com/docs is the "
     "authoritative reference and always holds the latest, most up-to-date information. Point the user there "
@@ -1198,7 +1198,7 @@ def _plugin_skill_prompt_rows(
     or unloading a plugin removes its registry entries, so enablement gating is inherent."""
     rows: list[tuple[str, str]] = []
     try:
-        from hermes_cli.plugins import discover_plugins, get_plugin_manager
+        from moor_cli.plugins import discover_plugins, get_plugin_manager
         discover_plugins()  # idempotent; joins an in-flight discovery (same call skills_list makes)
         for meta in get_plugin_manager().list_plugin_skill_metadata():
             name = str(meta.get("name") or "")
@@ -1510,7 +1510,7 @@ def _omitted_headings(content: str, start: int, end: int, limit: int = 15) -> li
 
 
 def load_soul_md(context_length: Optional[int] = None, home_override: Path | None = None) -> Optional[str]:
-    """SOUL.md from HERMES_HOME (identity slot #1), or None.
+    """SOUL.md from MOOR_HOME (identity slot #1), or None.
 
     Callers must pass ``skip_soul=True`` to ``build_context_files_prompt`` so it isn't injected twice.
     ``home_override`` pins the profile home (a thread that lost the MOOR_HOME ContextVar reads the wrong one).

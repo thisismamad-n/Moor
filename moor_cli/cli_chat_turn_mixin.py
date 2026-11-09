@@ -20,7 +20,7 @@ from typing import Optional
 
 from agent.i18n import t
 
-from hermes_cli.cli_agent_setup_mixin import _retire_agent
+from moor_cli.cli_agent_setup_mixin import _retire_agent
 
 
 class CLIChatTurnMixin:
@@ -256,7 +256,7 @@ class CLIChatTurnMixin:
             # _stream_delta already renders the text and this would print it twice.
             def display_callback(sentence: str):
                 if not turn.box_opened and getattr(self, "_modern_layout", False):
-                    from hermes_cli.cli_modern_layout import answer_label
+                    from moor_cli.cli_modern_layout import answer_label
                     turn.box_opened = True
                     _cprint(answer_label())
                 if not turn.box_opened:
@@ -513,9 +513,9 @@ class CLIChatTurnMixin:
         """/discard <admission_id>: acknowledge a turn the gateway lost in a restart without replaying
         it (the owner's fenced ``prompt.resolve_unknown``), so prompts may run again."""
         from cli import _cprint
-        from hermes_cli.gateway_chat_view import lost_admission
-        from hermes_cli.gateway_client import GatewayClientError
-        from hermes_cli.gateway_side import connection_for
+        from moor_cli.gateway_chat_view import lost_admission
+        from moor_cli.gateway_client import GatewayClientError
+        from moor_cli.gateway_side import connection_for
         admission_id = cmd_original.partition(" ")[2].strip()
         if not admission_id:
             _cprint("  Usage: /discard <admission_id>")
@@ -681,7 +681,7 @@ class CLIChatTurnMixin:
         if self.show_reasoning and turn.result and not self._reasoning_shown_this_turn:
             reasoning = turn.result.get("last_reasoning")
             if reasoning and getattr(self, "_modern_layout", False):
-                from hermes_cli.cli_modern_layout import thought_rows
+                from moor_cli.cli_modern_layout import thought_rows
                 for line in thought_rows(None, reasoning, self.reasoning_full):
                     _cprint(line)
             elif reasoning:
@@ -728,14 +728,14 @@ class CLIChatTurnMixin:
                 (self._stream_started and self._stream_box_opened) or _interrupted_streamed
             ) and not is_error_response
             modern = getattr(self, "_modern_layout", False)
-            # A gateway refusal is Hermes's own copy (quoted user text, a /discard line to copy):
+            # A gateway refusal is Moor's own copy (quoted user text, a /discard line to copy):
             # markdown stripping or rendering would rewrite the quote and merge the lines.
             mode = ("raw" if turn.result and turn.result.get("failure_reason") == "gateway_connection"
                     else self.final_response_markdown)
             if turn.use_streaming_tts and turn.box_opened and not is_error_response:
                 # Text already printed sentence-by-sentence; just close the box.
                 if modern:
-                    from hermes_cli.cli_modern_layout import closing_separator
+                    from moor_cli.cli_modern_layout import closing_separator
                     _cprint(closing_separator(True))
                 else:
                     _cprint(f"\n{_ACCENT}╰{'─' * (self._scrollback_box_width() - 2)}╯{_RST}")
@@ -746,7 +746,7 @@ class CLIChatTurnMixin:
                 if _post_stream_text.strip():
                     _cprint(_post_stream_text)
             elif modern:
-                from hermes_cli.cli_modern_layout import answer_label, closing_separator
+                from moor_cli.cli_modern_layout import answer_label, closing_separator
                 _cprint(answer_label())
                 ChatConsole().print(_render_final_assistant_content(response, mode=mode),
                                     style=_resp_text, soft_wrap=True)  # terminal wraps; resize re-flows
@@ -763,7 +763,7 @@ class CLIChatTurnMixin:
             # stays visible instead of scrolling away inside the response prose.
             _limit = (turn.result or {}).get("usage_limit") if turn.result else None
             if isinstance(_limit, dict):
-                # Usage-window plan: what to do next, in commands that always work here. Hermes never
+                # Usage-window plan: what to do next, in commands that always work here. Moor never
                 # switches on its own; the user picks.
                 try:
                     from agent.plan_limits import limit_next_steps_from_payload
@@ -779,8 +779,8 @@ class CLIChatTurnMixin:
                 # (A window plan's refusal already reads as its own sentence with the way on; an
                 # "Out of credits" box under it would contradict it.)
                 _bb = turn.result.get("billing_block") or {}
-                if _bb.get("is_nous"):
-                    _cta_lines = [t("cli.chat.billing_cta_nous")]
+                if _bb.get("is_moor"):
+                    _cta_lines = [t("cli.chat.billing_cta_moor")]
                 else:
                     _url = _bb.get("billing_url")
                     _cta_lines = [t("cli.chat.billing_cta_provider",

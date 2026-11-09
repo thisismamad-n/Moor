@@ -132,7 +132,7 @@ def isolated_env(
         TERM="dumb",
         PYTHONUNBUFFERED="1",
         PYTHONHASHSEED="0",
-        HERMES_DISABLE_LAZY_INSTALLS="1",
+        MOOR_DISABLE_LAZY_INSTALLS="1",
         # The pre-upgrade release under test still bundles tirith; keep its scanner off.
         TIRITH_ENABLED="false",
         GIT_TERMINAL_PROMPT="0",

@@ -3,20 +3,20 @@ from __future__ import annotations
 
 import json
 
-from hermes_cli import update_receipt
+from moor_cli import update_receipt
 
 
 def _steps(path):
     return [f["step"] for f in json.loads(path.read_text(encoding="utf-8")).get("followups") or []]
 
 
-def test_follow_up_on_an_open_run_is_recorded_once_not_amended_again(_isolate_hermes_home):
+def test_follow_up_on_an_open_run_is_recorded_once_not_amended_again(_isolate_moor_home):
     update_receipt.begin_update_receipt()
     run = update_receipt._current.get().data
     archive = update_receipt._run_file(update_receipt._receipt_dir(), run)
 
     update_receipt.owe_followup(run["update_id"], "channel_adoption", "remote refused",
-                                retry="the next `hermes update` adopts it again")
+                                retry="the next `moor update` adopts it again")
 
     # The durable running record (what an interrupted run leaves behind) owes it once.
     assert _steps(archive) == ["channel_adoption"]
@@ -24,7 +24,7 @@ def test_follow_up_on_an_open_run_is_recorded_once_not_amended_again(_isolate_he
     assert _steps(archive) == ["channel_adoption"]
 
 
-def test_follow_up_after_the_run_closed_amends_its_terminal_receipt(_isolate_hermes_home):
+def test_follow_up_after_the_run_closed_amends_its_terminal_receipt(_isolate_moor_home):
     update_receipt.begin_update_receipt()
     run = dict(update_receipt._current.get().data)
     update_receipt.finalize_update_receipt("success")

@@ -343,7 +343,7 @@ def seed_due_cron_job(t: Tenant, home: Path) -> str:
     """Create (once) an hourly job in the tenant's own cron store and mark it due now (the state the
     "run on next tick" action produces), so the multiplexed ticker's first tick fires it."""
     r = subprocess.run([sys.executable, "-c", _SEED_CRON, t.cron_prompt], cwd=str(home),
-                       env=hermetic_env(home, {"HERMES_HOME": str(t.home)}), capture_output=True, text=True,
+                       env=hermetic_env(home, {"MOOR_HOME": str(t.home)}), capture_output=True, text=True,
                        timeout=120, stdin=subprocess.DEVNULL, check=False)
     assert r.returncode == 0, r.stderr[-2000:]
     return r.stdout.strip().splitlines()[-1]
@@ -480,7 +480,7 @@ class ServeBackend(TuiBackend):
 
         self.token = secrets.token_urlsafe(24)
         self._log = open(log_path, "a", encoding="utf-8")
-        env = {"HERMES_DASHBOARD_SESSION_TOKEN": self.token, "HERMES_DESKTOP": "1", **(extra_env or {})}
+        env = {"MOOR_DASHBOARD_SESSION_TOKEN": self.token, "MOOR_DESKTOP": "1", **(extra_env or {})}
         self.proc = subprocess.Popen(
             [sys.executable, "-m", "moor_cli.main", "serve", "--host", "127.0.0.1", "--port", "0"],
             cwd=str(home), env=hermetic_env(home, env), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,

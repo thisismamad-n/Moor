@@ -396,7 +396,7 @@ class TestSaveAndLoadRoundtrip:
 
     def test_atomic_config_write_refuses_partial_state_instead_of_wiping_config(self, tmp_path):
         """A partial dict is not a full-state replacement: preserve the existing document."""
-        from hermes_cli.config import atomic_config_write
+        from moor_cli.config import atomic_config_write
 
         config_path = tmp_path / "config.yaml"
         original = {f"k{i}": i for i in range(99)}
@@ -409,7 +409,7 @@ class TestSaveAndLoadRoundtrip:
 
     def test_atomic_config_write_refuses_nested_omissions_with_same_top_level_keys(self, tmp_path):
         """Completeness is recursive: keeping the root names must not hide sibling deletion."""
-        from hermes_cli.config import atomic_config_write
+        from moor_cli.config import atomic_config_write
 
         config_path = tmp_path / "config.yaml"
         original = {
@@ -428,7 +428,7 @@ class TestSaveAndLoadRoundtrip:
 
     def test_atomic_config_replace_makes_delete_by_omission_explicit(self, tmp_path):
         """Full-state owners can still deliberately prune keys without a count-based heuristic."""
-        from hermes_cli.config import atomic_config_replace
+        from moor_cli.config import atomic_config_replace
 
         config_path = tmp_path / "config.yaml"
         config_path.write_text(

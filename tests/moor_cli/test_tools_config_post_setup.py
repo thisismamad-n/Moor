@@ -20,14 +20,14 @@ def test_browser_setup_respects_provider_and_native_owner(monkeypatch, capsys, t
                                                           playwright):
     baked = tmp_path / 'chromium-executable-path'
     if docker_image:
-        baked.write_text('/opt/hermes/chromium/chrome', encoding='utf-8')
+        baked.write_text('/opt/moor/chromium/chrome', encoding='utf-8')
     found = iter([None, None if docker_image else '/pm/chromium/chrome'])
     with (
         patch('tools.browser_use_cli._find_cli', return_value=['harness']) as install,
-        patch('hermes_cli.browser_runtime.BAKED_EXECUTABLE_FILE', baked),
-        patch('hermes_cli.browser_runtime.chromium_executable', side_effect=lambda **_kw: next(found)) as chromium,
-        patch('hermes_constants.is_termux', return_value=False),
-        patch('hermes_platform.host.runtime.is_termux', return_value=False),
+        patch('moor_cli.browser_runtime.BAKED_EXECUTABLE_FILE', baked),
+        patch('moor_cli.browser_runtime.chromium_executable', side_effect=lambda **_kw: next(found)) as chromium,
+        patch('moor_constants.is_termux', return_value=False),
+        patch('moor_platform.host.runtime.is_termux', return_value=False),
         patch('importlib.util.find_spec', return_value=object() if playwright else None),
         patch('shutil.which', return_value='/usr/bin/apt-get'),
         patch('pm.ensure') as ensure, patch('subprocess.run') as run,
@@ -59,11 +59,11 @@ def test_browser_setup_respects_provider_and_native_owner(monkeypatch, capsys, t
     (True, '/pm/chromium/chrome', True), (True, None, False), (False, '/pm/chromium/chrome', False),
 ])
 def test_local_browser_row_ready_only_when_setup_would_be_a_noop(harness, chromium, ready):
-    from hermes_cli.tools_config_post_setup import _POST_SETUP_READY
+    from moor_cli.tools_config_post_setup import _POST_SETUP_READY
 
     with (
         patch('tools.browser_use_cli._find_cli', return_value=['harness'] if harness else None),
-        patch('hermes_cli.browser_runtime.chromium_executable', return_value=chromium),
+        patch('moor_cli.browser_runtime.chromium_executable', return_value=chromium),
     ):
         assert _POST_SETUP_READY['chromium']() is ready
         # Cloud rows need only browser_exec's engine: the vendor hosts Chromium.
@@ -90,4 +90,4 @@ def test_importable_sdk_does_not_bypass_pm_constraints(monkeypatch, capsys, key,
         assert "Retry with: moor tools" in output
         assert "Restart Moor" not in output
     else:
-        assert "Restart Hermes" in output
+        assert "Restart Moor" in output

@@ -620,7 +620,7 @@ def atomic_roundtrip_yaml_save(path: str | Path, new_state: dict, *,
     """Persist a full config-state dict while preserving comments and ordering.
 
     THE on-disk primitive for ``config.yaml`` (production callers reach it through
-    ``hermes_cli.config.atomic_config_write`` or ``atomic_config_replace``): the document is
+    ``moor_cli.config.atomic_config_write`` or ``atomic_config_replace``): the document is
     loaded through ruamel round-trip mode and *new_state* is merged onto it, so comments, key order, quotes, blank
     lines and readable Unicode survive. Only nodes whose value actually changed are reassigned;
     an untouched scalar or list keeps its inline comments and formatting. Keys absent from

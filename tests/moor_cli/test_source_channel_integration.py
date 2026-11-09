@@ -157,8 +157,8 @@ def test_main_follows_the_git_branch_without_reading_a_channel_record(source, mo
     WAF or a timeout cannot stop an install following main. Preview channels still read theirs."""
     import urllib.error
 
-    from hermes_cli import source_check
-    from hermes_cli.release_channels import ChannelNotFound
+    from moor_cli import source_check
+    from moor_cli.release_channels import ChannelNotFound
 
     set_install_channel("main", source.root)
     reads = []

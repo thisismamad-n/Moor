@@ -9,7 +9,7 @@ const getTerminalBackends = vi.fn()
 const selectTerminalBackend = vi.fn()
 const confirmMock = vi.fn()
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getTerminalBackends: (profile?: ProfileScope) => getTerminalBackends(profile),
   selectTerminalBackend: (backend: string, profile?: ProfileScope) => selectTerminalBackend(backend, profile)
 }))

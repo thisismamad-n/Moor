@@ -77,7 +77,7 @@ def _set_interactive_stdin(monkeypatch, *, is_tty: bool = True) -> None:
 async def test_first_observation_401_still_allows_in_place_refresh(tmp_path, monkeypatch):
     """A 401 on the first disk observation seeds the baseline but must still
     report refreshable when the SDK can refresh in place (GH#39551)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     token_dir = tmp_path / "mcp-tokens"
@@ -109,7 +109,7 @@ async def test_first_observation_401_still_allows_in_place_refresh(tmp_path, mon
 async def test_external_login_after_absent_tokens_file_forces_reload(tmp_path, monkeypatch):
     """Provider built before login (no file, no in-memory tokens) must reload
     once another process writes the tokens file (GH#39551 review)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     from tools.mcp_oauth_manager import MCPOAuthManager, _ProviderEntry
 
     class _Ctx:

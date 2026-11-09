@@ -1,4 +1,4 @@
-"""N8 review 2.2: quitting a clean ``hermes --tui -w`` session that had a conversation removes its
+"""N8 review 2.2: quitting a clean ``moor --tui -w`` session that had a conversation removes its
 tree and branch, but the session's policy froze that cwd, so a later resume had every turn refused
 ``workspace_unavailable``. A resume (``--tui --resume``, ``-c``, classic CLI; all go through
 ``_resolve_chat_session_args``) now recreates a missing tree the ``--tui -w`` launcher created, at
@@ -29,28 +29,28 @@ def _branches(repo):
 
 
 def _quit_clean_session_with_history(tmp_path, monkeypatch):
-    """``hermes --tui -w``, one user + assistant exchange, ``/quit`` (row ended ``tui_shutdown``)."""
-    from hermes_cli import main_tui_launch
-    from hermes_cli.worktree_ops import _setup_worktree
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    """``moor --tui -w``, one user + assistant exchange, ``/quit`` (row ended ``tui_shutdown``)."""
+    from moor_cli import main_tui_launch
+    from moor_cli.worktree_ops import _setup_worktree
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB
 
     repo = _repo(tmp_path)
     monkeypatch.chdir(repo)
-    monkeypatch.setenv('HERMES_PYTHON', sys.executable)
-    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_hermes_home() / 'state.db')
+    monkeypatch.setenv('MOOR_PYTHON', sys.executable)
+    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_moor_home() / 'state.db')
     monkeypatch.setattr(main_tui_launch, '_setup_tui_worktree', lambda: wt_info)
     monkeypatch.setattr(main_tui_launch, '_make_tui_argv', lambda *_: (['node'], Path('.')))
     monkeypatch.setattr(main_tui_launch, '_print_tui_exit_summary', lambda *_: None)
 
     def ink(_argv, cwd=None, env=None):
-        db = SessionDB(db_path=get_hermes_home() / 'state.db')
-        db.create_session('tui-wt', 'tui', cwd=env['HERMES_TUI_CWD'])
+        db = SessionDB(db_path=get_moor_home() / 'state.db')
+        db.create_session('tui-wt', 'tui', cwd=env['MOOR_TUI_CWD'])
         db.append_message('tui-wt', 'user', 'hello')
         db.append_message('tui-wt', 'assistant', 'hi')
         db.end_session('tui-wt', 'tui_shutdown')
         db.close()
-        Path(env['HERMES_TUI_ACTIVE_SESSION_FILE']).write_text(json.dumps({'session_id': 'tui-wt'}))
+        Path(env['MOOR_TUI_ACTIVE_SESSION_FILE']).write_text(json.dumps({'session_id': 'tui-wt'}))
         return 0
 
     monkeypatch.setattr(main_tui_launch.subprocess, 'call', ink)
@@ -62,7 +62,7 @@ def _quit_clean_session_with_history(tmp_path, monkeypatch):
 
 
 def _resume(session_id, **extra):
-    from hermes_cli import main as m
+    from moor_cli import main as m
     args = SimpleNamespace(resume=session_id, continue_last=None, in_dir=None, worktree=False,
                            no_restore_cwd=False, create_if_missing=False, **extra)
     m._resolve_chat_session_args(args, use_tui=True)
@@ -72,7 +72,7 @@ def _resume(session_id, **extra):
 def _turn_runs_in(cwd):
     """The owner's readiness gate a resumed turn passes through (``policy_scope``)."""
     from gateway.session_policy import policy_scope
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_state_runtime import RuntimeStoreError
     try:
         with policy_scope(SimpleNamespace(cwd=str(cwd))):
             pass
@@ -87,7 +87,7 @@ def _turn_runs_in(cwd):
 def test_resume_recreates_the_removed_tui_worktree_so_turns_run(tmp_path, monkeypatch, no_restore_cwd):
     repo, tree, wt_info = _quit_clean_session_with_history(tmp_path, monkeypatch)
     monkeypatch.chdir(tmp_path)
-    from hermes_cli import main as m
+    from moor_cli import main as m
     args = SimpleNamespace(resume='tui-wt', continue_last=None, in_dir=None, worktree=False,
                            no_restore_cwd=no_restore_cwd, create_if_missing=False)
     m._resolve_chat_session_args(args, use_tui=True)
@@ -104,20 +104,20 @@ def test_resume_recreates_the_removed_tui_worktree_so_turns_run(tmp_path, monkey
 
 def test_resume_reuses_the_surviving_branch(tmp_path, monkeypatch):
     """A tree removed while its branch survived comes back on that branch, at its commit."""
-    from hermes_cli.worktree_ops import _setup_worktree
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    from moor_cli.worktree_ops import _setup_worktree
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB
 
     repo = _repo(tmp_path)
     monkeypatch.chdir(repo)
-    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_hermes_home() / 'state.db')
+    wt_info = _setup_worktree(str(repo), sync_base=False, retain_db=get_moor_home() / 'state.db')
     tree = Path(wt_info['path'])
     (tree / 'f.txt').write_text('work')
     subprocess.run([*GIT, '-C', str(tree), 'add', 'f.txt'], check=True)
     subprocess.run([*GIT, '-C', str(tree), 'commit', '-qm', 'work'], check=True)
     tip = subprocess.run(['git', '-C', str(tree), 'rev-parse', 'HEAD'], capture_output=True, text=True,
                          check=True).stdout.strip()
-    db = SessionDB(db_path=get_hermes_home() / 'state.db')
+    db = SessionDB(db_path=get_moor_home() / 'state.db')
     db.create_session('tui-wt', 'tui', cwd=str(tree))
     db.append_message('tui-wt', 'user', 'hello')
     db.close()
@@ -131,12 +131,12 @@ def test_resume_reuses_the_surviving_branch(tmp_path, monkeypatch):
 
 
 def test_resume_never_creates_a_missing_dir_the_launcher_did_not_make(tmp_path, monkeypatch):
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB
 
     repo = _repo(tmp_path)
-    foreign = repo / '.worktrees' / 'hermes-deadbeef'  # looks like ours; no launcher record
-    db = SessionDB(db_path=get_hermes_home() / 'state.db')
+    foreign = repo / '.worktrees' / 'moor-deadbeef'  # looks like ours; no launcher record
+    db = SessionDB(db_path=get_moor_home() / 'state.db')
     db.create_session('other', 'tui', cwd=str(foreign))
     db.append_message('other', 'user', 'hello')
     db.create_session('plain', 'tui', cwd=str(tmp_path / 'gone'))
@@ -154,15 +154,15 @@ def test_a_store_error_reading_the_policy_falls_back_to_the_row_cwd(tmp_path, mo
     the tree from the row's cwd instead of skipping the resume step."""
     import sqlite3
 
-    import hermes_state_local
-    from hermes_cli.worktree_ops import _setup_worktree
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    import moor_state_local
+    from moor_cli.worktree_ops import _setup_worktree
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB
 
     repo = _repo(tmp_path)
     monkeypatch.chdir(repo)
-    tree = Path(_setup_worktree(str(repo), sync_base=False, retain_db=get_hermes_home() / 'state.db')['path'])
-    db = SessionDB(db_path=get_hermes_home() / 'state.db')
+    tree = Path(_setup_worktree(str(repo), sync_base=False, retain_db=get_moor_home() / 'state.db')['path'])
+    db = SessionDB(db_path=get_moor_home() / 'state.db')
     db.create_session('tui-wt', 'tui', cwd=str(tree))
     db.append_message('tui-wt', 'user', 'hello')
     db.close()
@@ -171,7 +171,7 @@ def test_a_store_error_reading_the_policy_falls_back_to_the_row_cwd(tmp_path, mo
     def broken(*_a, **_k):
         raise sqlite3.OperationalError('no such table: state_meta')
 
-    monkeypatch.setattr(hermes_state_local, 'local_receipt', broken)
+    monkeypatch.setattr(moor_state_local, 'local_receipt', broken)
     monkeypatch.chdir(tmp_path)
     _resume('tui-wt')
     assert tree.is_dir()
@@ -180,7 +180,7 @@ def test_a_store_error_reading_the_policy_falls_back_to_the_row_cwd(tmp_path, mo
 
 @pytest.mark.asyncio
 async def test_resume_recreates_the_removed_classic_worktree(tmp_path, monkeypatch):
-    """Classic ``hermes -w`` runs its session's tools in the tree (frozen policy cwd) while the row
+    """Classic ``moor -w`` runs its session's tools in the tree (frozen policy cwd) while the row
     keeps main's stamp, the repo root. Quit removes the clean tree; ``-c`` now gets it back."""
     import cli
     from gateway.config import GatewayConfig
@@ -188,7 +188,7 @@ async def test_resume_recreates_the_removed_classic_worktree(tmp_path, monkeypat
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
     from gateway.session_local import create_local_session
-    from hermes_cli import main as m
+    from moor_cli import main as m
 
     repo = _repo(tmp_path)
     monkeypatch.chdir(repo)

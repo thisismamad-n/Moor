@@ -180,7 +180,7 @@ def test_a_successful_catalog_fetch_stays_cached(monkeypatch):
 
 
 
-def test_fetch_models_with_pricing_keeps_the_display_name_for_nous_only(monkeypatch):
+def test_fetch_models_with_pricing_keeps_the_display_name_for_moor_only(monkeypatch):
     """The limit card names a model the way the catalog does ("Model A"); a name equal to the id
     adds nothing and is dropped."""
     payload = {"data": [
@@ -194,6 +194,6 @@ def test_fetch_models_with_pricing_keeps_the_display_name_for_nous_only(monkeypa
     monkeypatch.setattr(models_mod, "_urlopen_model_catalog_request", lambda req, timeout=8.0: resp)
 
     fetch = lambda **kw: fetch_models_with_pricing(api_key="sk-test", base_url="https://example.test", force_refresh=True, **kw)
-    nous = fetch(include_sale_original=True)
-    assert nous["a/b"]["name"] == "A B Model" and "name" not in nous["c/d"]
+    moor = fetch(include_sale_original=True)
+    assert moor["a/b"]["name"] == "A B Model" and "name" not in moor["c/d"]
     assert "name" not in fetch()["a/b"]

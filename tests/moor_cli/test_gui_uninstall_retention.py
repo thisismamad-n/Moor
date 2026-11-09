@@ -5,19 +5,19 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import gui_uninstall, main
-from hermes_constants import get_hermes_home
+from moor_cli import gui_uninstall, main
+from moor_constants import get_moor_home
 
 
 @pytest.fixture(params=("complete", "record_only"))
 def installation(request, tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    home = get_hermes_home()
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+    home = get_moor_home()
     assert home.resolve().is_relative_to(tmp_path.resolve())
-    root = home / "hermes-agent"
+    root = home / "moor-agent"
     protected = {
-        root / "hermes_cli" / "__init__.py": b"# agent source\n",
+        root / "moor_cli" / "__init__.py": b"# agent source\n",
         root / "venv" / "runtime": b"agent runtime",
         root / "node_modules" / "shared-package" / "index.js": b"shared workspace dependency",
         home / "config.yaml": b"model: fixture-model\n",
@@ -25,7 +25,7 @@ def installation(request, tmp_path, monkeypatch):
         home / "sessions" / "saved.json": b'{"saved": true}',
     }
     record = tmp_path / "desktop-installed-apps.json"
-    bundle = tmp_path / "apps" / "Hermes.app"
+    bundle = tmp_path / "apps" / "Moor.app"
     userdata = tmp_path / "desktop-data"
     gui_files = {
         root / "apps" / "desktop" / "dist" / "index.html": b"renderer",
@@ -48,7 +48,7 @@ def installation(request, tmp_path, monkeypatch):
 
 
 def _run(monkeypatch, *args):
-    monkeypatch.setattr(sys, "argv", ["hermes", "uninstall", "--gui", *args])
+    monkeypatch.setattr(sys, "argv", ["moor", "uninstall", "--gui", *args])
     return main.main()
 
 
@@ -69,7 +69,7 @@ def test_gui_dry_run_never_confirms_or_removes_installed_state(installation, mon
         assert "Uninstalled!" not in output
 
     # The sibling full-agent preview must also work without an interactive terminal.
-    monkeypatch.setattr(sys, "argv", ["hermes", "uninstall", "--dry-run"])
+    monkeypatch.setattr(sys, "argv", ["moor", "uninstall", "--dry-run"])
     main.main()
     for path, data in {**protected, **gui_files}.items():
         assert path.read_bytes() == data

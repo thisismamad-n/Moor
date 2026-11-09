@@ -64,10 +64,10 @@ def _discover_venv() -> list[Component]:
         except Exception:
             continue
         version = (dist.version or "").strip()
-        if name.lower().replace("_", "-") == "hermes-agent" and version == "0.0.0":
+        if name.lower().replace("_", "-") == "moor-agent" and version == "0.0.0":
             # pyproject declares 0.0.0 in source trees, which matches every advisory ever filed:
             # audit the running release instead, and skip the dist when no release is known.
-            from hermes_cli.version_info import get_version_info
+            from moor_cli.version_info import get_version_info
 
             version = get_version_info().base_version
             if version == "unknown":

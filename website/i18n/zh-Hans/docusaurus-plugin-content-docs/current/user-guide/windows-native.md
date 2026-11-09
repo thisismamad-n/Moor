@@ -205,8 +205,8 @@ moor gateway uninstall   # 移除 schtasks 条目、Startup 快捷方式、pid �
 
 ## 浏览器工具
 
-浏览器工具（`browser_exec`）是 Hermes Python 环境的一部分。
-本地浏览时，Hermes 启动 PM 安装的固定版本 Chromium（缺失时运行 `hermes pm install chromium`）；设置 `browser.executable_path` 可使用其他 Chromium 系程序。云端浏览器在 `hermes tools` 中选择。
+浏览器工具（`browser_exec`）是 Moor Python 环境的一部分。
+本地浏览时，Moor 启动 PM 安装的固定版本 Chromium（缺失时运行 `moor pm install chromium`）；设置 `browser.executable_path` 可使用其他 Chromium 系程序。云端浏览器在 `moor tools` 中选择。
 ARM64 Windows 上固定的 Chromium 是 x64 构建，通过 Windows 的 x64 模拟运行，这与原生 Python 不同。
 详见 [浏览器自动化](./features/browser.md)。
 
@@ -290,7 +290,7 @@ moor uninstall
 你只在当前进程中设置了它；请关闭并重新打开 shell，或在系统属性 → 环境变量中以用户作用域设置。在新 PowerShell 窗口中用 `echo $env:EDITOR` 验证。
 
 **浏览器工具启动了，但工具调用超时。**
-运行 `hermes doctor` 和 `hermes pm doctor`，并通过 `hermes tools` 检查所选浏览器提供商。首次启动 Chromium 较慢时，可通过 `browser.command_timeout`（启动超时下限，单位秒）放宽时间。不要向签名包写入另一个 Playwright 版本。
+运行 `moor doctor` 和 `moor pm doctor`，并通过 `moor tools` 检查所选浏览器提供商。首次启动 Chromium 较慢时，可通过 `browser.command_timeout`（启动超时下限，单位秒）放宽时间。不要向签名包写入另一个 Playwright 版本。
 
 **CLI 中中文/日文/阿拉伯文字符显示为 `?`。**
 UTF-8 stdio 垫片未激活。检查 `MOOR_DISABLE_WINDOWS_UTF8` 是否**未**设置（`Get-ChildItem env:MOOR_DISABLE_WINDOWS_UTF8`）。如果该变量为空但仍然看到 `?`，控制台宿主（非常旧的 `cmd.exe`）可能完全不支持 UTF-8——请切换到 Windows Terminal。

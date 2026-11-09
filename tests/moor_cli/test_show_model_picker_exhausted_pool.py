@@ -6,7 +6,7 @@
 credential pool was entirely rate-limited (entries present, none usable until
 ``last_error_reset_at``) was treated as "not authenticated" and its row
 vanished from the main picker until the cooldown elapsed or the user ran
-``hermes auth reset``. The gateway interactive picker (#66584) and the aux
+``moor auth reset``. The gateway interactive picker (#66584) and the aux
 pickers (#66624) already forward the flag; this is the same contract for the
 CLI's main picker surface.
 """
@@ -14,7 +14,7 @@ CLI's main picker surface.
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from hermes_cli.cli_model_switch_mixin import _show_model_picker
+from moor_cli.cli_model_switch_mixin import _show_model_picker
 
 
 def _run_picker(payload_providers):
@@ -26,7 +26,7 @@ def _run_picker(payload_providers):
 
     cli = SimpleNamespace(model="some-model", provider="", _open_model_picker=MagicMock())
     ctx = SimpleNamespace(user_providers={}, custom_providers=[])
-    with patch("hermes_cli.inventory.build_models_payload", side_effect=_fake_build):
+    with patch("moor_cli.inventory.build_models_payload", side_effect=_fake_build):
         _show_model_picker(cli, ctx, force_refresh=False)
     return captured, cli
 

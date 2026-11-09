@@ -52,7 +52,7 @@ export function UpdateHoldOverlay() {
   const recheck = async () => {
     setRefused(false)
     setBusy('recheck')
-    const result = await window.hermesDesktop?.updateHold.recheck().catch(() => null)
+    const result = await window.moorDesktop?.updateHold.recheck().catch(() => null)
 
     if (!result?.ok) {
       setBusy(null)
@@ -61,13 +61,13 @@ export function UpdateHoldOverlay() {
 
   const quit = async () => {
     setBusy('quit')
-    await window.hermesDesktop?.updateHold.quit().catch(() => undefined)
+    await window.moorDesktop?.updateHold.quit().catch(() => undefined)
   }
 
   const startAnyway = async () => {
     setBusy('start')
 
-    const result = await window.hermesDesktop?.updateHold
+    const result = await window.moorDesktop?.updateHold
       .startAnyway({ holdId: hold.holdId, confirmed: true })
       .catch(() => null)
 
@@ -78,7 +78,7 @@ export function UpdateHoldOverlay() {
     }
   }
 
-  const openLogs = () => void window.hermesDesktop?.revealLogs().catch(() => undefined)
+  const openLogs = () => void window.moorDesktop?.revealLogs().catch(() => undefined)
 
   return (
     <div
@@ -91,7 +91,7 @@ export function UpdateHoldOverlay() {
       data-testid="update-hold-overlay"
       role="alertdialog"
     >
-      <div className="relative w-full max-w-[40rem] overflow-hidden rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) shadow-nous">
+      <div className="relative w-full max-w-[40rem] overflow-hidden rounded-xl border border-(--stroke-moor) bg-(--ui-chat-bubble-background) shadow-moor">
         <div className="flex items-start gap-3 px-5 py-4">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-500" />
           <div>

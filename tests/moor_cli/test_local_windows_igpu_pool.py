@@ -11,13 +11,13 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.local_runtime.hardware as hw
-from hermes_cli.local_runtime import binaries
-from hermes_cli.local_runtime.binaries import Engine
-from hermes_cli.local_runtime.catalog import CATALOG, select_variant
-from hermes_cli.local_runtime.devices import GGML_DEVICE_IGPU
-from hermes_platform.host import gpu_adapters
-from hermes_platform.host.gpu_adapters import Adapter
+import moor_cli.local_runtime.hardware as hw
+from moor_cli.local_runtime import binaries
+from moor_cli.local_runtime.binaries import Engine
+from moor_cli.local_runtime.catalog import CATALOG, select_variant
+from moor_cli.local_runtime.devices import GGML_DEVICE_IGPU
+from moor_platform.host import gpu_adapters
+from moor_platform.host.gpu_adapters import Adapter
 
 GIB = 1 << 30
 RAM = int(31.5 * GIB)

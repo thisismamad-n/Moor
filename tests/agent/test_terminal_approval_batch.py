@@ -240,8 +240,8 @@ def test_failed_command_re_gates_later_prepared_approvals(tmp_path, monkeypatch)
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.delenv("MOOR_DESKTOP", raising=False)
+    monkeypatch.setenv("MOOR_EXEC_ASK", "1")
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(tmp_path))
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
@@ -327,7 +327,7 @@ def test_switching_yolo_off_mid_batch_re_gates_later_commands(tmp_path, monkeypa
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.setenv("MOOR_EXEC_ASK", "1")
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
     monkeypatch.setattr("agent.title_generator.maybe_auto_title", lambda *a, **kw: None)
     key = "yolo-off-terminal-batch"

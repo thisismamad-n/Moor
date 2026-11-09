@@ -145,7 +145,7 @@ class TestRefusalOutsideScope:
 class TestSkips:
     @pytest.mark.parametrize("next_opener_recreates", [False, True], ids=["vanished", "recreated"])
     def test_sidecars_unlinked_by_sibling_close_mid_preflight_are_not_readonly(
-        self, hermes_home, tmp_path, monkeypatch, next_opener_recreates
+        self, moor_home, tmp_path, monkeypatch, next_opener_recreates
     ):
         """A sibling connection's last close() unlinks -wal/-shm after the preflight
         listed them (and the next opener may recreate them before the re-check); a
@@ -192,8 +192,8 @@ class TestSkips:
 
 
 class TestSessionDBIntegration:
-    def test_sessiondb_repairs_readonly_dir_before_fresh_db_lock(self, hermes_home):
-        sub = hermes_home / "profiles" / "p1"
+    def test_sessiondb_repairs_readonly_dir_before_fresh_db_lock(self, moor_home):
+        sub = moor_home / "profiles" / "p1"
         sub.mkdir(parents=True)
         os.chmod(sub, 0o555)
         try:
@@ -203,8 +203,8 @@ class TestSessionDBIntegration:
         finally:
             os.chmod(sub, 0o755)
 
-    def test_sessiondb_selfheals_readonly_db_in_home(self, hermes_home):
-        db_path = hermes_home / "state.db"
+    def test_sessiondb_selfheals_readonly_db_in_home(self, moor_home):
+        db_path = moor_home / "state.db"
         first = SessionDB(db_path)
         first.close()
         for suffix in ("", "-wal", "-shm"):

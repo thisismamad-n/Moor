@@ -67,7 +67,7 @@ const reportNewSessionNotices = (info: null | SessionInfo, msg: string | undefin
   }
 }
 
-export const writeActiveSessionFile = (sessionId: null | string, file = process.env.HERMES_TUI_ACTIVE_SESSION_FILE) => {
+export const writeActiveSessionFile = (sessionId: null | string, file = process.env.MOOR_TUI_ACTIVE_SESSION_FILE) => {
   if (!file || !sessionId) {
     return
   }
@@ -428,7 +428,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
           return null
         }
 
-        // HERMES_TUI_CWD is the dashboard-picked workspace: an explicit cwd on
+        // MOOR_TUI_CWD is the dashboard-picked workspace: an explicit cwd on
         // session.create on both transports, so /new stays in that workspace.
         const workspaceCwd = STARTUP_WORKSPACE_CWD ? { cwd: STARTUP_WORKSPACE_CWD } : {}
 

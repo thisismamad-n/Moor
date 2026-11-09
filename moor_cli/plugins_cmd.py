@@ -15,41 +15,41 @@ import threading
 from pathlib import Path
 from typing import Any, NoReturn, Optional
 
-from hermes_constants import get_hermes_home, hermes_home_key
-from hermes_cli.config import cfg_get
-from hermes_cli.plugin_capabilities import _child_dict
+from moor_constants import get_moor_home, moor_home_key
+from moor_cli.config import cfg_get
+from moor_cli.plugin_capabilities import _child_dict
 # Tests patch these two on the facade; the install/remove siblings read them through it.
-from hermes_cli.secret_prompt import masked_secret_prompt
+from moor_cli.secret_prompt import masked_secret_prompt
 from utils import rmtree_readonly
 
 # Topical siblings. The facade re-exports what other modules, tests and the old updater import from
-# ``hermes_cli.plugins_cmd``; sibling bodies read those names back through the facade at call time.
-from hermes_cli.plugins_cmd_capabilities import (
+# ``moor_cli.plugins_cmd``; sibling bodies read those names back through the facade at call time.
+from moor_cli.plugins_cmd_capabilities import (
     _declared_capabilities_for_key, _declared_capabilities_from_manifest, _resolve_tool_override_grant,
     _run_capability_consent, cmd_capabilities,
 )
-from hermes_cli.plugins_cmd_git import (
+from moor_cli.plugins_cmd_git import (
     _EXACT_COMMIT_RE, _canonical_source, _checkout_exact_revision, _clone_plugin_repo, _git_head_revision,
     _git_or_raise, _git_pull_plugin_dir, _git_resolve_commit, _normalize_exact_revision, _pin_annotation,
     _read_install_metadata, _run_plugin_git, _safe_git_error, _scrub_cloned_origin, _update_install_record,
     _write_install_metadata, pinned_revision,
 )
-from hermes_cli.plugins_cmd_install import (
+from moor_cli.plugins_cmd_install import (
     _check_manifest_version, _consent_python_deps, _display_after_install, _install_plugin_core,
     _install_plugin_python_deps, _prompt_plugin_env_vars, _python_dependency_summary,
     _read_manifest_for_install, cmd_install, dashboard_install_plugin,
 )
-from hermes_cli.plugins_cmd_listing import (
+from moor_cli.plugins_cmd_listing import (
     _filter_plugin_entries, cmd_list, cmd_show,
 )
-from hermes_cli.plugins_cmd_remove import (
+from moor_cli.plugins_cmd_remove import (
     _remove_plugin_core, cmd_remove, dashboard_remove_user_plugin,
 )
-from hermes_cli.plugins_cmd_toggle import (
+from moor_cli.plugins_cmd_toggle import (
     _discover_context_engines, _persist_plugin_selection, _provider_categories, _run_composite_fallback,
     cmd_toggle,
 )
-from hermes_cli.plugins_cmd_update import (
+from moor_cli.plugins_cmd_update import (
     _clear_plugin_bytecode, cmd_adopt, cmd_check_updates, cmd_trust_update_url, cmd_update,
     dashboard_update_user_plugin,
 )
@@ -470,10 +470,10 @@ def _unknown_plugin_message(name: str, *, downloaded_only: bool = False) -> str:
     """``No plugin named ...`` with the exact-name rule and the two commands that resolve it."""
     scope = (" This command only works on downloaded plugins; bundled ones can only be enabled or disabled."
              if downloaded_only else " Bundled plugins can only be enabled or disabled.")
-    from hermes_cli.left_core_migration import moved_plugin_hint
+    from moor_cli.left_core_migration import moved_plugin_hint
     if moved := moved_plugin_hint(name):
         return f"[red]No plugin named '{name}'.[/red] {moved}"
-    return (f"[red]No plugin named '{name}'.[/red] Run `hermes plugins list` to see the exact names "
+    return (f"[red]No plugin named '{name}'.[/red] Run `moor plugins list` to see the exact names "
             f"(nested plugins use their full key, e.g. web/firecrawl).{scope} "
             "To add one: `moor plugins install <owner/repo>`.")
 
@@ -562,7 +562,7 @@ def _plugin_aliases(key: str, entries: Optional[list] = None) -> set:
     The loader matches BOTH the canonical key (``web/firecrawl``) and the manifest name
     (``web-firecrawl``), so a stale entry under any form vetoes an enable ("explicit disable wins").
     Pass *entries* to reuse one :func:`_discover_all_plugins` scan across several keys."""
-    from hermes_cli.left_core_migration import legacy_plugin_keys
+    from moor_cli.left_core_migration import legacy_plugin_keys
     names = {key, key.split("/")[-1], *legacy_plugin_keys(key)}
     names.update(e[0] for e in (_discover_all_plugins() if entries is None else entries) if e[5] == key)
     return names
@@ -589,7 +589,7 @@ def _disabled_by_update(key: str, aliases) -> bool:
     from pm.plugins_state import RECORD
     from pm.plugins_state import read_home_selection
 
-    record = ((read_home_selection(get_hermes_home()) or {}).get("plugins") or {}).get(RECORD)
+    record = ((read_home_selection(get_moor_home()) or {}).get("plugins") or {}).get(RECORD)
     return isinstance(record, dict) and bool({key, *aliases} & set(record))
 
 
@@ -625,7 +625,7 @@ def _forget_plugin_config(aliases: set) -> dict[str, Any]:
     return result
 
 
-# One lock per Hermes home. The Desktop install card enables several plugins at once, each on its own
+# One lock per Moor home. The Desktop install card enables several plugins at once, each on its own
 # thread; without it every thread read the same config version and all but the first commit were
 # refused as stale. The version check in PM stays: it still catches an edit from another process.
 _SELECTION_LOCKS: dict[str, threading.Lock] = {}
@@ -634,7 +634,7 @@ _SELECTION_LOCKS_GUARD = threading.Lock()
 
 def _selection_lock() -> threading.Lock:
     with _SELECTION_LOCKS_GUARD:
-        return _SELECTION_LOCKS.setdefault(hermes_home_key(), threading.Lock())
+        return _SELECTION_LOCKS.setdefault(moor_home_key(), threading.Lock())
 
 
 def _set_plugin_enabled(name: str, *, enable: bool, aliases=(), console=None) -> None:
@@ -643,7 +643,7 @@ def _set_plugin_enabled(name: str, *, enable: bool, aliases=(), console=None) ->
 
     with _selection_lock():
         expected_config = _plugin_selection_version()
-        config = read_home_selection(get_hermes_home()) or {}
+        config = read_home_selection(get_moor_home()) or {}
         plugins = config.get("plugins") or {}
         enabled = set(plugins.get("enabled") or ())
         disabled = set(plugins.get("disabled") or ())
@@ -670,11 +670,11 @@ def _resolve_plugin_key(name: str) -> Optional[str]:
 
 
 def _catalog_installed_dir(name: str) -> Optional[Path]:
-    """Install dir whose installer-owned record names catalog entry *name* (``hermes-memory-wiki`` is
+    """Install dir whose installer-owned record names catalog entry *name* (``moor-memory-wiki`` is
     installed as ``plugins/memory-wiki``), else None (also when two dirs claim it). Read through
     :func:`catalog_install_record` (``.install-metadata.json``), never the tree, so a URL-installed
     repo cannot claim a catalog entry's name."""
-    from hermes_cli.plugins_cmd_catalog import catalog_install_record
+    from moor_cli.plugins_cmd_catalog import catalog_install_record
     try:
         keys = list(_read_install_metadata())
     except PluginOperationError:
@@ -691,7 +691,7 @@ def _find_plugin_entry(name: str) -> Optional[tuple]:
     ``web/exa``) only when unique; else the catalog name the plugin was installed under.
     Never guesses between two candidates."""
     entries = _discover_all_plugins()
-    from hermes_cli.left_core_migration import legacy_plugin_alias
+    from moor_cli.left_core_migration import legacy_plugin_alias
     target = legacy_plugin_alias(name) or name  # ``observability/langfuse`` -> its catalog plugin
     exact = next((entry for entry in entries if target in (entry[0], entry[5])), None)
     if exact is not None:
@@ -724,7 +724,7 @@ def cmd_enable(name: str, allow_tool_override: Optional[bool] = None) -> None:
         if plugin in LEGACY_RELAY_PLUGIN_KEYS:
             _fail(console, (
                 f"[red]Plugin '{plugin}' was removed.[/red] Relay lifecycle is owned "
-                "by Hermes core; configure a standard user or system Relay plugins.toml, or use "
+                "by Moor core; configure a standard user or system Relay plugins.toml, or use "
                 f"{RELAY_PLUGINS_CONFIG_ENV} for an explicit user-file override."))
 
     _refuse_legacy_relay(name)
@@ -743,7 +743,7 @@ def cmd_enable(name: str, allow_tool_override: Optional[bool] = None) -> None:
 
     changed = _activate_key(key, enable=True, console=console)
     if changed:
-        from hermes_cli.plugins_activation import report_activation
+        from moor_cli.plugins_activation import report_activation
         console.print(f"[green]✓[/green] Plugin [bold]{key}[/bold] enabled.")  # the hint says when it applies
         report_activation(console, key)
     else:
@@ -779,7 +779,7 @@ def cmd_disable(name: str) -> None:
         console.print(f"[dim]Plugin '{key}' is already disabled.[/dim]")
         return
     _toggle_plugin_toolset(key, enable=False, toolset_key=toolset_key)
-    from hermes_cli.plugins_activation import gateway_reload_hint, reload_running_gateway
+    from moor_cli.plugins_activation import gateway_reload_hint, reload_running_gateway
     console.print(f"[yellow]⊘[/yellow] Plugin [bold]{key}[/bold] disabled.")
     console.print(f"[dim]{gateway_reload_hint(reload_running_gateway(), key)}[/dim]")
 
@@ -891,7 +891,7 @@ def _discover_all_plugins() -> list:
     seen: dict = {}
     # memory/, context_engine/, computer_use/, model-providers/ and config_backends/ load through dedicated
     # paths, not the PluginManager opt-in surface, so listing them as toggleable plugins would mislead.
-    from hermes_cli.plugins import discover_entrypoint_manifests, get_bundled_plugins_dir
+    from moor_cli.plugins import discover_entrypoint_manifests, get_bundled_plugins_dir
     for base, source, skip in (
         (get_bundled_plugins_dir(), "bundled", {"memory", "context_engine", "computer_use", "model-providers", "config_backends"}),
         (_plugins_dir(), "user", set()),
@@ -974,8 +974,8 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
 def _saved_list_toolset_key(name: str) -> Optional[str]:
     """The plugin's toolset key, or None without loading any plugin when no platform has a SAVED
     ``platform_toolsets`` list (the only lists :func:`_toggle_plugin_toolset` edits)."""
-    from hermes_cli.config import load_config
-    from hermes_cli.toolset_validation import parse_platform_toolsets_value
+    from moor_cli.config import load_config
+    from moor_cli.toolset_validation import parse_platform_toolsets_value
     saved = load_config().get("platform_toolsets")
     if not isinstance(saved, dict) or all(parse_platform_toolsets_value(v) is None for v in saved.values()):
         return None
@@ -1032,7 +1032,7 @@ def dashboard_set_agent_plugin_enabled(name: str, *, enabled: bool) -> dict[str,
     if changed and enabled:
         # Load it now, here and in the running gateway; ``activation`` tells the UI what is live vs
         # deferred, and ``restart_required`` only survives when no gateway answered (#87770).
-        from hermes_cli.plugins_activation import activate_plugin_now
+        from moor_cli.plugins_activation import activate_plugin_now
         result = {"ok": True, "name": key, "unchanged": False, **activate_plugin_now(key)}
         # Only now is the plugin loaded here, so its toolset key resolves: a backend that scanned
         # while the plugin was off held a placeholder and the toolset was never re-added.
@@ -1046,7 +1046,7 @@ def dashboard_set_agent_plugin_enabled(name: str, *, enabled: bool) -> dict[str,
 
 
 def _user_installed_plugin_dir(name: str) -> Optional[Path]:
-    """Resolved path under ``~/.hermes/plugins/<name>`` if it exists, else the user install
+    """Resolved path under ``~/.moor/plugins/<name>`` if it exists, else the user install
     :func:`_find_plugin_entry` resolves *name* to (its manifest or catalog name)."""
     try:
         target = _sanitize_plugin_name(name, _plugins_dir(), allow_subdir=True)
@@ -1084,12 +1084,12 @@ def _catalog():
 def _action_update(args):
     if args.name:
         if getattr(args, "yes", False):
-            _fail(_console(), "[red]Error:[/red] --yes only applies to `hermes plugins update` with no name.")
+            _fail(_console(), "[red]Error:[/red] --yes only applies to `moor plugins update` with no name.")
         cmd_update(args.name, force=getattr(args, "force", False))
         return
     if getattr(args, "force", False):
-        _fail(_console(), "[red]Error:[/red] --force applies to one named plugin: `hermes plugins update <name> --force`.")
-    from hermes_cli.plugins_cmd_update_all import cmd_update_all
+        _fail(_console(), "[red]Error:[/red] --force applies to one named plugin: `moor plugins update <name> --force`.")
+    from moor_cli.plugins_cmd_update_all import cmd_update_all
     cmd_update_all(yes=getattr(args, "yes", False))
 
 

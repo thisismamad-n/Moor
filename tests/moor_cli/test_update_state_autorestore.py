@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.update_cmd import (
+from moor_cli.update_cmd import (
     _restore_state_db_from_snapshot,
 )
 

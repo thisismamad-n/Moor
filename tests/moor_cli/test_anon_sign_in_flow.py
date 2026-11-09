@@ -1,6 +1,6 @@
 """``anon_auth.run_sign_in``: the one plain device-code sign-in every surface renders.
 
-Driven directly against the same fake portal ``hermes auth upgrade`` is tested with, so the states,
+Driven directly against the same fake portal ``moor auth upgrade`` is tested with, so the states,
 the persistence rules, the cancel rules and the free tier's handoff are exercised on the real wire
 rather than mocked away. Each test asserts a single ruled property of the flow.
 """
@@ -14,9 +14,9 @@ import time
 
 import pytest
 
-from hermes_cli import anon_auth, auth_device_flow
-from hermes_cli.auth import _auth_file_path, _load_auth_store
-from tests.hermes_cli.test_anon_upgrade import (
+from moor_cli import anon_auth, auth_device_flow
+from moor_cli.auth import _auth_file_path, _load_auth_store
+from tests.moor_cli.test_anon_upgrade import (
     EMAIL, FREE_PICK, PORTAL, WELCOME, _write_model_config, free_account, portal)
 
 __all__ = ["free_account", "portal"]
@@ -85,7 +85,7 @@ def test_no_identity_on_disk_signs_in_without_minting_or_claiming(portal, free_a
 
     assert states[-1].kind == "completed" and states[-1].handoff == ()
     assert portal.claims == []
-    assert not anon_auth.is_guest_state(_load_auth_store()["providers"]["nous"])
+    assert not anon_auth.is_guest_state(_load_auth_store()["providers"]["moor"])
 
 
 def test_an_expired_code_yields_timed_out_and_keeps_the_enriched_detail(portal):
@@ -97,7 +97,7 @@ def test_an_expired_code_yields_timed_out_and_keeps_the_enriched_detail(portal):
 
     assert state.kind == "timed_out"
     assert state.copy == anon_auth.UPGRADE_TIMED_OUT
-    assert state.detail == auth_device_flow._nous_device_auth_timeout_message(PORTAL)
+    assert state.detail == auth_device_flow._moor_device_auth_timeout_message(PORTAL)
     assert portal.token_grants == 0
     assert _auth_bytes() == before
 
@@ -123,10 +123,10 @@ def test_the_portal_override_is_read_inside_the_profile_scope(portal, free_accou
         finally:
             in_scope.pop()
 
-    from hermes_cli import auth_nous
+    from moor_cli import auth_moor
     reads = []
-    real_override = auth_nous._nous_portal_env_override
-    monkeypatch.setattr(auth_nous, "_nous_portal_env_override",
+    real_override = auth_moor._moor_portal_env_override
+    monkeypatch.setattr(auth_moor, "_moor_portal_env_override",
                         lambda: (reads.append(bool(in_scope)), real_override())[1])
 
     assert _drain(scope=_scope)[-1].kind == "completed"
@@ -135,9 +135,9 @@ def test_the_portal_override_is_read_inside_the_profile_scope(portal, free_accou
 
 def test_the_portal_override_wins_over_a_saved_portal(portal, monkeypatch):
     guest = _seed_free_tier()
-    from hermes_cli.auth import _save_auth_store, _save_provider_state
+    from moor_cli.auth import _save_auth_store, _save_provider_state
     store = _load_auth_store()
-    _save_provider_state(store, "nous", {**guest, "portal_base_url": "https://portal.nousresearch.com"})
+    _save_provider_state(store, "moor", {**guest, "portal_base_url": "https://portal.nousresearch.com"})
     _save_auth_store(store)
     asked = []
 
@@ -206,7 +206,7 @@ def test_a_settle_failure_yields_failed_rather_than_raising(portal, free_account
 
 
 def test_already_signed_in_short_circuits_before_any_network_unless_replacing(portal):
-    from hermes_cli.auth import _save_auth_store, _save_provider_state
+    from moor_cli.auth import _save_auth_store, _save_provider_state
     store = _load_auth_store()
     _save_provider_state(store, "moor", {"auth_method": "oauth_device_code", "access_token": "x"})
     _save_auth_store(store)
@@ -303,26 +303,26 @@ def test_persistence_happens_only_after_the_token_grant(portal, free_account):
 
 
 def test_a_token_without_a_scope_keeps_the_requested_scope(portal, free_account, monkeypatch):
-    from hermes_cli import auth_nous
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli import auth_moor
+    from moor_cli.auth import PROVIDER_REGISTRY
     real_poll = auth_device_flow._poll_for_token
     monkeypatch.setattr(auth_device_flow, "_poll_for_token",
                         lambda **kw: {k: v for k, v in real_poll(**kw).items() if k != "scope"})
     saved = []
-    real_persist = auth_nous.persist_nous_credentials
-    monkeypatch.setattr(auth_nous, "persist_nous_credentials",
+    real_persist = auth_moor.persist_moor_credentials
+    monkeypatch.setattr(auth_moor, "persist_moor_credentials",
                         lambda state, **kw: (saved.append(state), real_persist(state, **kw))[1])
 
     assert _drain()[-1].kind == "completed"
-    assert saved[0]["scope"] == PROVIDER_REGISTRY["nous"].scope
+    assert saved[0]["scope"] == PROVIDER_REGISTRY["moor"].scope
 
 
 def test_the_ca_bundle_is_honoured_for_the_whole_sign_in(portal, free_account, monkeypatch):
     import certifi
-    monkeypatch.setenv("HERMES_CA_BUNDLE", certifi.where())
+    monkeypatch.setenv("MOOR_CA_BUNDLE", certifi.where())
     seen = []
-    from hermes_cli import auth_nous
-    real_client = auth_nous._nous_http_client
+    from moor_cli import auth_moor
+    real_client = auth_moor._moor_http_client
 
     def _recording(timeout_seconds, verify):
         seen.append(verify)

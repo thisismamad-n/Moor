@@ -19,9 +19,9 @@ from moor_cli.model_setup_flows_common import (
     _load_config_model_section, _models_dev_merged, _oauth_gate, _persist_model, _pick_model_or_prompt,
     _print_numbered, _prompt_auth_credentials_choice,
     _note_setup_failure, _run_login, _say, _show_curated)
-from hermes_cli.model_setup_flows_custom import _model_flow_custom, _model_flow_named_custom
-from hermes_cli.model_setup_flows_azure import _model_flow_azure_foundry
-from hermes_cli.model_setup_flows_bedrock import _model_flow_bedrock
+from moor_cli.model_setup_flows_custom import _model_flow_custom, _model_flow_named_custom
+from moor_cli.model_setup_flows_azure import _model_flow_azure_foundry
+from moor_cli.model_setup_flows_bedrock import _model_flow_bedrock
 
 
 def _env_base_url(base_url_env: str) -> str:
@@ -176,10 +176,10 @@ def _moor_login_args(args) -> argparse.Namespace:
 def _moor_model_catalog(free_tier: bool, portal_url: str, model_ids: list, pricing: dict):
     """Free/paid-tier catalog for the Moor picker: ``(model_ids, pricing, unavailable_models,
     unavailable_message, policy_narrowed)`` or None (message already printed) when nothing is selectable."""
-    from hermes_cli.models_pricing import nous_policy_allowed_ids, restrict_to_nous_policy
-    from hermes_cli.models import (
-        partition_nous_models_by_tier,
-        union_with_nous_on_sale_models,
+    from moor_cli.models_pricing import moor_policy_allowed_ids, restrict_to_moor_policy
+    from moor_cli.models import (
+        partition_moor_models_by_tier,
+        union_with_moor_on_sale_models,
         union_with_portal_free_recommendations,
         union_with_portal_paid_recommendations,
     )
@@ -201,7 +201,7 @@ def _moor_model_catalog(free_tier: bool, portal_url: str, model_ids: list, prici
         model_ids, pricing = union_with_portal_free_recommendations(model_ids, pricing, portal_url)
     else:
         model_ids, pricing = union_with_portal_paid_recommendations(model_ids, pricing, portal_url)
-        model_ids = union_with_nous_on_sale_models(model_ids, pricing)
+        model_ids = union_with_moor_on_sale_models(model_ids, pricing)
     _before_policy = model_ids
     model_ids = restrict_to_moor_policy(model_ids, _policy_allowed, rescue_empty=True)
     _policy_narrowed = model_ids != _before_policy
@@ -209,7 +209,7 @@ def _moor_model_catalog(free_tier: bool, portal_url: str, model_ids: list, prici
         model_ids, unavailable_models = partition_moor_models_by_tier(model_ids, pricing, free_tier=True)
 
     if not model_ids and not unavailable_models:
-        print("No models available for Nous Portal after filtering.")
+        print("No models available for Moor Portal after filtering.")
         _note_setup_failure("no_models")
         return None
     if free_tier and not model_ids:
@@ -278,16 +278,16 @@ def _moor_persist_selection(selected: str, creds: dict) -> dict:
     return config
 
 
-def _model_flow_nous(config, current_model="", args=None):
-    """Nous Portal provider: ensure logged in, then pick model."""
-    from hermes_cli.auth import get_provider_auth_state, _prompt_model_selection, _login_nous, PROVIDER_REGISTRY
-    from hermes_cli.config import load_config
-    from hermes_cli.nous_subscription import prompt_enable_tool_gateway
-    state = get_provider_auth_state("nous")
-    from hermes_cli import anon_auth
+def _model_flow_moor(config, current_model="", args=None):
+    """Moor Portal provider: ensure logged in, then pick model."""
+    from moor_cli.auth import get_provider_auth_state, _prompt_model_selection, _login_moor, PROVIDER_REGISTRY
+    from moor_cli.config import load_config
+    from moor_cli.moor_subscription import prompt_enable_tool_gateway
+    state = get_provider_auth_state("moor")
+    from moor_cli import anon_auth
     # A free tier with no inference here signs in like no account; its apps move to the account after.
     if not state or not state.get("access_token") or anon_auth.guest_without_free_tier(state):
-        _say("Not logged into Nous Portal. Starting login...", "")
+        _say("Not logged into Moor Portal. Starting login...", "")
 
         def _login_then_offer_gateway(login_args, pconfig):
             _login_moor(login_args, pconfig)
@@ -301,9 +301,9 @@ def _model_flow_nous(config, current_model="", args=None):
 
     # Already logged in — the curated list (agentic models users know from OpenRouter)
     # instead of the hundreds returned by the live /models endpoint.
-    from hermes_cli.models import check_nous_free_tier, get_curated_nous_model_ids
-    from hermes_cli.models_pricing import get_pricing_for_provider
-    model_ids = get_curated_nous_model_ids()
+    from moor_cli.models import check_moor_free_tier, get_curated_moor_model_ids
+    from moor_cli.models_pricing import get_pricing_for_provider
+    model_ids = get_curated_moor_model_ids()
     if not model_ids:
         print("No curated models available for Moor Portal.")
         return
@@ -338,8 +338,8 @@ def _model_flow_nous(config, current_model="", args=None):
     _policy_notice = moor_policy_notice(removed=_policy_narrowed)
     if _policy_notice:
         print(_policy_notice)
-    from hermes_cli.model_picker_usage import featured_first, nous_picker_usage
-    _usage = nous_picker_usage(warm=True)
+    from moor_cli.model_picker_usage import featured_first, moor_picker_usage
+    _usage = moor_picker_usage(warm=True)
     # Window plans: every model is usable; the plan's featured picks lead the list.
     if _usage is not None:
         model_ids = featured_first(model_ids, _usage.featured_model_ids)
@@ -347,17 +347,17 @@ def _model_flow_nous(config, current_model="", args=None):
 
     selected = _prompt_model_selection(
         model_ids, current_model=current_model, pricing=pricing, unavailable_models=unavailable_models,
-        portal_url=_nous_portal_url, unavailable_message=unavailable_message, confirm_provider="nous",
+        portal_url=_moor_portal_url, unavailable_message=unavailable_message, confirm_provider="moor",
         confirm_base_url=creds.get("base_url", ""), confirm_api_key=creds.get("api_key", ""),
         usage=_usage)
     if not selected:
         print("No change.")
         return
-    config = _nous_persist_selection(selected, creds)
-    print(f"Default model set to: {selected} (via Nous Portal)")
+    config = _moor_persist_selection(selected, creds)
+    print(f"Default model set to: {selected} (via Moor Portal)")
     if _usage is not None:
-        from hermes_cli.model_picker_usage import large_model_notice
-        if _notice := large_model_notice(selected, "nous"):
+        from moor_cli.model_picker_usage import large_model_notice
+        if _notice := large_model_notice(selected, "moor"):
             print(f"⚠ {_notice}")
     # Offer Tool Gateway enablement for paid subscribers
     prompt_enable_tool_gateway(config)
@@ -385,7 +385,7 @@ def _model_flow_openai_codex(config, current_model=""):
             _codex_token, _codex_base = _codex_status.get("api_key"), _codex_status.get("base_url")
     if not _codex_token:
         with contextlib.suppress(Exception):
-            from hermes_cli.auth import resolve_codex_runtime_credentials
+            from moor_cli.auth import resolve_codex_runtime_credentials
             _creds = resolve_codex_runtime_credentials()
             _codex_token, _codex_base = _creds.get("api_key"), _creds.get("base_url")
 
@@ -514,10 +514,10 @@ def _model_flow_kimi(config, current_model=""):
 
 def _model_flow_stepfun(config, current_model=""):
     """StepFun Step Plan flow with region-specific endpoints."""
-    from hermes_cli.main_provider_setup import _infer_stepfun_region, _prompt_provider_choice, _stepfun_base_url_for_region
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.config import save_env_value
-    from hermes_cli.models import _PROVIDER_MODELS, fetch_api_models, provider_model_ids
+    from moor_cli.main_provider_setup import _infer_stepfun_region, _prompt_provider_choice, _stepfun_base_url_for_region
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.config import save_env_value
+    from moor_cli.models import _PROVIDER_MODELS, fetch_api_models, provider_model_ids
     provider_id = "stepfun"
     pconfig = PROVIDER_REGISTRY[provider_id]
     base_url_env = pconfig.base_url_env_var or ""
@@ -730,8 +730,8 @@ def _api_key_provider_model_list(provider_id: str, pconfig, existing_key: str, k
     merged with ``fallback_models`` exactly like the ``/model`` picker's
     ``models._profile_live_catalog``; generic /models probe for unregistered providers).
     Providers in ``_SPECIAL_MODEL_LISTS`` have their own resolution."""
-    from hermes_cli.config import get_env_value
-    from hermes_cli.models import fetch_api_models, probe_profile_catalog, static_catalog
+    from moor_cli.config import get_env_value
+    from moor_cli.models import fetch_api_models, probe_profile_catalog, static_catalog
     curated = static_catalog(provider_id)
     api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
 
@@ -999,7 +999,7 @@ _PLUGIN_FLOW_CREDENTIALS = {
 
 
 def _profile_model_setup_flow(provider_id: str):
-    """``flow(config, current_model, args)`` for a registered profile that owns its ``hermes model``
+    """``flow(config, current_model, args)`` for a registered profile that owns its ``moor model``
     step (``ProviderProfile.model_setup_flow``), else None."""
     from providers import get_provider_profile
     profile = get_provider_profile(provider_id)

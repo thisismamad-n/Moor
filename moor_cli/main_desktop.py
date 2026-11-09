@@ -1,4 +1,4 @@
-"""Desktop (Electron) app: build/stamp, stage-and-swap pack, exe integrity gate, macOS signing, Linux sandbox, launch (hermes gui/desktop).
+"""Desktop (Electron) app: build/stamp, stage-and-swap pack, exe integrity gate, macOS signing, Linux sandbox, launch (moor gui/desktop).
 
 Split out of ``moor_cli/main.py``. Names that still live in main (``PROJECT_ROOT``, ...)
 are imported lazily inside the functions that use them (avoids an import cycle).
@@ -50,7 +50,7 @@ def _packaged_resources_dir(desktop_dir: Path) -> Optional[Path]:
     executable = _desktop_packaged_executable(desktop_dir)
     if executable is None:
         return None
-    # macOS: …/Hermes.app/Contents/MacOS/Hermes → …/Contents/Resources
+    # macOS: …/Moor.app/Contents/MacOS/Moor → …/Contents/Resources
     return executable.parent.parent / "Resources" if sys.platform == "darwin" else executable.parent / "resources"
 
 
@@ -138,8 +138,8 @@ def _packaged_desktop_current_for_head(desktop_dir: Path, project_root: Path) ->
     resources = _packaged_resources_dir(desktop_dir)
     if resources is None:
         return False
-    from hermes_cli.steward import read_install_stamp
-    from hermes_cli.version_info import _run_git
+    from moor_cli.steward import read_install_stamp
+    from moor_cli.version_info import _run_git
 
     commit = read_install_stamp(resources).get("commit")
     if not isinstance(commit, str) or commit != _run_git(project_root, "rev-parse", "HEAD"):
@@ -265,7 +265,7 @@ def _move_live_app_aside(live_root: Path, previous: Path, held_by: Optional[list
     except PermissionError:
         if sys.platform != "win32":
             raise
-        from hermes_cli.desktop_release_holders import find_release_cwd_holders, release_after_refused_rename
+        from moor_cli.desktop_release_holders import find_release_cwd_holders, release_after_refused_rename
         holders, closed = release_after_refused_rename(live_root, consent=consent)
         if not closed:
             if held_by is not None:
@@ -285,8 +285,8 @@ def _swap_staged_desktop_app(
     """Promote a VERIFIED staged pack over ``release/`` by two renames (live → ``.previous``, staged →
     live); a failure between them rolls back. Returns the live exe or None (live app kept). Never raises.
     ``held_by`` collects the named programs that blocked the swap (Windows cwd holders)."""
-    from hermes_cli.desktop_release_holders import take_consent
-    from hermes_cli.update_receipt import _launcher_correlation_id
+    from moor_cli.desktop_release_holders import take_consent
+    from moor_cli.update_receipt import _launcher_correlation_id
     release_dir = desktop_dir / "release"
     # A "close and retry" consent covers this one attempt of the run it was given for (#101789).
     consent = take_consent(release_dir, _launcher_correlation_id())
@@ -492,7 +492,7 @@ def _desktop_ancestor_in(desktop_dir: Path) -> Optional[int]:
     """PID of a Desktop from this build's ``release`` tree that is one of OUR ancestors, else None.
 
     That Desktop is running this process (its backend's launch-time update tail, or a
-    `hermes update` it spawned). On Windows it holds the exe lock the promotion rename
+    `moor update` it spawned). On Windows it holds the exe lock the promotion rename
     needs, and it cannot be stopped without killing this process first. Never raises."""
     try:
         import psutil
@@ -527,7 +527,7 @@ def _stop_desktop_processes_locking_build(desktop_dir: Path, *, also_posix: bool
     me = os.getpid()
     # Never stop a Desktop that is one of OUR ancestors, on any platform: this
     # process lives in its tree. A historical Desktop (v2026.7.1 Linux in-app
-    # update) runs `hermes update` as a child with piped stdout/stderr and owns
+    # update) runs `moor update` as a child with piped stdout/stderr and owns
     # the post-update rebuild and relaunch. Killing it breaks those pipes (EPIPE
     # fails the update) and leaves nobody to relaunch. On Windows the same holds
     # for the launch-time tail a Desktop's own backend runs
@@ -890,7 +890,7 @@ def _desktop_macos_relaunchable_fixup(
                     f"  ✗ macOS signing identity {configured!r} did not produce a verified "
                     f"signature, and the installed app is publisher-signed (Team ID "
                     f"{target_sig['team']}); keeping it (no ad-hoc fallback). Fix the identity "
-                    "(e.g. `hermes desktop --setup-tcc-identity` or edit "
+                    "(e.g. `moor desktop --setup-tcc-identity` or edit "
                     "desktop.macos_signing_identity in config.yaml) and update again."
                 )
                 return False
@@ -984,7 +984,7 @@ def _stage_macos_bundle_copy(src: Path, dst: Path) -> None:
 
 
 def _install_rebuilt_desktop_app(desktop_dir: Path, candidates: list[Path]) -> tuple[list[Path], list[str]]:
-    """Copy the rebuilt macOS bundle into every stale or missing installed ``Hermes.app`` in
+    """Copy the rebuilt macOS bundle into every stale or missing installed ``Moor.app`` in
     *candidates* (``_installed_desktop_apps()``) (#52339).
 
     ``moor desktop --build-only`` (what ``moor update`` runs) packages into
@@ -1003,7 +1003,7 @@ def _install_rebuilt_desktop_app(desktop_dir: Path, candidates: list[Path]) -> t
     rebuilt_exe = _desktop_packaged_executable(desktop_dir)
     if rebuilt_exe is None:
         return [], []
-    # .../Hermes.app/Contents/MacOS/Hermes -> .../Hermes.app
+    # .../Moor.app/Contents/MacOS/Moor -> .../Moor.app
     return _install_rebuilt_macos_bundles(
         rebuilt_exe.parents[2], candidates, running=_running_macos_app_bundles())
 
@@ -1019,15 +1019,15 @@ def _refresh_installed_desktop_apps(desktop_dir: Path) -> None:
     for app in installed:
         if app in missing:
             print(f"  ✓ Reinstalled the Desktop app at {app}: it had been removed, so Finder, "
-                  "the Dock and Spotlight could not find Hermes")
+                  "the Dock and Spotlight could not find Moor")
         else:
             print(f"  ✓ Installed the rebuilt Desktop app at {app}")
     for problem in problems:
         print(f"  ⚠ {problem}")
-    from hermes_cli.gui_uninstall import desktop_install_record
+    from moor_cli.gui_uninstall import desktop_install_record
     from utils import atomic_json_write, read_json_or_empty
     # A copy that failed to reinstall stays recorded, so the next update retries it. Every
-    # `hermes desktop` launch lands here: write only when the set changed.
+    # `moor desktop` launch lands here: write only when the set changed.
     apps = [str(app) for app in owned]
     if read_json_or_empty(desktop_install_record()).get("apps", []) == apps:
         return
@@ -1038,7 +1038,7 @@ def _refresh_installed_desktop_apps(desktop_dir: Path) -> None:
 
 
 def _update_owned_macos_bundles(candidates: list[Path]) -> list[Path]:
-    """The existing bundles in *candidates* that only ``hermes update`` keeps current (#52339).
+    """The existing bundles in *candidates* that only ``moor update`` keeps current (#52339).
 
     Ownership comes from the bundle's own ``install-stamp.json``. ``updateMechanism: self`` is a
     bootstrap build (a local pack or the bootstrap download), and stamps older than the field
@@ -1057,27 +1057,27 @@ def _update_owned_macos_bundles(candidates: list[Path]) -> list[Path]:
 
 
 def _owns_installed_desktop_apps() -> bool:
-    """A packaged app runs the checkout under the default Hermes home, so only that checkout (on
+    """A packaged app runs the checkout under the default Moor home, so only that checkout (on
     macOS) may build for it: a bundle from any other tree (a dev worktree) would split shell from
     backend."""
     if sys.platform != "darwin":
         return False
-    from hermes_cli.main import PROJECT_ROOT
-    from hermes_constants import get_default_hermes_root
-    return Path(PROJECT_ROOT).resolve() == (get_default_hermes_root() / "hermes-agent").resolve()
+    from moor_cli.main import PROJECT_ROOT
+    from moor_constants import get_default_moor_root
+    return Path(PROJECT_ROOT).resolve() == (get_default_moor_root() / "moor-agent").resolve()
 
 
 def _installed_desktop_apps() -> list[Path]:
-    """Installed macOS ``Hermes.app`` bundles this checkout's update owns.
+    """Installed macOS ``Moor.app`` bundles this checkout's update owns.
 
     When no owned copy is left, a recorded one that has gone missing still counts: its ownership
     stamp left with the bundle, and without the record nothing would ever put it back (Finder, the
-    Dock and Spotlight lose Hermes for good). A copy moved to the other Applications folder keeps
-    its stamp, so it is found instead of doubled. Hermes' GUI uninstall deletes the record.
+    Dock and Spotlight lose Moor for good). A copy moved to the other Applications folder keeps
+    its stamp, so it is found instead of doubled. Moor' GUI uninstall deletes the record.
     """
     if not _owns_installed_desktop_apps():
         return []
-    from hermes_cli.gui_uninstall import desktop_install_record, packaged_gui_app_paths
+    from moor_cli.gui_uninstall import desktop_install_record, packaged_gui_app_paths
     from utils import read_json_or_empty
     candidates = packaged_gui_app_paths()
     if owned := _update_owned_macos_bundles(candidates):
@@ -1089,9 +1089,9 @@ def _installed_desktop_apps() -> list[Path]:
 
 
 def _installed_desktop_launch_target(desktop_dir: Path, packaged_executable: Path) -> Path:
-    """The executable ``hermes desktop`` launches: the installed app once it IS the checkout build.
+    """The executable ``moor desktop`` launches: the installed app once it IS the checkout build.
 
-    Finder, the Dock and Spotlight open the installed ``Hermes.app``; launching the ``release/``
+    Finder, the Dock and Spotlight open the installed ``Moor.app``; launching the ``release/``
     bundle beside it ran the same app from a second path while the installed copy went stale
     (#52339). Refresh the installed copies, then launch the first one that matches the checkout
     build. The checkout bundle stays the fallback: nothing installed, or a copy that is running
@@ -1103,7 +1103,7 @@ def _installed_desktop_launch_target(desktop_dir: Path, packaged_executable: Pat
     rebuilt_hash = _app_asar_hash(packaged_executable.parents[2])
     for app in _installed_desktop_apps():
         if rebuilt_hash is not None and _app_asar_hash(app) == rebuilt_hash:
-            return app / "Contents" / "MacOS" / "Hermes"
+            return app / "Contents" / "MacOS" / "Moor"
     return packaged_executable
 
 
@@ -1125,7 +1125,7 @@ def _install_rebuilt_macos_bundles(
     for app in candidates:
         # Either swapper (this one or the Desktop hand-off's posix.sh ``.old``) may have died
         # between its renames; recover before judging what is installed.
-        _recover_interrupted_swap(app, app.parent / f"{app.name}.hermes-update-old")
+        _recover_interrupted_swap(app, app.parent / f"{app.name}.moor-update-old")
         _recover_interrupted_swap(app, app.parent / f"{app.name}.old")
         if app.is_dir() and _app_asar_hash(app) == rebuilt_hash:
             continue
@@ -1141,8 +1141,8 @@ def _install_rebuilt_macos_bundles(
                 if downgrade:
                     problems.append(f"{app} not refreshed: {downgrade}")
                     continue
-        tmp = app.parent / f"{app.name}.hermes-update-new"
-        old = app.parent / f"{app.name}.hermes-update-old"
+        tmp = app.parent / f"{app.name}.moor-update-new"
+        old = app.parent / f"{app.name}.moor-update-old"
         shutil.rmtree(tmp, ignore_errors=True)
         try:
             _stage_macos_bundle_copy(rebuilt_app, tmp)
@@ -1246,7 +1246,7 @@ def _desktop_linux_sandbox_fixup(packaged_executable: Path) -> bool:
     if _sandbox_helper_is_setuid_root(st):
         return True
 
-    from hermes_cli.main_desktop_apparmor import chromium_userns_sandbox_verdict
+    from moor_cli.main_desktop_apparmor import chromium_userns_sandbox_verdict
 
     verdict = chromium_userns_sandbox_verdict(packaged_executable)
     if verdict if verdict is not None else _desktop_linux_userns_sandbox_available():
@@ -1441,7 +1441,7 @@ def _promote_staged_desktop_app(
     held_by: list = []
     packaged_executable = _swap_staged_desktop_app(desktop_dir, staging_dir, held_by=held_by)
     if packaged_executable is None and held_by:
-        from hermes_cli.desktop_release_holders import describe_block, holder_names
+        from moor_cli.desktop_release_holders import describe_block, holder_names
         print(describe_block(held_by, desktop_dir / "release"))
         raise RuntimeError(
             f"Could not publish the desktop build: {holder_names(held_by)} is using its folder. {_PREVIOUS_APP_KEPT}")
@@ -1470,16 +1470,16 @@ def _diagnose_esbuild_ignore_scripts(output: Optional[str]) -> None:
 def build_prepared_desktop(desktop_dir: Path, *, source_mode: bool, npm: str, env: dict,
                            icons: Path | None = None) -> Optional[Path]:
     """Build prepared desktop sources, then publish the verified staged app."""
-    from hermes_cli.source_build import run_in_custody  # npm writes the checkout: update custody
+    from moor_cli.source_build import run_in_custody  # npm writes the checkout: update custody
 
     if not source_mode and sys.platform == "win32" and (ancestor := _desktop_ancestor_in(desktop_dir)):
         # The Desktop running this build holds the exe lock the promotion rename needs,
         # and stopping it would kill this process first (#123499). Packing would only
         # produce a build that cannot be installed; leave the app as it is. Its content
-        # stamp stays stale, so `hermes desktop` run outside the app rebuilds it
+        # stamp stays stale, so `moor desktop` run outside the app rebuilds it
         # (_desktop_build_needed), and the in-app update completes with desktop=True.
         print(f"  ⚠ Skipped rebuilding the desktop app: this update is running inside it (pid {ancestor}),")
-        print("    and Windows locks a running app's files. Quit Hermes Desktop and run `hermes desktop`")
+        print("    and Windows locks a running app's files. Quit Moor Desktop and run `moor desktop`")
         print("    from a terminal, or use Update now in Settings → About, to rebuild and reopen it.")
         return None
     build_label = "source build" if source_mode else "packaged app"
@@ -1506,7 +1506,7 @@ def build_prepared_desktop(desktop_dir: Path, *, source_mode: bool, npm: str, en
     try:
         run_in_custody(desktop_dir.parents[1], build_cmd, f"Building desktop {build_label}", cwd=desktop_dir, env=build_env)
         if staging_dir is not None:
-            from hermes_cli.update_stage import publish_stage
+            from moor_cli.update_stage import publish_stage
 
             publish_stage("Packaging the desktop app")
             run_in_custody(desktop_dir.parents[1], [npm, "run", "builder", "--", "--dir", "--publish", "never",
@@ -1549,15 +1549,15 @@ def _prefer_wsl_d3d12(env: dict) -> None:
 # Chromium's ProcessSingleton binds $TMPDIR/scoped_dirXXXXXX/SingletonSocket (33 bytes after
 # TMPDIR, measured on Electron 40); sun_path holds 107 bytes plus the NUL.
 _ELECTRON_TMPDIR_MAX_BYTES = 107 - len("/scoped_dirXXXXXX/SingletonSocket")
-_DESKTOP_TMPDIR_ENV = "HERMES_DESKTOP_TMPDIR"
+_DESKTOP_TMPDIR_ENV = "MOOR_DESKTOP_TMPDIR"
 
 
 def _desktop_launch_env(args: argparse.Namespace) -> tuple[dict, list[str]]:
     """Electron child env + config-supplied extra flags. ``desktop.*`` config is bridged to env vars
     Electron already reads; an explicit env var wins over config (and over keychain detection)."""
-    from hermes_constants import socket_safe_tmpdir, with_hermes_node_path
-    # with_hermes_node_path() copies os.environ when called with no arg.
-    env = with_hermes_node_path()
+    from moor_constants import socket_safe_tmpdir, with_moor_node_path
+    # with_moor_node_path() copies os.environ when called with no arg.
+    env = with_moor_node_path()
     tmpdir = env.get("TMPDIR", "")
     if sys.platform == "linux" and len(os.fsencode(tmpdir)) > _ELECTRON_TMPDIR_MAX_BYTES:
         # A longer TMPDIR hangs requestSingleInstanceLock(). Only Chromium's socket dir moves:
@@ -1584,8 +1584,8 @@ def _desktop_launch_env(args: argparse.Namespace) -> tuple[dict, list[str]]:
     # Renderer accessibility tree (composer exposure to OS dictation/IME
     # tools, #118271/#92607) defaults to ON inside the app; bridge only the
     # explicit opt-out so the default never depends on the launcher path.
-    if not config_renderer_a11y and "HERMES_DESKTOP_RENDERER_ACCESSIBILITY" not in os.environ:
-        env["HERMES_DESKTOP_RENDERER_ACCESSIBILITY"] = "0"
+    if not config_renderer_a11y and "MOOR_DESKTOP_RENDERER_ACCESSIBILITY" not in os.environ:
+        env["MOOR_DESKTOP_RENDERER_ACCESSIBILITY"] = "0"
 
     # Without --password-store safeStorage.isEncryptionAvailable() is often
     # false and the desktop app refuses to persist remote gateway tokens.
@@ -1625,7 +1625,7 @@ def _check_desktop_skip_build(
 
 def _packaged_desktop_launch_command(packaged_executable: Path) -> list[str]:
     """``[exe, *sandbox flags]`` after the Linux sandbox fixup; exits when the sandbox can't be configured."""
-    from hermes_cli.main_desktop_apparmor import print_no_sandbox_fallback
+    from moor_cli.main_desktop_apparmor import print_no_sandbox_fallback
 
     launch_command = [str(packaged_executable)]
     if not _desktop_linux_sandbox_fixup(packaged_executable):
@@ -1656,20 +1656,20 @@ def _site_packages_install_kind(project_root: Path) -> Optional[str]:
 
 
 def _launch_installed_macos_desktop_app() -> bool:
-    """Launch a separately installed ``/Applications/Hermes.app``, if present.
+    """Launch a separately installed ``/Applications/Moor.app``, if present.
 
     Returns True only when the app bundle exists and a detached launch was
     started — the caller then exits without touching the build ladder.
     """
     if sys.platform != "darwin":
         return False
-    executable = Path("/Applications/Hermes.app/Contents/MacOS/Hermes")
+    executable = Path("/Applications/Moor.app/Contents/MacOS/Moor")
     if not executable.is_file():
         return False
-    from hermes_cli.bundled_app import launch_detached
+    from moor_cli.bundled_app import launch_detached
 
     pid = launch_detached([str(executable)], cwd=executable.parent)
-    print(f"→ Launched the installed Hermes Desktop app: {executable} (pid {pid})")
+    print(f"→ Launched the installed Moor Desktop app: {executable} (pid {pid})")
     return True
 
 
@@ -1677,20 +1677,20 @@ def _run_desktop_one_shot(args: argparse.Namespace, desktop_dir: Path, *, bundle
     """Run a host-setup one-shot flag, then exit without building or launching."""
     # macOS: a self-signed code-signing identity so TCC grants survive rebuilds.
     if getattr(args, "setup_tcc_identity", False):
-        from hermes_cli.main_desktop_tcc import _desktop_macos_setup_tcc_identity
-        identity = getattr(args, "identity", None) or "Hermes Local Signing"
+        from moor_cli.main_desktop_tcc import _desktop_macos_setup_tcc_identity
+        identity = getattr(args, "identity", None) or "Moor Local Signing"
         sys.exit(0 if _desktop_macos_setup_tcc_identity(identity) else 1)
     # Linux: the per-binary AppArmor profile for Chromium's namespace sandbox (#130177).
     if getattr(args, "install_apparmor_profile", False):
-        from hermes_cli.bundled_app import NotBundledApp, resolve_bundle_layout
-        from hermes_cli.main import PROJECT_ROOT
-        from hermes_cli.main_desktop_apparmor import install_profile
+        from moor_cli.bundled_app import NotBundledApp, resolve_bundle_layout
+        from moor_cli.main import PROJECT_ROOT
+        from moor_cli.main_desktop_apparmor import install_profile
         exe = _desktop_packaged_executable(desktop_dir)
         if bundled:
             with contextlib.suppress(NotBundledApp):
                 exe = resolve_bundle_layout(PROJECT_ROOT).launcher
         if exe is None:
-            print(f"✗ No packaged Hermes Desktop found under {desktop_dir / 'release'}; run `hermes desktop` first.")
+            print(f"✗ No packaged Moor Desktop found under {desktop_dir / 'release'}; run `moor desktop` first.")
         sys.exit(0 if exe is not None and install_profile(exe) else 1)
 
 
@@ -1717,10 +1717,10 @@ def cmd_gui(args: argparse.Namespace):
         print(f"Desktop GUI source not found at: {desktop_dir}")
         if install_kind == "homebrew":
             print(
-                "  This Hermes came from Homebrew, which does not ship the desktop app's\n"
+                "  This Moor came from Homebrew, which does not ship the desktop app's\n"
                 "  source tree, so it cannot be built from this install.\n"
                 "  Install the desktop app from https://hermes-agent.nousresearch.com,\n"
-                "  or run `hermes desktop` from a source checkout."
+                "  or run `moor desktop` from a source checkout."
             )
         sys.exit(1)
 
@@ -1743,10 +1743,10 @@ def cmd_gui(args: argparse.Namespace):
 
     # The mutable preflight (freshness check → npm install → pack) mutates
     # checkout-scoped node_modules and apps/desktop/release. Serialize it
-    # across processes so a manual `hermes desktop` racing `hermes update`'s
+    # across processes so a manual `moor desktop` racing `moor update`'s
     # rebuild cannot corrupt either (#93940). The lock lives outside the
     # checkout, keyed by the resolved checkout path.
-    from hermes_cli.desktop_build_lock import DesktopBuildLock
+    from moor_cli.desktop_build_lock import DesktopBuildLock
 
     build_lock: DesktopBuildLock | None = None
     if not bundled and not skip_build:
@@ -1758,7 +1758,7 @@ def cmd_gui(args: argparse.Namespace):
             print("  Refusing to run npm without serialization; check the checkout permissions and retry.")
             sys.exit(1)
         if not acquired:
-            print("✗ A Hermes update or another desktop dependency install or build is already running.")
+            print("✗ A Moor update or another desktop dependency install or build is already running.")
             print("  Wait for it to finish, then retry.")
             sys.exit(2)
 
@@ -1846,13 +1846,13 @@ def cmd_gui(args: argparse.Namespace):
         launch_command.append("--local")
     # Out-of-band preview escape hatch (#97213): a fullscreened preview pane
     # owns all input, and Wayland has no xdotool/wmctrl to break out from a
-    # terminal. `hermes desktop --close-preview` rides the single-instance
+    # terminal. `moor desktop --close-preview` rides the single-instance
     # argv so a second CLI invocation unlocks the running app.
     if getattr(args, "close_preview", False):
         launch_command.append("--close-preview")
     launch_command.extend(_explicit_profile_args())
     if not source_mode:
-        desktop_launch_notice(f"→ Launching packaged Hermes Desktop: {' '.join(launch_command)}")
+        desktop_launch_notice(f"→ Launching packaged Moor Desktop: {' '.join(launch_command)}")
     # The launch target is ready; the fixups above finished mutating the
     # packaged tree. Electron is the long-lived handoff, so release the build
     # lock now — an open Desktop window must never block a future rebuild.
@@ -1872,7 +1872,7 @@ def cmd_gui(args: argparse.Namespace):
         # macOS/Linux keep the foreground run below: those launches are
         # expected to stay attached to the terminal, and the desktop_console
         # drain is a Windows-only concern.
-        from hermes_cli._subprocess_compat import (
+        from moor_cli._subprocess_compat import (
             windows_detach_flags,
             windows_detach_flags_without_breakaway,
         )
@@ -1902,7 +1902,7 @@ def cmd_gui(args: argparse.Namespace):
             )
         if deferred_entry is not None:
             deferred_entry.finish()
-        desktop_launch_notice("✓ Hermes Desktop launched in a detached window; you can close this shell.")
+        desktop_launch_notice("✓ Moor Desktop launched in a detached window; you can close this shell.")
         sys.exit(0)
     with desktop_console_output(source_mode=source_mode) as streams:
         try:
@@ -1914,7 +1914,7 @@ def cmd_gui(args: argparse.Namespace):
             # closing the Desktop, not a launcher crash. Exit cleanly instead
             # of dumping a KeyboardInterrupt traceback from subprocess.run
             # (#59848).
-            print("\n✓ Hermes Desktop closed.")
+            print("\n✓ Moor Desktop closed.")
             sys.exit(0)
     if deferred_entry is not None:
         deferred_entry.finish()
@@ -1924,10 +1924,10 @@ def cmd_gui(args: argparse.Namespace):
 def _explicit_profile_args() -> list[str]:
     """``--profile <name>`` for Electron when ``-p``/``--profile`` was on argv.
 
-    Explicit flag only. A bare `hermes desktop` must not forward the sticky CLI
+    Explicit flag only. A bare `moor desktop` must not forward the sticky CLI
     profile — Electron would persist it over the stored desktop one.
     """
-    from hermes_cli.main import explicit_cli_profile
+    from moor_cli.main import explicit_cli_profile
 
     profile = explicit_cli_profile()
     return ["--profile", profile] if profile else []

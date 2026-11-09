@@ -12,7 +12,7 @@ def test_preflight_finishes_while_another_connection_keeps_writing(tmp_path):
     home = tmp_path / "home"
     home.mkdir()
     db = home / "state.db"
-    script = Path(__file__).resolve().parents[2] / "hermes_cli" / "backup_sqlite.py"
+    script = Path(__file__).resolve().parents[2] / "moor_cli" / "backup_sqlite.py"
     with sqlite3.connect(db) as setup:
         setup.execute("PRAGMA journal_mode=WAL")
         setup.execute("CREATE TABLE messages (body TEXT)")
@@ -92,7 +92,7 @@ runpy.run_path(sys.argv[0], run_name='__main__')
 def test_rollback_journal_copy_lets_a_live_writer_commit_between_steps(tmp_path, monkeypatch):
     # A rollback-journal reader blocks every commit while it holds the read lock, so a
     # one-step copy of a large state.db stalls the live backend's writes for the whole copy.
-    from hermes_cli import backup_sqlite
+    from moor_cli import backup_sqlite
 
     db = tmp_path / "state.db"
     with sqlite3.connect(db) as setup:

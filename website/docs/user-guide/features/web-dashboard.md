@@ -558,7 +558,7 @@ bypass the per-session revision fence, so they are **offline maintenance**: they
 profile's exclusive `gateway.lock`. While that profile's gateway is running they return
 `409` with `Exclusive maintenance refused: Gateway runtime already owns profile <home>.
 Drain and stop the gateway, then retry.` and change nothing. Stop the gateway
-(`hermes gateway stop`), run the maintenance call, then start it again. `dry_run` prune
+(`moor gateway stop`), run the maintenance call, then start it again. `dry_run` prune
 and every read endpoint keep working against a live gateway. The Desktop's one-shot legacy
 owner backfill treats this `409` as the steady state of an attached gateway (like a backend
 without the route) and does not retry it on every sidebar refresh.
@@ -862,15 +862,15 @@ curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'
 
 ### Deployment session-token provider (token-only deployments)
 
-The bundled `plugins/dashboard_auth/session_token` plugin makes the **deployment session token** (`HERMES_DASHBOARD_SESSION_TOKEN`) a first-class gated-mode credential. This is the shape secret-managed deployments already provision — a single shared token (nix/agenix hands it over as a decrypted file; the Nix modules set `HERMES_DASHBOARD_SESSION_TOKEN=file:<path>` from `backend.sessionTokenFile`) that Hermes Desktop's remote-gateway **"Session token"** field presents. Without this provider, a non-loopback bind with only a provisioned token hit the fail-closed gate and pushed the operator into basic-auth or OAuth credentials the deployment never asked for.
+The bundled `plugins/dashboard_auth/session_token` plugin makes the **deployment session token** (`MOOR_DASHBOARD_SESSION_TOKEN`) a first-class gated-mode credential. This is the shape secret-managed deployments already provision — a single shared token (nix/agenix hands it over as a decrypted file; the Nix modules set `MOOR_DASHBOARD_SESSION_TOKEN=file:<path>` from `backend.sessionTokenFile`) that Moor Desktop's remote-gateway **"Session token"** field presents. Without this provider, a non-loopback bind with only a provisioned token hit the fail-closed gate and pushed the operator into basic-auth or OAuth credentials the deployment never asked for.
 
 When the env var is provisioned, the provider registers automatically and `verify_session` constant-time-compares the presented credential against it. Both legs a token-mode client uses run through that seam — the REST `Authorization: Bearer` path and the `/api/ws` `?token=` upgrade credential — so one provisioned token authorizes both. There is **no browser sign-in flow**: `/login` renders a note explaining the credential channel instead of sign-in buttons, and the provider is never offered by the auto-SSO redirect.
 
 :::warning Treat the token like a password
-The provisioned token grants full dashboard access to whoever holds it. Provision it from a secret manager (never a Nix store path), rotate by redeploying the secret — rotation invalidates every saved client copy, which surfaces as "HTTP reachable but the WebSocket fails" in Desktop until the new token is pasted in. There is no per-user identity behind it: for shared or internet-facing deployments prefer the [Nous Research](#default-provider-nous-research) or [self-hosted OIDC](#self-hosted-oidc-provider) provider.
+The provisioned token grants full dashboard access to whoever holds it. Provision it from a secret manager (never a Nix store path), rotate by redeploying the secret — rotation invalidates every saved client copy, which surfaces as "HTTP reachable but the WebSocket fails" in Desktop until the new token is pasted in. There is no per-user identity behind it: for shared or internet-facing deployments prefer the [Moor inc.](#default-provider-moor-research) or [self-hosted OIDC](#self-hosted-oidc-provider) provider.
 :::
 
-**Activation and opt-out.** Registering is driven by the credential itself: the provider is a no-op until `HERMES_DASHBOARD_SESSION_TOKEN` is set (env wins; `file:<path>` is read at startup and fails loudly when missing/empty). To keep the token internal-only (loopback SPA use, desktop-spawned backends) while authenticating the gate with basic-auth/OAuth instead, disable the provider:
+**Activation and opt-out.** Registering is driven by the credential itself: the provider is a no-op until `MOOR_DASHBOARD_SESSION_TOKEN` is set (env wins; `file:<path>` is read at startup and fails loudly when missing/empty). To keep the token internal-only (loopback SPA use, desktop-spawned backends) while authenticating the gate with basic-auth/OAuth instead, disable the provider:
 
 ```yaml
 dashboard:
@@ -1190,24 +1190,24 @@ The recipe below uses the username/password path because it's the quickest to st
 ### On the backend (the remote machine)
 
 ```bash
-# 1. Set the dashboard login credentials in ~/.hermes/.env (secrets file, 0600).
-cat >> ~/.hermes/.env <<'EOF'
-HERMES_DASHBOARD_BASIC_AUTH_USERNAME=admin
-HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=choose-a-strong-password
+# 1. Set the dashboard login credentials in ~/.moor/.env (secrets file, 0600).
+cat >> ~/.moor/.env <<'EOF'
+MOOR_DASHBOARD_BASIC_AUTH_USERNAME=admin
+MOOR_DASHBOARD_BASIC_AUTH_PASSWORD=choose-a-strong-password
 EOF
 # Recommended: a stable signing secret so sessions survive restarts.
 # This runs openssl, so the secret is unique to you.
-echo "HERMES_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)" >> ~/.hermes/.env
-chmod 600 ~/.hermes/.env
+echo "MOOR_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)" >> ~/.moor/.env
+chmod 600 ~/.moor/.env
 
 # 2. Run the dashboard bound to a reachable address. The non-loopback bind
 #    engages the auth gate; the username/password provider handles login.
 moor dashboard --no-open --host 0.0.0.0 --port 9119
 ```
 
-An earlier version of this recipe wrote the secret line inside the quoted heredoc, which stores the text `$(openssl rand -base64 32)` instead of a random value. If `grep BASIC_AUTH_SECRET ~/.hermes/.env` shows that text, replace the line with a freshly generated secret and restart the dashboard.
+An earlier version of this recipe wrote the secret line inside the quoted heredoc, which stores the text `$(openssl rand -base64 32)` instead of a random value. If `grep BASIC_AUTH_SECRET ~/.moor/.env` shows that text, replace the line with a freshly generated secret and restart the dashboard.
 
-Prefer no plaintext at rest? Use `HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` with a scrypt hash instead — see [Username/password provider](#usernamepassword-provider-no-oauth-idp) for the full surface.
+Prefer no plaintext at rest? Use `MOOR_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` with a scrypt hash instead — see [Username/password provider](#usernamepassword-provider-no-oauth-idp) for the full surface.
 
 If you run the dashboard as a systemd service, `~/.moor/.env` is picked up automatically when the unit has `EnvironmentFile=%h/.moor/.env`, so the credentials are in the environment at boot.
 
@@ -1269,7 +1269,7 @@ The Vite dev server at `http://localhost:5173` proxies `/api` requests to the Fa
 
 The frontend is built with React 19, TypeScript, Tailwind CSS v4, and shadcn/ui-style components. Production builds output to `moor_cli/web_dist/` which the FastAPI server serves as a static SPA.
 
-The build is CPU- and memory-intensive (Vite 8's Rust-native Rolldown bundler parallelizes across cores), so it is **resource-bounded by default**: the V8 heap is capped (`--max-old-space-size`, sized from the container's memory limit) and the native bundler's thread pool is limited to half the available cores (`RAYON_NUM_THREADS`), preventing the 200%+ CPU spikes and OOMs small VPS hosts otherwise hit during a build (#63338). Override with `HERMES_WEB_BUILD_MAX_OLD_SPACE_SIZE` / `HERMES_WEB_BUILD_THREADS`; set `HERMES_WEB_BUILD_LIGHT=1` to tighten the caps (1 thread, 1 GB heap) when the host cannot spare full CPU.
+The build is CPU- and memory-intensive (Vite 8's Rust-native Rolldown bundler parallelizes across cores), so it is **resource-bounded by default**: the V8 heap is capped (`--max-old-space-size`, sized from the container's memory limit) and the native bundler's thread pool is limited to half the available cores (`RAYON_NUM_THREADS`), preventing the 200%+ CPU spikes and OOMs small VPS hosts otherwise hit during a build (#63338). Override with `MOOR_WEB_BUILD_MAX_OLD_SPACE_SIZE` / `MOOR_WEB_BUILD_THREADS`; set `MOOR_WEB_BUILD_LIGHT=1` to tighten the caps (1 thread, 1 GB heap) when the host cannot spare full CPU.
 
 ## Automatic Build on Update
 

@@ -406,7 +406,7 @@ class _MoveBatch:
         if self._result is not None:
             return self._result
         src_db, dst_db = session.db(self.src), session.db(self.dst)
-        from hermes_state_profile_repair import SessionLedgeredError
+        from moor_state_profile_repair import SessionLedgeredError
         payloads: dict[str, Optional[dict[str, Any]]] = {}
         for sid in self.ids:
             try:

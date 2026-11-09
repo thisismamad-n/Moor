@@ -9,7 +9,7 @@
  * store, one writer.
  */
 
-import { atom, host, randomUuid } from '@hermes/plugin-sdk'
+import { atom, host, randomUuid } from '@moor/plugin-sdk'
 
 import { $botMeta, $lastRoster, botRosterKey } from './data'
 import { groupMemberReferencesConnection, markOrphanedGroupMemberDescriptor } from './hygiene'
@@ -383,9 +383,9 @@ export function groupChatSyncSnapshot(
               sourceScoped: true
             }
           : {}),
-        ...(member?.hermesHandleTaken
+        ...(member?.moorHandleTaken
           ? {
-              hermesHandleTaken: true
+              moorHandleTaken: true
             }
           : {})
       })),
@@ -1486,7 +1486,7 @@ export function groupSpeakerLabel(name?: null | string, group?: null | string) {
     // Exact key only: the bare `profile` key is a single-source record and
     // names whichever machine wrote it, never this connection's bot.
     const title = String(meta?.[trimmed]?.title || '').trim()
-    const label = title || (profile.toLowerCase() === 'default' ? 'Hermes' : profile)
+    const label = title || (profile.toLowerCase() === 'default' ? 'Moor' : profile)
 
     // Another connection still exposes this name: keep them tellable apart.
     return rows.some(bot => bot.name === profile) ? `${label} · ${connection}` : label
@@ -1504,7 +1504,7 @@ export function groupSpeakerLabel(name?: null | string, group?: null | string) {
   // Legacy rungs for names the roster cannot place: a bare-keyed Bot Mode
   // title (single-source rosters only — once rows are connection-scoped the
   // bare key cannot say which machine it named), then the local row's
-  // display_name, then default → Hermes.
+  // display_name, then default → Moor.
   const scoped = rows.some(bot => bot.sourceScoped || bot.remoteSource)
   const title = scoped ? '' : String(meta?.[trimmed]?.title || '').trim()
 

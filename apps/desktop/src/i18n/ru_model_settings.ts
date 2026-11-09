@@ -1,4 +1,4 @@
-import type { TranslationOverride } from '@hermes/shared/i18n'
+import type { TranslationOverride } from '@moor/shared/i18n'
 
 import { ruAuxTasks } from './ru_aux_tasks'
 import { ruDelegationRouting } from './ru_delegation_routing'

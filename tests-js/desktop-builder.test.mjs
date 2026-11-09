@@ -58,7 +58,7 @@ function fixture() {
   put(join(app, 'index.html'), '<html><div id="app"></div><script type="module" src="/src/index.js"></script></html>')
   put(join(app, 'src/index.js'), 'document.getElementById("app").textContent = "built renderer"')
   put(join(app, 'electron/entry.ts'), "await import('./main')")
-  put(join(app, 'electron/main.ts'), 'console.log(JSON.stringify({ stamp: __HERMES_INSTALL_STAMP__, identity: __HERMES_PRODUCT_IDENTITY__ }))')
+  put(join(app, 'electron/main.ts'), 'console.log(JSON.stringify({ stamp: __MOOR_INSTALL_STAMP__, identity: __MOOR_PRODUCT_IDENTITY__ }))')
   put(join(app, 'electron/preload.ts'), 'globalThis.fixturePreload = "compiled preload"')
   put(join(app, 'electron/preview-guest-preload-entry.ts'), 'globalThis.fixtureGuestPreload = "compiled guest preload"')
   cpSync(join(repo, 'apps/desktop/product-identity.cjs'), join(app, 'product-identity.cjs'))
@@ -187,7 +187,7 @@ test('a stamp-only change reuses the renderer bytes and rebakes only main/preloa
   const { productCurrent } = await import('../scripts/build/freshness.mjs')
   const input = fixture()
   expect((await buildDesktop(input)).reusedRenderer).toBe(false)
-  const renderer = () => files(input.out).filter(([name]) => !/electron-|preload|hermes-build\.json/.test(name))
+  const renderer = () => files(input.out).filter(([name]) => !/electron-|preload|moor-build\.json/.test(name))
   const before = renderer()
   put(input.stamp, JSON.stringify({ ...JSON.parse(readFileSync(input.stamp, 'utf8')), commit: 'c'.repeat(40) }))
   expect(productCurrent({ ...input, product: 'desktop' })).toBe(false)
@@ -270,7 +270,7 @@ test('a desktop build that another build restamps mid-compile still publishes, a
   const { buildDesktop } = await import('../scripts/build/desktop.mjs')
   const input = fixture()
   const raced = { ...JSON.parse(readFileSync(input.stamp, 'utf8')), builtAt: '2027-03-03T00:00:00.000Z' }
-  // The issue's actual shape: a second `hermes desktop` runs write-build-stamp.mjs
+  // The issue's actual shape: a second `moor desktop` runs write-build-stamp.mjs
   // while this build is compiling, so recordProduct() re-hashes a stamp whose only
   // difference is the build clock. Provenance racing in must still fail the build.
   put(join(input.source, 'apps/desktop/vite.config.mjs'), `
@@ -280,7 +280,7 @@ test('a desktop build that another build restamps mid-compile still publishes, a
     }}] }
   `)
   await expect(buildDesktop(input)).resolves.toBeTruthy()
-  expect(existsSync(join(input.out, 'hermes-build.json'))).toBe(true)
+  expect(existsSync(join(input.out, 'moor-build.json'))).toBe(true)
   // The guard itself: a PROVENANCE change during compilation must still throw, or
   // this test would pass simply because recordProduct stopped guarding anything.
   const swapped = { ...JSON.parse(readFileSync(input.stamp, 'utf8')), commit: 'e'.repeat(40) }
@@ -310,7 +310,7 @@ test('the pre-build gate still notices a restamp, so packaging cannot ship a bun
   const restamped = { ...JSON.parse(readFileSync(input.stamp, 'utf8')), builtAt: '2027-04-04T00:00:00.000Z' }
   put(input.stamp, JSON.stringify(restamped))
   expect(productCurrent({ ...input, product: 'desktop' })).toBe(false)
-  // And rebuilding restores agreement, which is what the next `hermes desktop` does.
+  // And rebuilding restores agreement, which is what the next `moor desktop` does.
   await buildDesktop(input)
   expect(productCurrent({ ...input, product: 'desktop' })).toBe(true)
   const rebaked = readFileSync(join(input.out, 'electron-main.mjs'), 'utf8')
@@ -333,7 +333,7 @@ test('the receipt records the clock the output BAKED, so a restamp between the b
   expect(() => recordProduct({
     source: input.source, product: 'desktop', out: input.out, inputs, stampClock: baked,
   })).not.toThrow()
-  const receipt = JSON.parse(readFileSync(join(input.out, 'hermes-build.json'), 'utf8'))
+  const receipt = JSON.parse(readFileSync(join(input.out, 'moor-build.json'), 'utf8'))
   expect(receipt.stampClock).toBe(baked)
   expect(productCurrent({ ...input, product: 'desktop' })).toBe(false)
 }, 60000)

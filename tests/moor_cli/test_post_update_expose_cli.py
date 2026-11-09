@@ -91,12 +91,12 @@ def user_path_writes(monkeypatch):
 
 @pytest.mark.platforms("windows")
 def test_sandbox_home_keeps_its_launchers_off_the_user_path(user_path_writes, tmp_path, monkeypatch):
-    """A review sandbox's HERMES_HOME publishes into its own bin and never reaches the User PATH.
+    """A review sandbox's MOOR_HOME publishes into its own bin and never reaches the User PATH.
 
     The console environment is not stubbed: Windows builds it from the user's
     stored variables, so these overrides are exactly what a sandbox sets."""
     box = tmp_path / "box"
-    monkeypatch.setenv("HERMES_HOME", str(box / "hermes"))
+    monkeypatch.setenv("MOOR_HOME", str(box / "moor"))
     monkeypatch.setenv("LOCALAPPDATA", str(box / "local"))
     monkeypatch.setenv("USERPROFILE", str(box / "user"))
 
@@ -108,37 +108,37 @@ def test_sandbox_home_keeps_its_launchers_off_the_user_path(user_path_writes, tm
 
 
 @pytest.mark.platforms("windows")
-@pytest.mark.parametrize("hermes_home", [None, ("hermes",), ("hermes", "profiles", "work")])
-def test_the_home_new_consoles_use_registers_its_bin(user_path_writes, hermes_home, tmp_path, monkeypatch):
+@pytest.mark.parametrize("moor_home", [None, ("moor",), ("moor", "profiles", "work")])
+def test_the_home_new_consoles_use_registers_its_bin(user_path_writes, moor_home, tmp_path, monkeypatch):
     local = tmp_path / "local"
     monkeypatch.setenv("LOCALAPPDATA", str(local))
-    if hermes_home is None:
-        monkeypatch.delenv("HERMES_HOME", raising=False)
+    if moor_home is None:
+        monkeypatch.delenv("MOOR_HOME", raising=False)
     else:
-        monkeypatch.setenv("HERMES_HOME", str(local.joinpath(*hermes_home)))
+        monkeypatch.setenv("MOOR_HOME", str(local.joinpath(*moor_home)))
     monkeypatch.setattr(_launchers, "_new_console_environment", lambda: {"LOCALAPPDATA": str(local)})
 
     result = _launchers._expose_windows_user_bin(tmp_path / "checkout", create=True)
 
     assert result["path"] == "added"
-    assert user_path_writes == [local / "hermes" / "bin"]
+    assert user_path_writes == [local / "moor" / "bin"]
 
 
 @pytest.mark.platforms("windows")
 @pytest.mark.parametrize("stored_home, override", [
-    ("%LOCALAPPDATA%\\hermes-data", "LOCALAPPDATA"),
-    ("~\\hermes-data", "USERPROFILE"),
+    ("%LOCALAPPDATA%\\moor-data", "LOCALAPPDATA"),
+    ("~\\moor-data", "USERPROFILE"),
 ])
 def test_inherited_home_reference_expands_from_the_console_environment(
         user_path_writes, stored_home, override, tmp_path, monkeypatch):
-    """A sandbox that inherits a stored HERMES_HOME such as %LOCALAPPDATA%\\x and overrides
+    """A sandbox that inherits a stored MOOR_HOME such as %LOCALAPPDATA%\\x and overrides
     LOCALAPPDATA resolves a different root from a new console, so it must not match."""
     real = tmp_path / "real"
-    console = {"LOCALAPPDATA": str(real / "local"), "USERPROFILE": str(real / "user"), "HERMES_HOME": stored_home}
+    console = {"LOCALAPPDATA": str(real / "local"), "USERPROFILE": str(real / "user"), "MOOR_HOME": stored_home}
     monkeypatch.setattr(_launchers, "_new_console_environment", lambda: dict(console))
     monkeypatch.setenv("LOCALAPPDATA", console["LOCALAPPDATA"])
     monkeypatch.setenv("USERPROFILE", console["USERPROFILE"])
-    monkeypatch.setenv("HERMES_HOME", stored_home)
+    monkeypatch.setenv("MOOR_HOME", stored_home)
     monkeypatch.setenv(override, str(tmp_path / "box" / override.lower()))
 
     result = _launchers._expose_windows_user_bin(tmp_path / "checkout", create=True)
@@ -150,7 +150,7 @@ def test_inherited_home_reference_expands_from_the_console_environment(
 @pytest.mark.platforms("windows")
 def test_unknown_console_environment_leaves_the_user_path(user_path_writes, tmp_path, monkeypatch):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "local"))
-    monkeypatch.delenv("HERMES_HOME", raising=False)
+    monkeypatch.delenv("MOOR_HOME", raising=False)
     monkeypatch.setattr(_launchers, "_new_console_environment", lambda: None)
 
     assert _launchers._expose_windows_user_bin(tmp_path / "checkout", create=True)["skipped"]
@@ -161,16 +161,16 @@ def test_unknown_console_environment_leaves_the_user_path(user_path_writes, tmp_
 def test_new_console_environment_ignores_this_process(tmp_path, monkeypatch):
     """The real Win32 read: variables set only in this process are absent from a new console's environment."""
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "local"))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    monkeypatch.setenv("HERMES_TEST_ONLY_IN_THIS_PROCESS", "1")
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor"))
+    monkeypatch.setenv("MOOR_TEST_ONLY_IN_THIS_PROCESS", "1")
 
     environ = _launchers._new_console_environment()
 
     assert environ is not None
-    assert "HERMES_TEST_ONLY_IN_THIS_PROCESS" not in environ
+    assert "MOOR_TEST_ONLY_IN_THIS_PROCESS" not in environ
     assert environ.get("LOCALAPPDATA")
     assert Path(environ["LOCALAPPDATA"]) != tmp_path / "local"
-    assert environ.get("HERMES_HOME") != str(tmp_path / "hermes")
+    assert environ.get("MOOR_HOME") != str(tmp_path / "moor")
 
 
 @pytest.mark.platforms("windows")
@@ -178,10 +178,10 @@ def test_environment_block_reader_counts_utf16_units():
     """An emoji takes two UTF-16 units but one Python character; the variables after it must survive."""
     import ctypes
 
-    block = ctypes.create_unicode_buffer("A=1\0MOOD=\U0001F600\0HERMES_HOME=C:\\h\0=C:=C:\\\0\0")
+    block = ctypes.create_unicode_buffer("A=1\0MOOD=\U0001F600\0MOOR_HOME=C:\\h\0=C:=C:\\\0\0")
 
     assert _launchers._read_environment_block(ctypes.addressof(block)) == {
-        "A": "1", "MOOD": "\U0001F600", "HERMES_HOME": "C:\\h"}
+        "A": "1", "MOOD": "\U0001F600", "MOOR_HOME": "C:\\h"}
 
 
 def _windows_home(tmp_path, monkeypatch) -> Path:
@@ -190,12 +190,12 @@ def _windows_home(tmp_path, monkeypatch) -> Path:
     distlib is switched off, so publication writes the ``.cmd`` form on every test host."""
     local = tmp_path / "local"
     monkeypatch.setenv("LOCALAPPDATA", str(local))
-    monkeypatch.delenv("HERMES_HOME", raising=False)
-    monkeypatch.delenv("HERMES_RUNTIME_DIR", raising=False)
+    monkeypatch.delenv("MOOR_HOME", raising=False)
+    monkeypatch.delenv("MOOR_RUNTIME_DIR", raising=False)
     monkeypatch.setattr(_launchers, "_new_console_environment", lambda: {"LOCALAPPDATA": str(local)})
     monkeypatch.setattr(_launchers, "_load_script_maker", lambda: None)
     monkeypatch.setattr(_launchers, "_store_script_maker", lambda python_exe: None)
-    home = local / "hermes"
+    home = local / "moor"
     _store_python(home).parent.mkdir(parents=True)
     _store_python(home).touch()
     (home / "tools" / "facts.json").write_text(
@@ -223,9 +223,9 @@ def _write_exe_launcher(target: Path, python: Path, root: Path) -> None:
 
 
 def _command(home: Path) -> Path:
-    """The ``hermes`` a console runs: PATHEXT resolves .exe before .cmd."""
-    exe = home / "bin" / "hermes.exe"
-    return exe if exe.exists() else home / "bin" / "hermes.cmd"
+    """The ``moor`` a console runs: PATHEXT resolves .exe before .cmd."""
+    exe = home / "bin" / "moor.exe"
+    return exe if exe.exists() else home / "bin" / "moor.cmd"
 
 
 @pytest.fixture
@@ -242,9 +242,9 @@ def test_review_tree_leaves_the_installed_commands_alone(form, path_registration
     """A review tree started against the real home keeps the installed checkout's commands in its bin.
 
     Its boot bootstrap runs expose_cli too; republishing there would point every
-    console's ``hermes`` at the review tree."""
+    console's ``moor`` at the review tree."""
     home = _windows_home(tmp_path, monkeypatch)
-    installed = _checkout(home / "hermes-agent")
+    installed = _checkout(home / "moor-agent")
     review = _checkout(home / "reviews" / "pr-1" / "rebuild-wt")
     if form == "exe":
         (home / "bin").mkdir()
@@ -257,7 +257,7 @@ def test_review_tree_leaves_the_installed_commands_alone(form, path_registration
     result = _launchers._expose_windows_user_bin(review, create=True)
 
     assert {path.name: path.read_bytes() for path in (home / "bin").iterdir()} == before
-    assert result == {"ok": True, "skipped": f"{home / 'bin' / f'hermes.{form}'} starts another checkout"}
+    assert result == {"ok": True, "skipped": f"{home / 'bin' / f'moor.{form}'} starts another checkout"}
     assert _launchers._launcher_checkout(_command(home)) == installed
     assert path_registrations == ([] if form == "exe" else [home / "bin"])
 
@@ -280,7 +280,7 @@ def test_review_tree_publishes_where_no_working_command_exists(path_registration
 @pytest.mark.platforms("windows")
 def test_installed_checkout_takes_its_commands_back(path_registrations, tmp_path, monkeypatch):
     home = _windows_home(tmp_path, monkeypatch)
-    installed = _checkout(home / "hermes-agent")
+    installed = _checkout(home / "moor-agent")
     review = _checkout(home / "reviews" / "pr-1" / "rebuild-wt")
     _launchers._expose_windows_user_bin(review, create=True)
     assert _launchers._launcher_checkout(_command(home)) == review
@@ -468,7 +468,7 @@ def test_direct_packaged_cli_exposes_shims_before_electron(tmp_path):
     # Execute the package CLI directly. No Electron process or linking helper runs.
     # `--help` reaches main()'s boot bootstrap (which owns expose_cli) before argparse
     # exits; `--version` is answered on the pre-import fast path and never gets there.
-    result = subprocess.run([str(bin_dir / "hermes"), "--help"], env=env,
+    result = subprocess.run([str(bin_dir / "moor"), "--help"], env=env,
                             capture_output=True, text=True, timeout=30, encoding="utf-8", check=False)
     assert result.returncode == 0, result.stderr
     for name in ("moor", "moor-agent", "moor-acp"):

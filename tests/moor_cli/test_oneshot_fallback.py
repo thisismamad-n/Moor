@@ -107,9 +107,9 @@ def test_run_agent_falls_back_when_primary_resolution_raises_auth_error(monkeypa
 
 
 def test_run_agent_forwards_resolved_request_overrides(monkeypatch):
-    """#103738: ``hermes -z`` hands the resolver's ``request_overrides`` (a custom entry's ``extra_body``) to
-    AIAgent like ``hermes chat``, or a proxy that requires a body field 400s on one-shot runs."""
-    import hermes_cli.oneshot as oneshot_mod
+    """#103738: ``moor -z`` hands the resolver's ``request_overrides`` (a custom entry's ``extra_body``) to
+    AIAgent like ``moor chat``, or a proxy that requires a body field 400s on one-shot runs."""
+    import moor_cli.oneshot as oneshot_mod
 
     captured = {}
 
@@ -132,10 +132,10 @@ def test_run_agent_forwards_resolved_request_overrides(monkeypatch):
 
     cfg = {"model": {"default": "some-model", "provider": "custom:my-proxy"}}
     monkeypatch.setattr(oneshot_mod, "_create_session_db_for_oneshot", lambda: None)
-    monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
-    monkeypatch.setattr("hermes_cli.runtime_provider.resolve_runtime_provider", fake_resolve)
-    monkeypatch.setattr("hermes_cli.tools_config._get_platform_tools", lambda _cfg, _p: [])
-    monkeypatch.setattr("hermes_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
+    monkeypatch.setattr("moor_cli.config.load_config", lambda: cfg)
+    monkeypatch.setattr("moor_cli.runtime_provider.resolve_runtime_provider", fake_resolve)
+    monkeypatch.setattr("moor_cli.tools_config._get_platform_tools", lambda _cfg, _p: [])
+    monkeypatch.setattr("moor_cli.mcp_startup.ensure_mcp_discovery_before_agent_build", lambda **_kw: None)
     monkeypatch.setattr("run_agent.AIAgent", _FakeAgent)
 
     oneshot_mod._run_agent("say OK")

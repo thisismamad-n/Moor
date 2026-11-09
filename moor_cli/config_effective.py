@@ -18,10 +18,10 @@ import copy
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from hermes_cli import config as _config
-from hermes_cli import managed_scope
-from hermes_cli.config_backend import read_config_doc
-from hermes_cli.config_read_errors import _warn_config_parse_failure
+from moor_cli import config as _config
+from moor_cli import managed_scope
+from moor_cli.config_backend import read_config_doc
+from moor_cli.config_read_errors import _warn_config_parse_failure
 
 # path -> raw user mapping from the last successful parse in this process; served (through the
 # normal pipeline) when the file is later found mid-edit as broken YAML.

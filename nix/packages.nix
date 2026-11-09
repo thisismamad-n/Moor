@@ -96,10 +96,10 @@
           defaultDependencyGroups = [ "messaging" ];
         };
 
-        tui = full.hermesTui;
-        web = full.hermesWeb;
-        webapp = full.hermesWebapp;
-        desktop = full.hermesDesktop;
+        tui = full.moorTui;
+        web = full.moorWeb;
+        webapp = full.moorWebapp;
+        desktop = full.moorDesktop;
 
         update-npm-lockfile = full.moorNpmLib.updateNpmLockfile;
       }

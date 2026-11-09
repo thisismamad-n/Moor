@@ -857,7 +857,7 @@ describe('threads', () => {
         () =>
           !room.gateway.calls.some(call => call.prompt.includes(text)) ||
           Boolean(room.chat.$groupChats.get().Rooms?.running) ||
-          !JSON.stringify(room.gateway.uiMeta['hermes-bots-groups'] || {}).includes(text)
+          !JSON.stringify(room.gateway.uiMeta['moor-bots-groups'] || {}).includes(text)
       )
     }
 
@@ -868,7 +868,7 @@ describe('threads', () => {
     const firstEntry = log(room, 'Rooms').find(entry => entry.from.kind === 'user' && entry.text === 'first topic')
 
     expect(firstEntry?.thread).toBe(first)
-    expect(JSON.stringify(room.gateway.uiMeta['hermes-bots-groups'] || {})).toContain('first topic')
+    expect(JSON.stringify(room.gateway.uiMeta['moor-bots-groups'] || {})).toContain('first topic')
 
     const second = room.rounds.sendToGroupChat('Rooms', member, 'second topic')!
 
@@ -880,7 +880,7 @@ describe('threads', () => {
     expect(second).toBeTruthy()
     expect(first).not.toBe(second)
     expect(secondEntry?.thread).toBe(second)
-    expect(JSON.stringify(room.gateway.uiMeta['hermes-bots-groups'] || {})).toContain('second topic')
+    expect(JSON.stringify(room.gateway.uiMeta['moor-bots-groups'] || {})).toContain('second topic')
   })
 
   it('continues an explicit thread and scopes the member delta to it', async () => {

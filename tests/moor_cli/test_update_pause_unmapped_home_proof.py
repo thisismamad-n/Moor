@@ -5,7 +5,7 @@ install's spawn ledger holds an exact-birth witness of its home. The pause recor
 home: written as ``home: null`` it read as a pre-home record, whose argv-only readiness match let
 another home's gateway with the same selectorless argv retire the paused runtime's debt.
 
-Real processes, each under its own ``HERMES_HOME``, a real ledger entry, the real pause producer and
+Real processes, each under its own ``MOOR_HOME``, a real ledger entry, the real pause producer and
 durable record, and the real readiness predicate. Seams: the OS denying A's environment
 (``_pid_environ``), the Windows-only gateway enumeration and the stop itself (never signalled here).
 """
@@ -21,26 +21,26 @@ import psutil
 import pytest
 
 from gateway.status import get_process_start_time
-from hermes_cli import dashboard_procs, gateway, process_identity, update_cmd_windows
-from hermes_cli import update_pause_record as pause_record
-from hermes_cli.update_cmd_windows import _pause_windows_gateways_for_update, _unmapped_ready_filter
+from moor_cli import dashboard_procs, gateway, process_identity, update_cmd_windows
+from moor_cli import update_pause_record as pause_record
+from moor_cli.update_cmd_windows import _pause_windows_gateways_for_update, _unmapped_ready_filter
 from tests.waiting import wait_until
 
 
 @pytest.fixture
 def homes_and_spawn(tmp_path):
-    entry = tmp_path / "bin" / "hermes"  # a ``hermes`` entry token: the cmdline reads as a gateway
+    entry = tmp_path / "bin" / "moor"  # a ``moor`` entry token: the cmdline reads as a gateway
     entry.parent.mkdir()
     entry.write_text("import time\ntime.sleep(60)\n", encoding="utf-8")
     argv = [sys.executable, str(entry), "gateway", "run"]
-    root = os.environ["HERMES_HOME"]  # the sandboxed home this update owns, with two profiles
+    root = os.environ["MOOR_HOME"]  # the sandboxed home this update owns, with two profiles
     home_a, home_b = (os.path.join(root, "profiles", name) for name in ("a", "b"))
     os.makedirs(home_a)
     os.makedirs(home_b)
     procs: list[subprocess.Popen] = []
 
     def spawn(home) -> subprocess.Popen:
-        proc = subprocess.Popen(argv, env={**os.environ, "HERMES_HOME": str(home)})
+        proc = subprocess.Popen(argv, env={**os.environ, "MOOR_HOME": str(home)})
         procs.append(proc)
         # Popen returns once exec has begun, before the kernel publishes the new image's argv and
         # environment: /proc/<pid>/cmdline reads empty for that instant. A gateway is running.
@@ -61,10 +61,10 @@ def test_a_ledger_proven_unmapped_gateway_is_recorded_with_its_home(homes_and_sp
     time.sleep(0.05)
     ct = process_identity._process_create_time(a.pid)
     assert process_identity._append_entry(process_identity.LedgerEntry(
-        a.pid, ct, "gateway", process_identity.install_id(), None, None, time.time(), "", hermes_home=home_a))
+        a.pid, ct, "gateway", process_identity.install_id(), None, None, time.time(), "", moor_home=home_a))
     real_environ = dashboard_procs._pid_environ
     monkeypatch.setattr(dashboard_procs, "_pid_environ", lambda pid: None if pid == a.pid else real_environ(pid))
-    from hermes_cli import main
+    from moor_cli import main
     monkeypatch.setattr(main, "_is_windows", lambda: True)
     monkeypatch.setattr(gateway, "find_gateway_pids", lambda all_profiles=False: [a.pid])
     monkeypatch.setattr(gateway, "find_profile_gateway_processes", lambda strict=False: [])

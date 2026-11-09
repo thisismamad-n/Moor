@@ -22,16 +22,16 @@ from moor_constants import OPENROUTER_BASE_URL
 from moor_cli.config import load_env
 from agent.secret_scope import get_secret as _get_secret, get_secret_str
 from agent.retry_utils import reset_delay_from_message
-from hermes_cli.auth_plugin_providers import plugin_refresh_hook
+from moor_cli.auth_plugin_providers import plugin_refresh_hook
 from agent.credential_pool_plugin import apply_plugin_refresh_result, plugin_row_is_expiring, recover_failed_plugin_refresh
 from agent.credential_persistence import (
     fingerprint_secret_value,
     is_borrowed_credential_source,
     sanitize_borrowed_credential_payload,
 )
-import hermes_cli.auth as auth_mod
-from hermes_cli.auth_oauth_grants import owned_profile_reads_root_state
-from hermes_cli.auth import (
+import moor_cli.auth as auth_mod
+from moor_cli.auth_oauth_grants import owned_profile_reads_root_state
+from moor_cli.auth import (
     CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     PROVIDER_REGISTRY,
     SINGLE_USE_REFRESH_POOL_PROVIDERS,
@@ -60,8 +60,8 @@ def _load_config_safe() -> Optional[dict]:
     Inside ``frozen_runtime_config`` it is the session's frozen config: a key rotated in config.yaml
     must never seed a frozen session's pool."""
     try:
-        from hermes_cli.config import load_config_readonly
-        from hermes_cli.runtime_provider import _FROZEN_RUNTIME_CONFIG
+        from moor_cli.config import load_config_readonly
+        from moor_cli.runtime_provider import _FROZEN_RUNTIME_CONFIG
         return _FROZEN_RUNTIME_CONFIG.get() or load_config_readonly()
     except Exception:
         return None
@@ -516,7 +516,7 @@ def custom_provider_pool_key_candidates(
     base_url: Optional[str], provider_name: Optional[str] = None, config: Optional[dict] = None,
 ) -> list[str]:
     """Return pool keys to try for a custom endpoint: the durable ``providers.<key>`` slug
-    (``hermes auth add <key>``), then legacy ``custom:<display-name>``, so a populated pool is not
+    (``moor auth add <key>``), then legacy ``custom:<display-name>``, so a populated pool is not
     skipped for the ``no-key-required`` placeholder. ``config`` is a frozen route's config: ITS
     entry owns the endpoint, so a live edit of that entry's URL neither drops nor redirects the pool.
     """
@@ -779,8 +779,8 @@ def _write_through_provider_state_to_global_root(
 
 
 def _singleton_target_for_entry(pool: CredentialPool, entry: PooledCredential) -> Optional[Path]:
-    """Root ``.anthropic_oauth.json`` when *entry* is a borrowed hermes_pkce row, else None."""
-    if entry.source != "hermes_pkce" or entry.id not in getattr(pool, "_borrowed_root_ids", ()):
+    """Root ``.anthropic_oauth.json`` when *entry* is a borrowed moor_pkce row, else None."""
+    if entry.source != "moor_pkce" or entry.id not in getattr(pool, "_borrowed_root_ids", ()):
         return None
     try:
         from agent.anthropic_credentials import _root_moor_oauth_file
@@ -930,8 +930,8 @@ REFRESHABLE_OAUTH_PROVIDERS = frozenset({"anthropic", "moor", *_TOKENS_SINGLETON
 
 # Providers whose refresh tokens are single-use: the sync -> POST -> write-back
 # sequence must be serialized across processes under the auth-store flock.
-# ``nous`` is deliberately absent even though it is in SINGLE_USE_REFRESH_POOL_PROVIDERS:
-# its refresh path serializes on its own auth-store lock (``_refresh_entry_impl`` nous branch).
+# ``moor`` is deliberately absent even though it is in SINGLE_USE_REFRESH_POOL_PROVIDERS:
+# its refresh path serializes on its own auth-store lock (``_refresh_entry_impl`` moor branch).
 _SINGLE_USE_REFRESH_PROVIDERS = ("openai-codex", "xai-oauth", "anthropic")
 
 # Lock-free window between consecutive auth-store holds in a deferred refresh sweep
@@ -1406,7 +1406,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             }
             if not any(v not in (None, "") and getattr(entry, k, None) != v for k, v in comparable.items()):
                 return entry
-            logger.debug("Pool entry %s: syncing Nous state from auth.json", entry.id)
+            logger.debug("Pool entry %s: syncing Moor state from auth.json", entry.id)
             field_updates: dict[str, Any] = dict(_CLEAR_STATUS)
             field_updates.update({k: v for k, v in comparable.items() if v})
             extra_updates = dict(entry.extra)
@@ -1933,7 +1933,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
                 self._sync_device_code_entry_to_auth_store(entry)
                 token = entry.access_token or token
             # The row keeps the canonical URL; a gateway key belongs to its route host (#121486).
-            from hermes_cli.auth_codex import _codex_pool_route_base_url
+            from moor_cli.auth_codex import _codex_pool_route_base_url
             return bool(auth_mod._probe_codex_quota_restored(
                 token, base_url=_codex_pool_route_base_url(entry.base_url)))
         except Exception:
@@ -2529,7 +2529,7 @@ class _Seeder:
         self.is_suppressed = _is_source_suppressed_fn()
 
     def upsert(self, source: str, payload: dict[str, Any]) -> bool:
-        """Upsert unless suppressed (``hermes auth remove`` must stay stable across loads)."""
+        """Upsert unless suppressed (``moor auth remove`` must stay stable across loads)."""
         if self.is_suppressed(self.provider, source):
             return False
         self.active_sources.add(source)
@@ -2596,12 +2596,12 @@ def _seed_anthropic_singletons(seed: _Seeder) -> None:
             })
 
 
-def _seed_nous_singleton(seed: _Seeder, auth_store: dict[str, Any]) -> None:
-    state, source_path = _load_provider_state_with_source(auth_store, "nous")
-    if owned_profile_reads_root_state(auth_store, "nous", source_path):
+def _seed_moor_singleton(seed: _Seeder, auth_store: dict[str, Any]) -> None:
+    state, source_path = _load_provider_state_with_source(auth_store, "moor")
+    if owned_profile_reads_root_state(auth_store, "moor", source_path):
         # e.g. an agent_key-only row surviving a fork strip/heal
         return
-    from hermes_cli.anon_auth import guest_without_free_tier  # kept for connectors only: no inference rows
+    from moor_cli.anon_auth import guest_without_free_tier  # kept for connectors only: no inference rows
     has_runtime_material = not guest_without_free_tier(state) and bool(isinstance(state, dict) and (
         str(state.get("access_token") or "").strip() or str(state.get("agent_key") or "").strip()))
     if state and not has_runtime_material:
@@ -2639,7 +2639,7 @@ def _seed_profile_singleton(seed: _Seeder) -> None:
     profile = get_provider_profile(seed.provider)
     if profile is None or not _profile_seeds_pool(seed.provider):
         return
-    from hermes_cli.auth import is_provider_explicitly_configured, suppressed_credential_sources
+    from moor_cli.auth import is_provider_explicitly_configured, suppressed_credential_sources
     rows = profile.seed_pool_credentials(  # values, not callbacks: a hosted profile gets plain JSON
         suppressed_sources=suppressed_credential_sources(seed.provider),
         explicitly_configured=is_provider_explicitly_configured(seed.provider))
@@ -2743,8 +2743,8 @@ def _seed_from_singletons(provider: str, entries: list[PooledCredential]) -> tup
     auth_store = _load_auth_store()
     if provider == "anthropic":
         _seed_anthropic_singletons(seed)
-    elif provider == "nous":
-        _seed_nous_singleton(seed, auth_store)
+    elif provider == "moor":
+        _seed_moor_singleton(seed, auth_store)
     elif provider == "qwen-oauth":
         _seed_qwen_singleton(seed)
     elif provider == "minimax-oauth":

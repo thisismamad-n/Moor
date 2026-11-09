@@ -5,22 +5,22 @@
 // `groups.capabilities` answer is discarded by its own fence and the UI stays in
 // `checking` forever (New Group Chat: two bots ticked, Create disabled, no warning).
 // No mock of the epoch: the real beginGatewayActivation runs.
-import type * as HermesSdk from '@hermes/plugin-sdk'
-import { host } from '@hermes/plugin-sdk'
+import type * as MoorSdk from '@moor/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-import { groupCreationSource, useGroupCapability } from '@/plugins/hermes-bots/canonical-group-capabilities'
-import { CreateGroupChatDialog } from '@/plugins/hermes-bots/create-dialog'
-import { GroupChatWorkspace } from '@/plugins/hermes-bots/group-chat-view'
+import { groupCreationSource, useGroupCapability } from '@/plugins/moor-bots/canonical-group-capabilities'
+import { CreateGroupChatDialog } from '@/plugins/moor-bots/create-dialog'
+import { GroupChatWorkspace } from '@/plugins/moor-bots/group-chat-view'
 import { ensureGatewayForProfile, gatewayActivationEpoch } from '@/store/gateway'
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 
-vi.mock('@hermes/plugin-sdk', async importOriginal => {
-  const sdk = await importOriginal<typeof HermesSdk>()
+vi.mock('@moor/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof MoorSdk>()
   const { en } = await import('@/i18n/en')
-  const { translateBots } = await import('@/plugins/hermes-bots/i18n-test-helper')
+  const { translateBots } = await import('@/plugins/moor-bots/i18n-test-helper')
 
   return {
     ...sdk,
@@ -39,7 +39,7 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
     usePluginI18n: () => translateBots
   }
 })
-vi.mock('@/plugins/hermes-bots/group-chat-parts', async importOriginal => ({
+vi.mock('@/plugins/moor-bots/group-chat-parts', async importOriginal => ({
   ...(await importOriginal<any>()),
   GroupImageControls: () => null
 }))

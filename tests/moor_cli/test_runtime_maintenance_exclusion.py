@@ -12,7 +12,7 @@ from tests.waiting import async_wait_until
 
 
 def test_restore_refuses_live_authority_without_changing_data(tmp_path):
-    from hermes_cli.backup import create_quick_snapshot, restore_quick_snapshot
+    from moor_cli.backup import create_quick_snapshot, restore_quick_snapshot
 
     root = Path(__file__).resolve().parents[2]
     home, user = tmp_path / 'state', tmp_path / 'user'
@@ -31,7 +31,7 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
         'platform_toolsets': {'cli': []},
     }))
     env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), MOOR_HOME=str(home), PYTHONPATH=str(root),
                OPENAI_API_KEY='loopback-only', OPENAI_BASE_URL=url)
 
     def rows():
@@ -45,7 +45,7 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
             await rpc(ws, 'prompt.submit', session_id=session, input_id='warm', text='WARM')
             await async_wait_until(lambda: dict(rows()).get('warm') == 'terminal', timeout=30, interval=.05,
                                    what='the warm turn to settle')
-            snapshot = create_quick_snapshot(hermes_home=home)
+            snapshot = create_quick_snapshot(moor_home=home)
             assert snapshot, snapshot
             await rpc(ws, 'prompt.submit', session_id=session, input_id='started', text='BLOCK_STARTED')
             assert await asyncio.to_thread(peer.blocked.wait, 25)
@@ -55,14 +55,14 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
             import hashlib
             bundle = [Path(str(home / 'state.db') + suffix) for suffix in ('', '-wal', '-shm')]
             hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle if p.exists()}
-            restored = restore_quick_snapshot(snapshot, hermes_home=home)
+            restored = restore_quick_snapshot(snapshot, moor_home=home)
             assert hashes == {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle if p.exists()}
             after = rows()
             print(json.dumps({'live_restore': restored, 'before': before, 'after': after}), flush=True)
             assert not restored and after == before
             # The real daemon still holds the source DB. Separate-output salvage
             # must not require stopping it or installing recovered runtime work.
-            from hermes_cli.session_recovery import recover_session_database
+            from moor_cli.session_recovery import recover_session_database
             hashes = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in bundle if p.exists()}
             report = recover_session_database(home / 'state.db', tmp_path / 'salvaged.db')
             assert report['verified'] and report['source_unchanged'], report
@@ -78,7 +78,7 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
             snapshot = asyncio.run(exercise(desc))
             old_epoch = desc['authority_epoch']
         peer.release.set()
-        assert restore_quick_snapshot(snapshot, hermes_home=home)
+        assert restore_quick_snapshot(snapshot, moor_home=home)
         assert rows() == [('warm', 'terminal')]
         with daemon(root, home, env, barrier=False) as (_, restarted):
             assert restarted['instance_id'] != desc['instance_id']
@@ -86,7 +86,7 @@ def test_restore_refuses_live_authority_without_changing_data(tmp_path):
             assert rows() == [('warm', 'terminal')]
             later_epoch = restarted['authority_epoch']
         # Restoring the same older snapshot must not reuse a previous owner's epoch.
-        assert restore_quick_snapshot(snapshot, hermes_home=home)
+        assert restore_quick_snapshot(snapshot, moor_home=home)
         with daemon(root, home, env, barrier=False) as (_, restored_again):
             assert restored_again['authority_epoch'] > later_epoch
             print(json.dumps({'offline_restore_restart_epochs': [old_epoch, later_epoch, restored_again['authority_epoch']],
@@ -103,7 +103,7 @@ def test_import_and_startup_exclude_each_other_before_publication(tmp_path, monk
     import sys
     import zipfile
     from gateway.runtime_ownership import ProfileOwnership
-    from hermes_cli import backup
+    from moor_cli import backup
 
     home = tmp_path / 'state'
     home.mkdir(mode=0o700)
@@ -135,7 +135,7 @@ def test_import_and_startup_exclude_each_other_before_publication(tmp_path, monk
         assert arrived.wait(20)
         root = Path(__file__).resolve().parents[2]
         env = {k: os.environ[k] for k in ('PATH', 'LANG', 'TZ', 'TIRITH_ENABLED') if k in os.environ}
-        env.update(HOME=str(tmp_path / 'user'), HERMES_HOME=str(home), PYTHONPATH=str(root))
+        env.update(HOME=str(tmp_path / 'user'), MOOR_HOME=str(home), PYTHONPATH=str(root))
         contender = subprocess.run([sys.executable, '-c',
             "import logging, runpy; logging.basicConfig(level=logging.INFO); runpy.run_module('gateway.run', run_name='__main__')"], cwd=root, env=env,
                                    stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=25, check=False)
@@ -156,7 +156,7 @@ def test_import_and_startup_exclude_each_other_before_publication(tmp_path, monk
             restore()
         assert before == ((home / 'config.yaml').read_bytes(), (home / 'state.db').read_bytes())
         from argparse import Namespace
-        monkeypatch.setenv('HERMES_HOME', str(home))
+        monkeypatch.setenv('MOOR_HOME', str(home))
         def forbidden_revival(*args):
             raise AssertionError('refused import must not revive a service')
         monkeypatch.setattr(backup, '_revive_gateway_after_import', forbidden_revival)
@@ -177,9 +177,9 @@ def test_recovery_output_exemption_excludes_canonical_activation(tmp_path):
     import hashlib
     import pytest
     from gateway.runtime_ownership import ProfileOwnership
-    from hermes_cli.session_recovery import recover_session_database, SessionRecoverySafetyError
-    from hermes_state import SessionDB
-    from hermes_state_runtime import begin_runtime_epoch, admit_session_input
+    from moor_cli.session_recovery import recover_session_database, SessionRecoverySafetyError
+    from moor_state import SessionDB
+    from moor_state_runtime import begin_runtime_epoch, admit_session_input
 
     source_home, target_home = tmp_path / 'source', tmp_path / 'target'
     source_home.mkdir()

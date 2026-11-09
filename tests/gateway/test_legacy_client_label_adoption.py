@@ -1,9 +1,9 @@
 """A phone app's self-labelled chat continues in Desktop; a plugin platform sharing the label is untouched.
 
-The pre-authority ``hermes serve`` stored whatever ``source`` a client sent, so phone apps signed in
+The pre-authority ``moor serve`` stored whatever ``source`` a client sent, so phone apps signed in
 through the dashboard login left routeless rows labelled ``mobile``, ``ios`` and the like (#146814).
 They are the owner's chats: Desktop's resume adopts them as writable conversations, while a third-party
-WebUI's rows (its own agent writes them) still open read-only. The catalog plugin hermes-mobile
+WebUI's rows (its own agent writes them) still open read-only. The catalog plugin moor-mobile
 registers ``Platform('mobile')``; its routed chats keep their messaging route.
 """
 from types import SimpleNamespace
@@ -22,7 +22,7 @@ async def _owner(tmp_path, monkeypatch, toolsets):
     from gateway.session_authority import initialize_session_authority
     from gateway.session_controls import AuthorityConnection
 
-    monkeypatch.setenv('HERMES_HOME', str(tmp_path))
+    monkeypatch.setenv('MOOR_HOME', str(tmp_path))
     monkeypatch.setattr(run, '_load_gateway_config', lambda: {'platform_toolsets': toolsets})
     store = SessionStore(tmp_path / 'sessions', GatewayConfig())
     runner = SimpleNamespace(session_store=store, _session_db=store._db, adapters={}, _draining=False,
@@ -45,10 +45,10 @@ async def test_a_phone_apps_own_label_resumes_writable_and_a_webui_row_stays_rea
         db.create_session(sid, source=source, model='m', cwd=str(tmp_path), user_id=user_id)
         db.append_message(sid, role='user', content='hi from ' + sid)
         db.end_session(sid, 'ws_orphan_reap')
-    # hermes-mobile installed registers Platform('mobile'): a routeless row with that label still adopts.
+    # moor-mobile installed registers Platform('mobile'): a routeless row with that label still adopts.
     from gateway.config import Platform
     Platform._add_pseudo_member('mobile')
-    from hermes_cli.sessions_adopt import adoptable_sessions
+    from moor_cli.sessions_adopt import adoptable_sessions
     offered = {row['id'] for row in adoptable_sessions(db.db_path)}
     assert {'phone-mobile', 'phone-ios'} <= offered and not offered & {'webui-row', 'teams-row', 'curator-row'}
     for i, sid in enumerate(('phone-mobile', 'phone-ios')):
@@ -80,7 +80,7 @@ async def test_a_plugin_platform_sharing_the_label_keeps_its_messaging_route(tmp
     from gateway.session import SessionSource
 
     store, desktop = await _owner(tmp_path, monkeypatch, {})
-    Platform._add_pseudo_member('mobile')  # what the hermes-mobile plugin's platform registration yields
+    Platform._add_pseudo_member('mobile')  # what the moor-mobile plugin's platform registration yields
     entry = store.get_or_create_session(SessionSource(platform=Platform('mobile'), chat_id='device-1',
                                                       chat_type='dm', user_id='device-1'))
     store._db.append_message(entry.session_id, role='user', content='from the plugin app')

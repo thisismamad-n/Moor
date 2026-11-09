@@ -3,8 +3,8 @@
 import sys
 
 from agent.i18n import t
-from hermes_cli.colors import Colors, color
-from hermes_cli.secret_prompt import masked_secret_prompt
+from moor_cli.colors import Colors, color
+from moor_cli.secret_prompt import masked_secret_prompt
 
 
 def print_info(text: str) -> None:

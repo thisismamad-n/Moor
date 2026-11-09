@@ -16,7 +16,7 @@
  * itself here as the delegate so tile UI stays dependency-light.
  */
 
-import { backendScopeKey, type GatewayEvent, LOCAL_CONNECTION_ID, registryBackendScopeKey } from '@hermes/shared'
+import { backendScopeKey, type GatewayEvent, LOCAL_CONNECTION_ID, registryBackendScopeKey } from '@moor/shared'
 import { atom, computed } from 'nanostores'
 
 import { setSessionOwnerResolver } from '@/api/client'
@@ -1197,8 +1197,8 @@ export interface SessionTileWorkspaceScope {
 // Tiles are persisted per connection and profile: same-named profiles on two
 // backends own different sessions. Switching either scope swaps the visible
 // set, with runtime bindings dropped so tiles re-resume on their own gateway.
-const TILES_KEY = 'hermes.desktop.sessionTiles.v2'
-const LEGACY_TILES_KEY = 'hermes.desktop.sessionTiles.v1'
+const TILES_KEY = 'moor.desktop.sessionTiles.v2'
+const LEGACY_TILES_KEY = 'moor.desktop.sessionTiles.v1'
 const BOTS_TILE_BUCKET = '__bots_workspace__'
 
 /** Persisted placement — `dir` + strip slot (`before`) + dock `anchor` so a

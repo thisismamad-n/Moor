@@ -95,12 +95,12 @@ verifying re-scan.
   - Email automation, two credential-free-or-not options:
     - **Browser mode (no password): `setup --email-mode browser`.** The agent sends opt-out/CCPA
       emails and opens verification links through the operator's **logged-in webmail** using
-      `browser_exec`. Nothing is stored. This requires Hermes to be pointed at the operator's own
+      `browser_exec`. Nothing is stored. This requires Moor to be pointed at the operator's own
       logged-in browser, **NOT** a cloud browser: a headless cloud browser (Browserbase) holds no
       webmail session and is itself Cloudflare/DataDome-gated on webmail and on session-bound broker
       gates (e.g. PeopleConnect guided-mode). Drive the operator's real Chrome over CDP - launch
-      `chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.hermes/chrome-debug"` (a dedicated
-      debug profile signed into the webmail once, not the Default profile) and attach Hermes's browser
+      `chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.moor/chrome-debug"` (a dedicated
+      debug profile signed into the webmail once, not the Default profile) and attach Moor's browser
       to `127.0.0.1:9222` with `/browser connect`. **`$PDD cdp` launches this for you** (finds Chrome/Chromium/Brave/Edge,
       starts it detached on the dedicated profile, prints the CDP endpoint; `--check` to test, `--print`
       for the command). See `references/methods.md` -> "Browser backends: scan vs execute".

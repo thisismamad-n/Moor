@@ -21,9 +21,9 @@ from utils import base_url_host_matches
 logger = logging.getLogger("moor_cli.model_switch")
 
 # Rows never capped by max_models: aggregators whose full catalogs (70+ models) must stay visible, and
-# rows that are already a curated list (Nous = curated + Portal picks, OpenRouter = curated ∩ live),
+# rows that are already a curated list (Moor = curated + Portal picks, OpenRouter = curated ∩ live),
 # where the cap only cut the bottom "Free tier" block and the Portal's appended recommendations.
-_UNCAPPED_PICKER_PROVIDERS: frozenset[str] = frozenset({"opencode-zen", "opencode-go", "nous", "openrouter"})
+_UNCAPPED_PICKER_PROVIDERS: frozenset[str] = frozenset({"opencode-zen", "opencode-go", "moor", "openrouter"})
 
 
 def _save_discovered_models_to_config(
@@ -221,7 +221,7 @@ def _prefetch_provider_models_parallel(provider_slugs: list[str]) -> None:
     catalog is authoritative inside its own short native TTL, so prefetching either trades a
     non-blocking serial read for a parallel fetch the picker waits on. Persistence is
     ``cached_provider_model_ids``'s own locked write; workers add none of their own."""
-    from hermes_cli.models import (
+    from moor_cli.models import (
         _credential_fingerprint, _disk_serve_tier, _load_provider_models_cache,
         _normalized_cache_slug, cached_provider_model_ids)
 
@@ -273,12 +273,12 @@ def _iter_builtin_candidates(models_dev_data: dict, excluded: set, seen: set):
     profile ("kimi" -> "kimi-coding"), non-api_key auth types (section 2 handles them) and
     unroutable providers. PROVIDER_REGISTRY env var names win over models.dev's."""
     from agent.models_dev import models_dev_provider_map
-    from hermes_cli.auth import PROVIDER_REGISTRY, is_runtime_provider_routable
-    from hermes_cli.models import _AGGREGATOR_PROVIDERS
-    from hermes_cli.providers import ALIASES
-    for hermes_id, mdev_id in models_dev_provider_map().items():
-        alias_target = ALIASES.get(hermes_id)
-        if alias_target and alias_target != hermes_id and alias_target in _AGGREGATOR_PROVIDERS:
+    from moor_cli.auth import PROVIDER_REGISTRY, is_runtime_provider_routable
+    from moor_cli.models import _AGGREGATOR_PROVIDERS
+    from moor_cli.providers import ALIASES
+    for moor_id, mdev_id in models_dev_provider_map().items():
+        alias_target = ALIASES.get(moor_id)
+        if alias_target and alias_target != moor_id and alias_target in _AGGREGATOR_PROVIDERS:
             continue
         try:
             from providers import get_provider_profile
@@ -314,13 +314,13 @@ def _auth_store_has_provider(*keys: str) -> bool:
         return False
 
 
-def _raw_pool_usable(hermes_id: str, *, for_picker: bool = False) -> bool:
+def _raw_pool_usable(moor_id: str, *, for_picker: bool = False) -> bool:
     """Section-1 pool check: only consult the pool when auth.json lists a raw entry."""
     try:
         from moor_cli.auth import _load_auth_store
         store = _load_auth_store()
-        if store and store.get("credential_pool", {}).get(hermes_id):
-            return _credential_pool_is_usable(hermes_id, raw_pool_present=True, for_picker=for_picker)
+        if store and store.get("credential_pool", {}).get(moor_id):
+            return _credential_pool_is_usable(moor_id, raw_pool_present=True, for_picker=for_picker)
     except Exception:
         pass
     return False
@@ -409,8 +409,8 @@ def _live_or_curated_ids(slug: str, curated: dict, *fallback_keys: str, merge_mo
     back to the curated list (merged with models.dev for preferred providers) when live is empty.
     ``non_blocking`` (GUI read path) reads the disk cache only — a provider that is slow or down
     contributes its curated list instead of stalling the whole picker (#114215)."""
-    from hermes_cli.models import _MODELS_DEV_PREFERRED, _merge_with_models_dev, cached_provider_model_ids
-    from hermes_cli.chat_catalog import without_generation_models
+    from moor_cli.models import _MODELS_DEV_PREFERRED, _merge_with_models_dev, cached_provider_model_ids
+    from moor_cli.chat_catalog import without_generation_models
 
     model_ids = cached_provider_model_ids(slug, non_blocking=non_blocking)
     if not model_ids:
@@ -441,26 +441,26 @@ def _aws_live_or_curated_ids(slug: str, curated: dict, *fallback_keys: str,
         return _first_curated(curated, fallback_keys or (slug,)) or []
 
 
-def _nous_picker_model_ids(curated: dict, force_fresh_nous_tier: bool) -> list:
-    """Nous serves a huge live catalog; the picker shows ONLY the curated agentic list, augmented
+def _moor_picker_model_ids(curated: dict, force_fresh_moor_tier: bool) -> list:
+    """Moor serves a huge live catalog; the picker shows ONLY the curated agentic list, augmented
     with the Portal's free/paid recommendations and paid-tier sale models, then narrowed by org
-    policy. Mirrors ``_model_flow_nous`` so GUI pickers match the CLI. A failed
+    policy. Mirrors ``_model_flow_moor`` so GUI pickers match the CLI. A failed
     recommendation fetch still yields a policy-filtered curated list."""
     model_ids = curated.get("moor", [])
     try:
-        from hermes_cli.models_pricing import get_pricing_for_provider
-        from hermes_cli.models import (
-            check_nous_free_tier,
-            union_with_nous_on_sale_models,
+        from moor_cli.models_pricing import get_pricing_for_provider
+        from moor_cli.models import (
+            check_moor_free_tier,
+            union_with_moor_on_sale_models,
             union_with_portal_free_recommendations,
             union_with_portal_paid_recommendations,
         )
-        from hermes_cli.auth import get_provider_auth_state
+        from moor_cli.auth import get_provider_auth_state
         # Cache-only: a cold cache must not hold the picker open. The Portal unions only append ids;
         # the on-sale union reads the rows the background prewarm filled under the same key the
         # fetcher registers (base + credential fingerprint), so a logged-in account's cached_only
         # read finds them.
-        pricing = get_pricing_for_provider("nous", cached_only=True) or {}
+        pricing = get_pricing_for_provider("moor", cached_only=True) or {}
         try:
             portal = (get_provider_auth_state("moor") or {}).get("portal_base_url", "") or ""
         except Exception:
@@ -469,20 +469,20 @@ def _nous_picker_model_ids(curated: dict, force_fresh_nous_tier: bool) -> list:
             model_ids, _ = union_with_portal_free_recommendations(model_ids, pricing, portal)
         else:
             model_ids, _ = union_with_portal_paid_recommendations(model_ids, pricing, portal)
-            model_ids = union_with_nous_on_sale_models(model_ids, pricing)
+            model_ids = union_with_moor_on_sale_models(model_ids, pricing)
     except Exception:
         pass
     try:
         from moor_cli.models_pricing import moor_policy_allowed_ids, restrict_to_moor_policy
         model_ids = restrict_to_moor_policy(model_ids, moor_policy_allowed_ids(), rescue_empty=True)
     except Exception:
-        logger.debug("Nous model policy filter failed", exc_info=True)
+        logger.debug("Moor model policy filter failed", exc_info=True)
     try:
         # Window plans: the plan's featured picks lead the list. Plan shape only (it rarely changes), so
         # the last snapshot at any age answers — a long-running gateway's 60s cache has usually lapsed
         # by the time someone opens /model.
-        from hermes_cli.model_picker_usage import featured_first, nous_picker_usage
-        usage = nous_picker_usage(any_age=True)
+        from moor_cli.model_picker_usage import featured_first, moor_picker_usage
+        usage = moor_picker_usage(any_age=True)
         if usage is not None:
             model_ids = featured_first(model_ids, usage.featured_model_ids)
     except Exception:
@@ -505,7 +505,7 @@ def _free_tier_moor_row(row: dict) -> dict | None:
     if not anon_auth.guest_allowed():
         return None
     if not anon_auth.free_inference_active():
-        return row  # a guest without the welcome trial here: the row is whatever real Nous login exists
+        return row  # a guest without the welcome trial here: the row is whatever real Moor login exists
     out = dict(row)
     out["name"] = anon_auth.FREE_TIER_LABEL
     out["models"] = [anon_auth.GUEST_MODEL]
@@ -658,11 +658,11 @@ def _collect_authed_provider_slugs(
     but never calls ``cached_provider_model_ids``; feeds :func:`_prefetch_provider_models_parallel`.
     Env vars are read through the per-profile secret scope. AWS SDK providers are skipped
     (heavier detection)."""
-    from hermes_cli.model_switch import _scoped_key_env
+    from moor_cli.model_switch import _scoped_key_env
     from agent.models_dev import models_dev_provider_map
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    from hermes_cli.providers import hermes_overlays
-    from hermes_cli.models import CANONICAL_PROVIDERS
+    from moor_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.providers import moor_overlays
+    from moor_cli.models import CANONICAL_PROVIDERS
     excluded_set = {str(p).strip().lower() for p in excluded if p}
     slugs: list[str] = []
     seen: set[str] = set()
@@ -675,10 +675,10 @@ def _collect_authed_provider_slugs(
         if _any_env(env_vars, _scoped_key_env) or _raw_pool_usable(moor_id):
             _emit(moor_id, moor_id)
 
-    mdev_to_hermes = {v: k for k, v in models_dev_provider_map().items()}
-    for pid, overlay in hermes_overlays().items():
-        hermes_slug = mdev_to_hermes.get(pid, pid)
-        if _skip(seen, excluded_set, pid, hermes_slug) or overlay.auth_type == "aws_sdk":
+    mdev_to_moor = {v: k for k, v in models_dev_provider_map().items()}
+    for pid, overlay in moor_overlays().items():
+        moor_slug = mdev_to_moor.get(pid, pid)
+        if _skip(seen, excluded_set, pid, moor_slug) or overlay.auth_type == "aws_sdk":
             continue
         if (
             _overlay_has_env_creds(pid, moor_slug, overlay, _scoped_key_env)
@@ -849,7 +849,7 @@ def _lap_builtin_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None
     for moor_id, mdev_id, pconfig, env_vars in _iter_builtin_candidates(data, b.excluded, b.seen_slugs):
         # Per-profile scope, never raw os.environ: a secondary profile's picker otherwise listed the
         # LAUNCH profile's env-keyed providers and hid its own .env-keyed ones.
-        if not (_any_env(env_vars, _scoped_key_env) or _raw_pool_usable(hermes_id, for_picker=b.for_picker)):
+        if not (_any_env(env_vars, _scoped_key_env) or _raw_pool_usable(moor_id, for_picker=b.for_picker)):
             continue
         model_ids = _live_or_curated_ids(moor_id, b.curated, non_blocking=b.non_blocking_catalogs)
         # A providers.<built-in>.models block extends the discovered catalog; section 3 cannot
@@ -869,8 +869,8 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, moor_slug: str, overlay) -> bo
     if overlay.auth_type == "aws_sdk":
         has_creds = _has_aws_sdk_creds_for_listing(moor_slug, b.current_provider)
     else:
-        from hermes_cli.model_switch import _scoped_key_env
-        has_creds = _overlay_has_env_creds(pid, hermes_slug, overlay, _scoped_key_env)
+        from moor_cli.model_switch import _scoped_key_env
+        has_creds = _overlay_has_env_creds(pid, moor_slug, overlay, _scoped_key_env)
     # External-process providers (ACP CLIs) hold no key/token/pool entry by design — the
     # spawned subprocess brings its own auth. "Configured" means the executable resolves.
     # "Configured" means the executable resolves, which is exactly what get_auth_status() reports for them;
@@ -890,7 +890,7 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, moor_slug: str, overlay) -> bo
         # Full auto-seeding pool check catches external stores (Codex CLI ~/.codex/auth.json)
         # not yet in auth.json.
         try:
-            if _credential_pool_is_usable(hermes_slug, for_picker=b.for_picker):
+            if _credential_pool_is_usable(moor_slug, for_picker=b.for_picker):
                 has_creds = True
         except Exception as exc:
             logger.debug("Credential pool check failed for %s: %s", moor_slug, exc)
@@ -909,20 +909,20 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, moor_slug: str, overlay) -> bo
 
 
 def _lap_overlay_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None:
-    """Section 2: Hermes-only providers (nous, openai-codex, opencode-go, plugin overlays, ...)."""
+    """Section 2: moor-only providers (moor, openai-codex, opencode-go, plugin overlays, ...)."""
     from agent.models_dev import models_dev_provider_map
-    from hermes_cli.model_switch import _declared_model_ids
-    from hermes_cli.providers import hermes_overlays
+    from moor_cli.model_switch import _declared_model_ids
+    from moor_cli.providers import moor_overlays
 
-    # Overlay keys may be models.dev IDs while config.yaml uses Hermes IDs.
-    mdev_to_hermes = {v: k for k, v in models_dev_provider_map().items()}
-    for pid, overlay in hermes_overlays().items():
-        hermes_slug = mdev_to_hermes.get(pid, pid)
-        if _skip(b.seen_slugs, b.excluded, pid, hermes_slug):
+    # Overlay keys may be models.dev IDs while config.yaml uses Moor IDs.
+    mdev_to_moor = {v: k for k, v in models_dev_provider_map().items()}
+    for pid, overlay in moor_overlays().items():
+        moor_slug = mdev_to_moor.get(pid, pid)
+        if _skip(b.seen_slugs, b.excluded, pid, moor_slug):
             continue
         if not _overlay_has_creds(b, pid, moor_slug, overlay):
             continue
-        if hermes_slug == "openai-codex":
+        if moor_slug == "openai-codex":
             # Live OAuth-backed discovery so Pro-only Codex slugs not in the static catalog
             # appear; falls back to curated when unreachable (or not yet cached on the read path).
             model_ids = _live_or_curated_ids(moor_slug, b.curated, merge_models_dev=False,
@@ -979,7 +979,7 @@ def _lap_canonical_rows(b: _PickerBuild) -> None:
             _is_aws_sdk(cp_config) and _has_aws_sdk_creds_for_listing(cp.slug, b.current_provider))
         if not has_creds and cp_config is not None and cp_config.auth_type == "external_process":
             # Subprocess-backed providers own their auth; the binary resolving is the credential
-            # evidence for listing (same gate as the section-2 overlay rows and hermes auth status).
+            # evidence for listing (same gate as the section-2 overlay rows and moor auth status).
             try:
                 from moor_cli.auth import get_external_process_provider_status
                 has_creds = bool(get_external_process_provider_status(cp.slug).get("configured"))
@@ -1074,7 +1074,7 @@ def _lap_bare_custom_row(b: _PickerBuild, custom_providers: list | None) -> None
         default_model = b.current_model
     else:
         try:
-            from hermes_cli.config import load_config
+            from moor_cli.config import load_config
             cfg_model = load_config().get("model")
         except Exception:  # health: allow BLE001 -- config.yaml may be user-edited or mid-migration; a read failure must degrade to "no row", never crash the picker
             cfg_model = None
@@ -1235,7 +1235,7 @@ def _build_curated_lists(current_provider: str, current_base_url: str, current_m
 
 def list_authenticated_providers(
     current_provider: str = "", current_base_url: str = "", user_providers: dict | None = None,
-    custom_providers: list | None = None, *, force_fresh_nous_tier: bool = False,
+    custom_providers: list | None = None, *, force_fresh_moor_tier: bool = False,
     max_models: int | None = None, current_model: str = "", refresh: bool = False,
     probe_custom_providers: bool = True, probe_current_custom_provider: bool = False,
     for_picker: bool = False, excluded_providers: list | None = None,
@@ -1281,7 +1281,7 @@ def list_authenticated_providers(
     data = fetch_models_dev()
 
     # A single excluded entry like ``kimi-coding`` hides the provider under every key it surfaces
-    # as (hermes_id / mdev_id / canonical slug).
+    # as (moor_id / mdev_id / canonical slug).
     b = _PickerBuild(
         current_provider=current_provider, current_base_url=current_base_url, current_model=current_model,
         max_models=max_models, for_picker=for_picker, force_fresh_moor_tier=force_fresh_moor_tier,
@@ -1419,31 +1419,31 @@ def list_picker_providers(
 
 
 def _attach_window_model_notes(providers: list[dict]) -> None:
-    """Nous on a usage-window plan, for the messaging pickers (same words as the CLI/TUI/desktop pickers):
+    """Moor on a usage-window plan, for the messaging pickers (same words as the CLI/TUI/desktop pickers):
     ``model_labels`` {id: "Large" | "Free"} (plan shape, any-age snapshot; other levels carry no tag), and
     from a fresh snapshot only (a stale percent would mislabel it) ``plan_line`` (the limit line: "Weekly
     limit reached · resets in 21h · paid models now use your credits (pay as you go)").
     Every field is omitted when empty and for any account not on a window plan. Never raises."""
     try:
-        nous = next((p for p in providers if str(p.get("slug", "")).lower() == "nous"), None)
-        if nous is None:
+        moor = next((p for p in providers if str(p.get("slug", "")).lower() == "moor"), None)
+        if moor is None:
             return
-        from hermes_cli.model_picker_usage import nous_picker_usage, usage_level_label, usage_tag_levels
-        fresh = nous_picker_usage()
-        usage = fresh or nous_picker_usage(any_age=True)
+        from moor_cli.model_picker_usage import moor_picker_usage, usage_level_label, usage_tag_levels
+        fresh = moor_picker_usage()
+        usage = fresh or moor_picker_usage(any_age=True)
         if usage is None:
             return
         from agent.plan_limits import cached_pricing
         pricing = cached_pricing()  # this profile's catalog only (cache-only, no credential refresh)
-        models = [str(m) for m in nous.get("models", [])]
+        models = [str(m) for m in moor.get("models", [])]
         # Subscription-billed rows carry no tag (usage_tag_levels).
         labels = {m: label for m, lv in usage_tag_levels(models, pricing).items() if (label := usage_level_label(lv))}
         if labels:
-            nous["model_labels"] = labels
+            moor["model_labels"] = labels
         if fresh is None:
             return
         line = usage.limit_line()
         if line:
-            nous["plan_line"] = line
+            moor["plan_line"] = line
     except Exception:
         logger.debug("window model notes failed", exc_info=True)

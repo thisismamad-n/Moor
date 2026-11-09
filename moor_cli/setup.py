@@ -90,12 +90,12 @@ def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     if reason:
         print_info(reason)
     _info("The interactive wizard cannot be used here.", None,
-          "Configure Hermes using environment variables or config commands:",
-          "  hermes config set model.provider custom",
-          "  hermes config set model.base_url http://localhost:8080/v1",
-          "  hermes config set model.default your-model-name", None,
+          "Configure Moor using environment variables or config commands:",
+          "  moor config set model.provider custom",
+          "  moor config set model.base_url http://localhost:8080/v1",
+          "  moor config set model.default your-model-name", None,
           "Or set OPENROUTER_API_KEY (OpenRouter) / OPENAI_API_KEY (OpenAI) in your environment.",
-          "Run 'hermes setup' in an interactive terminal to use the full wizard.", None)
+          "Run 'moor setup' in an interactive terminal to use the full wizard.", None)
 
 
 def _sanitize_pasted_input(value: str) -> str:
@@ -285,7 +285,7 @@ def is_noninteractive() -> bool:
 
 
 def prompt_yes_no(question: str, default: bool = True, description: str | None = None) -> bool:
-    """Prompt for yes/no. Ctrl+C exits; empty input, ``HERMES_NONINTERACTIVE=1`` or a
+    """Prompt for yes/no. Ctrl+C exits; empty input, ``MOOR_NONINTERACTIVE=1`` or a
     closed/redirected stdin return ``default`` instead of aborting the whole process.
     ``description`` is the context the question refers to, shown above it in setup's full-screen
     menu, which hides everything printed before it; the line prompt keeps that text on screen."""
@@ -382,8 +382,8 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     print_header("Inference Provider")
     _info("Choose how to connect to your main chat model.",
           f"   Guide: {_DOCS_BASE}/integrations/providers", None)
-    from hermes_cli.main import select_provider_and_model
-    from hermes_cli.observability.shared_metrics_setup import provider_setup_surface
+    from moor_cli.main import select_provider_and_model
+    from moor_cli.observability.shared_metrics_setup import provider_setup_surface
     try:
         with provider_setup_surface("cli_setup"):
             select_provider_and_model()
@@ -513,7 +513,7 @@ def setup_tools(config: dict, first_install: bool = False):
 
 
 _SEND_CONSENT_EXPLAINER = (
-    "", "Sharing uploads each daily package to the Nous telemetry",
+    "", "Sharing uploads each daily package to the Moor telemetry",
     "service. Packages carry your profile-scoped install ID, a",
     "stable random UUID that identifies this profile across days",
     "(it contains no personal information and is reset by deleting",
@@ -527,7 +527,7 @@ _SEND_CONSENT_EXPLAINER = (
 
 
 def setup_telemetry(config: dict):
-    """Turn shared metrics on (collect and send to Nous) or off: one answer sets both keys."""
+    """Turn shared metrics on (collect and send to Moor) or off: one answer sets both keys."""
     print_header("Shared Metrics")
     _info("Shared metrics contain only bounded counters: activity, session length,",
           "outcomes, error classes (with a fixed-list reason when a memory write or",
@@ -536,7 +536,7 @@ def setup_telemetry(config: dict):
           "counts, update and install results and timing (with a fixed-list reason",
           "and the stage when one fails; a fresh install is noted on this machine and",
           "counted only once you opt in), crashes,",
-          "startup and reply speed, messaging-platform health, how Hermes gets used",
+          "startup and reply speed, messaging-platform health, how Moor gets used",
           "(agent accuracy and efficiency, active time per surface, which features and",
           "settings are used or switched off, provider setup outcomes), and coarse",
           "machine facts (RAM range, GPU type, version age and channel, updates behind,",
@@ -545,15 +545,15 @@ def setup_telemetry(config: dict):
     _info(*_SEND_CONSENT_EXPLAINER)
     # The answer is written to config.yaml here, not by the caller's later save: that save strips
     # values equal to the defaults, so a "no" would vanish and every surface would ask again.
-    from hermes_cli.observability.shared_metrics_consent import save_consent
+    from moor_cli.observability.shared_metrics_consent import save_consent
 
     shared_metrics = _sub_dict(_sub_dict(config, "telemetry"), "shared_metrics")
     sharing = shared_metrics.get("enabled") is True and shared_metrics.get("send") is True
     # One answer for both keys: off also withdraws send consent and stops collection.
-    share = prompt_yes_no("Send shared metrics to Nous?", default=sharing)
+    share = prompt_yes_no("Send shared metrics to Moor?", default=sharing)
     save_consent(share, share, config)
     if share:
-        print_success("Shared metrics sent to Nous once a day.")
+        print_success("Shared metrics sent to Moor once a day.")
     else:
         print_info("Shared metrics off.")
 
@@ -575,13 +575,13 @@ def _record_send_consent_change(*, enabled: bool) -> None:
 # Extracted sections, re-exported so callers and test patches keep resolving through
 # moor_cli.setup. They import this module lazily inside bodies, so this is cycle-free.
 
-from hermes_cli.setup_tts import setup_tts
-from hermes_cli.setup_terminal import setup_terminal_backend
-from hermes_cli.setup_platforms import setup_gateway
-from hermes_cli.setup_summary import _print_setup_summary
-from hermes_cli.setup_migration import _skip_configured_section
-from hermes_cli.setup_agent_import import offer_agent_import
-from hermes_cli.setup_quick import _run_portal_one_shot, _run_quick_setup
+from moor_cli.setup_tts import setup_tts
+from moor_cli.setup_terminal import setup_terminal_backend
+from moor_cli.setup_platforms import setup_gateway
+from moor_cli.setup_summary import _print_setup_summary
+from moor_cli.setup_migration import _skip_configured_section
+from moor_cli.setup_agent_import import offer_agent_import
+from moor_cli.setup_quick import _run_portal_one_shot, _run_quick_setup
 
 
 # ── Main Wizard Orchestrator ──
@@ -622,13 +622,13 @@ def _run_setup_section(config: dict, section: str) -> None:
     print_success(f"{label} configuration complete!")
 
 
-def _run_full_setup(config: dict, hermes_home, *, is_existing: bool, imported_from: str = "") -> None:
+def _run_full_setup(config: dict, moor_home, *, is_existing: bool, imported_from: str = "") -> None:
     """Full Setup — run all sections; after an import (*imported_from* names the agents) each
     already-configured section offers to skip."""
     print_header("Configuration Location")
     _info(f"Config file:  {get_config_path()}", f"Secrets file: {get_env_path()}",
-          f"Data folder:  {hermes_home}", f"Install dir:  {PROJECT_ROOT}", None,
-          "You can edit these files directly or use 'hermes config edit'")
+          f"Data folder:  {moor_home}", f"Install dir:  {PROJECT_ROOT}", None,
+          "You can edit these files directly or use 'moor config edit'")
     if imported_from:
         _info(None, f"Settings were imported from {imported_from}.",
               "Each section below shows what is already set up — keep it,",
@@ -646,7 +646,7 @@ def _run_full_setup(config: dict, hermes_home, *, is_existing: bool, imported_fr
             setup_gateway(config)
             return
         # An import does not imply consent to install a persistent service.
-        from hermes_cli.gateway_setup_service import ensure_gateway_service
+        from moor_cli.gateway_setup_service import ensure_gateway_service
         ensure_gateway_service(context="setup", interactive=True, config=config)
 
     def _step(key: str, label: str, run) -> tuple:
@@ -716,7 +716,7 @@ def _run_setup_wizard_impl(args):
         # narrows it to missing items (partial import, cleared key). --reconfigure is a
         # backwards-compatible no-op here.
         if quick_requested:
-            _run_setup_steps([("Quick Setup", lambda: _run_quick_setup(config, hermes_home))])
+            _run_setup_steps([("Quick Setup", lambda: _run_quick_setup(config, moor_home))])
             _record_setup_completed(config)
             return
         print_header("Reconfigure", gap=True)
@@ -732,19 +732,19 @@ def _run_setup_wizard_impl(args):
             _info("No existing configuration found — running first-time setup.", None)
         # Before configuration begins. The plugin install and the import write config.yaml from
         # outside this dict (the import from another process), so reload it.
-        imported_from = offer_agent_import(hermes_home)
+        imported_from = offer_agent_import(moor_home)
         config = load_config()
-        setup_mode = prompt_choice("How would you like to set up Hermes?", [label for label, _ in _FIRST_TIME_MODES], 0)
+        setup_mode = prompt_choice("How would you like to set up Moor?", [label for label, _ in _FIRST_TIME_MODES], 0)
         label, runner = _FIRST_TIME_MODES[setup_mode]
         if runner is not None:
-            from hermes_cli import setup_quick
+            from moor_cli import setup_quick
             # Quick Setup offers to keep a model the import brought (Full setup acknowledges it below).
-            run_args = (config, hermes_home, is_existing) + (
+            run_args = (config, moor_home, is_existing) + (
                 (imported_from,) if runner == "_run_first_time_quick_setup" else ())
             _run_setup_steps([(label, lambda: getattr(setup_quick, runner)(*run_args))])
             _record_setup_completed(config)
             return
-    _run_full_setup(config, hermes_home, is_existing=is_existing, imported_from=imported_from)
+    _run_full_setup(config, moor_home, is_existing=is_existing, imported_from=imported_from)
 
     # Save and show summary
     save_config(config)
@@ -752,16 +752,16 @@ def _run_setup_wizard_impl(args):
         _info(f"Previous config backed up to: {_backup_path}",
               "If setup changed a value you customized, restore it with:",
               f"  cp {_backup_path} {config_path}")
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, moor_home)
     _record_setup_completed(config)
 
 
 def _record_setup_completed(config: dict) -> None:
     """Count a wizard run that finished. Every setup flow ends here, so the one-time
     shared-metrics offer runs first: a user who opts in now is counted; the API checks enablement."""
-    from hermes_cli.observability.shared_metrics_consent import offer_consent_if_undecided
+    from moor_cli.observability.shared_metrics_consent import offer_consent_if_undecided
 
     offer_consent_if_undecided(config)
-    from hermes_cli.observability.shared_metrics_events import record_setup_completed
+    from moor_cli.observability.shared_metrics_events import record_setup_completed
     model = config.get("model")
     record_setup_completed(surface="cli", provider=model.get("provider") if isinstance(model, dict) else None)

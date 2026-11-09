@@ -6,7 +6,7 @@ import shutil
 
 import pytest
 
-from tests.hermes_cli import test_web_server as web_server_tests
+from tests.moor_cli import test_web_server as web_server_tests
 
 _EXAMPLE_PLUGIN_FIXTURE = web_server_tests._EXAMPLE_PLUGIN_FIXTURE
 _install_example_plugin = web_server_tests._install_example_plugin  # the fixture
@@ -27,24 +27,24 @@ class TestPluginAPISecretScopeProductionMount:
     _PROBE_KEY = "EXAMPLE_PLUGIN_PROBE_KEY"
 
     @pytest.fixture(autouse=True)
-    def _setup(self, monkeypatch, _isolate_hermes_home, _install_example_plugin):
+    def _setup(self, monkeypatch, _isolate_moor_home, _install_example_plugin):
         try:
             from starlette.testclient import TestClient
         except ImportError:
             pytest.skip("fastapi/starlette not installed")
 
-        import hermes_state
-        from hermes_constants import get_hermes_home
-        from hermes_cli import profiles
-        from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+        import moor_state
+        from moor_constants import get_moor_home
+        from moor_cli import profiles
+        from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-        default_home = get_hermes_home()
-        monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", default_home / "state.db")
+        default_home = get_moor_home()
+        monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", default_home / "state.db")
 
         # Anchor the named-profiles root to the isolated home so ``?profile=workerb``
         # resolves inside the test sandbox (mirrors test_web_server_skills_profiles).
         profiles_root = default_home / "profiles"
-        monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+        monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: default_home)
         monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
 
         # Named profile B: a live profile with its OWN probe key value in ``.env`` (also its identity
@@ -71,7 +71,7 @@ class TestPluginAPISecretScopeProductionMount:
             yield
         finally:
             set_multiplex_active(self._previous_multiplex)
-            from hermes_cli import plugins as plugins_mod
+            from moor_cli import plugins as plugins_mod
             for manager in list(plugins_mod._plugin_managers_by_home.values()):
                 host = getattr(manager, "_plugin_host_instance", None)
                 if host is not None:

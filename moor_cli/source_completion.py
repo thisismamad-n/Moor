@@ -48,25 +48,25 @@ def complete_source_checkout(
     recorded on the open update receipt and appended to ``followups`` as ``(step, reason)``.
     Returns True only when every step finished and the SQLite runtime is not unsafe.
     """
-    from hermes_cli.update_lock import UpdateLock, describe_holder
+    from moor_cli.update_lock import UpdateLock, describe_holder
 
     root = Path(root)
     # This tail is the last mutating step of an install or update, and its product
     # builds run for minutes. A gateway restarted while it runs (launchd KeepAlive,
-    # a service manager, a second `hermes` launch) reaches the same tail through
-    # venv_sync, and `hermes update` runs its own: two completions then build the
+    # a service manager, a second `moor` launch) reaches the same tail through
+    # venv_sync, and `moor update` runs its own: two completions then build the
     # same output directories concurrently and race on install-stamp.json (#123376).
     # Claim the shared update lock so stacked completions serialize. A tail whose
     # orchestrator already holds the lock (venv_sync's interrupted-update finish,
     # the updater's completion child) runs under its parent's claim, exactly as
-    # `hermes update` does under the desktop handoff pid. The CHECKOUT lock is acquired, not
+    # `moor update` does under the desktop handoff pid. The CHECKOUT lock is acquired, not
     # sampled (R2): a completion from another home must not build a checkout an update owns;
     # one inside the update's tree joins the lock it inherited.
     lock = UpdateLock(install_root=root)
     if not lock.acquire():
         raise RuntimeError(
             f"an update is still running ({describe_holder(lock.holder)}); "
-            "wait for it to exit, then relaunch Hermes"
+            "wait for it to exit, then relaunch Moor"
         )
     try:
         return _complete_locked(
@@ -94,12 +94,12 @@ def _complete_locked(
     before_build=None,
 ) -> bool:
     """The completion body; callers hold the update lock already."""
-    from hermes_cli.source_build import build_update_products
-    from hermes_cli.update_cmd_maint import _run_post_update_maintenance
-    from hermes_cli.venv_sync import publish_launchers
+    from moor_cli.source_build import build_update_products
+    from moor_cli.update_cmd_maint import _run_post_update_maintenance
+    from moor_cli.venv_sync import publish_launchers
 
     try:
-        from hermes_cli._subprocess_compat import expose_pm_git
+        from moor_cli._subprocess_compat import expose_pm_git
 
         # The builds, the release-history refresh and the install stamp all run
         # git; a fresh Windows machine has only PM's.
@@ -114,7 +114,7 @@ def _complete_locked(
         try:
             run()
         except (Exception, SystemExit) as exc:  # health: allow BLE001 -- reported as an owed follow-up
-            from hermes_cli.update_receipt import record_followup
+            from moor_cli.update_receipt import record_followup
 
             reason = str(exc) or type(exc).__name__
             record_followup(name, reason)
@@ -138,7 +138,7 @@ def _complete_locked(
     )))
     tail_done = not owed
     if tail_done:
-        from hermes_cli.source_stamp import write_source_stamp
+        from moor_cli.source_stamp import write_source_stamp
 
         try:
             write_source_stamp(root)
@@ -212,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
     passthrough = (["--desktop"] if args.desktop else []) + \
                   (["--finish-update"] if args.finish_update else [])
     command = _bootstrap_command(root, passthrough)
-    from hermes_cli.update_lock import checkout_lock_fds
+    from moor_cli.update_lock import checkout_lock_fds
 
     # Called inside an update tree (venv_sync's interrupted-update finish), the prepared child
     # keeps the checkout lock this bootstrap inherited.

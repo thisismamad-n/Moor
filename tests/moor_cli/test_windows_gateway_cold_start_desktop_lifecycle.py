@@ -22,12 +22,12 @@ import json
 
 import pytest
 
-from hermes_cli import gateway as hermes_gateway
-from hermes_cli import gateway_windows
-from hermes_cli import main as cli_main
-from hermes_cli import process_identity
-from hermes_cli import update_cmd
-from hermes_cli import update_cmd_windows
+from moor_cli import gateway as moor_gateway
+from moor_cli import gateway_windows
+from moor_cli import main as cli_main
+from moor_cli import process_identity
+from moor_cli import update_cmd
+from moor_cli import update_cmd_windows
 
 
 def _live_serve_ledger_entry() -> dict:
@@ -78,7 +78,7 @@ def test_ledger_live_serve_with_live_spawner_owns_lifecycle(monkeypatch):
         process_identity, "ledger_entries", lambda **_k: [_live_serve_ledger_entry()]
     )
     monkeypatch.setattr(process_identity, "spawner_is_dead", lambda _e: False)
-    monkeypatch.setattr("hermes_cli.update_cmd_windows._detect_venv_python_processes", list)
+    monkeypatch.setattr("moor_cli.update_cmd_windows._detect_venv_python_processes", list)
 
     assert update_cmd._desktop_owns_gateway_lifecycle() is True
 
@@ -87,7 +87,7 @@ def test_orphaned_control_plane_does_not_own_lifecycle(monkeypatch):
         process_identity, "ledger_entries", lambda **_k: [_live_serve_ledger_entry()]
     )
     monkeypatch.setattr(process_identity, "spawner_is_dead", lambda _e: True)
-    monkeypatch.setattr("hermes_cli.update_cmd_windows._detect_venv_python_processes", list)
+    monkeypatch.setattr("moor_cli.update_cmd_windows._detect_venv_python_processes", list)
 
     assert update_cmd._desktop_owns_gateway_lifecycle() is False
 
@@ -113,7 +113,7 @@ def _running_beta_pause_fixture(monkeypatch, tmp_path):
     # Resume side.
     monkeypatch.setattr(cli_main, "_refresh_windows_gateway_launchers", lambda: None)
     relaunched: set = set()
-    monkeypatch.setattr(hermes_gateway, "launch_detached_profile_gateway_restart",
+    monkeypatch.setattr(moor_gateway, "launch_detached_profile_gateway_restart",
                         lambda p, o: relaunched.add(p) or True)
     ready_probes: list = []
     monkeypatch.setattr(gateway_windows, "_wait_for_gateway_ready", lambda *a, **k: ready_probes.append(k) or [4242])

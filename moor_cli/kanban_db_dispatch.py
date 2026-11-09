@@ -662,7 +662,7 @@ def enforce_max_runtime(conn: sqlite3.Connection, *, signal_fn=None) -> list[str
         "  AND COALESCE(r.started_at, t.started_at) IS NOT NULL "
         "  AND t.worker_pid IS NOT NULL"
     ).fetchall()
-    from hermes_cli.kanban_owner_recovery import owner_reclaim_blocked, owner_reclaim_blocked_after_kill
+    from moor_cli.kanban_owner_recovery import owner_reclaim_blocked, owner_reclaim_blocked_after_kill
     for row in rows:
         if owner_reclaim_blocked(conn, row["id"]):
             continue
@@ -777,7 +777,7 @@ def detect_stale_running(
         "WHERE t.status = 'running'"
     ).fetchall()
 
-    from hermes_cli.kanban_owner_recovery import owner_reclaim_blocked, owner_reclaim_blocked_after_kill
+    from moor_cli.kanban_owner_recovery import owner_reclaim_blocked, owner_reclaim_blocked_after_kill
     for row in rows:
         if owner_reclaim_blocked(conn, row["id"]):
             continue
@@ -867,7 +867,7 @@ def reconcile_orphaned_running(conn: sqlite3.Connection) -> list[str]:
         "WHERE status = 'running' "
         "  AND (claim_lock IS NULL OR claim_expires IS NULL)"
     ).fetchall()
-    from hermes_cli.kanban_owner_recovery import owner_reclaim_blocked
+    from moor_cli.kanban_owner_recovery import owner_reclaim_blocked
     for row in rows:
         if owner_reclaim_blocked(conn, row["id"]):
             continue
@@ -988,7 +988,7 @@ _PROTOCOL_VIOLATION_ERROR = (
 
 
 # Rich panel/rule chrome around the rendered response, and the CLI's own preamble lines.
-_LOG_CHROME = re.compile(r"[─━═╭╮╰╯│┃┌┐└┘]+|☤\s*Hermes")
+_LOG_CHROME = re.compile(r"[─━═╭╮╰╯│┃┌┐└┘]+|☤\s*Moor")
 
 
 def _exit_summary_marker() -> str:
@@ -1171,7 +1171,7 @@ def _reclaim_dead_workers(conn: sqlite3.Connection, board: Optional[str] = None)
             "WHERE status = 'running' AND worker_pid IS NOT NULL"
         ).fetchall()
         host_prefix = _kb._host_prefix()
-        from hermes_cli.kanban_owner_recovery import apply_attempt_note, managed_run_exit_code, owner_reclaim_blocked
+        from moor_cli.kanban_owner_recovery import apply_attempt_note, managed_run_exit_code, owner_reclaim_blocked
         for row in rows:
             lock = row["claim_lock"] or ""
             if not lock.startswith(host_prefix):
@@ -2464,10 +2464,10 @@ def _positive_int(value: Any, default: int, *, minimum: int = 1) -> int:
     return parsed if parsed >= minimum else default
 
 
-def _module_hermes_argv() -> list[str]:
-    """Interpreter-bound Hermes CLI invocation (``hermes_cli.main`` is the
-    console-script target — there is no top-level ``hermes`` package)."""
-    return [sys.executable, "-m", "hermes_cli.main"]
+def _module_moor_argv() -> list[str]:
+    """Interpreter-bound Moor CLI invocation (``moor_cli.main`` is the
+    console-script target — there is no top-level ``moor`` package)."""
+    return [sys.executable, "-m", "moor_cli.main"]
 
 
 def _absolute_moor_path(path: str) -> str:
@@ -2694,10 +2694,10 @@ def _retag_legacy_worker_sessions(workspaces_root_path: str) -> None:
         _kb._log.debug("kanban worker: legacy session retag skipped (%s)", exc)
 
 
-def _worker_argv(task: Task, profile_arg: str, hermes_home: Optional[str]) -> list[str]:
+def _worker_argv(task: Task, profile_arg: str, moor_home: Optional[str]) -> list[str]:
     """The profile owner executes; this subprocess only waits for its receipt."""
     import sys
-    return [sys.executable, "-m", "hermes_cli.kanban_worker_client"]
+    return [sys.executable, "-m", "moor_cli.kanban_worker_client"]
 
 
 def _open_worker_log(task: Task, board: Optional[str]):
@@ -2708,7 +2708,7 @@ def _open_worker_log(task: Task, board: Optional[str]):
     log_dir = _kb.worker_logs_dir(board=board)
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"{task.id}.log"
-    from hermes_cli.kanban_worker_log import rotate_worker_log, worker_log_rotation_config
+    from moor_cli.kanban_worker_log import rotate_worker_log, worker_log_rotation_config
     rotate_worker_log(log_path, *worker_log_rotation_config())
     return open(log_path, "ab")
 
@@ -2843,9 +2843,9 @@ def _default_spawn(task: Task, workspace: str, *, board: Optional[str] = None) -
         if override is not None:
             env[var] = override
     # Pin the board DB + workspaces root so the worker's kanban paths still
-    # match after `hermes -p` rewrites HERMES_HOME (symlink / Docker layouts).
-    env["HERMES_KANBAN_DB"] = str(_kb.kanban_db_path(board=board))
-    env["HERMES_KANBAN_WORKSPACES_ROOT"] = str(_kb.workspaces_root(board=board))
+    # match after `moor -p` rewrites MOOR_HOME (symlink / Docker layouts).
+    env["MOOR_KANBAN_DB"] = str(_kb.kanban_db_path(board=board))
+    env["MOOR_KANBAN_WORKSPACES_ROOT"] = str(_kb.workspaces_root(board=board))
     # Board slug — defense-in-depth pin if a path is resolved without the
     # DB / workspaces env vars.
     env["MOOR_KANBAN_BOARD"] = _kb._normalize_board_slug(board) or _kb.get_current_board()
@@ -2859,14 +2859,14 @@ def _default_spawn(task: Task, workspace: str, *, board: Optional[str] = None) -
     # older moor builds on PATH that predate the flag's precedence.
     env.pop("MOOR_TUI", None)
 
-    cmd = _worker_argv(task, profile_arg, env.get("HERMES_HOME"))
-    # The worker is `-m hermes_cli.kanban_worker_client`: Hermes itself, with no console-script
-    # bootstrap. The routed-profile scrub above strips Hermes-owned PYTHONPATH entries (user
+    cmd = _worker_argv(task, profile_arg, env.get("MOOR_HOME"))
+    # The worker is `-m moor_cli.kanban_worker_client`: Moor itself, with no console-script
+    # bootstrap. The routed-profile scrub above strips moor-owned PYTHONPATH entries (user
     # children must not see our tree), so a PYTHONPATH-launched dispatcher spawned a child that
-    # died on `No module named 'hermes_cli'` before it ever reached the owner. Same pin as cron's
+    # died on `No module named 'moor_cli'` before it ever reached the owner. Same pin as cron's
     # external worker (#112729): applied to the sanitized env, after every other decision stands.
-    from cron.scheduler_worker_env import pin_hermes_tree_on_pythonpath
-    env = pin_hermes_tree_on_pythonpath(env, Path(__file__).resolve().parent.parent)
+    from cron.scheduler_worker_env import pin_moor_tree_on_pythonpath
+    env = pin_moor_tree_on_pythonpath(env, Path(__file__).resolve().parent.parent)
     # A worker spawned by a managed systemd gateway must leave the gateway's
     # cgroup before startup; otherwise restarting the service kills the worker
     # that is performing the handoff.
@@ -2959,6 +2959,6 @@ def run_daemon(
 
 # Late-bound origin namespace (see module docstring); imported LAST so this
 # module is fully populated before ``kanban_db`` imports from it.
-from hermes_cli import kanban_db as _kb
-from hermes_cli import kanban_db_connect as _kbc
-from hermes_cli import kanban_db_workspace as _kbw
+from moor_cli import kanban_db as _kb
+from moor_cli import kanban_db_connect as _kbc
+from moor_cli import kanban_db_workspace as _kbw

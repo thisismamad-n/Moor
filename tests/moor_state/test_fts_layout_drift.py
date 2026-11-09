@@ -16,8 +16,8 @@ import sqlite3
 
 import pytest
 
-import hermes_state_common
-from hermes_state import SessionDB
+import moor_state_common
+from moor_state import SessionDB
 
 
 def _require_trigram(db: SessionDB) -> None:
@@ -98,39 +98,39 @@ def v1_trigram_db(tmp_path):
 
 
 def test_realign_does_not_stamp_current_while_the_trigram_is_stale(v1_trigram_db):
-    assert _stamp(v1_trigram_db) != str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(v1_trigram_db) != str(moor_state_common.FTS_STORAGE_VERSION)
 
 
 def test_doctor_offers_optimize_storage_for_a_stale_trigram(v1_trigram_db, monkeypatch):
-    from hermes_cli import doctor_state
-    from hermes_state_dbfile import collect_state_db_stats
+    from moor_cli import doctor_state
+    from moor_state_dbfile import collect_state_db_stats
 
     stats = collect_state_db_stats(v1_trigram_db)
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(stats)
-    assert any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
+    assert any("moor sessions optimize-storage" in detail for _, _, detail in rows)
 
 
 def test_fresh_store_is_stamped_on_creation_and_doctor_stays_quiet(tmp_path, monkeypatch):
-    from hermes_cli import doctor_state
-    from hermes_state_dbfile import collect_state_db_stats
+    from moor_cli import doctor_state
+    from moor_state_dbfile import collect_state_db_stats
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
     _seed(db)
     db.close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(moor_state_common.FTS_STORAGE_VERSION)
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(collect_state_db_stats(db_path))
-    assert not any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
+    assert not any("moor sessions optimize-storage" in detail for _, _, detail in rows)
 
 
 def _notice_for(db_path: pathlib.Path, monkeypatch) -> str:
-    """Run the `hermes update` notice against *db_path* with the size gate satisfied for state.db only."""
-    from hermes_cli import update_cmd_maint
-    import hermes_constants
+    """Run the `moor update` notice against *db_path* with the size gate satisfied for state.db only."""
+    from moor_cli import update_cmd_maint
+    import moor_constants
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: db_path.parent)
+    monkeypatch.setattr(moor_constants, "get_moor_home", lambda: db_path.parent)
     real_stat = pathlib.Path.stat
 
     def _big(path, *args, **kwargs):
@@ -149,12 +149,12 @@ def _notice_for(db_path: pathlib.Path, monkeypatch) -> str:
 
 def test_notice_for_a_stale_trigram_does_not_claim_the_legacy_reclaim(v1_trigram_db, monkeypatch):
     out = _notice_for(v1_trigram_db, monkeypatch)
-    assert "hermes sessions optimize-storage" in out
+    assert "moor sessions optimize-storage" in out
     assert "60%" not in out and "old storage layout" not in out.lower()
 
 
 def test_notice_for_a_legacy_inline_store_keeps_the_reclaim_estimate(tmp_path, monkeypatch):
-    from hermes_state_common import LEGACY_FTS_SQL
+    from moor_state_common import LEGACY_FTS_SQL
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -175,7 +175,7 @@ def test_notice_for_a_legacy_inline_store_keeps_the_reclaim_estimate(tmp_path, m
 def test_a_base_index_the_next_open_realigns_is_not_offered_as_opt_in_work(tmp_path, monkeypatch):
     """A raw-``messages`` base index with a current trigram is realigned automatically on the next read-write
     open, so the update notice (read-only, before that open) must not send the user to optimize-storage."""
-    import hermes_state_fts
+    import moor_state_fts
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -188,12 +188,12 @@ def test_a_base_index_the_next_open_realigns_is_not_offered_as_opt_in_work(tmp_p
 
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     try:
-        assert hermes_state_fts.fts_layout_drift(conn.cursor()) == []
+        assert moor_state_fts.fts_layout_drift(conn.cursor()) == []
     finally:
         conn.close()
     assert "optimize-storage" not in _notice_for(db_path, monkeypatch)
     SessionDB(db_path=db_path).close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(moor_state_common.FTS_STORAGE_VERSION)
 
 
 def test_a_layout_change_the_code_has_not_shipped_yet_is_reported_as_drift(tmp_path, monkeypatch):
@@ -202,20 +202,20 @@ def test_a_layout_change_the_code_has_not_shipped_yet_is_reported_as_drift(tmp_p
     db = SessionDB(db_path=db_path)
     _seed(db)
     db.close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(moor_state_common.FTS_STORAGE_VERSION)
 
-    import hermes_state_fts
-    bumped = hermes_state_common.FTS_SQL.replace(
+    import moor_state_fts
+    bumped = moor_state_common.FTS_SQL.replace(
         "content_rowid='id'\n);", "content_rowid='id',\n    tokenize='porter unicode61'\n);", 1)
-    assert bumped != hermes_state_common.FTS_SQL
-    monkeypatch.setattr(hermes_state_fts, "FTS_SQL", bumped)
-    layouts = dict(hermes_state_fts.FTS_VTABLE_LAYOUTS)
-    layouts["messages_fts"] = (*layouts["messages_fts"], hermes_state_fts._expected_vtable_sql(bumped, "messages_fts"))
-    monkeypatch.setattr(hermes_state_fts, "FTS_VTABLE_LAYOUTS", layouts)
+    assert bumped != moor_state_common.FTS_SQL
+    monkeypatch.setattr(moor_state_fts, "FTS_SQL", bumped)
+    layouts = dict(moor_state_fts.FTS_VTABLE_LAYOUTS)
+    layouts["messages_fts"] = (*layouts["messages_fts"], moor_state_fts._expected_vtable_sql(bumped, "messages_fts"))
+    monkeypatch.setattr(moor_state_fts, "FTS_VTABLE_LAYOUTS", layouts)
 
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     try:
-        drift = hermes_state_fts.fts_layout_drift(conn.cursor())
+        drift = moor_state_fts.fts_layout_drift(conn.cursor())
     finally:
         conn.close()
     assert "messages_fts" in drift
@@ -223,21 +223,21 @@ def test_a_layout_change_the_code_has_not_shipped_yet_is_reported_as_drift(tmp_p
 
 def test_the_layout_registry_ends_with_the_shipping_ddl():
     """A change to the FTS DDL must append its stored form, keeping the previous one recognisable as old."""
-    import hermes_state_fts
-    from hermes_state_common import FTS_SQL, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL
+    import moor_state_fts
+    from moor_state_common import FTS_SQL, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL
 
-    layouts = hermes_state_fts.FTS_VTABLE_LAYOUTS
-    assert layouts["messages_fts"][-1] == hermes_state_fts._expected_vtable_sql(FTS_SQL, "messages_fts")
-    assert layouts["messages_fts_trigram"][-1] == hermes_state_fts._expected_vtable_sql(
+    layouts = moor_state_fts.FTS_VTABLE_LAYOUTS
+    assert layouts["messages_fts"][-1] == moor_state_fts._expected_vtable_sql(FTS_SQL, "messages_fts")
+    assert layouts["messages_fts_trigram"][-1] == moor_state_fts._expected_vtable_sql(
         FTS_TRIGRAM_SQL, "messages_fts_trigram")
-    assert hermes_state_fts._expected_vtable_sql(LEGACY_FTS_SQL, "messages_fts") in layouts["messages_fts"][:-1]
-    assert hermes_state_fts._expected_vtable_sql(
+    assert moor_state_fts._expected_vtable_sql(LEGACY_FTS_SQL, "messages_fts") in layouts["messages_fts"][:-1]
+    assert moor_state_fts._expected_vtable_sql(
         LEGACY_FTS_TRIGRAM_SQL, "messages_fts_trigram") in layouts["messages_fts_trigram"][:-1]
 
 
 def _install_newer_base_layout(db: SessionDB) -> str:
     """A base-index definition this code does not recognise (a newer release's), stamped with a newer version."""
-    from hermes_state_common import FTS_SQL, FTS_STORAGE_VERSION
+    from moor_state_common import FTS_SQL, FTS_STORAGE_VERSION
 
     sql = db._conn.execute("SELECT sql FROM sqlite_master WHERE name = 'messages_fts'").fetchone()[0]
     db._conn.executescript(
@@ -260,7 +260,7 @@ def _forbid_demote(db: SessionDB, monkeypatch) -> None:
 
 def test_a_layout_from_a_newer_release_is_left_alone(tmp_path, monkeypatch):
     """Downgrade: an unrecognised (newer) definition is neither rebuilt nor re-stamped as this release's."""
-    from hermes_state_common import FTS_STORAGE_VERSION
+    from moor_state_common import FTS_STORAGE_VERSION
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -298,7 +298,7 @@ def test_a_quoted_table_name_in_the_stored_definition_is_still_current(tmp_path,
         db.optimize_fts_storage(vacuum=False)
     finally:
         db.close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(moor_state_common.FTS_STORAGE_VERSION)
 
 
 def test_optimize_settle_refuses_pending_backfill(tmp_path):
@@ -327,7 +327,7 @@ def test_optimize_settle_refuses_pending_backfill(tmp_path):
 
 
 def test_a_stale_base_source_view_is_replaced_before_the_store_is_stamped(tmp_path):
-    from hermes_state_common import FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS
+    from moor_state_common import FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -421,7 +421,7 @@ def test_the_base_realign_without_the_trigram_tokenizer_keeps_the_store_open_and
         return real_connect(*args, **kwargs)
 
     with monkeypatch.context() as m:
-        m.setattr("hermes_state.sqlite3.connect", connect)
+        m.setattr("moor_state.sqlite3.connect", connect)
         db = SessionDB(db_path=db_path)
         try:
             assert [row["id"] for row in db.search_messages("deployment")] == [last_id]
@@ -437,7 +437,7 @@ def test_the_base_realign_without_the_trigram_tokenizer_keeps_the_store_open_and
 
 def test_a_stale_source_view_does_not_replace_a_newer_base_index(tmp_path):
     """Downgrade with a differing source view: the open-time repair leaves an unrecognised base index alone."""
-    from hermes_state_common import FTS_STORAGE_VERSION
+    from moor_state_common import FTS_STORAGE_VERSION
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -459,7 +459,7 @@ def test_a_stale_source_view_does_not_replace_a_newer_base_index(tmp_path):
 
 def test_optimize_storage_on_a_newer_layout_finishes_its_work_without_restamping(tmp_path):
     """Leftover old-index tables on a downgraded store are torn down and reported as done; the stamp stays."""
-    from hermes_state_common import FTS_STORAGE_VERSION
+    from moor_state_common import FTS_STORAGE_VERSION
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -481,8 +481,8 @@ def test_optimize_storage_on_a_newer_layout_finishes_its_work_without_restamping
 
 def test_doctor_offers_the_resume_after_backfill_before_teardown(tmp_path, monkeypatch):
     """optimize-storage interrupted after backfill but before trash teardown: doctor agrees with the update notice."""
-    from hermes_cli import doctor_state
-    from hermes_state_dbfile import collect_state_db_stats
+    from moor_cli import doctor_state
+    from moor_state_dbfile import collect_state_db_stats
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -497,15 +497,15 @@ def test_doctor_offers_the_resume_after_backfill_before_teardown(tmp_path, monke
     assert "optimize-storage" in _notice_for(db_path, monkeypatch)
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(collect_state_db_stats(db_path))
-    assert any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
+    assert any("moor sessions optimize-storage" in detail for _, _, detail in rows)
 
 
 @pytest.mark.parametrize("mode, heading", [("advise", "Search index update available"),
                                            ("require", "required by your notice policy")])
 def test_the_follow_up_notice_makes_no_size_or_effort_claim(v1_trigram_db, monkeypatch, mode, heading):
-    from hermes_cli import config as hermes_config
+    from moor_cli import config as moor_config
 
-    monkeypatch.setattr(hermes_config, "load_config", lambda: {"sessions": {"fts_optimize_notice": mode}})
+    monkeypatch.setattr(moor_config, "load_config", lambda: {"sessions": {"fts_optimize_notice": mode}})
     out = _notice_for(v1_trigram_db, monkeypatch)
     assert heading in out
     assert "%" not in out and "smaller" not in out.lower()

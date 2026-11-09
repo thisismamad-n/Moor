@@ -170,11 +170,11 @@ class Sandbox:
     def _stop_gateways(self) -> None:
         """Under the attach model a TUI starts the gateway daemon (setsid, outside the dashboard's
         process group), which outlives its viewer by design: stop it the way a user would."""
-        for home in (self.hermes_home, *sorted((self.hermes_home / "profiles").glob("*"))):
+        for home in (self.moor_home, *sorted((self.moor_home / "profiles").glob("*"))):
             if (home / "gateway.pid").exists():
                 with contextlib.suppress(Exception):
-                    subprocess.run([sys.executable, "-m", "hermes_cli.main", "gateway", "stop"],
-                                   env=self.env({"HERMES_HOME": str(home)}), cwd=str(self.home),
+                    subprocess.run([sys.executable, "-m", "moor_cli.main", "gateway", "stop"],
+                                   env=self.env({"MOOR_HOME": str(home)}), cwd=str(self.home),
                                    capture_output=True, timeout=60, check=False)
 
 
@@ -259,7 +259,7 @@ class Dashboard:
         self.sb = sb
         self.log_path = log_path
         self._log = open(log_path, "a", encoding="utf-8")
-        env = sb.env({"HERMES_WEB_DIST": str(sb.root / "web_dist"), **(extra_env or {})})
+        env = sb.env({"MOOR_WEB_DIST": str(sb.root / "web_dist"), **(extra_env or {})})
         self.proc = subprocess.Popen(
             [sys.executable, "-m", "moor_cli.main", "dashboard", "--no-open", "--skip-build",
              "--host", "127.0.0.1", "--port", "0", *argv],

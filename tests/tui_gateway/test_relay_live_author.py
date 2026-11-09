@@ -60,7 +60,7 @@ def turn_env(monkeypatch, tmp_path):
 def test_live_relay_forwards_sender_to_canonical_authority(tmp_path, monkeypatch):
     from tools import bot_live_delivery
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     (home / "profiles" / "ops").mkdir(parents=True)
     (home / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
     monkeypatch.setenv("MOOR_HOME", str(home))

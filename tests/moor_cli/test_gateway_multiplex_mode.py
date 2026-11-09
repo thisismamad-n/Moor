@@ -18,8 +18,8 @@ import pytest
 
 import moor_constants
 from gateway.config import GatewayConfig, load_gateway_config
-from hermes_cli import gateway_migrate as gm
-from hermes_cli import gateway_multiplex_mode as mode
+from moor_cli import gateway_migrate as gm
+from moor_cli import gateway_multiplex_mode as mode
 from datetime import UTC
 
 
@@ -166,9 +166,9 @@ def test_live_record_outranks_the_raw_flag_for_other_processes(fleet, monkeypatc
     reading config; a gateway that stayed standalone recorded an empty served set."""
     root, _services, _pids = fleet
     from gateway import status
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
-    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
-    record = {"pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running", "served_profiles": []}
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "moor gateway run")
+    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "moor_home": str(root)}))
+    record = {"pid": os.getpid(), "moor_home": str(root), "gateway_state": "running", "served_profiles": []}
     (root / "gateway_state.json").write_text(json.dumps(record))
     assert mode.default_gateway_multiplexes(root) is False
     record["served_profiles"] = ["default", "coder", "ops"]
@@ -194,7 +194,7 @@ def test_pre_lock_decision_never_publishes_a_rival_gateway_owner(tmp_path):
     """The multiplex decision is made while the config loads, before the runtime-lock claim. Writing
     it then published that launch's pid in gateway_state.json, and a launch racing it read that pid as
     a live gateway and refused, so neither served (the cron e2e's "A gateway already owns this host").
-    A real `hermes gateway run`-shaped child records its decision without the lock; the rival must
+    A real `moor gateway run`-shaped child records its decision without the lock; the rival must
     still see no owner, and the decision lands only once that child holds the lock."""
     import subprocess
     import sys
@@ -202,22 +202,22 @@ def test_pre_lock_decision_never_publishes_a_rival_gateway_owner(tmp_path):
 
     home = tmp_path / "home"
     home.mkdir()
-    entry = tmp_path / "bin" / "hermes"  # the argv a gateway identity check accepts
+    entry = tmp_path / "bin" / "moor"  # the argv a gateway identity check accepts
     entry.parent.mkdir()
     entry.write_text(textwrap.dedent("""
         import os, sys
         from gateway import status
-        from hermes_cli.gateway_multiplex_mode import MultiplexDecision, record_multiplex_decision
+        from moor_cli.gateway_multiplex_mode import MultiplexDecision, record_multiplex_decision
         record_multiplex_decision(MultiplexDecision(False, "guard", "profile 'coder' runs its own gateway"))
         print("decided", flush=True)
         sys.stdin.readline()
         assert status.acquire_gateway_runtime_lock()
-        from hermes_cli.gateway_multiplex_mode import publish_pending_multiplex_decision
+        from moor_cli.gateway_multiplex_mode import publish_pending_multiplex_decision
         publish_pending_multiplex_decision()
         print("claimed", os.getpid(), flush=True)  # the lock owner (Popen.pid is the venv launcher on Windows)
         sys.stdin.readline()
     """), encoding="utf-8")
-    env = {**os.environ, "HERMES_HOME": str(home), "PYTHONPATH": str(Path(__file__).resolve().parents[2])}
+    env = {**os.environ, "MOOR_HOME": str(home), "PYTHONPATH": str(Path(__file__).resolve().parents[2])}
     child = subprocess.Popen([sys.executable, str(entry), "gateway", "run"], env=env, text=True,
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     probe = textwrap.dedent("""

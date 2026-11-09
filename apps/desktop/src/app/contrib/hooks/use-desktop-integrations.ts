@@ -8,7 +8,7 @@ import { openSession } from '@/app/open-session'
 import { commandFocusedTerminal, wordEraseFocusedTerminal } from '@/app/right-sidebar/terminal/terminal-context-menu'
 import { openConnectionDoneLink } from '@/components/assistant-ui/connector-tool'
 import { $diskPluginsScanPending } from '@/contrib/runtime-loader'
-import { getSession } from '@/hermes'
+import { getSession } from '@/moor'
 import { resolveDeepLinkAction } from '@/lib/deeplink-routes'
 import { pathFromMoorDeepLink, resolveMoorOpenPath } from '@/lib/moor-open-target'
 import { storedSessionIdForNotification } from '@/lib/session-ids'
@@ -44,7 +44,7 @@ import { onSessionsChanged } from '@/store/session-sync'
 import { requestSkillInstallFromDeepLink } from '@/store/skill-deeplink-install'
 import { openUpdatesWindow, startUpdatePoller, stopUpdatePoller } from '@/store/updates'
 import { isBrowserWindow, isHudWindow, isPeerInstanceWindow, isSecondaryWindow } from '@/store/windows'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { requestComposerFocus, requestComposerInsert } from '../../chat/composer/focus'
 import { appViewForPath, isOverlayView, NEW_CHAT_ROUTE, routeSessionId, sessionRoute } from '../../routes'
@@ -511,7 +511,7 @@ export function useDesktopIntegrations({
   // OS-standard window close, esp. secondary windows). The Win/Linux keyboard
   // path is the `view.closeTab` keybind (use-keybinds), sharing closeActiveTab.
   useEffect(() => {
-    const unsubscribe = window.hermesDesktop?.onClosePreviewRequested?.(() => {
+    const unsubscribe = window.moorDesktop?.onClosePreviewRequested?.(() => {
       // A focused user terminal owns the chord as the shell's word erase: main
       // claimed the keystroke (before-input-event), so re-deliver the ^W byte
       // to the PTY instead of closing the pane and killing the shell (#65457).
@@ -531,7 +531,7 @@ export function useDesktopIntegrations({
   // answers those against the focused guest and never asks. Only ⌘R has an
   // app-level meaning to fall back to; an unfocused swipe is a no-op.
   useEffect(() => {
-    const unsubscribe = window.hermesDesktop?.onPreviewNav?.(command => {
+    const unsubscribe = window.moorDesktop?.onPreviewNav?.(command => {
       if (commandFocusedTerminal(command)) {
         return
       }
@@ -546,7 +546,7 @@ export function useDesktopIntegrations({
 
   // File > Open Folder… — same open-folder-as-project upsert as the ⌘O keybind.
   useEffect(() => {
-    const unsubscribe = window.hermesDesktop?.onOpenFolderRequested?.(() => {
+    const unsubscribe = window.moorDesktop?.onOpenFolderRequested?.(() => {
       recordAction('workspace.openFolder', 'menu')
       void openFolderAsProject()
     })

@@ -291,7 +291,7 @@ test('secondary URLs preserve exact local and remote routes in packaged and deve
           profile: 'research',
           watch: true,
           devServer,
-          rendererIndexPath: '/tmp/hermes/index.html'
+          rendererIndexPath: '/tmp/moor/index.html'
         })
       )
 

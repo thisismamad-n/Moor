@@ -6,7 +6,7 @@ import type { GroupMember } from './types'
 
 const { host } = vi.hoisted(() => ({ host: {} as Record<string, unknown> }))
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   Object.assign(host, createGroupGateway().host)
   const base = await pluginSdkMock(host)

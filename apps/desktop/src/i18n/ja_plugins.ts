@@ -18,7 +18,7 @@ export const jaPluginSettings = {
     openFolder: 'デスクトッププラグインフォルダーを開く',
     installModal: {
       installUncertain:
-        'Hermes はインストール結果の待機を終了しましたが、プラグインのインストールはまだ進行中の可能性があります。この画面を閉じ、再インストールする前にプラグイン一覧を再スキャンしてください。',
+        'Moor はインストール結果の待機を終了しましたが、プラグインのインストールはまだ進行中の可能性があります。この画面を閉じ、再インストールする前にプラグイン一覧を再スキャンしてください。',
       installFromGit: 'Git からインストール',
       reviewRepository: 'リポジトリを確認',
       repoPlaceholder: 'https://github.com/owner/repo',
@@ -30,7 +30,7 @@ export const jaPluginSettings = {
         `MCP サーバー ${server} は接続されていません${reason ? `: ${reason}` : '。'}`,
       verified: '確認済み',
       unverified: '未確認',
-      reviewedByNous: 'Nous がレビュー済み。',
+      reviewedByMoor: 'Moor がレビュー済み。',
       installsAndEnables: profile => `${profile} にインストールし、すぐに有効になります。`,
       installsOnly: profile => `${profile} にインストールします。`,
       advanced: '詳細設定',
@@ -67,7 +67,7 @@ export const jaPluginsTab = {
     pickerTitle: (name: string) => `${name} 用のフォルダーを選択`,
     pickerButton: 'アクセスを許可',
     refusedProtected: (name: string) =>
-      `${name} はこのフォルダーを使用できません。Hermes の設定、キー、またはプラグインデータが含まれています。それらを含まないフォルダーを選択してください。`,
+      `${name} はこのフォルダーを使用できません。Moor の設定、キー、またはプラグインデータが含まれています。それらを含まないフォルダーを選択してください。`,
     loadFailed: (name: string) => `${name} と共有しているフォルダーを読み込めませんでした。`
   }
 } satisfies NonNullable<NonNullable<TranslationOverrides['skills']>['plugins']>

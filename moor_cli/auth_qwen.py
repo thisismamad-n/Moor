@@ -27,7 +27,7 @@ def _qwen_cli_auth_path() -> Path:
 
 
 def _read_qwen_cli_tokens() -> dict[str, Any]:
-    from hermes_cli.auth import _qwen_cli_auth_path
+    from moor_cli.auth import _qwen_cli_auth_path
     auth_path = _qwen_cli_auth_path()
     if not auth_path.exists():
         raise _qwen_err("Qwen CLI credentials not found. Run 'qwen auth qwen-oauth' first.", "qwen_auth_missing")
@@ -43,7 +43,7 @@ def _read_qwen_cli_tokens() -> dict[str, Any]:
 
 
 def _save_qwen_cli_tokens(tokens: dict[str, Any]) -> Path:
-    from hermes_cli.auth import _qwen_cli_auth_path, _save_private_json
+    from moor_cli.auth import _qwen_cli_auth_path, _save_private_json
     auth_path = _qwen_cli_auth_path()
     _save_private_json(auth_path, tokens, sort_keys=True)
     return auth_path
@@ -112,14 +112,14 @@ def _mark_qwen_oauth_active(creds: dict[str, Any]) -> None:
 
 
 def _qwen_base_url() -> str:
-    return os.getenv("HERMES_QWEN_BASE_URL", "").strip().rstrip("/") or DEFAULT_QWEN_BASE_URL
+    return os.getenv("MOOR_QWEN_BASE_URL", "").strip().rstrip("/") or DEFAULT_QWEN_BASE_URL
 
 
 def resolve_qwen_runtime_credentials(
     *, force_refresh: bool = False, refresh_if_expiring: bool = True,
     refresh_skew_seconds: int = QWEN_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> dict[str, Any]:
-    from hermes_cli.auth import _qwen_cli_auth_path, _refresh_qwen_cli_tokens
+    from moor_cli.auth import _qwen_cli_auth_path, _refresh_qwen_cli_tokens
     tokens = _read_qwen_cli_tokens()
     should_refresh = bool(force_refresh)
     if not should_refresh and refresh_if_expiring:
@@ -139,7 +139,7 @@ def resolve_qwen_runtime_credentials(
 
 
 def get_qwen_auth_status() -> dict[str, Any]:
-    from hermes_cli.auth import _qwen_cli_auth_path, resolve_qwen_runtime_credentials
+    from moor_cli.auth import _qwen_cli_auth_path, resolve_qwen_runtime_credentials
     auth_path = _qwen_cli_auth_path()
     try:
         # Refresh-validate: otherwise stale CLI tokens read as "logged in" and break `moor model`.

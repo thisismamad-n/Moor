@@ -198,7 +198,7 @@ def _default_task_id(arg: Any) -> Optional[str]:
         # A cron job fired in-process from a worker must never inherit the
         # worker's task id as an implicit default.
         return None
-    env_tid = os.environ.get("HERMES_KANBAN_TASK")
+    env_tid = os.environ.get("MOOR_KANBAN_TASK")
     if env_tid:
         val = env_tid.strip()
         if val:
@@ -216,12 +216,12 @@ def _require_task_id(args: dict) -> str:
     tid = _default_task_id(args.get("task_id"))
     if tid:
         return tid
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("MOOR_KANBAN_TASK"):
         # Env task present but not usable here (delegate child / cron run beside
         # a worker): it is not this session's to default to.
         raise _Reject(
             "task_id is required: this session does not own the inherited "
-            "HERMES_KANBAN_TASK, so it is not a valid default. Pass an explicit "
+            "MOOR_KANBAN_TASK, so it is not a valid default. Pass an explicit "
             "task_id.")
     raise _Reject(
         "task_id is required: this session has no dispatcher-assigned task to "
@@ -546,12 +546,12 @@ def register_current_worker_from_env() -> bool:
     (``adopt_worker_pid``). False only when the board says the run was already reclaimed:
     the caller must exit. Anything unreadable (no run id, delegate child, board error)
     lets the worker run, as before."""
-    tid = os.environ.get("HERMES_KANBAN_TASK")
+    tid = os.environ.get("MOOR_KANBAN_TASK")
     run_id = _worker_run_id(tid) if tid else None
     if run_id is None or _is_delegated_child_context():
         return True
     try:
-        from hermes_cli import kanban_db_dispatch as kbd
+        from moor_cli import kanban_db_dispatch as kbd
         with _board(None, quiet_close=True) as (_kb, conn):
             return kbd.adopt_worker_pid(conn, tid, run_id, os.getpid())
     except Exception:
@@ -665,7 +665,7 @@ def _handle_show(args: dict, **kw) -> str:
     tid = _default_task_id(args.get("task_id"))
     if not tid:
         # No dispatcher task in scope and no explicit id: the caller asked "what
-        # should I be looking at". A chat profile cannot set HERMES_KANBAN_TASK,
+        # should I be looking at". A chat profile cannot set MOOR_KANBAN_TASK,
         # so an error naming the env var is dead end (#91431) — answer instead.
         return json.dumps({
             "current_task": None,
@@ -1155,7 +1155,7 @@ def _handle_create(args: dict, **kw) -> str:
 
 
 def _live_tui_session_key(session_key: str, profile: Optional[str]) -> str:
-    """Re-resolve a TUI session key at subscribe time: the inherited ``HERMES_SESSION_KEY``
+    """Re-resolve a TUI session key at subscribe time: the inherited ``MOOR_SESSION_KEY``
     can name a session already superseded by a compaction fork, and a subscription bound to
     the dead key silently drops every later completion notification (#110068). Maps the key
     to its continuation tip via the session store's lineage walk. Best-effort, fail-open:
@@ -1164,13 +1164,13 @@ def _live_tui_session_key(session_key: str, profile: Optional[str]) -> str:
     if profile and profile != "default":
         try:
             from pathlib import Path
-            from hermes_cli.profiles import get_profile_dir, profile_exists
+            from moor_cli.profiles import get_profile_dir, profile_exists
             if profile_exists(profile):
                 db_path = Path(get_profile_dir(profile)) / "state.db"
         except Exception:
             db_path = None
     try:
-        from hermes_state_registry import acquire, release_or_close
+        from moor_state_registry import acquire, release_or_close
         db = acquire(db_path)
         try:
             return db.resolve_resume_session_id(session_key) or session_key

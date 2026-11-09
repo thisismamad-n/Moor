@@ -37,7 +37,7 @@ import { afterOnboardingSurfaceClear, onboardingSurfaceOpen } from '@/store/onbo
 import { captureOnboardingScope, type OnboardingScope } from '@/store/onboarding-scope'
 import { requestRoute } from '@/store/recovery-requests'
 import { setModelPickerOpen } from '@/store/session'
-import type { AppHandoffStatus, OAuthPollResponse, OAuthProvider, OAuthStartResponse } from '@/types/hermes'
+import type { AppHandoffStatus, OAuthPollResponse, OAuthProvider, OAuthStartResponse } from '@/types/moor'
 
 type PkceStart = Extract<OAuthStartResponse, { flow: 'pkce' }>
 type DeviceStart = Extract<OAuthStartResponse, { flow: 'device_code' }>
@@ -76,7 +76,7 @@ export type OnboardingFlow =
       label: string
       providerSlug: string
       saving: boolean
-      // A Nous sign-in's account and what the free tier's apps did, shown on the screen it happened on.
+      // A Moor sign-in's account and what the free tier's apps did, shown on the screen it happened on.
       signedIn?: OnboardingSignedIn
       status: 'confirming_model'
     }
@@ -125,8 +125,8 @@ export interface OnboardingContext {
   requestGateway: <T = unknown>(method: string, params?: Record<string, unknown>) => Promise<T>
 }
 
-const CONFIGURED_CACHE_KEY = 'hermes-desktop-onboarded-v1'
-const SKIP_CACHE_KEY = 'hermes-onboarding-skipped-v1'
+const CONFIGURED_CACHE_KEY = 'moor-desktop-onboarded-v1'
+const SKIP_CACHE_KEY = 'moor-onboarding-skipped-v1'
 const COPY_FLASH_MS = 1500
 export const DEFAULT_ONBOARDING_REASON = 'No inference provider is configured.'
 export const DEFAULT_MANUAL_ONBOARDING_REASON = 'Add or switch inference provider.'
@@ -336,7 +336,7 @@ export function settleLocalRuntimeNotice(runtime: RuntimeReadinessResult) {
 // The Webapp has no Local models pane (the flag is Electron-only), so there the way forward it can
 // offer is another model, and the sentence must not send the user to a pane they cannot open.
 const WEBAPP_LOCAL_RUNTIME_DOWN =
-  "The local model server isn't serving. Start it from the Hermes desktop app or `hermes model` in a terminal, or choose another model."
+  "The local model server isn't serving. Start it from the Moor desktop app or `moor model` in a terminal, or choose another model."
 
 // Desktop has the pane, so its notice names it next to the button that opens it.
 const DESKTOP_LOCAL_RUNTIME_DOWN =
@@ -897,7 +897,7 @@ export async function refreshOnboarding(ctx: OnboardingContext, stillWanted?: ()
         kind: 'info',
         title: 'Runtime not ready',
         message:
-          'Hermes Desktop could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
+          'Moor Desktop could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
       })
     }
 

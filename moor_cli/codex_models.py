@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from hermes_cli.route_identity import normalize_route_base_url
+from moor_cli.route_identity import normalize_route_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ def _fetch_models_from_api(access_token: str, base_url: Optional[str] = None) ->
     """
     try:
         from agent.model_metadata import _codex_catalog_probe_allowed
-        from hermes_cli.auth_codex import _codex_base_url
+        from moor_cli.auth_codex import _codex_base_url
         catalog_base = (base_url or "").strip().rstrip("/") or _codex_base_url()
         if not _codex_catalog_probe_allowed(access_token, catalog_base):
             return []
@@ -224,7 +224,7 @@ def get_codex_model_ids(access_token: Optional[str] = None, base_url: Optional[s
         if api_models:
             return _finalize_codex_models(api_models)
     # Late: models_catalog_static builds its codex table from this module at import time.
-    from hermes_cli.models_catalog_static import CuratedFallbackModels
+    from moor_cli.models_catalog_static import CuratedFallbackModels
 
     default_model = _read_default_model(codex_home)
     return CuratedFallbackModels(_finalize_codex_models(_drop_undiscovered_astra(_dedupe([

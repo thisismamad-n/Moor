@@ -20,7 +20,7 @@
  *    Mode until previously-painted rows were carried forward.
  */
 
-import { queryClient } from '@hermes/plugin-sdk'
+import { queryClient } from '@moor/plugin-sdk'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
@@ -719,7 +719,7 @@ describe('a profile this gateway does not serve', () => {
       { profiles: [{ name: 'default' }, { name: 'research' }, { name: 'solo' }] },
       {
         agents: [
-          { connectionId: 'local', connectionKind: 'local', handle: 'hermes', profile: 'default' },
+          { connectionId: 'local', connectionKind: 'local', handle: 'moor', profile: 'default' },
           { connectionId: 'local', connectionKind: 'local', handle: 'research', profile: 'research' },
           {
             connectionId: 'local',

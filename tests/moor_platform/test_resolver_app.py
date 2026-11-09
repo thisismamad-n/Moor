@@ -11,8 +11,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 
-from hermes_platform.resolver import CheckState, Effort
-from hermes_platform.resolver.app import AppDef, AppLocation, AppResolver, Endpoint
+from moor_platform.resolver import CheckState, Effort
+from moor_platform.resolver.app import AppDef, AppLocation, AppResolver, Endpoint
 
 TOKEN = "tok-3e1f9c-unique-fixture-value"
 

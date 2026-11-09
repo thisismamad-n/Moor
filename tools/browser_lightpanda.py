@@ -73,7 +73,7 @@ def merge_sane_path(existing_path: str = "") -> str:
 
 def find_lightpanda_binary() -> Optional[str]:
     """Return the lightpanda executable, or None. Order: PATH (plus the standard system dirs), then the
-    installer's locations, then ``$HERMES_HOME/bin``. No Windows build."""
+    installer's locations, then ``$MOOR_HOME/bin``. No Windows build."""
     if os.name == "nt":
         logger.debug("Lightpanda has no Windows build")
         return None
@@ -191,7 +191,7 @@ def _write_record(server: LightpandaServer) -> None:
     record = {"pid": server.proc.pid, "port": server.port, "owner_pid": os.getpid(),
               "start_time": server.start_time, "started_at": time.time()}
     try:
-        # Temp + rename: an orphan sweep (another Hermes, or a cleanup thread) unlinks a record it
+        # Temp + rename: an orphan sweep (another Moor, or a cleanup thread) unlinks a record it
         # cannot parse, so a torn in-place write would drop a live server's record.
         atomic_json_write(_state_dir() / f"{server.session_name}.json", record, indent=None)
     except OSError as e:
@@ -219,7 +219,7 @@ def launch_lightpanda(session_name: str, *, block_private_networks: bool = False
     try:
         with open(log_path, "wb") as log_file:
             proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                    # detached-spawn: ok — a crashed owner's server is reaped from its state record by the next Hermes (reap_orphaned_lightpanda); owning it is a follow-up with the launcher's Chromium
+                                    # detached-spawn: ok — a crashed owner's server is reaped from its state record by the next Moor (reap_orphaned_lightpanda); owning it is a follow-up with the launcher's Chromium
                                     stderr=log_file, env=_browser_env(), start_new_session=True)
     except (OSError, subprocess.SubprocessError) as e:
         return None, f"Failed to launch lightpanda serve ({binary}): {e}"
@@ -357,7 +357,7 @@ def lightpanda_engine_status() -> tuple[bool, str]:
 
     ``(False, "")`` when the engine isn't lightpanda; else the reason names the setting shadowing it, in
     session-creation precedence, with config-only gates (no network I/O) for ``/browser status`` and
-    ``hermes doctor``."""
+    ``moor doctor``."""
     if not using_lightpanda_engine():
         return False, ""
     from tools.browser_session_cdp import get_cdp_override_raw
@@ -377,4 +377,4 @@ def lightpanda_engine_status() -> tuple[bool, str]:
     from tools.browser_use_cli import _read_browser_cfg, is_legacy_browser_use_cloud_config
     if is_legacy_browser_use_cloud_config(_read_browser_cfg()):
         return False, "Browser Use cloud (BROWSER_USE_API_KEY) is selected"
-    return True, "Hermes spawns `lightpanda serve` per browser session"
+    return True, "Moor spawns `lightpanda serve` per browser session"

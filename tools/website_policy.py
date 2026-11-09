@@ -78,7 +78,7 @@ def _require_mapping(value: Any, label: str) -> dict[str, Any]:
 
 
 def _load_policy_config(config_path: Path) -> dict[str, Any]:
-    from hermes_cli.config_backend import config_exists, read_config_doc
+    from moor_cli.config_backend import config_exists, read_config_doc
     if not config_exists(config_path):
         return dict(_DEFAULT_WEBSITE_BLOCKLIST)
     try:
@@ -168,7 +168,7 @@ def check_website_access(url: str, config_path: Optional[Path] = None) -> Option
     """
     # Fast path: only a fresh disabled policy for THIS profile may skip loading/host parsing.
     if config_path is None:
-        default_path = get_hermes_home() / "config.yaml"
+        default_path = get_moor_home() / "config.yaml"
         cached = _fresh_cached_policy(str(default_path), time.monotonic())
         if cached is not None and not cached.get("enabled"):
             return None

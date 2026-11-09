@@ -75,7 +75,7 @@ def _warn_config_parse_failure(
     in ``moor_cli.config._load_config_impl``).
     """
     try:
-        from hermes_cli.config_backend import config_version
+        from moor_cli.config_backend import config_version
         sig = config_version(config_path)
         key = (str(config_path), *sig)
         _CONFIG_PARSE_FAILURES[str(config_path)] = (*_failure_version(config_path), str(exc))
@@ -106,14 +106,14 @@ def _failure_version(path: Path) -> tuple:
     try:
         return file_cache_version(path, always_digest=True)
     except OSError:
-        from hermes_cli.config_backend import config_version
+        from moor_cli.config_backend import config_version
         return (*config_version(path), None)
 
 
 def get_active_config_parse_failure() -> Optional[str]:
     """Return the recorded parse error while the ACTIVE config.yaml is still byte-identical
     (``file_cache_version`` with its content digest) to the file that failed to parse; else None."""
-    from hermes_cli.config import get_config_path
+    from moor_cli.config import get_config_path
     try:
         record = _CONFIG_PARSE_FAILURES[str(path := get_config_path())]
         sig = _failure_version(path)

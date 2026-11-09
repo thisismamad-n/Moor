@@ -92,10 +92,10 @@ def test_scan_gateway_pids_claims_own_home_spellings_not_the_sibling(
 ):
     """``_scan_gateway_pids`` drives the mirrored MOOR_HOME predicate: the process-table
     fallback must not sweep a longer sibling home's live gateway, while the supervisor
-    trailing-separator spelling (``HERMES_HOME=/root/.hermes/``) is still its own home."""
-    import hermes_cli.gateway as gw
-    import hermes_cli.gateway_migrate_guards as guards
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    trailing-separator spelling (``MOOR_HOME=/root/.moor/``) is still its own home."""
+    import moor_cli.gateway as gw
+    import moor_cli.gateway_migrate_guards as guards
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     rendered = cmdline.format(home=tmp_path)
     monkeypatch.setattr(gw, "_iter_proc_cmdlines", lambda exclude: iter([(424242, rendered)]))
     # The fake pid is ours; the other-users filter would otherwise stat whatever process really holds it.

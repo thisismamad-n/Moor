@@ -66,7 +66,7 @@ identity on no-ops.
 ## Switching context is a re-home, not a reboot
 
 A connection/mode apply is a SOFT re-home (shell stays, gateway-bound stores wiped explicitly, then
-reconnect); a runtime `HERMES_HOME` change is a HARD re-home (reload); a live profile swap merges
+reconnect); a runtime `MOOR_HOME` change is a HARD re-home (reload); a live profile swap merges
 lists while background profiles keep streaming. After any swap the active socket, profile and
 connection atoms must agree.
 
@@ -84,8 +84,8 @@ percent-escapes (`electron/oauth-partition.ts`).
 
 Artifact iframes and the preview `<webview>` never drive the OS browser on their own
 (GHSA-9f4c-93c8-jc8g): `setWindowOpenHandler` denies everything, the webview has no `allowpopups`,
-and a guest `target="_blank"` link reaches `hermes:openExternal` only through the
-`persist:hermes-preview` guest preload's trusted-click bridge, `http:`/`https:` only. Widening the
+and a guest `target="_blank"` link reaches `moor:openExternal` only through the
+`persist:moor-preview` guest preload's trusted-click bridge, `http:`/`https:` only. Widening the
 partition key, the trusted-click gate or the scheme set reopens the advisory.
 
 ## Compatibility without carrying the past forever

@@ -6,7 +6,7 @@ duplicate-credential finding per platform.
 
 The inventory is OWNERSHIP-based and evaluated in the SOURCE profile's plugin scope: every adapter
 (built-in ``Platform`` member, a platform that left core — its ``LEFT_CORE`` row, plugin installed or
-not — or a plugin registered under the source's ``HERMES_HOME``) owns the env
+not — or a plugin registered under the source's ``MOOR_HOME``) owns the env
 keys it declares outright (``required_env``, allowlist / allow-all / home-channel names, its
 ``env_overrides`` / ``env_enable_credentials``, core's ``config_env._ENV_ENABLE_CREDENTIALS``) plus every key
 under its canonical ``<PLATFORM>_`` prefix and its historical alias prefixes. Gateway-wide channel
@@ -89,9 +89,9 @@ def _registry_entries() -> list:
 
 
 def _left_core_platforms() -> list:
-    """Rows of platforms that left core for a catalog plugin (``hermes_cli.left_core_migration``).
+    """Rows of platforms that left core for a catalog plugin (``moor_cli.left_core_migration``).
     Their channel ownership comes from the row, so it holds while the plugin is absent."""
-    from hermes_cli.left_core_migration import LEFT_CORE
+    from moor_cli.left_core_migration import LEFT_CORE
     return [feature for feature in LEFT_CORE if feature.platform]
 
 
@@ -269,12 +269,12 @@ def _shared_adapters_active(source_dir: Optional[Path], shared: dict[str, tuple[
     """Shared-prefix platforms the SOURCE runs as a channel: explicitly enabled in its config.yaml, or
     auto-enabled by a complete credential set in its ``.env`` and not explicitly disabled — the same
     gate ``gateway.platform_env.EnvCred`` applies at gateway start."""
-    from hermes_cli.config_backend import config_exists
+    from moor_cli.config_backend import config_exists
     if source_dir is None:
         return set(shared)  # no source to consult: the historical (strip) behaviour
     raw: dict = {}
     if config_exists(source_dir / "config.yaml"):
-        from hermes_cli.config import read_user_config_raw
+        from moor_cli.config import read_user_config_raw
         with contextlib.suppress(Exception):
             raw = read_user_config_raw(source_dir / "config.yaml") or {}
     env = _env_values(source_dir / ".env")
@@ -387,10 +387,10 @@ def _channel_config_paths(raw: dict, platforms: Iterable[str]) -> list[tuple[str
 
 def strip_channel_config(config_path: Path, index: Optional[ChannelKeyIndex] = None) -> list[str]:
     """Remove platform sections from a raw ``config.yaml`` in place. Returns the dotted paths removed."""
-    from hermes_cli.config_backend import config_exists
+    from moor_cli.config_backend import config_exists
     if not config_exists(config_path):
         return []
-    from hermes_cli.config import atomic_config_replace, read_user_config_raw
+    from moor_cli.config import atomic_config_replace, read_user_config_raw
     index = index or ChannelKeyIndex()
     raw = read_user_config_raw(config_path)
     paths = _channel_config_paths(raw, index.platforms)
@@ -452,7 +452,7 @@ def strip_channel_settings(profile_dir: Path, *, include_state: bool, source_dir
 def channel_platforms_configured(profile_dir: Path) -> list[str]:
     """Platform ids with any channel setting in ``profile_dir`` (.env keys or config.yaml sections) —
     what a channel-less clone of it leaves behind. Pure read, in ``profile_dir``'s plugin scope."""
-    from hermes_cli.config_backend import config_exists
+    from moor_cli.config_backend import config_exists
     index = ChannelKeyIndex(profile_dir)
     found: set[str] = set()
     env_path = profile_dir / ".env"
@@ -464,7 +464,7 @@ def channel_platforms_configured(profile_dir: Path) -> list[str]:
                 found.add(platform)
     config_path = profile_dir / "config.yaml"
     if config_exists(config_path):
-        from hermes_cli.config import read_user_config_raw
+        from moor_cli.config import read_user_config_raw
         raw = read_user_config_raw(config_path)
         for path in _channel_config_paths(raw, index.platforms):
             node = raw
@@ -502,7 +502,7 @@ def clone_channels_refusal(source_dir: Path, source_label: str) -> Optional[str]
 
 def _config_platform_tokens(config_path: Path) -> dict[str, str]:
     """``{platform: token}`` from ``platforms.<p>.token|api_key`` (both nesting spellings)."""
-    from hermes_cli.config_backend import config_exists
+    from moor_cli.config_backend import config_exists
     tokens: dict[str, str] = {}
     if not config_exists(config_path):
         return tokens

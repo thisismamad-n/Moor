@@ -228,7 +228,7 @@ def _drop_gated_carried_tools(merged: list, carried: set) -> list:
 
 def _pinned_tool_defs(saved, fresh, keep_bytes=False) -> tuple:
     """(pinned, same_code, definitions) for a tools[] pin, either shape: a pin from the SAME code keeps
-    its bytes; otherwise (``hermes update``, a legacy name list) each tool takes this process's
+    its bytes; otherwise (``moor update``, a legacy name list) each tool takes this process's
     definition (``fresh``, else its registry schema)."""
     pinned, version = (saved.get("tools") or [], saved.get("version")) if isinstance(saved, dict) else (saved, None)
     if not isinstance(pinned, list):

@@ -16,7 +16,7 @@ from datetime import datetime, timezone, UTC
 from pathlib import Path
 
 from agent.deadline import poll_until
-from hermes_cli.update_cmd_common import _best_effort
+from moor_cli.update_cmd_common import _best_effort
 
 logger = logging.getLogger("moor_cli.update_cmd")  # log-record parity with the origin module
 
@@ -255,9 +255,9 @@ def _moor_holder_subcommand(cmdline: str) -> str | None:
         tokens = shlex.split(cmdline, posix=False)
     except Exception:
         tokens = cmdline.split()
-    # ``python -c <src> … -m hermes_cli.main <subcommand>``: the entry token belongs to the argv the
+    # ``python -c <src> … -m moor_cli.main <subcommand>``: the entry token belongs to the argv the
     # inline source carries for a LATER spawn, not to this holder (#107002) -- unless the source is a
-    # Hermes bootstrap running the entry point in this process (#124318).
+    # Moor bootstrap running the entry point in this process (#124318).
     from gateway.status_inline_source import command_line_runs_inline_source, inline_bootstrap_argv
     normalized = [t.strip("\"'").replace("\\", "/") for t in tokens]
     if command_line_runs_inline_source(normalized):
@@ -267,8 +267,8 @@ def _moor_holder_subcommand(cmdline: str) -> str | None:
 
     def _is_entry(i: int, token: str) -> bool:
         low = token.lower().strip("\"'").replace("\\", "/")
-        return (low.endswith("hermes_cli.main") and i > 0 and tokens[i - 1] == "-m") or (
-            low.rsplit("/", 1)[-1] in ("hermes", "hermes.exe")) or low.endswith("hermes_cli/main.py")
+        return (low.endswith("moor_cli.main") and i > 0 and tokens[i - 1] == "-m") or (
+            low.rsplit("/", 1)[-1] in ("moor", "moor.exe")) or low.endswith("moor_cli/main.py")
 
     entry_idx = next((i for i, token in enumerate(tokens) if _is_entry(i, token)), None)
     if entry_idx is None:
@@ -521,7 +521,7 @@ def _orphaned_desktop_backend_pids(matches: list[tuple[int, str, str]]) -> list[
         try:
             proc = psutil.Process(int(pid))
             # Fingerprint from the SAME psutil handle, centisecond-quantized like
-            # gateway.status.get_process_start_time so pid_is_hermes round-trips at kill time.
+            # gateway.status.get_process_start_time so pid_is_moor round-trips at kill time.
             process_start_time = round(proc.create_time() * 100)
         except psutil.NoSuchProcess:
             continue  # exited during classification — nothing to reap
@@ -855,9 +855,9 @@ def _pause_windows_gateway_services(service_gateways, token: dict, profiles: dic
 def _owned_gateway_pids(pids, *, keep=(), quiet: bool = True) -> list[int]:
     """*pids* whose live home this update owns, plus *keep* (PIDs mapped to this install's profile
     PID files / services). The same home scope the POSIX fleet restart uses (#93349): a gateway of
-    another Hermes install, or one whose home cannot be read, is named (unless *quiet*) and left
+    another Moor install, or one whose home cannot be read, is named (unless *quiet*) and left
     running, never paused, force-killed or replayed (#124659)."""
-    from hermes_cli.update_cmd_fleet import _scoped_manual_gateway_pids
+    from moor_cli.update_cmd_fleet import _scoped_manual_gateway_pids
     return _scoped_manual_gateway_pids(list(pids), keep=keep, quiet=quiet)
 
 
@@ -933,16 +933,16 @@ def _gateway_drain_timeout(socket_acks: list[dict]) -> float:
 def _pause_windows_gateways_for_update() -> dict | None:
     """Stop running Windows gateways before mutating the checkout or venv.
 
-    Scheduled/startup gateways run via pythonw.exe, invisible to the hermes.exe instance guard, yet keep files
+    Scheduled/startup gateways run via pythonw.exe, invisible to the moor.exe instance guard, yet keep files
     locked during ``git``/``uv``. Stop only PIDs the gateway discovery code identifies. The paused set is on
     disk (``update_pause_record``) before the first stop, with any set a killed earlier update orphaned."""
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     if not _m()._is_windows():
         return None
     with _abort_on_error("Could not prepare Windows gateway pause for update"):
         import gateway.status
-        from hermes_cli.gateway import _capture_gateway_argv
-    from hermes_cli import update_pause_record as pause_record
+        from moor_cli.gateway import _capture_gateway_argv
+    from moor_cli import update_pause_record as pause_record
     with _abort_on_error("Could not read the gateways an earlier update paused"):
         adopted, claims = pause_record.adopt_orphans()
     profile_processes, service_gateways, service_gateway_pids, running_pids = _discover_windows_gateways()
@@ -950,7 +950,7 @@ def _pause_windows_gateways_for_update() -> dict | None:
         return _cold_start_pause_token(adopted, claims)
     unmapped_pids = [pid for pid in running_pids if pid not in profile_processes and pid not in service_gateway_pids]
     from gateway.status import get_process_start_time
-    from hermes_cli.update_fleet_scope import gateway_pid_home
+    from moor_cli.update_fleet_scope import gateway_pid_home
     born = {int(pid): get_process_start_time(int(pid)) for pid in running_pids}  # the processes discovered
     # Snapshot unmapped gateways' argv *before* anything stops so resume (or a later launch) can replay it.
     # Unmapped = no profile->PID-file mapping (e.g. Scheduled Task ``pythonw.exe -m ...``). Two homes can
@@ -960,7 +960,7 @@ def _pause_windows_gateways_for_update() -> dict | None:
     # record, whose argv-only match lets another home's gateway retire this debt.
     homes = {int(pid): gateway_pid_home(int(pid)) for pid in unmapped_pids}
     if None in homes.values():
-        raise RuntimeError("Could not prove the Hermes home of unmapped gateway PID(s) "
+        raise RuntimeError("Could not prove the Moor home of unmapped gateway PID(s) "
                            + ", ".join(str(p) for p, h in homes.items() if h is None) + "; nothing was stopped")
     unmapped = [
         {"pid": int(pid), "argv": _try_call(lambda p=int(pid): _capture_gateway_argv(p),
@@ -1003,7 +1003,7 @@ def _pause_windows_gateways_for_update() -> dict | None:
 
 def _cold_start_pause_token(adopted: dict | None, claims: list) -> dict | None:
     """No gateway runs: the cold-start plan, plus any orphaned set adopted from a killed update."""
-    from hermes_cli import update_pause_record as pause_record
+    from moor_cli import update_pause_record as pause_record
     token = _windows_cold_start_plan()
     # Other profiles may hold a dead attestation even when the active profile owes nothing
     # (clean exit, autostart not installed): give them a token to ride on.
@@ -1026,7 +1026,7 @@ def _stop_windows_gateways(running_pids, profile_processes, service_gateway_pids
     strict PID-file identity first), never re-read after the drain: a PID that exited and was
     reused meanwhile reads its replacement's own birth. No discovered birth refuses the kill."""
     from gateway.status import get_process_start_time, terminate_pid
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     mapped = [int(p) for p in running_pids if int(p) not in service_gateway_pids and int(p) in profile_processes]
     born = {**{int(k): v for k, v in (born or {}).items()},
             **{p: round(float(profile_processes[p].create_time) * 100) for p in mapped
@@ -1037,7 +1037,7 @@ def _stop_windows_gateways(running_pids, profile_processes, service_gateway_pids
     born.update({int(p): get_process_start_time(int(p)) for p in launcher_pids if int(p) not in born})
     profiles, mapped_pids, socket_acks = _request_socket_pauses(
         running_pids, profile_processes, service_gateway_pids, on_request=on_request)
-    print("→ Stopping Windows gateway process(es) before updating Hermes...")
+    print("→ Stopping Windows gateway process(es) before updating Moor...")
     drain_timeout = _gateway_drain_timeout(socket_acks)
     survivors = _m()._wait_for_windows_update_gateway_exit(mapped_pids, timeout=drain_timeout)
     # Tree-kill survivors, unmapped gateways, and pre-request launchers; one already gone raises
@@ -1054,7 +1054,7 @@ def _stop_windows_gateways(running_pids, profile_processes, service_gateway_pids
     if unmapped_pids:
         print(f"  → Stopped {len(unmapped_pids)} gateway process(es) without profile mapping")
         if any(not u.get("argv") for u in unmapped):  # no recoverable cmdline (psutil missing, denied, gone)
-            print("    Restart manually after update: hermes gateway run")
+            print("    Restart manually after update: moor gateway run")
     return profiles
 
 
@@ -1255,7 +1255,7 @@ def _refresh_bootstrap_cache_scripts(branch: str = "main") -> None:
 _SERVICE_READY_TIMEOUT_S = 60.0
 # A launch recovering an orphaned pause (``update_pause_record.recover``, before every command)
 # only probes briefly, and a service whose gateway stays unready is re-probed with backoff; the
-# full wait belongs to ``hermes update`` itself.
+# full wait belongs to ``moor update`` itself.
 _SERVICE_READY_PROBE_S = 5.0
 _SERVICE_RETRY_BASE_S = 60.0
 _SERVICE_RETRY_MAX_S = 3600.0
@@ -1264,8 +1264,8 @@ _SERVICE_RETRY_MAX_S = 3600.0
 def _service_gateway_ready(name: str, profile: str | None, timeout_s: float | None = None) -> list[int]:
     """The stable gateway *name*'s service process supervises (in *profile*'s home when known): SCM
     ``running`` proves only the wrapper started, not that the gateway it hosts came up."""
-    from hermes_cli import gateway_windows
-    from hermes_cli.profiles import get_profile_dir
+    from moor_cli import gateway_windows
+    from moor_cli.profiles import get_profile_dir
     psutil, service = _win_service(name)
 
     def under_service(pids):
@@ -1306,7 +1306,7 @@ def _resume_windows_services(token: dict) -> None:
     A recovering launch (``token["recovery"]``) probes readiness briefly, and a running service
     whose gateway was not ready is not re-probed before its backoff (``service_retry``) elapses:
     the debt stays owed without stalling every command."""
-    from hermes_cli.update_cmd import _start_windows_gateway_service
+    from moor_cli.update_cmd import _start_windows_gateway_service
     services = list(token.get("services") or [])
     token.setdefault("expected_services", list(services))
     verified_restarts = list(token.get("restarted_services") or [])
@@ -1393,10 +1393,10 @@ def _relaunch_verify_timeout_s(profiles: dict, unmapped: list, pid_exists) -> fl
 
     The base window assumes the watchers respawn immediately. When an old PID is still alive the
     watcher is still in its wait loop, so the poll must reach at least the watcher's own deadline —
-    otherwise ``hermes update`` declares "no stable gateway process appeared" for a gateway that was
+    otherwise ``moor update`` declares "no stable gateway process appeared" for a gateway that was
     never scheduled to appear inside the window (#107002).
     """
-    from hermes_cli.gateway import GATEWAY_RESTART_WATCHER_TIMEOUT_S
+    from moor_cli.gateway import GATEWAY_RESTART_WATCHER_TIMEOUT_S
     if not _pending_relaunch_pids(profiles, unmapped, pid_exists):
         return _RELAUNCH_VERIFY_TIMEOUT_S
     return float(GATEWAY_RESTART_WATCHER_TIMEOUT_S) + _RELAUNCH_VERIFY_TIMEOUT_S
@@ -1411,8 +1411,8 @@ def _unmapped_ready_filter(entry: dict, taken: set):
     captured (no key: a pre-durable-pause updater's token) keeps the argv-only match; a recorded
     ``home`` that is empty proves no runtime and is never matched."""
     import psutil
-    from gateway.status import _looks_like_gateway_process, _same_hermes_home, get_process_start_time
-    from hermes_cli.update_fleet_scope import gateway_pid_home
+    from gateway.status import _looks_like_gateway_process, _same_moor_home, get_process_start_time
+    from moor_cli.update_fleet_scope import gateway_pid_home
     tail, old = list(entry.get("argv") or [])[1:], int(entry.get("pid") or 0)
     home, old_ct = entry.get("home"), entry.get("ct")
 
@@ -1422,7 +1422,7 @@ def _unmapped_ready_filter(entry: dict, taken: set):
         if not home:
             return False
         live_home, ct = gateway_pid_home(pid), get_process_start_time(pid)
-        return live_home is not None and _same_hermes_home(live_home, home) and (old_ct is None or ct is None or ct > old_ct)
+        return live_home is not None and _same_moor_home(live_home, home) and (old_ct is None or ct is None or ct > old_ct)
 
     def matches(pid: int) -> bool:
         if pid == old or pid in taken:
@@ -1461,7 +1461,7 @@ def _poll_until_ready(targets: list, deadline: float, taken: set, respawn_window
     and the whole poll stops at the entry deadline plus both windows and one confirmation tick: a
     replacement that flaps in and out must not renew its budget forever.
     """
-    from hermes_cli.gateway import find_gateway_pids
+    from moor_cli.gateway import find_gateway_pids
     ready: dict = {}
     since: dict = {}
     failed: set = set()
@@ -1522,8 +1522,8 @@ def _verify_relaunched_gateways_alive(token: dict, profiles: dict, unmapped: lis
     Vouched PIDs are persisted so a death AFTER updater exit is reported by the next CLI invocation."""
     with _abort_on_error("Could not load Windows gateway liveness helpers"):
         from gateway.status import _pid_exists
-        from hermes_cli import gateway_windows
-        from hermes_cli.profiles import get_profile_dir
+        from moor_cli import gateway_windows
+        from moor_cli.profiles import get_profile_dir
     deadline = _time.monotonic() + _relaunch_verify_timeout_s(profiles, unmapped, _pid_exists)
     taken: set = set()
     # Profiles first: a gateway on a profile's home is that profile's, never an unmapped entry's.
@@ -1581,7 +1581,7 @@ def _resume_windows_gateways_after_update(token: dict | None) -> None:
 
 def _resume_unless_torn(token: dict) -> None:
     """Resume the paused set, or leave it owed when the checkout is not whole."""
-    from hermes_cli import update_pause_record as pause_record
+    from moor_cli import update_pause_record as pause_record
     if token.get("pause_id"):
         whole, why = pause_record.tree_is_whole(token)
         if not whole:
@@ -1589,7 +1589,7 @@ def _resume_unless_torn(token: dict) -> None:
             # dependencies. The durable record keeps the obligation for the next launch, which
             # runs after the interrupted-pull restore and the dependency sync.
             print(f"  ⚠ Paused gateway(s) left stopped: {why}.\n"
-                  "    The next `hermes` command (or `hermes update`) restarts them.")
+                  "    The next `moor` command (or `moor update`) restarts them.")
             token["resume_needed"] = False
             token["resume_deferred"] = why
             pause_record.sync(token)
@@ -1603,9 +1603,9 @@ def _resume_unless_torn(token: dict) -> None:
 def _resume_paused_set(token: dict) -> None:
     """Bring every paused runtime back; each one is retired from *token* only on its own verified
     start, and one failure (an SCM service, a profile) never keeps the others stopped."""
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     if token.get("platform") == "posix":  # Linux/macOS pre-swap pause (update_cmd_posix_pause)
-        from hermes_cli.update_cmd_posix_pause import resume_paused_set
+        from moor_cli.update_cmd_posix_pause import resume_paused_set
         return resume_paused_set(token)
     # Regenerate launcher scripts before respawning so a legacy pythonw-era
     # autostart entry comes back on the current design at next login too.
@@ -1649,7 +1649,7 @@ def _resume_paused_set(token: dict) -> None:
 def _resume_windows_gateways_and_merge_outcome(outcome, _windows_gateway_resume, gateway_mode: bool):
     """Resume gateways paused for a Windows update and fold the token into ``outcome``'s systemd/launchd-style
     bookkeeping so reconciliation never reports a healthy gateway as unaccounted. Must never abort the update."""
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     try:
         _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
     except Exception as _windows_resume_exc:

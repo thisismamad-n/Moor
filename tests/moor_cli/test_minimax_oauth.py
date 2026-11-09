@@ -400,7 +400,7 @@ def test_token_provider_quarantines_state_on_terminal_refresh():
     with patch("moor_cli.auth.get_provider_auth_state", return_value=state), \
          patch("httpx.Client") as mock_client_class, \
          patch(
-             "hermes_cli.auth._minimax_save_auth_state",
+             "moor_cli.auth._minimax_save_auth_state",
              side_effect=lambda s, **_k: saved_states.append(dict(s)),
          ):
         mock_instance = MagicMock()
@@ -504,7 +504,7 @@ def test_refresh_error_body_bounded_and_readable_with_real_client():
 
 def _minimax_state(tmp_path, *, expires_in: int = 30, refresh_token: str = "r1",
                    access_token: str = "tok1") -> dict:
-    from hermes_cli.auth import MINIMAX_OAUTH_CLIENT_ID
+    from moor_cli.auth import MINIMAX_OAUTH_CLIENT_ID
 
     state = {
         "provider": "minimax-oauth",
@@ -518,14 +518,14 @@ def _minimax_state(tmp_path, *, expires_in: int = 30, refresh_token: str = "r1",
         **_minimax_expiry_fields_for_test(expires_in),
     }
     (tmp_path / "auth.json").write_text(json.dumps({
-        "version": 1, "active_provider": "nous",
+        "version": 1, "active_provider": "moor",
         "providers": {"minimax-oauth": state},
     }), encoding="utf-8")
     return state
 
 
 def _minimax_expiry_fields_for_test(expires_in: int) -> dict:
-    from hermes_cli.auth_minimax import _minimax_expiry_fields
+    from moor_cli.auth_minimax import _minimax_expiry_fields
 
     return _minimax_expiry_fields(expires_in)
 
@@ -598,9 +598,9 @@ def test_concurrent_refresh_rotates_token_once_and_keeps_login(tmp_path, monkeyp
     same still-valid ``r1``, the portal rejects the second (``refresh_token_reused``),
     and the quarantine wipes the winner's fresh tokens (the review's case D).
     """
-    from hermes_cli.auth import build_minimax_oauth_token_provider
+    from moor_cli.auth import build_minimax_oauth_token_provider
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     _minimax_state(tmp_path, expires_in=30, refresh_token="r1")
     portal = _RotatingPortal().start()
     try:
@@ -661,11 +661,11 @@ def test_concurrent_refresh_rotates_token_once_and_keeps_login(tmp_path, monkeyp
 
 def test_aux_refresh_preserves_active_provider(tmp_path, monkeypatch):
     """An aux-triggered refresh rewrites credentials, not the user's provider
-    choice: ``auth.json.active_provider`` stays ``nous`` (review case B'; the
+    choice: ``auth.json.active_provider`` stays ``moor`` (review case B'; the
     rule ``_save_provider_state_to_source`` already documents)."""
-    from hermes_cli.auth import build_minimax_oauth_token_provider, get_active_provider
+    from moor_cli.auth import build_minimax_oauth_token_provider, get_active_provider
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     _minimax_state(tmp_path, expires_in=30, refresh_token="r1")
     portal = _RotatingPortal().start()
     try:
@@ -673,12 +673,12 @@ def test_aux_refresh_preserves_active_provider(tmp_path, monkeypatch):
         store["providers"]["minimax-oauth"]["portal_base_url"] = portal.url
         (tmp_path / "auth.json").write_text(json.dumps(store), encoding="utf-8")
 
-        assert get_active_provider() == "nous"
+        assert get_active_provider() == "moor"
         token = build_minimax_oauth_token_provider()()
         assert token == "tok-r2", "the refresh must actually run over the loopback portal"
 
         final = json.loads((tmp_path / "auth.json").read_text(encoding="utf-8"))
-        assert final["active_provider"] == "nous", (
+        assert final["active_provider"] == "moor", (
             "an aux-side refresh must not flip the user's active provider"
         )
         assert final["providers"]["minimax-oauth"]["access_token"] == "tok-r2"
@@ -689,18 +689,18 @@ def test_aux_refresh_preserves_active_provider(tmp_path, monkeypatch):
 def test_minimax_oauth_login_sets_active_provider(tmp_path, monkeypatch):
     """``_minimax_oauth_login`` is the one path that legitimately makes
     minimax-oauth the active provider (the user just chose it)."""
-    from hermes_cli import auth_minimax
+    from moor_cli import auth_minimax
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     store = {"version": 1, "active_provider": "", "providers": {}}
     (tmp_path / "auth.json").write_text(json.dumps(store), encoding="utf-8")
 
     token_data = {"access_token": "tok", "refresh_token": "r1", "expired_in": 900}
-    with patch("hermes_cli.auth._minimax_pkce_pair", return_value=("v", "c", "s")), \
-         patch("hermes_cli.auth._minimax_request_user_code", return_value={
+    with patch("moor_cli.auth._minimax_pkce_pair", return_value=("v", "c", "s")), \
+         patch("moor_cli.auth._minimax_request_user_code", return_value={
              "verification_uri": "https://portal.minimax.io/device", "user_code": "ABCD",
              "expired_in": 600, "interval": 1000}), \
-         patch("hermes_cli.auth._print_device_code_instructions"), \
+         patch("moor_cli.auth._print_device_code_instructions"), \
          patch.object(auth_minimax, "_minimax_poll_token", return_value=token_data):
         auth_minimax._minimax_oauth_login(region="global", open_browser=False)
 

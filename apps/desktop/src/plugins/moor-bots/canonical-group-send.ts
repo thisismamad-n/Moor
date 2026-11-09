@@ -1,8 +1,8 @@
-import { randomUuid } from '@hermes/plugin-sdk'
+import { randomUuid } from '@moor/plugin-sdk'
 
 import type { CanonicalGroupBinding } from './canonical-groups'
 
-const STORAGE_KEY = 'hermes.desktop.canonicalGroupSends.v1'
+const STORAGE_KEY = 'moor.desktop.canonicalGroupSends.v1'
 
 export interface PreparedCanonicalGroupSend {
   binding: CanonicalGroupBinding
@@ -23,7 +23,7 @@ function journalKey(binding: CanonicalGroupBinding): string {
 }
 
 async function readJournal(): Promise<Record<string, PreparedCanonicalGroupSend>> {
-  const native = window.hermesDesktop?.preparedSubmissions
+  const native = window.moorDesktop?.preparedSubmissions
 
   const parsed: unknown = JSON.parse(native
     ? await native.read()
@@ -44,13 +44,13 @@ async function compareAndSet(
   expected: string | null,
   entry: string | null
 ): Promise<{ applied: boolean; current: string | null }> {
-  const native = window.hermesDesktop?.preparedSubmissions
+  const native = window.moorDesktop?.preparedSubmissions
 
   // Await private atomic-file publication before the caller may send. Never
   // downgrade a native write failure to Chromium's deferred localStorage.
   if (native) {
     // An older preload has no atomic op: refuse rather than fall back to a racy read-then-write.
-    if (!native.compareAndSet) {throw new Error('Group Send needs an updated Desktop; restart Hermes Desktop')}
+    if (!native.compareAndSet) {throw new Error('Group Send needs an updated Desktop; restart Moor Desktop')}
 
     return native.compareAndSet(key, expected, entry)
   }

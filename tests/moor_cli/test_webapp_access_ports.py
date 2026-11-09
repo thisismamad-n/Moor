@@ -1,9 +1,9 @@
-"""Which port Web Access serves a gateway's Webapp on (``hermes_cli.webapp_access._port_to_serve``).
+"""Which port Web Access serves a gateway's Webapp on (``moor_cli.webapp_access._port_to_serve``).
 
 The default profile's gateway serves the documented address, 9120 unless ``webapp.port`` says otherwise.
 A standalone profile has a gateway of its own; turning Web Access on there without a ``webapp.port`` used
 to bind 9120 too, which the default gateway's Webapp holds, so nothing was served. Start now gives such a
-profile the first port above 9120 that no other Hermes home claims and nothing listens on, and writes it to
+profile the first port above 9120 that no other Moor home claims and nothing listens on, and writes it to
 that profile's ``webapp.port``, so the gateway binds it, the launcher prints and opens it, the sign-in
 callback names it, and it stays the same across restarts. A ``webapp.port`` the user set always stays.
 No test binds a real port: what listens is faked, and the probe itself is checked on OS-chosen ports.
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import webapp_access
+from moor_cli import webapp_access
 
 
 def _write(path: Path, text: str) -> Path:
@@ -26,9 +26,9 @@ def _write(path: Path, text: str) -> Path:
 
 @pytest.fixture
 def machine(monkeypatch, tmp_path):
-    """A Hermes root with a standalone profile ``solo`` and a sibling ``other`` that claims 9122; 9121 is
+    """A Moor root with a standalone profile ``solo`` and a sibling ``other`` that claims 9122; 9121 is
     in use by something else. The process runs as ``solo`` (Web Access scopes to its gateway's home)."""
-    root = _write(tmp_path / ".hermes", "")
+    root = _write(tmp_path / ".moor", "")
     solo = _write(root / "profiles" / "solo", "gateway:\n  standalone: true\n")
     _write(root / "profiles" / "other", "gateway:\n  standalone: true\nwebapp:\n  port: 9122\n")
     listening = {9121}
@@ -39,14 +39,14 @@ def machine(monkeypatch, tmp_path):
         return port not in listening
 
     monkeypatch.setattr(webapp_access, "_port_free", port_free, raising=False)
-    monkeypatch.setattr(webapp_access, "nous_signed_in", lambda: True)
+    monkeypatch.setattr(webapp_access, "moor_signed_in", lambda: True)
     monkeypatch.setattr(webapp_access, "lan_address", lambda: "192.168.1.50")
-    monkeypatch.setenv("HERMES_HOME", str(solo))
+    monkeypatch.setenv("MOOR_HOME", str(solo))
     return {"root": root, "solo": solo, "listening": listening, "probed": probed, "monkeypatch": monkeypatch}
 
 
 def _webapp_block(home: Path) -> dict:
-    from hermes_cli.config import read_user_config_raw
+    from moor_cli.config import read_user_config_raw
 
     return read_user_config_raw(home / "config.yaml").get("webapp") or {}
 
@@ -93,7 +93,7 @@ def test_the_own_url_mode_also_gets_a_free_port(machine):
 
 
 def test_the_default_profile_keeps_the_documented_port_and_writes_none(machine):
-    machine["monkeypatch"].setenv("HERMES_HOME", str(machine["root"]))
+    machine["monkeypatch"].setenv("MOOR_HOME", str(machine["root"]))
     host, port, public_url, callback = webapp_access.plan("lan")
     assert port is None and callback == "http://192.168.1.50:9120/auth/callback"
     webapp_access.serve(host, public_url, port)
@@ -115,10 +115,10 @@ def test_a_port_the_managed_scope_sets_is_the_one_the_callback_names(machine, tm
     """An administrator's ``webapp.port`` wins over the profile's config when the gateway loads it, and
     saving never writes over it: Start registers the callback on that port and writes none."""
     from gateway.webapp_listener import listener_plan
-    from hermes_cli import managed_scope
+    from moor_cli import managed_scope
 
     managed = _write(tmp_path / "managed", "webapp:\n  port: 9555\n")
-    machine["monkeypatch"].setenv("HERMES_MANAGED_DIR", str(managed))
+    machine["monkeypatch"].setenv("MOOR_MANAGED_DIR", str(managed))
     managed_scope.invalidate_managed_cache()
     host, port, public_url, callback = webapp_access.plan("lan")
     assert (port, callback) == (None, "http://192.168.1.50:9555/auth/callback")
@@ -138,9 +138,9 @@ def test_with_no_free_port_start_refuses_and_names_the_setting(machine):
 
 
 @pytest.mark.parametrize("mode, url", [("lan", None), ("public", "https://solo.example.test")])
-def test_a_start_refused_for_no_nous_account_saves_no_port(machine, mode, url):
-    machine["monkeypatch"].setattr(webapp_access, "nous_signed_in", lambda: False)
-    with pytest.raises(webapp_access.WebappAccessError, match="Sign in to your Nous account"):
+def test_a_start_refused_for_no_moor_account_saves_no_port(machine, mode, url):
+    machine["monkeypatch"].setattr(webapp_access, "moor_signed_in", lambda: False)
+    with pytest.raises(webapp_access.WebappAccessError, match="Sign in to your Moor account"):
         webapp_access.plan(mode, url)
     assert _webapp_block(machine["solo"]) == {} and machine["probed"] == []
 
@@ -172,12 +172,12 @@ def _start_in_a_process_of_its_own(home: str, first: bool, first_holds, second_s
     once the first holds it. Reports the port *home* saved, or the traceback."""
     import traceback
 
-    from hermes_cli import auth
-    from hermes_constants import set_hermes_home_override
+    from moor_cli import auth
+    from moor_constants import set_moor_home_override
 
-    os.environ["HERMES_HOME"] = home
-    set_hermes_home_override(Path(home))
-    webapp_access.nous_signed_in = lambda: True
+    os.environ["MOOR_HOME"] = home
+    set_moor_home_override(Path(home))
+    webapp_access.moor_signed_in = lambda: True
     webapp_access.lan_address = lambda: "192.168.1.50"
     listening = {9121}
     try:

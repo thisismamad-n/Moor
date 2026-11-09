@@ -253,7 +253,7 @@ class TestConfigGetPhantomKeyNotice:
     ):
         # The check is a DEFAULT_CONFIG walk; ``gateway.proxy_url`` is deliberately unseeded
         # yet read by gateway/run_turn.py, so the notice must not claim it is never read.
-        (_isolated_hermes_home / "config.yaml").write_text("gateway:\n  proxy_url: http://127.0.0.1:1\n")
+        (_isolated_moor_home / "config.yaml").write_text("gateway:\n  proxy_url: http://127.0.0.1:1\n")
 
         config_command(argparse.Namespace(config_command="get", key="gateway.proxy_url", json=False))
 
@@ -591,7 +591,7 @@ class TestValidateConfigKey:
     def test_underscore_only_first_segment_escapes(self):
         """The underscore escape only applies to the FIRST segment. A real
         typo in a sub-key (e.g. agent._max_turns) is still caught."""
-        from hermes_cli.config import _validate_config_key
+        from moor_cli.config import _validate_config_key
         is_known, _suggestion = _validate_config_key("agent._max_turns")
         assert not is_known, "Sub-key typo under a known top-level key must still be flagged"
 
@@ -686,7 +686,7 @@ class TestMappingGuard:
         ({}, "[a, b]"),
         ({"model": "gpt-4o"}, "[a, b]"),
     ])
-    def test_bare_model_container_literal_is_refused(self, _isolated_hermes_home, start, literal):
+    def test_bare_model_container_literal_is_refused(self, _isolated_moor_home, start, literal):
         """A JSON/YAML mapping/list under bare ``model`` must be refused, not redirected (#131435).
 
         ``model`` is seeded as a string default, so the generic coerce kept the literal
@@ -694,16 +694,16 @@ class TestMappingGuard:
         model id — a route every runtime reader then fails to resolve, while
         ``config get`` echoes it back. Fail closed instead, like #114471 did for
         container slots. A list has no reader even when no model section exists yet."""
-        self._write_config(_isolated_hermes_home, start)
+        self._write_config(_isolated_moor_home, start)
         with pytest.raises(SystemExit) as exc:
             set_config_value("model", literal)
         assert exc.value.code == 1
-        assert yaml.safe_load(_read_config(_isolated_hermes_home)) == start
+        assert yaml.safe_load(_read_config(_isolated_moor_home)) == start
 
-    def test_bare_model_mapping_force_replaces_section(self, _isolated_hermes_home):
+    def test_bare_model_mapping_force_replaces_section(self, _isolated_moor_home):
         """--force keeps its documented meaning for mappings too: replace the whole
         model section with the validated literal instead of refusing."""
-        self._write_config(_isolated_hermes_home, {
+        self._write_config(_isolated_moor_home, {
             "model": {
                 "default": "gpt-4o",
                 "provider": "openai-api",
@@ -712,15 +712,15 @@ class TestMappingGuard:
         })
         set_config_value(
             "model", '{"provider": "openrouter", "default": "z-ai/glm-5.3-flash"}', force=True)
-        parsed = yaml.safe_load(_read_config(_isolated_hermes_home))
+        parsed = yaml.safe_load(_read_config(_isolated_moor_home))
         assert parsed["model"] == {
             "provider": "openrouter",
             "default": "z-ai/glm-5.3-flash",
         }
 
-    def test_non_model_mapping_is_refused(self, _isolated_hermes_home):
-        """hermes config set terminal bash → refuse, terminal has sub-keys."""
-        self._write_config(_isolated_hermes_home, {
+    def test_non_model_mapping_is_refused(self, _isolated_moor_home):
+        """moor config set terminal bash → refuse, terminal has sub-keys."""
+        self._write_config(_isolated_moor_home, {
             "terminal": {
                 "backend": "docker",
                 "docker_image": "python:3.12",

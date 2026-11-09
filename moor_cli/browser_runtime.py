@@ -14,7 +14,7 @@ import pm
 # Written by the Docker image build with the pm Chromium binary it staged. The binary's path differs
 # per architecture (chrome-linux64/chrome vs chromium-linux-arm64/chromium), so the build resolves it
 # once; it also survives a volume over the runtime dir that hides pm's facts.
-BAKED_EXECUTABLE_FILE = Path("/etc/hermes/chromium-executable-path")
+BAKED_EXECUTABLE_FILE = Path("/etc/moor/chromium-executable-path")
 
 # Distribution command names for a system Chromium, used only where pm builds none for this target
 # (Termux: `pkg install chromium` from x11-repo).
@@ -23,7 +23,7 @@ _SYSTEM_CHROMIUM_COMMANDS = ("chromium", "chromium-browser")
 
 def _configured_executable() -> str | None:
     """``browser.executable_path`` from the active profile's config (managed overlay applied)."""
-    from hermes_cli.config import cfg_get, load_config_readonly
+    from moor_cli.config import cfg_get, load_config_readonly
 
     value = cfg_get(load_config_readonly(), "browser", "executable_path", default="")
     value = os.path.expanduser(value.strip()) if isinstance(value, str) else ""
@@ -38,7 +38,7 @@ def _pm_executable() -> str | None:
 def _baked_executable() -> str | None:
     try:
         value = BAKED_EXECUTABLE_FILE.read_text(encoding="utf-8-sig").strip()
-    except OSError:  # not a Hermes Docker image: nothing baked
+    except OSError:  # not a Moor Docker image: nothing baked
         return None
     return value if value and os.path.isfile(value) else None
 
@@ -49,7 +49,7 @@ def _pm_has_no_chromium() -> bool:
 
 
 def _system_executable() -> str | None:
-    from hermes_platform.resolver import locate_command
+    from moor_platform.resolver import locate_command
 
     for name in _SYSTEM_CHROMIUM_COMMANDS:
         found = locate_command(name).command
@@ -74,18 +74,18 @@ def chromium_executable(*, allow_override: bool = True) -> str | None:
 
 def chromium_missing_hint() -> str:
     """One actionable line for "no Chromium" on this machine. Never suggests npm."""
-    from hermes_platform.host.runtime import is_termux
+    from moor_platform.host.runtime import is_termux
 
     if pinned := _configured_executable():  # the pin wins over every other source, so name it
         return (f"browser.executable_path is set to {pinned}, which is not a browser on this machine: fix the "
-                "path, or clear it to use Hermes's Chromium.")
+                "path, or clear it to use Moor's Chromium.")
     if is_termux():
         return ("No Chromium found: pm builds none for Termux. Install one with "
                 "`pkg install x11-repo && pkg install chromium`, or set browser.executable_path.")
     if BAKED_EXECUTABLE_FILE.exists():
-        return ("The image's Chromium is missing: pull the current Hermes image and recreate the "
+        return ("The image's Chromium is missing: pull the current Moor image and recreate the "
                 "container (a volume mounted over the image's tool store hides it).")
     if _pm_has_no_chromium():
         return ("No Chromium found: pm builds none for this platform. Install your distribution's "
                 "chromium package, or set browser.executable_path.")
-    return "Chromium is not installed: run `hermes pm install chromium`."
+    return "Chromium is not installed: run `moor pm install chromium`."

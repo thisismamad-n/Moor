@@ -14,8 +14,8 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from agent.session_activity import (
     ActivityProvenance, bound_activity_description, normalize_activity_provenance,
 )
-from hermes_state_errors import SessionActiveWriteGuardError
-from hermes_state_common import (
+from moor_state_errors import SessionActiveWriteGuardError
+from moor_state_common import (
     _LISTABLE_CHILD_SQL, _RECOVERABLE_END_REASONS,
     _RECOVERABLE_END_REASONS_SQL, _RESET_CHILD_SQL, _RESET_END_REASONS, _legacy_reset_child_sql, _non_continuation_child_sql,
     _shape_preview, _sql_preview_raw, QUEUED_PROMPT_METADATA_KEY,
@@ -23,7 +23,7 @@ from hermes_state_common import (
     escape_like as _escape_like, _SQL_IN_CHUNK, _id_chunks, _placeholders as _session_ids_placeholders,
     _source_match_clause, emit_session_deleted, launch_stub_filter_sql,
 )
-from hermes_state_compression import _CHAIN_CAP, _UNSET_CREATED_SQL
+from moor_state_compression import _CHAIN_CAP, _UNSET_CREATED_SQL
 
 # caplog tests pin the "moor_state" logger name.
 logger = logging.getLogger("moor_state")
@@ -222,7 +222,7 @@ def _collect_delegate_child_ids(conn, parent_ids: list[str]) -> list[str]:
 
 def _delete_delegate_children(conn, parent_ids: list[str]) -> list[str]:
     ids = _collect_delegate_child_ids(conn, parent_ids)
-    from hermes_state_mutation_retirement import retire_sessions
+    from moor_state_mutation_retirement import retire_sessions
     retire_sessions(conn, ids)
     for chunk in _id_chunks(ids):
         ph = _session_ids_placeholders(chunk)
@@ -403,7 +403,7 @@ class SessionSessionsMixin:
         sidebar even though its transcript is intact (#99222). Stores outside the profile tree (explicit
         ``db_path`` in tests, ad-hoc copies) derive nothing and keep NULL — never guess.
         """
-        from hermes_state_worker_lifecycle import insert_session_row_in_transaction
+        from moor_state_worker_lifecycle import insert_session_row_in_transaction
         params = dict(session_id=session_id, source=source, model=model, model_config=model_config,
                       system_prompt=system_prompt, user_id=user_id, session_key=session_key,
                       chat_id=chat_id, chat_type=chat_type, thread_id=thread_id,
@@ -792,12 +792,12 @@ class SessionSessionsMixin:
     def update_conversation_model_config_value(self, session_id: str, key: str,
                                                update: Callable[[Any], Any]) -> Optional[str]:
         """Write ``update(value)`` of a conversation-wide key at the compression tip (one transaction)."""
-        from hermes_state_sessions_model_config import update_conversation_model_config_value
+        from moor_state_sessions_model_config import update_conversation_model_config_value
         return update_conversation_model_config_value(self, session_id, key, update)
 
     def session_ids_with_model_config_key(self, key: str) -> list[str]:
         """Ids of the sessions whose model_config carries ``key``, newest first."""
-        from hermes_state_sessions_model_config import session_ids_with_model_config_key
+        from moor_state_sessions_model_config import session_ids_with_model_config_key
         return session_ids_with_model_config_key(self, key)
 
     def update_session_runtime_lock(
@@ -1329,9 +1329,9 @@ class SessionSessionsMixin:
         if not include_hidden and not archived_only:
             where_clauses.append("s.hidden = 0")
         heads = {}
-        from hermes_state_local import exclude_superseded_segments
+        from moor_state_local import exclude_superseded_segments
         if not include_children:
-            # A local reset lineage is one conversation (hermes_state_local.local_lineage_index):
+            # A local reset lineage is one conversation (moor_state_local.local_lineage_index):
             # earlier segments leave the page in SQL, before LIMIT/OFFSET, not after it.
             heads = exclude_superseded_segments(self, where_clauses, params)
         where_sql = _where_sql(where_clauses)
@@ -1448,10 +1448,10 @@ class SessionSessionsMixin:
                     seen_ids.add(s["id"])
                     sessions.append(s)
         if project_compression_tips and not include_children:
-            from hermes_state_session_list import project_compression_tips
+            from moor_state_session_list import project_compression_tips
             sessions = project_compression_tips(self, sessions, compact_rows)
         if heads:
-            from hermes_state_local import annotate_local_lineages
+            from moor_state_local import annotate_local_lineages
             sessions = annotate_local_lineages(sessions, heads)
         # last_read_at is lineage-stamped, so root and tip watermarks agree.
         for s in sessions:
@@ -1507,7 +1507,7 @@ class SessionSessionsMixin:
 
     def assert_exports_safe(self, session_ids, max_messages: Optional[int] = None) -> None:
         """assert_export_safe for each id with the limit resolved once; 0 disables (no queries)."""
-        from hermes_state import resolved_max_export_messages
+        from moor_state import resolved_max_export_messages
         if max_messages is None:
             max_messages = resolved_max_export_messages()
         if max_messages == 0:
@@ -1545,7 +1545,7 @@ class SessionSessionsMixin:
         skip_launch_stubs: bool = False,
     ) -> list[dict[str, Any]]:
         """Sessions MRU-first with a computed ``last_active``; ``workspace_key`` scopes to one workspace
-        so ``hermes -c``/``--resume`` picks its last session. ``source`` may be one label or several.
+        so ``moor -c``/``--resume`` picks its last session. ``source`` may be one label or several.
         ``local_created_sources`` restricts ``source='local'`` rows before LIMIT/OFFSET, and
         ``skip_launch_stubs`` drops empty launch stubs (launch_stub_filter_sql) before it too."""
         where_clauses = [launch_stub_filter_sql(self)] if skip_launch_stubs else []
@@ -1582,7 +1582,7 @@ class SessionSessionsMixin:
             local_created_sources=local_created_sources,
         )
         if exclude_children:
-            from hermes_state_local import exclude_superseded_segments
+            from moor_state_local import exclude_superseded_segments
             exclude_superseded_segments(self, where_clauses, params)
         return self._read_one(f"SELECT COUNT(*) FROM sessions s{_where_sql(where_clauses, ' ')}", params)[0]
 
@@ -1600,7 +1600,7 @@ class SessionSessionsMixin:
             include_archived=include_archived,
         )
         if exclude_children:
-            from hermes_state_local import exclude_superseded_segments
+            from moor_state_local import exclude_superseded_segments
             exclude_superseded_segments(self, where_clauses, params)
         with self._read_ctx() as conn:
             if self._conn is None:
@@ -1657,7 +1657,7 @@ class SessionSessionsMixin:
             # Use the borrowed read connection, never self._conn: handing the shared writer connection to a
             # helper here executes on it without self._lock — the same unsynchronized-read class as
             # #99349/#90734.
-            from hermes_state_local import owned_lineage_ids
+            from moor_state_local import owned_lineage_ids
             scope = owned_lineage_ids(conn, session_id)
             delegate_ids = _collect_delegate_child_ids(conn, scope)
         return [session_id, *sorted(set(scope) - {session_id}), *sorted(delegate_ids)]
@@ -1694,7 +1694,7 @@ class SessionSessionsMixin:
             seen.update(frontier)
         # A local reset lineage (creation id + every segment, compression children included) is one
         # listed conversation: deleting any segment must not strand the others without an owner.
-        from hermes_state_local import local_conversation_ids
+        from moor_state_local import local_conversation_ids
         for sid in list(seen):
             seen.update(local_conversation_ids(conn, sid))
         return list(seen)
@@ -1733,7 +1733,7 @@ class SessionSessionsMixin:
                 return False
             # A local reset/compression conversation deletes whole from any segment: the listed row
             # is its latest segment, and a lone segment delete strands the owner's policy and FIFO.
-            from hermes_state_local import owned_lineage_ids
+            from moor_state_local import owned_lineage_ids
             scope = owned_lineage_ids(conn, session_id)
             target_ids = (
                 [*scope, *_collect_delegate_child_ids(conn, scope)]
@@ -1751,7 +1751,7 @@ class SessionSessionsMixin:
                 for covered_id, expected in expected_display_messages.items()
             ):
                 return False
-            from hermes_state_mutation_retirement import retire_sessions
+            from moor_state_mutation_retirement import retire_sessions
             retire_sessions(conn, scope)
             removed_ids.extend(_delete_delegate_children(conn, scope))
             for sid in scope:  # orphan remaining children (branches) so FK is satisfied
@@ -1764,7 +1764,7 @@ class SessionSessionsMixin:
         deleted = self._execute_write(_do)
         if deleted:
             emit_session_deleted(self, removed_ids, reason="delete", primary=session_id, sessions_dir=sessions_dir)
-        from hermes_state_media import collect_retired_media
+        from moor_state_media import collect_retired_media
         collect_retired_media(self)
         for sid in removed_ids:
             self._remove_session_files(sessions_dir, sid)
@@ -1795,7 +1795,7 @@ class SessionSessionsMixin:
         row whose first turn is already leased but not yet flushed would be deleted mid-turn
         (#123583). A guarded row is simply not deleted (returns ``False``), like any non-empty row."""
         def _do(conn):
-            from hermes_state_local import owned_lineage_ids
+            from moor_state_local import owned_lineage_ids
             if self._guarded_ids(conn, [session_id]) or owned_lineage_ids(conn, session_id) != [session_id]:
                 return False  # an empty reset tip is still its conversation's current target
             eligible = conn.execute(
@@ -1818,7 +1818,7 @@ class SessionSessionsMixin:
             # Same BEGIN IMMEDIATE transaction as the check above: retire the ledger rows
             # (ON DELETE RESTRICT) and delete without re-evaluating eligibility. Housekeeping, not
             # a user delete: its fence ages out at the horizon (an untitled row is never a Bot Chat).
-            from hermes_state_mutation_retirement import retire_sessions
+            from moor_state_mutation_retirement import retire_sessions
             retire_sessions(conn, [session_id], expiring=[session_id])
             conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
             self._delete_unreferenced_system_prompts(conn)
@@ -1826,7 +1826,7 @@ class SessionSessionsMixin:
         deleted = self._execute_write(_do)
         if deleted:
             emit_session_deleted(self, [session_id], reason="empty_sweep", sessions_dir=sessions_dir)
-        from hermes_state_media import collect_retired_media
+        from moor_state_media import collect_retired_media
         collect_retired_media(self)
         if deleted:
             self._remove_session_files(sessions_dir, session_id)
@@ -1858,7 +1858,7 @@ class SessionSessionsMixin:
             ).fetchall()]
             if not existing:
                 return 0
-            from hermes_state_local import owned_lineage_ids
+            from moor_state_local import owned_lineage_ids
 
             def expand(ids):
                 # A local reset/compression segment deletes as its whole conversation (delete_session).
@@ -1896,7 +1896,7 @@ class SessionSessionsMixin:
                 if not existing:
                     return 0
                 expanded = expand(existing)
-            from hermes_state_mutation_retirement import retire_sessions
+            from moor_state_mutation_retirement import retire_sessions
             retire_sessions(conn, expanded)
             removed_ids.extend(_delete_delegate_children(conn, expanded))
             for chunk in _id_chunks(expanded):
@@ -1916,7 +1916,7 @@ class SessionSessionsMixin:
         if count:
             emit_session_deleted(self, removed_ids, reason="delete", primary=unique_ids[0] if len(unique_ids) == 1 else None,
                                  sessions_dir=sessions_dir)
-        from hermes_state_media import collect_retired_media
+        from moor_state_media import collect_retired_media
         collect_retired_media(self)
         for sid in removed_ids:
             self._remove_session_files(sessions_dir, sid)
@@ -1943,7 +1943,7 @@ class SessionSessionsMixin:
             session_ids = {row["id"] for row in conn.execute(
                 f"SELECT id FROM sessions WHERE {self._EMPTY_SESSION_WHERE}"
             ).fetchall()}
-            from hermes_state_mutation_retirement import retire_prunable
+            from moor_state_mutation_retirement import retire_prunable
             session_ids = retire_prunable(conn, sorted(session_ids))
             if not session_ids:
                 return 0
@@ -1960,7 +1960,7 @@ class SessionSessionsMixin:
         count = self._execute_write(_do)
         if count:
             emit_session_deleted(self, removed_ids, reason="empty_sweep", sessions_dir=sessions_dir)
-        from hermes_state_media import collect_retired_media
+        from moor_state_media import collect_retired_media
         collect_retired_media(self)
         for sid in removed_ids:
             self._remove_session_files(sessions_dir, sid)

@@ -177,8 +177,8 @@ class TestRegister:
 
 
     def test_registers_with_env_plaintext_password(self, basic, monkeypatch):
-        monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
-        monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
+        monkeypatch.setenv("MOOR_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
+        monkeypatch.setenv("MOOR_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
         monkeypatch.setattr(basic, "_load_config_basic_auth_section", dict)
         ctx = MagicMock()
         basic.register(ctx)
@@ -216,9 +216,9 @@ class TestRegister:
         # other's tokens (the restart-/multi-worker-survival contract).
         shared = secrets.token_bytes(32).hex()
         monkeypatch.setattr(basic, "_load_config_basic_auth_section", dict)
-        monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
-        monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
-        monkeypatch.setenv("HERMES_DASHBOARD_BASIC_AUTH_SECRET", shared)
+        monkeypatch.setenv("MOOR_DASHBOARD_BASIC_AUTH_USERNAME", "admin")
+        monkeypatch.setenv("MOOR_DASHBOARD_BASIC_AUTH_PASSWORD", "hunter2")
+        monkeypatch.setenv("MOOR_DASHBOARD_BASIC_AUTH_SECRET", shared)
 
         ctx1, ctx2 = MagicMock(), MagicMock()
         basic.register(ctx1)

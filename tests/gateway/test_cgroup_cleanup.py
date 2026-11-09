@@ -71,7 +71,7 @@ class TestLiveGatewayGuard:
         import gateway.status
 
         cgroup_path = "/some.slice/some-gateway.service"
-        gateway_cmdline = f"/opt/hermes/venv/bin/python -m hermes_cli.main gateway {verb}"
+        gateway_cmdline = f"/opt/moor/venv/bin/python -m moor_cli.main gateway {verb}"
         monkeypatch.setattr(
             cgroup_cleanup, "_read_cgroup_pids", lambda _p: [777, os.getpid()]
         )

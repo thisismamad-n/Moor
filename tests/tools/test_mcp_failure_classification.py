@@ -80,7 +80,7 @@ class TestAuthErrorSurfacing:
             "MCP OAuth 'gmail': this provider does not support automatic "
             "client registration ... add it under config.yaml "
             "mcp_servers.<name>.oauth (client_id, client_secret), then run "
-            "`hermes mcp login gmail`."
+            "`moor mcp login gmail`."
         )
         detail = _auth_error_detail(exc)
         assert detail.startswith(" ")

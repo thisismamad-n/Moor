@@ -1,4 +1,4 @@
-"""A failed ``hermes skills install|update|uninstall|snapshot import`` exits non-zero (#118301).
+"""A failed ``moor skills install|update|uninstall|snapshot import`` exits non-zero (#118301).
 
 The Desktop spawns these as detached actions and learns their outcome only from the
 exit code (``apps/desktop/src/store/hub-actions.ts`` toasts on non-zero), so a refused
@@ -10,7 +10,7 @@ the action log. The scan gate is the common case: a blocked install used to prin
 import sys
 import pytest
 
-import hermes_cli.skills_hub as cli_hub
+import moor_cli.skills_hub as cli_hub
 
 
 def _scan_gate_env(monkeypatch, tmp_path, *, verdict="dangerous", installed=None):
@@ -55,7 +55,7 @@ def _scan_gate_env(monkeypatch, tmp_path, *, verdict="dangerous", installed=None
     return installs, audit
 
 
-# --- the process exit code, through the real `hermes` entry point ---
+# --- the process exit code, through the real `moor` entry point ---
 
 
 @pytest.mark.parametrize("argv, target, outcome, code", [
@@ -73,19 +73,19 @@ def _scan_gate_env(monkeypatch, tmp_path, *, verdict="dangerous", installed=None
     (["skills", "install", "org/repo/risky-skill", "--yes"], "scan_gate", "caution", 1),
 ])
 def test_cli_exit_code_follows_the_action_outcome(monkeypatch, tmp_path, capsys, argv, target, outcome, code):
-    from hermes_cli.main import main
+    from moor_cli.main import main
 
     if target == "scan_gate":
         installs, audit = _scan_gate_env(monkeypatch, tmp_path, verdict=outcome)
     else:
         monkeypatch.setattr(cli_hub, target, lambda *a, **k: outcome)
     if argv[1] == "update":
-        # Never run hermes_cli.main with `update` in argv (it can turn into a real self-update): drive
-        # the same router `hermes skills` returns its exit code from.
+        # Never run moor_cli.main with `update` in argv (it can turn into a real self-update): drive
+        # the same router `moor skills` returns its exit code from.
         from argparse import Namespace
         exit_code = cli_hub.skills_command(Namespace(skills_action="update", name=None, force=False)) or 0
     else:
-        monkeypatch.setattr(sys, "argv", ["hermes", *argv])
+        monkeypatch.setattr(sys, "argv", ["moor", *argv])
         try:
             main()
             exit_code = 0

@@ -1,9 +1,9 @@
 """An isolated serve says so in the spawn ledger; an ordinary serve does not.
 
 Desktop's attach-first discovery reads ``spawn-ledger.json`` and attaches to any live loopback
-serve. ``hermes serve --isolated`` (the backend another machine's Desktop spawns over SSH) opts out
+serve. ``moor serve --isolated`` (the backend another machine's Desktop spawns over SSH) opts out
 of the host singleton on the CLI side, so the ledger row must carry that fact as a structured field
-for Desktop to honour it too. Real processes against a temp ``HERMES_HOME``; no mocks.
+for Desktop to honour it too. Real processes against a temp ``MOOR_HOME``; no mocks.
 """
 
 import json
@@ -55,9 +55,9 @@ def _stop(proc):
 def test_isolated_serve_ledger_row_is_marked_and_ordinary_serve_is_not(tmp_path):
     home = tmp_path / "home"
     home.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home), "HERMES_GATEWAY_LOCK_DIR": str(tmp_path / "locks")}
-    for key in ("HERMES_DESKTOP", "HERMES_PARENT_PID", "HERMES_PARENT_START_MARKER",
-                "HERMES_DASHBOARD_SESSION_TOKEN", "HERMES_SPAWN"):
+    env = {**os.environ, "MOOR_HOME": str(home), "MOOR_GATEWAY_LOCK_DIR": str(tmp_path / "locks")}
+    for key in ("MOOR_DESKTOP", "MOOR_PARENT_PID", "MOOR_PARENT_START_MARKER",
+                "MOOR_DASHBOARD_SESSION_TOKEN", "MOOR_SPAWN"):
         env.pop(key, None)
     ledger = home / "spawn-ledger.json"
 
@@ -69,7 +69,7 @@ def test_isolated_serve_ledger_row_is_marked_and_ordinary_serve_is_not(tmp_path)
             log = tmp_path / f"{name}.log"
             with log.open("w", encoding="utf-8") as out:
                 procs[name] = subprocess.Popen(
-                    [sys.executable, "-m", "hermes_cli.main", "serve", *extra,
+                    [sys.executable, "-m", "moor_cli.main", "serve", *extra,
                      "--host", "127.0.0.1", "--port", str(_free_port())],
                     env=env, stdout=out, stderr=subprocess.STDOUT,
                 )

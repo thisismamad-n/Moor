@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { createClientSessionState } from '@/lib/chat-runtime'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { makeSessionInfo } from '../test/session-info'
 
@@ -32,8 +32,8 @@ function reset() {
   $sessionSeenCounts.set({})
   $unreadFinishedMarkers.set({})
   $unreadFinishedSessionIds.set([])
-  delete document.documentElement.dataset.hermesDesktopHost
-  document.title = 'Hermes'
+  delete document.documentElement.dataset.moorDesktopHost
+  document.title = 'Moor'
 }
 
 describe('browserTabTitle', () => {
@@ -68,7 +68,7 @@ describe('installBrowserTabTitle', () => {
   afterEach(reset)
 
   it('follows the focused session and background status in a browser host', () => {
-    document.documentElement.dataset.hermesDesktopHost = 'browser'
+    document.documentElement.dataset.moorDesktopHost = 'browser'
     setSessions([row({ id: 's1', title: 'Fix login' }), row({ id: 's2', profile: 'writer', title: 'Draft essay' })])
     $selectedStoredSessionId.set('s1')
     uninstall = installBrowserTabTitle()
@@ -96,12 +96,12 @@ describe('installBrowserTabTitle', () => {
   })
 
   it('never puts unsent or untitled text in the tab', () => {
-    document.documentElement.dataset.hermesDesktopHost = 'browser'
+    document.documentElement.dataset.moorDesktopHost = 'browser'
     setSessions([row({ id: 's1', preview: 'my bank password is', title: null })])
     $selectedStoredSessionId.set('s1')
     uninstall = installBrowserTabTitle()
 
-    expect(document.title).toBe('Hermes')
+    expect(document.title).toBe('Moor')
   })
 
   it('leaves the native window title alone', () => {
@@ -110,6 +110,6 @@ describe('installBrowserTabTitle', () => {
     uninstall = installBrowserTabTitle()
     publishSessionState('r1', state('s1', { busy: true }))
 
-    expect(document.title).toBe('Hermes')
+    expect(document.title).toBe('Moor')
   })
 })

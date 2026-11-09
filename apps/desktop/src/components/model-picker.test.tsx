@@ -177,7 +177,7 @@ const WINDOW_USAGE = {
   top_tier_model_ids: ['example/model-b']
 }
 
-// The gateway's per-plan words, passed through by the backend (Hermes never computes them).
+// The gateway's per-plan words, passed through by the backend (Moor never computes them).
 const WINDOW_LEVELS = {
   'example/model-d': 'medium',
   'example/model-b': 'top_tier',
@@ -196,8 +196,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d', 'example/model-b', 'example/model-free:free'],
           authenticated: true,
           plan_usage: WINDOW_USAGE,
@@ -205,7 +205,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(await screen.findByText('Every model below is included', { exact: false })).toBeTruthy()
     // Gauges read as used and fill up: 0.82 left → 18% used, 0.97 left → 3% used.
@@ -230,8 +230,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d'],
           authenticated: true,
           plan_usage: {
@@ -242,7 +242,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(await screen.findByText('Month')).toBeTruthy()
     expect(screen.getByText('40% used')).toBeTruthy()
@@ -252,8 +252,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d'],
           authenticated: true,
           plan_usage: {
@@ -267,7 +267,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(await screen.findByText('Next 5 hours')).toBeTruthy()
     expect(screen.getByText('50% used')).toBeTruthy()
@@ -277,8 +277,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d', 'example/model-b', 'example/model-free:free'],
           authenticated: true,
           plan_usage: {
@@ -292,7 +292,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     // Only the top-tier row draws on the spent top-tier allowance: it dims; Medium and Free still have room.
     const large = await screen.findByText('example/model-b')
@@ -307,8 +307,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d', 'example/model-b', 'example/model-free:free'],
           authenticated: true,
           plan_usage: {
@@ -319,7 +319,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     // A spent all-model allowance is said once, above the list, not on every paid row.
     expect(await screen.findByText('Daily limit reached', { exact: false })).toBeTruthy()
@@ -330,8 +330,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d', 'example/model-b', 'example/model-free:free'],
           authenticated: true,
           plan_usage: {
@@ -343,7 +343,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(await screen.findByText('Weekly limit reached', { exact: false })).toBeTruthy()
     expect(screen.getByText('· paid models now use your credits (pay as you go)', { exact: false })).toBeTruthy()
@@ -355,8 +355,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d', 'example/model-b', 'example/model-free:free'],
           authenticated: true,
           plan_usage: {
@@ -371,7 +371,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(
       await screen.findByText('· Large models now use your credits (pay as you go)', { exact: false })
@@ -384,8 +384,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d'],
           authenticated: true,
           pricing: {
@@ -395,7 +395,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(await screen.findByText('$1.00 / $5.00')).toBeTruthy()
     expect(screen.queryByText('Credit Plan', { exact: false })).toBeNull()
@@ -406,8 +406,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-b', 'example/model-d', 'example/model-free:free'],
           authenticated: true,
           plan_usage: { ...WINDOW_USAGE, featured_model_ids: ['example/model-b'] },
@@ -415,7 +415,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(await screen.findByText('Recommended')).toBeTruthy()
     expect(screen.getByText('Other models')).toBeTruthy()
@@ -425,8 +425,8 @@ describe('ModelPickerDialog plan usage', () => {
     vi.mocked(requestModelOptions).mockResolvedValue({
       providers: [
         {
-          slug: 'nous',
-          name: 'Nous',
+          slug: 'moor',
+          name: 'Moor',
           models: ['example/model-d'],
           authenticated: true,
           pricing: { 'example/model-d': { input: '$1.00', output: '$5.00', free: false } },
@@ -435,7 +435,7 @@ describe('ModelPickerDialog plan usage', () => {
         }
       ]
     })
-    renderPicker({ currentModel: 'example/model-d', currentProvider: 'nous' })
+    renderPicker({ currentModel: 'example/model-d', currentProvider: 'moor' })
 
     expect(await screen.findByText('$1.00 / $5.00')).toBeTruthy()
     expect(screen.queryByText('Recommended')).toBeNull()

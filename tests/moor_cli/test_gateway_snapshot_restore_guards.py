@@ -3,13 +3,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.backup import create_quick_snapshot
-from hermes_cli.cli_commands_mixin import CLICommandsMixin
-from hermes_cli.gateway_client import GatewayClientError
-from hermes_cli.gateway_connection import GatewayConnection
-from hermes_cli.gateway_runtime import GatewayDiscovery, GatewayEndpoint
-from hermes_cli.gateway_session_store import GatewaySessionStore
-from hermes_cli.profiles import parked_marker_path
+from moor_cli.backup import create_quick_snapshot
+from moor_cli.cli_commands_mixin import CLICommandsMixin
+from moor_cli.gateway_client import GatewayClientError
+from moor_cli.gateway_connection import GatewayConnection
+from moor_cli.gateway_runtime import GatewayDiscovery, GatewayEndpoint
+from moor_cli.gateway_session_store import GatewaySessionStore
+from moor_cli.profiles import parked_marker_path
 
 
 class _Connection:
@@ -44,7 +44,7 @@ def _corrupt_manifest(sid):
     ("satellite-not-reserved", lambda sid: True, "manual", "is not served again yet: host operation is still pending"),
     ("invalid-id", lambda sid: False, "manual", "Snapshot not found: ../outside"),
     ("other-pid-paused", None, "manual", "Gateway refused the snapshot maintenance handoff"),
-    ("satellite-unserve-error", None, "manual", "nothing was restored. Park the profile with `hermes -p state"),
+    ("satellite-unserve-error", None, "manual", "nothing was restored. Park the profile with `moor -p state"),
     # A profile the user parked is restored but stays parked: the restore does not serve it.
     ("satellite-pre-parked", lambda sid: True, "manual", "Restored state from"),
     ("corrupt-manifest", _corrupt_manifest, "manual", "was not fully restored"),
@@ -55,13 +55,13 @@ def test_restore_reply_follows_the_restore_not_the_rejoin(tmp_path, monkeypatch,
                                                           case, restore, supervisor, expected):
     home = (tmp_path / "state").resolve()
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     if case == "remote":
-        monkeypatch.setenv("HERMES_TUI_GATEWAY_URL", "wss://remote.invalid/api/ws")
+        monkeypatch.setenv("MOOR_TUI_GATEWAY_URL", "wss://remote.invalid/api/ws")
     else:
-        monkeypatch.delenv("HERMES_TUI_GATEWAY_URL", raising=False)
+        monkeypatch.delenv("MOOR_TUI_GATEWAY_URL", raising=False)
     (home / "config.yaml").write_text("{}\n", encoding="utf-8")
-    snapshot = create_quick_snapshot(hermes_home=home)
+    snapshot = create_quick_snapshot(moor_home=home)
     old = _Connection()
     old.launch_api_key = "launch-only-key"  # --api-key: the rejoin's resumes must re-supply it
     store = GatewaySessionStore(old)
@@ -74,11 +74,11 @@ def test_restore_reply_follows_the_restore_not_the_rejoin(tmp_path, monkeypatch,
     control_home = str(tmp_path) if satellite else str(home)
     endpoint = GatewayEndpoint(str(home), "owner", 5, 1, "http://127.0.0.1:1", "none",
                                frozenset({"session-authority-v1"}), control_home)
-    monkeypatch.setattr("hermes_cli.gateway_runtime.discover_gateway_endpoint",
+    monkeypatch.setattr("moor_cli.gateway_runtime.discover_gateway_endpoint",
                         lambda home: GatewayDiscovery("ready", endpoint))
     monkeypatch.setattr(GatewayConnection, "shared", classmethod(lambda cls: _Connection()))
     monkeypatch.setattr("gateway.control_socket.identify_gateway", lambda h, **kw: {
-        "pid": 4321, "hermes_home": str(home), "launch_supervisor": supervisor})
+        "pid": 4321, "moor_home": str(home), "launch_supervisor": supervisor})
     paused = []
     monkeypatch.setattr("gateway.control_socket.pause_gateway_for_update",
                         lambda *a, **kw: paused.append(a) or {"pausing": True,
@@ -95,8 +95,8 @@ def test_restore_reply_follows_the_restore_not_the_rejoin(tmp_path, monkeypatch,
         return {"pending": True}
     monkeypatch.setattr("gateway.control_socket.request_unserve_profile", unserve)
     monkeypatch.setattr("gateway.control_socket.request_serve_profile_hot", serve)
-    monkeypatch.setattr("hermes_cli.profiles_remove.wait_profile_unowned", lambda home: True)
-    monkeypatch.setattr("hermes_cli.backup.restore_quick_snapshot",
+    monkeypatch.setattr("moor_cli.profiles_remove.wait_profile_unowned", lambda home: True)
+    monkeypatch.setattr("moor_cli.backup.restore_quick_snapshot",
                         restore or (lambda sid: pytest.fail("restore ran without the identified owner's handoff")))
 
     target = "../outside" if case == "invalid-id" else snapshot
@@ -117,7 +117,7 @@ def test_restore_reply_follows_the_restore_not_the_rejoin(tmp_path, monkeypatch,
 
 
 def test_rejoin_of_a_compressed_session_keeps_undo_counts(monkeypatch):
-    from hermes_cli.cli_snapshot import _rejoin_cli
+    from moor_cli.cli_snapshot import _rejoin_cli
     rows = [{"row_id": 1, "role": "user", "content": "OLD", "archived": True},
             {"row_id": 2, "role": "assistant", "content": "OLD answer", "archived": True},
             {"row_id": 3, "role": "user", "content": "summary of OLD"},
@@ -131,7 +131,7 @@ def test_rejoin_of_a_compressed_session_keeps_undo_counts(monkeypatch):
 
     store = GatewaySessionStore(Connection())
     store.snapshots["kept"] = snapshot  # the restored session, already resumed
-    monkeypatch.setattr("hermes_cli.gateway_tools.bind_session", lambda cli, connection: None)
+    monkeypatch.setattr("moor_cli.gateway_tools.bind_session", lambda cli, connection: None)
     cli = SimpleNamespace(session_id="kept", conversation_history=[])
 
     _rejoin_cli(cli, store)

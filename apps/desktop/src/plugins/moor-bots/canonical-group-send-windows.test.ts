@@ -31,7 +31,7 @@ function windows() {
 
   const ipc = (channel: string) => async (...args: unknown[]) => {
     await hop()
-    const handler = main.handlers.get(`hermes:prepared-submissions:${channel}`)!
+    const handler = main.handlers.get(`moor:prepared-submissions:${channel}`)!
 
     if (channel !== 'read' && held) { const gate = held; held = undefined; await gate }
     const result = handler(event, ...args)
@@ -41,7 +41,7 @@ function windows() {
   }
 
   const preparedSubmissions = { read: ipc('read'), update: ipc('update'), compareAndSet: ipc('compare-and-set') }
-  vi.stubGlobal('window', { hermesDesktop: { preparedSubmissions } })
+  vi.stubGlobal('window', { moorDesktop: { preparedSubmissions } })
 
   return {
     durable: () => preparedJournal(main.userData, origin).read() as Record<string, { params: { event_id: string } }>,

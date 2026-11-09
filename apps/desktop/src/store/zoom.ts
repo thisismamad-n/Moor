@@ -16,8 +16,8 @@ export function setZoomPercent(percent: number): void {
   window.moorDesktop?.zoom?.setPercent(percent)
 }
 
-if (typeof window !== 'undefined' && window.hermesDesktop?.zoom) {
-  const zoom = window.hermesDesktop.zoom
+if (typeof window !== 'undefined' && window.moorDesktop?.zoom) {
+  const zoom = window.moorDesktop.zoom
   let receivedZoomChange = false
 
   zoom.onChanged(({ percent }) => {

@@ -71,10 +71,10 @@ def liveness_clock(monkeypatch):
     """Drive the router's liveness-check clock so tests can cross the recheck interval
     without sleeping. Returns ``advance()``, which jumps past the interval."""
     now = [1000.0]
-    monkeypatch.setattr(hermes_logging, "_monotonic", lambda: now[0])
+    monkeypatch.setattr(moor_logging, "_monotonic", lambda: now[0])
 
     def advance():
-        now[0] += hermes_logging._PROFILE_LIVENESS_RECHECK_S
+        now[0] += moor_logging._PROFILE_LIVENESS_RECHECK_S
 
     return advance
 
@@ -294,55 +294,55 @@ class TestSetupLogging:
         assert "gw-b" in (profile_home / "logs" / "gateway.log").read_text()
 
     def test_profile_routing_falls_back_when_profile_home_deleted(
-        self, hermes_home, tmp_path, capsys
+        self, moor_home, tmp_path, capsys
     ):
         """A profile deleted underneath a long-lived dashboard must not loop.
 
-        ``_profile_homes`` is a startup snapshot, so a ``hermes profile delete``
+        ``_profile_homes`` is a startup snapshot, so a ``moor profile delete``
         leaves the routing set naming a home whose directory no longer exists.
         Records for that home must fall back to the default home instead of
         retrying (and stderr-spamming) the vanished logs/ path on every record
         (#103777).
         """
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         profile_home = tmp_path / "profile-deleted"
         profile_home.mkdir()
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing(
-            [hermes_home, profile_home]
+        moor_logging.setup_logging(moor_home=moor_home)
+        assert moor_logging.enable_profile_log_routing(
+            [moor_home, profile_home]
         ) is True
 
         logger = logging.getLogger("cron.scheduler.profile-routing-deleted-test")
         # The default home's agent.log must exist before the fallback assertion
         # can mean anything (lazy-opening handlers may not have created it yet).
         logger.info("routing fallback default-home probe record")
-        hermes_logging.flush_log_queue()
-        default_log = hermes_home / "logs" / "agent.log"
+        moor_logging.flush_log_queue()
+        default_log = moor_home / "logs" / "agent.log"
         assert "default-home probe record" in default_log.read_text()
 
-        token = set_hermes_home_override(profile_home)
+        token = set_moor_home_override(profile_home)
         try:
             logger.info("profile-routed record before deletion")
         finally:
-            reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+            reset_moor_home_override(token)
+        moor_logging.flush_log_queue()
         assert "record before deletion" in (
             profile_home / "logs" / "agent.log"
         ).read_text()
 
-        # `hermes profile delete` removes the home while the dashboard process
+        # `moor profile delete` removes the home while the dashboard process
         # (and its static routing snapshot) keeps running.
         import shutil
 
         shutil.rmtree(profile_home)
 
-        token = set_hermes_home_override(profile_home)
+        token = set_moor_home_override(profile_home)
         try:
             logger.info("profile-routed record after deletion")
         finally:
-            reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+            reset_moor_home_override(token)
+        moor_logging.flush_log_queue()
 
         assert "record after deletion" in default_log.read_text()
         # The deleted profile's directory must not be resurrected on disk.
@@ -352,7 +352,7 @@ class TestSetupLogging:
 
     @pytest.mark.parametrize("removal", ["tombstone", "rmtree", "logs-only"])
     def test_out_of_band_profile_delete_releases_routed_handler(
-        self, hermes_home, capsys, liveness_clock, removal
+        self, moor_home, capsys, liveness_clock, removal
     ):
         """A CLI delete tombstones then removes the home behind a running serve: the router must
         stop writing there on either signal alone and close the stale file, like an in-process
@@ -360,27 +360,27 @@ class TestSetupLogging:
         removes just logs/ of a live profile, whose records must still land somewhere."""
         import shutil
 
-        from hermes_constants import (
-            mark_named_profile_deleted, reset_hermes_home_override, set_hermes_home_override,
+        from moor_constants import (
+            mark_named_profile_deleted, reset_moor_home_override, set_moor_home_override,
         )
 
-        profile_home = (hermes_home / "profiles" / "worker").resolve()
+        profile_home = (moor_home / "profiles" / "worker").resolve()
         profile_home.mkdir(parents=True)
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing([hermes_home, profile_home]) is True
+        moor_logging.setup_logging(moor_home=moor_home)
+        assert moor_logging.enable_profile_log_routing([moor_home, profile_home]) is True
         logger = logging.getLogger("cron.scheduler.out-of-band-delete-test")
 
         def emit(message):
-            token = set_hermes_home_override(profile_home)
+            token = set_moor_home_override(profile_home)
             try:
                 logger.warning(message)
             finally:
-                reset_hermes_home_override(token)
-            hermes_logging.flush_log_queue()
+                reset_moor_home_override(token)
+            moor_logging.flush_log_queue()
 
         emit("before delete")
-        routed = [h._profile_handlers[profile_home] for h in hermes_logging._queued_file_handlers
-                  if isinstance(h, hermes_logging._ProfileRoutingFileHandler)]
+        routed = [h._profile_handlers[profile_home] for h in moor_logging._queued_file_handlers
+                  if isinstance(h, moor_logging._ProfileRoutingFileHandler)]
         assert routed
         if removal == "tombstone":
             mark_named_profile_deleted(profile_home)
@@ -395,24 +395,24 @@ class TestSetupLogging:
 
         assert "Logging error" not in capsys.readouterr().err
         assert all(h.stream is None or h.stream.closed for h in routed), "stale profile log fd kept open"
-        default_log = (hermes_home / "logs" / "agent.log").read_text(encoding="utf-8-sig")
+        default_log = (moor_home / "logs" / "agent.log").read_text(encoding="utf-8-sig")
         assert all(f"after delete {i}" in default_log for i in range(3))
         profile_log = profile_home / "logs" / "agent.log"
         assert not profile_log.exists() or "after delete" not in profile_log.read_text(encoding="utf-8-sig")
 
     @pytest.mark.parametrize("stream_closed_after_write", [False, True], ids=["kept-open", "closed-per-write"])
     def test_live_profile_liveness_checked_at_most_once_per_interval(
-        self, hermes_home, liveness_clock, monkeypatch, stream_closed_after_write
+        self, moor_home, liveness_clock, monkeypatch, stream_closed_after_write
     ):
         """A live routed profile must not pay the delete check (two stats) on every record.
 
         ``closed-per-write`` is how concurrent-log-handler behaves on Windows: the stream is
         closed after every write, which must not read as a skipped write.
         """
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from moor_constants import reset_moor_home_override, set_moor_home_override
 
         if stream_closed_after_write:
-            real_emit = hermes_logging._ManagedRotatingFileHandler.emit
+            real_emit = moor_logging._ManagedRotatingFileHandler.emit
 
             def emit_then_close(handler, record):
                 real_emit(handler, record)
@@ -420,36 +420,36 @@ class TestSetupLogging:
                     handler.stream.close()
                     handler.stream = None
 
-            monkeypatch.setattr(hermes_logging._ManagedRotatingFileHandler, "emit", emit_then_close)
+            monkeypatch.setattr(moor_logging._ManagedRotatingFileHandler, "emit", emit_then_close)
 
-        profile_home = (hermes_home / "profiles" / "worker").resolve()
+        profile_home = (moor_home / "profiles" / "worker").resolve()
         profile_home.mkdir(parents=True)
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing([hermes_home, profile_home]) is True
+        moor_logging.setup_logging(moor_home=moor_home)
+        assert moor_logging.enable_profile_log_routing([moor_home, profile_home]) is True
         logger = logging.getLogger("cron.scheduler.liveness-rate-limit-test")
         calls = []
-        real = hermes_logging.named_profile_is_deleted
+        real = moor_logging.named_profile_is_deleted
 
         def counting(home):
             calls.append(home)
             return real(home)
 
         def emit_many(n):
-            token = set_hermes_home_override(profile_home)
+            token = set_moor_home_override(profile_home)
             try:
                 for i in range(n):
                     logger.warning("live %d", i)
             finally:
-                reset_hermes_home_override(token)
-            hermes_logging.flush_log_queue()
+                reset_moor_home_override(token)
+            moor_logging.flush_log_queue()
 
-        with patch.object(hermes_logging, "named_profile_is_deleted", counting):
+        with patch.object(moor_logging, "named_profile_is_deleted", counting):
             emit_many(5)
             first = len(calls)
             liveness_clock()
             emit_many(5)
-        routers = sum(isinstance(h, hermes_logging._ProfileRoutingFileHandler)
-                      for h in hermes_logging._queued_file_handlers)
+        routers = sum(isinstance(h, moor_logging._ProfileRoutingFileHandler)
+                      for h in moor_logging._queued_file_handlers)
         assert routers and first == routers, "first sighting checks once per router, then rate-limits"
         assert len(calls) == 2 * routers
         assert "live 4" in (profile_home / "logs" / "agent.log").read_text(encoding="utf-8-sig")
@@ -1003,7 +1003,7 @@ class TestRolloverPreservesLogOwnership:
     def _rolled_handler(log_path: Path):
         log_path.write_text("seed\n", encoding="utf-8")
         os.chmod(log_path, 0o640)
-        handler = hermes_logging._ManagedRotatingFileHandler(
+        handler = moor_logging._ManagedRotatingFileHandler(
             str(log_path), maxBytes=1, backupCount=1, encoding="utf-8")
         try:
             handler.doRollover()
@@ -1037,28 +1037,28 @@ class TestRolloverPreservesLogOwnership:
         assert log_path.exists()
 
 
-def test_profile_router_never_holds_its_lock_while_taking_the_logging_module_lock(hermes_home, monkeypatch):
+def test_profile_router_never_holds_its_lock_while_taking_the_logging_module_lock(moor_home, monkeypatch):
     """T23: uvicorn's ``dictConfig`` holds ``logging._lock`` and, in ``logging.shutdown``, waits on
     every handler's lock. The QueueListener thread routing a record to a not-yet-opened profile
     home built that home's file handler (``Handler.__init__`` takes ``logging._lock``) while
     ``Handler.handle`` held the router's lock: a lock-order deadlock that hung
     ``test_runtime_listener_supervision`` on CI. The router must take the module lock with no
     lock of its own held."""
-    profile = hermes_home / "profiles" / "t23"
+    profile = moor_home / "profiles" / "t23"
     (profile / "logs").mkdir(parents=True)
-    hermes_home.joinpath("logs").mkdir(exist_ok=True)
-    existing = RotatingFileHandler(str(hermes_home / "logs" / "agent.log"), encoding="utf-8")
-    router = hermes_logging._ProfileRoutingFileHandler(existing, [profile])
+    moor_home.joinpath("logs").mkdir(exist_ok=True)
+    existing = RotatingFileHandler(str(moor_home / "logs" / "agent.log"), encoding="utf-8")
+    router = moor_logging._ProfileRoutingFileHandler(existing, [profile])
     existing.close()
-    building, real_new = threading.Event(), hermes_logging._new_file_handler
+    building, real_new = threading.Event(), moor_logging._new_file_handler
 
     def new_file_handler(*args, **kwargs):
         building.set()
         return real_new(*args, **kwargs)
 
-    monkeypatch.setattr(hermes_logging, "_new_file_handler", new_file_handler)
+    monkeypatch.setattr(moor_logging, "_new_file_handler", new_file_handler)
     record = logging.LogRecord("t23", logging.ERROR, __file__, 1, "routed", None, None)
-    record.hermes_home = str(profile)
+    record.moor_home = str(profile)
     listener = threading.Thread(target=router.handle, args=(record,), daemon=True)
     with logging._lock:  # dictConfig's configure() holds this across _clearExistingHandlers()
         listener.start()
@@ -1077,7 +1077,7 @@ def test_profile_router_never_holds_its_lock_while_taking_the_logging_module_loc
 
 
 @pytest.mark.parametrize("closed_at", ["after_pick", "before_publish"])
-def test_profile_router_close_is_never_undone_by_a_record_in_flight(hermes_home, monkeypatch, closed_at):
+def test_profile_router_close_is_never_undone_by_a_record_in_flight(moor_home, monkeypatch, closed_at):
     """T23 follow-up: with no router lock across ``emit``, ``logging.shutdown`` (uvicorn's
     ``dictConfig``) can close the router and its per-home handler while a routed record is in
     flight. ``after_pick``: the record picked the per-home handler, then it was closed; a
@@ -1085,11 +1085,11 @@ def test_profile_router_close_is_never_undone_by_a_record_in_flight(hermes_home,
     Windows its lock then stays held and the profile's logs/ cannot be removed). ``before_publish``:
     the record built a new home's handler, and its ``setdefault`` landed in the closed router (a
     leaked fd). Real handlers; only the interleaving is forced."""
-    profile = hermes_home / "profiles" / "t23b"
+    profile = moor_home / "profiles" / "t23b"
     (profile / "logs").mkdir(parents=True)
-    hermes_home.joinpath("logs").mkdir(exist_ok=True)
-    existing = RotatingFileHandler(str(hermes_home / "logs" / "agent.log"), encoding="utf-8")
-    router = hermes_logging._ProfileRoutingFileHandler(existing, [profile])
+    moor_home.joinpath("logs").mkdir(exist_ok=True)
+    existing = RotatingFileHandler(str(moor_home / "logs" / "agent.log"), encoding="utf-8")
+    router = moor_logging._ProfileRoutingFileHandler(existing, [profile])
     existing.close()
     profile_log = profile / "logs" / "agent.log"
     built = []
@@ -1105,7 +1105,7 @@ def test_profile_router_close_is_never_undone_by_a_record_in_flight(hermes_home,
 
         monkeypatch.setattr(router, "_handler_for_home", pick_then_shutdown)
     else:
-        real_new = hermes_logging._new_file_handler
+        real_new = moor_logging._new_file_handler
 
         def build_then_shutdown(*args, **kwargs):
             handler = real_new(*args, **kwargs)
@@ -1115,37 +1115,37 @@ def test_profile_router_close_is_never_undone_by_a_record_in_flight(hermes_home,
                 profile_log.unlink()
             return handler
 
-        monkeypatch.setattr(hermes_logging, "_new_file_handler", build_then_shutdown)
+        monkeypatch.setattr(moor_logging, "_new_file_handler", build_then_shutdown)
     record = logging.LogRecord("t23", logging.ERROR, __file__, 1, "in flight", None, None)
-    record.hermes_home = str(profile)
+    record.moor_home = str(profile)
     router.handle(record)
     assert not profile_log.exists(), "a closed per-home log file was reopened"
     assert router._profile_handlers == {}
     assert all(handler.stream is None for handler in built), "a handler built after close leaked its fd"
 
 
-def test_router_never_builds_a_child_handler_under_a_lock_logging_shutdown_takes(hermes_home, monkeypatch):
+def test_router_never_builds_a_child_handler_under_a_lock_logging_shutdown_takes(moor_home, monkeypatch):
     """CI run 39131422357 hung: the listener thread held the router's handler lock while building a
     child handler (which takes ``logging._lock``), while dictConfig held ``logging._lock`` inside
     ``logging.shutdown`` and waited on the router's lock. Both sides must finish."""
-    profile_home = (hermes_home / "profiles" / "lockorder").resolve()
+    profile_home = (moor_home / "profiles" / "lockorder").resolve()
     (profile_home / "logs").mkdir(parents=True)
-    (hermes_home / "logs").mkdir(exist_ok=True)
-    existing = RotatingFileHandler(str(hermes_home / "logs" / "agent.log"), encoding="utf-8")
-    router = hermes_logging._ProfileRoutingFileHandler(existing, [profile_home])
+    (moor_home / "logs").mkdir(exist_ok=True)
+    existing = RotatingFileHandler(str(moor_home / "logs" / "agent.log"), encoding="utf-8")
+    router = moor_logging._ProfileRoutingFileHandler(existing, [profile_home])
     existing.close()
 
     building, go = threading.Event(), threading.Event()
-    real_new_file_handler = hermes_logging._new_file_handler
+    real_new_file_handler = moor_logging._new_file_handler
 
     def paused_new_file_handler(*args, **kwargs):
         building.set()
         go.wait(5)
         return real_new_file_handler(*args, **kwargs)  # Handler.__init__ takes logging._lock
 
-    monkeypatch.setattr(hermes_logging, "_new_file_handler", paused_new_file_handler)
+    monkeypatch.setattr(moor_logging, "_new_file_handler", paused_new_file_handler)
     record = logging.LogRecord("lockorder", logging.WARNING, __file__, 1, "routed", None, None)
-    record.hermes_home = str(profile_home)
+    record.moor_home = str(profile_home)
     holding_module_lock, emitter_released = threading.Event(), threading.Event()
     shutdown_got_router_lock = []
 

@@ -211,7 +211,7 @@ describe('annotateInPage overlay', () => {
     const api = annotateInPage(document)
     api.install()
     const pending = api.wait()
-    const host = document.querySelector('hermes-annotate') as HTMLElement
+    const host = document.querySelector('moor-annotate') as HTMLElement
 
     host.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 20, clientY: 20 }))
     host.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: 21, clientY: 21 }))
@@ -252,7 +252,7 @@ describe('annotateInPage overlay', () => {
     const api = annotateInPage(document)
     api.install()
     const pending = api.wait()
-    const host = document.querySelector('hermes-annotate') as HTMLElement
+    const host = document.querySelector('moor-annotate') as HTMLElement
 
     host.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 20, clientY: 20 }))
     host.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: 21, clientY: 21 }))
@@ -292,7 +292,7 @@ describe('annotateInPage overlay', () => {
     const api = annotateInPage(document)
     api.install()
     const pending = api.wait()
-    const host = document.querySelector('hermes-annotate') as HTMLElement
+    const host = document.querySelector('moor-annotate') as HTMLElement
 
     host.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 20, clientY: 20 }))
     host.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: 21, clientY: 21 }))

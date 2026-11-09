@@ -16,7 +16,7 @@ function firstLine(text: string): string {
  * {@link StatusRow} — same chrome as its status-stack siblings, so it reads as
  * one piece with the composer card (no bordered alert-in-a-card). It never
  * disables the composer — slash commands (`/topup`, `/model`, `/login`) stay
- * usable — it only offers recovery: Nous opens Settings → Billing in-app, other
+ * usable — it only offers recovery: Moor opens Settings → Billing in-app, other
  * providers deep-link out. The failed turn's card also names the wall (it can't
  * know whether this banner is on screen: a collapsed drawer, a popped-out
  * composer); a wall in a background chat also raises a sticky toast.

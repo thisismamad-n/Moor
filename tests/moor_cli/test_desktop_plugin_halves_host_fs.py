@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import desktop_plugin_halves as halves
-from hermes_cli.desktop_plugin_halves import PACKAGE_MARKER, reconcile_desktop_halves_report
+from moor_cli import desktop_plugin_halves as halves
+from moor_cli.desktop_plugin_halves import PACKAGE_MARKER, reconcile_desktop_halves_report
 
 
 def _package(folder: Path) -> None:
@@ -45,7 +45,7 @@ def _secret_folder(tmp_path: Path) -> Path:
 
 @pytest.mark.platforms("windows")
 def test_a_junction_inside_an_installed_desktop_folder_is_not_published(tmp_path):
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     package = root / "plugins" / "media"
     _package(package)
     _junction(_secret_folder(tmp_path), package / "desktop" / "assets")
@@ -61,7 +61,7 @@ def test_a_dev_checkout_junctioned_into_plugins_is_published_as_linked(tmp_path)
     """Junctions are how a checkout is linked in on Windows without Developer Mode. Electron's lstat
     calls the folder a link and stamps ``linked``; the host must agree, or each writer re-copies
     the other's half on every pass."""
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     checkout = tmp_path / "src" / "media"
     _package(checkout)
     (root / "plugins").mkdir(parents=True)
@@ -76,7 +76,7 @@ def test_a_dev_checkout_junctioned_into_plugins_is_published_as_linked(tmp_path)
 def test_pruning_a_junctioned_copy_removes_the_junction_not_the_folder_it_points_at(tmp_path):
     """An old copy that kept a link to a checkout, its marker inside the checkout: once the package is
     gone only the junction goes. ``shutil.rmtree`` refuses a junction, so it used to stay forever."""
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     checkout = tmp_path / "src" / "media"
     checkout.mkdir(parents=True)
     (checkout / "plugin.js").write_text("export default {}", encoding="utf-8")
@@ -92,7 +92,7 @@ def test_pruning_a_junctioned_copy_removes_the_junction_not_the_folder_it_points
 
 @pytest.mark.parametrize("junction", ["desktop", "desktop/assets"])
 def test_a_folder_the_host_reports_as_a_junction_is_refused_like_a_link(tmp_path, monkeypatch, junction):
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     package = root / "plugins" / "media"
     _package(package)
     (package / "desktop" / "assets").mkdir()
@@ -105,7 +105,7 @@ def test_a_folder_the_host_reports_as_a_junction_is_refused_like_a_link(tmp_path
 
 
 def test_a_package_folder_the_host_reports_as_a_junction_is_a_linked_checkout(tmp_path, monkeypatch):
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     package = root / "plugins" / "media"
     _package(package)
     _stub_junctions(monkeypatch, package)
@@ -118,7 +118,7 @@ def test_a_package_folder_the_host_reports_as_a_junction_is_a_linked_checkout(tm
 def test_a_plain_folder_the_host_reports_as_a_junction_at_the_target_is_left_alone(tmp_path, monkeypatch):
     """A junction at ``<app_root>/<name>`` with no marker is the user's own linked plugin: the pass
     neither publishes over it nor deletes it, as it does for a symlink."""
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     _package(root / "plugins" / "media")
     (app_root / "media").mkdir(parents=True)
     (app_root / "media" / "mine.txt").write_text("mine", encoding="utf-8")
@@ -130,7 +130,7 @@ def test_a_plain_folder_the_host_reports_as_a_junction_at_the_target_is_left_alo
 
 @pytest.mark.platforms("macos", "windows")
 def test_a_desktop_folder_spelled_with_a_capital_publishes_on_a_case_insensitive_volume(tmp_path):
-    root, app_root = tmp_path / "hermes", tmp_path / "hermes" / "desktop-plugins"
+    root, app_root = tmp_path / "moor", tmp_path / "moor" / "desktop-plugins"
     package = root / "plugins" / "media"
     (package / "Desktop").mkdir(parents=True)
     (package / "Desktop" / "plugin.js").write_text("export default {}", encoding="utf-8")

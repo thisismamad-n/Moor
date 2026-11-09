@@ -207,8 +207,8 @@ def test_zip_fallback_keeps_selected_repository_and_commit(releases, monkeypatch
     with pytest.raises(DownloadBoundary):
         update_cmd_zip._update_via_zip(
             SimpleNamespace(branch=None), target_sha=releases.commits[2],
-            target_repository="Fixture/hermes-agent", completion_request={})
-    assert seen == [(f"https://github.com/Fixture/hermes-agent/archive/{releases.commits[2]}.zip",
+            target_repository="Fixture/moor-agent", completion_request={})
+    assert seen == [(f"https://github.com/Fixture/moor-agent/archive/{releases.commits[2]}.zip",
                      releases.commits[2])]
 
 
@@ -254,14 +254,14 @@ def test_missing_pointers_fall_back_only_to_published_releases(releases, channel
 
 
 def _track_official_origin(releases):
-    official = "https://github.com/NousResearch/hermes-agent.git"
+    official = "https://github.com/thisismamad-n/Moor.git"
     git(releases.root, "remote", "set-url", "origin", official)
     git(releases.root, "config", f"url.{releases.origin.as_uri()}.insteadOf", official)
 
 
 def test_stable_is_the_latest_published_github_release_without_r2(releases):
     """Publishing a GitHub release is the only promotion stable needs: no R2 record or pointer."""
-    from hermes_cli import source_releases
+    from moor_cli import source_releases
 
     def no_r2(name, repository):
         raise AssertionError("stable must not read an R2 channel record")
@@ -278,7 +278,7 @@ def test_stable_is_the_latest_published_github_release_without_r2(releases):
 @pytest.mark.parametrize("start,expected", [(0, 1), (3, 3)], ids=["behind-release", "newer-than-release"])
 def test_default_stable_only_moves_forward_until_the_channel_is_chosen(releases, monkeypatch, capsys,
                                                                        start, expected):
-    from hermes_cli.update_channel import default_channel
+    from moor_cli.update_channel import default_channel
 
     _track_official_origin(releases)
     git(releases.root, "checkout", "--detach", releases.commits[start])

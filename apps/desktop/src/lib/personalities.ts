@@ -19,13 +19,13 @@ export const BUILTIN_PERSONALITIES = [
 ]
 
 // Spellings the runtime treats as "no personality" — mirrors
-// hermes_cli/personality.py NEUTRAL_PERSONALITY_NAMES. A config key with any of
+// moor_cli/personality.py NEUTRAL_PERSONALITY_NAMES. A config key with any of
 // these (after folding) never resolves to a personality, so it must not be
 // offered in the dropdown.
 export const NEUTRAL_PERSONALITY_NAMES = new Set(['', 'none', 'default', 'neutral'])
 
 /**
- * Canonical personality key, mirroring hermes_cli/personality.py
+ * Canonical personality key, mirroring moor_cli/personality.py
  * `normalize_personality_name` (`str(name).strip().lower()`, neutral spellings →
  * ''). The runtime folds every user-config key this way before resolving it, so
  * any reader that lists names for selection must fold identically — otherwise the

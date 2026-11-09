@@ -83,7 +83,7 @@ def test_first_stamp_persists_while_monotonic_clock_is_below_interval(monkeypatc
     agent = _agent_with_db()
     monkeypatch.setattr(run_agent.time, "time", lambda: 1_700_000_000.0)
     monkeypatch.setattr(run_agent.time, "monotonic", lambda: 5.0)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("MOOR_KANBAN_TASK", raising=False)
 
     agent._touch_activity("starting API call #1")
 

@@ -13,7 +13,7 @@ from concurrent.futures import FIRST_COMPLETED, wait as _cf_wait
 from dataclasses import dataclass, field, replace
 from typing import Any, Dict, List, Optional
 
-from hermes_cli.observability.shared_metrics_loop import begin_delegation_run, finish_delegation_unit
+from moor_cli.observability.shared_metrics_loop import begin_delegation_run, finish_delegation_unit
 from tools.async_delegation import _new_delegation_id, record_unit_child
 from tools.delegate_tool_child_run import _attach_child, _detach_child, _fabricated_entry, _signal_child_stop
 from tools.delegate_tool_progress import (
@@ -229,7 +229,7 @@ _SYNC_FALLBACK_NOTES = {
     "no_async": (
         "background=true is not available in this session — it cannot "
         "receive a detached subagent result after the turn ends (a "
-        "finite chat using -Q, --oneshot, or non-TTY stdio, `hermes -z`, a /bg background task, a cron "
+        "finite chat using -Q, --oneshot, or non-TTY stdio, `moor -z`, a /bg background task, a cron "
         "job, a Kanban worker, or a stateless HTTP endpoint). The subagent(s) ran SYNCHRONOUSLY and the result is included above."
     ),
     "at_capacity": (
@@ -261,7 +261,7 @@ def _resolve_async_wake_sid(
     # wins over legacy standalone launch markers, without changing terminal delivery.
     from gateway.session_finite import finite_turn_required
     finite = finite_turn_required()
-    if oneshot_session or finite is True or (finite is None and get_session_env("HERMES_SINGLE_QUERY_SESSION") == "1"):
+    if oneshot_session or finite is True or (finite is None and get_session_env("MOOR_SINGLE_QUERY_SESSION") == "1"):
         return None
 
     try:

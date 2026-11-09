@@ -5,7 +5,7 @@ import os
 import pytest
 
 import pm
-from hermes_cli import browser_runtime
+from moor_cli import browser_runtime
 from pm import paths
 
 
@@ -30,8 +30,8 @@ def _fake_pm_chromium(store):
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_RUNTIME_DIR", str(tmp_path / "tools"))
     (tmp_path / "home").mkdir()
     monkeypatch.setattr(browser_runtime, "BAKED_EXECUTABLE_FILE", tmp_path / "etc" / "chromium-executable-path")
     return tmp_path
@@ -75,17 +75,17 @@ def test_agent_browser_env_is_not_an_override(homes, monkeypatch):
 
 
 def test_override_is_read_from_the_active_profile(homes):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
 
     a, b = homes / "a", homes / "b"
     _write_config(a, "browser:\n  executable_path: /opt/a/chrome\n")
     _write_config(b, "browser:\n  executable_path: ''\n")
     for home, expected in ((a, "/opt/a/chrome"), (b, None), (a, "/opt/a/chrome")):
-        token = set_hermes_home_override(home)
+        token = set_moor_home_override(home)
         try:
             assert browser_runtime.chromium_executable() == expected
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
 
 
 def test_baked_docker_path_after_pm(homes):
@@ -104,7 +104,7 @@ def test_baked_path_to_a_missing_binary_is_ignored_and_hinted(homes):
     browser_runtime.BAKED_EXECUTABLE_FILE.parent.mkdir()
     browser_runtime.BAKED_EXECUTABLE_FILE.write_text(str(homes / "gone"), encoding="utf-8")
     assert browser_runtime.chromium_executable() is None
-    assert "pull the current Hermes image" in browser_runtime.chromium_missing_hint()
+    assert "pull the current Moor image" in browser_runtime.chromium_missing_hint()
 
 
 @pytest.mark.platforms("posix")
@@ -118,14 +118,14 @@ def test_system_chromium_only_where_pm_builds_none(homes, monkeypatch):
     # A target pm builds Chromium for: a system chromium on PATH is not picked up.
     monkeypatch.setattr(pm, "current_target", lambda: "linux-x64")
     assert browser_runtime.chromium_executable() is None
-    assert browser_runtime.chromium_missing_hint() == "Chromium is not installed: run `hermes pm install chromium`."
+    assert browser_runtime.chromium_missing_hint() == "Chromium is not installed: run `moor pm install chromium`."
     # Termux (linux-arm64-bionic): pm builds no Chromium, the system one is used.
     monkeypatch.setattr(pm, "current_target", lambda: "linux-arm64-bionic")
     assert browser_runtime.chromium_executable() == str(exe)
 
 
 def test_termux_hint_never_mentions_npm(homes, monkeypatch):
-    from hermes_platform.host import runtime
+    from moor_platform.host import runtime
 
     monkeypatch.setattr(runtime, "is_termux", lambda: True)
     hint = browser_runtime.chromium_missing_hint()

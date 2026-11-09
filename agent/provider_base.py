@@ -31,7 +31,7 @@ class ProviderBase(abc.ABC):
         return self.name
 
     def get_setup_schema(self) -> dict[str, Any]:
-        """Provider row for the ``hermes tools`` picker.
+        """Provider row for the ``moor tools`` picker.
 
         Shape: ``{"name", "badge", "tag", "env_vars": [{"key", "prompt", "url"}, ...]}``
         (browser providers may add ``"post_setup"``). Override to expose API key

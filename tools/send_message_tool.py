@@ -335,9 +335,9 @@ def _not_configured_error(platform_name, platform, entry):
     from agent.secret_scope import load_env_file
     from gateway.config import _getenv
     from gateway.config_env import _ENV_ENABLE_CREDENTIALS
-    from hermes_constants import get_hermes_home
-    from hermes_cli.config_backend import config_exists
-    home = get_hermes_home()
+    from moor_constants import get_moor_home
+    from moor_cli.config_backend import config_exists
+    home = get_moor_home()
     env_names = list(_ENV_ENABLE_CREDENTIALS.get(platform) or (entry.required_env if entry else ()))
     names = "/".join(env_names) or "credentials"
     env_path, config_path = home / ".env", home / "config.yaml"
@@ -624,7 +624,7 @@ def _standalone_send_policy(platform_name):
     (idempotent manifest scan; only this platform's adapter is materialized)."""
     from gateway.platform_registry import platform_registry
     if not platform_registry.is_registered(platform_name):
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()
     entry = platform_registry.get(platform_name)
     return entry.standalone_send if entry is not None else None

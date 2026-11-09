@@ -1,7 +1,7 @@
 """Local readers of a gateway's ``identify`` answer see what launched it, not the protocol's "none".
 
 The session runtime protocol reports a manual or Desktop-spawned gateway as ``supervisor: "none"``.
-``hermes gateway restart`` read that as an external supervisor: it SIGUSR1'd an auto-started
+``moor gateway restart`` read that as an external supervisor: it SIGUSR1'd an auto-started
 gateway, waited for a relaunch that never came, and exited 1 with no gateway running (#134889).
 """
 from pathlib import Path
@@ -11,10 +11,10 @@ import pytest
 
 from gateway import control_socket
 from gateway import status as gateway_status
-from hermes_cli import gateway as gw
-from hermes_cli import gateway_supervised_restart as supervised
+from moor_cli import gateway as gw
+from moor_cli import gateway_supervised_restart as supervised
 
-PLAIN_ARGV = ["/usr/bin/python", "-m", "hermes_cli.main", "gateway", "run"]
+PLAIN_ARGV = ["/usr/bin/python", "-m", "moor_cli.main", "gateway", "run"]
 SUPERVISED_ARGV = [*PLAIN_ARGV, "--external-supervisor"]
 MANUAL = {"pid": 4321, "supervisor": "none", "launch_supervisor": "manual"}
 
@@ -66,7 +66,7 @@ def test_restart_of_a_manual_gateway_stops_it_and_runs_a_new_one(monkeypatch):
     monkeypatch.setattr(gw, "_wait_for_gateway_exit", lambda **k: None)
     monkeypatch.setattr(gw, "_wait_for_api_server_port_free", lambda *a, **k: None)
     monkeypatch.setattr(gw, "run_gateway", lambda **k: calls.__setitem__("started", True))
-    monkeypatch.setattr("hermes_cli.main_dashboard._get_systemd_service_for_pid", lambda pid: None)
+    monkeypatch.setattr("moor_cli.main_dashboard._get_systemd_service_for_pid", lambda pid: None)
 
     gw._cmd_restart(SimpleNamespace(system=False, all=False, force=False))
 
@@ -83,10 +83,10 @@ class _PastOwnerCheck(Exception):
     ({"pid": 4321, "supervisor": "none"}, "unknown gateway still owns"),
 ])
 def test_profile_data_cleanup_drains_only_a_manual_gateway(monkeypatch, tmp_path, identity, refusal):
-    from hermes_cli.data_cleanup_holders import _drain_manual_gateway
+    from moor_cli.data_cleanup_holders import _drain_manual_gateway
 
     home = Path(tmp_path).resolve()
-    answer = {**identity, "hermes_home": str(home), "start_time": 111}
+    answer = {**identity, "moor_home": str(home), "start_time": 111}
     monkeypatch.setattr(control_socket, "identify_gateway", lambda h, **k: answer)
 
     def pause(h):
@@ -106,7 +106,7 @@ def test_profile_data_cleanup_drains_only_a_manual_gateway(monkeypatch, tmp_path
     ({"pid": 4321, "supervisor": "none"}, "manual"),  # unknown: the outside-in classifier decides
 ])
 def test_update_inventory_records_the_launch_supervisor(monkeypatch, tmp_path, record, expected):
-    from hermes_cli import update_inventory, update_receipt
+    from moor_cli import update_inventory, update_receipt
 
     monkeypatch.setattr(update_inventory, "_supervisor_classifier", lambda: lambda pid: "manual")
     monkeypatch.setattr(update_receipt, "_socket_identity", lambda home: (4321, record))

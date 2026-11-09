@@ -27,10 +27,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli import main as hermes_main
-from hermes_cli import main_web_build
-from hermes_cli import main_install_repair
-from hermes_cli import update_cmd
+from moor_cli import main as moor_main
+from moor_cli import main_web_build
+from moor_cli import main_install_repair
+from moor_cli import update_cmd
 
 
 GIT = ["git"]
@@ -86,7 +86,7 @@ def _no_config(monkeypatch):
     """Isolate the guard from the machine's real config.yaml."""
     import moor_cli.config as moor_config
 
-    monkeypatch.setattr(hermes_config, "load_config", dict)
+    monkeypatch.setattr(moor_config, "load_config", dict)
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +293,7 @@ def test_parked_branch_guard_skips_cherry_on_a_partial_clone_when_git_ignores_no
     """Git before 2.44 ignores GIT_NO_LAZY_FETCH, so the no-lazy-fetch child alone would still
     fetch without bound there (#124767, git 2.43). A partial clone must not reach cherry at all:
     with the override emptied, as old git effectively sees it, the assessment starts no fetch."""
-    from hermes_cli import update_cmd_git
+    from moor_cli import update_cmd_git
     monkeypatch.setattr(update_cmd_git, "NO_LAZY_FETCH_ENV", {})
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")

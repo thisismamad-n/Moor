@@ -82,7 +82,7 @@ def _subdict(node: Any, *keys: str) -> dict[str, Any]:
 
 
 def _read_config_section(*path: str, label: str, log: logging.Logger = logger) -> dict[str, Any]:
-    """Read a nested section of ~/.hermes/config.yaml. Tolerates missing file."""
+    """Read a nested section of ~/.moor/config.yaml. Tolerates missing file."""
     try:
         from moor_cli.config import load_config_readonly
         cfg = load_config_readonly()
@@ -121,7 +121,7 @@ _warned_bad_values: set = set()
 
 def _bounded_count(key: str, default: int) -> int:
     """*key* (a ``curator.<key>`` day/hour count), floored at 1 like ``curator prune --days`` already
-    refuses (hermes_cli/curator.py::_cmd_prune). A value < 1 collapses stale_cutoff/archive_cutoff
+    refuses (moor_cli/curator.py::_cmd_prune). A value < 1 collapses stale_cutoff/archive_cutoff
     onto or past "now" in apply_automatic_transitions(), mass-transitioning every skill with any
     past activity on the next automatic pass — unlike the manual prune path this runs unconfirmed,
     so it falls back to the default instead of acting on the bad value."""
@@ -926,7 +926,7 @@ def run_curator_review(
     recorded in ``state.last_report_path`` so users can read what WOULD have happened."""
     consolidate = get_consolidate() if consolidate is None else consolidate
     start = datetime.now(UTC)
-    hermes_home = get_hermes_home()  # the LLM pass may run on a thread with no profile binding
+    moor_home = get_moor_home()  # the LLM pass may run on a thread with no profile binding
     if dry_run:  # count candidates without mutating state
         counts = {"checked": len(_safe_curated_report()), "marked_stale": 0, "archived": 0, "reactivated": 0}
     else:
@@ -971,7 +971,7 @@ def run_curator_review(
             llm_meta = _llm_meta("skipped (consolidation off)")
         elapsed = (datetime.now(UTC) - start).total_seconds()
         state2 = {**load_state(), "last_run_duration_seconds": elapsed, "last_run_summary": final_summary}
-        # Per-run report, best-effort; path recorded for `hermes curator status`.
+        # Per-run report, best-effort; path recorded for `moor curator status`.
         after_report = _safe_curated_report()
         try:
             report_path = _write_run_report(
@@ -983,7 +983,7 @@ def run_curator_review(
         except Exception as e:
             logger.debug("Curator report write failed: %s", e, exc_info=True)
         save_state(state2)
-        _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, hermes_home)
+        _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, moor_home)
         _notify(on_summary, f"curator: {final_summary}")
 
     if synchronous:
@@ -1004,8 +1004,8 @@ def run_curator_review(
 
 # --- Provider/model resolution for the review fork ---
 
-def _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, hermes_home) -> None:
-    from hermes_cli.observability.shared_metrics_loop import record_curator_run
+def _record_run_metric(trigger, dry_run, counts, before_report, after_report, llm_meta, moor_home) -> None:
+    from moor_cli.observability.shared_metrics_loop import record_curator_run
 
     def what_changed() -> dict[str, int]:
         before, after = _by_name(before_report), _by_name(after_report)
@@ -1016,7 +1016,7 @@ def _record_run_metric(trigger, dry_run, counts, before_report, after_report, ll
                 "merged": len(diff.consolidated), "patched": patched}
 
     outcome = "skipped" if dry_run else "failed" if llm_meta.get("error") else "success"
-    record_curator_run(trigger=trigger, outcome=outcome, counts=what_changed, hermes_home=hermes_home)
+    record_curator_run(trigger=trigger, outcome=outcome, counts=what_changed, moor_home=moor_home)
 
 
 class _ReviewRuntimeBinding(NamedTuple):

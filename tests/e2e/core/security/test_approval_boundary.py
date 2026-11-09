@@ -112,7 +112,7 @@ def _plant(root: Path) -> Path:
 
 
 def _single_query_run(root: Path, single_query_mode: str) -> dict[str, Any]:
-    """One ``hermes chat -q`` whose model calls ``terminal`` once per variant, then the control."""
+    """One ``moor chat -q`` whose model calls ``terminal`` once per variant, then the control."""
     home, victims = root / "home", _plant(root)
     script: list[Any] = [ToolCall("terminal", {"command": t.format(X=n)}) for n, t in VARIANTS.items()]
     script += [ToolCall("terminal", {"command": CONTROL}), Text("done")]

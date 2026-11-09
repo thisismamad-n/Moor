@@ -23,14 +23,14 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException
 
 from gateway.status import resolve_gateway_liveness, retained_gateway_state
-from hermes_cli._subprocess_compat import windows_hide_flags
-from hermes_cli.config import OPTIONAL_ENV_VARS, get_env_path
-from hermes_cli.process_identity import release_process_group_once_empty, spawn_owned
-from hermes_constants import get_process_hermes_home
-from hermes_cli.web_deps import LateState, late
-from hermes_cli.web_server_gateway import _restart_gateway_after
-from hermes_cli.web_whatsapp_session import _backup_whatsapp_session
-from hermes_cli.web_server_messaging import (
+from moor_cli._subprocess_compat import windows_hide_flags
+from moor_cli.config import OPTIONAL_ENV_VARS, get_env_path
+from moor_cli.process_identity import release_process_group_once_empty, spawn_owned
+from moor_constants import get_process_moor_home
+from moor_cli.web_deps import LateState, late
+from moor_cli.web_server_gateway import _restart_gateway_after
+from moor_cli.web_whatsapp_session import _backup_whatsapp_session
+from moor_cli.web_server_messaging import (
     _TelegramOnboardingPairing, _WhatsAppOnboardingSession, _messaging_platform_catalog, _telegram_onboarding_error_message, _telegram_onboarding_lock, _telegram_onboarding_pairings, _whatsapp_onboarding_payload, _whatsapp_onboarding_sessions,
 )
 from moor_cli.web_routers._common import (
@@ -46,17 +46,17 @@ _log = logging.getLogger("moor_cli.web_server")
 router = APIRouter()
 
 # Late-bound so a test's monkeypatch on the owning module wins at call time.
-_config_profile_scope = late("_config_profile_scope", "hermes_cli.web_server_profiles")
-_profile_scope = late("_profile_scope", "hermes_cli.web_server_profiles")
-_resolve_profile_dir = late("_resolve_profile_dir", "hermes_cli.web_server_profiles")
-_restart_gateway_after_whatsapp_onboarding = late("_restart_gateway_after_whatsapp_onboarding", "hermes_cli.web_server_messaging")
-_telegram_onboarding_request_sync = late("_telegram_onboarding_request_sync", "hermes_cli.web_server_messaging")
-_whatsapp_session_path = late("_whatsapp_session_path", "hermes_cli.web_server_messaging")
-_write_platform_enabled = late("_write_platform_enabled", "hermes_cli.web_server_messaging")
-load_env = late("load_env", "hermes_cli.config")
-get_secret_source_values = late("get_secret_source_values", "hermes_cli.env_loader")
+_config_profile_scope = late("_config_profile_scope", "moor_cli.web_server_profiles")
+_profile_scope = late("_profile_scope", "moor_cli.web_server_profiles")
+_resolve_profile_dir = late("_resolve_profile_dir", "moor_cli.web_server_profiles")
+_restart_gateway_after_whatsapp_onboarding = late("_restart_gateway_after_whatsapp_onboarding", "moor_cli.web_server_messaging")
+_telegram_onboarding_request_sync = late("_telegram_onboarding_request_sync", "moor_cli.web_server_messaging")
+_whatsapp_session_path = late("_whatsapp_session_path", "moor_cli.web_server_messaging")
+_write_platform_enabled = late("_write_platform_enabled", "moor_cli.web_server_messaging")
+load_env = late("load_env", "moor_cli.config")
+get_secret_source_values = late("get_secret_source_values", "moor_cli.env_loader")
 builtin_platform_status = late("builtin_platform_status", "gateway.config_env")
-load_config = late("load_config", "hermes_cli.config")
+load_config = late("load_config", "moor_cli.config")
 read_runtime_status = late("read_runtime_status", "gateway.status")
 remove_env_value = late("remove_env_value", "moor_cli.config")
 save_env_value = late("save_env_value", "moor_cli.config")
@@ -298,8 +298,8 @@ def _platform_payloads(scoped_dir: Optional[Path], entries) -> list[dict[str, An
     # profile's standalone days outranks nothing: only a record proving a live own gateway does —
     # the same rung order ``resolve_gateway_liveness`` uses (own runtime PID before the multiplexer),
     # so the two surfaces cannot disagree. Unscoped, the profile is the process's own home (a pooled
-    # ``hermes --profile X serve``).
-    own_home = scoped_dir if scoped_dir is not None else get_process_hermes_home()
+    # ``moor --profile X serve``).
+    own_home = scoped_dir if scoped_dir is not None else get_process_moor_home()
     runtime = served_profile_runtime(own_home, runtime) or runtime
     # Credentials a secret manager supplies have no .env line; only values the profile's enabled
     # sources resolved (into its secret scope, by ``_profile_scope``) count, and an empty one is unset.

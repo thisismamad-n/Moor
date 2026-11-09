@@ -11,14 +11,14 @@ import {
 import { activeGatewayProfileKey, ensureGatewayForProfile } from '@/store/gateway'
 import { $localModelOfferPending } from '@/store/local-model-offer'
 import { $onboardingDecided, markOnboardingDecided, setOnboardingSurfaceActive } from '@/store/onboarding-presence'
-import type { FreeTierStatus } from '@/types/hermes'
+import type { FreeTierStatus } from '@/types/moor'
 
 const status = (nudge_due_in: null | number, available = true): FreeTierStatus => ({
   available,
   enabled: true,
   has_guest: available,
-  label: 'Nous · free tier',
-  model: 'nous/welcome',
+  label: 'Moor · free tier',
+  model: 'moor/welcome',
   notice_pending: false,
   nudge_due_in
 })

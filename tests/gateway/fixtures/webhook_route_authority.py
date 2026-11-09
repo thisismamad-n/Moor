@@ -11,14 +11,14 @@ def mount_authority(app, adapter):
         from gateway.run import GatewayRunner
         from gateway.session_authority import initialize_session_authority
         from gateway.session import SessionStore
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
         runner = GatewayRunner()
         # Route tests mount ONE default-profile authority with no profile reservation; a profiles/
         # directory in the test home must not flip the runner into (unreserved) multiplex mode.
         runner.config.multiplex_profiles = False
-        runner.session_store = SessionStore(sessions_dir=get_hermes_home() / "sessions", config=runner.config)
-        from hermes_state import SessionDB
-        runner.session_store._db = SessionDB(db_path=get_hermes_home() / "state.db")
+        runner.session_store = SessionStore(sessions_dir=get_moor_home() / "sessions", config=runner.config)
+        from moor_state import SessionDB
+        runner.session_store._db = SessionDB(db_path=get_moor_home() / "state.db")
         runner._session_db = runner.session_store._db
         authority = await initialize_session_authority(runner, profile_id='default', instance_id='route-test')
         runner.adapters[Platform.WEBHOOK] = adapter

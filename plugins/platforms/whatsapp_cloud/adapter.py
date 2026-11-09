@@ -615,7 +615,7 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
     async def send_voice(self, chat_id: str, audio_path: str, caption: Optional[str] = None, reply_to: Optional[str] = None,
                          is_voice: Optional[bool] = None, **kwargs) -> SendResult:
         """Voice message: ``audio/ogg; codecs=opus`` renders as a voice bubble, so a
-        local MP3 (Hermes TTS output) is converted via ffmpeg first; other audio is sent as-is.
+        local MP3 (Moor TTS output) is converted via ffmpeg first; other audio is sent as-is.
         A plain audio MEDIA file (``is_voice=False``) is never converted into a voice bubble."""
         mime_type: Optional[str] = None
         if is_voice is False and audio_path.lower().endswith(".mp3"):
@@ -1076,17 +1076,17 @@ class WhatsAppCloudAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
 
 def _is_connected(config) -> bool:
     """Phone-number id + access token, from ``PlatformConfig.extra`` (YAML / env seeding) or the
-    scope-aware env reader (``hermes_cli.gateway.get_env_value`` so setup-status patches see it)."""
+    scope-aware env reader (``moor_cli.gateway.get_env_value`` so setup-status patches see it)."""
     extra = (getattr(config, "extra", None) or {}) if config is not None else {}
     if extra.get("phone_number_id") and extra.get("access_token"):
         return True
-    import hermes_cli.gateway as gateway_mod
+    import moor_cli.gateway as gateway_mod
     return all((gateway_mod.get_env_value(name) or "").strip()
                for name in ("WHATSAPP_CLOUD_PHONE_NUMBER_ID", "WHATSAPP_CLOUD_ACCESS_TOKEN"))
 
 
 def _interactive_setup() -> None:
-    """``hermes gateway setup`` entry: the same wizard ``hermes whatsapp-cloud`` runs."""
+    """``moor gateway setup`` entry: the same wizard ``moor whatsapp-cloud`` runs."""
     from .setup_wizard import run_whatsapp_cloud_setup
     run_whatsapp_cloud_setup()
 
@@ -1103,7 +1103,7 @@ _PLATFORM_HINT = (
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system.
+    """Plugin entry point — called by the Moor plugin system.
 
     No ``validate_config``: an unconfigured adapter still reaches ``connect()``, which records the
     ``whatsapp_cloud_unconfigured`` fatal error (same outcome as the former core wiring). No
@@ -1113,12 +1113,12 @@ def register(ctx) -> None:
     ctx.register_platform(
         name="whatsapp_cloud", label="WhatsApp Business (Cloud)", adapter_factory=WhatsAppCloudAdapter,
         dashboard_label="WhatsApp Cloud API",
-        dashboard_description="Use Hermes via Meta's hosted WhatsApp Cloud API (no local bridge).",
+        dashboard_description="Use Moor via Meta's hosted WhatsApp Cloud API (no local bridge).",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/whatsapp-cloud",
         check_fn=check_whatsapp_cloud_requirements, is_connected=_is_connected,
         config_connected_fn=config_connected_extra("phone_number_id", "access_token"),
         required_env=["WHATSAPP_CLOUD_PHONE_NUMBER_ID", "WHATSAPP_CLOUD_ACCESS_TOKEN"],
-        install_hint="aiohttp/httpx missing — reinstall hermes-agent", setup_fn=_interactive_setup,
+        install_hint="aiohttp/httpx missing — reinstall moor-agent", setup_fn=_interactive_setup,
         cron_deliver_env_var="WHATSAPP_CLOUD_HOME_CHANNEL", emoji="📱", allow_update_command=False,
         platform_hint=_PLATFORM_HINT,
         # Adapter lacks edit_message; promote once it lands.

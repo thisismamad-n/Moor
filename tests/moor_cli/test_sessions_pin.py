@@ -14,7 +14,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def existing_store(tmp_path, monkeypatch):
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr("moor_constants.get_moor_home", lambda: tmp_path)
     (tmp_path / "state.db").touch()
 
 
@@ -54,8 +54,8 @@ def _run(monkeypatch, capsys, argv_tail, db):
         assert kwargs.get("read_only", False) == (argv_tail[0] == "pinned")
         return db
 
-    monkeypatch.setattr(hermes_state, "SessionDB", open_db)
-    monkeypatch.setattr(sys, "argv", ["hermes", "sessions", *argv_tail])
+    monkeypatch.setattr(moor_state, "SessionDB", open_db)
+    monkeypatch.setattr(sys, "argv", ["moor", "sessions", *argv_tail])
     try:
         main_mod.main()
         code = 0

@@ -204,7 +204,7 @@ class TestDefaults:
 class TestModelResolution:
 
     def test_no_config_falls_back_to_default(self, image_tool):
-        with patch("hermes_cli.config.load_config", return_value={}):
+        with patch("moor_cli.config.load_config", return_value={}):
             mid, _meta = image_tool._resolve_fal_model()
         assert mid == image_tool.DEFAULT_MODEL
 

@@ -37,7 +37,7 @@ export function describeCrashReason(reason: unknown): string {
 }
 
 /** Property stamped on intentional app-transition sentinel errors. */
-const EXPECTED_TRANSITION_FLAG = '__hermesExpectedTransition'
+const EXPECTED_TRANSITION_FLAG = '__moorExpectedTransition'
 
 /**
  * Stamp a sentinel Error as an expected, intentional app transition (#119409).

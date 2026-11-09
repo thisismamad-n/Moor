@@ -9,7 +9,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from agent.i18n import t
-from hermes_cli.commands import (
+from moor_cli.commands import (
     COMMAND_REGISTRY, _is_gateway_available, _iter_plugin_command_entries, _resolve_config_gates)
 
 # Logger name parity with the origin module (tests capture "moor_cli.commands").
@@ -384,9 +384,9 @@ _SLACK_RESERVED_COMMANDS = frozenset({
 _SLACK_VIA_MOOR_ONLY = frozenset({
     "topup", "moa", "debug", "egress", "init", "version", "diff", "update", "heartbeat",
     "refine", "review", "pause", "whoami", "platform", "insights", "login",
-    # Recovery-only, after a restart lost a turn: `/hermes discard` reaches it.
+    # Recovery-only, after a restart lost a turn: `/moor discard` reaches it.
     "discard",
-    # One-time answer to the low-disk prompt; `/hermes autoprune on` reaches it.
+    # One-time answer to the low-disk prompt; `/moor autoprune on` reaches it.
     "autoprune"})
 
 
@@ -407,8 +407,8 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
     wanted += [(name, desc, hint or "") for name, desc, hint in _iter_plugin_command_entries()]
 
     entries: list[tuple[str, str, str]] = [
-        ("hermes", t("slash.hermes.description"), "[subcommand] [args]")]
-    seen = {"hermes"}
+        ("moor", t("slash.moor.description"), "[subcommand] [args]")]
+    seen = {"moor"}
     for name, desc, hint in wanted:
         slack_name = _sanitize_slack_name(name)
         if (not slack_name or slack_name in seen or slack_name in _SLACK_RESERVED_COMMANDS

@@ -186,14 +186,14 @@ def _hand_off_primary_routed_run(job: dict[str, Any], extra_prompt: Optional[str
     routed = _primary_routed_delivery_platforms(job)
     if not routed:
         return None
-    from hermes_cli.cron import _builtin_gateway_liveness
+    from moor_cli.cron import _builtin_gateway_liveness
     alive = _builtin_gateway_liveness()
     if alive is not True:
         # None = the probe could not tell; a run queued for a ticker that may not exist is worse
         # than an honest refusal (nothing would ever pick it up).
         cause = ("Start the gateway — its ticker will deliver the job on schedule." if alive is False
                  else "Could not determine whether a gateway serves this profile; check "
-                      "`hermes cron status` and re-run.")
+                      "`moor cron status` and re-run.")
         return _dumps({
             "success": False,
             "error": (
@@ -359,13 +359,13 @@ def _run_claimed_job(job: dict[str, Any], extra_prompt: Optional[str] = None) ->
         runner = runner_ref() if callable(runner_ref) else None
         adapters = getattr(runner, "adapters", None) if runner is not None else None
         # ``runner.adapters`` is the LAUNCH profile's map; under multiplex the run executes with
-        # HERMES_HOME bound to the owning profile, so resolve that profile's adapters the way the
+        # MOOR_HOME bound to the owning profile, so resolve that profile's adapters the way the
         # ticker (``tick_adapters_for``) does — fail closed, never the default bot (#124248). A
         # resolution error propagates to the ``except`` below and marks the run failed.
         if runner is not None and hasattr(runner, "_adapters_for_profile"):
-            from hermes_constants import get_hermes_home, profile_name_for_home
+            from moor_constants import get_moor_home, profile_name_for_home
 
-            profile = profile_name_for_home(get_hermes_home())
+            profile = profile_name_for_home(get_moor_home())
             adapters = runner._adapters_for_profile(profile)
             # A credentialless shared-bot satellite borrows the primary's bot for ROUTED targets
             # only — the same grant the ticker's ``tick_adapters_for`` makes, never the full map.
@@ -510,11 +510,11 @@ def _run_session_usage(job_id: str, execution_id: Optional[str]) -> dict[str, An
         return {}
     import sqlite3
 
-    from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    from moor_constants import get_moor_home
+    from moor_state import SessionDB
     # A missing or locked state.db costs the notice its usage line, never the completion.
     try:
-        db = SessionDB(db_path=get_hermes_home() / "state.db", read_only=True)
+        db = SessionDB(db_path=get_moor_home() / "state.db", read_only=True)
     except (sqlite3.Error, OSError):
         return {}
     try:

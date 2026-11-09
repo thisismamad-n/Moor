@@ -42,7 +42,7 @@ no-foreground invariant, click-dispatch internals — see
 ## Which machine it drives
 
 `computer_use` acts on the same machine the bot's screen lives on, never on
-the machine running Hermes Desktop. On a gateway with `terminal.backend:
+the machine running Moor Desktop. On a gateway with `terminal.backend:
 local` that is the gateway host. With a sandboxed terminal (`docker`, `ssh`,
 or a plugin backend that declares `supports_streams`, such as `singularity`) the
 driver runs **inside the sandbox** on the sandbox's own
@@ -55,13 +55,13 @@ runs](./bot-screen.md#where-the-screen-runs).
 
 ## Enabling
 
-**The driver ships with Hermes.** `cua-driver` is pinned in `pm/lock.json`
-and is a default PM package: the installers, a bare `hermes pm install`, and
-`hermes update` install it on every macOS, Windows, and glibc Linux target
+**The driver ships with Moor.** `cua-driver` is pinned in `pm/lock.json`
+and is a default PM package: the installers, a bare `moor pm install`, and
+`moor update` install it on every macOS, Windows, and glibc Linux target
 (cua-driver publishes no musl or Android build). The desktop app's bundle
 carries it too. To leave it out, pass `--skip-computer-use` on POSIX or
-`-SkipComputerUse` on Windows (or run `hermes pm install --without cua-driver`);
-Hermes remembers the choice, and `hermes pm install cua-driver` undoes it.
+`-SkipComputerUse` on Windows (or run `moor pm install --without cua-driver`);
+Moor remembers the choice, and `moor pm install cua-driver` undoes it.
 
 If the download failed or you opted out earlier, any of these installs it:
 
@@ -399,7 +399,7 @@ Screenshots are expensive. Moor applies four layers of optimisation:
   request until it would cross a per-request image limit; then the oldest
   batch becomes `[screenshot removed to save context]` placeholders. The
   block limit is 100 images when every image in the request is at most
-  2000 px per side (Hermes embeds its own screenshots at 1568 px or less),
+  2000 px per side (Moor embeds its own screenshots at 1568 px or less),
   and 20 when any image is larger, because above 20 images Anthropic holds
   every image to that stricter per-side cap. A 24 MB image-data budget
   applies either way. Below the limit nothing is rewritten, so the
@@ -512,7 +512,7 @@ MOOR_CUA_DRIVER_CMD=/path/to/your/cua-driver
 ### Windows auto-start (opt-in)
 
 On Windows, cua-driver can run from a per-boot Scheduled Task
-(`cua-driver-serve`) so it is already listening when Hermes needs it. This
+(`cua-driver-serve`) so it is already listening when Moor needs it. This
 task is **opt-in**: by default Computer Use starts the driver on demand,
 per session — exactly as on macOS and Linux — and no scheduled task is
 registered when you install or enable the toolset (#97389).
@@ -530,13 +530,13 @@ desktop, so an on-demand driver cannot reach one
 ([windows-ssh](https://cua.ai/docs/how-to-guides/driver/windows-ssh) has the
 recipe). If the task exists but you want it gone, remove it with
 `cua-driver autostart disable` (or `schtasks /Delete /TN cua-driver-serve`)
-from an elevated shell — Hermes does not re-register it once
+from an elevated shell — Moor does not re-register it once
 `computer_use.autostart` is false.
 
 Swap the driver entirely: `computer_use.backend` in `config.yaml` names the one
 active provider (`cua`, the default, or an installed provider plugin; see
 [computer-use backend plugins](../../developer-guide/plugins/index.md#computer-use-backend-plugins)).
-`hermes tools` → Computer Use lists every installed provider.
+`moor tools` → Computer Use lists every installed provider.
 
 ### Telemetry
 

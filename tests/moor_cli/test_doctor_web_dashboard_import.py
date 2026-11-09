@@ -1,8 +1,8 @@
-"""``hermes doctor`` reports a dashboard web surface that dies at import (#124214).
+"""``moor doctor`` reports a dashboard web surface that dies at import (#124214).
 
 The optional ``web`` extra pins fastapi/starlette in lockstep, but the standalone starlette
 security pin ships in several other extras — so a venv can end up with starlette 1.x beside an
-older fastapi. ``hermes dashboard`` then dies constructing ``FastAPI(...)`` with a TypeError
+older fastapi. ``moor dashboard`` then dies constructing ``FastAPI(...)`` with a TypeError
 (not an ImportError), so the module's own lazy-install fallback never fires, and the process
 exits before printing anything. The doctor probe imports the web surface in a subprocess so the
 crash lands in the report instead of the user's terminal.
@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import sys
 
-from hermes_cli import doctor_platform as dp
-from hermes_cli.doctor_report import Finding
+from moor_cli import doctor_platform as dp
+from moor_cli.doctor_report import Finding
 
 
 class _FakeCompleted:
@@ -44,7 +44,7 @@ def test_drifted_pair_is_a_reported_issue(capsys, monkeypatch):
     out = capsys.readouterr().out
     assert "Dashboard web surface" in out and "✗" in out
     assert "Router.__init__() got an unexpected keyword argument 'on_startup'" in out
-    assert any("hermes pm repair" in i for i in finding.issues)
+    assert any("moor pm repair" in i for i in finding.issues)
 
 
 def test_probe_runs_without_lazy_installs(capsys, monkeypatch):
@@ -53,7 +53,7 @@ def test_probe_runs_without_lazy_installs(capsys, monkeypatch):
 
     (args, kwargs) = recorded[0]
     assert args[0][:2] == [sys.executable, "-c"]
-    assert args[0][2] == "import hermes_cli.web_server"
+    assert args[0][2] == "import moor_cli.web_server"
     env = kwargs["env"]
-    assert env["HERMES_DISABLE_LAZY_INSTALLS"] == "1"
+    assert env["MOOR_DISABLE_LAZY_INSTALLS"] == "1"
     assert kwargs["timeout"] >= 60

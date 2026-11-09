@@ -264,7 +264,7 @@ def get_secret(name: str, default: Optional[str] = None) -> Optional[str]:
 def secret_source_label(name: str) -> str:
     """``" (from Bitwarden)"``-style suffix naming the external secret source (a secret-source plugin)
     that supplied env var *name*; ``""`` for ``.env`` / shell values. Public for plugins' status lines."""
-    from hermes_cli.env_loader import format_secret_source_suffix
+    from moor_cli.env_loader import format_secret_source_suffix
 
     return format_secret_source_suffix(name)
 
@@ -327,8 +327,8 @@ def _parse_env_value(raw_value: str) -> str:
 # in-place same-size rewrite inside one tick, and ``/reload`` then served the old value (CI run
 # 39146191939). The open keeps close-to-open revalidation on NFS, and a vanished/unreadable file
 # fails the open and is never cached (a transient EACCES must not become "this profile has no
-# secrets"). ``invalidate_env_file_cache()`` is the explicit knob; ``hermes_cli.config.
-# invalidate_env_cache()`` calls it for Hermes's own .env writers.
+# secrets"). ``invalidate_env_file_cache()`` is the explicit knob; ``moor_cli.config.
+# invalidate_env_cache()`` calls it for Moor's own .env writers.
 _ENV_FILE_CACHE: OrderedDict[str, tuple[bytes, dict[str, str]]] = OrderedDict()
 _ENV_FILE_CACHE_LOCK = threading.Lock()
 _ENV_FILE_CACHE_MAX = 64  # one entry per profile home in practice
@@ -370,7 +370,7 @@ def _parse_env_text(text: str) -> dict[str, str]:
 
 
 def load_env_file(env_path: Path) -> dict[str, str]:
-    """THE ``.env`` tokenizer: every reader (profile scope, ``hermes_cli.config.load_env``, the dashboard
+    """THE ``.env`` tokenizer: every reader (profile scope, ``moor_cli.config.load_env``, the dashboard
     scrub, skill secret capture, managed .env, setup prompts) parses through here so no two boundaries
     disagree on which keys/values a file defines. Dict only — never touches ``os.environ``. ``export``
     prefix, ``#`` comments, quote escapes reversed; a BOM is stripped so it doesn't prefix the first key.
@@ -404,7 +404,7 @@ def load_env_file(env_path: Path) -> dict[str, str]:
     return secrets
 
 
-def build_profile_secret_scope(hermes_home: Path) -> dict[str, str]:
+def build_profile_secret_scope(moor_home: Path) -> dict[str, str]:
     """Build a profile's secret mapping from ``<home>/.env`` plus its external
     secret sources. Global vars are NOT copied in — ``get_secret`` reads those
     from ``os.environ`` — so the scope holds only profile secrets."""
@@ -429,7 +429,7 @@ def build_profile_secret_scope(hermes_home: Path) -> dict[str, str]:
     # managed-vs-user collision (#111187 review). Every multiplex-authoritative scope — gateway
     # turn, routed cron fire, external worker — is built here, so managed authority is composed
     # once, not restored by each consumer.
-    from hermes_cli.managed_scope import load_managed_env  # fail-open: {} when no managed scope
+    from moor_cli.managed_scope import load_managed_env  # fail-open: {} when no managed scope
 
     secrets.update((k, v) for k, v in load_managed_env().items() if not _is_global_env(k))
     return secrets
@@ -446,8 +446,8 @@ def _is_process_home(moor_home: Path) -> bool:
         return False
 
 
-def refresh_installed_secret_scope(hermes_home: Path) -> bool:
-    """Fold a fresh build of *hermes_home*'s secrets into the INSTALLED scope, in place.
+def refresh_installed_secret_scope(moor_home: Path) -> bool:
+    """Fold a fresh build of *moor_home*'s secrets into the INSTALLED scope, in place.
 
     A scope is frozen when installed, but a fire can learn of new values afterwards: a routed cron
     fire's first agent build discovers plugin secret sources, and under multiplex semantics the
@@ -461,7 +461,7 @@ def refresh_installed_secret_scope(hermes_home: Path) -> bool:
     # REPLACE, don't merge: the rebuild is the profile's current truth, so a name a source has
     # stopped supplying (rotated, revoked, source removed) must disappear from the fire's scope
     # rather than survive as the stale value dict.update() would keep.
-    rebuilt = build_profile_secret_scope(hermes_home)
+    rebuilt = build_profile_secret_scope(moor_home)
     # Update first, then drop what is gone: a concurrent reader never sees an emptied scope.
     scope.update(rebuilt)
     for name in [n for n in scope if n not in rebuilt]:

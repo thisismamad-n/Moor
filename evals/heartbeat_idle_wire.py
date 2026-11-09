@@ -21,7 +21,7 @@ from gateway.platforms.base import BasePlatformAdapter, SendResult
 from gateway.platforms.event import MessageEvent
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource, SessionStore, build_session_key
-from hermes_cli import heartbeat
+from moor_cli import heartbeat
 
 
 class WireAdapter(BasePlatformAdapter):

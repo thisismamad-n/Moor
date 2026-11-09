@@ -26,13 +26,13 @@ from typing import Callable, Mapping, Optional
 # `appId` into extraMetadata.desktopName, and Electron hands that string to the compositor
 # verbatim (Wayland app_id, CHROME_DESKTOP). GNOME links a window to a launcher by StartupWMClass
 # or by a `<app_id>.desktop` file name, so the entry has to carry the same id — under the old
-# "hermes.desktop" name a packaged launch matches neither rung and lands on the placeholder icon.
-APP_ID = "com.nousresearch.hermes"
+# "moor.desktop" name a packaged launch matches neither rung and lands on the placeholder icon.
+APP_ID = "com.moorinc.moor"
 DESKTOP_ENTRY_NAME = f"{APP_ID}.desktop"
 
 # Entry name written before the app-id rename; a successful install converts it into a hidden
 # alias (NoDisplay=true) so pre-rename taskbar pins keep resolving (see _alias_legacy_desktop_entry).
-LEGACY_DESKTOP_ENTRY_NAME = "hermes.desktop"
+LEGACY_DESKTOP_ENTRY_NAME = "moor.desktop"
 
 # XDG startup notification: set by an app-grid / menu launch, absent for terminal and detached
 # (updater relaunch) launches. See launched_from_shell().
@@ -131,7 +131,7 @@ def resolve_exec_command(project_root: Optional[Path] = None) -> str:
         # lineage, commit 4150501f641) — cached here per-process so a desktop launch pays the subprocess
         # cost at most once.
         interpreter = _running_interpreter_fallback()
-    argv = [interpreter, "-m", "hermes_cli.main", *_desktop_argv_tail(project_root)]
+    argv = [interpreter, "-m", "moor_cli.main", *_desktop_argv_tail(project_root)]
     if bin_path:
         resolved = Path(bin_path).resolve()
         # A Python launcher whose shebang points OUTSIDE the venv (e.g. the repo's `moor` script
@@ -160,7 +160,7 @@ def _desktop_argv_tail(project_root: Optional[Path]) -> list[str]:
     packaged = any(
         (release / dist / name).exists()
         for dist in ("linux-unpacked", "linux-arm64-unpacked")
-        for name in ("hermes", "Hermes")
+        for name in ("moor", "Moor")
     )
     return ["desktop", "--skip-build"] if packaged else ["desktop"]
 
@@ -225,7 +225,7 @@ def _is_this_checkout_managed_cli(candidate: str, checkout_root: Path) -> bool:
     return path == generations or generations in path.parents
 
 
-def _resolve_hermes_bin_for_desktop_entry(
+def _resolve_moor_bin_for_desktop_entry(
     resolve_fn=None,
     checkout_root: Optional[Path] = None,
 ) -> Optional[str]:
@@ -235,7 +235,7 @@ def _resolve_hermes_bin_for_desktop_entry(
     checkout is a launch-context artifact, not a durable installed launcher — persisting it makes
     the entry depend on how the previous launch happened (a bootstrap loop). Skip such candidates
     and fall through to PATH, then to the installer's known wrapper locations. A candidate that
-    provably cannot serve ``hermes desktop`` (a code tree carrying ``hermes_cli`` but no desktop
+    provably cannot serve ``moor desktop`` (a code tree carrying ``moor_cli`` but no desktop
     app beside it — a managed runtime env's console script) is skipped the same way: its entry
     would only ever die with "Desktop GUI source not found". ``resolve_fn`` is injectable for tests.
 
@@ -260,7 +260,7 @@ def _resolve_hermes_bin_for_desktop_entry(
     primary = resolve_fn()
     # A managed-environment console script is outside the checkout but is not a durable desktop
     # launcher: its workspace has no apps/desktop (#122438). The same holds for any launcher
-    # that provably cannot serve `hermes desktop` (another install's managed env, #122485).
+    # that provably cannot serve `moor desktop` (another install's managed env, #122485).
     # Fall through so the durable-wrapper probe below can still find a working one.
     if (
         primary
@@ -407,7 +407,7 @@ def _wrapper_targets_checkout(wrapper: Path, checkout_root: Path) -> bool:
     )
 
 
-_HERMES_CODE_MARKERS = ("hermes_cli", "workspace/hermes_cli")
+_MOOR_CODE_MARKERS = ("moor_cli", "workspace/moor_cli")
 _DESKTOP_APP_ENTRIES = ("apps/desktop/package.json", "workspace/apps/desktop/package.json")
 
 
@@ -421,20 +421,20 @@ def _launcher_tree(path: Path) -> Path:
 
 
 def _tree_desktop_state(tree: Path) -> Optional[bool]:
-    """``True`` when *tree* can serve ``hermes desktop``, ``False`` when it provably cannot, else ``None``.
+    """``True`` when *tree* can serve ``moor desktop``, ``False`` when it provably cannot, else ``None``.
 
-    ``False`` is reserved for a tree that IS a hermes code tree (carries ``hermes_cli``) yet has no
+    ``False`` is reserved for a tree that IS a moor code tree (carries ``moor_cli``) yet has no
     desktop app beside it — the managed runtime env layout, whose launcher runs but dies with
     "Desktop GUI source not found". Unfamiliar shapes stay ``None`` (accepted) so no install
     method is rejected for looking exotic.
     """
     if any((tree / entry).is_file() for entry in _DESKTOP_APP_ENTRIES):
         return True
-    from hermes_cli.steward import is_bundled_payload
+    from moor_cli.steward import is_bundled_payload
 
     if is_bundled_payload(tree):
         return True
-    if any((tree / marker).is_dir() for marker in _HERMES_CODE_MARKERS):
+    if any((tree / marker).is_dir() for marker in _MOOR_CODE_MARKERS):
         return False
     return None
 
@@ -480,7 +480,7 @@ def _persisted_exec_serves_desktop(exec_command: str) -> Optional[bool]:
     """Desktop-capability of a rendered ``Exec`` line, ignoring an interpreter prefix.
 
     ``[<interpreter>, <launcher>, desktop]`` is judged by the launcher. The module fallback
-    ``[<interpreter>, -m, hermes_cli.main, desktop]`` passes: it is only ever written by a
+    ``[<interpreter>, -m, moor_cli.main, desktop]`` passes: it is only ever written by a
     process that already passed the desktop launch checks.
     """
     try:
@@ -494,7 +494,7 @@ def _persisted_exec_serves_desktop(exec_command: str) -> Optional[bool]:
         if len(tokens) > 1 and tokens[1] != "-m":
             candidate = tokens[1]  # `[<interpreter>, <launcher>, desktop]` prefix form
         else:
-            # Module fallback `[<interpreter>, -m, hermes_cli.main, desktop]`: only a process
+            # Module fallback `[<interpreter>, -m, moor_cli.main, desktop]`: only a process
             # that already passed the desktop launch checks writes it, so it is not
             # second-guessed here.
             return None
@@ -768,11 +768,11 @@ def _launcher_entry_management_enabled() -> bool:
 
 
 def _alias_legacy_desktop_entry(applications_dir: Path, exec_command: str, icon: str) -> bool:
-    """Keep the pre-rename ``hermes.desktop`` as a hidden alias of the app-id entry.
+    """Keep the pre-rename ``moor.desktop`` as a hidden alias of the app-id entry.
 
     Shells resolve a taskbar pin by the entry file name it was pinned against: deleting the
     file makes GNOME drop the favourite and Plasma leave an inert item, and nothing can
-    re-pin for the user. The alias stays launchable for old pins without listing Hermes
+    re-pin for the user. The alias stays launchable for old pins without listing Moor
     twice. Only a file that still names this app is converted; anything else at that path
     is left alone. True when the legacy file was (re)written.
     """
@@ -781,7 +781,7 @@ def _alias_legacy_desktop_entry(applications_dir: Path, exec_command: str, icon:
         text = legacy.read_text(encoding="utf-8-sig")
     except OSError:
         return False
-    if not any(line.strip() == "Name=Hermes" for line in text.splitlines()):
+    if not any(line.strip() == "Name=Moor" for line in text.splitlines()):
         return False
     alias_contents = _render_legacy_alias_entry(exec_command, icon)
     if text == alias_contents:
@@ -799,11 +799,11 @@ def _alias_legacy_desktop_entry(applications_dir: Path, exec_command: str, icon:
 def install_desktop_entry(project_root: Path) -> Optional[Path]:
     """Create or refresh the app-id entry, respecting the opt-out for existing entries.
 
-    Only the app-id entry is written; a pre-rename ``hermes.desktop`` beside it is converted
+    Only the app-id entry is written; a pre-rename ``moor.desktop`` beside it is converted
     into a hidden alias once the new entry exists, and only while launcher management is
     enabled — deleting it instead would silently kill existing taskbar pins (#124492).
     ``None`` on non-Linux platforms, when the write fails, or when the resolved ``Exec``
-    provably cannot serve ``hermes desktop`` — a convenience, never a reason to fail a launch.
+    provably cannot serve ``moor desktop`` — a convenience, never a reason to fail a launch.
     """
     if not is_supported():
         return None
@@ -829,7 +829,7 @@ def install_desktop_entry(project_root: Path) -> Optional[Path]:
     # the copy is impossible (read-only tree); themed name when the checkout has no icon at all.
     icon_value = str(icon) if icon.is_file() else "moor"
     if icon.is_file() and _install_icon_to_hicolor(icon):
-        icon_value = "hermes"
+        icon_value = "moor"
     contents = render_desktop_entry(exec_command, icon_value)
 
     try:

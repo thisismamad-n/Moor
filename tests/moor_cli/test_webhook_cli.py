@@ -93,7 +93,7 @@ class TestSubscribe:
         assert _load_subscriptions()["notifier"]["secret"] == "original"
 
     def test_stale_update_cannot_restore_concurrently_removed_or_disabled_route(self, monkeypatch):
-        import hermes_cli.webhook as webhook_module
+        import moor_cli.webhook as webhook_module
 
         webhook_command(_make_args(
             webhook_action="subscribe", name="notifier", secret="original"
@@ -110,7 +110,7 @@ class TestSubscribe:
                     raise AssertionError("timed out waiting to resume stale update")
             return subscriptions
 
-        monkeypatch.setattr("hermes_cli.webhook._load_subscriptions", load_with_paused_update)
+        monkeypatch.setattr("moor_cli.webhook._load_subscriptions", load_with_paused_update)
 
         def update_route():
             try:
@@ -161,7 +161,7 @@ class TestSubscribe:
         profile_dir = tmp_path / "profiles" / "compta"
         profile_dir.mkdir(parents=True)
         (profile_dir / "config.yaml").write_text("{}\n")  # identity marker
-        monkeypatch.setattr("hermes_cli.webhook.time.strftime", lambda *_a: "2026-01-01T00:00:00Z")
+        monkeypatch.setattr("moor_cli.webhook.time.strftime", lambda *_a: "2026-01-01T00:00:00Z")
         # One char shorter than the rotated secret: "default" -> "compta" then keeps the file size equal.
         webhook_command(_make_args(
             webhook_action="subscribe", name="notifier", secret="old-profile-secret-ab"
@@ -171,7 +171,7 @@ class TestSubscribe:
         adapter = WebhookAdapter(PlatformConfig(enabled=True, extra={"secret": "global"}))
         adapter._reload_dynamic_routes()
         initial_stat = _subscriptions_path().stat()
-        monkeypatch.setattr("hermes_cli.webhook.secrets.token_urlsafe", lambda _n: "rotated-profile-secret")
+        monkeypatch.setattr("moor_cli.webhook.secrets.token_urlsafe", lambda _n: "rotated-profile-secret")
         webhook_command(_make_args(
             webhook_action="subscribe", name="notifier", route_profile="compta"
         ))

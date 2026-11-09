@@ -87,7 +87,7 @@ function register(windowTarget: unknown) {
     sshBinary: () => '/usr/bin/ssh'
   })
 
-  return { api, start: handles.map.get('hermes:terminal:start') as Start }
+  return { api, start: handles.map.get('moor:terminal:start') as Start }
 }
 
 async function spawnFor(start: Start, payload: Record<string, unknown>) {
@@ -132,7 +132,7 @@ test('a removed or shell-less gateway is reported, never answered with a local s
 test('an SSH teardown leaves the tab disconnected instead of closing it', async () => {
   const { api, start } = register(null)
   const nas = await spawnFor(start, { connectionId: 'nas', profile: 'default' })
-  const attach = handles.map.get('hermes:terminal:attach') as (event: unknown, id: string) => boolean
+  const attach = handles.map.get('moor:terminal:attach') as (event: unknown, id: string) => boolean
 
   assert.equal(attach({ sender: nas.sender }, nas.session.id), true)
   api.disposeTerminalSessionsForSshScope('conn:nas::default')
@@ -149,7 +149,7 @@ test('an SSH teardown leaves the tab disconnected instead of closing it', async 
 test('an SSH teardown before the tab attaches still delivers disconnected on attach', async () => {
   const { api, start } = register(null)
   const nas = await spawnFor(start, { connectionId: 'nas', profile: 'default' })
-  const attach = handles.map.get('hermes:terminal:attach') as (event: unknown, id: string) => boolean
+  const attach = handles.map.get('moor:terminal:attach') as (event: unknown, id: string) => boolean
 
   api.disposeTerminalSessionsForSshScope('conn:nas::default')
 
@@ -170,7 +170,7 @@ test('an SSH teardown before the tab attaches still delivers disconnected on att
 test('app quit kills shells without telling the tabs they exited', async () => {
   const { api, start } = register(null)
   const local = await spawnFor(start, { connectionId: 'local' })
-  const attach = handles.map.get('hermes:terminal:attach') as (event: unknown, id: string) => boolean
+  const attach = handles.map.get('moor:terminal:attach') as (event: unknown, id: string) => boolean
 
   assert.equal(attach({ sender: local.sender }, local.session.id), true)
   api.disposeAllTerminalSessions()

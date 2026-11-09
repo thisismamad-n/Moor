@@ -8,7 +8,7 @@ the same content as the plain string it decorates (production telemetry: plain s
 full previous prefix on 99.5% of consecutive calls). Splitting one string into several parts is a
 content change.
 
-The cells run the OpenAI-wire envelope layout (OpenRouter / Nous Portal / custom relays) and were
+The cells run the OpenAI-wire envelope layout (OpenRouter / Moor Portal / custom relays) and were
 chosen from per-call cache telemetry (``agent.log`` ``cache=R/T write=W``): consecutive
 calls in one session reuse the whole previous prefix except where these cells say otherwise.
 
@@ -28,7 +28,7 @@ from typing import Any
 import pytest
 
 from tests.e2e.core.history._helpers import NO_BACKGROUND_REVIEW, OFFLINE_CONFIG, canon, prefix_breaks
-from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_hermes_home
+from tests.fakes.fake_llm_provider import FakeLLMServer, Text, ToolCall, write_moor_home
 
 SKILL_BODY = "Follow these steps carefully. " * 300
 
@@ -55,20 +55,20 @@ def _prefix_breaks(requests: list[dict[str, Any]]) -> list[tuple[int, str]]:
 @pytest.fixture
 def caching_route():
     """A custom OpenAI-wire relay declared ``prompt_caching: true`` -> envelope cache layout."""
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["MOOR_HOME"])
     skill = home / "skills" / "demo"
     skill.mkdir(parents=True)
     (skill / "SKILL.md").write_text(f"---\nname: demo\ndescription: Demo skill.\n---\n\n# Demo\n\n{SKILL_BODY}\n")
     srv = FakeLLMServer([]).__enter__()
     route = (f"custom_providers:\n  - name: cacherelay\n    base_url: {srv.base_url}\n    api_key: sk-fake-e2e\n"
              "    models:\n      fake-model:\n        prompt_caching: true\n")
-    write_hermes_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + route)
+    write_moor_home(home, srv.base_url, extra_config=OFFLINE_CONFIG + NO_BACKGROUND_REVIEW + route)
     yield srv, home
     srv.__exit__(None, None, None)
 
 
 def _agent(srv, home):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     from run_agent import AIAgent
 
     agent = AIAgent(provider="custom:cacherelay", base_url=srv.base_url, api_key="sk-fake-e2e", model="fake-model",

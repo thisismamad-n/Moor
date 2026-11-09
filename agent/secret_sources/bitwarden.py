@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 _BWS_RUN_TIMEOUT = 30
 
-# <hermes_home>/bws_cache.json holds only secret VALUES (never the access
+# <moor_home>/bws_cache.json holds only secret VALUES (never the access
 # token); kept out of .env so users editing .env don't commit BSM-sourced secrets.
 _CacheKey = tuple[str, str, str]  # (access_token_fingerprint, project_id, server_url)
 _DISK_CACHE_BASENAME = "bws_cache.json"

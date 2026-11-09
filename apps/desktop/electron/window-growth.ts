@@ -12,7 +12,7 @@ export interface WindowSizingHost {
 }
 
 const electronHost: WindowSizingHost = {
-  onSizeRequest: listener => ipcMain.on('hermes:window:size', listener),
+  onSizeRequest: listener => ipcMain.on('moor:window:size', listener),
   workAreaOf: bounds => screen.getDisplayMatching(bounds).workArea
 }
 

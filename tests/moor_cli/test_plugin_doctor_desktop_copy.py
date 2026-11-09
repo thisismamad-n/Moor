@@ -1,4 +1,4 @@
-"""``hermes plugins doctor`` warns when Desktop runs a stale copy of a unified package's desktop half."""
+"""``moor plugins doctor`` warns when Desktop runs a stale copy of a unified package's desktop half."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _copy(home: Path, plugin: Path) -> Path:
     copy = home / "desktop-plugins" / "uni"
     copy.mkdir(parents=True)
     (copy / "plugin.js").write_bytes((plugin / "desktop" / "plugin.js").read_bytes())
-    (copy / ".hermes-package.json").write_text(
+    (copy / ".moor-package.json").write_text(
         json.dumps({"package": "uni", "source": str(plugin / "desktop"), "sourceMtimeMs": 1}), encoding="utf-8")
     return copy
 
@@ -32,14 +32,14 @@ def _stale_warnings(report) -> list[str]:
 
 @pytest.fixture
 def home(tmp_path, monkeypatch) -> Path:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     return home
 
 
 def test_doctor_warns_when_the_desktop_copy_is_stale(home: Path) -> None:
-    from hermes_cli.plugin_dev import doctor_plugin
+    from moor_cli.plugin_dev import doctor_plugin
 
     plugin = _plugin(home)
     copy = _copy(home, plugin)
@@ -55,6 +55,6 @@ def test_doctor_warns_when_the_desktop_copy_is_stale(home: Path) -> None:
 
 
 def test_doctor_is_silent_without_a_desktop_copy(home: Path) -> None:
-    from hermes_cli.plugin_dev import doctor_plugin
+    from moor_cli.plugin_dev import doctor_plugin
 
     assert _stale_warnings(doctor_plugin(_plugin(home))) == []

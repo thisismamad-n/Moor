@@ -294,19 +294,19 @@ def _remove_systemd_gateway() -> bool:
     return removed_any
 
 
-# Both gateway LaunchAgent naming schemes: the current ``ai.hermes.gateway*``
-# label and the ``io.nousresearch.hermes-agent.gateway*`` label older builds
+# Both gateway LaunchAgent naming schemes: the current ``ai.moor.gateway*``
+# label and the ``io.nousresearch.moor-agent.gateway*`` label older builds  # LEGACY-REBRAND-COMPAT: legacy plist label
 # installed. An uninstall must sweep BOTH — a stale agent keeps respawning the
 # gateway after the code tree is gone (#62209).
 _LAUNCHD_GATEWAY_PLIST_PATTERNS = (
-    "ai.hermes.gateway*.plist",
-    "io.nousresearch.hermes-agent.gateway*.plist",
+    "ai.moor.gateway*.plist",
+    "io.nousresearch.moor-agent.gateway*.plist",  # LEGACY-REBRAND-COMPAT: legacy plist pattern
 )
 
 
 def _launchd_gateway_plists() -> list[Path]:
     """Every gateway LaunchAgent plist on disk, under the real account home."""
-    from hermes_cli.gateway import get_launchd_plist_path
+    from moor_cli.gateway import get_launchd_plist_path
 
     launch_agents = get_launchd_plist_path().parent
     return sorted({p for pattern in _LAUNCHD_GATEWAY_PLIST_PATTERNS for p in launch_agents.glob(pattern)})
@@ -366,8 +366,8 @@ _GATEWAY_SERVICE_REMOVERS = {
 # they work under Constrained Language Mode; new shells see them without WM_SETTINGCHANGE.
 
 
-def _hermes_path_markers(hermes_home: Path, *, include_managed_bin: bool = False) -> list[str]:
-    r"""Prefixes identifying Hermes-owned User-PATH entries (prefix match sweeps git\cmd, git\bin,
+def _moor_path_markers(moor_home: Path, *, include_managed_bin: bool = False) -> list[str]:
+    r"""Prefixes identifying moor-owned User-PATH entries (prefix match sweeps git\cmd, git\bin,
     node...). ``include_managed_bin`` adds ``<root>\bin`` (launchers + managed uv) — only when that
     dir is about to be deleted, so a keep-data uninstall keeps the working uv resolvable."""
     root = str(moor_home).rstrip("\\/")
@@ -438,15 +438,15 @@ def remove_portable_tooling_windows(moor_home: Path) -> list[Path]:
 
 
 def _xdg_leftover_paths(full_uninstall: bool) -> tuple[list[Path], list[Path]]:
-    """The XDG cache/data dirs an install scatters outside HERMES_HOME.
+    """The XDG cache/data dirs an install scatters outside MOOR_HOME.
 
     Returns (removable, data_preserved): the cache dir is always removable;
     the XDG data dir is user data, so it is only removed on a full uninstall
     and otherwise reported as intentionally preserved.
     """
     home = Path.home()
-    cache = home / ".cache" / "hermes"
-    data = home / ".local" / "share" / "hermes"
+    cache = home / ".cache" / "moor"
+    data = home / ".local" / "share" / "moor"
     removable = [cache] if cache.exists() else []
     if data.exists() and full_uninstall:
         removable.append(data)
@@ -455,13 +455,13 @@ def _xdg_leftover_paths(full_uninstall: bool) -> tuple[list[Path], list[Path]]:
 
 
 def remove_desktop_app_leftovers(*, full_uninstall: bool) -> list[Path]:
-    """Remove per-user app leftovers that live outside HERMES_HOME and the
+    """Remove per-user app leftovers that live outside MOOR_HOME and the
     checkout, which earlier uninstallers left behind (#62209): the macOS
     Library caches/logs/browser-store/state entries the packaged app and
     Electron scatter, and the XDG cache dir on every platform. On a full
-    uninstall the XDG data dir (``~/.local/share/hermes``) goes too.
+    uninstall the XDG data dir (``~/.local/share/moor``) goes too.
 
-    Only well-known Hermes-named entries are touched — never a glob of the
+    Only well-known moor-named entries are touched — never a glob of the
     whole Library.
     """
     import sys as _sys
@@ -478,7 +478,7 @@ def remove_desktop_app_leftovers(*, full_uninstall: bool) -> list[Path]:
                 entries = list(parent_dir.iterdir())
             except OSError:
                 continue
-            targets.extend(e for e in entries if "hermes" in e.name.lower())
+            targets.extend(e for e in entries if "moor" in e.name.lower())
     removable, _ = _xdg_leftover_paths(full_uninstall=full_uninstall)
     targets.extend(removable)
     return _remove_each((t for t in targets if t.exists()), _remove_path_or_tree)
@@ -495,8 +495,8 @@ def _remove_path_or_tree(path: Path) -> bool:
         return False
 
 
-def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
-    """Delete managed-runtime trees a PRE-SPLIT install left in HERMES_HOME.
+def remove_legacy_runtime_trees(moor_home: Path) -> list[Path]:
+    """Delete managed-runtime trees a PRE-SPLIT install left in MOOR_HOME.
 
     Runtime artifacts are install-scoped now, so the current locations go
     away with ``rmtree(project_root)``. But a checkout OUTSIDE the home
@@ -615,8 +615,8 @@ def _uninstall_profile(profile) -> None:
     name = profile.name
     log_info(f"Uninstalling profile '{name}'...")
 
-    # 1. Gateway service, via `python -m hermes_cli.main` (the `hermes` wrapper may be half-gone).
-    hermes_invocation = [sys.executable, "-P", "-m", "hermes_cli.main", "--profile", name]
+    # 1. Gateway service, via `python -m moor_cli.main` (the `moor` wrapper may be half-gone).
+    moor_invocation = [sys.executable, "-P", "-m", "moor_cli.main", "--profile", name]
     for subcmd in ("stop", "uninstall"):
         try:
             subprocess.run(
@@ -727,9 +727,9 @@ def run_gui_uninstall(args):
     print()
     if agent_is_installed(moor_home):
         print(color("Kept intact:", Colors.GREEN, Colors.BOLD))
-        print(f"  • The Hermes agent at {hermes_home / 'hermes-agent'}")
-        print(f"  • Your config, sessions, and secrets under {hermes_home}")
-        if (shared_modules := hermes_home / "hermes-agent" / "node_modules").exists():
+        print(f"  • The Moor agent at {moor_home / 'moor-agent'}")
+        print(f"  • Your config, sessions, and secrets under {moor_home}")
+        if (shared_modules := moor_home / "moor-agent" / "node_modules").exists():
             print(f"  • Shared workspace dependencies at {shared_modules}")
         print()
 
@@ -792,10 +792,10 @@ def run_uninstall(args):
     # Show what will be affected
     print(color("Current Installation:", Colors.CYAN, Colors.BOLD))
     print(f"  Code:    {project_root}")
-    print(f"  Config:  {hermes_home / 'config.yaml'}")
-    print(f"  Secrets: {hermes_home / '.env'}")
-    print(f"  Data:    {hermes_home / 'cron/'}, {hermes_home / 'sessions/'}, {hermes_home / 'logs/'}")
-    from hermes_cli.gui_uninstall import desktop_userdata_dir
+    print(f"  Config:  {moor_home / 'config.yaml'}")
+    print(f"  Secrets: {moor_home / '.env'}")
+    print(f"  Data:    {moor_home / 'cron/'}, {moor_home / 'sessions/'}, {moor_home / 'logs/'}")
+    from moor_cli.gui_uninstall import desktop_userdata_dir
     if (desktop_userdata := desktop_userdata_dir()).exists():
         print(f"  Desktop: {desktop_userdata}  (app data - kept by 'Keep data', removed by 'Full uninstall')")
     print()
@@ -873,19 +873,19 @@ def _print_uninstall_dry_run(*, project_root: Path, moor_home: Path, full_uninst
     print("  • Moor wrapper scripts and moor-managed node/npm/npx symlinks")
     print("  • Desktop Chat GUI artifacts")
     print(f"  • Code checkout: {project_root}")
-    from hermes_cli.gui_uninstall import desktop_userdata_dir
+    from moor_cli.gui_uninstall import desktop_userdata_dir
     userdata = desktop_userdata_dir()
     if not full_uninstall:
-        print(f"  • Keep Hermes config/data: {hermes_home}")
+        print(f"  • Keep Moor config/data: {moor_home}")
         if userdata.exists():
             print(f"  • Keep desktop app data: {userdata}")
     else:
-        print(f"  • Hermes config/data: {hermes_home}")
+        print(f"  • Moor config/data: {moor_home}")
         if sys.platform == "darwin":
             print("  • macOS: dashboard/serve launchd jobs, Electron + setup caches")
         if userdata.exists():
             print(f"  • Desktop app data: {userdata}")
-        profiles = _discover_named_profiles() if _is_default_hermes_home(hermes_home) else []
+        profiles = _discover_named_profiles() if _is_default_moor_home(moor_home) else []
         if profiles:
             print("  • Named profiles (interactive uninstall asks before removing):")
             for prof in profiles:
@@ -916,17 +916,17 @@ def _rmtree_step(path: Path, *, indent: str = "", fully: bool = True) -> None:
 
 
 def _macos_cache_leftover_dirs() -> list[Path]:
-    """Cache dirs Electron/Chromium and the setup binary write OUTSIDE HERMES_HOME on
+    """Cache dirs Electron/Chromium and the setup binary write OUTSIDE MOOR_HOME on
     macOS. Chromium splits the desktop app's HTTP/script caches under ``~/Library/Caches``
     keyed by both the product name and the app id, and the Tauri setup binary does the
     same under its own pair of identifiers. ``gui_uninstall`` removes the userData dir
-    (``Application Support/Hermes``) but never these (#62209)."""
+    (``Application Support/Moor``) but never these (#62209)."""
     caches = Path.home() / "Library" / "Caches"
     return [
-        caches / "Hermes",
-        caches / "com.nousresearch.hermes",
-        caches / "hermes-setup",
-        caches / "com.nousresearch.hermes.setup",
+        caches / "Moor",
+        caches / "com.moorinc.moor",
+        caches / "moor-setup",
+        caches / "com.moorinc.moor.setup",
     ]
 
 
@@ -940,15 +940,15 @@ def _rmtree_if_exists(path: Path) -> bool:
 
 def remove_dashboard_launchd_jobs() -> list[Path]:
     """macOS: boot out and delete every launchd job whose ``ProgramArguments`` runs a
-    ``hermes dashboard`` / ``hermes serve`` backend, returning the removed plist paths.
+    ``moor dashboard`` / ``moor serve`` backend, returning the removed plist paths.
 
     The gateway uninstall only reaches the gateway label, so a dashboard/serve
     LaunchAgent survives a full uninstall and launchd keeps respawning its backend.
-    Mirrors the enumeration ``hermes_cli.main_dashboard`` uses to find those jobs
+    Mirrors the enumeration ``moor_cli.main_dashboard`` uses to find those jobs
     (``_launchd_plist_dirs`` + ``_parse_dashboard_runtime``): read each plist, match the
     arguments, ``launchctl bootout`` the job's domains (launchd takes the process down;
     booting out an already-unloaded job is fine and never checked), then delete the
-    plist — a stale, not-loaded plist is still Hermes-created and still goes. A missing,
+    plist — a stale, not-loaded plist is still moor-created and still goes. A missing,
     unreadable, or malformed plist is skipped, never fatal. macOS only (empty list
     elsewhere)."""
     if sys.platform != "darwin":
@@ -957,7 +957,7 @@ def remove_dashboard_launchd_jobs() -> list[Path]:
     import shlex
     from xml.parsers.expat import ExpatError
 
-    from hermes_cli.main_dashboard import _launchd_plist_dirs, _parse_dashboard_runtime
+    from moor_cli.main_dashboard import _launchd_plist_dirs, _parse_dashboard_runtime
 
     uid = os.getuid()  # windows-footgun: ok — darwin-only branch
     removed: list[Path] = []
@@ -1043,20 +1043,20 @@ def _perform_uninstall(
             _remove_step(label, remove, success_fmt, none_msg)
 
     # 3c. Chat GUI artifacts go with the agent code. uninstall_gui() never touches config/sessions/
-    #     .env (safe in keep-data mode); the packaged app + Electron userData live OUTSIDE HERMES_HOME.
+    #     .env (safe in keep-data mode); the packaged app + Electron userData live OUTSIDE MOOR_HOME.
     #     The userData dir is user configuration (connections.json, OAuth partitions, renderer
     #     state), so keep-data preserves it — only the full wipe removes it.
     log_info("Removing desktop Chat GUI artifacts...")
     try:
-        from hermes_cli.gui_uninstall import uninstall_gui
-        if not uninstall_gui(hermes_home, remove_userdata=full_uninstall):
+        from moor_cli.gui_uninstall import uninstall_gui
+        if not uninstall_gui(moor_home, remove_userdata=full_uninstall):
             log_info("No desktop GUI artifacts found")
     except Exception as e:
         log_warn(f"Could not remove desktop GUI artifacts: {e}")
 
-    # 3d. Per-user app leftovers outside HERMES_HOME: macOS Library caches/logs/
+    # 3d. Per-user app leftovers outside MOOR_HOME: macOS Library caches/logs/
     #     browser-store/state entries, the XDG cache dir, and (full mode) the XDG
-    #     data dir. Only Hermes-named entries are touched (#62209).
+    #     data dir. Only moor-named entries are touched (#62209).
     log_info("Removing app caches and leftovers outside the install...")
     removed_leftovers = remove_desktop_app_leftovers(full_uninstall=full_uninstall)
     if removed_leftovers:
@@ -1105,7 +1105,7 @@ def _perform_uninstall(
                 "Removing dashboard/serve launchd jobs...",
                 remove_dashboard_launchd_jobs, "Removed {}",
                 "No dashboard/serve launchd jobs found")
-        # 5c. macOS: Electron/Chromium and setup cache dirs written OUTSIDE HERMES_HOME
+        # 5c. macOS: Electron/Chromium and setup cache dirs written OUTSIDE MOOR_HOME
         #     survive both the checkout removal and the home rmtree below (#62209).
         if sys.platform == "darwin":
             _remove_step(
@@ -1123,8 +1123,8 @@ def _perform_uninstall(
 
     if not full_uninstall:
         print(color("Your configuration and data have been preserved:", Colors.CYAN))
-        print(f"  {hermes_home}/")
-        from hermes_cli.gui_uninstall import desktop_userdata_dir
+        print(f"  {moor_home}/")
+        from moor_cli.gui_uninstall import desktop_userdata_dir
         if (desktop_userdata := desktop_userdata_dir()).exists():
             print(f"  {desktop_userdata}  (desktop app data)")
         _, preserved = _xdg_leftover_paths(full_uninstall=False)

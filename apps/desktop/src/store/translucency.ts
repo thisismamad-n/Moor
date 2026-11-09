@@ -72,8 +72,8 @@ export type { Appearance }
 /** Browser-hosted Desktop has no native window material or opacity surface. */
 export const GLASS_SUPPORTED =
   hostHas('windowMaterial') &&
-  (typeof window !== 'undefined' && typeof window.hermesDesktop?.glassSupported === 'boolean'
-    ? window.hermesDesktop.glassSupported
+  (typeof window !== 'undefined' && typeof window.moorDesktop?.glassSupported === 'boolean'
+    ? window.moorDesktop.glassSupported
     : isMacPlatform() || isWindowsPlatform())
 
 /**
@@ -83,8 +83,8 @@ export const GLASS_SUPPORTED =
  */
 export const TRANSLUCENCY_SUPPORTED =
   hostHas('windowMaterial') &&
-  (typeof window !== 'undefined' && typeof window.hermesDesktop?.translucencySupported === 'boolean'
-    ? window.hermesDesktop.translucencySupported
+  (typeof window !== 'undefined' && typeof window.moorDesktop?.translucencySupported === 'boolean'
+    ? window.moorDesktop.translucencySupported
     : isMacPlatform() || isWindowsPlatform())
 
 /** Windows collapses the frost ladder — see `glassMaterialsFor`. */

@@ -21,10 +21,10 @@ import pytest
 
 @pytest.fixture()
 def isolated_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    import hermes_cli.config as config_mod
+    monkeypatch.setenv("MOOR_HOME", str(home))
+    import moor_cli.config as config_mod
 
     importlib.reload(config_mod)
     yield home
@@ -43,13 +43,13 @@ def _write_cli_config(home):
 
 
 def _model_cfg(home):
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
     return (yaml.safe_load((home / "config.yaml").read_text(encoding="utf-8")) or {}).get("model", {})
 
 
 def test_same_endpoint_model_set_preserves_bare_custom_block(isolated_home):
-    from hermes_cli.web_server_config import _apply_model_assignment_sync
+    from moor_cli.web_server_config import _apply_model_assignment_sync
 
     _write_cli_config(isolated_home)
     # Dashboard re-save of the same endpoint (base_url sent along).
@@ -67,9 +67,9 @@ def test_same_endpoint_model_set_preserves_bare_custom_block(isolated_home):
 def test_new_endpoint_model_set_still_registers_named_provider(isolated_home):
     """The guard must not over-fix: introducing a GENUINELY new custom endpoint through the
     dashboard still registers a named ``custom_providers`` row (the picker's ready row)."""
-    import hermes_yaml as yaml
+    import moor_yaml as yaml
 
-    from hermes_cli.web_server_config import _apply_model_assignment_sync
+    from moor_cli.web_server_config import _apply_model_assignment_sync
 
     _write_cli_config(isolated_home)
     _apply_model_assignment_sync(

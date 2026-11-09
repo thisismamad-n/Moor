@@ -25,7 +25,7 @@ import { useModelControls } from './use-model-controls'
 const tile = vi.hoisted(() => ({ delegate: null as unknown }))
 const notifyError = vi.fn()
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/moor', () => ({
   getGlobalModelInfo: vi.fn(),
   setApiRequestProfile: vi.fn(),
   setGlobalModel: vi.fn()
@@ -104,7 +104,7 @@ describe('useModelControls stale pick ordering', () => {
   it('does not roll a failed older pick back over a newer one that applied', async () => {
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('moor')
 
     const older = deferred<never>()
     const newer = deferred<unknown>()
@@ -130,7 +130,7 @@ describe('useModelControls stale pick ordering', () => {
   it('does not paint the previous session rollback into a session opened mid-switch', async () => {
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('moor')
 
     const pending = deferred<never>()
     const requestGateway = vi.fn(() => pending.promise)
@@ -164,7 +164,7 @@ describe('useModelControls stale pick ordering', () => {
   async function overlappingPicks(settle: (a: InFlightPick, b: InFlightPick) => Promise<void>) {
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('moor')
 
     const a = deferred<unknown>()
     const b = deferred<unknown>()
@@ -188,7 +188,7 @@ describe('useModelControls stale pick ordering', () => {
     })
 
     expect($currentModel.get()).toBe('fable-5')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('moor')
     // Only the newest pick's failure is reported; the superseded one stays quiet.
     expect(notifyError).toHaveBeenCalledTimes(1)
   })
@@ -202,7 +202,7 @@ describe('useModelControls stale pick ordering', () => {
     })
 
     expect($currentModel.get()).toBe('fable-5')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('moor')
   })
 
   it('shows the older pick when the newer one fails and the older one then applies', async () => {
@@ -222,7 +222,7 @@ describe('useModelControls stale pick ordering', () => {
   it('keeps a confirmed expensive pick when an older pick fails afterwards', async () => {
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('moor')
     vi.mocked(confirm).mockResolvedValueOnce(true)
 
     const older = deferred<never>()
@@ -254,7 +254,7 @@ describe('useModelControls stale pick ordering', () => {
   it('rolls a failed pick back even when the reasoning effort stepped mid-switch', async () => {
     $activeSessionId.set('session-1')
     setCurrentModel('fable-5')
-    setCurrentProvider('nous')
+    setCurrentProvider('moor')
 
     const pending = deferred<never>()
     const requestGateway = vi.fn(() => pending.promise)
@@ -273,7 +273,7 @@ describe('useModelControls stale pick ordering', () => {
     await expect(pick).resolves.toBe(false)
 
     expect($currentModel.get()).toBe('fable-5')
-    expect($currentProvider.get()).toBe('nous')
+    expect($currentProvider.get()).toBe('moor')
     expect(notifyError).toHaveBeenCalledTimes(1)
   })
 

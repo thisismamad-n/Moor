@@ -336,11 +336,11 @@ class TestOrphanedHolderStalenessBreak:
 
         script = f"""
 import os, sys, time
-sys.path.insert(0, {str(Path(hermes_state_common.__file__).parent)!r})
+sys.path.insert(0, {str(Path(moor_state_common.__file__).parent)!r})
 from pathlib import Path
 import moor_state_repair
 
-lock_cm = hermes_state_repair._cross_process_repair_lock(Path({str(db_path)!r}))
+lock_cm = moor_state_repair._cross_process_repair_lock(Path({str(db_path)!r}))
 assert lock_cm.__enter__() is True
 pid = os.fork()
 if pid == 0:

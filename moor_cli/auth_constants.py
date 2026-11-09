@@ -56,16 +56,16 @@ DEFAULT_MOOR_INFERENCE_URL = "https://inference-api.nousresearch.com/v1"
 # The free tier's (anonymous account) inference host. NAS hands it to the client on every token
 # exchange (``inference_base_url``); this literal is the fallback when that field is absent or fails
 # the host allowlist, because the paid host cross-refuses an anonymous JWT with a 400.
-DEFAULT_NOUS_WELCOME_URL = "https://welcome-api.nousresearch.com/v1"
-DEFAULT_NOUS_CLIENT_ID = "hermes-cli"
+DEFAULT_MOOR_WELCOME_URL = "https://welcome-api.nousresearch.com/v1"
+DEFAULT_MOOR_CLIENT_ID = "moor-cli"
 # On every guest minted since the welcome trial: True when the desktop's first install claimed it
-# (``hermes_cli.welcome_trial``), False for a connector mint. Absent = minted before the trial existed.
+# (``moor_cli.welcome_trial``), False for a connector mint. Absent = minted before the trial existed.
 WELCOME_CLAIM_FLAG = "welcome_claim"
-NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
-NOUS_BILLING_MANAGE_SCOPE = "billing:manage"
-DEFAULT_NOUS_SCOPE = NOUS_INFERENCE_INVOKE_SCOPE
-NOUS_DEVICE_CODE_SOURCE = "device_code"
-NOUS_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
+MOOR_INFERENCE_INVOKE_SCOPE = "inference:invoke"
+MOOR_BILLING_MANAGE_SCOPE = "billing:manage"
+DEFAULT_MOOR_SCOPE = MOOR_INFERENCE_INVOKE_SCOPE
+MOOR_DEVICE_CODE_SOURCE = "device_code"
+MOOR_AUTH_PATH_INVOKE_JWT = "invoke_jwt"
 ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120       # refresh 2 min before expiry
 MOOR_INVOKE_JWT_MIN_TTL_SECONDS = ACCESS_TOKEN_REFRESH_SKEW_SECONDS
 DEVICE_AUTH_POLL_INTERVAL_CAP_SECONDS = 1     # poll at most every 1s

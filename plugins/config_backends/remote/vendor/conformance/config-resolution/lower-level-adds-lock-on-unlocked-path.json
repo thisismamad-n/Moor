@@ -90,7 +90,7 @@
       "by": "profile",
       "op": "set",
       "path": "model.provider",
-      "value": "nous",
+      "value": "moor",
       "expect": {
         "result": "reject",
         "error": "config_key_locked",

@@ -40,7 +40,7 @@ from agent.secret_sources.base import (
     reset_source_environment,
     set_source_environment,
 )
-from hermes_cli import env_loader
+from moor_cli import env_loader
 
 
 pytestmark = pytest.mark.platforms("posix")  # the command secret provider is POSIX-only

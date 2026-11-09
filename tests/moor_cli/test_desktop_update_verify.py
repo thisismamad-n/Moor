@@ -4,8 +4,8 @@ import struct
 
 import pytest
 
-from hermes_cli import desktop_update_verify as verify
-from tests.hermes_cli.test_source_build import copy_freshness_scripts, stamp_product, use_host_node_as_pm_node
+from moor_cli import desktop_update_verify as verify
+from tests.moor_cli.test_source_build import copy_freshness_scripts, stamp_product, use_host_node_as_pm_node
 
 
 @pytest.fixture
@@ -74,18 +74,18 @@ def _app_only_under(root):
     desktop = (root / 'apps' / 'desktop').resolve()
 
     def lookup(candidate):
-        return desktop / 'release/fixture/Hermes.exe' if Path(candidate).resolve() == desktop else None
+        return desktop / 'release/fixture/Moor.exe' if Path(candidate).resolve() == desktop else None
 
     return lookup
 
 
 def test_caller_root_without_a_packaged_app_falls_back_to_the_checkout(bundle, tmp_path, monkeypatch):
-    # A hand-off script read before the pull still passes HERMES_HOME, which never
+    # A hand-off script read before the pull still passes MOOR_HOME, which never
     # holds a packaged app. The healthy checkout it just wrote must be verified instead.
     checkout, _, _ = bundle
     monkeypatch.setattr(verify, '_desktop_packaged_executable', _app_only_under(checkout))
     monkeypatch.setattr(verify, 'checkout_root', lambda: checkout)
-    verify.verify_windows_desktop_update(tmp_path / 'hermes_home')
+    verify.verify_windows_desktop_update(tmp_path / 'moor_home')
 
 
 def test_caller_root_that_has_a_packaged_app_is_verified_as_given(bundle, tmp_path, monkeypatch):

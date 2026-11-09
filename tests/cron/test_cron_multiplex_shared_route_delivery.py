@@ -165,7 +165,7 @@ def test_live_native_adapter_without_platform_block_is_not_treated_as_disabled()
 def test_multiplex_tick_routes_desktop_served_satellite_with_only_local_adapter(
     tmp_path, monkeypatch,
 ):
-    """#139825: a satellite profile also chatted with from Hermes Desktop holds
+    """#139825: a satellite profile also chatted with from Moor Desktop holds
     ``{LOCAL: adapter}`` in ``_profile_adapters``. LOCAL carries no platform credential, so its
     cron tick must still hand it the routed primary view — before, the non-empty map skipped
     ``SharedRouteAdapters`` and delivery fell through to the profile's own credentialless config
@@ -182,7 +182,7 @@ def test_multiplex_tick_routes_desktop_served_satellite_with_only_local_adapter(
         "gateway": {"multiplex_profiles": True, "profile_routes": [
             {"platform": "discord", "guild_id": "G1", "chat_id": "C1", "profile": "sat"}]},
     }), encoding="utf-8")
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
 
     primary = _primary_adapter()
     captured = {}

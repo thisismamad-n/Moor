@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 from gateway.whatsapp_identity import expand_whatsapp_aliases, normalize_whatsapp_identifier
-from hermes_constants import get_default_hermes_root, get_hermes_dir, get_hermes_home
+from moor_constants import get_default_moor_root, get_moor_dir, get_moor_home
 from utils import atomic_json_write, file_cache_version
 
 logger = logging.getLogger(__name__)
@@ -65,11 +65,11 @@ def _allowlist_env_for_platform(platform: str) -> Optional[str]:
     Approving a code also writes the user into an already-configured allowlist (revoke removes
     them) so the operator's list stays the visible source of truth. Platforms without one (or with
     no allowlist configured) keep the pairing store as the sole grant record (authz union). See
-    #23778. Discovers plugins first: ``hermes pairing approve`` runs in a CLI process that may not
+    #23778. Discovers plugins first: ``moor pairing approve`` runs in a CLI process that may not
     have loaded them yet."""
     platform = (platform or "").lower().strip()
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
     with contextlib.suppress(Exception):
         from gateway.platform_env import authz_field
@@ -380,7 +380,7 @@ class PairingStore:
         The file lock is taken FIRST: ``is_approved`` runs on the gateway event loop under
         ``self._lock``, so holding it while waiting (up to 10 s) on another process would stall
         every chat on that loop. ``is_approved`` never takes the file lock, so the order is safe."""
-        from hermes_cli.auth import _file_lock
+        from moor_cli.auth import _file_lock
         with _file_lock(
             self._dir / ".lock", _dir_lock_holder(self._dir), 10.0,
             f"Timed out waiting for the pairing store lock ({self._dir})",

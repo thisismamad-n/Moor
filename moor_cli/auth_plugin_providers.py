@@ -46,7 +46,7 @@ class HomeScopedRegistry(dict):
     One process serves many profile homes (multiplex gateway, Desktop ``serve``) and each home
     installs its own provider plugins, so no read returns a row another home rewrote: a mirrored row
     is hidden from a home without that provider and built from the home's own profile when only the
-    home declares it; a ``$HERMES_HOME`` plugin's declared fields (:func:`override_registry_row`) land
+    home declares it; a ``$MOOR_HOME`` plugin's declared fields (:func:`override_registry_row`) land
     on a per-home copy; an alias key follows the bound home's plugin that claims it. Built-in rows a
     home does not override are returned as stored; writes are plain dict writes.
     """
@@ -131,7 +131,7 @@ def _resolver() -> Callable[[str], tuple]:
 
 
 def _builtin_ids() -> frozenset:
-    from hermes_cli.auth import BUILTIN_PROVIDER_IDS
+    from moor_cli.auth import BUILTIN_PROVIDER_IDS
     return BUILTIN_PROVIDER_IDS
 
 
@@ -169,7 +169,7 @@ def register_plugin_provider(pp: Any) -> None:
     Registering is what lets an out-of-tree provider pass ``resolve_provider()``'s known-provider
     gate ("Unknown provider"); OAuth-shaped plugins carry their own login via ``auth_handler``.
     """
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.auth import PROVIDER_REGISTRY
 
     pconfig = _profile_row(pp)
     if pconfig is None:
@@ -181,7 +181,7 @@ def register_plugin_provider(pp: Any) -> None:
 
 def _profile_row(pp: Any) -> Optional[Any]:
     """The registry row *pp* declares, or None (a skipped name, an api-key profile without env vars)."""
-    from hermes_cli.auth import ProviderConfig, _api_key_provider
+    from moor_cli.auth import ProviderConfig, _api_key_provider
 
     if pp.name in _REGISTRY_PLUGIN_SKIP:
         return None
@@ -243,7 +243,7 @@ def override_registry_row(pconfig: Any, pp: Any) -> None:
     """A ``$MOOR_HOME`` plugin re-registering a name that already has a row wins for the fields
     it declares — ``display_name``, ``base_url`` and, on api-key rows, ``env_vars`` (#48450, #116668). ``register_provider()``
     is last-writer-wins for the profile; without this the runtime kept reading the built-in
-    endpoint. A ``$HERMES_HOME`` layer plugin's fields land on that home's own copy of the row
+    endpoint. A ``$MOOR_HOME`` layer plugin's fields land on that home's own copy of the row
     (:class:`HomeScopedRegistry`), so another served home keeps the built-in endpoint; a process-wide
     registration (every home reads it) rewrites the stored row in place.
     """
@@ -296,7 +296,7 @@ def sync_plugin_provider_registry() -> int:
 def canonical_registry_rows() -> list[tuple[str, Any]]:
     """``PROVIDER_REGISTRY`` items in order, minus the alias keys :func:`mirror_aliases` points at a
     plugin's row, so a scan or listing sees each provider once, under its own id."""
-    from hermes_cli.auth import PROVIDER_REGISTRY
+    from moor_cli.auth import PROVIDER_REGISTRY
 
     return [(pid, pconfig) for pid, pconfig in PROVIDER_REGISTRY.items() if pid == pconfig.id]
 
@@ -349,9 +349,9 @@ def dispatch_plugin_auth(action: str, args: Any, provider: str) -> bool:
 
     True = the plugin owned the action (core prints nothing more). False = run the built-in path. A
     handler exception becomes a readable ``SystemExit`` naming provider and action.
-    ``<plugin>:<id>`` names an OAuth client a plugin declares under ``oauth:`` (:mod:`hermes_cli.plugin_oauth`).
+    ``<plugin>:<id>`` names an OAuth client a plugin declares under ``oauth:`` (:mod:`moor_cli.plugin_oauth`).
     """
-    from hermes_cli.plugin_oauth import handle_auth_action
+    from moor_cli.plugin_oauth import handle_auth_action
 
     owned = handle_auth_action(action, args, provider)
     if owned is not None:

@@ -182,7 +182,7 @@ _KEEP_BY_KIND: dict[str, tuple[str, ...]] = {
 
 
 def _allowlisted_attrs(ev: dict[str, Any], keys: Iterable[str]) -> dict[str, Any]:
-    """``hermes.<key>`` attributes for present keys; string values are redacted and bounded."""
+    """``moor.<key>`` attributes for present keys; string values are redacted and bounded."""
     attrs: dict[str, Any] = {}
     for col in keys:
         v = ev.get(col)
@@ -194,7 +194,7 @@ def _allowlisted_attrs(ev: dict[str, Any], keys: Iterable[str]) -> dict[str, Any
 def _span_attrs(ev: dict[str, Any]) -> dict[str, Any]:
     """Span attributes for a monitoring event (content-free by construction)."""
     kind = ev.get("event")
-    attrs: dict[str, Any] = {"hermes.event": kind or "unknown"}
+    attrs: dict[str, Any] = {"moor.event": kind or "unknown"}
     attrs.update(_allowlisted_attrs(ev, _KEEP_BY_KIND.get(kind, ())))  # type: ignore[arg-type]
     return attrs
 

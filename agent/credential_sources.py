@@ -105,7 +105,7 @@ def _profile_removal_step(provider: str, source: str) -> Optional[RemovalStep]:
     sources, hints = claimed
 
     def remove_fn(provider: str, removed) -> RemovalResult:
-        from hermes_cli.auth import suppress_credential_source
+        from moor_cli.auth import suppress_credential_source
         for variant in sources:
             suppress_credential_source(provider, variant)
         return RemovalResult(hints=list(hints))

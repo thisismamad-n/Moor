@@ -143,7 +143,7 @@ def _response_status(result):
     return 'completed'
 
 
-def _hermes_extras(completed, is_partial, is_failed, err_msg, finish_reason: str, *,
+def _moor_extras(completed, is_partial, is_failed, err_msg, finish_reason: str, *,
                    budget_exhausted: bool = False) -> dict[str, Any]:
     error_code = ("iteration_budget_exhausted" if budget_exhausted and finish_reason == "length"
                   else "output_truncated" if finish_reason == "length" else "agent_error")
@@ -677,7 +677,7 @@ class _ResponsesStream:
             # Only the publisher recorded the deltas; a replay observer winning the
             # INSERT OR IGNORE would leave every later replay without them. Built here, on the
             # loop, so the worker never reads headers or events the loop may still append to.
-            headers = {k: v for k, v in self.response.headers.items() if k.startswith('X-Hermes-')}
+            headers = {k: v for k, v in self.response.headers.items() if k.startswith('X-Moor-')}
             terminal_event = {'type': 'response.' + status, 'response': env, 'sequence_number': self.sequence_number}
             record = {'fingerprint': self.durable_key[1], 'response': env, 'headers': headers,
                       'events': [*self.recorded_events, ('response.' + status, terminal_event)]}
@@ -930,7 +930,7 @@ class OpenAICompatRoutesMixin:
                 history = []
         else:
             # Stable id from the conversation fingerprint so Open WebUI-style clients map onto
-            # one Hermes session; namespaced by the routed profile (#123989).
+            # one Moor session; namespaced by the routed profile (#123989).
             first_user = next(
                 (cm.get("content", "") for cm in conversation_messages if cm.get("role") == "user"), "")
             session_id = _derive_chat_session_id(system_prompt, first_user, _api_request_profile.get())
@@ -1052,11 +1052,11 @@ class OpenAICompatRoutesMixin:
         if reasoning_text and not presentation_muted:
             response_data["choices"][0]["message"]["reasoning_content"] = reasoning_text
         if is_partial or is_failed or not completed:
-            response_data["hermes"] = _hermes_extras(
+            response_data["moor"] = _moor_extras(
                 completed, is_partial, is_failed, "" if presentation_muted else err_msg, finish_reason,
                 budget_exhausted=budget_exhausted)
-            response_headers["X-Hermes-Completed"] = "false"
-            response_headers["X-Hermes-Partial"] = "true" if is_partial else "false"
+            response_headers["X-moor-completed"] = "false"
+            response_headers["X-moor-partial"] = "true" if is_partial else "false"
             if err_msg and not presentation_muted:
                 response_headers["X-moor-error"] = _redact_api_error_text(err_msg, limit=200)
         return web.json_response(response_data, headers=response_headers)
@@ -1089,7 +1089,7 @@ class OpenAICompatRoutesMixin:
         if authority is None:
             return session_id, None  # admission refuses the unserved profile with its own verdict
         import sqlite3
-        from hermes_state_runtime import RuntimeStoreError
+        from moor_state_runtime import RuntimeStoreError
         try:
             return await asyncio.to_thread(implicit_api_session, authority.db, session_id,
                                            self._chat_request_id(request)), None
@@ -1116,7 +1116,7 @@ class OpenAICompatRoutesMixin:
         route), folded into the key because the store keeps the fingerprint only as the slot's value.
         """
         from gateway.platforms.api_server import _error_response, _idem_cache, _make_request_fingerprint
-        from hermes_state_runtime import RuntimeStoreError
+        from moor_state_runtime import RuntimeStoreError
         idempotency_key = request.headers.get("Idempotency-Key")
         try:
             # Durable /v1/runs admissions own idempotency under session authority; the in-memory
@@ -1176,7 +1176,7 @@ class OpenAICompatRoutesMixin:
                     # Custom event: tool lifecycle for frontends without markers in history.
                     if not self._tool_progress_events:
                         continue  # opted out for strict OpenAI clients (#12020)
-                    await response.write(_sse_frame(delta[1], event="hermes.tool.progress"))
+                    await response.write(_sse_frame(delta[1], event="moor.tool.progress"))
                 elif isinstance(delta, tuple) and len(delta) == 2 and delta[0] == "__reasoning__":
                     # DeepSeek-style ``delta.reasoning_content`` (#99552), the field Open WebUI,
                     # opencode and the Vercel AI SDK render as a thinking block.
@@ -1229,7 +1229,7 @@ class OpenAICompatRoutesMixin:
                     finish_chunk["error"] = {
                         "message": err_msg,
                         "type": type(agent_error).__name__ if agent_error else "agent_error"}
-                finish_chunk["hermes"] = _hermes_extras(
+                finish_chunk["moor"] = _moor_extras(
                     completed, is_partial, is_failed, "" if presentation_muted else err_msg, finish_reason,
                     budget_exhausted=budget_exhausted)
             await response.write(_sse_frame(finish_chunk))
@@ -1313,7 +1313,7 @@ class OpenAICompatRoutesMixin:
         from gateway.platforms.api_server import _sse_frame
         headers = replay.get('headers') or {}
         response = await self._prepare_sse_response(
-            request, headers.get('X-Hermes-Session-Id'), headers.get('X-Hermes-Session-Key'))
+            request, headers.get('X-moor-session-Id'), headers.get('X-moor-session-Key'))
         events = replay.get('events')
         if not events:
             env = replay['response']
@@ -1396,7 +1396,7 @@ class OpenAICompatRoutesMixin:
         if replayed is not None:
             return replayed
         from gateway.platforms.api_server_response_admissions import prepare_context
-        from hermes_state_runtime import RuntimeStoreError
+        from moor_state_runtime import RuntimeStoreError
         try:
             context, error = await prepare_context(
                 self, request, body, gateway_session_key, durable_key, idempotency_scope, idempotency_key)
@@ -1492,9 +1492,9 @@ class OpenAICompatRoutesMixin:
                 result.get('error') or 'The admitted turn failed.')}
         snapshot = (response_id, {"response": response_data, "conversation_history": full_history,
                     "instructions": instructions, "session_id": _effective_session_id}) if store else None
-        response_headers = {"X-Hermes-Session-Id": _effective_session_id}
+        response_headers = {"X-moor-session-Id": _effective_session_id}
         if gateway_session_key:
-            response_headers["X-Hermes-Session-Key"] = gateway_session_key
+            response_headers["X-moor-session-Key"] = gateway_session_key
         replay_record = (durable_key[0], {'fingerprint': durable_key[1], 'response': response_data,
                          'headers': response_headers}) if durable_key is not None else None
         if snapshot is not None or replay_record is not None:

@@ -1,19 +1,19 @@
 # Spotify
 
-Hermes 通过[插件目录](./plugins.md)中的官方 **`spotify` 插件**控制 Spotify——播放、队列、搜索、播放列表、已保存的曲目/专辑以及收听历史——基于 Spotify 官方 Web API 配合 PKCE OAuth 实现。该插件由 Nous Research 在 [NousResearch/hermes-official-plugins](https://github.com/NousResearch/hermes-official-plugins/tree/main/spotify) 维护，不属于 Hermes 核心。Token（令牌）存储在 `~/.hermes/auth.json` 中，遇到 401 时自动刷新；每台机器只需登录一次。
+Moor 通过[插件目录](./plugins.md)中的官方 **`spotify` 插件**控制 Spotify——播放、队列、搜索、播放列表、已保存的曲目/专辑以及收听历史——基于 Spotify 官方 Web API 配合 PKCE OAuth 实现。该插件由 Moor inc. 在 [NousResearch/hermes-official-plugins](https://github.com/NousResearch/hermes-official-plugins/tree/main/spotify) 维护，不属于 Moor 核心。Token（令牌）存储在 `~/.moor/auth.json` 中，遇到 401 时自动刷新；每台机器只需登录一次。
 
-与 Hermes 内置的 OAuth 集成不同，Spotify 要求每位用户自行注册一个轻量级开发者应用。Spotify 不允许第三方发布可供所有人使用的公共 OAuth 应用。整个过程大约需要两分钟，`hermes spotify login` 会全程引导你完成。
+与 Moor 内置的 OAuth 集成不同，Spotify 要求每位用户自行注册一个轻量级开发者应用。Spotify 不允许第三方发布可供所有人使用的公共 OAuth 应用。整个过程大约需要两分钟，`moor spotify login` 会全程引导你完成。
 
 ## 安装
 
 ```bash
-hermes plugins install spotify
+moor plugins install spotify
 ```
 
-插件按 profile 安装。若要在其他 profile 中使用 Spotify，请在该 profile 中同样安装（`hermes -p <profile> plugins install spotify`）。
+插件按 profile 安装。若要在其他 profile 中使用 Spotify，请在该 profile 中同样安装（`moor -p <profile> plugins install spotify`）。
 
 :::info 从内置 Spotify 的版本升级
-无需任何操作。所有已在使用 Spotify 的 profile（`auth.json` 中存有 Spotify 登录，或 `platform_toolsets` 中列出了 `spotify` 工具集）都会由 `hermes update` 自动从插件目录安装该插件；若该步骤未能运行，则在该 profile 首次启动时安装（遵循 `security.allow_lazy_installs`）。你的登录、`spotify` 工具集和工具名称都保持不变。唯一可见的变化：`hermes auth spotify` 改为 `hermes spotify login`（`hermes auth status spotify` / `hermes auth logout spotify` 改为 `hermes spotify status` / `hermes spotify logout`）；旧写法会打印新命令。若之后移除插件（`hermes plugins remove spotify`），它将保持移除状态。
+无需任何操作。所有已在使用 Spotify 的 profile（`auth.json` 中存有 Spotify 登录，或 `platform_toolsets` 中列出了 `spotify` 工具集）都会由 `moor update` 自动从插件目录安装该插件；若该步骤未能运行，则在该 profile 首次启动时安装（遵循 `security.allow_lazy_installs`）。你的登录、`spotify` 工具集和工具名称都保持不变。唯一可见的变化：`moor auth spotify` 改为 `moor spotify login`（`moor auth status spotify` / `moor auth logout spotify` 改为 `moor spotify status` / `moor spotify logout`）；旧写法会打印新命令。若之后移除插件（`moor plugins remove spotify`），它将保持移除状态。
 :::
 
 ## 前提条件
@@ -26,16 +26,16 @@ hermes plugins install spotify
 
 ### 1. 启用工具集
 
-插件的 `spotify` 工具集默认关闭，以避免不需要它的用户在每次 API 调用时额外传输工具 schema。在 `hermes tools` 中启用（选中 `🔌 Spotify` 后保存），或运行：
+插件的 `spotify` 工具集默认关闭，以避免不需要它的用户在每次 API 调用时额外传输工具 schema。在 `moor tools` 中启用（选中 `🔌 Spotify` 后保存），或运行：
 
 ```bash
-hermes tools enable spotify
+moor tools enable spotify
 ```
 
 ### 2. 登录
 
 ```bash
-hermes spotify login
+moor spotify login
 ```
 
 7 个 Spotify 工具只有在登录后才会提供给 agent。
@@ -77,10 +77,10 @@ ssh -N -L 43827:127.0.0.1:43827 user@remote-host
 ## 验证
 
 ```bash
-hermes spotify status
+moor spotify status
 ```
 
-显示 token 是否存在以及 access token 的过期时间。刷新是自动的：当任何 Spotify API 调用返回 401 时，客户端会用 refresh token 换取新 token 并重试一次。Refresh token 在 Hermes 重启后仍然有效，只有在你的 Spotify 账号设置中撤销该应用，或运行 `hermes spotify logout` 后才需要重新认证。
+显示 token 是否存在以及 access token 的过期时间。刷新是自动的：当任何 Spotify API 调用返回 401 时，客户端会用 refresh token 换取新 token 并重试一次。Refresh token 在 Moor 重启后仍然有效，只有在你的 Spotify 账号设置中撤销该应用，或运行 `moor spotify logout` 后才需要重新认证。
 
 ## 使用方法
 
@@ -218,7 +218,7 @@ moor cron add \
 ## 退出登录
 
 ```bash
-hermes spotify logout
+moor spotify logout
 ```
 
 从 `~/.moor/auth.json` 中移除 token。若还需清除应用配置，请从 `~/.moor/.env` 中删除 `MOOR_SPOTIFY_CLIENT_ID`（以及 `MOOR_SPOTIFY_REDIRECT_URI`，如果你设置了的话），或重新运行向导。
@@ -237,7 +237,7 @@ hermes spotify logout
 
 **`429 Too Many Requests`** — Spotify 的速率限制。Moor 会返回友好的错误提示；等待一分钟后重试。若持续出现，你可能在脚本中运行了紧密循环——Spotify 的配额大约每 30 秒重置一次。
 
-**`401 Unauthorized` 持续出现** — 你的 refresh token 已被撤销（通常是因为你从账号中移除了该应用，或应用被删除）。重新运行 `hermes spotify login`。
+**`401 Unauthorized` 持续出现** — 你的 refresh token 已被撤销（通常是因为你从账号中移除了该应用，或应用被删除）。重新运行 `moor spotify login`。
 
 **向导未打开浏览器** — 若你通过 SSH 连接或在没有显示器的容器中运行，Moor 会检测到并跳过自动打开。复制它打印的 dashboard URL 并手动打开。
 
@@ -246,7 +246,7 @@ hermes spotify logout
 默认情况下，Moor 会请求所有已发布工具所需的 scope。若需限制访问权限，可覆盖默认值：
 
 ```bash
-hermes spotify login --scope "user-read-playback-state user-modify-playback-state playlist-read-private"
+moor spotify login --scope "user-read-playback-state user-modify-playback-state playlist-read-private"
 ```
 
 Scope 参考：[Spotify Web API scopes](https://developer.spotify.com/documentation/web-api/concepts/scopes)。若请求的 scope 少于某个工具所需，该工具的调用将以 403 失败。
@@ -254,7 +254,7 @@ Scope 参考：[Spotify Web API scopes](https://developer.spotify.com/documentat
 ## 进阶：自定义 client ID / redirect URI
 
 ```bash
-hermes spotify login --client-id <id> --redirect-uri http://localhost:3000/callback
+moor spotify login --client-id <id> --redirect-uri http://localhost:3000/callback
 ```
 
 或在 `~/.moor/.env` 中永久设置：

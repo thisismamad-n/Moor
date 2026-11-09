@@ -50,7 +50,7 @@ def _looks_like_xai(model_id: Optional[str]) -> bool:
 
 
 def find_retired_xai_refs(config: dict[str, Any]) -> list[RetirementIssue]:
-    """Walk all model slots in a Hermes config and return retirement issues.
+    """Walk all model slots in a Moor config and return retirement issues.
 
     Slots scanned: ``principal.model``, ``auxiliary.<any>.model`` (introspective, covers future
     aux slots), ``delegation.model``, ``tts.xai.model``, ``plugins.image_gen.xai.model``.
@@ -131,7 +131,7 @@ def apply_migration(
     Unless ``backup=False`` a copy goes to ``backups/config/`` (reason ``pre-migrate-xai``).
     """
     from ruamel.yaml import YAML  # local import — avoid hard dep at module load
-    from hermes_cli.config_backend import require_file_tooling
+    from moor_cli.config_backend import require_file_tooling
     # A type-literal-preserving rewrite of the file itself; a non-file backend has no file.
     require_file_tooling("The xAI model migration")
     config_path = Path(config_path)

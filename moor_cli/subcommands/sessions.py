@@ -13,8 +13,8 @@ def _flag(parser, *names, help, **kw):
 
 
 def cmd_sessions_lazy(args, **kwargs):
-    """``hermes sessions`` handler; sessions_cmd imports only when the subcommand runs."""
-    from hermes_cli.sessions_cmd import cmd_sessions
+    """``moor sessions`` handler; sessions_cmd imports only when the subcommand runs."""
+    from moor_cli.sessions_cmd import cmd_sessions
 
     return cmd_sessions(args, **kwargs)
 
@@ -24,9 +24,9 @@ def _add_rename_and_discard(sessions_subparsers) -> None:
         "rename", help="Set or change a session's title")
     sessions_rename.add_argument("session_id", help="Session ID to rename")
     sessions_rename.add_argument("title", nargs="+", help="New title for the session")
-    from hermes_cli.sessions_discard import add_discard_parser
+    from moor_cli.sessions_discard import add_discard_parser
     add_discard_parser(sessions_subparsers)
-    from hermes_cli.sessions_adopt import add_adopt_parser
+    from moor_cli.sessions_adopt import add_adopt_parser
     add_adopt_parser(sessions_subparsers)
 
 
@@ -150,7 +150,7 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
             "and are older than AGE (default 30 days). Ordinary prune can "
             "never reach these — it only ever selects ended sessions")
     _flag(sessions_prune, "--force",
-        help="With no gateway running: run even while another Hermes process (Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped. With the gateway running, prune always goes through it")
+        help="With no gateway running: run even while another Moor process (Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped. With the gateway running, prune always goes through it")
 
     sessions_archive = sessions_subparsers.add_parser(
         "archive", help="Bulk-archive (soft-hide) sessions matching filters — no deletion")
@@ -185,7 +185,7 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
             "large fraction of state.db (the old layout stored duplicate "
             "copies of every message and indexed tool output). Runs "
             "foreground with progress for every phase (refusing while a gateway "
-            "or other Hermes process holds state.db, pacing itself if one opens it mid-run) and "
+            "or other Moor process holds state.db, pacing itself if one opens it mid-run) and "
             "VACUUMs at the end. Safe to interrupt and re-run — it resumes where it left off. No conversation data is "
             "changed; only the search index is rebuilt.")
     _flag(sessions_optimize_storage, "--no-vacuum", default=False,
@@ -193,7 +193,7 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
     _flag(sessions_optimize_storage, "--yes", "-y", default=False,
         help="Skip the disk-space confirmation prompt")
     _flag(sessions_optimize_storage, "--force",
-        help="Run even while another Hermes process (gateway, Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped; the rebuild then paces itself so that process stays responsive (much slower)")
+        help="Run even while another Moor process (gateway, Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped; the rebuild then paces itself so that process stays responsive (much slower)")
 
     sessions_repair = sessions_subparsers.add_parser(
         "repair", help="Repair a malformed state.db schema so hidden sessions reappear",

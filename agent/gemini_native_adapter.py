@@ -26,11 +26,11 @@ from agent.gemini_schema import prepare_gemini_tool_parameters, sanitize_gemini_
 
 logger = logging.getLogger(__name__)
 
-from hermes_cli.version_info import hermes_user_agent
+from moor_cli.version_info import moor_user_agent
 
 
 def _api_client() -> str:
-    return hermes_user_agent("hermes-agent")  # client context per Gemini's partner-integration guidance
+    return moor_user_agent("moor-agent")  # client context per Gemini's partner-integration guidance
 
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 # A Vertex AI express-mode base, when the user configures one explicitly: aiplatform serves the
@@ -867,8 +867,8 @@ class GeminiNativeClient:
     """Minimal OpenAI-SDK-compatible facade (``client.chat.completions.create(**kwargs)``) over Gemini's native REST API."""
 
     # For agent/auxiliary_client.py: a complete client, never re-dispatched through a wire adapter.
-    # (No HERMES_SKIP_ASYNC_WRAP — the async path has a real conversion, AsyncGeminiNativeClient.)
-    HERMES_SKIP_TRANSPORT_WRAP = True
+    # (No MOOR_SKIP_ASYNC_WRAP — the async path has a real conversion, AsyncGeminiNativeClient.)
+    MOOR_SKIP_TRANSPORT_WRAP = True
     # Seams for a subclass that speaks the same wire under another credential (an OAuth bearer on the
     # per-user-quota methods): RPC method names, the missing-credential text, and ``_auth_headers``.
     GENERATE_METHOD, STREAM_METHOD = "generateContent", "streamGenerateContent"

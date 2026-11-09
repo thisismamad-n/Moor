@@ -760,7 +760,7 @@ also runs in a worker thread). `plugins.isolation: host` runs the handlers in a 
 ([plugin host](plugins.md#running-plugins-out-of-process-pluginsisolation)): a slow handler there
 delays only that profile's hosted plugin requests, and one with no answer after 60 s gets HTTP 504.
 
-#### Accessing Hermes internals
+#### Accessing Moor internals
 
 Backend routes run inside the dashboard process, so they can import from the moor-agent codebase directly:
 
@@ -825,8 +825,8 @@ The dashboard scans three directories for `dashboard/manifest.json`:
 | 3 | `./.moor/plugins/<name>/dashboard/` | `project` — only when `MOOR_ENABLE_PROJECT_PLUGINS` is set |
 
 On a gateway serving several profiles, a request for a profile other than the one the gateway started
-with sees that profile's own `plugins/<name>/dashboard/`, then the root `~/.hermes/plugins/<name>/dashboard/`
-(as a standalone `hermes --profile <name> dashboard` did; the profile's own copy wins a same-name
+with sees that profile's own `plugins/<name>/dashboard/`, then the root `~/.moor/plugins/<name>/dashboard/`
+(as a standalone `moor --profile <name> dashboard` did; the profile's own copy wins a same-name
 conflict), then the bundled ones, gated by that profile's `plugins.enabled` / `plugins.disabled`. Its
 plugin API, a root plugin's included, runs in that profile's [plugin host](plugins.md#running-plugins-out-of-process-pluginsisolation),
 never inside the gateway.

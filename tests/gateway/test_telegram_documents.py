@@ -259,7 +259,7 @@ class TestDocumentDownloadBlock:
 
     @pytest.mark.asyncio
     async def test_video_note_failure_reply_is_localized(self, adapter, monkeypatch):
-        monkeypatch.setenv("HERMES_LANGUAGE", "de")
+        monkeypatch.setenv("MOOR_LANGUAGE", "de")
         msg = _make_message()
         msg.video_note = _make_video()
         msg.video_note.file_size = 100

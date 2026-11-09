@@ -58,7 +58,7 @@ def test_acp_agent_receives_custom_provider_request_body(acp_env, monkeypatch):
     """#103738: the resolver's ``request_overrides`` (a custom entry's ``extra_body``) reach the ACP agent, as
     on the CLI; an explicit base_url naming a different endpoint does not inherit them."""
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        "moor_cli.runtime_provider.resolve_runtime_provider",
         lambda requested=None, **_kwargs: {"provider": "custom", "api_mode": "chat_completions",
                                            "base_url": "https://proxy.example/v1", "api_key": "k",
                                            "request_overrides": {"extra_body": {"user": "proxy-user"}}},

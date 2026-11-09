@@ -118,7 +118,7 @@ def test_unconfigured_or_disabled_features_are_quiet(configured_update, capfd):
 
 def test_update_installs_the_extras_configured_features_need(monkeypatch, tmp_path, capsys):
     """#124228: an enabled platform's SDK joins the environment instead of only a warning."""
-    from hermes_cli import main_install_repair as repair
+    from moor_cli import main_install_repair as repair
 
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "x"\nversion = "0"\n'

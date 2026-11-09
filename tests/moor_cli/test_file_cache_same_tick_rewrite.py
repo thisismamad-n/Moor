@@ -43,8 +43,8 @@ def test_an_in_place_revocation_in_one_tick_is_not_served_from_the_pairing_cache
 
 
 def test_a_key_rotated_in_place_in_one_tick_reaches_global_auth_store_readers(coarse_clock, tmp_path, monkeypatch):
-    import hermes_cli.auth as auth_mod
-    path = tmp_path / "global-hermes" / "auth.json"
+    import moor_cli.auth as auth_mod
+    path = tmp_path / "global-moor" / "auth.json"
     path.parent.mkdir(parents=True)
     monkeypatch.setattr(auth_mod, "_global_auth_file_path", lambda: path)
     monkeypatch.setattr(auth_mod, "_global_auth_store_cache", None)
@@ -97,7 +97,7 @@ import json, os, sys
 from pathlib import Path
 import utils
 utils.RACY_MTIME_WINDOW_NS = int(sys.argv[1])
-home = Path(os.environ["HERMES_HOME"])
+home = Path(os.environ["MOOR_HOME"])
 (home / "config.yaml").write_text("agent:\n  max_turns: 17\nskills:\n  external_dirs: []\n")
 from agent.safe_worker_policy import _bind_safe_worker_policy
 _bind_safe_worker_policy(safe_mode=True, ignore_user_config=True, config={"agent": {"max_turns": 3}})
@@ -108,7 +108,7 @@ def audit(event, args):
 sys.addaudithook(audit)
 from agent import skill_utils
 import providers
-from hermes_cli import free_tier_bootstrap, model_switch, profiles
+from moor_cli import free_tier_bootstrap, model_switch, profiles
 calls = {
     "skills": skill_utils.get_external_skills_dirs,
     "named_custom": lambda: providers._has_named_custom_provider("foo", home, "k"),
@@ -128,7 +128,7 @@ print(json.dumps(opens))
 def _worker_config_opens(tmp_path: Path, window_ns: int) -> dict:
     home = tmp_path / f"home-{window_ns}"
     home.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home)}
+    env = {**os.environ, "MOOR_HOME": str(home)}
     root = Path(__file__).resolve().parents[2]
     out = subprocess.run([sys.executable, "-c", _WORKER_PROBE, str(window_ns)], cwd=root, env=env,
                          capture_output=True, text=True, timeout=120, check=True)

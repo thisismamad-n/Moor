@@ -293,7 +293,7 @@ def _prune_check_fn_caches(now: float) -> None:
 
 def check_fn_cache_scope() -> Optional[str]:
     """Return the active profile key when availability is profile-scoped. Single-profile
-    processes keep the process-wide cache; a multiplex gateway installs a Hermes-home override
+    processes keep the process-wide cache; a multiplex gateway installs a moor-home override
     per profile turn, so the canonical profile key is the boundary."""
     try:
         from agent.secret_scope import serves_routed_profile
@@ -403,7 +403,7 @@ def _check_fn_cached(fn: Callable) -> bool:
 
 
 def _core_tools_gated_by(fn: Callable) -> set[str]:
-    """Names of ``_HERMES_CORE_TOOLS`` members whose registered ``check_fn`` is *fn*."""
+    """Names of ``_MOOR_CORE_TOOLS`` members whose registered ``check_fn`` is *fn*."""
     try:
         from toolsets import _MOOR_CORE_TOOLS
         core = frozenset(_MOOR_CORE_TOOLS)
@@ -446,7 +446,7 @@ class ToolRegistry:
 
     def __init__(self):
         self._tools: dict[str, ToolEntry] = {}  # built-in / process-global registrations
-        # Plugin overlays keyed by resolved HERMES_HOME; a profile sees its overlay first.
+        # Plugin overlays keyed by resolved MOOR_HOME; a profile sees its overlay first.
         self._scoped_tools: dict[str, dict[str, ToolEntry]] = {}
         # Plugin namespace -> operator opt-in for built-in override (lifecycle-managed);
         # scope attribution stays durable after policy removal so delayed callbacks
@@ -487,7 +487,7 @@ class ToolRegistry:
 
     def _merged_tools(self, scope: Optional[str] = None) -> dict[str, ToolEntry]:
         """Return global tools overlaid with one profile's plugin tools."""
-        entries = {**self._tools, **self._scoped_tools.get(hermes_home_key(scope), {})}
+        entries = {**self._tools, **self._scoped_tools.get(moor_home_key(scope), {})}
         if scope is None:
             entries.update(self._scoped_tools.get(_session_slot_key(), {}))
         return entries

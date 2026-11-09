@@ -1,11 +1,11 @@
 """A Claude Code CLI outside PATH is found by every core check, not only by the Anthropic adapter.
 
-A backend started by a macOS LaunchAgent or spawned by Hermes Desktop inherits a bare PATH that
+A backend started by a macOS LaunchAgent or spawned by Moor Desktop inherits a bare PATH that
 carries none of Claude Code's install prefixes (``~/.local/bin``, ``~/.claude/local``, ...).
 ``agent.anthropic_adapter`` probes those prefixes after PATH; ``_external_process_spec`` and
 ``run_oauth_setup_token`` asked PATH only, so a provider whose ``process_command`` is ``claude``
 was reported missing ("Could not find the ... CLI command 'claude'") on a machine where the
-adapter could run it. Reported against hermes-plugin-claude-subscription-directsdk#32.
+adapter could run it. Reported against moor-plugin-claude-subscription-directsdk#32.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ def service_launch(tmp_path, monkeypatch):
 
 @pytest.mark.platforms("posix")  # HOME-relative prefixes and the exec bit are the POSIX layout
 def test_external_process_provider_finds_claude_in_an_install_prefix(service_launch, tmp_path, monkeypatch):
-    from hermes_cli.auth import get_external_process_provider_status, resolve_external_process_provider_credentials
+    from moor_cli.auth import get_external_process_provider_status, resolve_external_process_provider_credentials
 
     assert resolve_external_process_provider_credentials("claude-cli-acp-test")["command"] == service_launch
     status = get_external_process_provider_status("claude-cli-acp-test")

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import cli as cli_module
 from agent.i18n import t
-from cli import HermesCLI
+from cli import MoorCLI
 
 
 class _FakeBuffer:

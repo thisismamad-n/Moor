@@ -196,8 +196,8 @@ def _send_imap_id(imap: imaplib.IMAP4) -> None:
             version = get_version_info().base_version
         except Exception:
             version = "0"
-        imap.xatom("ID", f'("name" "hermes-agent" "version" "{version}" '
-                         '"vendor" "NousResearch" "support-email" "noreply@nousresearch.com")')
+        imap.xatom("ID", f'("name" "moor-agent" "version" "{version}" '
+                         '"vendor" "Moor inc." "support-email" "noreply@nousresearch.com")')
     except Exception as e:
         logger.debug("[Email] IMAP ID command not accepted: %s", e)
 
@@ -1011,13 +1011,13 @@ _SEND_TARGET_RE = re.compile(r"^\s*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Moor plugin system."""
     from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
         target_ref_syntax_fn=regex_stripped_parser(_SEND_TARGET_RE),
         standalone_send=StandaloneSendPolicy(text_direct=True),
         name="email", label="Email", adapter_factory=EmailAdapter, check_fn=check_email_requirements, is_connected=_is_connected,
-        dashboard_description="Talk to Hermes through an IMAP/SMTP mailbox.",
+        dashboard_description="Talk to Moor through an IMAP/SMTP mailbox.",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
         dashboard_env_vars=("EMAIL_ADDRESS", "EMAIL_PASSWORD", "EMAIL_IMAP_HOST", "EMAIL_SMTP_HOST"),
         dashboard_required_env=("EMAIL_ADDRESS", "EMAIL_PASSWORD", "EMAIL_IMAP_HOST", "EMAIL_SMTP_HOST"),

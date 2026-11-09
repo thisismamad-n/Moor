@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as notifications from '@/store/notifications'
 import { markOnboardingDecided } from '@/store/onboarding-presence'
 import { makeOAuthProvider } from '@/test/oauth-provider'
-import type { AppHandoffStatus, OAuthProvider } from '@/types/hermes'
+import type { AppHandoffStatus, OAuthProvider } from '@/types/moor'
 
 import {
   $desktopOnboarding,
@@ -25,7 +25,7 @@ import {
 markOnboardingDecided()
 
 const NOT_CONNECTED =
-  'Hermes is not connected to any AI provider yet. Run `hermes model` to pick one, or `hermes auth add <provider>`.'
+  'Moor is not connected to any AI provider yet. Run `moor model` to pick one, or `moor auth add <provider>`.'
 
 function baseState(overrides: Partial<DesktopOnboardingState> = {}): DesktopOnboardingState {
   return {
@@ -221,7 +221,7 @@ describe('refreshOnboarding', () => {
       if (method === 'setup.runtime_check') {
         return {
           ok: false,
-          error: 'Hermes is not connected to any AI provider yet. Run `hermes model` to pick one.'
+          error: 'Moor is not connected to any AI provider yet. Run `moor model` to pick one.'
         } as never
       }
 
@@ -256,7 +256,7 @@ describe('refreshOnboarding', () => {
     }
 
     expect(await refreshOnboarding(onboardingContext(unconfigured))).toBe(false)
-    expect($desktopOnboarding.get().reason).not.toContain('hermes model')
+    expect($desktopOnboarding.get().reason).not.toContain('moor model')
   })
 
   it('keeps cached providers when onboarding was not re-requested', async () => {
@@ -350,7 +350,7 @@ describe('refreshOnboarding', () => {
 
     expect(ready).toBe(false)
     expect($desktopOnboarding.get().configured).toBeNull()
-    expect(window.localStorage.getItem('hermes-desktop-onboarded-v1')).toBeNull()
+    expect(window.localStorage.getItem('moor-desktop-onboarded-v1')).toBeNull()
     // Nothing was ever verified, so there is no outage worth a toast.
     expect(notifySpy).not.toHaveBeenCalled()
   })
@@ -363,7 +363,7 @@ describe('refreshOnboarding', () => {
     // setup.ready bumped the boot generation moments ago. The runtime_check
     // answers ok:false because the external secret source (BWS) has not
     // hydrated yet — a hydration race, not a credential verdict (#124939).
-    window.localStorage.setItem('hermes-desktop-onboarded-v1', '1')
+    window.localStorage.setItem('moor-desktop-onboarded-v1', '1')
     $desktopOnboarding.set(baseState({ configured: true, providers: null, requested: false }))
 
     notifySetupReady()
@@ -372,14 +372,14 @@ describe('refreshOnboarding', () => {
 
     expect(ready).toBe(false)
     expect($desktopOnboarding.get().configured).toBe(true)
-    expect(window.localStorage.getItem('hermes-desktop-onboarded-v1')).toBe('1')
+    expect(window.localStorage.getItem('moor-desktop-onboarded-v1')).toBe('1')
   })
 
   it('still downgrades when the same ok:false arrives long after boot', async () => {
     const { notifySetupReady } = await import('@/store/live-sync')
 
     installApiMock(vi.fn())
-    window.localStorage.setItem('hermes-desktop-onboarded-v1', '1')
+    window.localStorage.setItem('moor-desktop-onboarded-v1', '1')
     $desktopOnboarding.set(baseState({ configured: true, providers: null, requested: false }))
 
     // Boot happened, then the grace window elapsed: an ok:false now is a real
@@ -392,29 +392,29 @@ describe('refreshOnboarding', () => {
 
       expect(ready).toBe(false)
       expect($desktopOnboarding.get().configured).toBe(false)
-      expect(window.localStorage.getItem('hermes-desktop-onboarded-v1')).toBeNull()
+      expect(window.localStorage.getItem('moor-desktop-onboarded-v1')).toBeNull()
     } finally {
       clock.mockRestore()
     }
   })
 
   it('keeps a persisted "choose later" when a passive round completes onboarding', () => {
-    window.localStorage.setItem('hermes-onboarding-skipped-v1', '1')
+    window.localStorage.setItem('moor-onboarding-skipped-v1', '1')
     $desktopOnboarding.set(baseState({ configured: null, firstRunSkipped: true }))
 
     completeDesktopOnboarding()
 
-    expect(window.localStorage.getItem('hermes-onboarding-skipped-v1')).toBe('1')
+    expect(window.localStorage.getItem('moor-onboarding-skipped-v1')).toBe('1')
     expect($desktopOnboarding.get().firstRunSkipped).toBe(true)
   })
 
   it('clears the skip only when the user actually connected a provider', () => {
-    window.localStorage.setItem('hermes-onboarding-skipped-v1', '1')
+    window.localStorage.setItem('moor-onboarding-skipped-v1', '1')
     $desktopOnboarding.set(baseState({ configured: null, firstRunSkipped: true }))
 
     completeDesktopOnboarding(true)
 
-    expect(window.localStorage.getItem('hermes-onboarding-skipped-v1')).toBeNull()
+    expect(window.localStorage.getItem('moor-onboarding-skipped-v1')).toBeNull()
     expect($desktopOnboarding.get().firstRunSkipped).toBe(false)
   })
 
@@ -549,7 +549,7 @@ describe('OAuth onboarding', () => {
     vi.restoreAllMocks()
   })
 
-  it('a Nous sign-in shows its account and what moved on the confirm screen, not in a dialog after it', async () => {
+  it('a Moor sign-in shows its account and what moved on the confirm screen, not in a dialog after it', async () => {
     const { startProviderOAuth } = await import('./onboarding')
     const { $freeTierSignIn } = await import('./free-tier-sign-in')
     const { setOnboardingSurfaceActive } = await import('./onboarding-presence')
@@ -565,15 +565,15 @@ describe('OAuth onboarding', () => {
       }
 
       if (path.startsWith('/api/model/options')) {
-        return { providers: [{ models: ['nous/m'], name: 'Nous Portal', slug: 'nous' }] }
+        return { providers: [{ models: ['moor/m'], name: 'Moor Portal', slug: 'moor' }] }
       }
 
-      return path.startsWith('/api/model/recommended-default') ? { model: 'nous/m' } : { ok: true }
+      return path.startsWith('/api/model/recommended-default') ? { model: 'moor/m' } : { ok: true }
     })
     vi.spyOn(window, 'open').mockReturnValue(null)
     setOnboardingSurfaceActive('onboarding', true)
 
-    await startProviderOAuth(makeOAuthProvider('nous', 'Nous Portal'), {
+    await startProviderOAuth(makeOAuthProvider('moor', 'Moor Portal'), {
       requestGateway: async method =>
         // SAFETY: onboarding reads only `provider_configured` from setup.status and `ok` from the rest.
         (method === 'setup.status' ? { provider_configured: true } : { ok: true }) as never
@@ -754,26 +754,26 @@ describe('manual onboarding (Settings / Add provider on an already-configured in
   })
 
   it('does not flip the global default until the user confirms on the confirm card', async () => {
-    const model = 'nous/hermes-5'
+    const model = 'moor/hermes-5'
     const calls: { body?: unknown; path: string }[] = []
 
     installApiMock(async ({ body, path }: { body?: unknown; path: string }) => {
       calls.push({ body, path })
 
-      if (path === '/api/providers/oauth/nous/submit') {
+      if (path === '/api/providers/oauth/moor/submit') {
         return { ok: true, status: 'approved' }
       }
 
       if (path.startsWith('/api/model/options')) {
-        return { providers: [{ name: 'Nous Portal', slug: 'nous', models: [model] }] }
+        return { providers: [{ name: 'Moor Portal', slug: 'moor', models: [model] }] }
       }
 
       if (path.startsWith('/api/model/recommended-default?')) {
-        return { provider: 'nous', model, free_tier: false }
+        return { provider: 'moor', model, free_tier: false }
       }
 
       if (path === '/api/model/set') {
-        return { ok: true, provider: 'nous', model, gateway_tools: [] }
+        return { ok: true, provider: 'moor', model, gateway_tools: [] }
       }
 
       throw new Error(`unexpected api path: ${path}`)
@@ -792,7 +792,7 @@ describe('manual onboarding (Settings / Add provider on an already-configured in
         // Still validated against the just-connected provider, not the
         // (unchanged) config default — this is what makes deferring the
         // persist safe.
-        expect(params).toEqual({ provider: 'nous' })
+        expect(params).toEqual({ provider: 'moor' })
 
         return { ok: true } as never
       }
@@ -801,14 +801,14 @@ describe('manual onboarding (Settings / Add provider on an already-configured in
     }
 
     // The user already has a working, different default configured — the
-    // exact scenario from the bug report (anthropic default, connecting Nous
+    // exact scenario from the bug report (anthropic default, connecting Moor
     // Portal as an *additional* provider from Settings).
     $desktopOnboarding.set(
       baseState({
         manual: true,
         flow: {
           status: 'awaiting_user',
-          provider: makeOAuthProvider('nous', 'Nous Portal'),
+          provider: makeOAuthProvider('moor', 'Moor Portal'),
           start: {
             auth_url: 'https://portal.example/auth',
             expires_in: 600,
@@ -835,14 +835,14 @@ describe('manual onboarding (Settings / Add provider on an already-configured in
   })
 
   it('persists the confirmed model only when the user clicks Begin', async () => {
-    const model = 'nous/hermes-5'
+    const model = 'moor/hermes-5'
     const calls: { body?: unknown; path: string }[] = []
 
     installApiMock(async ({ body, path }: { body?: unknown; path: string }) => {
       calls.push({ body, path })
 
       if (path === '/api/model/set') {
-        return { ok: true, provider: 'nous', model, gateway_tools: [] }
+        return { ok: true, provider: 'moor', model, gateway_tools: [] }
       }
 
       throw new Error(`unexpected api path: ${path}`)
@@ -854,9 +854,9 @@ describe('manual onboarding (Settings / Add provider on an already-configured in
         configured: true,
         flow: {
           status: 'confirming_model',
-          providerSlug: 'nous',
+          providerSlug: 'moor',
           currentModel: model,
-          label: 'Nous Portal',
+          label: 'Moor Portal',
           saving: false
         }
       })
@@ -866,7 +866,7 @@ describe('manual onboarding (Settings / Add provider on an already-configured in
     await confirmOnboardingModel({ requestGateway: vi.fn(), onCompleted })
 
     const assign = calls.find(c => c.path === '/api/model/set')
-    expect(assign?.body).toMatchObject({ scope: 'main', provider: 'nous', model })
+    expect(assign?.body).toMatchObject({ scope: 'main', provider: 'moor', model })
     expect(onCompleted).toHaveBeenCalledTimes(1)
   })
 })
@@ -1207,7 +1207,7 @@ describe('device-code poll expiry', () => {
         return deviceStart(2)
       }
 
-      if (path.startsWith('/api/providers/oauth/nous/poll/device-sess-1')) {
+      if (path.startsWith('/api/providers/oauth/moor/poll/device-sess-1')) {
         return { status: 'pending' }
       }
 
@@ -1234,7 +1234,7 @@ describe('device-code poll expiry', () => {
         return deviceStart(600)
       }
 
-      if (path.startsWith('/api/providers/oauth/nous/poll/device-sess-1')) {
+      if (path.startsWith('/api/providers/oauth/moor/poll/device-sess-1')) {
         return { status: 'pending' }
       }
 

@@ -1,4 +1,4 @@
-"""``hermes webapp`` where nothing checks who redeems a one-use launch link (macOS, the BSDs, illumos, WSL).
+"""``moor webapp`` where nothing checks who redeems a one-use launch link (macOS, the BSDs, illumos, WSL).
 
 The gateway marks such a link private (``gateway.webapp_listener._one_use_links_work``). The command never
 hands it to a browser launcher, whose command line other local users can read, and never prints it when it
@@ -16,9 +16,9 @@ from urllib.parse import unquote, urlsplit
 
 import pytest
 
-from hermes_cli import main as cli_main
-from hermes_cli import webapp_launcher as launcher
-from tests.hermes_cli import test_webapp_launcher as launcher_tests
+from moor_cli import main as cli_main
+from moor_cli import webapp_launcher as launcher
+from tests.moor_cli import test_webapp_launcher as launcher_tests
 
 LINK, _args = launcher_tests.LINK, launcher_tests._args
 world = launcher_tests.world  # the launcher's recorded side effects, as those tests use them
@@ -56,17 +56,17 @@ def test_a_private_link_reaches_the_browser_in_a_page_only_the_user_can_read(pri
     out = capsys.readouterr().out
     assert "Opened the Webapp in your browser" in out and "ticket=" not in out
     # macOS can report a browser that opened where the user never sees it (osascript over SSH).
-    assert "If no browser opened, run `hermes webapp --no-open` for a link." in out
+    assert "If no browser opened, run `moor webapp --no-open` for a link." in out
 
 
 @pytest.mark.platforms("posix")
 @pytest.mark.parametrize(("flag", "sticky", "command"), [
-    ("work", None, "hermes -p work webapp --no-open"),
-    ("default", "work", "hermes -p default webapp --no-open"),
-    ("work", "work", "hermes webapp --no-open"),
+    ("work", None, "moor -p work webapp --no-open"),
+    ("default", "work", "moor -p default webapp --no-open"),
+    ("work", "work", "moor webapp --no-open"),
 ])
 def test_the_no_open_hint_keeps_the_profile_a_bare_rerun_would_not_pick(private, capsys, flag, sticky, command):
-    """``-p`` re-homes only this process: a bare ``hermes webapp --no-open`` gets the sticky profile."""
+    """``-p`` re-homes only this process: a bare ``moor webapp --no-open`` gets the sticky profile."""
     private["monkeypatch"].setattr(cli_main, "_explicit_cli_profile", flag)
     if sticky:
         (private["root"] / "active_profile").write_text(sticky + "\n", encoding="utf-8")
@@ -85,10 +85,10 @@ def test_a_folder_other_users_could_read_is_closed_before_the_page_is_written(pr
 
 
 @pytest.mark.platforms("posix")
-def test_a_relative_hermes_home_still_reaches_the_browser_in_a_page(private, monkeypatch, capsys):
-    """``HERMES_HOME=./root`` is supported; the page's ``file:`` URI is built from its absolute path."""
+def test_a_relative_moor_home_still_reaches_the_browser_in_a_page(private, monkeypatch, capsys):
+    """``MOOR_HOME=./root`` is supported; the page's ``file:`` URI is built from its absolute path."""
     monkeypatch.chdir(private["tmp"])
-    monkeypatch.setenv("HERMES_HOME", "./root")
+    monkeypatch.setenv("MOOR_HOME", "./root")
     assert launcher.cmd_webapp(_args()) == 0
     [opened] = private["calls"]["opened"]
     page = _page_path(opened)
@@ -112,7 +112,7 @@ def test_where_no_user_only_page_can_carry_it_the_link_is_printed_and_no_page_is
     if case == "no browser":
         monkeypatch.setattr(launcher, "_open", lambda url: private["calls"]["opened"].append(url) and False)
     if case == "wsl":
-        monkeypatch.setattr("hermes_constants.is_wsl", lambda: True)
+        monkeypatch.setattr("moor_constants.is_wsl", lambda: True)
     if case == "folder others can read":
         monkeypatch.setattr("gateway.webapp_listener._readable_by_other_users", lambda path: True)
     assert launcher.cmd_webapp(_args(no_open=case == "no-open")) == 0

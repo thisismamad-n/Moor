@@ -45,7 +45,7 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _state_endpoint() -> dict | None:
-    from hermes_cli.local_runtime.recovery import (
+    from moor_cli.local_runtime.recovery import (
         is_modern,
         legacy_recorded_process,
         read_state,

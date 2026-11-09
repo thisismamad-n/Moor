@@ -193,7 +193,7 @@ describe('createSlashHandler', () => {
     expect(rpc).toHaveBeenCalledWith('session.status', { session_id: 'sid-abc' })
     expect(gatewayWork(ctx)).toEqual([])
     await vi.waitFor(() => {
-      expect(ctx.transcript.page).toHaveBeenCalledWith('Hermes TUI Status', t('slashCmd.core.status.pageTitle'))
+      expect(ctx.transcript.page).toHaveBeenCalledWith('Moor TUI Status', t('slashCmd.core.status.pageTitle'))
     })
   })
 
@@ -1014,7 +1014,7 @@ describe('createSlashHandler', () => {
         gw: {
           getLogTail: vi.fn(() => ''),
           request: vi.fn((method: string) =>
-            Promise.resolve(method === 'slash.exec' ? { output: 'Hermes v1', type: 'exec' } : {})
+            Promise.resolve(method === 'slash.exec' ? { output: 'Moor v1', type: 'exec' } : {})
           )
         },
         rpc: vi.fn(() => Promise.resolve({}))
@@ -1022,7 +1022,7 @@ describe('createSlashHandler', () => {
     })
 
     expect(createSlashHandler(ctx)('/version')).toBe(true)
-    await vi.waitFor(() => expect(ctx.transcript.sys).toHaveBeenCalledWith('Hermes v1'))
+    await vi.waitFor(() => expect(ctx.transcript.sys).toHaveBeenCalledWith('Moor v1'))
     expect(ctx.transcript.page).not.toHaveBeenCalled()
   })
 

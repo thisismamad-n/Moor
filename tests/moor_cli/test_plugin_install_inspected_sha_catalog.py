@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-import hermes_yaml as yaml
-from tests.hermes_cli.plugin_worker_support import (
+import moor_yaml as yaml
+from tests.moor_cli.plugin_worker_support import (
     isolated_python as isolated_python,  # noqa: PLC0414 -- the self-alias is load-bearing: it suppresses F811 for the pytest fixture parameter shadowing this import
     plugin_world as plugin_world,  # noqa: PLC0414 -- the self-alias is load-bearing: it suppresses F811 for the pytest fixture parameter shadowing this import
 )
@@ -51,8 +51,8 @@ def _rpc(action: str, **params):
 @pytest.fixture
 def world(tmp_path, monkeypatch):
     """``(home, repo, pin)``: a repo published through catalog entry ``demo``; ``pin(sha)`` re-pins it."""
-    from hermes_cli import plugins_cmd, plugins_cmd_catalog
-    from hermes_cli.plugin_catalog import PluginCatalogEntry
+    from moor_cli import plugins_cmd, plugins_cmd_catalog
+    from moor_cli.plugin_catalog import PluginCatalogEntry
     repo = tmp_path / "demo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
@@ -66,8 +66,8 @@ def world(tmp_path, monkeypatch):
     def pin(sha: str) -> None:
         current["demo"] = PluginCatalogEntry(name="demo", repo=URL, sha=sha, description="d", maintainer="m")
     monkeypatch.setattr(plugins_cmd_catalog, "get_live_catalog_entry", lambda name: current.get(name))
-    from hermes_constants import get_hermes_home
-    return get_hermes_home(), repo, pin
+    from moor_constants import get_moor_home
+    return get_moor_home(), repo, pin
 
 
 def _record(home: Path) -> dict:
@@ -100,7 +100,7 @@ def test_a_disabled_tree_at_another_commit_is_not_enabled_for_the_reviewed_one(w
 
     assert "already exists" in result["error"]["message"]
     assert _record(home)["revision"] == old
-    from hermes_cli.plugins_cmd import _get_enabled_set
+    from moor_cli.plugins_cmd import _get_enabled_set
     assert "demo" not in _get_enabled_set()
 
 

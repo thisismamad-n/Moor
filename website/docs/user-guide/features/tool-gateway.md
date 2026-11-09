@@ -19,8 +19,8 @@ The Tool Gateway is included with every paid [Moor Portal](https://portal.nousre
 
 | | Tool | What you get |
 |---|---|---|
-| 🔍 | **Web search & extract** | Agent-grade web search and full-page extraction, managed by Nous. No rate limits to worry about — the gateway handles scaling. |
-| 🎨 | **Image generation** | One **Nous Subscription** row spanning the FAL catalog, the native Krea models, and Nous Portal image models: **Krea 3**, **FLUX 2**, **GPT Image**, **Nano Banana**, **Seedream**, **Ideogram**, **Recraft**, **Qwen**, **Krea 2**, and more. Pick the model once in `hermes tools`, which shows the live list. |
+| 🔍 | **Web search & extract** | Agent-grade web search and full-page extraction, managed by Moor. No rate limits to worry about — the gateway handles scaling. |
+| 🎨 | **Image generation** | One **Moor Subscription** row spanning the FAL catalog, the native Krea models, and Moor Portal image models: **Krea 3**, **FLUX 2**, **GPT Image**, **Nano Banana**, **Seedream**, **Ideogram**, **Recraft**, **Qwen**, **Krea 2**, and more. Pick the model once in `moor tools`, which shows the live list. |
 | 🔊 | **Text-to-speech** | OpenAI TTS voices wired into the `text_to_speech` tool. Drop voice notes into Telegram, generate audio for pipelines, narrate anything. |
 | 🌐 | **Cloud browser automation** | Headless cloud Chromium sessions via Browser Use, driven by `browser_exec` over CDP — no Browserbase account required. |
 
@@ -60,9 +60,9 @@ moor tools              # Enable the gateway per-tool — pick "Moor Subscriptio
 Check what's active at any time:
 
 ```bash
-hermes portal info        # Portal auth + Tool Gateway routing summary
-hermes portal tools       # Gateway catalog with current routing per tool
-hermes status --full      # Full system status (Tool Gateway is one section)
+moor portal info        # Portal auth + Tool Gateway routing summary
+moor portal tools       # Gateway catalog with current routing per tool
+moor status --full      # Full system status (Tool Gateway is one section)
 ```
 
 `moor portal info` shows a section like:
@@ -111,22 +111,22 @@ Select the tool, pick **Moor Subscription** as the provider (or any direct provi
 
 ## Using individual image models
 
-The model is chosen once, in `hermes tools` → Image Generation, and stored in `config.yaml` as `image_gen.model`. Every `image_generate` call uses that stored model — the tool has no model parameter, so there is no per-call override. Leave it unset and a paid subscription gets Krea 3; the free tool pool gets FLUX 2 Klein 9B.
+The model is chosen once, in `moor tools` → Image Generation, and stored in `config.yaml` as `image_gen.model`. Every `image_generate` call uses that stored model — the tool has no model parameter, so there is no per-call override. Leave it unset and a paid subscription gets Krea 3; the free tool pool gets FLUX 2 Klein 9B.
 
-The **Nous Subscription** row has one model picker that lists every model once. The stored id decides which gateway serves the request: a native Krea id (`krea-3`, `krea-2-medium`, `krea-2-large`, `krea-2-medium-turbo`) goes to the Krea gateway, a FAL catalog id goes to FAL, and any other id goes to Nous Portal. The selection is still just `image_gen.provider: nous` plus the model id.
+The **Moor Subscription** row has one model picker that lists every model once. The stored id decides which gateway serves the request: a native Krea id (`krea-3`, `krea-2-medium`, `krea-2-large`, `krea-2-medium-turbo`) goes to the Krea gateway, a FAL catalog id goes to FAL, and any other id goes to Moor Portal. The selection is still just `image_gen.provider: moor` plus the model id.
 
-**Krea 3** (generates and edits existing images — up to 4 reference images, `thinking` and `resolution` controls), **Krea 2** (Medium, Large, Medium Turbo — up to 10 style-reference images, optional Enhance upscale) and the Nous Portal image models sit in that same picker rather than behind rows of their own. They need a paid subscription — the free tool pool funds the FAL models only. The Krea-via-FAL ids (`fal-ai/krea/v2/...`) stay on the direct FAL.ai row. If the Krea gateway refuses a request before starting a job (unreachable, or 429 after the gateway's own retries), Hermes reruns it on the FAL default model and the result says so in `fallback_from`; set `image_gen.krea.fallback_to_fal: false` to turn that off. Requests with source images never fall back.
+**Krea 3** (generates and edits existing images — up to 4 reference images, `thinking` and `resolution` controls), **Krea 2** (Medium, Large, Medium Turbo — up to 10 style-reference images, optional Enhance upscale) and the Moor Portal image models sit in that same picker rather than behind rows of their own. They need a paid subscription — the free tool pool funds the FAL models only. The Krea-via-FAL ids (`fal-ai/krea/v2/...`) stay on the direct FAL.ai row. If the Krea gateway refuses a request before starting a job (unreachable, or 429 after the gateway's own retries), Moor reruns it on the FAL default model and the result says so in `fallback_from`; set `image_gen.krea.fallback_to_fal: false` to turn that off. Requests with source images never fall back.
 
-Model ids, speeds, and prices live on the [Image Generation](./image-generation.md#supported-models) page. The set evolves — `hermes tools` → Image Generation shows the current live list.
+Model ids, speeds, and prices live on the [Image Generation](./image-generation.md#supported-models) page. The set evolves — `moor tools` → Image Generation shows the current live list.
 
 ## Multiple connector accounts
 
-Connectors are hosted apps such as Gmail that the agent reaches through the Nous tool gateway (see [Tool Search → Connectors](./tool-search.md#connectors-remote-tools)). You can connect two or more accounts of one app, for example a Gmail `home` and a Gmail `work`.
+Connectors are hosted apps such as Gmail that the agent reaches through the Moor tool gateway (see [Tool Search → Connectors](./tool-search.md#connectors-remote-tools)). You can connect two or more accounts of one app, for example a Gmail `home` and a Gmail `work`.
 
 - **Names.** Each account has a name of 1 to 32 characters: lowercase letters, digits or `-`, starting with a letter or digit. An unnamed account shows the app's own account label.
 - **No default.** No account is the default. When you ask the agent to use an app with several named accounts, it must say which one.
-- **The agent names new accounts.** It picks the name from what you said and asks if it is unsure. It then tells you the name it chose, for example "Hermes named this Gmail account work. Rename it anytime." The desktop app, the TUI and the classic CLI show that line.
-- **Rename.** Rename an account anytime, or ask the agent to. Renaming needs a Nous Portal version that supports it; until then you see "This Nous Portal cannot rename connector accounts yet."
+- **The agent names new accounts.** It picks the name from what you said and asks if it is unsure. It then tells you the name it chose, for example "Moor named this Gmail account work. Rename it anytime." The desktop app, the TUI and the classic CLI show that line.
+- **Rename.** Rename an account anytime, or ask the agent to. Renaming needs a Moor Portal version that supports it; until then you see "This Moor Portal cannot rename connector accounts yet."
 - **Reconnect deletes nothing.** Reconnecting a broken account replaces it with a new one under the same name. The old one is kept as retired (disabled). Retired accounts stay listed but folded away.
 - **Remove is yours.** You remove an account yourself, one at a time. The agent never removes one.
 
@@ -138,8 +138,8 @@ Manage accounts in any of these places:
 
 - The desktop app's **Connectors** page.
 - The TUI: `/connectors` (see [Slash Commands](../../reference/slash-commands.md#tools--skills)).
-- The CLI: `hermes connectors` (see [CLI Commands](../../reference/cli-commands.md#hermes-connectors)).
-- [Nous Portal](https://portal.nousresearch.com).
+- The CLI: `moor connectors` (see [CLI Commands](../../reference/cli-commands.md#moor-connectors)).
+- [Moor Portal](https://portal.nousresearch.com).
 
 ---
 
@@ -191,15 +191,15 @@ web:
 
 ### Mixing your own key and the gateway (web only)
 
-Web search and web extract can each choose their own route. In the desktop app, open **Capabilities → Tools → Web Search & Scraping**: **Use for Search** / **Use for Extract** on the **Nous Subscription** row sends that capability through the gateway, and the same buttons on a direct row (e.g. **Firecrawl**) send it through your own key. The **Search:** / **Extract:** pills at the top show which route each one takes right now. In `config.yaml` the managed choice is the value `nous` on the per-capability key:
+Web search and web extract can each choose their own route. In the desktop app, open **Capabilities → Tools → Web Search & Scraping**: **Use for Search** / **Use for Extract** on the **Moor Subscription** row sends that capability through the gateway, and the same buttons on a direct row (e.g. **Firecrawl**) send it through your own key. The **Search:** / **Extract:** pills at the top show which route each one takes right now. In `config.yaml` the managed choice is the value `moor` on the per-capability key:
 
 ```yaml
 web:
   search_backend: firecrawl   # your FIRECRAWL_API_KEY
-  extract_backend: nous       # the Nous Tool Gateway (managed Firecrawl)
+  extract_backend: moor       # the Moor Tool Gateway (managed Firecrawl)
 ```
 
-Picking **Nous Subscription** for the whole tool (or running `hermes tools`) clears both per-capability keys, so search and extract both go back through the gateway.
+Picking **Moor Subscription** for the whole tool (or running `moor tools`) clears both per-capability keys, so search and extract both go back through the gateway.
 
 ### Legacy `use_gateway` flag (deprecated)
 

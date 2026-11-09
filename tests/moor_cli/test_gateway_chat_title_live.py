@@ -1,4 +1,4 @@
-"""Title-keyed resume on the classic CLI (main's HermesCLI, gateway-backed) against an ordinary daemon.
+"""Title-keyed resume on the classic CLI (main's MoorCLI, gateway-backed) against an ordinary daemon.
 The CLI process may read state.db but never writes it: the gateway is the single writer."""
 import json
 import os
@@ -27,7 +27,7 @@ def test_title_create_if_missing_then_resume_by_title_is_deterministic(tmp_path,
         "auxiliary": {"title_generation": {"enabled": False}},
     }), encoding="utf-8")
     env = {k: os.environ[k] for k in ("PATH", "LANG", "TZ") if k in os.environ}
-    env.update(HOME=str(user), USERPROFILE=str(user), HERMES_HOME=str(home), PYTHONPATH=str(root),
+    env.update(HOME=str(user), USERPROFILE=str(user), MOOR_HOME=str(home), PYTHONPATH=str(root),
                PYTHONUNBUFFERED="1", OPENAI_API_KEY="loopback-only", OPENAI_BASE_URL=model_url)
     witness = tmp_path / "client-owner.json"
     wrapper = tmp_path / "client.py"
@@ -53,7 +53,7 @@ def connect(database, *a, **k):
     return conn
 sqlite3.connect = connect
 try:
-    runpy.run_module('hermes_cli.main', run_name='__main__')
+    runpy.run_module('moor_cli.main', run_name='__main__')
 finally:
     sys.setprofile(None)
     open({str(witness)!r}, 'w', encoding='utf-8').write(json.dumps(owners))

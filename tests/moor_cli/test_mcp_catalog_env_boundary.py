@@ -65,7 +65,7 @@ def test_catalog_rejects_undeclared_key_before_any_write_or_install(
     catalog_env: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    from hermes_cli import mcp_catalog
+    from moor_cli import mcp_catalog
 
     installs: list[str] = []
     monkeypatch.setattr(
@@ -101,7 +101,7 @@ def test_catalog_cannot_declare_reserved_control_key(
     catalog_env: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    from hermes_cli import mcp_catalog
+    from moor_cli import mcp_catalog
 
     catalog_root = Path(os.environ["MOOR_OPTIONAL_MCPS"])
     manifest_path = catalog_root / "demo" / "manifest.yaml"
@@ -142,7 +142,7 @@ def test_catalog_accepts_declared_credential(
     catalog_env: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    from hermes_cli import mcp_config
+    from moor_cli import mcp_config
     from agent.secret_scope import get_secret
     from tools.connectors.mcp import _CatalogBackend
 
@@ -175,7 +175,7 @@ def test_catalog_non_secret_env_never_lands_in_env_file(
 ):
     """Non-secret declared env vars (e.g. a base URL) are not written to .env:
     install_entry inlines them into the server config instead."""
-    from hermes_cli import mcp_catalog
+    from moor_cli import mcp_catalog
 
     catalog_root = Path(os.environ["MOOR_OPTIONAL_MCPS"])
     manifest_path = catalog_root / "demo" / "manifest.yaml"
@@ -274,8 +274,8 @@ def _acp_launch_resolvers(monkeypatch: pytest.MonkeyPatch):
     from providers.base import ProviderProfile
 
     acme = ProviderProfile(name="acme-acp", auth_type="external_process", base_url="acp://acme",
-                           process_command="acme", process_command_env_vars=("HERMES_ACME_ACP_COMMAND",),
-                           process_args_env_var="HERMES_ACME_ACP_ARGS")
+                           process_command="acme", process_command_env_vars=("MOOR_ACME_ACP_COMMAND",),
+                           process_args_env_var="MOOR_ACME_ACP_ARGS")
     real_list = providers.list_providers
     monkeypatch.setattr(providers, "list_providers", lambda: [*real_list(), acme])
 
@@ -298,14 +298,14 @@ def test_rejected_acp_launch_controls_do_not_change_live_resolvers(
 ):
     _resolve_command, _resolve_args = _acp_launch_resolvers(monkeypatch)
 
-    monkeypatch.setenv("HERMES_ACME_ACP_COMMAND", "/opt/trusted/acme")
-    monkeypatch.setenv("HERMES_ACME_ACP_ARGS", "--acp --stdio")
+    monkeypatch.setenv("MOOR_ACME_ACP_COMMAND", "/opt/trusted/acme")
+    monkeypatch.setenv("MOOR_ACME_ACP_ARGS", "--acp --stdio")
     expected_command = _resolve_command()
     expected_args = _resolve_args()
 
     attempts = {
-        "HERMES_ACME_ACP_COMMAND": "/tmp/attacker-command",
-        "HERMES_ACME_ACP_ARGS": "--malicious-transport",
+        "MOOR_ACME_ACP_COMMAND": "/tmp/attacker-command",
+        "MOOR_ACME_ACP_ARGS": "--malicious-transport",
     }
     for key, value in attempts.items():
         response = client.put(
@@ -329,13 +329,13 @@ def test_preexisting_acp_launch_controls_remain_usable(
     monkeypatch: pytest.MonkeyPatch,
 ):
     _resolve_command, _resolve_args = _acp_launch_resolvers(monkeypatch)
-    from hermes_cli.env_loader import load_hermes_dotenv
+    from moor_cli.env_loader import load_moor_dotenv
 
-    monkeypatch.setenv("HERMES_ACME_ACP_COMMAND", "parent-placeholder")
-    monkeypatch.setenv("HERMES_ACME_ACP_ARGS", "--parent-placeholder")
+    monkeypatch.setenv("MOOR_ACME_ACP_COMMAND", "parent-placeholder")
+    monkeypatch.setenv("MOOR_ACME_ACP_ARGS", "--parent-placeholder")
     (catalog_env / ".env").write_text(
-        "HERMES_ACME_ACP_COMMAND=/opt/operator/acme\n"
-        "HERMES_ACME_ACP_ARGS=--acp --stdio --operator-mode\n",
+        "MOOR_ACME_ACP_COMMAND=/opt/operator/acme\n"
+        "MOOR_ACME_ACP_ARGS=--acp --stdio --operator-mode\n",
         encoding="utf-8",
     )
 
@@ -355,7 +355,7 @@ def test_connection_card_install_keeps_env_file_secrets_only(
 ):
     """The connector-card backend (Desktop/TUI/CLI setup card) makes the same secrets-only split
     as the terminal install: a declared non-secret lands in the server block, never in .env."""
-    from hermes_cli import mcp_config
+    from moor_cli import mcp_config
     from tools.connectors.mcp import _CatalogBackend
 
     catalog_root = Path(os.environ["MOOR_OPTIONAL_MCPS"])

@@ -1,5 +1,5 @@
 /** Partition the preview pane's `<webview>` always carries. */
-export const PREVIEW_GUEST_PARTITION = 'persist:hermes-preview'
+export const PREVIEW_GUEST_PARTITION = 'persist:moor-preview'
 
 export interface PreviewGuestAttachPrefs {
   backgroundThrottling?: boolean

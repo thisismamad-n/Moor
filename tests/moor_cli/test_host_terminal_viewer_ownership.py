@@ -10,8 +10,8 @@ import time
 
 import pytest
 
-from hermes_cli.pty_session import PtySession, WS_CLOSE_SUPERSEDED
-from hermes_cli.web_host_terminal_sessions import HostOwner, HostTerminalRegistry
+from moor_cli.pty_session import PtySession, WS_CLOSE_SUPERSEDED
+from moor_cli.web_host_terminal_sessions import HostOwner, HostTerminalRegistry
 from tests.waiting import async_wait_until, wait_until
 
 
@@ -44,13 +44,13 @@ def read_pty_through(fd, marker, timeout=3.0):
 async def test_takeover_revokes_waiting_workers_and_waits_for_an_admitted_write(tmp_path, monkeypatch, pause_at_sink):
     import pty
     import tty
-    from hermes_cli import pty_bridge
+    from moor_cli import pty_bridge
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     profile = home / "profiles" / "worker"
     profile.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     owner = HostOwner(("loopback", "test"), profile, "sh", str(tmp_path))
     master, slave = pty.openpty()
     tty.setraw(slave)
@@ -152,7 +152,7 @@ def posix_pty(monkeypatch, on_write):
     worker may still be inside the sink."""
     import pty
     import tty
-    from hermes_cli import pty_bridge
+    from moor_cli import pty_bridge
 
     master, slave = pty.openpty()
     tty.setraw(slave)
@@ -178,7 +178,7 @@ def posix_pty(monkeypatch, on_write):
 def conpty(_monkeypatch, on_write):
     """The Windows bridge over a stand-in console. It gives a cancelled write a grace window to land,
     so the write is still running, cancelled, while the sink holds it."""
-    from hermes_cli.win_pty_bridge import WinPtyBridge
+    from moor_cli.win_pty_bridge import WinPtyBridge
 
     yield WinPtyBridge(ConsoleInput(on_write)), lambda write: write is not None and write.cancelling() > 0
 
@@ -194,13 +194,13 @@ async def test_takeover_during_an_admitted_input_write_keeps_the_shell(tmp_path,
     sink. The cancelled write returns False; the pump must neither close the shell nor let the old
     tab reconnect."""
     from types import SimpleNamespace
-    from hermes_cli.web_host_terminal_sessions import _pump_input
+    from moor_cli.web_host_terminal_sessions import _pump_input
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     profile = home / "profiles" / "worker"
     profile.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     owner = HostOwner(("loopback", "test"), profile, "sh", str(tmp_path))
     entered, release = threading.Event(), threading.Event()
 
@@ -245,7 +245,7 @@ async def test_takeover_during_an_admitted_input_write_keeps_the_shell(tmp_path,
 @pytest.mark.asyncio
 async def test_host_reaper_releases_dead_shell_before_drain_observes_eof(tmp_path):
     import signal
-    from hermes_cli.pty_bridge import PtyBridge
+    from moor_cli.pty_bridge import PtyBridge
 
     bridge = PtyBridge.spawn(["/bin/sh", "-c", "trap '' HUP; sleep 60 & echo ready; exec sleep 60"], cwd=str(tmp_path))
     registry = HostTerminalRegistry()
@@ -346,7 +346,7 @@ def unread_posix_pty(_monkeypatch):
     and then waits for room."""
     import pty
     import tty
-    from hermes_cli import pty_bridge
+    from moor_cli import pty_bridge
 
     master, slave = pty.openpty()
     tty.setraw(slave)
@@ -384,7 +384,7 @@ def keys_filling_the_input_queue(extra=0, *, text=False):
     frame repeats one letter; the next frame has the next letter. With ``text``, the frames are text
     frames, as a browser sends them, of 4-byte emoji: each has a quarter as many characters as UTF-8
     bytes."""
-    from hermes_cli import web_host_terminal_sessions as host_sessions
+    from moor_cli import web_host_terminal_sessions as host_sessions
 
     filled = host_sessions._INPUT_QUEUE_FRAMES
     size = host_sessions._INPUT_QUEUE_BYTES // filled
@@ -402,8 +402,8 @@ def as_written(frame) -> bytes:
 def test_text_frames_count_their_utf8_bytes_against_the_input_queue():
     """A text frame is written as UTF-8, so it counts its UTF-8 bytes: a non-ASCII paste fills the
     input queue at the same bound as the bytes it will write, not at a multiple of it."""
-    from hermes_cli import web_host_terminal_sessions as host_sessions
-    from hermes_cli.web_server_chat import _RESIZE_RE
+    from moor_cli import web_host_terminal_sessions as host_sessions
+    from moor_cli.web_server_chat import _RESIZE_RE
 
     keys, _ = keys_filling_the_input_queue(text=True)
     inbox = host_sessions._InputQueue()
@@ -425,7 +425,7 @@ def test_a_paste_or_keys_alone_do_not_fill_the_input_queue():
     """The reader stops taking frames only once the input queue holds both its byte bound and 64
     frames. One paste over the byte bound, or many keys, leave it reading the socket, where the
     server's keepalive pongs arrive."""
-    from hermes_cli import web_host_terminal_sessions as host_sessions
+    from moor_cli import web_host_terminal_sessions as host_sessions
 
     inbox = host_sessions._InputQueue()
     for frame in [b"P" * 2 * host_sessions._INPUT_QUEUE_BYTES, *[b"k"] * 48]:
@@ -452,13 +452,13 @@ async def test_closing_the_tab_during_a_waiting_paste_detaches_and_keeps_the_she
     any disconnect: it keeps running, retained for a reattach, and the reaper retires it once its
     retention runs out. A full input queue behind the paste (keys typed while it waited) does not
     hide the close."""
-    from hermes_cli import web_host_terminal_sessions as host_sessions
+    from moor_cli import web_host_terminal_sessions as host_sessions
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     profile = home / "profiles" / "worker"
     profile.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     owner = HostOwner(("loopback", "test"), profile, "sh", str(tmp_path))
     registry = HostTerminalRegistry()
     # 1 MiB: more than a pseudo-terminal buffers anywhere between its master and the program.
@@ -608,7 +608,7 @@ def served_host_terminal(monkeypatch, session, owner, ws_ping=(None, None)):
     import uvicorn
     from starlette.applications import Starlette
     from starlette.routing import WebSocketRoute
-    from hermes_cli import web_host_terminal_sessions as host_sessions
+    from moor_cli import web_host_terminal_sessions as host_sessions
 
     registry = HostTerminalRegistry()
     taken, finished = [], threading.Event()
@@ -667,11 +667,11 @@ def test_a_tab_closed_behind_more_keys_than_the_input_queue_holds_is_detached(tm
     then some, so the tab's close is unread behind them when it comes, and the browser drops the
     connection. Over a real socket the shell is still detached within a few seconds: it keeps
     running, retained for a reattach."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     profile = home / "profiles" / "worker"
     profile.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     owner = HostOwner(("loopback", "test"), profile, "sh", str(tmp_path))
     # 1 MiB: more than a pseudo-terminal buffers anywhere between its master and the program.
     paste = b"".join(b"%05d %s\n" % (n, b"x" * 57) for n in range(16 * 1024))
@@ -705,11 +705,11 @@ def test_a_live_tab_typing_behind_a_waiting_write_answers_keepalive_pings(tmp_pa
     program must not stop the server reading the socket, where the pongs arrive: the tab, answering
     every ping, stays attached through several ping timeouts, and everything reaches the program in
     order once it reads."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     profile = home / "profiles" / "worker"
     profile.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     owner = HostOwner(("loopback", "test"), profile, "sh", str(tmp_path))
     bridge = SlowAccept()
     session = PtySession("terminal", bridge, buffer_cap=32, read_timeout=0.01)
@@ -775,13 +775,13 @@ async def test_a_live_tab_typing_past_a_full_input_queue_is_held_back_and_loses_
     back on the browser), and checks only that the tab is still there, which leaves a live tab
     attached and writes nothing to its terminal. Once the program reads, every key reaches it in
     order. Text frames count the UTF-8 bytes they are written as."""
-    from hermes_cli import web_host_terminal_sessions as host_sessions
+    from moor_cli import web_host_terminal_sessions as host_sessions
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     profile = home / "profiles" / "worker"
     profile.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     owner = HostOwner(("loopback", "test"), profile, "sh", str(tmp_path))
     registry = HostTerminalRegistry()
     bridge = SlowAccept()

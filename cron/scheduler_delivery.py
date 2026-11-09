@@ -732,7 +732,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *,
     profile_label = profile or "(own)"
     message = bot_chat_message(job, content)
     try:
-        source_home = get_hermes_home().resolve()
+        source_home = get_moor_home().resolve()
         home = (get_profile_dir(profile) if profile else source_home).resolve()
         from gateway.warning_notifications import warning_notifications_enabled
         from moor_cli.config_effective import load_user_config_effective
@@ -1894,8 +1894,8 @@ def _deliver_result(
             continue
         if target["platform"] == "local":
             from gateway.session_cron import deliver_to_local_chat
-            from hermes_constants import get_hermes_home
-            local_error = deliver_to_local_chat(get_hermes_home(), target["chat_id"],
+            from moor_constants import get_moor_home
+            local_error = deliver_to_local_chat(get_moor_home(), target["chat_id"],
                                                 cleaned_delivery_content, diagnostic=for_failure)
             if local_error:
                 delivery_errors.append(local_error)

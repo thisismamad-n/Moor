@@ -307,10 +307,10 @@ class TestMultiplexProfileScope:
     ):
         """Loader parity (#125985): the documented top-level platforms.buzz shape passes the
         scoped gate, and an unconfigured sibling profile still fails closed (A→B→A)."""
-        import hermes_yaml as yaml
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        import moor_yaml as yaml
+        from moor_constants import (
+            reset_moor_home_override,
+            set_moor_home_override,
         )
 
         home_a = tmp_path / "s6probe-a"
@@ -338,11 +338,11 @@ class TestMultiplexProfileScope:
 
         for home, expected in ((home_a, True), (home_b, False), (home_a, True)):
             multiplex_scope()
-            token = set_hermes_home_override(str(home))
+            token = set_moor_home_override(str(home))
             try:
                 assert check_requirements() is expected
             finally:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
 
     def test_env_enablement_scoped_returns_none(self, multiplex_scope, default_profile_env):
         """Scoped env enablement must not fabricate Buzz for a profile from

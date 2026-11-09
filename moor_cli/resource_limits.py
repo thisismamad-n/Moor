@@ -110,7 +110,7 @@ def _arena_max_setting(env: Mapping[str, str]) -> str | None:
 def _launch_environ() -> dict[str, str] | None:
     """The environment this process was exec'd with (what glibc read at startup), or ``None``.
 
-    ``/proc/self/environ`` keeps the exec-time block; ``os.environ`` also holds values Hermes loaded
+    ``/proc/self/environ`` keeps the exec-time block; ``os.environ`` also holds values Moor loaded
     later from the profile ``.env``, which glibc never saw.
     """
     try:
@@ -144,7 +144,7 @@ def apply_malloc_arena_max(config: Mapping[str, Any] | None = None) -> bool:
     watchdog thread arms before config loads, so a gateway may hold one arena beyond a cap of 1.)
 
     An arena setting in the exec-time environment was already applied by glibc and wins. One that
-    is only in ``os.environ`` because Hermes loaded it from the profile ``.env`` is applied here with
+    is only in ``os.environ`` because Moor loaded it from the profile ``.env`` is applied here with
     the operator's number (glibc never read it). glibc only; never raises.
     """
     libc = glibc_malloc()
@@ -172,7 +172,7 @@ def apply_malloc_arena_max(config: Mapping[str, Any] | None = None) -> bool:
 def server_process_argv(argv: list[str]) -> bool:
     """True when *argv* (``sys.argv[1:]``) launches a long-lived server: ``serve``, ``dashboard`` or a
     foreground ``gateway`` (``gateway`` / ``gateway run``)."""
-    from hermes_cli._parser import command_argv
+    from moor_cli._parser import command_argv
 
     args = command_argv(argv)
     if not args:

@@ -75,7 +75,7 @@ def test_cronjob_tool_rejects_stale_past_one_shot(cron_env, monkeypatch):
     from tools.cronjob_tools import cronjob
 
     now = datetime(2026, 3, 18, 4, 30, 0, tzinfo=UTC)
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
+    monkeypatch.setattr("cron.jobs._moor_now", lambda: now)
     stale = (now - timedelta(minutes=5)).isoformat()
 
     result = json.loads(cronjob(action="create", prompt="Too late", schedule=stale))
@@ -173,7 +173,7 @@ class TestRunJobScript:
 
         # sorted() so the probed var is deterministic across runs
         # (frozenset iteration order varies with PYTHONHASHSEED).
-        blocked_var = min(_HERMES_PROVIDER_ENV_BLOCKLIST)
+        blocked_var = min(_MOOR_PROVIDER_ENV_BLOCKLIST)
         monkeypatch.setenv(blocked_var, "must_not_leak")
 
         script = cron_env / "scripts" / "env_probe.py"
@@ -338,7 +338,7 @@ class TestRunJobScript:
         self, cron_env, tmp_path, monkeypatch
     ):
         """#123044/#123440: on a POSIX managed-store install a cron ``.py`` script imports the
-        selected venv's packages, resolves Hermes from the LIVE checkout ahead of the venv's
+        selected venv's packages, resolves Moor from the LIVE checkout ahead of the venv's
         workspace snapshot, keeps ``python script.py`` path and ``__main__`` semantics, and
         leaves no ``PYTHONPATH`` for its own children to inherit."""
         from cron import scheduler_script
@@ -356,22 +356,22 @@ class TestRunJobScript:
         (deps / "probe_pkg.py").write_text("VALUE = 42\n", encoding="utf-8")
         snapshot = tmp_path / "workspace-snapshot"
         snapshot.mkdir()
-        (snapshot / "hermes_constants.py").write_text("STALE = True\n", encoding="utf-8")
+        (snapshot / "moor_constants.py").write_text("STALE = True\n", encoding="utf-8")
         (deps / "snapshot.pth").write_text(f"{snapshot}\n", encoding="utf-8")
 
         monkeypatch.setattr(
-            "hermes_cli._launchers.resolve_store_python", lambda repo: Path(sys.executable)
+            "moor_cli._launchers.resolve_store_python", lambda repo: Path(sys.executable)
         )
         monkeypatch.setattr("pm.environments.selected_venv", lambda repo: venv)
         monkeypatch.delenv("PYTHONPATH", raising=False)
 
         script = cron_env / "scripts" / "probe.py"
         script.write_text(
-            "import atexit, os, pickle, sys, probe_pkg, hermes_constants\n"
+            "import atexit, os, pickle, sys, probe_pkg, moor_constants\n"
             "class Probe: pass\n"
             "atexit.register(lambda: print('pickled', bool(pickle.dumps(Probe()))))\n"
             "print(probe_pkg.VALUE)\n"
-            "print(hermes_constants.__file__)\n"
+            "print(moor_constants.__file__)\n"
             "print(sys.path[0])\n"
             "print('PYTHONPATH=' + (os.environ.get('PYTHONPATH') or ''))\n",
             encoding="utf-8",
@@ -382,7 +382,7 @@ class TestRunJobScript:
         value, constants_file, path0, pythonpath, pickled = output.splitlines()
         assert value == "42"
         repo = Path(scheduler_script.__file__).resolve().parents[1]
-        assert Path(constants_file).resolve() == repo / "hermes_constants.py"
+        assert Path(constants_file).resolve() == repo / "moor_constants.py"
         assert Path(path0).resolve() == script.parent.resolve()
         assert pythonpath == "PYTHONPATH="
         assert pickled == "pickled True"  # __main__ outlives the body, as in a plain run
@@ -401,7 +401,7 @@ class TestRunJobScript:
             raise RuntimeError("dependency environment is missing or outside this install")
 
         monkeypatch.setattr(
-            "hermes_cli._launchers.resolve_store_python", lambda repo: Path(sys.executable)
+            "moor_cli._launchers.resolve_store_python", lambda repo: Path(sys.executable)
         )
         monkeypatch.setattr(
             "pm.environments.selected_venv",

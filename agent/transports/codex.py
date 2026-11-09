@@ -623,7 +623,7 @@ def _reasoning_fields(
             if params.get("profile_reasoning") is not None:
                 # Request a reasoning summary so the Responses API actually returns reasoning text:
                 # without ``summary: "auto"`` such endpoints return reasoning items with no summary and
-                # Hermes persists empty reasoning/thinking content — the same loss the generic branch
+                # Moor persists empty reasoning/thinking content — the same loss the generic branch
                 # below avoids (#46527).
                 fields["reasoning"] = {**params["profile_reasoning"], "summary": "auto"}
         else:
@@ -781,7 +781,7 @@ class ResponsesApiTransport(ProviderTransport):
         # An override may rewrite the wire model; provenance must be stamped with what actually goes out.
         wire_model = _strip_ctx_variant(request_overrides.get("model", model))
         input_items = self.convert_messages(
-            payload_messages, is_xai_responses=is_xai_responses, is_github_responses=is_github_responses,
+            payload_messages, is_xai_responses=is_xai_responses,
             replay_encrypted_reasoning=replay_encrypted_reasoning, base_url=params.get("base_url"),
             is_codex_backend=is_codex_backend, context_management=context_management, model=wire_model,
         )

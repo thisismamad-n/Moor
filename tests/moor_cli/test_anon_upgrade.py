@@ -1,4 +1,4 @@
-"""``hermes auth upgrade``: the plain device-code sign-in, then the free tier's apps move over.
+"""``moor auth upgrade``: the plain device-code sign-in, then the free tier's apps move over.
 
 Driven through a fake portal covering the device-code endpoints plus the free tier's claim
 endpoint, so the wire contract (device code, token grant persisted over the guest singleton, one
@@ -89,7 +89,7 @@ class FakePortal:
             if self.on_token is not None:
                 self.on_token()
             return httpx.Response(200, json={
-                "access_token": _jwt(sub="nas_user:9", client_id="hermes-cli", account_tier="free", email=EMAIL),
+                "access_token": _jwt(sub="nas_user:9", client_id="moor-cli", account_tier="free", email=EMAIL),
                 "refresh_token": REFRESH_TOKEN, "token_type": "Bearer", "expires_in": 900,
                 "scope": "inference:invoke", "inference_base_url": INFERENCE})
         return httpx.Response(500, json={"error": f"unexpected {path}"})
@@ -98,9 +98,9 @@ class FakePortal:
 @pytest.fixture
 def portal(monkeypatch, tmp_path):
     fake = FakePortal()
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", PORTAL)
-    monkeypatch.setenv("HERMES_ANON_API_SECRET", "test-secret")
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("MOOR_PORTAL_BASE_URL", PORTAL)
+    monkeypatch.setenv("MOOR_ANON_API_SECRET", "test-secret")
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     from moor_cli import auth_moor
@@ -145,7 +145,7 @@ class TestUpgrade:
         assert anon_auth.upgrade_guest(_args()) == 0
         assert f"Signed in as {EMAIL}." in capsys.readouterr().out
         assert portal.claims == [] and portal.minted == 0
-        assert not anon_auth.is_guest_state(_load_auth_store()["providers"]["nous"])
+        assert not anon_auth.is_guest_state(_load_auth_store()["providers"]["moor"])
 
     def test_completed_sign_in_keeps_no_free_tier_fields_and_prints_what_moved(self, portal, capsys, tmp_path):
         guest = anon_auth.ensure_portal_identity(explicit=True)
@@ -169,32 +169,32 @@ class TestUpgrade:
         assert shared.get("refresh_token") == REFRESH_TOKEN
         assert "anon_token" not in shared
 
-    def test_hermes_model_signs_a_connector_free_tier_in_instead_of_refusing(self, portal, monkeypatch, capsys):
-        from hermes_cli import model_setup_flows
-        from tests.hermes_cli.anon_portal import as_local_desktop_backend
+    def test_moor_model_signs_a_connector_free_tier_in_instead_of_refusing(self, portal, monkeypatch, capsys):
+        from moor_cli import model_setup_flows
+        from tests.moor_cli.anon_portal import as_local_desktop_backend
         as_local_desktop_backend(monkeypatch)
         assert anon_auth.guest_without_free_tier(anon_auth.ensure_portal_identity(explicit=True))
         logins = []
         monkeypatch.setattr(model_setup_flows, "_run_login", lambda login_fn, *args: logins.append(args))
 
-        model_setup_flows._model_flow_nous({})
+        model_setup_flows._model_flow_moor({})
 
         assert len(logins) == 1
         assert anon_auth.UPGRADE_HINT not in capsys.readouterr().out
 
     def test_the_terminal_device_login_prints_what_moved(self, portal, monkeypatch, capsys):
         import argparse
-        from hermes_cli import auth_nous
-        from hermes_cli.auth import PROVIDER_REGISTRY
+        from moor_cli import auth_moor
+        from moor_cli.auth import PROVIDER_REGISTRY
         anon_auth.ensure_portal_identity(explicit=True)
-        account = {"access_token": _jwt(sub="nas_user:9", client_id="hermes-cli", account_tier="free", email=EMAIL),
+        account = {"access_token": _jwt(sub="nas_user:9", client_id="moor-cli", account_tier="free", email=EMAIL),
                    "refresh_token": REFRESH_TOKEN, "portal_base_url": PORTAL, "inference_base_url": INFERENCE,
-                   "client_id": "hermes-cli", "expires_in": 900}
-        monkeypatch.setattr(auth_nous, "_offer_shared_nous_import", lambda timeout: None)
-        monkeypatch.setattr(auth_nous, "_nous_device_code_login", lambda **kw: dict(account))
-        monkeypatch.setattr(auth_nous, "_pick_nous_model_after_login", lambda *a: None)
+                   "client_id": "moor-cli", "expires_in": 900}
+        monkeypatch.setattr(auth_moor, "_offer_shared_moor_import", lambda timeout: None)
+        monkeypatch.setattr(auth_moor, "_moor_device_code_login", lambda **kw: dict(account))
+        monkeypatch.setattr(auth_moor, "_pick_moor_model_after_login", lambda *a: None)
 
-        auth_nous._login_nous(argparse.Namespace(no_browser=True, timeout=15.0), PROVIDER_REGISTRY["nous"])
+        auth_moor._login_moor(argparse.Namespace(no_browser=True, timeout=15.0), PROVIDER_REGISTRY["moor"])
 
         assert f"Your apps moved to {EMAIL}: Gmail." in capsys.readouterr().out
         assert len(portal.claims) == 1

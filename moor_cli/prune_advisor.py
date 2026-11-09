@@ -81,8 +81,8 @@ class Advice:
 def _home(home: Optional[Path]) -> Path:
     if home is not None:
         return Path(home)
-    from hermes_constants import get_hermes_home
-    return get_hermes_home()
+    from moor_constants import get_moor_home
+    return get_moor_home()
 
 
 def disk_snapshot(home: Optional[Path] = None) -> Optional[DiskSnapshot]:
@@ -100,7 +100,7 @@ def _effective_sessions(home: Optional[Path]) -> Optional[dict]:
     """*home*'s ``sessions:`` block as maintenance sees it (user file, ``${VAR}`` expansion, managed
     overlay; no defaults merged) or None when the file cannot be read. Read through *home*'s own
     config path, so gateway housekeeping gets each served profile's values, not the caller's."""
-    from hermes_cli.config_effective import load_user_config_effective
+    from moor_cli.config_effective import load_user_config_effective
     try:
         sessions = load_user_config_effective(_home(home) / "config.yaml", fail_closed=True).get("sessions")
     except Exception as exc:  # health: allow BLE001 -- any parse/read failure means "unreadable": never ask on it
@@ -167,7 +167,7 @@ def advise(home: Optional[Path] = None) -> Optional[Advice]:
     prunable = total = prunable_bytes = total_bytes = 0
     estimate_ok = True
     try:
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
         db = SessionDB(db_path=_home(home) / "state.db", read_only=True)
         try:
             where, params = db._prune_where(retention, None, {}, whole_lineages=True)
@@ -302,7 +302,7 @@ def advice_lines(advice: Advice, *, command_prefix: str = "/") -> list[str]:
         # Automatic compaction runs only past a free-page threshold most prunes never reach, so the
         # disk gets the space back reliably only from an explicit VACUUM.
         lines.append("Deleted history frees space inside state.db; to give it back to the disk, run "
-                     "`hermes sessions optimize` with other Hermes windows closed.")
+                     "`moor sessions optimize` with other Moor windows closed.")
     p = command_prefix
     lines.append(f"{p}autoprune on to enable, {p}autoprune off to keep everything (never asked again), "
                  f"{p}autoprune later to be reminded in a week.")
@@ -338,21 +338,21 @@ def notice_due(home: Optional[Path], shown: dict) -> bool:
 
 def managed() -> bool:
     """True when an administrator pins ``sessions.auto_prune`` (the user cannot change it)."""
-    from hermes_cli import managed_scope
+    from moor_cli import managed_scope
     return managed_scope.is_key_managed("sessions.auto_prune")
 
 
 def decide(enable: bool, home: Optional[Path] = None) -> bool:
     """Persist the user's answer as an explicit ``sessions.auto_prune``; ends the prompt for good.
     False when the save failed or did not take effect (an administrator-managed value wins)."""
-    import hermes_yaml as yaml
-    from hermes_cli.config_backend import ConfigWriteError, write_config_key
-    from hermes_constants import mkdir_under_hermes_home
+    import moor_yaml as yaml
+    from moor_cli.config_backend import ConfigWriteError, write_config_key
+    from moor_constants import mkdir_under_moor_home
     if managed():
         return False
     path = _home(home) / "config.yaml"
     try:
-        mkdir_under_hermes_home(path.parent)
+        mkdir_under_moor_home(path.parent)
         write_config_key(path, "sessions.auto_prune", bool(enable))
     except (OSError, ValueError, yaml.YAMLError, ConfigWriteError) as exc:
         logger.warning("Could not save sessions.auto_prune: %s", exc)
@@ -379,7 +379,7 @@ def run_command(args: str, home: Optional[Path] = None) -> str:
         return ("Auto-prune is on: ended sessions inactive past retention_days are deleted once a day."
                 if decide(True, home) else _SAVE_FAILED)
     if arg in {"off", "disable", "no"}:
-        return ("Auto-prune is off and you will not be asked again. `hermes sessions prune` still works any time."
+        return ("Auto-prune is off and you will not be asked again. `moor sessions prune` still works any time."
                 if decide(False, home) else _SAVE_FAILED)
     if arg in {"later", "snooze"}:
         snooze(home)

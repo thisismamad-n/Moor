@@ -139,7 +139,7 @@ def test_set_paused_roundtrip(curator_env):
 def test_non_positive_archive_after_days_falls_back_to_default(curator_env, monkeypatch, bad_days):
     """``curator.archive_after_days: 0`` (or negative) collapses archive_cutoff onto or past "now",
     which would mass-archive every skill with any past activity on the very next automatic pass.
-    ``hermes curator prune --days`` already refuses the same value; apply_automatic_transitions()
+    ``moor curator prune --days`` already refuses the same value; apply_automatic_transitions()
     runs unconfirmed on an idle tick, so it must fall back to the default instead."""
     c = curator_env["curator"]
     u = curator_env["usage"]
@@ -1128,7 +1128,7 @@ def test_threaded_llm_pass_keeps_callers_profile_scope(curator_env, tmp_path, mo
     """#125032: the daemon ``curator-review`` thread must inherit the caller's contextvars (home
     override + secret scope), else on a multiplexed gateway it runs unscoped against the ROOT home."""
     from agent import secret_scope as ss
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import get_moor_home, reset_moor_home_override, set_moor_home_override
 
     c, root = curator_env["curator"], curator_env["home"]
     profile = tmp_path / "profiles" / "served"
@@ -1136,13 +1136,13 @@ def test_threaded_llm_pass_keeps_callers_profile_scope(curator_env, tmp_path, mo
     seen = {}
 
     def _pass(prefix, auto_summary, dry_run, before_names):
-        seen["home"] = get_hermes_home()
+        seen["home"] = get_moor_home()
         seen["secret"] = ss.get_secret("CURATOR_PROBE_KEY")
         return f"{prefix}{auto_summary}; llm: stub", c._llm_meta("stub")
 
     monkeypatch.setattr(c, "_consolidation_pass", _pass)
     ss.set_multiplex_active(True)
-    home_tok = set_hermes_home_override(profile)
+    home_tok = set_moor_home_override(profile)
     scope_tok = ss.set_secret_scope({"CURATOR_PROBE_KEY": "served"}, profile_home=str(profile))
     try:
         c.run_curator_review(synchronous=False, consolidate=True)
@@ -1151,7 +1151,7 @@ def test_threaded_llm_pass_keeps_callers_profile_scope(curator_env, tmp_path, mo
                 t.join(timeout=10.0)
     finally:
         ss.reset_secret_scope(scope_tok)
-        reset_hermes_home_override(home_tok)
+        reset_moor_home_override(home_tok)
         ss.set_multiplex_active(False)
 
     assert seen == {"home": profile, "secret": "served"}

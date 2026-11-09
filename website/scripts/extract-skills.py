@@ -351,7 +351,7 @@ def extract_local_skills():
                 # 1-based curated hero rank; the site and the app rotate through these.
                 **({"featured": featured.index(rel_id) + 1} if rel_id in featured else {}),
                 "installIdentifier": install_identifier,
-                "installCmd": f"hermes skills install {install_identifier}",
+                "installCmd": f"moor skills install {install_identifier}",
             })
 
     return skills
@@ -462,7 +462,7 @@ def extract_unified_index_skills():
             "docsPath": "",
             "identifier": identifier,
             "installCmd": install_cmd,
-            "installIdentifier": install_cmd.removeprefix("hermes skills install "),
+            "installIdentifier": install_cmd.removeprefix("moor skills install "),
             "sourceUrl": source_url,
         })
 

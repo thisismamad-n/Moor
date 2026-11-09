@@ -8,8 +8,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from hermes_cli.model_switch import ModelSwitchResult
-from tests.hermes_cli.test_cli_gateway_model_route import RecordingConnection, _agent, _model_routes
+from moor_cli.model_switch import ModelSwitchResult
+from tests.moor_cli.test_cli_gateway_model_route import RecordingConnection, _agent, _model_routes
 
 _CONFIRM_MESSAGE = "Large context: this switch re-reads the whole session."
 
@@ -28,26 +28,26 @@ class GuardedConnection(RecordingConnection):
 
 def _cli(monkeypatch, conn):
     import cli as cli_mod
-    from hermes_cli.gateway_session_store import GatewaySessionStore
-    from tests.hermes_cli.test_cli_model_once import _StubCLI
+    from moor_cli.gateway_session_store import GatewaySessionStore
+    from tests.moor_cli.test_cli_model_once import _StubCLI
     stub = _StubCLI()
     stub.agent = _agent(conn, model="old/model", provider="openrouter")
-    stub._snapshot_model_runtime = cli_mod.HermesCLI._snapshot_model_runtime.__get__(stub)
+    stub._snapshot_model_runtime = cli_mod.MoorCLI._snapshot_model_runtime.__get__(stub)
     stub._session_db = GatewaySessionStore(conn)
     stub.session_id = "s"
     printed = []
     monkeypatch.setattr(cli_mod, "_cprint", lambda s, *a, **k: printed.append(str(s)))
     monkeypatch.setattr(cli_mod, "save_config_value", lambda *a, **k: None)
-    monkeypatch.setattr("hermes_cli.inventory.load_picker_context", lambda: SimpleNamespace(
+    monkeypatch.setattr("moor_cli.inventory.load_picker_context", lambda: SimpleNamespace(
         user_providers=None, custom_providers=None,
         with_overrides=lambda **_: SimpleNamespace(user_providers=None, custom_providers=None)))
     _pick(monkeypatch, "claude-sonnet-4.6", "anthropic", "https://api.anthropic.com", "anthropic_messages")
-    monkeypatch.setattr("hermes_cli.model_switch.resolve_display_context_length", lambda *a, **k: None)
+    monkeypatch.setattr("moor_cli.model_switch.resolve_display_context_length", lambda *a, **k: None)
     return cli_mod, stub, printed
 
 
 def _pick(monkeypatch, model, provider, base_url, api_mode):
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", lambda **_: ModelSwitchResult(
+    monkeypatch.setattr("moor_cli.model_switch.switch_model", lambda **_: ModelSwitchResult(
         success=True, new_model=model, target_provider=provider, api_key=f"sk-{provider}",
         base_url=base_url, api_mode=api_mode, provider_label=provider.title()))
 
@@ -57,11 +57,11 @@ def _submits(conn):
 
 
 def _prepare_for_chat(monkeypatch, cli_mod, stub):
-    """Enough of HermesCLI for the real ``chat``: its retire, ``_init_agent``, the agent thread
+    """Enough of MoorCLI for the real ``chat``: its retire, ``_init_agent``, the agent thread
     and the one-turn restore all run. Only the terminal UI around the turn is stubbed."""
     for name in ("chat", "_chat_run_agent", "_chat_release_turn_audio", "_init_agent",
                  "_resolve_turn_agent_config", "_restore_model_runtime_snapshot"):
-        setattr(stub, name, getattr(cli_mod.HermesCLI, name).__get__(stub))
+        setattr(stub, name, getattr(cli_mod.MoorCLI, name).__get__(stub))
     monkeypatch.setattr(cli_mod, "ChatConsole", lambda *a, **k: SimpleNamespace(print=lambda *a, **k: None))
     stub._ensure_runtime_credentials = lambda: True
     stub.finalize_preloaded_skills = lambda: None
@@ -147,7 +147,7 @@ def _chat_cli(monkeypatch, conn):
 def test_model_once_rides_one_turn_and_never_touches_the_session(monkeypatch):
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, printed = _chat_cli(monkeypatch, conn)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
     assert not [line for line in printed if "fail" in line.lower()], printed
     assert stub.chat("the once turn") == "ok"
     assert stub.chat("the turn after") == "ok"
@@ -163,9 +163,9 @@ def test_model_once_rides_one_turn_and_never_touches_the_session(monkeypatch):
 def test_a_second_once_before_the_turn_restores_the_route_before_the_first(monkeypatch):
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, _printed = _chat_cli(monkeypatch, conn)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
     _pick(monkeypatch, "gpt-5.4", "openai", "https://api.openai.com/v1", "codex_responses")
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model gpt-5.4 --provider openai --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model gpt-5.4 --provider openai --once")
     stub.chat("the once turn")
     stub.chat("the turn after")
     once, after = _submits(conn)
@@ -178,9 +178,9 @@ def test_a_second_once_before_the_turn_restores_the_route_before_the_first(monke
 def test_session_switch_of_the_one_turn_target_commits_on_the_fence(monkeypatch):
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, printed = _chat_cli(monkeypatch, conn)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
     assert not _model_routes(conn)[0], "the one-turn pick wrote the session"
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic")
     assert not [line for line in printed if "fail" in line.lower()], printed
     mutates = [p for m, p in conn.calls if m == "session.mutate" and p.get("operation") == "model"]
     assert mutates and mutates[-1]["payload"]["model"] == "claude-sonnet-4.6", mutates
@@ -198,7 +198,7 @@ def test_session_model_switch_commits_the_route_on_the_owner(monkeypatch, conn_c
     cli_mod, stub, printed = _cli(monkeypatch, conn)
     asked = []
     stub.agent.model_confirm_callback = lambda refusal: asked.append(refusal["confirm_message"]) or True
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic")
     assert not [line for line in printed if "fail" in line.lower()], printed
     assert asked == ([_CONFIRM_MESSAGE] if conn_class is GuardedConnection else [])
     stub.agent.run_conversation("next turn")
@@ -225,11 +225,11 @@ def test_once_on_a_resumed_session_asks_before_it_switches(monkeypatch):
             return default
 
     stub._session_db = _AnchorDB()
-    stub._confirm_expensive_model_switch = cli_mod.HermesCLI._confirm_expensive_model_switch.__get__(stub)
+    stub._confirm_expensive_model_switch = cli_mod.MoorCLI._confirm_expensive_model_switch.__get__(stub)
     stub._prompt_text_input_modal = lambda **kw: asked.append(kw) or "cancel"
-    stub._normalize_slash_confirm_choice = cli_mod.HermesCLI._normalize_slash_confirm_choice.__get__(stub)
+    stub._normalize_slash_confirm_choice = cli_mod.MoorCLI._normalize_slash_confirm_choice.__get__(stub)
     monkeypatch.setattr("agent.usage_anchor.persisted_anchor_tokens", lambda *_a, **_k: 200_000)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
     assert asked, "the large-context confirm did not appear"
     assert any("LARGE CONTEXT" in (kw.get("detail") or "") or "context" in (kw.get("title") or "").lower()
                for kw in asked), asked
@@ -242,7 +242,7 @@ def test_switching_to_the_route_the_session_runs_commits_nothing(monkeypatch):
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, _printed = _cli(monkeypatch, conn)
     _pick(monkeypatch, "old/model", "openrouter", "https://openrouter.ai/api/v1", "chat_completions")
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model old/model --provider openrouter")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model old/model --provider openrouter")
     stub.agent.run_conversation("next turn")
     mutates, overrides = _model_routes(conn)
     assert not mutates and not overrides, (mutates, overrides)
@@ -257,8 +257,8 @@ def test_once_reasoning_rides_the_admission_and_never_mutates_the_session(monkey
     (each a durable ``session_pins.reasoning``), so the session stopped following its profile's level."""
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, printed = _chat_cli(monkeypatch, conn)
-    stub._confirm_and_apply_cli_model_switch = cli_mod.HermesCLI._confirm_and_apply_cli_model_switch.__get__(stub)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once --reasoning high")
+    stub._confirm_and_apply_cli_model_switch = cli_mod.MoorCLI._confirm_and_apply_cli_model_switch.__get__(stub)
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once --reasoning high")
     assert not [line for line in printed if "fail" in line.lower()], printed
     assert stub.chat("the once turn") == "ok"
     assert stub.chat("the turn after") == "ok"
@@ -273,7 +273,7 @@ def test_once_reasoning_equal_to_the_inherited_level_commits_nothing(monkeypatch
     """dokterdok's probe: the session already runs ``high`` by inheritance; neither the --once pick nor its
     restore may write the session's reasoning."""
     import cli
-    from hermes_cli.cli_model_switch_mixin import _commit_model_switch
+    from moor_cli.cli_model_switch_mixin import _commit_model_switch
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter", "reasoning_effort": "high"})
     _cli_mod, stub, _printed = _cli(monkeypatch, conn)
     stub.agent = _agent(conn, model="old/model", provider="openrouter",
@@ -283,7 +283,7 @@ def test_once_reasoning_equal_to_the_inherited_level_commits_nothing(monkeypatch
     result = ModelSwitchResult(success=True, new_model="next/model", target_provider="openrouter",
                                api_key="key", base_url=stub.base_url, api_mode="chat_completions")
     _commit_model_switch(stub, result, persist_global=False, one_turn=True, reasoning_effort="high")
-    cli.HermesCLI._restore_model_runtime_snapshot(stub, stub._pending_one_turn_model_restore)
+    cli.MoorCLI._restore_model_runtime_snapshot(stub, stub._pending_one_turn_model_restore)
     assert _reasoning_mutates(conn) == []
 
 
@@ -293,7 +293,7 @@ def test_once_sends_the_alias_it_resolved_through(monkeypatch, session_model):
     endpoints. ``/model second --once`` sends ``second``, not the bare model the owner would re-resolve to
     the first alias, and still sends it when the session already runs that model."""
     from gateway.session_cli_turn import one_turn_runtime
-    from hermes_cli import model_switch
+    from moor_cli import model_switch
     resolve = model_switch.switch_model
     conn = RecordingConnection({"model": session_model, "provider": "custom"})
     cli_mod, stub, printed = _chat_cli(monkeypatch, conn)
@@ -301,7 +301,7 @@ def test_once_sends_the_alias_it_resolved_through(monkeypatch, session_model):
     for name, port in (("first", 7002), ("second", 7003)):
         monkeypatch.setitem(model_switch.DIRECT_ALIASES, name, model_switch.DirectAlias(
             model="shared-model", provider="custom", base_url=f"http://127.0.0.1:{port}/v1", api_key=f"sk-{name}"))
-    monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model", lambda *_a, **_k: {
+    monkeypatch.setattr("moor_cli.models_validate.validate_requested_model", lambda *_a, **_k: {
         "accepted": True, "persist": True, "recognized": True, "message": ""})
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
     session = {"provider": "custom", "api_key": "sk-session", "base_url": "http://127.0.0.1:7001/v1"}
@@ -309,7 +309,7 @@ def test_once_sends_the_alias_it_resolved_through(monkeypatch, session_model):
     stub.base_url = stub._explicit_base_url = session["base_url"]
     stub.api_key = stub._explicit_api_key = session["api_key"]
     stub.agent.model, stub.agent.provider = session_model, "custom"
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model second --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model second --once")
     assert not [line for line in printed if "fail" in line.lower()], printed
     assert stub.agent.model == "shared-model", "the agent shows the resolved model, not the alias"
     stub.chat("run on second")
@@ -329,14 +329,14 @@ def test_once_through_an_alias_named_like_the_session_model_still_sends_it(monke
     --once`` resolves the alias, but the submit compared the staged ``shared-model`` with the session's
     route again, dropped it, and the turn ran on the session's endpoint and key."""
     from gateway.session_cli_turn import one_turn_runtime
-    from hermes_cli import model_switch
+    from moor_cli import model_switch
     resolve = model_switch.switch_model
     conn = RecordingConnection({"model": "shared-model", "provider": "custom"})
     cli_mod, stub, printed = _chat_cli(monkeypatch, conn)
     monkeypatch.setattr(model_switch, "switch_model", resolve)  # the real resolver over this alias
     monkeypatch.setitem(model_switch.DIRECT_ALIASES, "shared-model", model_switch.DirectAlias(
         model="shared-model", provider="custom", base_url="http://127.0.0.1:7003/v1", api_key="sk-alias"))
-    monkeypatch.setattr("hermes_cli.models_validate.validate_requested_model", lambda *_a, **_k: {
+    monkeypatch.setattr("moor_cli.models_validate.validate_requested_model", lambda *_a, **_k: {
         "accepted": True, "persist": True, "recognized": True, "message": ""})
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
     session = {"provider": "custom", "api_key": "sk-session", "base_url": "http://127.0.0.1:7001/v1"}
@@ -344,7 +344,7 @@ def test_once_through_an_alias_named_like_the_session_model_still_sends_it(monke
     stub.base_url = stub._explicit_base_url = session["base_url"]
     stub.api_key = stub._explicit_api_key = session["api_key"]
     stub.agent.model, stub.agent.provider = "shared-model", "custom"
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model shared-model --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model shared-model --once")
     assert not [line for line in printed if "fail" in line.lower()], printed
     assert stub.base_url == "http://127.0.0.1:7003/v1", "the CLI shows the alias's endpoint"
     stub.chat("run on the alias")
@@ -367,7 +367,7 @@ class BusyOnceConnection(RecordingConnection):
 
     def call(self, method, *, timeout=None, **params):
         if method == "prompt.submit" and not self.refused:
-            from hermes_cli.gateway_client import GatewayRPCError
+            from moor_cli.gateway_client import GatewayRPCError
             self.refused = True
             self.calls.append((method, params))
             raise GatewayRPCError("session_busy")
@@ -380,7 +380,7 @@ def test_a_once_pick_refused_as_session_busy_rides_the_resend(monkeypatch):
     model."""
     conn = BusyOnceConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, _printed = _chat_cli(monkeypatch, conn)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
     stub.chat("refused")
     assert stub.chat("the resend") == "ok"
     assert stub.chat("the turn after") == "ok"
@@ -420,16 +420,16 @@ def test_a_prompt_refused_behind_a_lost_turn_leaves_its_turn_for_the_resend(monk
     /model --once pick and its note, and the CLI's history holds the prompt once, as the owner's does."""
     conn = LostTurnConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, _printed = _chat_cli(monkeypatch, conn)
-    stub._chat_stage_user_message = cli_mod.HermesCLI._chat_stage_user_message.__get__(stub)
-    stub._chat_settle_turn = cli_mod.HermesCLI._chat_settle_turn.__get__(stub)
+    stub._chat_stage_user_message = cli_mod.MoorCLI._chat_stage_user_message.__get__(stub)
+    stub._chat_settle_turn = cli_mod.MoorCLI._chat_settle_turn.__get__(stub)
     stub._flush_stream = lambda: None
-    monkeypatch.setattr("hermes_cli.gateway_side.connection_for", lambda cli: conn)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
+    monkeypatch.setattr("moor_cli.gateway_side.connection_for", lambda cli: conn)
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once")
     note = stub._pending_model_switch_note
 
     stub.chat("second ask")  # refused with the /discard banner
     assert not _submits(conn)
-    cli_mod.HermesCLI._handle_discard_command(stub, "/discard adm-lost")
+    cli_mod.MoorCLI._handle_discard_command(stub, "/discard adm-lost")
     assert stub.chat("second ask") == "ok"
     assert stub.chat("the turn after") == "ok"
 
@@ -477,7 +477,7 @@ def test_a_session_reasoning_pick_is_committed_once_not_on_every_rebuild(monkeyp
     """Review of #140969: ``_reasoning_user_set`` never cleared after the commit, so every later agent
     rebuild (``/fast``, ``/personality``, a route change, a --once restore) re-sent the explicit level: a
     full ``session.resume``, a prepare+commit, a receipt and a gateway agent eviction each time."""
-    from hermes_cli.cli_agent_setup_mixin import _retire_agent
+    from moor_cli.cli_agent_setup_mixin import _retire_agent
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     _cli_mod, stub, _printed = _chat_cli(monkeypatch, conn)
     stub.agent = None
@@ -507,8 +507,8 @@ def test_once_reasoning_admission_passes_the_real_submit_contract(monkeypatch, o
 
     conn = RecordingConnection({"model": "old/model", "provider": "openrouter"})
     cli_mod, stub, _printed = _chat_cli(monkeypatch, conn)
-    stub._confirm_and_apply_cli_model_switch = cli_mod.HermesCLI._confirm_and_apply_cli_model_switch.__get__(stub)
-    cli_mod.HermesCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once --reasoning high")
+    stub._confirm_and_apply_cli_model_switch = cli_mod.MoorCLI._confirm_and_apply_cli_model_switch.__get__(stub)
+    cli_mod.MoorCLI._handle_model_switch(stub, "/model claude-sonnet-4.6 --provider anthropic --once --reasoning high")
     assert stub.chat("the once turn") == "ok"
     (submit,) = _submits(conn)
     assert submit["model_override"].get("reasoning") == "high", submit

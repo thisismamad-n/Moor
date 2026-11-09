@@ -225,7 +225,7 @@ class TestTransparentRefreshOnAccessTokenEviction:
 
         # Browsing is read-only; initialize the real store as its owner would.
         from contextlib import closing
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         with closing(SessionDB()) as db:
             db.create_session("refresh-owner-session", source="cli")
@@ -361,12 +361,12 @@ class TestAutoSsoRedirect:
         reverse proxy that mounts the dashboard at a sub-path."""
         r = gated_app.get(
             "/login",
-            headers={"X-Forwarded-Prefix": "/hermes"},
+            headers={"X-Forwarded-Prefix": "/moor"},
         )
         assert r.status_code == 200
         html = r.text
-        assert 'href="/hermes/auth/login?provider=' in html
-        assert 'data-prefix="/hermes"' in html
+        assert 'href="/moor/auth/login?provider=' in html
+        assert 'data-prefix="/moor"' in html
 
     def test_login_page_bare_urls_without_proxy_header(self, gated_app):
         """Without X-Forwarded-Prefix the login page must use
@@ -413,7 +413,7 @@ class TestNextSameOriginValidation:
         )
 
     def test_safe_next_validator_rejects_protocol_relative(self):
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from moor_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path):
@@ -423,7 +423,7 @@ class TestNextSameOriginValidation:
         assert _safe_next_target(FakeRequest("//evil.com")) == ""
 
     def test_safe_next_validator_rejects_login_loop(self):
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from moor_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path):
@@ -441,7 +441,7 @@ class TestNextSameOriginValidation:
         OAuth shows raw JSON instead of the dashboard. This is the bug
         fix that closes the analytics-page redirect mishap.
         """
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from moor_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path, query=""):
@@ -483,7 +483,7 @@ class TestNextSameOriginValidation:
         """When ``X-Forwarded-Prefix`` is set, the ``next`` target must
         include the prefix so the post-login redirect lands within the
         reverse-proxy sub-path."""
-        from hermes_cli.dashboard_auth.middleware import _safe_next_target
+        from moor_cli.dashboard_auth.middleware import _safe_next_target
 
         class FakeRequest:
             def __init__(self, path, query="", prefix=""):
@@ -499,12 +499,12 @@ class TestNextSameOriginValidation:
 
         # With prefix: path is prefixed
         assert (
-            _safe_next_target(FakeRequest("/sessions", prefix="/hermes"))
-            == "%2Fhermes%2Fsessions"
+            _safe_next_target(FakeRequest("/sessions", prefix="/moor"))
+            == "%2Fmoor%2Fsessions"
         )
         assert (
-            _safe_next_target(FakeRequest("/sessions", "page=2", prefix="/hermes"))
-            == "%2Fhermes%2Fsessions%3Fpage%3D2"
+            _safe_next_target(FakeRequest("/sessions", "page=2", prefix="/moor"))
+            == "%2Fmoor%2Fsessions%3Fpage%3D2"
         )
 
         # With multi-level prefix like /profile/nati
@@ -515,21 +515,21 @@ class TestNextSameOriginValidation:
 
         # Auth rejection paths still work with prefix
         assert (
-            _safe_next_target(FakeRequest("/login", prefix="/hermes"))
+            _safe_next_target(FakeRequest("/login", prefix="/moor"))
             == ""
         )
         assert (
-            _safe_next_target(FakeRequest("/auth/login", prefix="/hermes"))
+            _safe_next_target(FakeRequest("/auth/login", prefix="/moor"))
             == ""
         )
         assert (
-            _safe_next_target(FakeRequest("/api/auth/me", prefix="/hermes"))
+            _safe_next_target(FakeRequest("/api/auth/me", prefix="/moor"))
             == ""
         )
 
         # API paths rejected even with prefix
         assert (
-            _safe_next_target(FakeRequest("/api/analytics/models", prefix="/hermes"))
+            _safe_next_target(FakeRequest("/api/analytics/models", prefix="/moor"))
             == ""
         )
 
@@ -751,20 +751,20 @@ class TestRenderLoginHtmlNext:
         assert "%22injected" in html_out
 
     def test_prefix_prepended_to_provider_button_href(self):
-        from hermes_cli.dashboard_auth.login_page import render_login_html
-        html_out = render_login_html(prefix="/hermes")
-        assert 'href="/hermes/auth/login?provider=stub"' in html_out
+        from moor_cli.dashboard_auth.login_page import render_login_html
+        html_out = render_login_html(prefix="/moor")
+        assert 'href="/moor/auth/login?provider=stub"' in html_out
 
     def test_prefix_with_next_threaded(self):
-        from hermes_cli.dashboard_auth.login_page import render_login_html
-        html_out = render_login_html(next_path="/sessions", prefix="/hermes")
-        assert 'href="/hermes/auth/login?provider=stub' in html_out
+        from moor_cli.dashboard_auth.login_page import render_login_html
+        html_out = render_login_html(next_path="/sessions", prefix="/moor")
+        assert 'href="/moor/auth/login?provider=stub' in html_out
         assert "next=" in html_out
 
     def test_empty_prefix_produces_bare_root_urls(self):
         """Explicitly passing prefix='' (the default) must NOT inject a
         ``data-prefix`` attribute or alter the hrefs."""
-        from hermes_cli.dashboard_auth.login_page import render_login_html
+        from moor_cli.dashboard_auth.login_page import render_login_html
         html_out = render_login_html(prefix="")
         assert 'href="/auth/login?provider=stub"' in html_out
         assert "data-prefix" not in html_out
@@ -772,12 +772,12 @@ class TestRenderLoginHtmlNext:
     def test_prefix_injected_as_data_attribute(self):
         """The <main> element must carry data-prefix so the password-login
         JS can read it."""
-        from hermes_cli.dashboard_auth.login_page import render_login_html
-        html_out = render_login_html(prefix="/hermes")
-        assert 'data-prefix="/hermes"' in html_out
+        from moor_cli.dashboard_auth.login_page import render_login_html
+        html_out = render_login_html(prefix="/moor")
+        assert 'data-prefix="/moor"' in html_out
 
     def test_prefix_does_not_appear_without_explicit_prefix(self):
-        from hermes_cli.dashboard_auth.login_page import render_login_html
+        from moor_cli.dashboard_auth.login_page import render_login_html
         html_out = render_login_html()
         assert "<main>" in html_out
         assert "data-prefix" not in html_out

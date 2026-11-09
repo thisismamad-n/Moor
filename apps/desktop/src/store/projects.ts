@@ -9,8 +9,8 @@ import {
   projectOwnerBySessionId,
   type SidebarProjectTree
 } from '@/app/chat/sidebar/projects/workspace-groups'
-import type { HermesGitBaseBranch, HermesGitBranch } from '@/global'
-import { getHermesConfig, hermesApi, type HermesGateway, type SessionInfo } from '@/hermes'
+import type { MoorGitBaseBranch, MoorGitBranch } from '@/global'
+import { getMoorConfig, moorApi, type MoorGateway, type SessionInfo } from '@/moor'
 import { translateNow } from '@/i18n'
 import { desktopDefaultCwd, isDesktopFsRemoteMode, selectDesktopPaths, writeDesktopFileText } from '@/lib/desktop-fs'
 import { desktopGit } from '@/lib/desktop-git'
@@ -54,7 +54,7 @@ import {
   type SessionTombstoneGenerationSnapshot,
   tombstoneRowIds
 } from '@/store/session-removal'
-import type { ProjectInfo, ProjectsPayload } from '@/types/hermes'
+import type { ProjectInfo, ProjectsPayload } from '@/types/moor'
 
 import { recordFeatureUse } from './desktop-metrics'
 
@@ -368,7 +368,7 @@ interface ProjectRowOwner {
 }
 
 interface ActiveProjectsContext extends ProjectRowOwner {
-  gateway: HermesGateway
+  gateway: MoorGateway
   profile: string
 }
 
@@ -406,7 +406,7 @@ async function activeProjectsContext(profile = projectProfile()): Promise<Active
   }
 
   if (!gateway || !stillOnWritableProjectOwner({ connectionId, gateway, profile })) {
-    throw new Error('Active Hermes profile changed while connecting')
+    throw new Error('Active Moor profile changed while connecting')
   }
 
   return { connectionId, gateway, profile, stampLocal }

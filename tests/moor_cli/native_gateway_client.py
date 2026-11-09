@@ -2,11 +2,11 @@
 
 Native Desktop's local connection is the gateway's listener, and Electron's main process mints one
 ``native-http`` grant per request over the gateway's private control socket and sends it as
-``X-Hermes-Gateway-Ticket`` from a loopback peer, with no Origin
+``X-moor-gateway-Ticket`` from a loopback peer, with no Origin
 (``apps/desktop/electron/local-gateway.ts``, ``nativeGatewayHttpHeaders``). Here the grant comes from
 the same ``TicketStore`` the control socket mints from, bound to a runner serving the test's home,
 and the peer is recorded as ``GatewayRuntimeAPI`` records it, so the real
-``hermes_cli.dashboard_auth.native_http`` gate admits each request.
+``moor_cli.dashboard_auth.native_http`` gate admits each request.
 """
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ from fastapi.testclient import TestClient
 
 
 def native_desktop_client(monkeypatch) -> TestClient:
-    """A client for ``web_server.app`` bound to a gateway runner serving ``get_hermes_home()``."""
+    """A client for ``web_server.app`` bound to a gateway runner serving ``get_moor_home()``."""
     from gateway.runtime_bootstrap import TicketStore
     from gateway.session_authorities import SessionAuthorities
-    from hermes_cli import web_server
-    from hermes_constants import get_hermes_home
+    from moor_cli import web_server
+    from moor_constants import get_moor_home
 
-    home = get_hermes_home().resolve()
+    home = get_moor_home().resolve()
     authorities = SessionAuthorities(home)
     authorities.add(home, SimpleNamespace(profile_id=str(home), instance_id="daemon"))
     store = TicketStore("daemon", authorities.profile_ids())
@@ -35,8 +35,8 @@ def native_desktop_client(monkeypatch) -> TestClient:
     async def native_desktop(scope, receive, send):
         if scope["type"] == "http":
             ticket = store.mint(profile_id=str(home), subject="desktop", purpose="native-http")
-            scope = {**scope, "headers": [*scope["headers"], (b"x-hermes-gateway-ticket", ticket.encode())],
-                     "hermes.gateway_socket_peer": ("127.0.0.1", 50000)}
+            scope = {**scope, "headers": [*scope["headers"], (b"x-moor-gateway-ticket", ticket.encode())],
+                     "moor.gateway_socket_peer": ("127.0.0.1", 50000)}
         await web_server.app(scope, receive, send)
 
     return TestClient(native_desktop, raise_server_exceptions=False)

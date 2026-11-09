@@ -1,4 +1,4 @@
-import { atom, Button, host, randomUuid, useValue } from '@hermes/plugin-sdk'
+import { atom, Button, host, randomUuid, useValue } from '@moor/plugin-sdk'
 import { useEffect, useState } from 'react'
 
 import { useCanonicalGroupLabels } from './canonical-group-labels'

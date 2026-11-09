@@ -1,4 +1,4 @@
-import type { PluginTranslate } from '@hermes/plugin-sdk'
+import type { PluginTranslate } from '@moor/plugin-sdk'
 
 // Bind the message SHAPE to a plugin translator: string leaves resolve now,
 // function leaves forward their args through t(path, …).

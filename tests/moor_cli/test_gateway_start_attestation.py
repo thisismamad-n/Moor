@@ -18,7 +18,7 @@ import json
 
 import pytest
 
-from hermes_cli import gateway_windows
+from moor_cli import gateway_windows
 
 
 # ---------------------------------------------------------------------------

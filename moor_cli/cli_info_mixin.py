@@ -16,7 +16,7 @@ import time
 from typing import Any, NamedTuple
 
 from agent.i18n import t
-from hermes_constants import is_termux as _is_termux_environment
+from moor_constants import is_termux as _is_termux_environment
 from rich.markup import escape as _escape
 from utils import base_url_hostname
 
@@ -106,7 +106,7 @@ def banner_plan(cli, console) -> BannerPlan:
     """The welcome banner's plan. The compact banner (``banner_kw`` None) is for a narrow terminal,
     ``display.compact``, or a gateway session with no snapshot yet."""
     from agent.context_pin import is_context_pinned
-    from hermes_cli.gateway_tools_notify import gateway_store
+    from moor_cli.gateway_tools_notify import gateway_store
     store = gateway_store(cli)
     inventory = store.banner_inventory() if store is not None else None
     agent = getattr(cli, "agent", None)
@@ -128,7 +128,7 @@ class CLIInfoMixin:
     def _show_gateway_banner(self, build_welcome_banner, inventory, banner_kw):
         """Main's banner from the gateway session's snapshot (the TUI banner's data): the CLI
         enumerates nothing. The canonical id shows as main's 8-character label (display only)."""
-        from hermes_cli.gateway_session_store import session_label
+        from moor_cli.gateway_session_store import session_label
         build_welcome_banner(
             tools=inventory["tools"], get_toolset_for_tool=inventory["get_toolset_for_tool"],
             availability=inventory["availability"], skills_by_category=inventory["skills_by_category"],
@@ -213,7 +213,7 @@ class CLIInfoMixin:
         # the background and let its output land above the prompt (patch_stdout-safe).
         if isinstance((gateway_inventory or {}).get("tool_availability_warnings"), list):
             self._print_gateway_tool_warnings(gateway_inventory["tool_availability_warnings"])
-        elif not on_gateway and os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+        elif not on_gateway and os.environ.get("MOOR_DEFER_AGENT_STARTUP") != "1":
             if getattr(self, "_defer_tool_warnings", False):
                 threading.Thread(
                     target=self._show_tool_availability_warnings,
@@ -248,9 +248,9 @@ class CLIInfoMixin:
         from moor_cli.model_switch import is_moor_moor_non_agentic
         if is_moor_moor_non_agentic(getattr(self, "model", "") or ""):
             self._console_print()
-            self._console_print(f"[bold yellow]{t('cli.banner.hermes_models_not_agentic')}[/]")
-            self._console_print(f"[dim]   {t('cli.banner.hermes_models_lack_tools')}[/]")
-            self._console_print(f"[dim]   {t('cli.banner.hermes_models_switch_hint')}[/]")
+            self._console_print(f"[bold yellow]{t('cli.banner.moor_models_not_agentic')}[/]")
+            self._console_print(f"[dim]   {t('cli.banner.moor_models_lack_tools')}[/]")
+            self._console_print(f"[dim]   {t('cli.banner.moor_models_switch_hint')}[/]")
 
         # Project-local skills one-liner: trusted → count; untrusted-with-skills → point at
         # `moor skills trust`. Never raises.
@@ -292,7 +292,7 @@ class CLIInfoMixin:
         from cli import (
             ChatConsole, _BOLD, _DIM, _RST, _accent_hex, _cprint, _session_skill_commands,
             _termux_example_image_path, get_skill_bundles)
-        from hermes_cli.commands import COMMAND_REGISTRY, HELP_SESSION_SUBGROUPS
+        from moor_cli.commands import COMMAND_REGISTRY, HELP_SESSION_SUBGROUPS
 
         arg = (arg or "").strip()
         skill_commands = _session_skill_commands(self)
@@ -304,7 +304,7 @@ class CLIInfoMixin:
         # /help skills — the full list, kept out of the default view so core commands don't
         # scroll off screen.
         if arg.lower() in ("skills", "skill"):
-            from hermes_cli import gateway_plugin_commands
+            from moor_cli import gateway_plugin_commands
             if skill_commands:
                 _cprint(f"\n  ⚡ {_BOLD}{t('cli.help.skill_commands')}{_RST} "
                         f"({t('cli.help.n_installed', count=str(len(skill_commands)))}):")
@@ -322,7 +322,7 @@ class CLIInfoMixin:
 
         default_header = t("cli.help.header")
         try:
-            from hermes_cli.skin_engine import get_active_help_header
+            from moor_cli.skin_engine import get_active_help_header
             header = get_active_help_header(default_header)
         except Exception:
             header = default_header
@@ -421,7 +421,7 @@ class CLIInfoMixin:
 
     def show_tools(self):
         """Display available tools with kawaii ASCII art."""
-        from hermes_cli.gateway_tools import session_tools
+        from moor_cli.gateway_tools import session_tools
         remote = session_tools()  # the gateway session's catalog (its MCP + plugin tools included)
         if remote is not None:
             tools, get_toolset_for_tool = remote
@@ -462,7 +462,7 @@ class CLIInfoMixin:
 
     def show_toolsets(self):
         """Display available toolsets with kawaii ASCII art."""
-        from hermes_cli.cli_info_lines import toolsets_lines
+        from moor_cli.cli_info_lines import toolsets_lines
         print("\n".join(toolsets_lines(self.enabled_toolsets)))
 
     def _handle_whoami_command(self):
@@ -561,7 +561,7 @@ class CLIInfoMixin:
 
     def _show_gateway_status(self):
         """Show status of the gateway and connected messaging platforms."""
-        from hermes_cli.cli_info_lines import platforms_lines
+        from moor_cli.cli_info_lines import platforms_lines
         print("\n".join(platforms_lines()))
 
     def _print_random_tip(self) -> None:
@@ -654,7 +654,7 @@ class CLIInfoMixin:
         """`/context [all]` — 5×20 glyph grid (cell ≈ 1% of the window) plus an estimated
         per-category table; `all` appends per-skill / per-toolset costs. Read-only: same chars/4
         engine as the desktop popover (agent.context_breakdown) — no provider calls, no cache impact."""
-        from hermes_cli.gateway_side import connection_for
+        from moor_cli.gateway_side import connection_for
         if (connection := connection_for(self)) is not None:
             return self._show_gateway_context_breakdown(connection)
         if not self.agent:
@@ -698,7 +698,7 @@ class CLIInfoMixin:
         (``session.context_breakdown``): the session's prompt, tools and transcript live there."""
         from agent.context_breakdown import render_context_breakdown_lines
         from agent.context_file_sources import render_context_file_lines
-        from hermes_cli.gateway_client import GatewayClientError
+        from moor_cli.gateway_client import GatewayClientError
         try:
             payload = connection.call("session.context_breakdown", session_id=self.session_id)
         except GatewayClientError as e:
@@ -846,7 +846,7 @@ class CLIInfoMixin:
                 i += 1
 
         from types import SimpleNamespace
-        from hermes_cli.main_agent_cmds import cmd_insights
+        from moor_cli.main_agent_cmds import cmd_insights
 
         cmd_insights(SimpleNamespace(days=days, source=source))
 
@@ -864,7 +864,7 @@ class CLIInfoMixin:
         cache** (the next message re-sends the full input prefix, expensive on long-context / high-reasoning
         models). See #1474.
         """
-        from hermes_cli.config_backend import config_version_or_none, read_config_doc
+        from moor_cli.config_backend import config_version_or_none, read_config_doc
 
         now = time.monotonic()
         if now - self._last_config_check < CONFIG_WATCH_INTERVAL:
@@ -934,7 +934,7 @@ class CLIInfoMixin:
         """``/reload-mcp`` on the shared gateway: the gateway owns the MCP servers and the session's
         agent, so it reconciles them with config and refreshes its agents (``reload.mcp``); main's
         "Agent updated" line then counts the tools the gateway session now loads."""
-        from hermes_cli.gateway_client import GatewayClientError
+        from moor_cli.gateway_client import GatewayClientError
         if not self._command_running:
             print(t("cli.reload_mcp.reloading"))
         try:
@@ -954,7 +954,7 @@ class CLIInfoMixin:
     def _reload_mcp(self):
         """Reload MCP servers: disconnect all, re-read config.yaml, reconnect, then refresh the
         agent's tool list so the model sees the updated tools on the next turn."""
-        from hermes_cli.gateway_side import connection_for
+        from moor_cli.gateway_side import connection_for
         if (connection := connection_for(self)) is not None:
             return self._reload_gateway_mcp(connection)
         try:
@@ -1040,13 +1040,13 @@ class CLIInfoMixin:
         conversation_history, so message alternation stays intact.
         """
         try:
-            from hermes_cli.gateway_tools import process_view
+            from moor_cli.gateway_tools import process_view
             if not self._command_running:
                 print(t("cli.reload_skills.reloading"))
             view = process_view()
             if view is not None:  # the gateway session's rescan (its plugin skills too): nothing is scanned here
                 result = (view.connection.call("skills.reload", session_id=view.session_id) or {}).get("result") or {}
-                from hermes_cli.gateway_plugin_commands import invalidate
+                from moor_cli.gateway_plugin_commands import invalidate
                 invalidate(self)  # /help, completion and dispatch read the rescanned list
             else:
                 from agent.skill_commands import reload_skills

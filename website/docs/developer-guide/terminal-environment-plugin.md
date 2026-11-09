@@ -1,6 +1,6 @@
 # Terminal Environment Provider Plugins
 
-Hermes runs shell commands through a pluggable set of **terminal backends**.
+Moor runs shell commands through a pluggable set of **terminal backends**.
 The built-in backends (local, Docker, Modal, Daytona, Vercel Sandbox, SSH)
 live in the core repo under `tools/environments/`. The official
 [Singularity/Apptainer plugin](https://github.com/NousResearch/hermes-official-plugins/tree/main/singularity)
@@ -142,7 +142,7 @@ The one exception is an environment that declares
 `uses_host_filesystem = True` (only the built-in `LocalEnvironment` does): there
 the file tools read, write and search the host directly, run the bundled
 ripgrep, stat paths on the host, write oversized tool output straight to
-`~/.hermes/cache/spillover` and enable LSP diagnostics.
+`~/.moor/cache/spillover` and enable LSP diagnostics.
 
 A backend that subclasses `LocalEnvironment` to confine its commands (a
 bubblewrap or other host sandbox that hides paths, mounts them read-only or
@@ -158,14 +158,14 @@ class AcmeJailEnvironment(LocalEnvironment):
 ```
 
 Leave it unset on backends that don't subclass `LocalEnvironment`; the default
-is `False`. Hermes v0.22.5 and earlier ignore the attribute and use the host
-fast path for every `LocalEnvironment` subclass, so pin `requires_hermes` past
+is `False`. Moor v0.22.5 and earlier ignore the attribute and use the host
+fast path for every `LocalEnvironment` subclass, so pin `requires_moor` past
 that.
 
 ## Images
 
 Your backend reads its own image setting (a `config_schema` key, or a
-`terminal.<name>_image` key you document). Hermes passes `image=` only for a
+`terminal.<name>_image` key you document). Moor passes `image=` only for a
 per-task override: a batch run (`batch_runner.py`) giving each prompt its own
 container registers it as `<name>_image` for the active backend, and that value
 reaches `create_environment(image=...)`. Otherwise `image` is `""`; fall back to
@@ -184,7 +184,7 @@ absolute in-sandbox path to start somewhere else:
 ```
 
 When the home directory is only known once the sandbox is up, return `"~"`
-instead. Hermes then passes `cwd="~"` to `create_environment()` (it never
+instead. Moor then passes `cwd="~"` to `create_environment()` (it never
 expands it on the host), and your environment sets `self.cwd` to the absolute
 home it resolved:
 
@@ -196,7 +196,7 @@ class AcmeBoxEnvironment(BaseEnvironment):
         super().__init__(cwd=cwd, timeout=timeout)
 ```
 
-Hermes keeps `~` as the backend default, so every new sandbox resolves its
+Moor keeps `~` as the backend default, so every new sandbox resolves its
 own home, and records the path each environment resolved on that environment.
 Commands can also arrive with `cwd="~"`; `BaseEnvironment` already `cd`s
 there correctly. A `cd` anywhere under that home is kept for later commands
@@ -205,7 +205,7 @@ sandbox path like `/home/acme/project` would be discarded as if it were a
 host path.
 
 `default_cwd` is read on every command, so keep it cheap (no network calls).
-Relative paths are ignored, because Hermes would anchor them on the host.
+Relative paths are ignored, because Moor would anchor them on the host.
 
 ## Bot Desktop and `computer_use`
 
@@ -218,7 +218,7 @@ stdout left open. A plugin backend can opt in the same way:
 2. Give the environment an `exec_prefix(*, user=None, interactive=True)` method.
    It returns a local argv that runs whatever follows it inside the sandbox,
    with stdin and stdout open (the shape of `docker exec -i <container>`), or
-   `None` when it can't right now. Hermes appends `bash -c <script>` as
+   `None` when it can't right now. Moor appends `bash -c <script>` as
    separate words, so the client must pass them through unchanged and the
    sandbox needs `bash`. `user` names the account to run as; ignore it if your
    backend can't switch users. Return a list, not a single command string.

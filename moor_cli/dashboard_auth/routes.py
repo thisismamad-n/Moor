@@ -30,13 +30,13 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
-from hermes_cli import webapp_sign_in
-from hermes_cli.dashboard_auth import (
+from moor_cli import webapp_sign_in
+from moor_cli.dashboard_auth import (
     get_provider, list_interactive_providers, list_providers, list_session_providers,
     native_flow)
-from hermes_cli.dashboard_auth import prefix as _prefix_mod
-from hermes_cli.dashboard_auth.audit import AuditEvent, audit_log
-from hermes_cli.dashboard_auth.base import (
+from moor_cli.dashboard_auth import prefix as _prefix_mod
+from moor_cli.dashboard_auth.audit import AuditEvent, audit_log
+from moor_cli.dashboard_auth.base import (
     InvalidCodeError, InvalidCredentialsError, ProviderError, Session)
 from moor_cli.dashboard_auth.cookies import (
     clear_pkce_cookie, clear_session_cookies, clear_sso_attempt_cookie, detect_https,
@@ -154,8 +154,8 @@ def _login_success(request: Request, session: Session, provider: str) -> None:
 def _externalize_post_login_target(target: str, prefix: str) -> str:
     """Prepend *prefix* to *target* when behind a reverse proxy.
 
-    When the dashboard is mounted at a sub-path (e.g. ``/hermes``) via
-    ``X-Forwarded-Prefix``, a bare ``/`` landing must become ``/hermes/``
+    When the dashboard is mounted at a sub-path (e.g. ``/moor``) via
+    ``X-Forwarded-Prefix``, a bare ``/`` landing must become ``/moor/``
     so the browser stays inside the mount. Paths that already carry the
     prefix are returned unchanged; the native loopback redirect (an
     absolute ``http://127.0.0.1...`` URL) never matches and is untouched.
@@ -553,7 +553,7 @@ async def api_auth_me(request: Request):
     if sess is None:
         if getattr(request.app.state, "auth_required", False):
             raise _http(401, "Unauthorized")
-        from hermes_cli.web_server import _has_valid_session_token
+        from moor_cli.web_server import _has_valid_session_token
 
         if not _has_valid_session_token(request):
             raise _http(401, "Unauthorized")
@@ -575,9 +575,9 @@ async def api_auth_ws_ticket(request: Request):
     """Mint a 30s single-use ticket for a WS upgrade (browsers cannot set
     ``Authorization`` on the upgrade); one ticket per WS."""
     sess = _require_session(request)
-    from hermes_cli.dashboard_auth.ws_tickets import TTL_SECONDS, mint_ticket
+    from moor_cli.dashboard_auth.ws_tickets import TTL_SECONDS, mint_ticket
     # On the gateway's Webapp the ticket carries the login's sign-in binding, so the socket it opens
-    # closes at sign-out (``hermes_cli.webapp_sign_in``).
+    # closes at sign-out (``moor_cli.webapp_sign_in``).
     signed_in = webapp_sign_in.sign_in_of(request)
     ticket = mint_ticket(user_id=sess.user_id, provider=sess.provider, issuer=sess.issuer,
                          extra={"sign_in": signed_in} if signed_in else None)

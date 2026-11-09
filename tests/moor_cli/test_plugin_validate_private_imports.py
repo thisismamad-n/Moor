@@ -1,12 +1,12 @@
-"""``hermes plugins validate`` warns (never fails) on imports of private Hermes core modules."""
+"""``moor plugins validate`` warns (never fails) on imports of private Moor core modules."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import hermes_yaml as yaml
+import moor_yaml as yaml
 
-from hermes_cli.plugin_validate import validate_plugin_dir
+from moor_cli.plugin_validate import validate_plugin_dir
 
 
 def _plugin(root: Path, files: dict[str, str]) -> Path:
@@ -29,7 +29,7 @@ def test_private_core_import_warns_with_file_and_line_but_validate_passes(tmp_pa
         "import json\n"
         "def run():\n"
         "    from tools.tirith_security import ensure_installed\n"
-        "    from hermes_cli.config import _private_helper\n"
+        "    from moor_cli.config import _private_helper\n"
         "    return ensure_installed, _private_helper\n"
     )})
 
@@ -38,7 +38,7 @@ def test_private_core_import_warns_with_file_and_line_but_validate_passes(tmp_pa
     assert report.ok, report.failures
     [warning] = _private_warnings(report)
     assert "lib/agent_runner.py:3 tools.tirith_security.ensure_installed" in warning
-    assert "lib/agent_runner.py:4 hermes_cli.config._private_helper" in warning
+    assert "lib/agent_runner.py:4 moor_cli.config._private_helper" in warning
     assert "catalog rule 9" in warning
 
 
@@ -50,13 +50,13 @@ def test_documented_public_stdlib_and_own_package_imports_are_not_flagged(tmp_pa
             "import requests\n"
             "from agent.memory_provider import MemoryProvider\n"  # documented provider base class
             "from gateway.platforms import base\n"  # documented module, imported from its package
-            "from hermes_cli.plugins import PluginContext\n"  # what register() receives
+            "from moor_cli.plugins import PluginContext\n"  # what register() receives
             "from clean_lib.helpers import local_helper\n"  # the plugin's own package
             "from .client import Client\n"
             "if TYPE_CHECKING:\n"
             "    from run_agent import AIAgent\n"
             "def register(ctx):\n"
-            "    from hermes_cli.plugins import get_plugin_manager\n"  # same module, undocumented name
+            "    from moor_cli.plugins import get_plugin_manager\n"  # same module, undocumented name
             "    return get_plugin_manager\n"
         ),
         "clean_lib/__init__.py": "",
@@ -67,7 +67,7 @@ def test_documented_public_stdlib_and_own_package_imports_are_not_flagged(tmp_pa
     [warning] = _private_warnings(validate_plugin_dir(plugin))
 
     sites = warning.split("release): ", 1)[1].split(". Use ctx.*")[0].split("; ")
-    assert sites == ["__init__.py:12 hermes_cli.plugins.get_plugin_manager"], sites
+    assert sites == ["__init__.py:12 moor_cli.plugins.get_plugin_manager"], sites
 
 
 _PLATFORM_PLUGIN_SEAMS = (
@@ -81,11 +81,11 @@ _PLATFORM_PLUGIN_SEAMS = (
     ("tools.url_safety", "create_ssrf_safe_async_client"),
     ("tools.url_safety", "is_safe_url"),
     ("gateway.platforms._http_client_limits", "platform_httpx_limits"),
-    ("hermes_cli.gateway_setup_wizard", "print_setup_header"),
-    ("hermes_cli.gateway_setup_wizard", "confirm_reconfigure"),
-    ("hermes_cli.gateway_setup_wizard", "offer_home_channel"),
-    ("hermes_cli.gateway_setup_wizard", "save_env_values"),
-    ("hermes_cli.gateway_setup_wizard", "prompt_csv"),
+    ("moor_cli.gateway_setup_wizard", "print_setup_header"),
+    ("moor_cli.gateway_setup_wizard", "confirm_reconfigure"),
+    ("moor_cli.gateway_setup_wizard", "offer_home_channel"),
+    ("moor_cli.gateway_setup_wizard", "save_env_values"),
+    ("moor_cli.gateway_setup_wizard", "prompt_csv"),
 )
 
 
@@ -141,7 +141,7 @@ def test_documented_session_helper_and_own_install_path_fallback_are_not_flagged
             "    except ImportError:\n"
             "        import plugins.memory.openltm._db as _db\n"
             "        from plugins.memory.openltm import _db\n"
-            "    from hermes_cli.gateway_client import _session_ticket\n"
+            "    from moor_cli.gateway_client import _session_ticket\n"
             "    return get_session_env, _db, _session_ticket\n"
         ),
         "_db.py": "",
@@ -150,7 +150,7 @@ def test_documented_session_helper_and_own_install_path_fallback_are_not_flagged
     [warning] = _private_warnings(validate_plugin_dir(plugin))
 
     sites = warning.split("release): ", 1)[1].split(". Use ctx.*")[0].split("; ")
-    assert sites == ["__init__.py:8 hermes_cli.gateway_client._session_ticket"], sites
+    assert sites == ["__init__.py:8 moor_cli.gateway_client._session_ticket"], sites
 
 
 def test_private_method_calls_on_core_handles_warn_but_own_helpers_do_not(tmp_path):

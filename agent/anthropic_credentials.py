@@ -26,7 +26,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from utils import atomic_json_write, base_url_hostname
 from agent.secret_scope import get_secret as _get_secret
 
@@ -637,7 +637,7 @@ def _resolve_claude_code_token_from_credentials(creds: Optional[dict[str, Any]] 
 
 
 def _prefer_refreshable_claude_code_token(env_token: str, creds: Optional[dict[str, Any]]) -> Optional[str]:
-    """Prefer refreshable Claude Code creds over a static env OAuth token: Hermes historically persisted setup tokens
+    """Prefer refreshable Claude Code creds over a static env OAuth token: Moor historically persisted setup tokens
     into ANTHROPIC_TOKEN, and that static token would otherwise win before the refreshable file is inspected."""
     if not (env_token and _is_oauth_token(env_token) and isinstance(creds, dict) and creds.get("refreshToken")):
         return None
@@ -760,8 +760,8 @@ def _generate_pkce() -> tuple:
     return verifier, challenge
 
 
-def run_hermes_oauth_login_pure() -> Optional[dict[str, Any]]:
-    """Run Hermes-native OAuth PKCE flow and return credential state."""
+def run_moor_oauth_login_pure() -> Optional[dict[str, Any]]:
+    """Run moor-native OAuth PKCE flow and return credential state."""
     import webbrowser
     from urllib.parse import urlencode
     verifier, challenge = _generate_pkce()
@@ -815,9 +815,9 @@ def run_hermes_oauth_login_pure() -> Optional[dict[str, Any]]:
     return _oauth_token_state(result)
 
 
-def read_hermes_oauth_credentials() -> Optional[dict[str, Any]]:
-    """Read Hermes-managed OAuth credentials from ~/.hermes/.anthropic_oauth.json."""
-    data = _load_json_if_exists(_get_hermes_oauth_file(), "Hermes OAuth credentials")
+def read_moor_oauth_credentials() -> Optional[dict[str, Any]]:
+    """Read moor-managed OAuth credentials from ~/.moor/.anthropic_oauth.json."""
+    data = _load_json_if_exists(_get_moor_oauth_file(), "Moor OAuth credentials")
     return data if data is not None and data.get("accessToken") else None
 
 

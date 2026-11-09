@@ -181,15 +181,15 @@ def save_weixin_account(moor_home: str, *, account_id: str, token: str, base_url
         path.chmod(0o600)
 
 
-def load_weixin_account(hermes_home: str, account_id: str) -> Optional[dict[str, Any]]:
-    return _read_json(_account_dir(hermes_home) / f"{account_id}.json")
+def load_weixin_account(moor_home: str, account_id: str) -> Optional[dict[str, Any]]:
+    return _read_json(_account_dir(moor_home) / f"{account_id}.json")
 
 
 class ContextTokenStore:
     """Disk-backed ``context_token`` cache keyed by account + peer."""
 
-    def __init__(self, hermes_home: str):
-        self._root = _account_dir(hermes_home)
+    def __init__(self, moor_home: str):
+        self._root = _account_dir(moor_home)
         self._cache: dict[str, str] = {}
         # Serializes the offloaded flushes so two concurrent set() calls
         # cannot land their writes out of order (last-writer-wins would drop
@@ -599,7 +599,7 @@ def _print_qr(qrcode_value: str, qrcode_url: str, *, report_render_error: bool) 
             print(f"（终端二维码渲染失败: {_qr_exc}，请直接打开上面的二维码链接）")
 
 
-async def qr_login(hermes_home: str, *, bot_type: str = "3", timeout_seconds: int = 480) -> Optional[dict[str, str]]:
+async def qr_login(moor_home: str, *, bot_type: str = "3", timeout_seconds: int = 480) -> Optional[dict[str, str]]:
     if not AIOHTTP_AVAILABLE:
         raise RuntimeError("aiohttp is required for Weixin QR login")
     async with _new_session() as session:
@@ -1253,7 +1253,7 @@ async def send_weixin_direct(
 
 # ---------------------------------------------------------------------------
 # Plugin wiring (formerly core: gateway/run.py _BUILTIN_ADAPTERS row, tools/send_message_senders.py
-# ``_send_weixin``, hermes_cli/gateway_setup_wizard.py ``_setup_weixin``).
+# ``_send_weixin``, moor_cli/gateway_setup_wizard.py ``_setup_weixin``).
 # ---------------------------------------------------------------------------
 
 _INSTALL_HINT = "Weixin: aiohttp/cryptography not installed"
@@ -1310,33 +1310,33 @@ _WEIXIN_GROUP_NOTE = (
 
 
 def interactive_setup() -> None:
-    """``hermes gateway setup`` flow for Weixin / WeChat personal accounts (QR login via :func:`qr_login`).
-    Helpers resolve through the ``hermes_cli.gateway`` facade so the prompts/output match every other
+    """``moor gateway setup`` flow for Weixin / WeChat personal accounts (QR login via :func:`qr_login`).
+    Helpers resolve through the ``moor_cli.gateway`` facade so the prompts/output match every other
     wizard and the facade seams tests patch keep intercepting."""
-    from hermes_cli import gateway as gw
-    from hermes_cli.gateway_setup_wizard import (
+    from moor_cli import gateway as gw
+    from moor_cli.gateway_setup_wizard import (
         confirm_reconfigure, offer_home_channel, print_setup_header, prompt_csv, save_env_values)
 
     print_setup_header("💬 Weixin / WeChat")
     print()
     gw._print_info_lines(
-        "  1. Hermes will open Tencent iLink QR login in this terminal.",
+        "  1. Moor will open Tencent iLink QR login in this terminal.",
         "  2. Use WeChat to scan and confirm the QR code.",
-        "  3. Hermes will store the returned account_id/token in ~/.hermes/.env.",
+        "  3. Moor will store the returned account_id/token in ~/.moor/.env.",
         "  4. This adapter supports native text, image, video, and document delivery.",
     )
     if not confirm_reconfigure("Weixin", "WEIXIN_ACCOUNT_ID", "WEIXIN_TOKEN"):
         return
     if not check_weixin_requirements():
         gw.print_error("  Missing dependencies: Weixin needs aiohttp and cryptography.")
-        gw.print_info("  Install them, then rerun `hermes gateway setup`.")
+        gw.print_info("  Install them, then rerun `moor gateway setup`.")
         return
     print()
     if not gw.prompt_yes_no("  Start QR login now?", True):
         gw.print_info("  Cancelled.")
         return
     try:
-        credentials = gw.asyncio.run(qr_login(str(gw.get_hermes_home())))
+        credentials = gw.asyncio.run(qr_login(str(gw.get_moor_home())))
     except KeyboardInterrupt:
         print()
         gw.print_warning("  Weixin setup cancelled.")
@@ -1371,7 +1371,7 @@ def interactive_setup() -> None:
         save_env_values(WEIXIN_DM_POLICY=policy, WEIXIN_ALLOW_ALL_USERS=allow_all, WEIXIN_ALLOWED_USERS="")
         (gw.print_success if level == "success" else gw.print_warning)(message)
         if access_idx == 0:
-            gw.print_info("  Unknown DM users can request access and you approve them with `hermes pairing approve`.")
+            gw.print_info("  Unknown DM users can request access and you approve them with `moor pairing approve`.")
 
     print()
     gw._print_info_lines(*_WEIXIN_GROUP_NOTE)
@@ -1410,7 +1410,7 @@ _SEND_TARGET_RE = re.compile(r"^\s*((?:wxid|gh|v\d+|wm|wb)_[A-Za-z0-9_-]+|[A-Za-
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Moor plugin system."""
     from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
         target_ref_syntax_fn=regex_groups_parser(_SEND_TARGET_RE, thread_group=False),

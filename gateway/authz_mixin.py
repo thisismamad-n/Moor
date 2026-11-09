@@ -64,7 +64,7 @@ def _registry_entry(platform):
     if platform is None:
         return None
     with contextlib.suppress(Exception):
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()
     with contextlib.suppress(Exception):
         from gateway.platform_registry import platform_registry
@@ -229,7 +229,7 @@ class GatewayAuthorizationMixin:
                 return adapters
             # Its own LOCAL adapter stays layered over the borrowed primary bots.
             return {**self._primary_adapters(), **adapters}
-        # Identity captured at construction, not the per-turn HERMES_HOME-derived name.
+        # Identity captured at construction, not the per-turn MOOR_HOME-derived name.
         primary_profile = getattr(self, "_primary_profile_name", None)
         if not primary_profile:
             with contextlib.suppress(Exception):
@@ -646,7 +646,7 @@ class GatewayAuthorizationMixin:
             # Idempotent: the env name lives on the plugin's entry, so a runner that never ran the
             # config passes (which discover) must still see it rather than silently deny.
             with contextlib.suppress(Exception):
-                from hermes_cli.plugins import discover_plugins
+                from moor_cli.plugins import discover_plugins
                 discover_plugins()
             allow_bots_var = authz_field(source.platform.value, "allow_bots_env", _registry_entry(source.platform)) or ""
             if allow_bots_var:

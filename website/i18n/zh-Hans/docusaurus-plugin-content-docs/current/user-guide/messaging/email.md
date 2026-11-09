@@ -144,7 +144,7 @@ platforms:
 2. **未设置白名单** → 未知发件人会收到配对码
 3. **`EMAIL_ALLOW_ALL_USERS=true`** → 接受任意发件人（请谨慎使用）
 
-**发件人认证开启时（默认），必须设置 `authserv_id` pin。** 未设置 `platforms.email.authserv_id`（`EMAIL_AUTHSERV_ID`）时，Hermes 无法区分你的服务器写入的 `Authentication-Results` 头与发件人伪造的头（自建 MTA 若不写入自己的结果，发件人的头就会位于最上层），因此不信任任何头部：所有需要已认证 `From:` 的邮件都会被丢弃，gateway 日志会给出一次带修复方法的警告。获取方法：打开一封服务器投递的邮件原文，复制**最上层** `Authentication-Results` 头中第一个 `;` 之前的标识，例如 Gmail 为 `mx.google.com`。若该标识随邮件变化，说明它是逐跳的主机名而非 authserv-id：RFC 8601 规定 authserv-id 是管理域的稳定名称，请让 MTA 写入固定值（例如 OpenDKIM / OpenDMARC 的 `AuthservID`）并 pin 该值。id 匹配只是 pin，并不证明来源：还须确认 MTA 会先移除声称该 id 的入站 `Authentication-Results` 头，再添加自己的头部。若无法 pin 稳定的 id，可显式设置 `platforms.email.require_authenticated_sender: false`（或 `EMAIL_TRUST_FROM_HEADER=true`）接受风险，此时 `From:` 将按原样被信任。
+**发件人认证开启时（默认），必须设置 `authserv_id` pin。** 未设置 `platforms.email.authserv_id`（`EMAIL_AUTHSERV_ID`）时，Moor 无法区分你的服务器写入的 `Authentication-Results` 头与发件人伪造的头（自建 MTA 若不写入自己的结果，发件人的头就会位于最上层），因此不信任任何头部：所有需要已认证 `From:` 的邮件都会被丢弃，gateway 日志会给出一次带修复方法的警告。获取方法：打开一封服务器投递的邮件原文，复制**最上层** `Authentication-Results` 头中第一个 `;` 之前的标识，例如 Gmail 为 `mx.google.com`。若该标识随邮件变化，说明它是逐跳的主机名而非 authserv-id：RFC 8601 规定 authserv-id 是管理域的稳定名称，请让 MTA 写入固定值（例如 OpenDKIM / OpenDMARC 的 `AuthservID`）并 pin 该值。id 匹配只是 pin，并不证明来源：还须确认 MTA 会先移除声称该 id 的入站 `Authentication-Results` 头，再添加自己的头部。若无法 pin 稳定的 id，可显式设置 `platforms.email.require_authenticated_sender: false`（或 `EMAIL_TRUST_FROM_HEADER=true`）接受风险，此时 `From:` 将按原样被信任。
 
 :::warning
 **请务必配置 `EMAIL_ALLOWED_USERS`。** 若不配置，任何知道 Agent 邮箱地址的人都可以发送命令。Agent 默认具有终端访问权限。
@@ -175,7 +175,7 @@ platforms:
 - 使用**应用专用密码**代替主密码（Gmail 开启双重验证后必须如此）
 - 设置 `EMAIL_ALLOWED_USERS` 以限制可与 Agent 交互的用户
 - 将 `EMAIL_AUTHSERV_ID` 设为接收 MTA 最上层 `Authentication-Results` 头的精确 id，并确认该 MTA 会移除伪造此 id 的入站头部
-- 密码存储在 `~/.hermes/.env` 中——请保护此文件（`chmod 600`）
+- 密码存储在 `~/.moor/.env` 中——请保护此文件（`chmod 600`）
 - IMAP 默认使用 SSL（端口 993），SMTP 默认使用 STARTTLS（端口 587）——连接已加密
 
 ---

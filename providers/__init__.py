@@ -124,9 +124,9 @@ def _sync_auth_registry() -> None:
     because of the auth mirror.
     """
     for module, attr in (
-        ("hermes_cli.auth", "sync_plugin_provider_registry"),
-        ("hermes_cli.models_catalog_static", "sync_plugin_provider_catalog"),
-        ("hermes_cli.config_provider_env", "sync_registered_providers"),
+        ("moor_cli.auth", "sync_plugin_provider_registry"),
+        ("moor_cli.models_catalog_static", "sync_plugin_provider_catalog"),
+        ("moor_cli.config_provider_env", "sync_registered_providers"),
     ):
         sync = getattr(sys.modules.get(module), attr, None)
         if sync is None:
@@ -196,7 +196,7 @@ _NAMED_CUSTOM_MEMO_NO_SIG = object()
 
 def _has_named_custom_provider(name: str, home: Path | None, hkey: str) -> bool:
     """``has_named_custom_provider`` memoized on the home's config cache version."""
-    from hermes_cli.config_backend import config_cache_version
+    from moor_cli.config_backend import config_cache_version
 
     try:
         sig = config_cache_version(home / "config.yaml") if home is not None else None
@@ -209,7 +209,7 @@ def _has_named_custom_provider(name: str, home: Path | None, hkey: str) -> bool:
         _NAMED_CUSTOM_MEMO_SIG[hkey] = sig
     if name in memo:
         return memo[name]
-    from hermes_cli.runtime_provider_custom import has_named_custom_provider
+    from moor_cli.runtime_provider_custom import has_named_custom_provider
 
     memo[name] = has_named_custom_provider(name)
     return memo[name]
@@ -330,7 +330,7 @@ def profile_for_host(url: str, *, metadata: bool = False) -> ProviderProfile | N
     """The registered profile whose declared ``hostnames`` match *url*'s host (exact or subdomain).
 
     *metadata* also matches ``metadata_hostnames``. Resolved against the bound home's providers, so a
-    ``$HERMES_HOME`` plugin installed after import (or in another profile) is seen; memoized per
+    ``$MOOR_HOME`` plugin installed after import (or in another profile) is seen; memoized per
     (home, host) until the registry changes, because wire paths ask on every request.
     """
     from agent.safe_worker_policy import safe_worker_enabled
@@ -360,7 +360,7 @@ def profile_for_host(url: str, *, metadata: bool = False) -> ProviderProfile | N
 
 def list_providers() -> list[ProviderProfile]:
     """Return all registered provider profiles (one per canonical name); the bound home's
-    ``$HERMES_HOME`` plugins shadow process-wide profiles of the same name."""
+    ``$MOOR_HOME`` plugins shadow process-wide profiles of the same name."""
     from agent.safe_worker_policy import safe_worker_enabled
 
     if safe_worker_enabled():
@@ -405,7 +405,7 @@ def unlisted_provider_names() -> set[str]:
 def bound_profile_resolver():
     """``resolve(name) -> (home plugin profile, process-wide profile)`` for the home bound now.
 
-    *name* may be an alias. For process-wide mirrors read per home (``hermes_cli.auth``'s
+    *name* may be an alias. For process-wide mirrors read per home (``moor_cli.auth``'s
     ``PROVIDER_REGISTRY``), so cheap enough per lookup: no discovery, no miss re-scan; only the
     periodic plugin-dir stamp check, skipped mid-scan so a plugin reading the mirror while it imports
     cannot re-enter its own scan.
@@ -435,8 +435,8 @@ def _bound_home_layer() -> tuple[_HomeLayer, Path | None, str]:
     try:
         from moor_constants import get_moor_home, moor_home_key
 
-        home = Path(get_hermes_home())
-        key = hermes_home_key(home)
+        home = Path(get_moor_home())
+        key = moor_home_key(home)
     except Exception:
         home, key = None, ""
     with _HOME_LAYERS_LOCK:
@@ -604,7 +604,7 @@ def _import_plugin_dir(plugin_dir: Path, source: str, *, home_key: str = "") -> 
     if not (plugin_dir / "__init__.py").exists():
         return
     if source != "bundled":
-        from hermes_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
+        from moor_cli.plugin_isolation import ISOLATION_HOST, isolation_mode
         if isolation_mode() == ISOLATION_HOST:  # the plugin's code runs in the plugin host
             _import_hosted_plugin_dir(plugin_dir, source, _user_module_name(plugin_dir, home_key))
             return
@@ -625,7 +625,7 @@ def _import_hosted_plugin_dir(plugin_dir: Path, source: str, module_name: str) -
     boundary (e.g. it overrides ``create_client``) is imported in-process ALONE, with a warning,
     so it never takes its hosted siblings down with it."""
     global _current_source
-    from hermes_cli.plugin_host_profiles import load_hosted_profiles
+    from moor_cli.plugin_host_profiles import load_hosted_profiles
     layer = _REGISTRATION_TARGET.get()
     if layer is not None and module_name in layer.hosted:
         return  # already imported into this home's layer
@@ -682,7 +682,7 @@ def _exec_plugin_module(plugin_dir: Path, source: str, module_name: str) -> None
 
 
 def _note_load_result(plugin_dir: Path, exc: BaseException | None) -> None:
-    """Record (or clear) a ``$HERMES_HOME`` plugin's import error on the home layer importing it: the
+    """Record (or clear) a ``$MOOR_HOME`` plugin's import error on the home layer importing it: the
     general plugin manager lists a model-provider dir with no error, so this is the only record of why it
     registered nothing."""
     layer = _REGISTRATION_TARGET.get()
@@ -767,7 +767,7 @@ def _discover_entry_point_providers() -> None:
                 "entry-point provider %r skipped: not enabled in config", ep.name
             )
             continue
-        from hermes_cli.plugin_isolation import in_process_import_refusal
+        from moor_cli.plugin_isolation import in_process_import_refusal
         refusal = in_process_import_refusal(f"pip-installed model-provider plugin {ep.name!r}")
         if refusal:
             logger.warning("%s", refusal)
@@ -842,7 +842,7 @@ def bundled_profiles() -> list[ProviderProfile]:
             init = child / "__init__.py"
             if not child.is_dir() or child.name.startswith(("_", ".")) or not init.exists():
                 continue
-            name = f"_hermes_provider_catalog_{child.name.replace('-', '_')}"
+            name = f"_moor_provider_catalog_{child.name.replace('-', '_')}"
             spec = importlib.util.spec_from_file_location(name, init, submodule_search_locations=[str(child)])
             if spec is None or spec.loader is None:
                 continue

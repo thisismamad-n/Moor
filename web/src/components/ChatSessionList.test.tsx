@@ -11,7 +11,7 @@ import { ChatSessionList } from './ChatSessionList'
 
 const { getSessions } = vi.hoisted(() => ({ getSessions: vi.fn() }))
 
-vi.mock('@nous-research/ui/ui/components/button', () => ({
+vi.mock('@moor-research/ui/ui/components/button', () => ({
   Button: ({
     children,
     ghost,
@@ -33,7 +33,7 @@ vi.mock('@nous-research/ui/ui/components/button', () => ({
   }
 }))
 
-vi.mock('@nous-research/ui/ui/components/list-item', () => ({
+vi.mock('@moor-research/ui/ui/components/list-item', () => ({
   ListItem: ({ children, onClick, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button type="button" onClick={onClick} {...props}>
       {children}
@@ -41,7 +41,7 @@ vi.mock('@nous-research/ui/ui/components/list-item', () => ({
   )
 }))
 
-vi.mock('@nous-research/ui/ui/components/spinner', () => ({
+vi.mock('@moor-research/ui/ui/components/spinner', () => ({
   Spinner: () => <span>Loading</span>
 }))
 

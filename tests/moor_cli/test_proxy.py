@@ -33,9 +33,9 @@ from moor_cli.proxy.adapters.xai import XAIGrokAdapter
 # ---------------------------------------------------------------------------
 
 
-def _write_auth_store(hermes_home: Path, nous_state: dict[str, Any]) -> Path:
-    """Write an auth.json with the given nous state into a hermetic HERMES_HOME."""
-    auth_path = hermes_home / "auth.json"
+def _write_auth_store(moor_home: Path, moor_state: dict[str, Any]) -> Path:
+    """Write an auth.json with the given moor state into a hermetic MOOR_HOME."""
+    auth_path = moor_home / "auth.json"
     auth_path.write_text(json.dumps({
         "version": 1,
         "providers": {"moor": moor_state},
@@ -43,11 +43,11 @@ def _write_auth_store(hermes_home: Path, nous_state: dict[str, Any]) -> Path:
     return auth_path
 
 
-def test_nous_adapter_never_waits_on_a_free_tier_challenge_under_its_lock(tmp_path, monkeypatch):
+def test_moor_adapter_never_waits_on_a_free_tier_challenge_under_its_lock(tmp_path, monkeypatch):
     """Every proxied request queues on the adapter lock, so the credential read inside it is a
     background caller: a browser challenge is announced and raised, never waited on."""
-    from hermes_cli import anon_challenge
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    from moor_cli import anon_challenge
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     _write_auth_store(tmp_path, {"access_token": "a", "refresh_token": "r"})
     seen = []
 
@@ -56,8 +56,8 @@ def test_nous_adapter_never_waits_on_a_free_tier_challenge_under_its_lock(tmp_pa
         return {"api_key": "k", "expires_at": "2099-01-01T00:00:00Z",
                 "base_url": "https://inference-api.nousresearch.com/v1"}
 
-    with patch("hermes_cli.proxy.adapters.nous_portal.resolve_nous_runtime_credentials", side_effect=resolve):
-        NousPortalAdapter().get_credential()
+    with patch("moor_cli.proxy.adapters.moor_portal.resolve_moor_runtime_credentials", side_effect=resolve):
+        MoorPortalAdapter().get_credential()
     assert seen == [True]
 
 
@@ -246,7 +246,7 @@ def test_xai_adapter_retry_rotates_pool_entry_on_429(tmp_path, monkeypatch):
 aiohttp = pytest.importorskip("aiohttp")
 from aiohttp import web
 
-from hermes_cli.proxy.server import create_app
+from moor_cli.proxy.server import create_app
 
 
 class FakeAdapter(UpstreamAdapter):

@@ -324,12 +324,12 @@ def test_donor_must_share_the_orphans_profile(tmp_path, monkeypatch):
     sibling profile's keyed row in a shared legacy store must never be named as donor
     (by contiguity or lineage), and the write-time re-verify must refuse the pair even
     from a stale report. A legacy NULL-stamped row still reads as this store's own."""
-    import hermes_state
+    import moor_state
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "moor"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH)
+    monkeypatch.setenv("MOOR_HOME", str(root))
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", moor_state._IMPORT_DEFAULT_DB_PATH)
     store = SessionDB(db_path=root / "state.db")  # owner: default
     try:
         stale, orphan = _incident(store)  # both rows auto-stamped 'default'

@@ -34,22 +34,22 @@ def desktop_userdata_dir() -> Path:
     return _env_dir("XDG_CONFIG_HOME", home / ".config") / "Moor"
 
 
-def source_built_gui_artifacts(hermes_home: Path) -> list[Path]:
-    """GUI build artifacts produced by ``hermes desktop`` inside the checkout (same ``hermes-agent/`` layout
+def source_built_gui_artifacts(moor_home: Path) -> list[Path]:
+    """GUI build artifacts produced by ``moor desktop`` inside the checkout (same ``moor-agent/`` layout
     install.sh uses). The workspace-root node_modules is shared with the TUI, dashboard and other
     workspaces, so only the desktop workspace's own dependencies belong to GUI removal."""
-    agent_root = hermes_home / "hermes-agent"
+    agent_root = moor_home / "moor-agent"
     desktop_dir = agent_root / "apps" / "desktop"
     return [desktop_dir / "dist", desktop_dir / "release", desktop_dir / "node_modules",
-            hermes_home / "desktop-build-stamp.json"]
+            moor_home / "desktop-build-stamp.json"]
 
 
 def desktop_install_record() -> Path:
-    """Where ``hermes update`` records the installed ``Hermes.app`` copies it keeps current. The apps
+    """Where ``moor update`` records the installed ``Moor.app`` copies it keeps current. The apps
     are machine-wide, so the record sits under the default root whichever profile runs; deleting it
     is what stops an uninstalled app from being put back by the next update."""
-    from hermes_constants import get_default_hermes_root
-    return get_default_hermes_root() / "desktop-installed-apps.json"
+    from moor_constants import get_default_moor_root
+    return get_default_moor_root() / "desktop-installed-apps.json"
 
 
 def packaged_gui_app_paths() -> list[Path]:
@@ -67,15 +67,15 @@ def packaged_gui_app_paths() -> list[Path]:
             [Path(program_files) / "Moor"] if program_files else [])
     # Linux: an AppImage lives wherever the user put it and deb/rpm files belong to the package manager
     # (see the hint in ``uninstall_gui``), so only the desktop entry + hicolor icons are cleaned here.
-    from hermes_cli.linux_desktop_entry import LEGACY_DESKTOP_ENTRY_NAME, desktop_entry_path
+    from moor_cli.linux_desktop_entry import LEGACY_DESKTOP_ENTRY_NAME, desktop_entry_path
     data_base = _env_dir("XDG_DATA_HOME", home / ".local" / "share")
     icons = data_base / "icons" / "hicolor"
     # "scalable" plus every fixed-size dir the installer may have written (panel sizes + older native copies).
     # The legacy entry is a hidden alias of the app-id entry since #124492 — remove it with the real one.
     return [desktop_entry_path(),
             data_base / "applications" / LEGACY_DESKTOP_ENTRY_NAME,
-            data_base / "applications" / "Hermes.desktop"] + [
-        icons / size / "apps" / "hermes.png"
+            data_base / "applications" / "Moor.desktop"] + [
+        icons / size / "apps" / "moor.png"
         for size in ("scalable", "24x24", "32x32", "48x48", "256x256", "512x512", "1024x1024")]
 
 
@@ -85,15 +85,15 @@ def agent_is_installed(moor_home: Path) -> bool:
     return any((moor_home / "moor-agent" / sub).is_dir() for sub in ("moor_cli", "venv", ".venv"))
 
 
-def gui_is_installed(hermes_home: Path) -> bool:
+def gui_is_installed(moor_home: Path) -> bool:
     """Return True when any desktop GUI artifact or install record exists."""
     return any(p.exists() for p in (
-        *source_built_gui_artifacts(hermes_home), *packaged_gui_app_paths(),
+        *source_built_gui_artifacts(moor_home), *packaged_gui_app_paths(),
         desktop_userdata_dir(), desktop_install_record(),
     ))
 
 
-def gui_install_summary(hermes_home: Path | None = None) -> dict:
+def gui_install_summary(moor_home: Path | None = None) -> dict:
     """JSON-serializable snapshot of what's installed, for the desktop UI to render via IPC."""
     home: Path = moor_home if moor_home is not None else get_moor_home()
     userdata = desktop_userdata_dir()
@@ -133,7 +133,7 @@ def _remove_path(path: Path) -> bool:
         return False
 
 
-def uninstall_gui(hermes_home: Path | None = None, *, remove_userdata: bool = True) -> list[Path]:
+def uninstall_gui(moor_home: Path | None = None, *, remove_userdata: bool = True) -> list[Path]:
     """Remove the desktop GUI's artifacts, leaving the agent + user data intact."""
     home: Path = moor_home if moor_home is not None else get_moor_home()
     removed: list[Path] = []

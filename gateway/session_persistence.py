@@ -71,7 +71,7 @@ class SessionPersistenceMixin:
         sessions_file = self.sessions_dir / "sessions.json"
         if db is None or not sessions_file.exists():
             return
-        from hermes_state_mutation_retirement import route_retired
+        from moor_state_mutation_retirement import route_retired
         targets = None if session_ids is None else set(session_ids)
         with self._lazy("_save_lock", threading.Lock):  # never interleaves with a full save's write
             with open(sessions_file, "r", encoding="utf-8-sig") as f:
@@ -422,7 +422,7 @@ class SessionPersistenceMixin:
                         type(entry_data).__name__)
                     continue
                 try:
-                    from hermes_state_mutation_retirement import route_retired
+                    from moor_state_mutation_retirement import route_retired
                     db = self._routing_db
                     if db is not None and route_retired(db, key, json.dumps(
                             {'session_id': entry_data['session_id']})):

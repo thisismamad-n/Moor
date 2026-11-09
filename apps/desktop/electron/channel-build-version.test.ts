@@ -36,7 +36,7 @@ function request(sequence: number = 65536, token: string = 'ab12cd34ef56ab78'): 
       windowsExecutableName: 'moor-no-registry-needed',
       msixAppIdWithOrg: `Moor inc..MoorChannel${token}`
     },
-    bundleEnv: { HERMES_PREVIEW_FULL_CONNECTORS: '1' },
+    bundleEnv: { MOOR_PREVIEW_FULL_CONNECTORS: '1' },
     publicBase: 'https://builds.example.test'
   }
 }
@@ -154,7 +154,7 @@ test('channel packaging reuses admitted identity and rejects unsupported or unsa
 })
 
 test('a channel that copies the stable identity packages and runs as the regular app', (): void => {
-  process.env.HERMES_DESKTOP_VARIANT = 'bundled'
+  process.env.MOOR_DESKTOP_VARIANT = 'bundled'
 
   for (const file of ['../product-identity.cjs', '../electron-builder.config.cjs']) {
     delete require.cache[require.resolve(file)]

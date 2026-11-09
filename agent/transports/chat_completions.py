@@ -168,7 +168,7 @@ def _reasoning_config_for_model(model: str, reasoning_config: dict | None) -> di
 
 
 def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> dict | None:
-    """Translate Hermes/OpenRouter-style reasoning config to Gemini thinkingConfig."""
+    """Translate Moor/OpenRouter-style reasoning config to Gemini thinkingConfig."""
     from agent.gemini_native_adapter import gemini_uses_thinking_level
 
     if not isinstance(reasoning_config, dict):
@@ -211,7 +211,7 @@ def _build_gemini_thinking_config(model: str, reasoning_config: dict | None) -> 
     if effort not in {"minimal", "low", "medium", "high", "xhigh", "max", "ultra"}:
         effort = "medium"
     # Gemini 3 Pro is strict (low/high); every other thinking-level model (3.x Flash, Gemini 4 Argon)
-    # documents low/medium/high, and "minimal" is not universal (Argon 400s on it). Clamp Hermes' wider
+    # documents low/medium/high, and "minimal" is not universal (Argon 400s on it). Clamp Moor' wider
     # effort set to what each family accepts so we never forward an undocumented level verbatim.
     if gemini_uses_thinking_level(normalized_model):
         if "pro" in normalized_model:
@@ -302,7 +302,7 @@ def _wire_reasoning_carriers(provider: Any, base_url: Any) -> frozenset:
     ``message_sanitization.route_reasoning_carriers`` owns the table; keys the route rejected
     this session were already removed upstream by ``reapply_reasoning_echo``. The table replays
     ``reasoning_details`` to OpenRouter-format gateways (OpenRouter, Kilo, Vercel AI Gateway,
-    Nous Portal) and to vendors documenting it (Novita, MiniMax /v1, TokenHub), never to strict
+    Moor Portal) and to vendors documenting it (Novita, MiniMax /v1, TokenHub), never to strict
     schemas (Groq, Mistral, Cerebras, opencode relays: ``property 'reasoning_details' is
     unsupported`` / ``Extra inputs are not permitted`` / ``no such field``, #70233).
     The Portal is back on the list: the "cumulative replayed-reasoning budget" blamed for #118182

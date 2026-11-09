@@ -34,7 +34,7 @@ class CLIProcessNotificationsMixin:
         return mode == "off"
 
     def _drain_process_notifications(self, consumer: str) -> None:
-        from hermes_cli.gateway_tools_notify import gateway_store, queue_admitted_turn
+        from moor_cli.gateway_tools_notify import gateway_store, queue_admitted_turn
         store = gateway_store(self)
         if store is not None:
             # The process registry and its delivery claims live in the gateway, which admits the
@@ -90,7 +90,7 @@ class CLIProcessNotificationsMixin:
             user_input = user_input.text
         is_seeded_query = isinstance(user_input, _SeededQueryMessage)
         if is_seeded_query:
-            from hermes_cli.gateway_tools_notify import arm_adopted
+            from moor_cli.gateway_tools_notify import arm_adopted
             arm_adopted(self, user_input)
             user_input = (user_input.text, user_input.images) if user_input.images else user_input.text
         return user_input, is_voice_input, is_seeded_query

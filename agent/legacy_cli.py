@@ -11,7 +11,7 @@ from __future__ import annotations
 
 # moor_bootstrap first (UTF-8 stdio on Windows; no-op on POSIX), like every other entry point.
 try:
-    import hermes_bootstrap
+    import moor_bootstrap
 except ModuleNotFoundError:
     pass  # partial `moor update` — only skips the Windows UTF-8 stdio setup
 

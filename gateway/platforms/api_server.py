@@ -54,8 +54,8 @@ _STATIC_FEATURE_FLAGS = {
     "reasoning_streaming": True,
     "admin_config_rw": False, "jobs_admin": False, "memory_write_api": False,
     "skills_api": True, "audio_api": False, "realtime_voice": False,
-    "session_continuity_header": "X-Hermes-Session-Id",
-    "session_key_header": "X-Hermes-Session-Key"}
+    "session_continuity_header": "X-moor-session-Id",
+    "session_key_header": "X-moor-session-Key"}
 # /v1/capabilities "endpoints" table: name -> (method, path[, feature]). An entry naming a
 # feature is advertised only while that "features" flag is truthy on this listener.
 _CAPABILITY_ENDPOINTS = (
@@ -130,7 +130,7 @@ from gateway.readiness import collect_runtime_readiness
 from gateway.parked_route_refusal import ParkedRouteRefused
 from gateway.platforms._shared import coerce_port as _coerce_port, get_scoped_secret as _get_scoped_secret
 from gateway.platforms.tcp_site import start_tcp_site
-from hermes_state_errors import SessionActiveWriteGuardError
+from moor_state_errors import SessionActiveWriteGuardError
 
 
 logger = logging.getLogger(__name__)
@@ -869,9 +869,9 @@ def _names_launch_profile(profile: str) -> bool:
     """True when a /p/<profile>/ prefix names the profile this process was LAUNCHED as: its
     un-prefixed and prefixed requests are one profile and must key one session."""
     try:
-        from hermes_cli.profiles import profile_matches_home
-        from hermes_constants import get_routing_process_hermes_home
-        return profile_matches_home(profile, home=get_routing_process_hermes_home())
+        from moor_cli.profiles import profile_matches_home
+        from moor_constants import get_routing_process_moor_home
+        return profile_matches_home(profile, home=get_routing_process_moor_home())
     except Exception:
         return False
 
@@ -879,7 +879,7 @@ def _names_launch_profile(profile: str) -> bool:
 def _derive_chat_session_id(system_prompt: Optional[str], first_user_message: str,
                             profile: Optional[str] = None) -> str:
     """Stable session id from the system prompt + first user message (constant across all
-    turns of an Open WebUI-style conversation), so one Hermes session/sandbox is reused.
+    turns of an Open WebUI-style conversation), so one Moor session/sandbox is reused.
     A routed ``/p/<profile>/`` prefix namespaces the seed: the id keys process-wide state
     (session store, per-session sandbox), so two profiles opening with identical text must not
     collide (#123989). Default/standalone ids are unchanged so live conversations survive, and
@@ -939,7 +939,7 @@ class _ProviderAuthResolutionError(RuntimeError):
     def is_rate_limited(self) -> bool:
         """A quota/429 cap with valid credentials must not be labelled an authentication
         failure — the cause chain (RuntimeError -> AuthError) tells them apart (#89401)."""
-        from hermes_cli.auth import is_rate_limited_auth_error
+        from moor_cli.auth import is_rate_limited_auth_error
 
         cause = self.__cause__
         cause = getattr(cause, "__cause__", None) if isinstance(cause, RuntimeError) else cause
@@ -1072,16 +1072,16 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         self._direct_model_requests: bool = _coerce_request_bool(
             extra.get("direct_model_requests"), default=False)
         # ``platforms.api_server.tool_progress_events: false`` drops the custom
-        # ``hermes.tool.progress`` SSE frames from Chat Completions streams for strict OpenAI
+        # ``moor.tool.progress`` SSE frames from Chat Completions streams for strict OpenAI
         # clients that choke on named events (#12020). Default on.
         self._tool_progress_events: bool = _coerce_request_bool(
             extra.get("tool_progress_events"), default=True)
         self._app: Optional[web.Application] = None
         self._runner: Optional[web.AppRunner] = None
         self._site: Optional[web.TCPSite] = None
-        from hermes_constants import get_hermes_home
+        from moor_constants import get_moor_home
         self._response_store = ResponseStore()  # this home's; a /p/<profile>/ route gets its own
-        self._response_store_home = str(get_hermes_home())
+        self._response_store_home = str(get_moor_home())
         self._response_stores: dict[str, ResponseStore] = {}
         self._response_store_lock = threading.Lock()
         _api_runs._initialize_run_state(self, store_factory=RunIdempotencyStore)
@@ -1654,7 +1654,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
 
     def _parse_session_key_header(
         self, request: web.Request) -> tuple[Optional[str], Optional[web.Response]]:
-        """Validate ``X-Hermes-Session-Key`` (per-channel memory scope) -> ``(key_or_None, None)``
+        """Validate ``X-moor-session-Key`` (per-channel memory scope) -> ``(key_or_None, None)``
         or ``(None, error)``. Requires API-key auth so a client can't guess another scope."""
         raw = request.headers.get("X-moor-session-Key", "").strip()
         if not raw:
@@ -1696,7 +1696,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         if self.gateway_runner is not None:
             from gateway.platforms.api_server_store import selected_session_db
             return selected_session_db(self, home)
-        from hermes_state_registry import acquire
+        from moor_state_registry import acquire
         key = str(home)
         with self._session_db_cache_lock:
             if self._session_db_cache_closed:
@@ -1709,7 +1709,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
 
     def _cached_session_db_locked(self, key: str) -> Optional[Any]:
         """Caller holds ``_session_db_cache_lock``. A profile unserve/delete tears the home's
-        generation down through ``hermes_state_registry.close_all_under`` (clearing
+        generation down through ``moor_state_registry.close_all_under`` (clearing
         ``_shared_registry_owned``) without telling this cache; serving that handle would keep
         raising ``StateDbReplacedError`` after a recreate, so drop it and let the caller reopen."""
         db = self._session_dbs.get(key)
@@ -1738,9 +1738,9 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         """SessionDB for the active profile home (the runtime scope redirects ``get_moor_home()``
         per profile). Sync, for ``_create_agent``; handlers use ``_ensure_session_db_async``."""
         if self.gateway_runner is not None:
-            from hermes_constants import get_hermes_home
+            from moor_constants import get_moor_home
             from gateway.platforms.api_server_store import selected_session_db
-            return selected_session_db(self, get_hermes_home())
+            return selected_session_db(self, get_moor_home())
         if self._session_db is not None:
             return self._session_db
         try:
@@ -1754,9 +1754,9 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         """Async variant: the profile home is captured on the loop thread (its scope is invisible
         inside ``to_thread``), only the blocking open runs in the worker, single-flight locked."""
         if self.gateway_runner is not None:
-            from hermes_constants import get_hermes_home
+            from moor_constants import get_moor_home
             from gateway.platforms.api_server_store import selected_session_db
-            return selected_session_db(self, get_hermes_home())
+            return selected_session_db(self, get_moor_home())
         if self._session_db is not None:
             return self._session_db
         try:
@@ -2297,8 +2297,8 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             active_api_runs=active_api_runs, process_completion_queue_depth=process_depth,
             active_delegations=active_delegations)
         return web.json_response({
-"status": readiness["status"], "readiness": readiness, "platform": "hermes-agent",
-            "version": _hermes_version(), "gateway_state": gw_state,
+"status": readiness["status"], "readiness": readiness, "platform": "moor-agent",
+            "version": _moor_version(), "gateway_state": gw_state,
             "platforms": platforms,
             "api_server": api_status,
             "metrics_today": api_status["metrics_today"],
@@ -2314,14 +2314,14 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
 
     @_require_auth
     async def _handle_models(self, request: web.Request) -> web.Response:
-        """GET /v1/models — hermes-agent plus configured model_routes aliases (alias + resolved
+        """GET /v1/models — moor-agent plus configured model_routes aliases (alias + resolved
         model only, never credentials). Under /p/<profile>/ the primary id follows that profile."""
         now = int(time.time())
         # The middleware already entered the profile scope, so get_active_profile_name() resolves.
         model_name = self._resolve_model_name("") if _api_request_profile.get() else self._model_name
 
         def _model(mid: str, root: str, parent) -> dict[str, Any]:
-            return {"id": mid, "object": "model", "created": now, "owned_by": "hermes", "permission": [],
+            return {"id": mid, "object": "model", "created": now, "owned_by": "moor", "permission": [],
                     "root": root, "parent": parent}
         models = [_model(model_name, model_name, None)]
         models.extend(
@@ -2405,7 +2405,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             from toolsets import resolve_toolset
             config = load_config()
             enabled_toolsets = _get_platform_tools(config, "api_server", include_default_mcp_servers=False)
-            features = get_nous_subscription_features(config)
+            features = get_moor_subscription_features(config)
             data: list[dict[str, Any]] = []
             for name, label, desc in _get_effective_configurable_toolsets():
                 try:
@@ -2518,7 +2518,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
 
     @_require_auth
     async def _handle_list_sessions(self, request: web.Request) -> web.Response:
-        """GET /api/sessions — list persisted Hermes sessions."""
+        """GET /api/sessions — list persisted Moor sessions."""
         db = await self._ensure_session_db_async()
         if db is None:
             return self._session_db_unavailable()
@@ -2572,7 +2572,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
 
     @_require_auth
     async def _handle_create_session(self, request: web.Request) -> web.Response:
-        """POST /api/sessions -- create an empty Hermes session row. Existence check, insert and
+        """POST /api/sessions -- create an empty Moor session row. Existence check, insert and
         title handling run as ONE off-loop write so concurrent same-id creates can't both 201."""
         body, err = await self._read_json_body(request)
         if err:
@@ -2613,7 +2613,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         title = body.get("title")
 
         def _atomic(conn):
-            from hermes_state_mutation_retirement import create_conflict
+            from moor_state_mutation_retirement import create_conflict
             if conflict := create_conflict(conn, session_id):  # one BEGIN IMMEDIATE write: a racing create sees the row
                 return None, conflict
             conn.execute(
@@ -2700,11 +2700,11 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         if db is None:
             return self._session_db_unavailable()
         # Same profile home the DB was resolved from (the profile middleware scopes
-        # get_hermes_home() for this request) — without it the transcript/dump scrub is skipped.
+        # get_moor_home() for this request) — without it the transcript/dump scrub is skipped.
         sessions_dir = None
         try:
-            from hermes_constants import get_hermes_home
-            sessions_dir = Path(get_hermes_home()) / "sessions"
+            from moor_constants import get_moor_home
+            sessions_dir = Path(get_moor_home()) / "sessions"
         except Exception:
             logger.debug("sessions dir unavailable for delete of %s", session_id, exc_info=True)
         try:
@@ -2724,7 +2724,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             # loop like every other media release: its holder check and unlink are one write txn.
             from gateway.session_ingress_media import collect_unheld_api_images
             await asyncio.to_thread(collect_unheld_api_images, db)
-        return web.json_response({"object": "hermes.session.deleted", "id": session_id, "deleted": bool(deleted)})
+        return web.json_response({"object": "moor.session.deleted", "id": session_id, "deleted": bool(deleted)})
 
     @_require_auth
     async def _handle_session_messages(self, request: web.Request) -> web.Response:
@@ -2877,8 +2877,8 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
 
     @staticmethod
     def _session_headers(session_id: str, gateway_session_key: Optional[str]) -> dict[str, str]:
-        """``X-Hermes-Session-Id`` (+ ``X-Hermes-Session-Key`` when declared) response headers."""
-        headers = {"X-Hermes-Session-Id": session_id}
+        """``X-moor-session-Id`` (+ ``X-moor-session-Key`` when declared) response headers."""
+        headers = {"X-moor-session-Id": session_id}
         if gateway_session_key:
             headers["X-moor-session-Key"] = gateway_session_key
         return headers
@@ -3076,7 +3076,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             result.get("final_response", "") if is_dict else "")
         headers = self._session_headers(effective_session_id or session_id, gateway_session_key)
         return web.json_response(
-            {"object": "hermes.session.chat.completion", "status": _response_status(result),
+            {"object": "moor.session.chat.completion", "status": _response_status(result),
              "session_id": effective_session_id or session_id,
              "message": {"role": "assistant", "content": final_response}, "usage": usage,
              "runtime": self._effective_turn_runtime(ctx["runtime_request"], result, usage)},
@@ -3459,7 +3459,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         a long turn never trips NAS's timeout; the store CAS claim guards double-fire on retry."""
         # Startup-wait budget starts here so a slow JWKS fetch cannot outlast the forwarder timeout.
         received_at = asyncio.get_running_loop().time()
-        from hermes_cli.config import cfg_get, load_config
+        from moor_cli.config import cfg_get, load_config
         from plugins.cron_providers.chronos.verify import get_fire_verifier
         auth = request.headers.get("Authorization", "")
         token = auth[7:].strip() if auth.startswith("Bearer ") else ""

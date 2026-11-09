@@ -1,6 +1,6 @@
 import { PassThrough } from 'stream'
 
-import { renderSync } from '@hermes/ink'
+import { renderSync } from '@moor/ink'
 import React from 'react'
 import { describe, expect, it } from 'vitest'
 
@@ -22,16 +22,16 @@ const snapshot = {
   info: {
     branch: 'main',
     cwd: '/work/repo',
-    desktop_protocol: 'hermes-gateway-v1',
+    desktop_protocol: 'moor-gateway-v1',
     lazy: true,
     mcp_servers: [
-      { connected: true, name: 'nous-support', status: 'connected', tools: 6, transport: 'http' },
+      { connected: true, name: 'moor-support', status: 'connected', tools: 6, transport: 'http' },
       { connected: false, disabled: true, name: 'linear', status: 'disabled', tools: 0, transport: 'stdio' }
     ],
     model: 'anthropic/claude-opus-5.5',
-    profile_id: '/home/u/.hermes',
+    profile_id: '/home/u/.moor',
     profile_name: 'default',
-    provider: 'nous',
+    provider: 'moor',
     reasoning_effort: 'high',
     release_date: '2026.9.24',
     skills: { creative: ['ascii-art'], research: ['arxiv', 'blogwatcher'] },
@@ -106,7 +106,7 @@ describe('banner from a canonical session snapshot', () => {
     // draws its card (headings, version line slot, loading rows) rather than a one-line notice.
     const { info } = canonicalResult('session.resume', {
       ...snapshot,
-      info: { desktop_protocol: 'hermes-gateway-v1', lazy: true, model: 'anthropic/claude-opus-5.5', version: '0.18.0' }
+      info: { desktop_protocol: 'moor-gateway-v1', lazy: true, model: 'anthropic/claude-opus-5.5', version: '0.18.0' }
     })
 
     const frame = await render(info)

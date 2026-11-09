@@ -122,14 +122,14 @@ def _current_session_profile() -> str:
 def _container_profile() -> str:
     """Profile whose persistent container a session-bound command uses: the bound home's profile when it is not
     the session's own (a profile-routed subagent runs in its target's home while the session, and the delivery
-    identity HERMES_SESSION_PROFILE carries, stay the parent's; that target may be the launch profile, reached
+    identity MOOR_SESSION_PROFILE carries, stay the parent's; that target may be the launch profile, reached
     from a routed profile's chat), else the session's. A session with no profile name (a gateway launched as a
     named profile stamps none on its own chats) is the launch profile's, so it keys that profile by name, like
     the profile's Desktop sessions and its session-less work (:func:`_sessionless_container_key`)."""
-    from hermes_constants import get_hermes_home_override, profile_name_for_home
+    from moor_constants import get_moor_home_override, profile_name_for_home
     from tools.environments.local import _is_routed_home
 
-    override = get_hermes_home_override()
+    override = get_moor_home_override()
     session = _current_session_profile()
     bound = profile_name_for_home(override) if override else None
     if bound and (bound != session if session else _is_routed_home(override)):
@@ -300,7 +300,7 @@ def _sanitize_cwd_for_live_env(env: Any, new_cwd: str) -> Optional[str]:
     are already rejected on the creation paths. This write classifies the
     directory mounted at ``/workspace`` as unusable before that prefix
     heuristic, then remaps the match (or a child of it) to its container mount
-    instead of storing the host path. SSH maps the Hermes subprocess home onto
+    instead of storing the host path. SSH maps the Moor subprocess home onto
     the peer's home, as environment creation already does. Other backends apply
     the override verbatim (ACP project-root switching must keep working).
     """
@@ -489,9 +489,9 @@ def _sessionless_container_key(profile_scoped: bool) -> str:
     A routed home override keeps its existing key. Persistent Docker whose
     process home is a named profile reuses ``profile:<name>`` — the same key
     session-bound work of that profile uses. Dispatcher workers set
-    ``HERMES_HOME`` and clear session vars, so they are not a routed override;
+    ``MOOR_HOME`` and clear session vars, so they are not a routed override;
     without this they collapsed onto ``default`` and missed the profile sandbox.
-    The default profile, non-persistent backends, and a home outside the Hermes
+    The default profile, non-persistent backends, and a home outside the Moor
     root stay ``default`` (:func:`~tools.terminal_tool_config.home_profile_name` names the profile).
     """
     routed = _routed_home_task_key(profile_scoped)
@@ -774,7 +774,7 @@ def _resolve_config_cwd(env_type: str, mount_docker_cwd: bool) -> tuple:
     """
     default_cwd = _backend_default_cwd(env_type)
     cwd = _tenv("TERMINAL_CWD", default_cwd)
-    from hermes_cli.config import _is_ssh_remote_tilde_cwd
+    from moor_cli.config import _is_ssh_remote_tilde_cwd
     # The backend's own default is an in-sandbox path: its ``~`` is the sandbox home, not ours.
     if cwd and cwd != default_cwd and not _is_ssh_remote_tilde_cwd(env_type, cwd):
         cwd = os.path.expanduser(cwd)
@@ -812,7 +812,7 @@ def _resolve_config_cwd(env_type: str, mount_docker_cwd: bool) -> tuple:
 
 def _get_env_config() -> dict[str, Any]:
     """Resolve the terminal configuration dict from TERMINAL_* env vars."""
-    from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_image
+    from moor_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_image
     _ensure_terminal_env_bridged()
     env_type = _tenv("TERMINAL_ENV", "local")
     mount_docker_cwd = _tenv_bool("TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE", "false")
@@ -1343,8 +1343,8 @@ def _run_foreground(
     metered: bool = True,
 ) -> str:
     """Execute in the foreground with retry on transient errors, then finalize. ``metered``
-    is False for Hermes' own control-plane commands (``_host_local``)."""
-    from hermes_cli.observability.shared_metrics_harness import record_terminal_outcome
+    is False for Moor' own control-plane commands (``_host_local``)."""
+    from moor_cli.observability.shared_metrics_harness import record_terminal_outcome
     max_retries = 3
     env_type, eff, effective_timeout = plan.env_type, plan.effective_task_id, plan.effective_timeout
 
@@ -1375,7 +1375,7 @@ def _run_foreground(
             break
         except Exception as e:
             # A backend exception (e.g. an SSH connect timeout) never reached an exit status, so it
-            # is not a terminal outcome; Hermes' own deadline arrives as ``hermes_timed_out``.
+            # is not a terminal outcome; Moor' own deadline arrives as ``moor_timed_out``.
             if "timeout" in str(e).lower():
                 return _error_json(f"Command timed out after {effective_timeout} seconds", exit_code=124)
             # Retry on transient errors
@@ -1503,7 +1503,7 @@ def terminal_tool(
     ``_host_local`` forces the local backend for moor-owned control-plane
     children (kept in a separate env cache from the configured backend).
     """
-    from hermes_cli.observability.shared_metrics_loop import record_terminal_backend as _metered
+    from moor_cli.observability.shared_metrics_loop import record_terminal_backend as _metered
     plan = None
     try:
         plan = _plan_execution(

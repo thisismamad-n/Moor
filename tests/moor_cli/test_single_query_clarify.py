@@ -15,7 +15,7 @@ construction site that already knows it is in single-query mode.
 from __future__ import annotations
 
 def test_returns_immediate_undelivered_reply():
-    from hermes_cli.cli_agent_setup_mixin import _single_query_clarify_callback
+    from moor_cli.cli_agent_setup_mixin import _single_query_clarify_callback
 
     result = _single_query_clarify_callback([{
         "qid": "q0", "question": "Which timezone should I use?", "choices": None,

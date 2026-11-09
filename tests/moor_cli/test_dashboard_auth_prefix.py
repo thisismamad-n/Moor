@@ -536,49 +536,49 @@ class TestExternalizePostLoginTarget:
     """Unit tests for ``_externalize_post_login_target``."""
 
     def test_bare_slash_gets_prefix(self):
-        from hermes_cli.dashboard_auth.routes import (
+        from moor_cli.dashboard_auth.routes import (
             _externalize_post_login_target,
         )
 
-        assert _externalize_post_login_target("/", "/hermes") == "/hermes/"
+        assert _externalize_post_login_target("/", "/moor") == "/moor/"
 
     def test_prefixed_path_unchanged(self):
-        from hermes_cli.dashboard_auth.routes import (
+        from moor_cli.dashboard_auth.routes import (
             _externalize_post_login_target,
         )
 
         assert (
-            _externalize_post_login_target("/hermes/sessions", "/hermes")
-            == "/hermes/sessions"
+            _externalize_post_login_target("/moor/sessions", "/moor")
+            == "/moor/sessions"
         )
 
     def test_empty_target_returns_empty(self):
-        from hermes_cli.dashboard_auth.routes import (
+        from moor_cli.dashboard_auth.routes import (
             _externalize_post_login_target,
         )
 
-        assert _externalize_post_login_target("", "/hermes") == ""
+        assert _externalize_post_login_target("", "/moor") == ""
 
     def test_empty_prefix_returns_target_unchanged(self):
-        from hermes_cli.dashboard_auth.routes import (
+        from moor_cli.dashboard_auth.routes import (
             _externalize_post_login_target,
         )
 
         assert _externalize_post_login_target("/", "") == "/"
 
     def test_trailing_slash_on_prefix_stripped(self):
-        from hermes_cli.dashboard_auth.routes import (
+        from moor_cli.dashboard_auth.routes import (
             _externalize_post_login_target,
         )
 
-        assert _externalize_post_login_target("/", "/hermes/") == "/hermes/"
+        assert _externalize_post_login_target("/", "/moor/") == "/moor/"
 
     def test_exact_prefix_match_returns_target(self):
-        from hermes_cli.dashboard_auth.routes import (
+        from moor_cli.dashboard_auth.routes import (
             _externalize_post_login_target,
         )
 
-        assert _externalize_post_login_target("/hermes", "/hermes") == "/hermes"
+        assert _externalize_post_login_target("/moor", "/moor") == "/moor"
 
 
 class TestPostLoginLandingPrefix:
@@ -588,15 +588,15 @@ class TestPostLoginLandingPrefix:
         self, gated_app_proxied
     ):
         """After OAuth callback with prefix, the 302 Location must be
-        ``/hermes/`` not bare ``/``."""
+        ``/moor/`` not bare ``/``."""
         r1 = gated_app_proxied.get(
             "/auth/login?provider=stub",
-            headers={"x-forwarded-prefix": "/hermes"},
+            headers={"x-forwarded-prefix": "/moor"},
             follow_redirects=False,
         )
         pkce_set = next(
             c for c in r1.headers.get_list("set-cookie")
-            if "hermes_session_pkce" in c
+            if "moor_session_pkce" in c
         )
         pkce_kv = pkce_set.split(";", 1)[0]
         state = r1.headers["location"].split("state=")[1]
@@ -604,14 +604,14 @@ class TestPostLoginLandingPrefix:
         r2 = gated_app_proxied.get(
             f"/auth/callback?code=stub_code&state={state}",
             headers={
-                "x-forwarded-prefix": "/hermes",
+                "x-forwarded-prefix": "/moor",
                 "cookie": pkce_kv,
             },
             follow_redirects=False,
         )
         assert r2.status_code == 302, r2.text
         location = r2.headers["location"]
-        assert location.startswith("/hermes/"), (
+        assert location.startswith("/moor/"), (
             f"callback redirect should carry prefix, got {location!r}"
         )
 
@@ -625,7 +625,7 @@ class TestPostLoginLandingPrefix:
         )
         pkce_set = next(
             c for c in r1.headers.get_list("set-cookie")
-            if "hermes_session_pkce" in c
+            if "moor_session_pkce" in c
         )
         pkce_kv = pkce_set.split(";", 1)[0]
         state = r1.headers["location"].split("state=")[1]
@@ -655,10 +655,10 @@ class TestLoginPageWholeClassPrefix:
 
     def test_login_page_fonts_prefixed_behind_proxy(self, gated_app_proxied):
         r = gated_app_proxied.get(
-            "/login", headers={"X-Forwarded-Prefix": "/hermes"})
+            "/login", headers={"X-Forwarded-Prefix": "/moor"})
         assert r.status_code == 200
         assert "url('/fonts/" not in r.text
-        assert "url('/hermes/fonts/" in r.text
+        assert "url('/moor/fonts/" in r.text
 
     def test_login_page_byte_identical_without_prefix(self, gated_app_direct):
         # No X-Forwarded-Prefix: no data-prefix, no rewritten fonts,
@@ -674,15 +674,15 @@ class TestLoginPageWholeClassPrefix:
         emitted page must carry both the attribute and the JS that reads it
         (the PKCE cookie Path matches the mount, so a root-absolute POST
         would silently drop the cookie and break native login)."""
-        from hermes_cli.dashboard_auth import clear_providers, register_provider
-        from tests.hermes_cli.test_dashboard_auth_password_login import (
+        from moor_cli.dashboard_auth import clear_providers, register_provider
+        from tests.moor_cli.test_dashboard_auth_password_login import (
             PasswordProvider)
 
         clear_providers()
         register_provider(PasswordProvider())
         try:
             r = gated_app_proxied.get(
-                "/login", headers={"X-Forwarded-Prefix": "/hermes"})
+                "/login", headers={"X-Forwarded-Prefix": "/moor"})
             assert r.status_code == 200
             html = r.text
             assert "getAttribute('data-prefix')" in html
@@ -694,8 +694,8 @@ class TestLoginPageWholeClassPrefix:
         """The RFC 8252 desktop provider chooser shares the login template,
         so its font URLs must honour the prefix too (rendered when more
         than one interactive provider is registered)."""
-        from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
-        from hermes_cli.dashboard_auth.login_page import (
+        from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
+        from moor_cli.dashboard_auth.login_page import (
             render_native_provider_choice_html)
 
         class _SecondStub(StubAuthProvider):
@@ -704,21 +704,21 @@ class TestLoginPageWholeClassPrefix:
 
         html = render_native_provider_choice_html(
             providers=[StubAuthProvider(), _SecondStub()],
-            authorize_path="/hermes/auth/native/authorize",
+            authorize_path="/moor/auth/native/authorize",
             code_challenge="challenge",
             code_challenge_method="S256",
             redirect_uri="http://127.0.0.1:53123/cb",
             state="cli-state",
-            prefix="/hermes",
+            prefix="/moor",
         )
         assert "url('/fonts/" not in html
-        assert "url('/hermes/fonts/" in html
+        assert "url('/moor/fonts/" in html
         # The chooser buttons re-enter the mount, not the origin root.
-        assert 'href="/hermes/auth/native/authorize?' in html
+        assert 'href="/moor/auth/native/authorize?' in html
 
     def test_native_chooser_bare_root_without_prefix(self):
-        from tests.hermes_cli.conftest_dashboard_auth import StubAuthProvider
-        from hermes_cli.dashboard_auth.login_page import (
+        from tests.moor_cli.conftest_dashboard_auth import StubAuthProvider
+        from moor_cli.dashboard_auth.login_page import (
             render_native_provider_choice_html)
 
         class _SecondStub(StubAuthProvider):

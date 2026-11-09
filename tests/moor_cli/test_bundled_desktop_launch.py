@@ -279,15 +279,15 @@ class TestCmdGuiOnABundle:
         assert launches == [[str(launcher), "--disable-setuid-sandbox"]]
 
     def test_explicit_profile_reaches_the_bundled_launcher(self, tmp_path, monkeypatch):
-        """`hermes -p work desktop` on a bundle hands Electron --profile work."""
+        """`moor -p work desktop` on a bundle hands Electron --profile work."""
         repo, launcher = _host_bundle(tmp_path / "app")
-        # HERMES_HOME outside the platform home is the root itself on every OS.
-        root = tmp_path / "hermes-root"
+        # MOOR_HOME outside the platform home is the root itself on every OS.
+        root = tmp_path / "moor-root"
         profile = root / "profiles" / "work"
         profile.mkdir(parents=True)
         (profile / "config.yaml").write_text("{}\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(root))
-        monkeypatch.setattr(sys, "argv", ["hermes", "-p", "work", "desktop"])
+        monkeypatch.setenv("MOOR_HOME", str(root))
+        monkeypatch.setattr(sys, "argv", ["moor", "-p", "work", "desktop"])
         monkeypatch.setattr(cli_main, "_explicit_cli_profile", None)
         cli_main._apply_profile_override()
 

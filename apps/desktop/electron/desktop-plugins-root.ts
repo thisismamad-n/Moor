@@ -111,7 +111,7 @@ async function listDirs(dir: string, followLinks = false): Promise<string[]> {
     const entries = await fs.promises.readdir(dir, { withFileTypes: true })
 
     // `Dirent.isDirectory()` is false for a symlink. A package root follows
-    // links to directories: `ln -s ~/src/my-plugin ~/.hermes/plugins/` is how a
+    // links to directories: `ln -s ~/src/my-plugin ~/.moor/plugins/` is how a
     // plugin is developed in place, and the Python loader already follows it.
     const linkedDir = async (name: string) => {
       try {
@@ -147,11 +147,11 @@ export async function localHomes(moorHome: string): Promise<string[]> {
  *  id, so a duplicate is the same plugin installed twice); the profile copy is
  *  left in place for the user to delete rather than destroyed. Emptied profile
  *  roots are removed so the migration is a no-op on the next launch. */
-export function migrateProfileScopedDesktopPlugins(hermesHome: string, appRoot: string): Promise<string[]> {
-  return withDesktopPluginsRoot(appRoot, () => migrateProfileScoped(hermesHome, appRoot))
+export function migrateProfileScopedDesktopPlugins(moorHome: string, appRoot: string): Promise<string[]> {
+  return withDesktopPluginsRoot(appRoot, () => migrateProfileScoped(moorHome, appRoot))
 }
 
-async function migrateProfileScoped(hermesHome: string, appRoot: string): Promise<string[]> {
+async function migrateProfileScoped(moorHome: string, appRoot: string): Promise<string[]> {
   const moved: string[] = []
 
   for (const profile of await listDirs(path.join(moorHome, 'profiles'))) {
@@ -506,8 +506,8 @@ async function sourceGone(name: string, entry: string): Promise<boolean> {
  *  desktop half. First home wins for a name that appears in several profiles
  *  (the default home is first). Also drops root copies whose source package
  *  is gone — an uninstalled agent package must not leave a ghost pane. */
-export async function reconcileUnifiedDesktopHalves(hermesHome: string, appRoot: string): Promise<string[]> {
-  return (await reconcileDesktopHalvesReport(hermesHome, appRoot)).published
+export async function reconcileUnifiedDesktopHalves(moorHome: string, appRoot: string): Promise<string[]> {
+  return (await reconcileDesktopHalvesReport(moorHome, appRoot)).published
 }
 
 /** A package whose desktop half this pass did not publish, and why (the plain-tree check, an unreadable folder). */
@@ -524,11 +524,11 @@ export interface DesktopReconcileReport {
 
 /** `reconcileUnifiedDesktopHalves`, also naming each package it refused, so an install that just put one
  *  down can report its desktop half as failed instead of done. */
-export function reconcileDesktopHalvesReport(hermesHome: string, appRoot: string): Promise<DesktopReconcileReport> {
-  return withDesktopPluginsRoot(appRoot, () => reconcilePass(hermesHome, appRoot))
+export function reconcileDesktopHalvesReport(moorHome: string, appRoot: string): Promise<DesktopReconcileReport> {
+  return withDesktopPluginsRoot(appRoot, () => reconcilePass(moorHome, appRoot))
 }
 
-async function reconcilePass(hermesHome: string, appRoot: string): Promise<DesktopReconcileReport> {
+async function reconcilePass(moorHome: string, appRoot: string): Promise<DesktopReconcileReport> {
   const touched: string[] = []
   const refused: RefusedDesktopHalf[] = []
   const seen = new Set<string>()

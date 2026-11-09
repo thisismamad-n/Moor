@@ -59,8 +59,8 @@ def test_weekly_cron_retries_when_quota_recovers_before_next_occurrence(
     it is not silently deferred until the following week's natural occurrence."""
     now = datetime(2026, 9, 18, 12, 1, tzinfo=UTC)
     natural_next = datetime(2026, 9, 25, 12, 0, tzinfo=UTC)
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: now)
-    monkeypatch.setattr(qh, "_hermes_now", lambda: now)
+    monkeypatch.setattr("cron.jobs._moor_now", lambda: now)
+    monkeypatch.setattr(qh, "_moor_now", lambda: now)
     job = create_job("weekly digest", "0 12 * * 5")
     assert datetime.fromisoformat(job["next_run_at"]) == natural_next
 
@@ -86,7 +86,7 @@ def test_recovery_fire_skips_dense_schedules_and_never_re_parks(monkeypatch):
     minutes before :00 keeps its natural :00 (no off-lattice near-duplicate), and a job that is
     already the recovery fire (carries quota_hold_until) failing again is not re-parked."""
     now = datetime(2026, 9, 18, 12, 1, tzinfo=UTC)
-    monkeypatch.setattr(qh, "_hermes_now", lambda: now)
+    monkeypatch.setattr(qh, "_moor_now", lambda: now)
 
     dense = {
         "schedule": {"kind": "cron", "expr": "0 * * * *"},
@@ -122,7 +122,7 @@ def _tick(job, home, deliveries, resolve):
          patch("moor_cli.env_loader.reset_secret_source_cache"), \
          patch("moor_state_registry.acquire", return_value=MagicMock()), \
          patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
-         patch("hermes_cli.runtime_provider.resolve_runtime_provider", side_effect=resolve), \
+         patch("moor_cli.runtime_provider.resolve_runtime_provider", side_effect=resolve), \
          patch("cron.delivery_queue.enqueue",
                side_effect=lambda execution_id, jb, content, **kw: (
                    deliveries.append(content), {"status": "pending"})[1]), \

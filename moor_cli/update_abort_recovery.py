@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def _serve_unit_recovery_available() -> bool:
-    """Can a fresh process restart ``hermes-serve*``/``hermes-dashboard*`` units on this host?"""
+    """Can a fresh process restart ``moor-serve*``/``moor-dashboard*`` units on this host?"""
     return sys.platform == "linux" and bool(shutil.which("systemctl"))
 
 
@@ -97,7 +97,7 @@ def _qualified_serve_skips(skip_units) -> list[dict]:
 def _run_fresh_recovery_process(
     profiles, candidates, *, gateway_mode: bool, recover_serve: bool, skip_units
 ) -> subprocess.CompletedProcess | None:
-    """Spawn ``hermes_cli.update_restart_recovery --stdin`` detached from this process; None when it
+    """Spawn ``moor_cli.update_restart_recovery --stdin`` detached from this process; None when it
     could not run (no systemd-run in gateway mode, OSError, timeout) — the caller fails closed."""
     command = [sys.executable, "-m", "moor_cli.update_restart_recovery", "--stdin"]
     env = os.environ.copy()
@@ -242,10 +242,10 @@ def _warn_stale_serve_runtimes(rows) -> None:
             f" (profile {row.get('profile') or 'default'}, {row.get('supervisor') or 'unknown'})")
     unit_rows = [row for row in rows if row.get("supervisor") == "systemd"]
     if len(unit_rows) < len(rows):
-        print("    Ask their owner to relaunch `hermes serve` / `hermes dashboard`, or reconnect Desktop for an SSH backend.")
+        print("    Ask their owner to relaunch `moor serve` / `moor dashboard`, or reconnect Desktop for an SSH backend.")
     # A unit-managed backend restarts through its own unit and scope — never "ask the owner to
-    # relaunch", and never a hardcoded user-scope hermes-serve (#141021).
-    from hermes_cli.main_dashboard import _format_restart_commands, _systemd_restart_commands
+    # relaunch", and never a hardcoded user-scope moor-serve (#141021).
+    from moor_cli.main_dashboard import _format_restart_commands, _systemd_restart_commands
 
     for row in unit_rows:
         commands = _systemd_restart_commands(row.get("systemd_unit") or "<unit>", row.get("systemd_scope"))
@@ -261,7 +261,7 @@ def _owed_stale_serve_rows(rows) -> list[dict]:
     :func:`_warn_stale_serve_runtimes` and recorded in the receipt. See #111494. (The
     fleet-restart-pending marker draws the same boundary for its own inventory, so a supervisor-owned
     serve row no longer keeps that warning armed either.)"""
-    from hermes_cli.update_inventory import CLIENT_OWNED_SERVE_SUPERVISORS
+    from moor_cli.update_inventory import CLIENT_OWNED_SERVE_SUPERVISORS
 
     return [row for row in (rows or []) if row.get("supervisor") not in CLIENT_OWNED_SERVE_SUPERVISORS]
 

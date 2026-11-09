@@ -509,32 +509,32 @@ harden_import_path(str(_root))
 
 
 def _settle_interrupted_update() -> None:
-    """Put back the tree a killed ``hermes update`` left half-moved, before PM, launch preparation or
-    any Hermes package imports from it (``hermes_cli._early_recovery``; ``hermes_cli.main`` repeats the
-    call for entries that never reach this module). A killed ZIP swap can leave ``hermes_cli/`` itself
+    """Put back the tree a killed ``moor update`` left half-moved, before PM, launch preparation or
+    any Moor package imports from it (``moor_cli._early_recovery``; ``moor_cli.main`` repeats the
+    call for entries that never reach this module). A killed ZIP swap can leave ``moor_cli/`` itself
     moved aside: the journal-driven restore then runs from that moved-aside copy, the code that wrote
     the journal. Root files are never absent mid-swap (``update_cmd_zip._commit_staged_replacements``)."""
     try:
-        from hermes_cli import _early_recovery as recovery
+        from moor_cli import _early_recovery as recovery
     except ImportError:
-        moved_aside = _root / "hermes_cli.hermes-update-old" / "_early_recovery.py"
-        if not (_root / ".hermes-update-zip-swap").is_file() or not moved_aside.is_file():
+        moved_aside = _root / "moor_cli.moor-update-old" / "_early_recovery.py"
+        if not (_root / ".moor-update-zip-swap").is_file() or not moved_aside.is_file():
             return  # not a torn update: the imports below report the real damage
         import types
 
-        # The moved-aside directory stands in as ``hermes_cli`` (its ``__init__`` not run), so the
-        # repair's own ``from hermes_cli import update_lock`` finds the custody code beside it:
+        # The moved-aside directory stands in as ``moor_cli`` (its ``__init__`` not run), so the
+        # repair's own ``from moor_cli import update_lock`` finds the custody code beside it:
         # without that the restore refuses to repair unguarded. Dropped again unless it relaunches.
-        package = types.ModuleType("hermes_cli")
-        package.__path__ = [str(moved_aside.parent), str(_root / "hermes_cli")]
-        sys.modules["hermes_cli"] = package
+        package = types.ModuleType("moor_cli")
+        package.__path__ = [str(moved_aside.parent), str(_root / "moor_cli")]
+        sys.modules["moor_cli"] = package
         try:
-            from hermes_cli import _early_recovery as recovery
+            from moor_cli import _early_recovery as recovery
 
             if recovery.restore_interrupted_pull(_root):
                 recovery.relaunch_after_restore()
         finally:
-            for name in [n for n in sys.modules if n == "hermes_cli" or n.startswith("hermes_cli.")]:
+            for name in [n for n in sys.modules if n == "moor_cli" or n.startswith("moor_cli.")]:
                 del sys.modules[name]
         return
     if recovery.restore_interrupted_pull(_root):
@@ -545,14 +545,14 @@ _settle_interrupted_update()
 
 
 def _pin_launcher_home() -> None:
-    """A minted launcher (``hermes_cli._launchers``) pins ``HERMES_HOME`` to the install's default
-    root. That needs ``hermes_constants`` from the checkout, so the launcher asks for it here, after
-    the repair above: a merge killed while writing ``hermes_constants.py`` must not keep the repair
+    """A minted launcher (``moor_cli._launchers``) pins ``MOOR_HOME`` to the install's default
+    root. That needs ``moor_constants`` from the checkout, so the launcher asks for it here, after
+    the repair above: a merge killed while writing ``moor_constants.py`` must not keep the repair
     from ever running. The flag name is ``_launchers.PIN_DEFAULT_HOME_FLAG``."""
-    if getattr(sys, "_hermes_pin_default_home", False) and not os.environ.get("HERMES_HOME"):
-        from hermes_constants import get_default_hermes_root
+    if getattr(sys, "_moor_pin_default_home", False) and not os.environ.get("MOOR_HOME"):
+        from moor_constants import get_default_moor_root
 
-        os.environ["HERMES_HOME"] = str(get_default_hermes_root())
+        os.environ["MOOR_HOME"] = str(get_default_moor_root())
 
 
 _pin_launcher_home()
@@ -575,7 +575,7 @@ class RelaunchExit(SystemExit):
 
 
 from pm.environments import activate_dependencies, install_state_permission_message
-from hermes_cli._early_recovery import recover_if_needed
+from moor_cli._early_recovery import recover_if_needed
 
 from moor_cli._parser import command_argv
 
@@ -599,7 +599,7 @@ if not _pm_repair:
             os.execv(str(_launch_python), _command)
     except Exception as exc:
         if isinstance(exc, PermissionError) and (message := install_state_permission_message(_root, exc)):
-            print(f"hermes: {message}", file=sys.stderr)
+            print(f"moor: {message}", file=sys.stderr)
             raise SystemExit(1) from None
         # Degrade, never brick the CLI: the previous dependency generation is still selected
         # (a failed sync commits nothing), so an offline or half-finished update leaves a
@@ -613,7 +613,7 @@ if not _pm_repair:
         activate_dependencies(_root)
     except (RuntimeError, OSError) as exc:
         if isinstance(exc, PermissionError) and (message := install_state_permission_message(_root, exc)):
-            print(f"hermes: {message}", file=sys.stderr)
+            print(f"moor: {message}", file=sys.stderr)
             raise SystemExit(1) from None
         if command_argv(sys.argv[1:])[:1] != ["pm"]:
             print(f"moor: {exc}; run `moor pm repair`", file=sys.stderr)

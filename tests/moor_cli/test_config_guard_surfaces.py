@@ -65,7 +65,7 @@ class TestCronRunJobGuard:
 
         from gateway.session_contract import SessionRef
         from gateway.session_cron import current_execution, execute
-        from hermes_state_registry import acquire, release
+        from moor_state_registry import acquire, release
 
         _write_corrupt_config(tmp_path)
         # Agent-backed run_job is now a client. Exercise the scheduler's guard
@@ -81,7 +81,7 @@ class TestCronRunJobGuard:
             "cron_job": self._job(), "extra_prompt": None, "request_id": "guard-fire"}))
         previous = current_execution()
         try:
-            with pytest.raises(RuntimeError, match="Hermes stopped because your settings file"):
+            with pytest.raises(RuntimeError, match="Moor stopped because your settings file"):
                 await execute(owner, ref, admission, policy)
             success, _output_doc, final_response, error = owner.pending_results["guard-fire"]["result"]["cron_result"]
             assert current_execution() is previous

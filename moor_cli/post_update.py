@@ -75,8 +75,8 @@ def step_migrate_config() -> dict:
         SUPPORT_FLOOR_VERSION,
         support_floor_message,
     )
-    from hermes_cli.config_migrations_browser import agent_browser_env_pending
-    from hermes_cli.config_version_stamp import read_config_version_stamp, stamp_missing_config
+    from moor_cli.config_migrations_browser import agent_browser_env_pending
+    from moor_cli.config_version_stamp import read_config_version_stamp, stamp_missing_config
 
     stamp_missing_config()  # a missing config.yaml reads as current below
     stamp, latest_ver = read_config_version_stamp()
@@ -106,8 +106,8 @@ def step_migrate_config() -> dict:
             f"(still {post_ver}); restored: "
             + (", ".join(str(p) for p in restored) if restored else "none")
         )
-    # `hermes update` prints what a quiet migration changed; boot has no terminal to print it to.
-    from hermes_cli.left_core_migration import defer_startup_notice
+    # `moor update` prints what a quiet migration changed; boot has no terminal to print it to.
+    from moor_cli.left_core_migration import defer_startup_notice
     for notice in results.get("notices") or ():
         defer_startup_notice(notice)
     return {"ok": True, "migrated": f"{current_ver}->{latest_ver}"}
@@ -163,14 +163,14 @@ def step_state_db_guard() -> dict:
 def step_drop_live_plugin_catalog() -> dict:
     """Drop the active home's cached live plugin catalog after a code change.
 
-    Bundled/sealed app updates never run ``hermes update``'s maintenance tail,
+    Bundled/sealed app updates never run ``moor update``'s maintenance tail,
     so without this a pre-update snapshot out-votes the newer in-tree catalog
     for the rest of its TTL (#119340). Per home, like the boot record.
     """
-    from hermes_constants import get_hermes_home
-    from hermes_cli.plugin_catalog import invalidate_live_cache_for_home
+    from moor_constants import get_moor_home
+    from moor_cli.plugin_catalog import invalidate_live_cache_for_home
 
-    invalidate_live_cache_for_home(get_hermes_home())
+    invalidate_live_cache_for_home(get_moor_home())
     return {"ok": True}
 
 

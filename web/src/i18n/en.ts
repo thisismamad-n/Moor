@@ -113,12 +113,12 @@ export const en: Translations = {
     multiplexStandaloneBanner:
       "Your gateway serves only one profile. Not served: {profiles}. Why: {reason}. Fix: moor gateway migrate --multiplex",
     dismiss: "Dismiss",
-    sharedMetricsTitle: "Help improve Hermes?",
+    sharedMetricsTitle: "Help improve Moor?",
     sharedMetricsBody:
-      "Shared metrics are bounded counters, never prompts, files, paths or error text. Sharing sends them to Nous once a day.",
+      "Shared metrics are bounded counters, never prompts, files, paths or error text. Sharing sends them to Moor once a day.",
     sharedMetricsReaskBody:
       "Asking once more: an earlier version could save \"No thanks\" before you saw this question.",
-    sharedMetricsShare: "Share with Nous",
+    sharedMetricsShare: "Share with Moor",
     sharedMetricsOff: "No thanks",
     sharedMetricsDetails: "Details",
     sharedMetricsSaveFailed: "Couldn't save your choice",
@@ -129,13 +129,13 @@ export const en: Translations = {
     activeProvider: "Active memory provider",
     noProvider: "none — built-in only",
     builtinLayer: "Built-in layer",
-    builtinNote: "MEMORY.md and USER.md are Hermes's own memory, separate from any external provider. Both load into sessions by default; the config toggles (memory.memory_enabled / memory.user_profile_enabled) turn each off. A provider adds to them; it never replaces them.",
+    builtinNote: "MEMORY.md and USER.md are Moor's own memory, separate from any external provider. Both load into sessions by default; the config toggles (memory.memory_enabled / memory.user_profile_enabled) turn each off. A provider adds to them; it never replaces them.",
   },
 
   status: {
     actionFailed: "Action failed",
     actionFinished: "Finished",
-    actionFinishedOwed: "Updated, but still owed (re-run `hermes update` to finish)",
+    actionFinishedOwed: "Updated, but still owed (re-run `moor update` to finish)",
     actions: "Actions",
     agent: "Agent",
     activeSessions: "Active Sessions",

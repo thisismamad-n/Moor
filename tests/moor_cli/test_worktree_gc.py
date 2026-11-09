@@ -422,8 +422,8 @@ class TestCmdWorktreeJson:
         payload = json.loads(capsys.readouterr().out)
         assert set(payload) == {"repo", "trees", "external_trees", "branches", "archives"}
         names = [t["name"] for t in payload["trees"]]
-        assert "hermes-json" in names
-        tree = next(t for t in payload["trees"] if t["name"] == "hermes-json")
+        assert "moor-json" in names
+        tree = next(t for t in payload["trees"] if t["name"] == "moor-json")
         assert {"verdict", "reason", "age_days", "branch"} <= set(tree)
 
     def test_prune_dry_run_json(self, repo, capsys):

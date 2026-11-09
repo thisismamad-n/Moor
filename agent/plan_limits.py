@@ -7,7 +7,7 @@ button can never disagree:
 * a full gauge with scope ``all`` (day / week / month / any new one) blocks every paid model;
 * a full ``top_tier`` gauge blocks the models the gateway marks top tier.
 
-Hermes never switches model on its own. When a request is refused, :func:`limit_hit` describes the
+Moor never switches model on its own. When a request is refused, :func:`limit_hit` describes the
 limit and names up to two models from the plan's recommended list (in order) that still
 work. Each surface renders that as buttons where it already has them, otherwise as a sentence.
 
@@ -23,7 +23,7 @@ from typing import Any, Iterable, Optional
 
 logger = logging.getLogger(__name__)
 
-PROVIDER = "nous"
+PROVIDER = "moor"
 # Leave room for the reply: a suggestion must fit the conversation with this many tokens to spare.
 _CONTEXT_HEADROOM_TOKENS = 8_000
 _MAX_SUGGESTIONS = 2
@@ -83,11 +83,11 @@ class LimitHit:
 # ── catalog reads ────────────────────────────────────────────────────────────────────────────────
 
 def cached_pricing(base_url: str = "") -> dict:
-    """The calling profile's own cached Nous catalog (never fetches); ``base_url`` is not needed for it. Only
+    """The calling profile's own cached Moor catalog (never fetches); ``base_url`` is not needed for it. Only
     the profile-keyed read: a process serving several profiles holds their catalogs side by side, and a
     usage level (Large / Free) is per plan, so another profile's catalog must never answer."""
     try:
-        from hermes_cli.models_pricing import get_pricing_for_provider
+        from moor_cli.models_pricing import get_pricing_for_provider
         return get_pricing_for_provider(PROVIDER, cached_only=True) or {}
     except Exception:
         logger.debug("Cached pricing unavailable", exc_info=True)
@@ -96,7 +96,7 @@ def cached_pricing(base_url: str = "") -> dict:
 
 def _billed_elsewhere(model: str, pricing: Optional[dict]) -> bool:
     try:
-        from hermes_cli.models import _is_subscription_billed
+        from moor_cli.models import _is_subscription_billed
         return _is_subscription_billed((pricing or {}).get(model))
     except Exception:
         logger.debug("Subscription billing lookup failed", exc_info=True)
@@ -110,7 +110,7 @@ def is_free(model: str, pricing: Optional[dict]) -> bool:
     if model.endswith(":free"):
         return True
     try:
-        from hermes_cli.models import _is_model_free
+        from moor_cli.models import _is_model_free
         return bool(pricing) and _is_model_free(model, pricing)
     except Exception:
         logger.debug("Free-model lookup failed", exc_info=True)
@@ -123,7 +123,7 @@ def is_top_tier(model: str, pricing: Optional[dict]) -> bool:
     if not model:
         return False
     try:
-        from hermes_cli.model_picker_usage import usage_levels
+        from moor_cli.model_picker_usage import usage_levels
         return usage_levels([model], pricing).get(model) == "top_tier"
     except Exception:
         logger.debug("Usage level lookup failed", exc_info=True)
@@ -171,8 +171,8 @@ def _plan_usage() -> Any:
     # Plan shape only (featured models), so the last account snapshot at any age answers: the 60s
     # cache has long lapsed by the time a window runs out mid-session.
     try:
-        from hermes_cli.model_picker_usage import nous_picker_usage
-        return nous_picker_usage(any_age=True)
+        from moor_cli.model_picker_usage import moor_picker_usage
+        return moor_picker_usage(any_age=True)
     except Exception:
         logger.debug("Plan usage unavailable", exc_info=True)
         return None
@@ -182,11 +182,11 @@ def _portal_free_models() -> list[str]:
     """The Portal's free picks, from what this profile already holds for its own Portal (in-process,
     else its last copy on disk). Never fetches: this runs mid-turn."""
     try:
-        from hermes_cli import models as m
-        base = m._resolve_nous_portal_url()
-        payload = (m._nous_recommended_cache.get((m._pricing_profile_key(), base)) or (None,))[0]
+        from moor_cli import models as m
+        base = m._resolve_moor_portal_url()
+        payload = (m._moor_recommended_cache.get((m._pricing_profile_key(), base)) or (None,))[0]
         if not payload:
-            disk = m._read_nous_recommended_disk(base)
+            disk = m._read_moor_recommended_disk(base)
             payload = disk[0] if disk else None
         entries = payload.get("freeRecommendedModels") if isinstance(payload, dict) else None
         return [n for e in (entries or []) if (n := m._extract_model_name(e))]
@@ -301,7 +301,7 @@ def chat_refusal_wording(text: str, resets_at: Any = None) -> str:
     if isinstance(resets_at, (int, float)) and not isinstance(resets_at, bool) and resets_at > 0:
         try:
             from agent.credits_tracker import format_window_reset
-            from hermes_cli.model_picker_usage import compact_duration
+            from moor_cli.model_picker_usage import compact_duration
             ms = round(resets_at * 1000)  # the epoch seconds came from these ms: round, never truncate
             if left := compact_duration(ms):
                 text = text.replace(f"resets {format_window_reset(ms)}", f"resets in {left}")

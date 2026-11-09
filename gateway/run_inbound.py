@@ -37,7 +37,7 @@ from gateway.session import (
     neutralize_untrusted_inline_text,
 )
 from gateway.turn_lease import TurnLeaseTimeoutError
-from hermes_cli.observability.shared_metrics_busy import (
+from moor_cli.observability.shared_metrics_busy import (
     note_busy_admitting, note_busy_outcome, settle_busy_arrival, stamp_busy_arrival)
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -204,7 +204,7 @@ class GatewayInboundMixin(GatewayInboundHooksMixin, GatewayInboundTranscriptionM
         if (
             getattr(self, "_startup_restore_in_progress", False)
             and not is_internal
-            and not getattr(event, "_hermes_startup_restore_replay", False)
+            and not getattr(event, "_moor_startup_restore_replay", False)
             and not executing_admission.get()
         ):
             self._queue_startup_restore_event(event)
@@ -279,7 +279,7 @@ class GatewayInboundMixin(GatewayInboundHooksMixin, GatewayInboundTranscriptionM
     def _hm_estop_gate(
         self, event: MessageEvent, source: SessionSource, is_internal: bool
     ) -> Optional[str]:
-        """Global emergency-stop (`hermes pause`) notice when this turn must be blocked, else None.
+        """Global emergency-stop (`moor pause`) notice when this turn must be blocked, else None.
         Placed after auth so unauthorized senders can't probe pause state. A synthetic heartbeat that
         slipped past the poller's pause check gets "" (blocked, nothing sent): nobody typed it, and
         settle_heartbeat_attempt leaves its tick due for after resume."""
@@ -631,7 +631,7 @@ class GatewayInboundMixin(GatewayInboundHooksMixin, GatewayInboundTranscriptionM
                 authority.fence_route(_quick_key)
             return
         from gateway.session_contract import Principal, SessionRef
-        from hermes_state_runtime import RuntimeStoreError, list_session_admissions
+        from moor_state_runtime import RuntimeStoreError, list_session_admissions
         ref = SessionRef(authority.profile_id, sid)
         actor = Principal('messaging-control', authority.profile_id,
                           frozenset({'session:submit', 'session:control'}), 'busy-command')
@@ -1232,7 +1232,7 @@ class GatewayInboundMixin(GatewayInboundHooksMixin, GatewayInboundTranscriptionM
         if (authority is None and not is_internal and not event.get_command()
                 and getattr(self, 'session_authority', None) is not None):
             # Scoped to a home this process does not serve: never fall back to the launch ledger.
-            from hermes_state_runtime import RuntimeStoreError
+            from moor_state_runtime import RuntimeStoreError
             raise RuntimeStoreError('profile_mismatch')
         return False, None
 
@@ -1270,7 +1270,7 @@ class GatewayInboundMixin(GatewayInboundHooksMixin, GatewayInboundTranscriptionM
             return None
         event, source, is_internal = _admitted
         if not is_internal:
-            from hermes_cli.observability.shared_metrics_events import record_gateway_slash_command
+            from moor_cli.observability.shared_metrics_events import record_gateway_slash_command
             record_gateway_slash_command(event)
         # TERMINAL-DECLINE LATCH TEARDOWN. Deliberately placed AFTER admission,
         # not on the adapter's raw inbound: profile routing, the ignored-channel
@@ -1336,7 +1336,7 @@ class GatewayInboundMixin(GatewayInboundHooksMixin, GatewayInboundTranscriptionM
         _claim_state.turn.agent = _AGENT_PENDING_SENTINEL
         _claim_state.turn.event = event
         _claim_state.turn.started_ts = time.time()
-        from hermes_cli.observability.shared_metrics_gateway import start_reply_clock
+        from moor_cli.observability.shared_metrics_gateway import start_reply_clock
         start_reply_clock(source, internal=is_internal)
         self._persist_active_agents()
         _run_generation = self._begin_session_run_generation(_quick_key)

@@ -1,6 +1,6 @@
 """Is the agent making people wait? Busy-chat arrivals and the day's peak of chats running at once.
 
-``hermes.gateway.busy_arrival.count``: one row per human message that arrives while its chat's turn
+``moor.gateway.busy_arrival.count``: one row per human message that arrives while its chat's turn
 is still running (the adapter's busy path, or the runner's running-turn check at FIFO admission for a
 message the adapter saw as idle because an earlier queued turn now runs outside its session guard),
 recorded once its fate is known: it reached the agent (its own turn started, or it was steered into
@@ -11,7 +11,7 @@ answers and plugin-consumed input are not counted. The arrival rides the event o
 admission id links it to the turn that later runs the restored copy. It belongs to the profile that
 runs the chat's turns (the event's routing identity), never one inferred from the chat id.
 
-``gateway_peak_busy_chats_bucket`` (on ``hermes.engagement.day.count``): the most distinct chats
+``gateway_peak_busy_chats_bucket`` (on ``moor.engagement.day.count``): the most distinct chats
 (session keys) that had a turn running at the same moment during the UTC day, per owning profile.
 Tracked in memory from the runner's running-turn set at every turn boundary and folded into the
 profile's engagement day state, which reports it when the day closes. No chat id leaves the process.
@@ -32,7 +32,7 @@ from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
-BUSY_ARRIVAL_METRIC = "hermes.gateway.busy_arrival.count"
+BUSY_ARRIVAL_METRIC = "moor.gateway.busy_arrival.count"
 BUSY_ARRIVAL_DISPOSITIONS = frozenset({"queued", "steered", "interrupted", "merged", "dropped", "other"})
 BUSY_WAIT_BUCKETS = frozenset({"lt_5s", "5s_to_30s", "30s_to_2m", "2m_to_10m", "gte_10m", "never"})
 BUSY_PEAK_FIELD = "gateway_peak_busy_chats_bucket"
@@ -134,9 +134,9 @@ def note_busy_admitting(event: Any) -> None:
 
 
 def _bind_home(tag: _Arrival) -> None:
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
-    tag.home = str(get_hermes_home())
+    tag.home = str(get_moor_home())
 
 
 def note_busy_admitted(event: Any, admission_id: str, status: str, outcome: Any = None) -> None:
@@ -273,9 +273,9 @@ def observe_running_chats(session_keys: Any) -> None:
                 del _running[key]
             for key in keys - set(_running):
                 if home is None:
-                    from hermes_constants import get_hermes_home
+                    from moor_constants import get_moor_home
 
-                    home = _home_key(get_hermes_home())
+                    home = _home_key(get_moor_home())
                 _running[key] = home
             counts: dict[str, int] = {}
             for owner in _running.values():

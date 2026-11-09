@@ -21,17 +21,17 @@ from moor_constants import (
     LOCAL_RUNTIME_ROOT_DIRS, _get_platform_default_moor_home, get_default_moor_root, get_moor_home,
     display_moor_home,
 )
-from hermes_state_dbfile import RETIRED_GENERATION_DIR_SUFFIX
-from hermes_state_holders import read_only_db_uri
+from moor_state_dbfile import RETIRED_GENERATION_DIR_SUFFIX
+from moor_state_holders import read_only_db_uri
 
 from agent.provider_media import GENERATED_SUBDIR
-from hermes_cli.archive_safe import normalize_archive_parts
-from hermes_cli.backup_sqlite import _close_quietly, _safe_copy_db
-from hermes_cli.config_backend import require_file_tooling, supports_file_tooling
-from hermes_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS, SECRET_CACHE_FILES, profile_root_entry
-from hermes_cli.sizefmt import format_bytes as _format_size
+from moor_cli.archive_safe import normalize_archive_parts
+from moor_cli.backup_sqlite import _close_quietly, _safe_copy_db
+from moor_cli.config_backend import require_file_tooling, supports_file_tooling
+from moor_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS, SECRET_CACHE_FILES, profile_root_entry
+from moor_cli.sizefmt import format_bytes as _format_size
 
-from hermes_cli.backup_restore import (
+from moor_cli.backup_restore import (
     _count_cron_jobs,
     _count_session_rows,
     _default_new_file_mode,
@@ -599,8 +599,8 @@ def run_backup(args) -> bool:
     the caller turns False into exit status 1 so a cron/systemd timer never publishes a "successful"
     archive that is missing state.db. Hard failures keep raising ``SystemExit``.
     """
-    require_file_tooling("`hermes backup`")
-    hermes_root = get_default_hermes_root()
+    require_file_tooling("`moor backup`")
+    moor_root = get_default_moor_root()
 
     if not moor_root.is_dir():
         print(f"Error: Moor home directory not found at {moor_root}")
@@ -735,8 +735,8 @@ def _import_member_rel(member: str, prefix: str) -> tuple[str, bool]:
 
 
 def run_import(args) -> Optional[int]:
-    """Restore a Hermes backup; return 1 on damaged archives or incomplete restores."""
-    require_file_tooling("`hermes import`")
+    """Restore a Moor backup; return 1 on damaged archives or incomplete restores."""
+    require_file_tooling("`moor import`")
     zip_path = Path(args.zipfile).expanduser().resolve()
 
     if not zip_path.is_file():
@@ -747,9 +747,9 @@ def run_import(args) -> Optional[int]:
         print(f"Error: Not a valid zip file: {zip_path}")
         sys.exit(1)
 
-    # The home this command operates under (the "Target:" display_hermes_home() prints):
-    # get_default_hermes_root() would map a profile home back to <root> and restore the live root.
-    hermes_root = get_hermes_home()
+    # The home this command operates under (the "Target:" display_moor_home() prints):
+    # get_default_moor_root() would map a profile home back to <root> and restore the live root.
+    moor_root = get_moor_home()
 
     with zipfile.ZipFile(zip_path, "r") as zf:
         # Validate
@@ -763,13 +763,13 @@ def run_import(args) -> Optional[int]:
         file_count = len(members)
 
         print(f"Backup contains {file_count} files")
-        print(f"Target: {display_hermes_home()}")
+        print(f"Target: {display_moor_home()}")
         if prefix:
             print(f"Detected archive prefix: {prefix!r} (will be stripped)")
 
         # Check for existing installation
-        has_config = (hermes_root / "config.yaml").exists()  # config-reader: ok — profile marker for the backup scope (file tooling)
-        has_env = (hermes_root / ".env").exists()
+        has_config = (moor_root / "config.yaml").exists()  # config-reader: ok — profile marker for the backup scope (file tooling)
+        has_env = (moor_root / ".env").exists()
 
         if (has_config or has_env) and not args.force:
             print()
@@ -802,7 +802,7 @@ def run_import(args) -> Optional[int]:
         from gateway.runtime_ownership import OwnershipConflict
         try:
             restored, restored_external, errors, skipped_runtime, db_shrunk = _import_members(
-                zf, members, prefix, hermes_root, file_count)
+                zf, members, prefix, moor_root, file_count)
         except OwnershipConflict as exc:
             print(f"\nImport refused; no files restored: {exc}")
             sys.exit(1)
@@ -904,7 +904,7 @@ def run_import(args) -> Optional[int]:
             for pname in gw_profiles:
                 print(f"  moor -p {pname} gateway install")
 
-        _revive_gateway_after_import(hermes_root)
+        _revive_gateway_after_import(moor_root)
 
         if errors:
             print(f"Import incomplete: {len(errors)} file(s) were not restored (see Warnings above). "
@@ -914,26 +914,26 @@ def run_import(args) -> Optional[int]:
 
 
 def _import_members(
-    zf: zipfile.ZipFile, members: list[str], prefix: str, hermes_root: Path, file_count: int
+    zf: zipfile.ZipFile, members: list[str], prefix: str, moor_root: Path, file_count: int
 ) -> tuple[int, int, list[str], list[str], list[tuple[str, tuple[int, int], tuple[int, int]]]]:
     """Reserve all affected profiles before publishing even the first config file."""
     from gateway.runtime_ownership import exclusive_maintenance
-    root_res = hermes_root.resolve()
-    homes = {hermes_root}
+    root_res = moor_root.resolve()
+    homes = {moor_root}
     for member in members:
         if member.startswith(_EXTERNAL_PREFIX):
             continue  # restored under $HOME, outside every runtime authority
         rel = member[len(prefix):] if prefix and member.startswith(prefix) else member
         parts = Path(rel).parts
         if len(parts) >= 3 and parts[0] == "profiles":
-            home = hermes_root / parts[0] / parts[1]
+            home = moor_root / parts[0] / parts[1]
             if home.resolve().is_relative_to(root_res):
                 homes.add(home)
-        target = hermes_root / rel
+        target = moor_root / rel
         if target.suffix == ".db" and target.resolve().is_relative_to(root_res):
             homes.update([target.absolute().parent, target.resolve().parent])
     with exclusive_maintenance(homes):
-        return _import_members_exclusive(zf, members, prefix, hermes_root, file_count)
+        return _import_members_exclusive(zf, members, prefix, moor_root, file_count)
 
 
 def _import_external_member(
@@ -964,7 +964,7 @@ def _import_external_member(
 
 
 def _import_members_exclusive(
-    zf: zipfile.ZipFile, members: list[str], prefix: str, hermes_root: Path, file_count: int
+    zf: zipfile.ZipFile, members: list[str], prefix: str, moor_root: Path, file_count: int
 ) -> tuple[int, int, list[str], list[str], list[tuple[str, tuple[int, int], tuple[int, int]]]]:
     """Publish every member; return ``(restored, restored_external, errors, skipped_runtime, db_shrunk)``.
 
@@ -984,7 +984,7 @@ def _import_members_exclusive(
     for member in members:
         # External memory-provider state captured under the reserved
         # ``_external/`` arc prefix restores to its original home-relative
-        # location (e.g. ~/.honcho/config.json), NOT under HERMES_HOME.
+        # location (e.g. ~/.honcho/config.json), NOT under MOOR_HOME.
         if member.startswith(_EXTERNAL_PREFIX):
             if not member[len(_EXTERNAL_PREFIX):]:
                 continue
@@ -1014,7 +1014,7 @@ def _import_members_exclusive(
         # namespaced to the machine/container the backup was taken on;
         # clobbering them (especially gateway_state.json) breaks the gateway
         # reconciler on the target and disconnects hosted instances from the
-        # Nous portal. Matched by basename so both the root profile and
+        # Moor portal. Matched by basename so both the root profile and
         # named profiles (profiles/<name>/gateway_state.json) are covered.
         if parts[-1] in _IMPORT_SKIP_NAMES:
             skipped_runtime.append(rel)
@@ -1036,11 +1036,11 @@ def _import_members_exclusive(
             skipped_runtime.append(rel)
             continue
 
-        target = hermes_root.joinpath(*parts)
+        target = moor_root.joinpath(*parts)
 
         # Security: reject absolute paths and traversals
         try:
-            target.resolve().relative_to(hermes_root.resolve())
+            target.resolve().relative_to(moor_root.resolve())
         except ValueError:
             errors.append(f"  {rel}: path traversal blocked")
             continue
@@ -1069,7 +1069,7 @@ def _import_members_exclusive(
     return restored, restored_external, errors, skipped_runtime, db_shrunk
 
 
-def _revive_gateway_after_import(hermes_root: Path) -> None:
+def _revive_gateway_after_import(moor_root: Path) -> None:
     """Start an installed gateway service after a restore, best-effort and prompt-free.
 
     Bot tokens and cron jobs are inert without a gateway (a platform-less gateway is supported, so
@@ -1077,16 +1077,16 @@ def _revive_gateway_after_import(hermes_root: Path) -> None:
     revived when the restore landed in the default home or no other install exists: a sandbox or
     profile restore must not install a second gateway on the default service name.
     """
-    native_default = _get_platform_default_hermes_home()
-    if hermes_root != native_default and any(
+    native_default = _get_platform_default_moor_home()
+    if moor_root != native_default and any(
             (native_default / marker).exists() for marker in ("config.yaml", ".env", "state.db")):
         print("\nRestored into a non-default home; leaving the gateway service alone to avoid clashing "
               f"with the install at {native_default}.\n"
-              "To start a gateway for this home, run:  hermes gateway run")
+              "To start a gateway for this home, run:  moor gateway run")
         return
     try:
-        from hermes_cli.gateway import _is_service_running
-        from hermes_cli.gateway_setup_service import ensure_gateway_service
+        from moor_cli.gateway import _is_service_running
+        from moor_cli.gateway_setup_service import ensure_gateway_service
         if not _is_service_running():
             print()
             ensure_gateway_service(context="import")
@@ -1094,7 +1094,7 @@ def _revive_gateway_after_import(hermes_root: Path) -> None:
         # Import boundary: the restore already succeeded; any service failure prints the
         # manual fallback instead of failing the import.
         logger.debug("gateway revive after import failed", exc_info=True)
-        print("\nStart the gateway to activate cron jobs and messaging:\n  hermes gateway run")
+        print("\nStart the gateway to activate cron jobs and messaging:\n  moor gateway run")
 
 
 # --- Quick state snapshots (used by /snapshot slash command and moor backup --quick) ---
@@ -1185,13 +1185,13 @@ def _prune_incomplete_zips(backup_dir: Path, prefix: str, what: str) -> int:
 
 
 def _create_prefixed_full_backup(
-    hermes_home: Optional[Path], prefix: str, keep: int, what: str, prune_what: str) -> Optional[Path]:
-    """Write ``<HERMES_HOME>/backups/<prefix><timestamp>.zip`` and prune older same-prefix zips.
+    moor_home: Optional[Path], prefix: str, keep: int, what: str, prune_what: str) -> Optional[Path]:
+    """Write ``<MOOR_HOME>/backups/<prefix><timestamp>.zip`` and prune older same-prefix zips.
     Returns the path, or ``None`` if nothing to back up, the write failed, or the archive is
     incomplete (kept as ``<prefix><timestamp>.incomplete.zip``, excluded from retention).
     Never raises."""
-    hermes_root = hermes_home or get_default_hermes_root()
-    if not hermes_root.is_dir():
+    moor_root = moor_home or get_default_moor_root()
+    if not moor_root.is_dir():
         return None
     backup_dir = moor_root / _PRE_UPDATE_BACKUPS_DIR
     try:
@@ -1200,7 +1200,7 @@ def _create_prefixed_full_backup(
         logger.warning("Could not create %s backup dir %s: %s", what, backup_dir, exc)
         return None
     out_path = backup_dir / f"{prefix}{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.zip"
-    if _write_full_zip_backup(out_path, hermes_root) is None:
+    if _write_full_zip_backup(out_path, moor_root) is None:
         # Incomplete runs publish straight to ``*.incomplete.zip`` (all-failed runs are discarded);
         # cap those salvages at one without letting them rotate complete backups out.
         _prune_incomplete_zips(backup_dir, prefix, prune_what)
@@ -1213,15 +1213,15 @@ def create_pre_update_backup(
     moor_home: Optional[Path] = None, keep: int = _PRE_UPDATE_DEFAULT_KEEP) -> Optional[Path]:
     """Full zip backup to ``backups/pre-update-<timestamp>.zip``, auto-pruned; ``None`` if nothing
     was found, the backup failed, or it was incomplete (salvage kept as ``*.incomplete.zip``).
-    Never raises — ``hermes update`` continues anyway."""
-    return _create_prefixed_full_backup(hermes_home, _PRE_UPDATE_PREFIX, max(keep, 1), "pre-update", "backup")
+    Never raises — ``moor update`` continues anyway."""
+    return _create_prefixed_full_backup(moor_home, _PRE_UPDATE_PREFIX, max(keep, 1), "pre-update", "backup")
 
 
 def create_pre_migration_backup(
-    hermes_home: Optional[Path] = None, keep: int = _PRE_MIGRATION_DEFAULT_KEEP) -> Optional[Path]:
+    moor_home: Optional[Path] = None, keep: int = _PRE_MIGRATION_DEFAULT_KEEP) -> Optional[Path]:
     """Full zip backup to ``backups/pre-migration-<timestamp>.zip`` before a plugin's agent import
-    (``hermes import-agent openclaw``), so its name and signature are API; same dir as update backups
-    so ``hermes import`` finds it. ``None`` if nothing was found, the write failed, or it was
+    (``moor import-agent openclaw``), so its name and signature are API; same dir as update backups
+    so ``moor import`` finds it. ``None`` if nothing was found, the write failed, or it was
     incomplete (salvage kept as ``*.incomplete.zip``). Never raises."""
     return _create_prefixed_full_backup(
         moor_home, _PRE_MIGRATION_PREFIX, max(keep, 0), "pre-migration", "pre-migration backup")
@@ -1493,7 +1493,7 @@ def _create_quick_snapshot_locked(
 
 def list_quick_snapshots(
     limit: int = 20,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> list[dict[str, Any]]:
     """List existing quick state snapshots, most recent first."""
     root = _quick_snapshot_root(moor_home)
@@ -1522,7 +1522,7 @@ def _is_trusted_root_auth_alias(path: Path, home: Path) -> bool:
     if not path.is_symlink():
         return False
     try:
-        root = get_default_hermes_root(home=home).resolve(strict=False)
+        root = get_default_moor_root(home=home).resolve(strict=False)
         if home.resolve(strict=False) == root:
             return False
         trusted = (root / "auth.json").resolve(strict=False)
@@ -1544,7 +1544,7 @@ def restore_quick_snapshot(
     """
     from gateway.runtime_ownership import OwnershipConflict, exclusive_maintenance
     require_file_tooling("Snapshot restore")
-    home = hermes_home or get_hermes_home()
+    home = moor_home or get_moor_home()
     try:
         with exclusive_maintenance([home]):
             return _restore_quick_snapshot_exclusive(snapshot_id, home)
@@ -1595,9 +1595,9 @@ def _restore_snapshot_entry(rel: str, src: Path, dst: Path) -> bool:
         return False
 
 
-def quick_snapshot_dir(snapshot_id: str, hermes_home: Optional[Path] = None) -> Optional[Path]:
+def quick_snapshot_dir(snapshot_id: str, moor_home: Optional[Path] = None) -> Optional[Path]:
     """The directory of a restorable quick snapshot, or None for an invalid or missing id."""
-    root = _quick_snapshot_root(hermes_home)
+    root = _quick_snapshot_root(moor_home)
     # Security: reject snapshot_id values that contain path separators or
     # traversal sequences so that `root / snapshot_id` stays inside root.
     if not snapshot_id or "/" in snapshot_id or "\\" in snapshot_id or snapshot_id in (".", ".."):
@@ -1678,9 +1678,9 @@ def _restore_quick_snapshot_exclusive(snapshot_id: str, home: Path) -> bool:
 
 def restore_cron_jobs_if_emptied(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> Optional[dict[str, Any]]:
-    """Safety net for silent cron-job loss across ``hermes update``.
+    """Safety net for silent cron-job loss across ``moor update``.
 
     Config-version migrations have been observed to leave ``cron/jobs.json``
     valid-but-empty after an update, silently dropping every scheduled job
@@ -1801,7 +1801,7 @@ def create_pre_update_snapshots_all_profiles(
     siblings that snapshotted successfully. Never raises.
     """
     results: dict[str, str] = {}
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_moor_home()
     for name, profile_home in _sibling_profile_homes(home):
         try:
             snap_id = create_quick_snapshot(
@@ -1847,9 +1847,9 @@ def _read_raw_yaml_dict(path: Path) -> Optional[dict[str, Any]]:
 
 def restore_config_model_settings_if_rewritten(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    moor_home: Optional[Path] = None,
 ) -> Optional[dict[str, Any]]:
-    """Safety net for silent config.yaml model/MoA loss across ``hermes update``.
+    """Safety net for silent config.yaml model/MoA loss across ``moor update``.
 
     Desktop update/repair cycles have been observed to rewrite user-set
     ``model.provider``/``model.default`` and drop the ``moa:`` section

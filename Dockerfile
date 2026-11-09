@@ -73,8 +73,8 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/moor/tools
 # a side effect; pm stages the pinned browser instead (below), so the libs
 # must be declared here. The list is the `ldd ... | grep "not found"` set of
 # the pinned chrome binary in this base image, mapped to trixie package
-# names (see .hermes/plans/termux-removal-commit-spec.md).
-# tmux backs the hermes-agent skill's interactive spawning recipe; the runtime
+# names (see .moor/plans/termux-removal-commit-spec.md).
+# tmux backs the moor-agent skill's interactive spawning recipe; the runtime
 # user cannot apt-get it later (no root, and the root fs resets on restart).
 RUN apt-get -o Acquire::Retries=3 update && \
     apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
@@ -197,12 +197,12 @@ WORKDIR /opt/moor
 # here rather than by `npx playwright install`,
 # which fetched whatever revision the npm-resolved playwright wanted,
 # unverified, and recorded no fact. The resolved browser binary path is
-# baked to /etc/hermes/chromium-executable-path: the layout differs per
+# baked to /etc/moor/chromium-executable-path: the layout differs per
 # arch (chrome-linux64/chrome on amd64, chromium-linux-arm64/chromium on
 # arm64), so it is resolved at build time and never hunted at boot.
-# hermes_cli/browser_runtime.py reads it when a volume over the runtime dir
+# moor_cli/browser_runtime.py reads it when a volume over the runtime dir
 # hides pm's facts; stage2-hook.sh checks it still names a binary.
-ENV HERMES_RUNTIME_DIR=/opt/hermes/tools
+ENV MOOR_RUNTIME_DIR=/opt/moor/tools
 COPY pm/ pm/
 # pm's lazy imports resolve get_default_moor_root()/project_venv_dir()
 # from moor_constants (stdlib-only) at install time — a sealed-stage
@@ -221,8 +221,8 @@ RUN set -eu; \
     browser_bin="$(python3 -c 'from pm import installed_package; print(installed_package("chromium").binary)')"; \
     test -n "$browser_bin"; \
     "$browser_bin" --version; \
-    mkdir -p /etc/hermes; \
-    printf '%s' "$browser_bin" > /etc/hermes/chromium-executable-path
+    mkdir -p /etc/moor; \
+    printf '%s' "$browser_bin" > /etc/moor/chromium-executable-path
 
 # PM is resident too: never borrow application libraries or create its worker
 # environment under /root (unreachable to the runtime UID).
@@ -275,7 +275,7 @@ FROM runtime_base AS python_deps
 # the sealed venv.
 #
 # [fal] is baked because the image tool's availability check imports
-# fal_client whenever a FAL backend resolves, which the Nous-managed gateway
+# fal_client whenever a FAL backend resolves, which the Moor-managed gateway
 # always does on hosted agents. Lazy-installing it at the gateway's first boot
 # builds a whole new venv generation on the volume (about 90s).
 #
@@ -293,14 +293,14 @@ FROM runtime_base AS python_deps
 # Source binding is created after the source copy below.
 COPY pyproject.toml uv.lock ./
 RUN touch ./README.md
-# --cache puts uv's cache at /opt/hermes/uv-cache, the seed path that
-# pm.packages.uv_cache_dir() merges into $HERMES_HOME/cache/uv on first use.
-# Do not leave the cache at its default: HERMES_HOME is not set yet in this
-# stage, so the default is /root/.hermes/cache/uv, which nothing reads. A plugin
+# --cache puts uv's cache at /opt/moor/uv-cache, the seed path that
+# pm.packages.uv_cache_dir() merges into $MOOR_HOME/cache/uv on first use.
+# Do not leave the cache at its default: MOOR_HOME is not set yet in this
+# stage, so the default is /root/.moor/cache/uv, which nothing reads. A plugin
 # install then runs with an empty cache and builds python-olm from source.
-RUN python3 -m pm.build_env --source /opt/hermes --python /usr/local/bin/python3 \
-    --cache /opt/hermes/uv-cache \
-    --out /opt/hermes/.venv --no-install-project --sealed --record-selection \
+RUN python3 -m pm.build_env --source /opt/moor --python /usr/local/bin/python3 \
+    --cache /opt/moor/uv-cache \
+    --out /opt/moor/.venv --no-install-project --sealed --record-selection \
     --extra all --extra messaging --extra otlp --extra anthropic --extra bedrock \
     --extra azure-identity --extra matrix --extra google-chat --extra fal --extra documents
 
@@ -372,9 +372,9 @@ RUN cd plugins/platforms/photon/sidecar && \
     npm cache clean --force
 
 # Shared product outputs are independent of application dependency assembly.
-COPY --from=frontend_build /opt/products/tui /opt/hermes/ui-tui
-COPY --from=frontend_build /opt/products/web /opt/hermes/hermes_cli/web_dist
-COPY --from=webapp_build /opt/hermes/apps/desktop/dist-webapp /opt/hermes/apps/desktop/dist-webapp
+COPY --from=frontend_build /opt/products/tui /opt/moor/ui-tui
+COPY --from=frontend_build /opt/products/web /opt/moor/moor_cli/web_dist
+COPY --from=webapp_build /opt/moor/apps/desktop/dist-webapp /opt/moor/apps/desktop/dist-webapp
 # ---------- Bot Screen X socket directory ----------
 # Xvnc would create this itself (/tmp is 1777); pre-creating it keeps ownership
 # deterministic when MOOR_UID is remapped between boots.
@@ -526,17 +526,17 @@ COPY --chmod=0755 docker/entrypoint-dispatch.sh /opt/moor/docker/entrypoint-disp
 # shim wins PATH resolution. The shim's last act is to exec the venv
 # binary by absolute path, so this PATH ordering is transparent to
 # every other consumer.
-ENV PATH="/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:${PATH}"
+ENV PATH="/opt/moor/bin:/opt/moor/.venv/bin:/opt/data/.local/bin:${PATH}"
 # Login shells re-read /etc/profile, which resets PATH; this re-adds the dirs above.
-COPY --chmod=0644 docker/profile-hermes-path.sh /etc/profile.d/hermes.sh
+COPY --chmod=0644 docker/profile-moor-path.sh /etc/profile.d/moor.sh
 # PM's atomic writer creates private facts for source installs. In the
 # image these are shared, non-secret package metadata, read by UID 10000.
 # uv's environment locks are build-only and may be world-writable. Remove
 # them after all builds; never relax permissions on mutable PM/home state.
-RUN mkdir -p /opt/data && chmod 0644 /opt/hermes/tools/facts.json && \
-    rm -f /opt/hermes/.venv/.lock /opt/hermes/pm-runtime/.lock
+RUN mkdir -p /opt/data && chmod 0644 /opt/moor/tools/facts.json && \
+    rm -f /opt/moor/.venv/.lock /opt/moor/pm-runtime/.lock
 # Build helpers use system Python above; TUI gateway children need the sealed runtime.
-ENV HERMES_PYTHON=/opt/hermes/.venv/bin/python
+ENV MOOR_PYTHON=/opt/moor/.venv/bin/python
 VOLUME [ "/opt/data" ]
 
 # The image ENTRYPOINT is a tiny dispatcher rather than `/init` directly.

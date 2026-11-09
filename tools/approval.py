@@ -52,7 +52,7 @@ _lock = threading.Lock()
 _pending: dict[str, dict] = {}
 _session_approved: dict[str, set] = {}
 _session_yolo: set[str] = set()
-# Session keys whose launch YOLO (`hermes chat --yolo` session policy) was already seeded by
+# Session keys whose launch YOLO (`moor chat --yolo` session policy) was already seeded by
 # ``tools.approval_yolo.apply_launch_yolo``: once per boundary, so a later `/yolo` off sticks.
 _launch_yolo_applied: set[str] = set()
 _permanent_approved: set = set()
@@ -350,11 +350,11 @@ def _permanent_set() -> set:
     launch profile's "always" approvals must not pre-approve commands for a secondary, nor may a
     secondary's "always" choice be written back into the launch profile's config. Callers hold ``_lock``.
     """
-    from hermes_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    from moor_constants import get_moor_home_override, moor_home_key
+    if get_moor_home_override() is None:
         approved, key = _permanent_approved, ""
     else:
-        key = hermes_home_key()
+        key = moor_home_key()
         approved = _permanent_approved_by_home.setdefault(key, set())
     _sync_permanent_from_disk(approved, key)
     return approved
@@ -963,7 +963,7 @@ def _presence(approval_callback=None) -> tuple:
     elif is_ask and _is_unattended_platform_approval_context() \
             and (_gateway_notify_cb(get_current_session_key()) is None
                  or _get_session_platform() in approval_context._NOTIFIER_BLIND_APPROVAL_PLATFORMS):
-        # start_gateway() sets HERMES_EXEC_ASK process-wide, so an api_server/webhook turn
+        # start_gateway() sets MOOR_EXEC_ASK process-wide, so an api_server/webhook turn
         # inside that gateway still reads as "ask" here even though _is_gateway_approval_context()
         # already excluded the platform. /v1/runs and streaming chat register their notify
         # callback before the turn runs; a session with none has no surface that can resolve an

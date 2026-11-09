@@ -6,9 +6,9 @@ from pathlib import Path
 import subprocess
 import sys
 
-from hermes_cli._subprocess_compat import windows_detach_popen_kwargs, _WINDOWS_GATEWAY_BREAKAWAY_ENV
-from hermes_cli.gateway_launchd_runtime import GatewayJob, start_gateway_job
-from hermes_cli.gateway_runtime_service import RuntimeStartError, remaining
+from moor_cli._subprocess_compat import windows_detach_popen_kwargs, _WINDOWS_GATEWAY_BREAKAWAY_ENV
+from moor_cli.gateway_launchd_runtime import GatewayJob, start_gateway_job
+from moor_cli.gateway_runtime_service import RuntimeStartError, remaining
 
 
 # One launch's policy and pins, never the shared daemon's: hook consent would become daemon-lifetime
@@ -17,24 +17,24 @@ from hermes_cli.gateway_runtime_service import RuntimeStartError, remaining
 # prefill file, provider request, project plugins) ride each session's ``client_env`` instead
 # (agent.session_client_env); an operator-started gateway keeps its own environment.
 DAEMON_STRIPPED_ENV = (
-    "HERMES_PROFILE", "HERMES_YOLO_MODE", "HERMES_IGNORE_RULES", "HERMES_SAFE_MODE",
-    "HERMES_IGNORE_USER_CONFIG", "HERMES_ACCEPT_HOOKS", "HERMES_SESSION_SOURCE", "TERMINAL_CWD",
-    "HERMES_KANBAN_TASK", "HERMES_KANBAN_WORKSPACE", "HERMES_KANBAN_BRANCH", "HERMES_KANBAN_RUN_ID",
-    "HERMES_KANBAN_CLAIM_LOCK", "HERMES_KANBAN_CLAIM_TTL_SECONDS", "HERMES_KANBAN_GOAL_MODE",
-    "HERMES_KANBAN_GOAL_MAX_TURNS", "HERMES_KANBAN_DB", "HERMES_KANBAN_WORKSPACES_ROOT",
-    "HERMES_KANBAN_BOARD", "HERMES_TENANT", "HERMES_SESSION_SOURCE_EXPLICIT", "HERMES_TURN_AUTHOR",
+    "MOOR_PROFILE", "MOOR_YOLO_MODE", "MOOR_IGNORE_RULES", "MOOR_SAFE_MODE",
+    "MOOR_IGNORE_USER_CONFIG", "MOOR_ACCEPT_HOOKS", "MOOR_SESSION_SOURCE", "TERMINAL_CWD",
+    "MOOR_KANBAN_TASK", "MOOR_KANBAN_WORKSPACE", "MOOR_KANBAN_BRANCH", "MOOR_KANBAN_RUN_ID",
+    "MOOR_KANBAN_CLAIM_LOCK", "MOOR_KANBAN_CLAIM_TTL_SECONDS", "MOOR_KANBAN_GOAL_MODE",
+    "MOOR_KANBAN_GOAL_MAX_TURNS", "MOOR_KANBAN_DB", "MOOR_KANBAN_WORKSPACES_ROOT",
+    "MOOR_KANBAN_BOARD", "MOOR_TENANT", "MOOR_SESSION_SOURCE_EXPLICIT", "MOOR_TURN_AUTHOR",
     # Human-presence/one-shot markers: inherited, every messaging/cron turn would read as attended or -q.
-    "HERMES_INTERACTIVE", "HERMES_GATEWAY_SESSION", "HERMES_SINGLE_QUERY_SESSION",
-    "HERMES_EPHEMERAL_SYSTEM_PROMPT", "HERMES_PREFILL_MESSAGES_FILE", "HERMES_INFERENCE_PROVIDER",
-    "HERMES_ENABLE_PROJECT_PLUGINS", "HERMES_TUI_CLIENT_ENV",
+    "MOOR_INTERACTIVE", "MOOR_GATEWAY_SESSION", "MOOR_SINGLE_QUERY_SESSION",
+    "MOOR_EPHEMERAL_SYSTEM_PROMPT", "MOOR_PREFILL_MESSAGES_FILE", "MOOR_INFERENCE_PROVIDER",
+    "MOOR_ENABLE_PROJECT_PLUGINS", "MOOR_TUI_CLIENT_ENV",
     # A terminal's shell under a systemd service (gnome-terminal-server, a user unit) carries these; the
     # unmanaged daemon would then identify as "systemd" and maintenance would refuse it as supervised.
     "INVOCATION_ID", "JOURNAL_STREAM",
     # Same for any process below a launchd/--external-supervisor gateway (its agents' tools, scripts they
     # run): the daemon would identify as "launchd", never arm --idle-exit, and outlive every client.
-    # HERMES_S6_SUPERVISED_CHILD stays: without it `gateway run` in an s6 container redirects to s6.
-    "XPC_SERVICE_NAME", "LAUNCHD_SOCKET", "HERMES_LAUNCHD_LABEL",
-    "HERMES_GATEWAY_EXTERNAL_SUPERVISOR", "HERMES_SUPERVISED_CHILD",
+    # MOOR_S6_SUPERVISED_CHILD stays: without it `gateway run` in an s6 container redirects to s6.
+    "XPC_SERVICE_NAME", "LAUNCHD_SOCKET", "MOOR_LAUNCHD_LABEL",
+    "MOOR_GATEWAY_EXTERNAL_SUPERVISOR", "MOOR_SUPERVISED_CHILD",
     # systemd's notify socket and watchdog name the unit's main process: the daemon would feed them.
     "NOTIFY_SOCKET", "WATCHDOG_USEC", "WATCHDOG_PID",
 )
@@ -57,20 +57,20 @@ def spawn_unmanaged_gateway(profile_home: Path, *, deadline: float, idle_exit: b
     # _apply_profile_override follows the sticky active_profile and boots the wrong
     # profile's daemon. A <root>/profiles/<name> home is already trusted as-is.
     selector = [] if home.parent.name == "profiles" else ["--profile", "default"]
-    command = [sys.executable, "-m", "hermes_cli.main", *selector, "gateway", "run", "--quiet",
+    command = [sys.executable, "-m", "moor_cli.main", *selector, "gateway", "run", "--quiet",
                *(["--idle-exit"] if idle_exit else []), *(["--force"] if force else [])]
-    # The target profile's own secrets, never the launching client's: a `hermes -p work` client's
+    # The target profile's own secrets, never the launching client's: a `moor -p work` client's
     # dotenv would otherwise become the default daemon's frozen launch env (host_gateway_child_env).
     from tools.environments.local import served_profile_child_env
     env = served_profile_child_env(base=dict(os.environ), target_home=home, inherit_credentials=True)
     if sys.platform == "win32":
-        from hermes_cli.gateway_windows import windowless_gateway_restart_spec
+        from moor_cli.gateway_windows import windowless_gateway_restart_spec
         command, _, overlay = windowless_gateway_restart_spec(command)
         if not overlay:
             raise RuntimeStartError("windows_interpreter_unavailable")
         env.update(overlay)
         env[_WINDOWS_GATEWAY_BREAKAWAY_ENV] = "1"
-    env.update(HERMES_HOME=str(home), HERMES_GATEWAY_DETACHED="1", PYTHONIOENCODING="utf-8")
+    env.update(MOOR_HOME=str(home), MOOR_GATEWAY_DETACHED="1", PYTHONIOENCODING="utf-8")
     # Profile selection is the explicit home, not the invoking client's display
     # name. Launch-only approval/context/config flags ride the launching session's frozen
     # policy, not the shared daemon or every later session.

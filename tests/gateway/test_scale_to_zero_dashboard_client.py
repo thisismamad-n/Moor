@@ -239,7 +239,7 @@ class _FakeWS:
         pass
 
 
-def test_handle_ws_connect_touches_marker(hermes_home, monkeypatch):
+def test_handle_ws_connect_touches_marker(moor_home, monkeypatch):
     from tui_gateway import ws as ws_mod
 
     _stub_ws_server(monkeypatch, ws_mod)
@@ -250,7 +250,7 @@ def test_handle_ws_connect_touches_marker(hermes_home, monkeypatch):
     assert seen is not None and abs(seen - time.time()) < 5
 
 
-def test_handle_ws_inbound_frames_refresh_marker(hermes_home, monkeypatch):
+def test_handle_ws_inbound_frames_refresh_marker(moor_home, monkeypatch):
     from tui_gateway import ws as ws_mod
 
     _stub_ws_server(monkeypatch, ws_mod)
@@ -293,7 +293,7 @@ def test_note_activity_is_throttled(moor_home, monkeypatch):
     assert calls["n"] == 2
 
 
-def test_slow_marker_write_does_not_hold_the_connection(hermes_home, monkeypatch):
+def test_slow_marker_write_does_not_hold_the_connection(moor_home, monkeypatch):
     """#139011: the marker write is disk I/O. On the event loop a slow disk stalled the whole
     gateway (and every managed-worker RPC, each of which opens a socket here); awaited, it would
     still hold the connection that triggered it. It runs off the loop and nothing waits for it."""
@@ -326,7 +326,7 @@ def test_slow_marker_write_does_not_hold_the_connection(hermes_home, monkeypatch
     assert write_threads and loop_threads[0] not in write_threads
 
 
-def test_refused_marker_write_does_not_wedge_its_path(hermes_home, monkeypatch):
+def test_refused_marker_write_does_not_wedge_its_path(moor_home, monkeypatch):
     """Once interpreter shutdown starts the pool refuses work. The path must not stay pending, or
     every later touch for it is coalesced into a write that never runs."""
     from tui_gateway import ws as ws_mod
@@ -351,7 +351,7 @@ def test_refused_marker_write_does_not_wedge_its_path(hermes_home, monkeypatch):
     assert calls["n"] == 1
 
 
-def test_stalled_marker_write_coalesces_later_touches(hermes_home, monkeypatch):
+def test_stalled_marker_write_coalesces_later_touches(moor_home, monkeypatch):
     """Forced touches (one per accept) during a stalled write must not pile up behind it: the
     marker is an mtime, so one pending write per path covers them all."""
     from tui_gateway import ws as ws_mod
@@ -379,25 +379,25 @@ def test_stalled_marker_write_coalesces_later_touches(hermes_home, monkeypatch):
     assert calls["n"] == 2
 
 
-def test_marker_write_lands_in_the_launch_home_under_a_profile_override(hermes_home, monkeypatch):
+def test_marker_write_lands_in_the_launch_home_under_a_profile_override(moor_home, monkeypatch):
     """The gateway's idle watcher reads the launch home's marker, so a socket running in another
-    profile's HERMES_HOME override must still stamp the launch home."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    profile's MOOR_HOME override must still stamp the launch home."""
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     from tui_gateway import ws as ws_mod
 
     monkeypatch.setattr(ws_mod, "_dashboard_client_touched_at", 0.0)
-    served = hermes_home / "served-profile"
-    token = set_hermes_home_override(served)
+    served = moor_home / "served-profile"
+    token = set_moor_home_override(served)
     try:
         ws_mod._note_dashboard_client_activity(force=True)
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     _drain_marker_writes(ws_mod)
     assert s2z.dashboard_client_last_seen() is not None
     assert not s2z.dashboard_client_heartbeat_path(served).exists()
 
 
-def test_secondary_profile_socket_keeps_a_multiplexed_gateway_awake(hermes_home, monkeypatch):
+def test_secondary_profile_socket_keeps_a_multiplexed_gateway_awake(moor_home, monkeypatch):
     """A Webapp tab bound to a secondary profile runs handle_ws inside ``owner_scope`` of that
     profile (``chat_ws.gateway_ws``). Its pings must keep the multiplexed gateway awake."""
     from types import SimpleNamespace
@@ -406,7 +406,7 @@ def test_secondary_profile_socket_keeps_a_multiplexed_gateway_awake(hermes_home,
     from tui_gateway import ws as ws_mod
 
     _stub_ws_server(monkeypatch, ws_mod)
-    secondary = hermes_home / "profiles" / "b"
+    secondary = moor_home / "profiles" / "b"
     secondary.mkdir(parents=True)
     runner = _runner(monkeypatch, last_inbound_at=time.time() - 600)
     runner.config = SimpleNamespace(multiplex_profiles=True)

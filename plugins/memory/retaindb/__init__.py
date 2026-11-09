@@ -339,10 +339,10 @@ class RetainDBMemoryProvider(MemoryProvider):
             project = f"moor-{profile_name}" if profile_name not in {"", ".moor"} else "default"
         self._client = _Client(get_secret("RETAINDB_API_KEY", "") or "", base_url, project)
         self._session_id, self._user_id = session_id, kwargs.get("user_id", "default") or "default"
-        self._agent_id = kwargs.get("agent_id", "hermes") or "hermes"
+        self._agent_id = kwargs.get("agent_id", "moor") or "moor"
         # Bind to the profile the manager names, not the ambient one (multiplexing contract, MemoryProvider).
-        from hermes_constants import get_hermes_home
-        home = Path(kwargs["hermes_home"]) if kwargs.get("hermes_home") else get_hermes_home()
+        from moor_constants import get_moor_home
+        home = Path(kwargs["moor_home"]) if kwargs.get("moor_home") else get_moor_home()
         self._queue = _WriteQueue(self._client, home / "retaindb_queue.db")
         soul = (home / "SOUL.md").read_text(encoding="utf-8-sig", errors="replace").strip() if (home / "SOUL.md").exists() else ""
         if soul:  # seed agent identity from SOUL.md in background

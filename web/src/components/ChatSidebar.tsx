@@ -190,7 +190,7 @@ export function ChatSidebar({
   // Short name of a just-saved model awaiting confirm to reload (a fresh chat
   // session is how the running chat adopts it; we confirm before discarding it).
   const [pendingReloadModel, setPendingReloadModel] = useState<string | null>(null)
-  // Nous window plans, Large model: the backend's one-line warning for that switch (never a confirm).
+  // Moor window plans, Large model: the backend's one-line warning for that switch (never a confirm).
   const [switchNotice, setSwitchNotice] = useState<string | null>(null)
 
   const refreshEffectiveModel = useCallback(() => {

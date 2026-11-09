@@ -1,4 +1,4 @@
-"""``hermes sessions adopt``: bring this profile's pre-gateway history under its gateway, as the host.
+"""``moor sessions adopt``: bring this profile's pre-gateway history under its gateway, as the host.
 
 Since #106742 the profile's gateway owns its sessions. Chats written before that (main's CLI, TUI and
 Desktop rows) carry no gateway receipt until one native, same-OS-user client resumes them, which
@@ -23,11 +23,11 @@ def adoptable_sessions(path) -> list[dict]:
     The same eligibility the owner applies on resume (``validate_legacy_row``), read-only, so the
     count a dry run reports is what an adoption run attempts. A row the owner already bound is not
     offered again, which makes a second run a no-op."""
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     from gateway.owner_identity import host_owner_subject
-    from hermes_state_local import POLICY_PREFIX
-    from hermes_state_local_migration import LEGACY_LOCAL_SOURCES, LEGACY_PREFIX, not_client_labels, validate_legacy_row
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_state_local import POLICY_PREFIX
+    from moor_state_local_migration import LEGACY_LOCAL_SOURCES, LEGACY_PREFIX, not_client_labels, validate_legacy_row
+    from moor_state_runtime import RuntimeStoreError
 
     db = SessionDB(db_path=path, read_only=True)
     try:
@@ -69,8 +69,8 @@ async def adopt_sessions(rows, *, report=print) -> tuple[int, Counter]:
     """Resume each row once over this host's native connection (the owner adopts it), then detach
     without ending it. ``(adopted, skipped-by-refusal)``; a row the owner refuses is skipped,
     never retried as another principal."""
-    from hermes_cli.gateway_client import GatewayRPCError, connect_gateway
-    from hermes_cli.web_server_boundary import _DESKTOP_ATTACHMENT_WS_MAX_BYTES
+    from moor_cli.gateway_client import GatewayRPCError, connect_gateway
+    from moor_cli.web_server_boundary import _DESKTOP_ATTACHMENT_WS_MAX_BYTES
 
     adopted, skipped = 0, Counter()
     # The owner answers a resume with the session's whole history; a long chat outgrows the default frame.
@@ -106,31 +106,31 @@ def _refusal(exc) -> str:
 def _unreadable_store(exc: sqlite3.Error, store: str) -> str:
     """One line for a store adopt cannot read: what is wrong and what to run. Adopt opens the store
     read-only, so it neither upgrades a store from an older release nor waits out another writer."""
-    from hermes_state_errors import is_sqlite_lock_error
-    from hermes_state_repair import _schema_not_built
+    from moor_state_errors import is_sqlite_lock_error
+    from moor_state_repair import _schema_not_built
 
     if is_sqlite_lock_error(exc):
         return f'Error: {store} is locked by another program. Close that program, then run this command again.'
     if _schema_not_built(exc):
-        return (f'Error: {store} is from an older Hermes and has not been upgraded ({exc}). Run '
-                '`hermes sessions repair` to upgrade it (it makes a backup first), then run this command again.')
-    return f'Error: could not read {store} ({exc}). Run `hermes sessions repair` to check it.'
+        return (f'Error: {store} is from an older Moor and has not been upgraded ({exc}). Run '
+                '`moor sessions repair` to upgrade it (it makes a backup first), then run this command again.')
+    return f'Error: could not read {store} ({exc}). Run `moor sessions repair` to check it.'
 
 
 def cmd_adopt(args) -> int:
     import asyncio
     from websockets.exceptions import WebSocketException
-    from hermes_cli.gateway_client import GatewayClientError
-    from hermes_constants import display_hermes_home, get_hermes_home
+    from moor_cli.gateway_client import GatewayClientError
+    from moor_constants import display_moor_home, get_moor_home
 
-    path = get_hermes_home() / 'state.db'
+    path = get_moor_home() / 'state.db'
     if not path.exists():
-        print(f'No session database at {display_hermes_home()}/state.db (nothing to adopt).')
+        print(f'No session database at {display_moor_home()}/state.db (nothing to adopt).')
         return 0
     try:
         rows = adoptable_sessions(path)
     except sqlite3.Error as exc:
-        print(_unreadable_store(exc, f'{display_hermes_home()}/state.db'), file=sys.stderr)
+        print(_unreadable_store(exc, f'{display_moor_home()}/state.db'), file=sys.stderr)
         return 1
     if not rows:
         print('Nothing to adopt: every local chat in this profile already belongs to its gateway.')
@@ -158,5 +158,5 @@ def add_adopt_parser(sessions_subparsers) -> None:
         description="Chats written before the gateway owned sessions become gateway sessions the first "
             "time a native client on this host opens them. This adopts them all at once, so remote "
             "clients such as the Webapp can continue them. Run it as the gateway's OS user; use "
-            "`hermes -p <profile> sessions adopt` for another profile.")
+            "`moor -p <profile> sessions adopt` for another profile.")
     parser.add_argument('--dry-run', action='store_true', help='Only count what would be adopted')

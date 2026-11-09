@@ -140,7 +140,7 @@ def installed_package(name: str, *, allow_outdated: bool = False) -> InstalledPa
 
 def uv_launcher(name: str) -> Path | None:
     """PM's installed ``uv``/``uvx`` for a user-declared MCP stdio ``command:``, so a bare
-    ``uvx`` server runs the packaged uv, never the user's. Read-only; Hermes's own Python
+    ``uvx`` server runs the packaged uv, never the user's. Read-only; Moor's own Python
     work still goes through PM operations, not this executable."""
     if name not in ("uv", "uvx"):
         raise ValueError(f"{name!r} is not a uv launcher")
@@ -255,12 +255,12 @@ _SET_ASIDE_PREFIX = ".reclaim-"
 def _discard_entry(store: Store, entry_name: str) -> None:
     """Drop a tree a finished publish or restore left behind as garbage.
 
-    A running Hermes process can keep the replaced interpreter's DLLs mapped
+    A running Moor process can keep the replaced interpreter's DLLs mapped
     far past the retry window, and failing here reports a completed install
     as broken (#124807). Windows still allows renaming a tree with mapped
     images, so it moves to a `.reclaim-*` name: its slot is free for the next
     publish, no restore ever picks it up, and the next install or
-    `hermes pm gc` deletes it once the hold is gone.
+    `moor pm gc` deletes it once the hold is gone.
     """
     import uuid
 
@@ -274,7 +274,7 @@ def _discard_entry(store: Store, entry_name: str) -> None:
     except OSError:
         LOG.warning("could not remove or set aside %s: %s", entry_name, error)
         return
-    LOG.warning("%s is still in use (%s); set aside for the next install or `hermes pm gc`",
+    LOG.warning("%s is still in use (%s); set aside for the next install or `moor pm gc`",
                 entry_name, error)
 
 
@@ -393,7 +393,7 @@ def _refresh_recorded_env(package, facts, store, entry, previous, target) -> Non
 
 
 def _refresh_found_env(package, location, target, operation) -> None:
-    """:func:`_refresh_recorded_env` for an entry ``ensure`` found installed: `hermes update` skips
+    """:func:`_refresh_recorded_env` for an entry ``ensure`` found installed: `moor update` skips
     installed defaults, so no install would re-record it. Only the writable store is re-recorded, under
     its install lock (a sealed store's facts ship with the artifact)."""
     facts, store = location
@@ -1050,7 +1050,7 @@ def activate(*, allow_incomplete: bool = False) -> list[str]:
 
 def store_first_path(path: str) -> str:
     """``path`` with the installed store's tool dirs moved to the front, for
-    Hermes's own children whose PATH gets other dirs prepended after activate."""
+    Moor's own children whose PATH gets other dirs prepended after activate."""
     import os
 
     dirs = _store_path_dirs()

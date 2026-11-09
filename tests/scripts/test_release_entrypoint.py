@@ -74,7 +74,7 @@ def _release(repo, commit, **overrides):
 
     # Fixtures pin their own published head so they do not track the production seed.
     arguments = {"bump": "patch", "repo": repo, "remote": "origin",
-                 "repository": "example/hermes-agent", "execute": lambda _command: None,
+                 "repository": "example/moor-agent", "execute": lambda _command: None,
                  "published": ("0.21.4", None)}
     return release(commit, **{**arguments, **overrides})
 
@@ -92,7 +92,7 @@ def test_release_claims_the_first_attempt_creates_a_draft_and_dispatches(source)
     def execute(command):
         calls.append(command)
         if command[:3] == ["gh", "run", "list"]:
-            return json.dumps([{"databaseId": 7, "url": "https://github.com/example/hermes-agent/actions/runs/7",
+            return json.dumps([{"databaseId": 7, "url": "https://github.com/example/moor-agent/actions/runs/7",
                                 "headBranch": "main", "displayTitle": "Stable release rc.1-v0.21.5",
                                 "status": "queued"}])
         if command[:3] == ["gh", "release", "create"]:
@@ -131,8 +131,8 @@ def test_release_claims_the_first_attempt_creates_a_draft_and_dispatches(source)
     assert calls[1:] == [
         # Stable dispatches the default-branch workflow. The tag is an input.
         ["gh", "workflow", "run", "stable-release.yml", "--ref", "main",
-         "--repo", "example/hermes-agent", "--raw-field", "tag=rc.1-v0.21.5"],
-        ["gh", "run", "list", "--repo", "example/hermes-agent", "--workflow", "stable-release.yml",
+         "--repo", "example/moor-agent", "--raw-field", "tag=rc.1-v0.21.5"],
+        ["gh", "run", "list", "--repo", "example/moor-agent", "--workflow", "stable-release.yml",
          "--limit", "100", "--json", "databaseId,url,headBranch,headSha,displayTitle,status"],
     ]
     assert result["run_url"] == "https://github.com/example/moor-agent/actions/runs/7"
@@ -172,9 +172,9 @@ def test_release_output_names_the_ci_run_and_the_publish_step():
     from scripts.releases.entrypoint import next_steps
 
     result = {"version": "0.21.5", "tag": "rc.1-v0.21.5", "autopublish": False,
-              "lanes": lane_set.DEFAULT, "repository": "example/hermes-agent",
-              "run_url": "https://github.com/example/hermes-agent/actions/runs/7",
-              "url": "https://github.com/example/hermes-agent/releases/tag/untagged-0123abcd"}
+              "lanes": lane_set.DEFAULT, "repository": "example/moor-agent",
+              "run_url": "https://github.com/example/moor-agent/actions/runs/7",
+              "url": "https://github.com/example/moor-agent/releases/tag/untagged-0123abcd"}
     text = next_steps(result)
     assert "Attempting release rc.1-v0.21.5 for v0.21.5." in text
     assert "Release CI: " + result["run_url"] in text
@@ -204,18 +204,18 @@ def test_an_unlisted_run_points_at_the_workflow_page():
 
     text = next_steps({"version": "0.21.5", "tag": "rc.1-v0.21.5", "autopublish": False,
                        "lanes": lane_set.DEFAULT,
-                       "repository": "example/hermes-agent", "run_url": "",
-                       "url": "https://github.com/example/hermes-agent/releases/tag/untagged-0123abcd"})
+                       "repository": "example/moor-agent", "run_url": "",
+                       "url": "https://github.com/example/moor-agent/releases/tag/untagged-0123abcd"})
     assert "the run is not listed yet" in text
-    assert "https://github.com/example/hermes-agent/actions/workflows/stable-release.yml" in text
+    assert "https://github.com/example/moor-agent/actions/workflows/stable-release.yml" in text
 
 
 @pytest.mark.parametrize(("lists_on", "wait", "run_url", "naps"), [
-    (3, 30, "https://github.com/example/hermes-agent/actions/runs/7", 2),
+    (3, 30, "https://github.com/example/moor-agent/actions/runs/7", 2),
     (None, 4, "", 2),
 ])
 def test_release_looks_for_the_dispatched_run_only_within_its_wait(source, lists_on, wait, run_url, naps):
-    listed = json.dumps([{"databaseId": 7, "url": "https://github.com/example/hermes-agent/actions/runs/7",
+    listed = json.dumps([{"databaseId": 7, "url": "https://github.com/example/moor-agent/actions/runs/7",
                           "headBranch": "main", "displayTitle": "Stable release rc.1-v0.21.5",
                                 "status": "queued"}])
     lists, slept = [], []
@@ -407,15 +407,15 @@ def test_refusal_names_the_run_and_both_ways_out(source, capsys):
     _claim(source, "0.21.5", blocked)
 
     def execute(command):
-        assert command == ["gh", "run", "list", "--repo", "example/hermes-agent", "--workflow",
+        assert command == ["gh", "run", "list", "--repo", "example/moor-agent", "--workflow",
                            "stable-release.yml", "--limit", "100",
                            "--json", "databaseId,url,headBranch,headSha,displayTitle,status"]
         # Newest first. Run 98 belongs to another claim, so it must not be named.
         return json.dumps([
-            {"databaseId": 99, "url": "https://github.com/example/hermes-agent/actions/runs/99",
+            {"databaseId": 99, "url": "https://github.com/example/moor-agent/actions/runs/99",
              "headBranch": "main", "headSha": "f" * 40,
              "displayTitle": "Stable release rc.1-v0.21.5", "status": "completed"},
-            {"databaseId": 98, "url": "https://github.com/example/hermes-agent/actions/runs/98",
+            {"databaseId": 98, "url": "https://github.com/example/moor-agent/actions/runs/98",
              "headBranch": "main", "headSha": "f" * 40,
              "displayTitle": "Stable release rc.1-v0.21.4", "status": "completed"},
         ])
@@ -488,7 +488,7 @@ def test_release_draft_lists_the_commits_since_the_stable_base(source, published
             with open(notes_path, encoding="utf-8") as file:
                 seen["body"] = file.read()
         if command[:3] == ["gh", "run", "list"]:
-            return json.dumps([{"databaseId": 7, "url": "https://github.com/example/hermes-agent/actions/runs/7",
+            return json.dumps([{"databaseId": 7, "url": "https://github.com/example/moor-agent/actions/runs/7",
                                 "headBranch": "main", "displayTitle": "Stable release rc.1-v0.21.5",
                                 "status": "queued"}])
         return ""
@@ -581,7 +581,7 @@ def test_changelog_prints_the_notes_a_draft_would_carry_and_claims_nothing(sourc
     git(source, "tag", "-a", "v0.21.4", shipped, "-m", "published")
     commit = _advance(source, "feat: new in this release (#123)")
     monkeypatch.setattr(release_script, "REPO_ROOT", source)
-    monkeypatch.setattr(release_script, "remote_github_repo", lambda _remote: "example/hermes-agent")
+    monkeypatch.setattr(release_script, "remote_github_repo", lambda _remote: "example/moor-agent")
     monkeypatch.setattr("scripts.releases.versioning.published_stable_identity",
                         lambda _repository: ("0.21.4", shipped))
     monkeypatch.setattr(release_script.sys, "argv",
@@ -590,7 +590,7 @@ def test_changelog_prints_the_notes_a_draft_would_carry_and_claims_nothing(sourc
     release_script.main()
 
     out = capsys.readouterr().out
-    assert out.startswith("# Hermes Agent v0.21.5 (rc.1-v0.21.5)")
+    assert out.startswith("# Moor Agent v0.21.5 (rc.1-v0.21.5)")
     assert "New in this release" in out
     assert "hipped in the published release" not in out
     assert git(source, "ls-remote", "origin", "refs/tags/*") == ""
@@ -700,7 +700,7 @@ def _abandon(repo, version, *, drafts=None, runs=None, calls=None, execute=None)
             raise ReleaseRefused("release not found")
         return json.dumps(draft)
 
-    return abandon(version, repo=repo, remote="origin", repository="example/hermes-agent",
+    return abandon(version, repo=repo, remote="origin", repository="example/moor-agent",
                    execute=execute or (calls if calls is not None else []).append, inspect=inspect)
 
 
@@ -715,9 +715,9 @@ def test_abandon_of_a_draft_deletes_it_writes_the_marker_and_frees_the_version(s
     results = _abandon(source, "0.21.5", calls=calls, drafts={"rc.1-v0.21.5": _draft("rc.1-v0.21.5")})
 
     assert results == [{"version": "0.21.5", "tag": "rc.1-v0.21.5",
-                        "marker": "abandoned-rc.1-v0.21.5", "repository": "example/hermes-agent",
+                        "marker": "abandoned-rc.1-v0.21.5", "repository": "example/moor-agent",
                         "cancelled": []}]
-    assert calls == [["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/hermes-agent", "--yes"]]
+    assert calls == [["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/moor-agent", "--yes"]]
     remote = git(source, "ls-remote", "origin", "refs/tags/*")
     assert "refs/tags/abandoned-rc.1-v0.21.5" in remote
     assert "refs/tags/rc.1-v0.21.5" in remote
@@ -739,9 +739,9 @@ def test_abandon_force_cancels_in_progress_runs_before_the_draft_and_the_marker(
                        drafts={"rc.1-v0.21.5": _draft("rc.1-v0.21.5")})
 
     assert calls == [
-        ["gh", "run", "cancel", "11", "--repo", "example/hermes-agent", "--force"],
-        ["gh", "run", "cancel", "13", "--repo", "example/hermes-agent", "--force"],
-        ["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/hermes-agent", "--yes"],
+        ["gh", "run", "cancel", "11", "--repo", "example/moor-agent", "--force"],
+        ["gh", "run", "cancel", "13", "--repo", "example/moor-agent", "--force"],
+        ["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/moor-agent", "--yes"],
     ]
     assert results[0]["cancelled"] == ["https://example.test/runs/11", "https://example.test/runs/13"]
     assert "abandoned-rc.1-v0.21.5" in git(source, "ls-remote", "origin", "refs/tags/*")
@@ -758,7 +758,7 @@ def test_abandon_that_cannot_cancel_a_run_writes_no_marker_so_it_can_be_retried(
         raise ReleaseRefused("HTTP 403")
 
     with pytest.raises(ReleaseRefused, match="HTTP 403"):
-        abandon("0.21.5", repo=source, remote="origin", repository="example/hermes-agent",
+        abandon("0.21.5", repo=source, remote="origin", repository="example/moor-agent",
                 execute=refuse, inspect=lambda command: json.dumps([run]) if command[1] == "run"
                 else (_ for _ in ()).throw(ReleaseRefused("release not found")))
     assert "abandoned-rc" not in git(source, "ls-remote", "origin", "refs/tags/*")
@@ -836,8 +836,8 @@ def test_abandon_stops_at_a_failed_attempt_and_a_rerun_clears_only_the_rest(sour
 
     # Attempt one was cleaned up with its own run and draft; attempt two got no marker.
     assert calls == [
-        ["gh", "run", "cancel", "11", "--repo", "example/hermes-agent", "--force"],
-        ["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/hermes-agent", "--yes"],
+        ["gh", "run", "cancel", "11", "--repo", "example/moor-agent", "--force"],
+        ["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/moor-agent", "--yes"],
     ]
     remote = git(source, "ls-remote", "origin", "refs/tags/*")
     assert "refs/tags/abandoned-rc.1-v0.21.5" in remote
@@ -851,8 +851,8 @@ def test_abandon_stops_at_a_failed_attempt_and_a_rerun_clears_only_the_rest(sour
     assert [r["marker"] for r in results] == ["abandoned-rc.2-v0.21.5"]
     assert results[0]["cancelled"] == ["https://example.test/runs/21"]
     assert calls == [
-        ["gh", "run", "cancel", "21", "--repo", "example/hermes-agent", "--force"],
-        ["gh", "release", "delete", "rc.2-v0.21.5", "--repo", "example/hermes-agent", "--yes"],
+        ["gh", "run", "cancel", "21", "--repo", "example/moor-agent", "--force"],
+        ["gh", "release", "delete", "rc.2-v0.21.5", "--repo", "example/moor-agent", "--yes"],
     ]
     assert "refs/tags/abandoned-rc.2-v0.21.5" in git(source, "ls-remote", "origin", "refs/tags/*")
 
@@ -1021,7 +1021,7 @@ def test_abandon_cleans_up_a_claim_pushed_between_its_fetch_and_its_claim_list(
     # before the draft was deleted: the marker is what clears the attempt.
     assert pushed
     assert [r["marker"] for r in results] == ["abandoned-rc.1-v0.21.5"]
-    assert calls == [["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/hermes-agent", "--yes"]]
+    assert calls == [["gh", "release", "delete", "rc.1-v0.21.5", "--repo", "example/moor-agent", "--yes"]]
     assert "refs/tags/abandoned-rc.1-v0.21.5" in git(source, "ls-remote", "origin", "refs/tags/*")
 
 

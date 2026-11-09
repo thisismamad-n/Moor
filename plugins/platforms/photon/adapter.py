@@ -104,12 +104,12 @@ async def _aiter_ndjson_lines(response: Any) -> AsyncIterator[str]:
 # -- Sidecar runtime record ----------------------------------------------------
 
 def _runtime_record_path() -> Path:
-    from hermes_constants import get_hermes_home  # honors profile overrides
-    return get_hermes_home() / _RUNTIME_RECORD_NAME
+    from moor_constants import get_moor_home  # honors profile overrides
+    return get_moor_home() / _RUNTIME_RECORD_NAME
 
 
 def _legacy_runtime_record_path() -> Path:
-    """Where earlier releases kept the record: ``<hermes-home>/runtime/``."""
+    """Where earlier releases kept the record: ``<moor-home>/runtime/``."""
     path = _runtime_record_path()
     return path.parent / "runtime" / path.name
 
@@ -557,7 +557,7 @@ def _lookup_sent_text(chat_id: Optional[str], message_id: Optional[str]) -> Opti
 def _attachment_body(space_id: str, safe_path: str, *, kind: str, name: Optional[str] = None,
                      mime_type: Optional[str] = None, caption: Optional[str] = None) -> dict[str, Any]:
     """``/send-attachment`` body; spectrum-ts infers name/mimeType from the extension,
-    so optional keys are only sent when Hermes supplied them."""
+    so optional keys are only sent when Moor supplied them."""
     body: dict[str, Any] = {
         "spaceId": space_id, "path": safe_path, "kind": "voice" if kind == "voice" else "attachment"}
     body.update({k: v for k, v in (("name", name), ("mimeType", mime_type), ("caption", caption)) if v})
@@ -658,7 +658,7 @@ class PhotonAdapter(BasePlatformAdapter):
         return f"http://{self._sidecar_bind}:{self._sidecar_port}{path}"
 
     def _sidecar_headers(self) -> dict[str, str]:
-        return {"X-Hermes-Sidecar-Token": self._sidecar_token}
+        return {"X-moor-sidecar-Token": self._sidecar_token}
 
     # -- Connection lifecycle ------------------------------------------------------
 
@@ -1642,8 +1642,8 @@ def _standalone_token_from_record(port: int) -> tuple[Optional[str], int, str]:
         stale_hint = (f" A stale sidecar runtime record was found (pid {record.get('pid')} is not running)"
                       " — the gateway appears to be down.")
     return None, port, (
-        "Photon standalone send requires a running sidecar. Start the Hermes gateway (which spawns "
-        f"the sidecar and records its address in <hermes-home>/{_RUNTIME_RECORD_NAME}), "
+        "Photon standalone send requires a running sidecar. Start the Moor gateway (which spawns "
+        f"the sidecar and records its address in <moor-home>/{_RUNTIME_RECORD_NAME}), "
         "or set PHOTON_SIDECAR_TOKEN in this process's environment." + stale_hint)
 
 
@@ -1722,7 +1722,7 @@ def register(ctx) -> None:
         # DM GUIDs are adapter-native ids (mirrors the react handler).
         target_ref_syntax_fn=regex_stripped_parser(_SEND_DM_GUID_RE),
         name="photon", label="iMessage via Photon", adapter_factory=lambda cfg: PhotonAdapter(cfg),
-        dashboard_description="Use Hermes through iMessage via Photon's managed Spectrum platform.",
+        dashboard_description="Use Moor through iMessage via Photon's managed Spectrum platform.",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/photon",
         check_fn=check_requirements, validate_config=validate_config, is_connected=is_connected,
         required_env=["PHOTON_PROJECT_ID", "PHOTON_PROJECT_SECRET"],

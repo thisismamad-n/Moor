@@ -375,8 +375,8 @@ def test_plugin_error_containing_conflict_text_is_not_misclassified(
             host._plugin_configuration_state
             is relay_runtime._RelayPluginConfigurationState.FAILED
         )
-        assert "Hermes Relay plugin initialization failed" in caplog.text
-        assert "already active outside Hermes native ownership" not in caplog.text
+        assert "Moor Relay plugin initialization failed" in caplog.text
+        assert "already active outside Moor native ownership" not in caplog.text
     finally:
         host.shutdown()
 
@@ -429,8 +429,8 @@ def test_legacy_exporter_env_warns_without_disabling_ambient_discovery(
         )
         assert relay.events == [("plugin.initialize", {})]
         assert relay.initialized_from == [None]
-        assert "HERMES_NEMO_RELAY_ATOF_ENABLED" in caplog.text
-        assert "HERMES_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S" in caplog.text
+        assert "MOOR_NEMO_RELAY_ATOF_ENABLED" in caplog.text
+        assert "MOOR_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S" in caplog.text
         assert "standard user or system plugins.toml still applies" in caplog.text
     finally:
         host.shutdown()
@@ -597,7 +597,7 @@ def test_two_profile_hosts_initialize_once_and_clear_after_final_shutdown(
     assert (
         caplog.text.count(
             "The Relay plugin host is active process-wide and applies to all "
-            "profiles hosted by this Hermes process."
+            "profiles hosted by this Moor process."
         )
         == 1
     )
@@ -1058,7 +1058,7 @@ mode = "strict"
             host._plugin_configuration_state
             is relay_runtime._RelayPluginConfigurationState.FAILED
         )
-        assert "Hermes Relay plugin initialization failed" in caplog.text
+        assert "Moor Relay plugin initialization failed" in caplog.text
         assert "relay-plugin.toml" in caplog.text
     finally:
         host.shutdown()

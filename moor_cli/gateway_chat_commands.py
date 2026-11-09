@@ -18,7 +18,7 @@ import contextlib
 import sys
 import uuid
 
-from hermes_cli.gateway_client import GatewayClientError
+from moor_cli.gateway_client import GatewayClientError
 
 PARITY_DOC = "https://hermes-agent.nousresearch.com/docs/developer-guide/gateway-command-parity"
 
@@ -139,7 +139,7 @@ async def _new(view, rest):
     # The frozen request never holds the launch key; the one this terminal supplied rides along.
     if getattr(view, "launch_api_key", None) and "api_key" in accepted:
         request["api_key"] = view.launch_api_key
-    from hermes_cli.gateway_chat import client_env_policy
+    from moor_cli.gateway_chat import client_env_policy
     request.update(client_env_policy(accepted))  # never in launch_request: this shell's, sent afresh
     snapshot = await view.client.rpc("session.create", request_id=uuid.uuid4().hex, **request)
     await view.adopt(snapshot)
@@ -176,20 +176,20 @@ async def _tools(view, rest):
     if isinstance(toolsets, list) and toolsets:
         print("Toolsets frozen at launch: " + ", ".join(map(str, toolsets)))
     else:
-        print("This session runs the profile's CLI toolsets as they were at launch (`hermes tools list`).")
+        print("This session runs the profile's CLI toolsets as they were at launch (`moor tools list`).")
     print("Changing toolsets mid-session (/tools enable|disable) " + refusal("tools").split(" ", 1)[1])
 
 
 async def forward(view, name, rest):
     """Run a registry command (or a skill) on the owner; its refusal names where the command stands."""
-    from hermes_cli.gateway_client import GatewayRPCError
+    from moor_cli.gateway_client import GatewayRPCError
     try:
         reply = await view.client.rpc("slash.exec", session_id=view.session_id,
                                       command=name + (" " + rest if rest else ""))
     except GatewayRPCError as exc:
         if str(exc) != "unsupported_command":
             raise
-        from hermes_cli.commands import resolve_command
+        from moor_cli.commands import resolve_command
         print(refusal(name) if resolve_command(name) else f"Unknown command: /{name} (use /help)")
         return
     if reply.get("type") in ("skill", "send"):
@@ -211,7 +211,7 @@ _HANDLERS = {"title": _title, "undo": _undo, "retry": _retry, "new": _new, "clea
 
 async def run_command(view, command, rest):
     """Any slash command the view's own controls did not take."""
-    from hermes_cli.commands import resolve_command
+    from moor_cli.commands import resolve_command
     name = command.lstrip("/")
     definition = resolve_command(name)
     canonical = definition.name if definition else name

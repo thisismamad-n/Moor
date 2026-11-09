@@ -38,7 +38,7 @@ def build_tools_parser(subparsers, *, cmd_tools: Callable) -> None:
     tools_postsetup_p = tools_sub.add_parser(
         "post-setup", help="Run a provider's post-setup install hook (npm/pip/binary)",
         description="Run the install/bootstrap hook a tool backend declares — the\n"
-            "same step `hermes tools` runs after you pick a provider that\n"
+            "same step `moor tools` runs after you pick a provider that\n"
             "needs extra dependencies (browser Chromium, Lightpanda, cua-driver,\n"
             "KittenTTS/Piper, ddgs, xAI, Codex). Stable,\n"
             "non-interactive target the dashboard spawns to drive backend\n"

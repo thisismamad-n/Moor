@@ -589,7 +589,7 @@ def _init_prompt_cache_config(agent):
     # inject their own cache_control markers (#13477).
     agent._cache_ttl = "5m"
     try:
-        from hermes_cli.config import load_config_readonly as _load_pc_cfg
+        from moor_cli.config import load_config_readonly as _load_pc_cfg
         from agent.agent_runtime_helpers import cache_ttl_means_disabled
         from agent.prompt_caching import AUTO_CACHE_TTL, auto_cache_ttl_for_source
         _pc_cfg = _load_pc_cfg().get("prompt_caching", {}) or {}
@@ -610,8 +610,8 @@ def _init_prompt_cache_config(agent):
         # Config values and traceback frames may contain credentials.
         logger.warning(
             "Agent configuration for prompt_caching.cache_ttl could not be loaded (%s); "
-            "using default prompt caching settings. Check the active Hermes Python "
-            "environment and dependencies; run 'hermes config check' after "
+            "using default prompt caching settings. Check the active Moor Python "
+            "environment and dependencies; run 'moor config check' after "
             "configuration imports work again.",
             type(exc).__name__,
         )
@@ -629,12 +629,12 @@ def _init_turn_state(agent, run_budget_seconds):
 def _setup_logging(agent):
     # agent.log (INFO+) + errors.log (WARNING+); idempotent so per-message gateway agents
     # don't duplicate handlers.
-    from hermes_logging import setup_logging, setup_verbose_logging
+    from moor_logging import setup_logging, setup_verbose_logging
     # The ACTIVE home, not run_agent's import-time freeze: a Desktop serve backend builds agents
-    # for several profiles inside set_hermes_home_override(), and the frozen launch home made
+    # for several profiles inside set_moor_home_override(), and the frozen launch home made
     # setup_logging() see a home it already served, so it never adopted the profile and every
     # profile's records landed in the launch profile's agent.log (#125974).
-    setup_logging(hermes_home=get_hermes_home())
+    setup_logging(moor_home=get_moor_home())
 
     if agent.verbose_logging:
         setup_verbose_logging()
@@ -741,7 +741,7 @@ def _explicit_client_kwargs(agent, api_key, base_url, _provider_timeout) -> dict
         client_kwargs["timeout"] = _provider_timeout
     # ACP/subprocess providers take launch kwargs instead of HTTP credentials. Keyed on the profile's
     # auth_type, not a vendor slug: every external_process plugin gets this launch path (#102421).
-    from hermes_cli.runtime_provider_backends import _is_external_process_provider
+    from moor_cli.runtime_provider_backends import _is_external_process_provider
 
     if _is_external_process_provider(agent.provider):
         client_kwargs["command"] = agent.acp_command
@@ -862,12 +862,12 @@ def _routed_client_kwargs(agent, fallback_model, _provider_timeout) -> Optional[
         # Explicit non-OpenRouter provider with no creds and no usable fallback: fail fast.
         from agent.auxiliary_unavailable import ProviderNotConfiguredError, missing_provider_credentials_message
         raise ProviderNotConfiguredError(missing_provider_credentials_message(_explicit))
-    from hermes_constants import profile_cli_selector
+    from moor_constants import profile_cli_selector
     from agent.auxiliary_unavailable import ProviderNotConfiguredError
     _sel = profile_cli_selector()
     raise ProviderNotConfiguredError(
-        "No LLM provider configured. Run `hermes model` to "
-        "select a provider, or run `hermes setup` for first-time "
+        "No LLM provider configured. Run `moor model` to "
+        "select a provider, or run `moor setup` for first-time "
         "configuration."
     )
 
@@ -1011,9 +1011,9 @@ def _client_kwargs_from_routed(client, timeout) -> dict[str, Any]:
 def _load_tools(agent, enabled_toolsets, disabled_toolsets):
     # A feature that left core (Home Assistant) is installed once per process before discovery, so its tools
     # are in this snapshot; outcomes wait for a turn someone sees (deliver_kept_startup_notices), maybe not ours.
-    from hermes_cli.left_core_migration import recover_at_startup
+    from moor_cli.left_core_migration import recover_at_startup
     recover_at_startup()
-    # A multiplexed gateway may have switched HERMES_HOME since model_tools was imported;
+    # A multiplexed gateway may have switched MOOR_HOME since model_tools was imported;
     # make sure this profile's plugins are discovered before the tool snapshot.
     try:
         from moor_cli.plugins import discover_plugins
@@ -2235,7 +2235,7 @@ def init_agent(
         logger.warning(
             "Agent configuration could not be loaded (%s); using defaults for "
             "memory, skills, compression and related settings. Check the active "
-            "Hermes Python environment and dependencies; run 'hermes config check' "
+            "Moor Python environment and dependencies; run 'moor config check' "
             "after configuration imports work again.",
             type(exc).__name__,
         )

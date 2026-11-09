@@ -57,11 +57,11 @@ async def test_yolo_command_toggles_only_current_session(monkeypatch):
     await runner._handle_yolo_command(event_a)
 
     assert is_session_yolo_enabled(session_a) is False
-    assert os.environ.get("HERMES_YOLO_MODE") is None
+    assert os.environ.get("MOOR_YOLO_MODE") is None
 
 
 def test_launch_yolo_revocation_survives_the_next_turn(monkeypatch):
-    """`hermes chat --yolo` seeds the bypass once; a later `/yolo` off is not re-enabled per turn."""
+    """`moor chat --yolo` seeds the bypass once; a later `/yolo` off is not re-enabled per turn."""
     from types import SimpleNamespace
     from gateway import session_policy
     from gateway.run_turn_runner import TurnRunner
@@ -128,7 +128,7 @@ async def test_yolo_survives_gateway_restart_and_dies_at_session_boundary(tmp_pa
 
 @pytest.mark.asyncio
 async def test_owner_yolo_off_is_not_revived_by_the_persisted_restore(tmp_path):
-    """The owner's `config.set key=yolo` (TUI/Desktop/`hermes chat` /yolo) writes the route's persisted
+    """The owner's `config.set key=yolo` (TUI/Desktop/`moor chat` /yolo) writes the route's persisted
     copy too: switching off a persisted /yolo must not be re-armed by the next turn's restore."""
     from types import SimpleNamespace
     from gateway.config import GatewayConfig

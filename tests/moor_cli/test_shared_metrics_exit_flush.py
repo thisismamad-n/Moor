@@ -20,11 +20,11 @@ from pathlib import Path
 import pytest
 
 from agent import relay_runtime
-from hermes_cli import lifecycle, plugins
-from hermes_cli.observability import relay_shared_metrics
-from hermes_cli.observability import shared_metrics_process as process_metrics
-from hermes_cli.plugins import PluginManager
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from moor_cli import lifecycle, plugins
+from moor_cli.observability import relay_shared_metrics
+from moor_cli.observability import shared_metrics_process as process_metrics
+from moor_cli.plugins import PluginManager
+from moor_constants import reset_moor_home_override, set_moor_home_override
 from tests.waiting import wait_until
 
 
@@ -69,13 +69,13 @@ def _zero_plugin_runtimes(monkeypatch) -> None:
 
 @pytest.fixture
 def metrics_home(tmp_path, monkeypatch):
-    """Real NeMo Relay runtime over a temp HERMES_HOME; ``policy['on']`` is the opt-in answer."""
+    """Real NeMo Relay runtime over a temp MOOR_HOME; ``policy['on']`` is the opt-in answer."""
     _require_native_relay()
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     policy = {"on": True}
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     monkeypatch.setattr(
-        "hermes_cli.config.read_raw_config_readonly",
+        "moor_cli.config.read_raw_config_readonly",
         lambda: {"telemetry": {"shared_metrics": {"enabled": policy["on"], "send": False}}},
     )
     _zero_plugin_runtimes(monkeypatch)
@@ -102,14 +102,14 @@ def test_graceful_gateway_exit_writes_the_open_sessions_summary(metrics_home, mo
 
     home, _ = metrics_home
     _finished_task_in_open_session()
-    _wait_for(home, "hermes.task_run.finished")  # the task flush runs on its own worker
-    assert "hermes.session.count" not in _metric_names(home)
+    _wait_for(home, "moor.task_run.finished")  # the task flush runs on its own worker
+    assert "moor.session.count" not in _metric_names(home)
 
     monkeypatch.setattr(gateway_run.os, "_exit", _fake_exit)
     with pytest.raises(_Exited):
         gateway_run._exit_after_graceful_shutdown(1)
 
-    assert "hermes.session.count" in _metric_names(home)
+    assert "moor.session.count" in _metric_names(home)
 
 
 def test_compute_host_shutdown_frame_writes_the_open_sessions_summary(metrics_home):
@@ -119,25 +119,25 @@ def test_compute_host_shutdown_frame_writes_the_open_sessions_summary(metrics_ho
 
     home, _ = metrics_home
     _finished_task_in_open_session()
-    _wait_for(home, "hermes.task_run.finished")
+    _wait_for(home, "moor.task_run.finished")
     host = ComputeHost(stdout=io.StringIO(), heartbeat_secs=0)
 
     host.handle_frame({"type": "shutdown"})  # the reader thread os._exit(0)s right after this
 
-    assert "hermes.session.count" in _metric_names(home)
+    assert "moor.session.count" in _metric_names(home)
 
 
 def test_sigtermed_kanban_worker_writes_the_open_sessions_summary(metrics_home, monkeypatch):
     import signal
 
     import cli
-    from hermes_cli import cli_single_query
+    from moor_cli import cli_single_query
 
     home, _ = metrics_home
     _finished_task_in_open_session()
-    _wait_for(home, "hermes.task_run.finished")
+    _wait_for(home, "moor.task_run.finished")
     handlers = {}
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t-1")
+    monkeypatch.setenv("MOOR_KANBAN_TASK", "t-1")
     monkeypatch.setattr(signal, "signal", lambda signum, handler: handlers.__setitem__(signum, handler))
     monkeypatch.setattr(signal, "alarm", lambda seconds: 0)
     for name in ("_arm_exit_watchdog_on_shutdown_signal", "_flush_logging_and_stdio"):
@@ -150,7 +150,7 @@ def test_sigtermed_kanban_worker_writes_the_open_sessions_summary(metrics_home, 
     with pytest.raises(_Exited):
         handlers[signal.SIGTERM](signal.SIGTERM, None)
 
-    assert "hermes.session.count" in _metric_names(home)
+    assert "moor.session.count" in _metric_names(home)
 
 
 @pytest.mark.platforms("posix")  # the legacy parent watchdog is POSIX-only
@@ -159,7 +159,7 @@ def test_orphaned_slash_worker_writes_the_open_sessions_summary(metrics_home, mo
 
     home, _ = metrics_home
     _finished_task_in_open_session()
-    _wait_for(home, "hermes.task_run.finished")
+    _wait_for(home, "moor.task_run.finished")
     exited = threading.Event()
     monkeypatch.setattr(slash_worker.os, "_exit", lambda code: exited.set())
 
@@ -167,7 +167,7 @@ def test_orphaned_slash_worker_writes_the_open_sessions_summary(metrics_home, mo
     slash_worker._start_legacy_parent_watchdog(os.getppid() + 1_000_000, poll_s=0.01, grace_s=0)
 
     assert exited.wait(10)
-    assert "hermes.session.count" in _metric_names(home)
+    assert "moor.session.count" in _metric_names(home)
 
 
 def test_graceful_exit_with_collection_off_creates_no_store(metrics_home, monkeypatch):
@@ -204,11 +204,11 @@ def test_exit_flush_applies_each_profiles_own_consent(tmp_path, monkeypatch):
     _write_policy(launch, enabled=True, send=True, endpoint="http://127.0.0.1:9/never")
     _write_policy(send_off, enabled=True, send=False)
     _write_policy(revoked, enabled=True, send=False)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("MOOR_HOME", str(launch))
     _zero_plugin_runtimes(monkeypatch)
     try:
         for home in (send_off, revoked):  # routed turns, each under its own profile scope
-            token = set_hermes_home_override(str(home))
+            token = set_moor_home_override(str(home))
             try:
                 _finished_task_in_open_session(f"open-{home.name}")
                 # Relay delivers the task end event on its own thread, and the subscriber commits
@@ -218,9 +218,9 @@ def test_exit_flush_applies_each_profiles_own_consent(tmp_path, monkeypatch):
                 runtime = relay_shared_metrics._get_runtime()
                 assert runtime is not None
                 runtime.relay.subscribers.flush()
-                assert "hermes.task_run.finished" in _metric_names(home)
+                assert "moor.task_run.finished" in _metric_names(home)
             finally:
-                reset_hermes_home_override(token)
+                reset_moor_home_override(token)
         _write_policy(revoked, enabled=False, send=False)
         rows_before_exit = _metric_names(revoked)
 
@@ -228,7 +228,7 @@ def test_exit_flush_applies_each_profiles_own_consent(tmp_path, monkeypatch):
         with pytest.raises(_Exited):
             gateway_run._exit_after_graceful_shutdown(0)
 
-        assert "hermes.session.count" in _metric_names(send_off)  # its own consent still flushes it
+        assert "moor.session.count" in _metric_names(send_off)  # its own consent still flushes it
         assert _open_consent_windows(send_off) == []
         assert _metric_names(revoked) == rows_before_exit
     finally:
@@ -246,7 +246,7 @@ def test_a_wedged_exit_flush_is_bounded_and_runs_after_the_clean_exit_stamp(metr
 
     home, _ = metrics_home
     _finished_task_in_open_session()
-    _wait_for(home, "hermes.task_run.finished")
+    _wait_for(home, "moor.task_run.finished")
     entered, release = threading.Event(), threading.Event()
 
     def wedged_tool(_args):
@@ -293,15 +293,15 @@ def test_graceful_exit_drains_the_root_profiles_deferred_host_count(tmp_path, mo
     was deferred in memory; the graceful exit still writes it there (and only there) once the store
     frees, instead of losing it to ``os._exit``."""
     import gateway.run as gateway_run
-    from hermes_cli.observability import shared_metrics_engagement as engagement
-    from hermes_cli.observability.shared_metrics import SharedMetricsStore
+    from moor_cli.observability import shared_metrics_engagement as engagement
+    from moor_cli.observability.shared_metrics import SharedMetricsStore
 
     root = (tmp_path / "root").resolve()
     profile = root / "profiles" / "work"
     profile.mkdir(parents=True)
     _write_policy(root, enabled=True, send=False)
-    monkeypatch.setenv("HERMES_HOME", str(profile))
-    resource = {"architecture": "x86_64", "hermes_version": "0.0.0", "install_method": "git", "os_family": "linux"}
+    monkeypatch.setenv("MOOR_HOME", str(profile))
+    resource = {"architecture": "x86_64", "moor_version": "0.0.0", "install_method": "git", "os_family": "linux"}
     profile_store = SharedMetricsStore(_store(profile), _store(profile).parent / "outbox")
     engagement._root_store(root)  # the store exists; another process now holds its write lock
     holder = sqlite3.connect(_store(root), isolation_level=None)

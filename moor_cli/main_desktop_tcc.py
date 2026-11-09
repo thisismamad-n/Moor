@@ -1,6 +1,6 @@
-"""``hermes gui --setup-tcc-identity``: a persistent self-signed macOS code-signing identity.
+"""``moor gui --setup-tcc-identity``: a persistent self-signed macOS code-signing identity.
 
-Split out of ``hermes_cli/main_desktop.py``. The facade's build/sign helpers are imported lazily
+Split out of ``moor_cli/main_desktop.py``. The facade's build/sign helpers are imported lazily
 inside the function that uses them (the facade late-imports this module from ``cmd_gui``).
 """
 
@@ -28,7 +28,7 @@ def _macos_codesigning_identity_valid(security: str, identity: str) -> bool:
 def _macos_create_signing_identity(
     openssl: str, security: str, codesign: str, keychain: str, identity: str) -> bool:
     """Create a self-signed code-signing cert (10 years), import it with codesign access, trust it for codeSign."""
-    tmp_dir = Path(tempfile.mkdtemp(prefix="hermes-tcc-"))
+    tmp_dir = Path(tempfile.mkdtemp(prefix="moor-tcc-"))
     try:
         key = tmp_dir / "sign.key"
         crt = tmp_dir / "sign.crt"
@@ -55,7 +55,7 @@ def _macos_create_signing_identity(
                 [
                     openssl, "pkcs12", "-export", *extra_args,
                     "-inkey", str(key), "-in", str(crt),
-                    "-out", str(p12), "-passout", "pass:hermeslocal",
+                    "-out", str(p12), "-passout", "pass:moorlocal",
                 ],
                 capture_output=True, check=True)
 
@@ -63,7 +63,7 @@ def _macos_create_signing_identity(
             return subprocess.run(
                 [
                     security, "import", str(p12), "-k", keychain,
-                    "-P", "hermeslocal",
+                    "-P", "moorlocal",
                     "-T", codesign, "-T", "/usr/bin/codesign_allocate",
                 ],
                 capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
@@ -101,13 +101,13 @@ def _macos_create_signing_identity(
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-def _desktop_macos_setup_tcc_identity(identity: str = "Hermes Local Signing") -> bool:
+def _desktop_macos_setup_tcc_identity(identity: str = "Moor Local Signing") -> bool:
     """``--setup-tcc-identity``: create/import a self-signed code-signing cert, point
     ``desktop.macos_signing_identity`` at it and re-sign the packaged app. TCC grants follow the
     signing identity, so a certificate-anchored one is stable across rebuilds (the yabai/skhd
     mechanism). Idempotent; never raises."""
-    from hermes_cli.main import PROJECT_ROOT
-    from hermes_cli.main_desktop import _desktop_macos_relaunchable_fixup, _desktop_packaged_executable
+    from moor_cli.main import PROJECT_ROOT
+    from moor_cli.main_desktop import _desktop_macos_relaunchable_fixup, _desktop_packaged_executable
     if sys.platform != "darwin":
         print("  (--setup-tcc-identity is macOS-only; skipping)")
         return False
@@ -142,7 +142,7 @@ def _desktop_macos_setup_tcc_identity(identity: str = "Hermes Local Signing") ->
 
     # config.yaml, not .env — it's not a secret.
     try:
-        from hermes_cli.config import set_config_value
+        from moor_cli.config import set_config_value
         set_config_value("desktop.macos_signing_identity", identity)
         print(f"  → set desktop.macos_signing_identity = {identity!r}")
     except Exception as exc:
@@ -163,6 +163,6 @@ def _desktop_macos_setup_tcc_identity(identity: str = "Hermes Local Signing") ->
     print(
         "\n  Note: macOS will re-prompt for permissions ONE final time (the identity "
         "changed). Grant them and they persist from then on. If a permission gets "
-        "stuck, reset it with:  tccutil reset All com.nousresearch.hermes"
+        "stuck, reset it with:  tccutil reset All com.moorinc.moor"
     )
     return True

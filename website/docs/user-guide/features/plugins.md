@@ -90,11 +90,11 @@ Drop both files into `~/.moor/plugins/hello-world/`, restart Moor, and the model
 
 The model-facing tool description belongs in `schema["description"]`. The optional `ctx.register_tool(description=...)` value is separate `ToolEntry` registry metadata: when omitted, it defaults to the schema description, but Moor does not copy it back into a schema that lacks `description`. Prefer defining the text once in the schema. If you provide both values, keep them synchronized; the model sees the schema value.
 
-### Project-local plugins (`./.hermes/plugins/`) {#project-local-plugins}
+### Project-local plugins (`./.moor/plugins/`) {#project-local-plugins}
 
-The gateway does not load project-local plugins. Every Hermes session (`hermes`, `hermes --tui`, the Desktop app, messaging and cron) runs in the one gateway, which discovers plugins once for the whole process and never from the folder you started a session in. Setting `HERMES_ENABLE_PROJECT_PLUGINS=true` therefore has no effect on sessions: when a CLI or TUI session on the gateway's machine starts with it set in a folder whose `./.hermes/plugins/` has plugins, Hermes shows a warning at the start of that session and writes the same line to `gateway.log`.
+The gateway does not load project-local plugins. Every Moor session (`moor`, `moor --tui`, the Desktop app, messaging and cron) runs in the one gateway, which discovers plugins once for the whole process and never from the folder you started a session in. Setting `MOOR_ENABLE_PROJECT_PLUGINS=true` therefore has no effect on sessions: when a CLI or TUI session on the gateway's machine starts with it set in a folder whose `./.moor/plugins/` has plugins, Moor shows a warning at the start of that session and writes the same line to `gateway.log`.
 
-To use a plugin, install it as a user plugin (`~/.hermes/plugins/` or `hermes plugins install`) and enable it with `hermes plugins enable <name>`.
+To use a plugin, install it as a user plugin (`~/.moor/plugins/` or `moor plugins install`) and enable it with `moor plugins enable <name>`.
 
 ## What plugins can do
 
@@ -106,7 +106,7 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 | Add hooks | `ctx.register_hook("post_tool_call", callback)` |
 | Add slash commands | `ctx.register_command(name, handler, description)` — adds `/name` in CLI and gateway sessions |
 | Dispatch tools from commands | `ctx.dispatch_tool(name, args)` — invokes a registered tool with parent-agent context auto-wired |
-| Add CLI commands | `ctx.register_cli_command(name, help, setup_fn, handler_fn)` — adds `hermes <plugin> <subcommand>` |
+| Add CLI commands | `ctx.register_cli_command(name, help, setup_fn, handler_fn)` — adds `moor <plugin> <subcommand>` |
 | Inject messages | `ctx.inject_message(content, role="user", session_key=... \| origin=...)` - see [Injecting Messages](#injecting-messages) |
 | Post and edit a status message | `handle = ctx.post_message(text)`, then `handle.edit(text)` — see [Posting a live message](#posting-a-live-message) |
 | Ship data files | `Path(__file__).parent / "data" / "file.yaml"` |
@@ -127,11 +127,11 @@ Every `ctx.*` API below is available inside a plugin's `register(ctx)` function.
 | Register an inference backend (LLM provider) | `register_provider(ProviderProfile(...))` in `plugins/model-providers/<name>/__init__.py` — see [Model Provider Plugins](../../developer-guide/model-provider-plugin.md) (uses a separate discovery system) |
 
 :::note Slash command handlers run in the gateway
-A `/command` registered with `ctx.register_command()` runs in the gateway process that owns the session, beside the plugin's hooks, tools and MCP servers. That includes commands typed in the classic `hermes chat` CLI. So a handler should:
+A `/command` registered with `ctx.register_command()` runs in the gateway process that owns the session, beside the plugin's hooks, tools and MCP servers. That includes commands typed in the classic `moor chat` CLI. So a handler should:
 
 - **Return its text** instead of calling `print()`. Printed output goes to the gateway's stdout, not to the user's chat.
 - **Read the session's working directory with `agent.runtime_cwd.resolve_agent_cwd()`**, not `os.getcwd()`, which is the gateway's own directory. The gateway pins the session's directory while the handler runs.
-- **Take the calling session as handler keywords**: declare `session_id`, `session_key`, `platform` or `source` (the sender's `SessionSource`) and Hermes passes them; one-argument handlers keep working unchanged. The same values are bound as `HERMES_SESSION_*` around the handler (`gateway.session_context.get_session_env`, never `os.environ`), so a background job the handler starts records the session as its parent.
+- **Take the calling session as handler keywords**: declare `session_id`, `session_key`, `platform` or `source` (the sender's `SessionSource`) and Moor passes them; one-argument handlers keep working unchanged. The same values are bound as `MOOR_SESSION_*` around the handler (`gateway.session_context.get_session_env`, never `os.environ`), so a background job the handler starts records the session as its parent.
 
 The classic CLI waits for the reply for as long as the handler runs. Ctrl+C stops the wait, not the handler: the handler finishes in the gateway and its reply is not shown. The command runs over its own connection to the gateway, so the session's prompts, interrupts and other commands are not held up while it runs.
 
@@ -142,11 +142,11 @@ See [Register slash commands](../../developer-guide/plugins/index.md#register-sl
 
 | Source | Path | Use case |
 |--------|------|----------|
-| Bundled | `<repo>/plugins/` | Ships with Hermes — see [Built-in Plugins](./built-in-plugins.md) |
-| User | `~/.hermes/plugins/` | Personal plugins |
-| Project | `.hermes/plugins/` | Not loaded by the gateway that runs sessions; see [Project-local plugins](#project-local-plugins) |
-| pip | `hermes_agent.plugins` entry_points | Distributed packages |
-| Nix | `services.hermes-agent.extraPlugins` / `extraPythonPackages` | NixOS declarative installs — see [Nix Setup](../../getting-started/nix-setup.md#plugins) |
+| Bundled | `<repo>/plugins/` | Ships with Moor — see [Built-in Plugins](./built-in-plugins.md) |
+| User | `~/.moor/plugins/` | Personal plugins |
+| Project | `.moor/plugins/` | Not loaded by the gateway that runs sessions; see [Project-local plugins](#project-local-plugins) |
+| pip | `moor_agent.plugins` entry_points | Distributed packages |
+| Nix | `services.moor-agent.extraPlugins` / `extraPythonPackages` | NixOS declarative installs — see [Nix Setup](../../getting-started/nix-setup.md#plugins) |
 
 Later sources override earlier ones on name collision, so a user plugin with the same name as a bundled plugin replaces it.
 
@@ -210,12 +210,12 @@ moor plugins enable <name>      # add to allow-list
 moor plugins disable <name>     # remove from allow-list + add to disabled
 ```
 
-If you saved a tool selection (`hermes tools`, so `platform_toolsets` lists toolsets explicitly), disabling a
+If you saved a tool selection (`moor tools`, so `platform_toolsets` lists toolsets explicitly), disabling a
 plugin also takes its toolset out of those saved lists, and enabling it puts the toolset back. The CLI and the
 Desktop/TUI/dashboard switch behave the same. With no saved selection the lists are left alone: a plugin's
 toolset is on by default.
 
-After `hermes plugins install owner/repo`, you're asked `Enable 'name' now? [y/N]` — defaults to no. Skip the prompt for scripted installs with `--enable` or `--no-enable`. A memory provider (a plugin whose `__init__.py` registers a `MemoryProvider`) asks `Use 'name' as the memory provider now?` instead: yes (or `--enable`) sets `memory.provider`, which is the only switch that activates a provider; no leaves it for `hermes memory setup`.
+After `moor plugins install owner/repo`, you're asked `Enable 'name' now? [y/N]` — defaults to no. Skip the prompt for scripted installs with `--enable` or `--no-enable`. A memory provider (a plugin whose `__init__.py` registers a `MemoryProvider`) asks `Use 'name' as the memory provider now?` instead: yes (or `--enable`) sets `memory.provider`, which is the only switch that activates a provider; no leaves it for `moor memory setup`.
 
 For a reproducible install, pin a full immutable commit (tags, branches, and
 abbreviated SHAs are not accepted):
@@ -228,12 +228,12 @@ Moor checks out the commit detached, verifies that `HEAD` exactly matches the
 requested SHA, and records the canonical source, installed revision, and pin
 status in the current profile. `moor plugins update` refuses to move a pinned
 plugin; choose a new exact commit explicitly with
-`hermes plugins install <source> --force --ref <new-commit>`. Like an
+`moor plugins install <source> --force --ref <new-commit>`. Like an
 update, a forced reinstall from the source the plugin was installed from
 replaces its code but keeps your files: untracked and git-ignored files stay in
 place, and edits to tracked files are copied to
-`~/.hermes/plugins-backup/<name>-<sha>/`. A reinstall from a different source
-starts clean; to reset a plugin completely, `hermes plugins remove` it first. The
+`~/.moor/plugins-backup/<name>-<sha>/`. A reinstall from a different source
+starts clean; to reset a plugin completely, `moor plugins remove` it first. The
 profile-local install metadata contains no config values, environment values,
 secrets, or capability grants.
 
@@ -421,16 +421,16 @@ Declarative plugins are symlinked with a `nix-managed-` prefix — they coexist 
 moor plugins                               # unified interactive UI
 moor plugins list                          # table: enabled / disabled / not enabled (bundled backends,
                                              # platforms and the live memory.provider count as enabled)
-hermes plugins search <term>                 # search the Hermes plugin catalog
-hermes plugins install <name>                # install a catalog entry (repo @ reviewed pinned SHA)
-hermes plugins install user/repo             # install from Git, then prompt Enable? [y/N]
-hermes plugins install user/repo --enable    # request enable; dependency consent still applies
-hermes plugins install user/repo --no-enable # install but leave disabled (no prompt)
-hermes plugins update my-plugin              # pull latest (local edits are autostashed and re-applied)
-hermes plugins update my-plugin --force      # same, accepting a caution security-scan verdict without the question
-hermes plugins update                        # list every plugin with an update, then "Update all N? [Y/n]"
-hermes plugins update --yes                  # same, without the question (scripts, cron; required without a terminal)
-hermes plugins remove my-plugin              # uninstall; also drops it from plugins.enabled/disabled/entries
+moor plugins search <term>                 # search the Moor plugin catalog
+moor plugins install <name>                # install a catalog entry (repo @ reviewed pinned SHA)
+moor plugins install user/repo             # install from Git, then prompt Enable? [y/N]
+moor plugins install user/repo --enable    # request enable; dependency consent still applies
+moor plugins install user/repo --no-enable # install but leave disabled (no prompt)
+moor plugins update my-plugin              # pull latest (local edits are autostashed and re-applied)
+moor plugins update my-plugin --force      # same, accepting a caution security-scan verdict without the question
+moor plugins update                        # list every plugin with an update, then "Update all N? [Y/n]"
+moor plugins update --yes                  # same, without the question (scripts, cron; required without a terminal)
+moor plugins remove my-plugin              # uninstall; also drops it from plugins.enabled/disabled/entries
                                              # and resets memory.provider when it was the live provider
 moor plugins enable my-plugin              # add to allow-list
 moor plugins disable my-plugin             # remove from allow-list + add to disabled (bundled platforms:
@@ -457,12 +457,12 @@ check runs when `plugins.auto_update_check_hours` is due: default 24 hours,
 desktop sync-status view. This is not a hard once-per-day limit if you configure
 a different interval.
 
-`hermes plugins update` with no name runs the same check and lists the
+`moor plugins update` with no name runs the same check and lists the
 plugins it can move: catalog installs (re-pinned to the reviewed catalog
 commit) and tracked Git installs (pulled). It names every plugin it skips and
-why: pinned, needs fixing, status unknown, or a pip distribution Hermes does
+why: pinned, needs fixing, status unknown, or a pip distribution Moor does
 not upgrade. In a terminal it asks once, then updates each plugin through the
-same path as `hermes plugins update NAME`, so new capabilities, a widened
+same path as `moor plugins update NAME`, so new capabilities, a widened
 catalog pin and scan findings still prompt per plugin. One failure does not
 stop the rest; the summary lists what updated, what was already current and
 what failed with its reason (exit code 1 if any failed). Without a terminal
@@ -470,7 +470,7 @@ it prints the list and updates nothing unless you pass `--yes`; with `--yes`,
 consent prompts fail closed as in any non-interactive update (new
 capabilities stay ungranted, a widened catalog pin is not applied).
 
-By default, plugins only update when you run `hermes plugins update`. Setting
+By default, plugins only update when you run `moor plugins update`. Setting
 `plugins.auto_apply: true` opts tracked Git plugins into unattended updates.
 Both routes use the update security scan. Auto-apply does not manage pinned,
 manual, drifted, or pip-distribution rows.
@@ -788,21 +788,21 @@ Three verdicts, matching Cowork's pass/warn/fail:
 | **caution** | Findings are shown; you confirm `Install anyway? [y/N]` (or pass `--force`) |
 | **dangerous** | Blocked. `--force` does **not** override |
 
-`hermes plugins update` scans the new code with the same rules before it
+`moor plugins update` scans the new code with the same rules before it
 replaces the installed copy, so a plugin that picks up risky code in an update
 is flagged before it runs. A caution verdict on a Git update asks
-`Update anyway? [y/N]`, and `hermes plugins update NAME --force` accepts it
-without the question. Hermes Desktop shows the same findings in a dialog with an
+`Update anyway? [y/N]`, and `moor plugins update NAME --force` accepts it
+without the question. Moor Desktop shows the same findings in a dialog with an
 **Update anyway** button. Catalog updates move to a reviewed pin, so a caution
 verdict there does not ask. In every case nothing changes until the update is
 accepted.
 
-Hermes Desktop shows an **Update** button on a Git-installed plugin when the
+Moor Desktop shows an **Update** button on a Git-installed plugin when the
 last update check found a newer commit. The gateway runs that check every
-`plugins.auto_update_check_hours` (default 24), and `hermes plugins check-updates`
+`plugins.auto_update_check_hours` (default 24), and `moor plugins check-updates`
 runs it on demand.
 
-On `hermes plugins update`, a dangerous verdict on the updated tree
+On `moor plugins update`, a dangerous verdict on the updated tree
 disables the plugin until you review the findings and re-enable it. A
 dangerous block names the critical findings that caused it (e.g.
 `1 critical of 42 findings (destructive_root_rm)`), so a single blocking
@@ -854,9 +854,9 @@ plugins:
 
 ### Running plugins out of process (`plugins.isolation`)
 
-By default third-party Python plugins are imported into the Hermes process, as they always have been.
+By default third-party Python plugins are imported into the Moor process, as they always have been.
 Setting `plugins.isolation: host` moves them into a **plugin host**: one separate Python process per
-profile, started on demand, that imports the profile's user-installed plugins and talks to Hermes over a
+profile, started on demand, that imports the profile's user-installed plugins and talks to Moor over a
 private pipe.
 
 ```yaml
@@ -868,14 +868,14 @@ plugins:
 
 Plugins do not change. They receive the same `ctx` and register tools, hooks, slash commands, skills and
 provider objects (image/video generation, web search, browser, TTS/STT, memory, context engines,
-secret sources, `@` context references, model-provider profiles) exactly as before; Hermes registers
+secret sources, `@` context references, model-provider profiles) exactly as before; Moor registers
 matching entries on its side that call into the host, and values cross as the types the provider base
 class declares (a secret source's `fetch()` gets a `Path` and returns a `FetchResult`). Dashboard plugin APIs are served by the host too. Bundled plugins keep running in-process.
 In-process dashboard API handlers share the gateway's event loop, so they must not block it (see
 [Don't block the event loop](extending-the-dashboard.md#dont-block-the-event-loop)).
 
 On a gateway serving several profiles, every profile other than the one the gateway started with runs
-its own dashboard plugins (installed under its own `plugins/` folder or the root `~/.hermes/plugins/`,
+its own dashboard plugins (installed under its own `plugins/` folder or the root `~/.moor/plugins/`,
 the profile's own copy winning a same-name conflict, and enabled in its own config) in its own plugin
 host, whatever its `plugins.isolation` says: another profile's plugin code never runs inside the
 gateway. The host does not carry websockets yet, so such a plugin's websocket routes are refused
@@ -886,24 +886,24 @@ process for each profile that has used a dashboard plugin.
 
 What changes in `host` mode:
 
-- **No shared interpreter.** A plugin's module never enters the Hermes process, so it cannot read
-  another profile's data from memory or patch Hermes internals. Under the multiplex gateway every
+- **No shared interpreter.** A plugin's module never enters the Moor process, so it cannot read
+  another profile's data from memory or patch Moor internals. Under the multiplex gateway every
   profile gets its own host, started with only that profile's environment and secrets.
-- **Crashes stay contained.** A plugin that crashes or exits kills its host, not Hermes; the call in
-  flight returns a tool error and Hermes restarts the host and reloads its plugins (bounded retries).
+- **Crashes stay contained.** A plugin that crashes or exits kills its host, not Moor; the call in
+  flight returns a tool error and Moor restarts the host and reloads its plugins (bounded retries).
 - **A few surfaces need in-process code** and fail that plugin with a clear reason instead of loading:
   gateway platform adapters (`register_platform`), approval transports, Telegram/platform handlers,
   model-provider profiles that build their own SDK client (`create_client`), terminal backends (the
   backend's commands fail with this reason; the `singularity` plugin is one), streaming and websocket
-  dashboard endpoints, and plugins that monkeypatch Hermes modules. Run those with `isolation: in_process`.
+  dashboard endpoints, and plugins that monkeypatch Moor modules. Run those with `isolation: in_process`.
 
 **Locking it for a shared deployment.** `plugins.isolation` is ordinary profile config, so whoever can
 edit a profile's `config.yaml` can turn it off. When the profiles belong to people you are isolating from
 each other, pin it in the [managed scope](../managed-scope.md) instead; the managed value wins over every
-profile's own config and `hermes config set` refuses to change it:
+profile's own config and `moor config set` refuses to change it:
 
 ```yaml
-# /etc/hermes/config.yaml (root-owned, read by every profile on the machine)
+# /etc/moor/config.yaml (root-owned, read by every profile on the machine)
 plugins:
   isolation: host
   host:
@@ -913,7 +913,7 @@ plugins:
 Run the agents' terminal on an isolated backend (Docker, SSH, ...) as well, so the agent itself cannot
 reach the operator's files.
 
-`hermes plugins validate <dir>` and `hermes plugins show <name>` report whether a plugin runs in the host
+`moor plugins validate <dir>` and `moor plugins show <name>` report whether a plugin runs in the host
 and, if not, why. Across the plugin catalog at the time of writing, 299 of 348 entries run in the host
 unchanged.
 
@@ -1008,7 +1008,7 @@ What each surface does:
 | Messaging platforms that can edit (Telegram, Discord, Slack, Matrix, ...) | the adapter's normal `send` into the chat/thread | edits the same message in place |
 | Platforms without edit support (SMS, email, plugin adapters that do not implement `edit_message`) | `send` | sends a new message; the handle follows it (`edited: False, fallback: True`) |
 | Desktop and the Ink TUI | a keyed notice to the session's viewers (Desktop toast, TUI status line) | replaces that notice in place |
-| Classic CLI (`hermes chat`) | queued as a notice line, printed at the end of the next turn (the classic CLI has no live notice slot) | each edit queues another line |
+| Classic CLI (`moor chat`) | queued as a notice line, printed at the end of the next turn (the classic CLI has no live notice slot) | each edit queues another line |
 
 Text is clamped to the platform's message limit with an ellipsis (never split). It is plain text: an
 adapter may render its own formatting, but the plugin should not depend on it. No permission is needed,
@@ -1057,7 +1057,7 @@ When the classic CLI runs plugins in its own process (no gateway session):
 Without a session key (`session_key` and `origin` both omitted), when the plugin runs in the gateway (or its plugin host) — which is where plugins run for classic CLI, TUI and Desktop sessions — the gateway picks the chat:
 
 1. If the plugin is handling a local session's own call (its slash command, a hook fired for that session, or a tool or hook in its turn), the message goes to that session. This never guesses, however many sessions are open.
-2. With no session in the calling context (a timer, a background thread — a thread the plugin starts does not inherit the call's context), it goes to the one local session of the plugin's profile that was started by the classic CLI (`hermes chat`) and has a viewer attached. TUI and Desktop sessions, messaging chats and other profiles' sessions are never picked this way.
+2. With no session in the calling context (a timer, a background thread — a thread the plugin starts does not inherit the call's context), it goes to the one local session of the plugin's profile that was started by the classic CLI (`moor chat`) and has a viewer attached. TUI and Desktop sessions, messaging chats and other profiles' sessions are never picked this way.
 3. Otherwise (no such session, or several) it is refused: `False`, nothing is injected anywhere, and the gateway log names the plugin and says to pass a session key.
 
 The chosen session receives the text as a queued input, the same way as a keyed injection; it needs the `allow_gateway_injection` permission below. When that is a classic CLI session, the turn and its reply are in the session's transcript, but the attached classic CLI does not display them. A call made for a messaging chat without a key is refused, as before. Prefer passing `session_key`: a key-less call can be refused when the chat is ambiguous, and key-less injection may be retired later.
@@ -1065,10 +1065,10 @@ The chosen session receives the text as a queued input, the same way as a keyed 
 In gateway mode with a key:
 
 - `session_key` must identify an existing gateway session. It is the stable routing key, not the CLI session ID.
-- Hermes reuses that session's stored platform, chat, thread, profile, and conversation history. Plugins cannot change that route through `session_key`.
+- Moor reuses that session's stored platform, chat, thread, profile, and conversation history. Plugins cannot change that route through `session_key`.
 - The session must belong to the plugin's own profile: the key of another profile's chat or local session gets `False` right away, with the reason in the gateway log.
-- Hermes rechecks the stored route against the gateway's current authorisation rules before dispatch.
-- Routes that relied only on an adapter-time or upstream authorisation decision are rejected unless Hermes can revalidate them from current core allowlists, pairing, or explicit allow-all configuration.
+- Moor rechecks the stored route against the gateway's current authorisation rules before dispatch.
+- Routes that relied only on an adapter-time or upstream authorisation decision are rejected unless Moor can revalidate them from current core allowlists, pairing, or explicit allow-all configuration.
 - Injected text is always conversational input. It cannot invoke slash commands, approve tools, or resolve pending confirmation and clarification prompts.
 - The route and conversation are pinned while dispatch is pending. Moor drops the request if topic recovery changes the route or the session rotates before handling starts.
 - The request enters the platform adapter's normal message path. Active sessions use the existing busy-session queue rather than starting a competing turn.
@@ -1079,7 +1079,7 @@ Starting a session with `origin` (gateway mode only):
 
 - `origin` uses the same shape as a stored session origin (`SessionSource.to_dict()`): `platform` and `chat_id` are required; `chat_type`, `thread_id`, `user_id`, `user_name`, `chat_name` and the other origin fields are optional. Use it when no session exists yet — for example, a bot-authored forum post, which platforms like Discord never deliver back to the bot as an inbound message.
 - The session is created in **the plugin's own profile** (the profile whose plugin manager loaded it) through the normal session path, with a fresh prompt and an empty history, and the reply is delivered to that chat/thread. If the chat already has a session in that profile, the text joins it exactly like a human message would (the busy-session queue applies), so a human follow-up in the same thread continues the same session.
-- Under the gateway's session authority (every gateway-owned session), the plugin turn is committed to that session's durable FIFO and borrows the connector provenance of a human message already admitted there. An `origin` whose chat has **no human message admitted yet** (no session, or a session with no committed human turn) is therefore refused: `inject_message` returns `False` right away and the gateway log says "has no human message admitted yet". Hermes never mints platform provenance for a chat the platform did not deliver. Have the first message in that chat come from the platform (or a human), then inject with `origin` or `session_key`.
+- Under the gateway's session authority (every gateway-owned session), the plugin turn is committed to that session's durable FIFO and borrows the connector provenance of a human message already admitted there. An `origin` whose chat has **no human message admitted yet** (no session, or a session with no committed human turn) is therefore refused: `inject_message` returns `False` right away and the gateway log says "has no human message admitted yet". Moor never mints platform provenance for a chat the platform did not deliver. Have the first message in that chat come from the platform (or a human), then inject with `origin` or `session_key`.
 - A plugin can never target another profile. `False` is returned (with the reason in the gateway log) when the origin names a different `profile`, when the gateway's own profile routing sends that chat to a different profile, when the plugin's profile is not served by this gateway, or when that profile has no connected adapter for `platform` — another profile's bot is never borrowed. On a multiplexed gateway the turn runs under the plugin's profile home and secrets.
 - Authorisation is not bypassed: the origin's user must pass the gateway's current allowlists, pairing, or allow-all configuration for that profile, the same check as the `session_key` path. Choose a `user_id` that is authorised, or the request is dropped at dispatch and logged.
 - The same text rules apply: no slash commands, approvals, or prompt resolution. The permission below is read from the plugin's own profile `config.yaml`.
@@ -1098,7 +1098,7 @@ plugins:
 ```
 
 :::warning
-Only grant gateway injection to plugins you trust. Hermes checks this host API permission, restricts it to existing session routes or new sessions in the plugin's own profile, and applies current authorisation, but Python plugins run in-process and this setting is not a sandbox.
+Only grant gateway injection to plugins you trust. Moor checks this host API permission, restricts it to existing session routes or new sessions in the plugin's own profile, and applies current authorisation, but Python plugins run in-process and this setting is not a sandbox.
 :::
 
 :::note
@@ -1109,7 +1109,7 @@ This plugin API does not expose a public HTTP endpoint or CLI command for extern
 
 Hooks, tools and injected turns of every chat and every local session (CLI, TUI, Desktop) run in the one gateway process, not in the client you launched. Some process-level habits from the classic CLI do not carry over:
 
-- `os.getcwd()` is the gateway's own directory, shared by every session; Hermes never changes it. Use `ctx.session_cwd()` for the working directory of the session the hook or tool runs for: the workspace a CLI/TUI/Desktop session was started in, or the profile's terminal cwd for a chat (`""` when there is none). Pass it as `cwd=` to subprocesses. It reads the session from the running turn, so it works in code that runs for a session: turn hooks, tool handlers and approval hooks. Ingress hooks such as `pre_gateway_dispatch` run before the message is admitted to any session; there it returns the profile's terminal cwd, or `""` when none is configured.
+- `os.getcwd()` is the gateway's own directory, shared by every session; Moor never changes it. Use `ctx.session_cwd()` for the working directory of the session the hook or tool runs for: the workspace a CLI/TUI/Desktop session was started in, or the profile's terminal cwd for a chat (`""` when there is none). Pass it as `cwd=` to subprocesses. It reads the session from the running turn, so it works in code that runs for a session: turn hooks, tool handlers and approval hooks. Ingress hooks such as `pre_gateway_dispatch` run before the message is admitted to any session; there it returns the profile's terminal cwd, or `""` when none is configured.
 - `ctx.session_surface()` names the calling session's client: `"cli"`, `"tui"`, `"desktop"`, `"acp"`, or the messaging platform (`"telegram"`, …); `""` outside a session.
 - `print()` output goes to the gateway's `gateway-stdio.log`, not to your terminal. Use `logging` instead.
 - `input()` gets end-of-file: the gateway has no terminal. Ask through a tool result or a slash command.

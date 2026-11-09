@@ -289,11 +289,11 @@ describe('repoChangeKindForPath', () => {
     $repoStatusByCwd.set({
       '/repo-a': {
         ...sampleStatus,
-        files: [{ path: 'src/file1.ts', untracked: false, conflicted: false } as HermesRepoStatus['files'][number]]
+        files: [{ path: 'src/file1.ts', untracked: false, conflicted: false } as MoorRepoStatus['files'][number]]
       },
       '/repo-b': {
         ...otherStatus,
-        files: [{ path: 'src/file2.ts', untracked: true, conflicted: false } as HermesRepoStatus['files'][number]]
+        files: [{ path: 'src/file2.ts', untracked: true, conflicted: false } as MoorRepoStatus['files'][number]]
       }
     })
 
@@ -306,7 +306,7 @@ describe('repoChangeKindForPath', () => {
     $repoStatusByCwd.set({
       '/repo': {
         ...sampleStatus,
-        files: [{ path: 'brand_new_dir', untracked: true, conflicted: false } as HermesRepoStatus['files'][number]]
+        files: [{ path: 'brand_new_dir', untracked: true, conflicted: false } as MoorRepoStatus['files'][number]]
       }
     })
 

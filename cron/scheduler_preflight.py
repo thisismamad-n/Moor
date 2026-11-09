@@ -101,7 +101,7 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
         return None  # fail-open: never block on a preflight-internal error
 
     requested = job.get("provider") or cron_default_provider(cfg) or None
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    model = job.get("model") or cron_env_setting("MOOR_MODEL") or ""
 
     from moor_cli.auth import AuthError, is_rate_limited_auth_error
     try:
@@ -163,7 +163,7 @@ def _primary_profile_routes_for_current_home() -> list:
             return []  # this IS the primary home — nothing to consult
 
         # Same layers the primary gateway's own loader reads: routes pinned in the managed scope
-        # (/etc/hermes/config.yaml) never reached the raw user-file read (#121212), so preflight
+        # (/etc/moor/config.yaml) never reached the raw user-file read (#121212), so preflight
         # false-blocked and routed delivery failed closed on centrally-managed installs.
         from gateway.config_loader import read_yaml_layers
         layered = read_yaml_layers(primary_home.expanduser())

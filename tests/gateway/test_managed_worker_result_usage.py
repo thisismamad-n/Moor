@@ -4,7 +4,7 @@ accounting fields of ``run_conversation`` and the owner commits them with ``usag
 import io
 
 from agent.managed_worker import accept_result, encode_frame, read_frame, result_frame
-from hermes_cli.oneshot import _USAGE_KEYS
+from moor_cli.oneshot import _USAGE_KEYS
 
 
 def _run_conversation_result():
@@ -55,7 +55,7 @@ def test_failed_non_billing_turn_with_no_billing_block_is_accepted():
 def test_worker_result_frame_carries_the_billing_block():
     """A billing-blocked managed turn hands the owner the same structured block the in-process turn returns, so a local viewer's message.complete can carry ``billing``."""
     block = {'provider': 'custom', 'provider_label': 'Custom', 'model': 'm', 'billing_url': None,
-             'is_nous': False, 'message': 'Add credits', 'unverified': True, 'internal': object()}
+             'is_moor': False, 'message': 'Add credits', 'unverified': True, 'internal': object()}
     raw = {**_run_conversation_result(), 'failed': True, 'failure_reason': 'billing', 'billing_block': block}
     wire = read_frame(io.BytesIO(encode_frame({'type': 'result', 'result': result_frame(raw)})))
     result, _usage = accept_result(wire['result'])
@@ -64,7 +64,7 @@ def test_worker_result_frame_carries_the_billing_block():
 
 
 def _usage_db(tmp_path):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
     return SessionDB(db_path=tmp_path / 'state.db')
 
 
@@ -155,6 +155,6 @@ def test_worker_result_frame_carries_the_usage_window_refusal():
            'failure_resets_at': 1_900_000_000.0, 'usage_window_message': message, 'error': message}
     wire = read_frame(io.BytesIO(encode_frame({'type': 'result', 'result': result_frame(raw)})))
     result, _usage = accept_result(wire['result'])
-    surface = build_error_surface_from_result(result, 'nous', 'm')
+    surface = build_error_surface_from_result(result, 'moor', 'm')
     assert surface['code'] == 'usage_window' and surface['message'] == message
     assert surface['resets_at'] == 1_900_000_000.0

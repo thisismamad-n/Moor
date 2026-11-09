@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { HermesReadDirResult } from '@/global'
-import type * as HermesModule from '@/hermes'
+import type { MoorReadDirResult } from '@/global'
+import type * as MoorModule from '@/moor'
 import { $previewScriptGrants, grantPreviewScript } from '@/store/plugin-preview-grants'
 
 import { emitGatewayEvent } from './events'
@@ -674,13 +674,13 @@ export default { id: 'quoted-spec', register: () => { globalThis.__captured = do
   })
 
   it('rewrites imports after the entities htmlReplacer regex (#120208)', async () => {
-    // entities 6.0.1 encode.js (via the hermes-toolsmith bundle): the
+    // entities 6.0.1 encode.js (via the moor-toolsmith bundle): the
     // character class contains a backtick, then SDK/react imports follow.
     const restore = withBlobReroute()
 
     try {
       const id = await loadRuntimePlugin(
-        "var htmlReplacer = /[\\t\\n\\f!-,./:-@[-`{-}\\^@-\\uFFFF]/g;\nimport { host } from '@hermes/plugin-sdk'\nconst label = `ok`\nexport default { id: 'entities-re', register() { void host; void label; void htmlReplacer } }",
+        "var htmlReplacer = /[\\t\\n\\f!-,./:-@[-`{-}\\^@-\\uFFFF]/g;\nimport { host } from '@moor/plugin-sdk'\nconst label = `ok`\nexport default { id: 'entities-re', register() { void host; void label; void htmlReplacer } }",
         'entities-re'
       )
 
@@ -699,7 +699,7 @@ export default { id: 'quoted-spec', register: () => { globalThis.__captured = do
 
     try {
       const id = await loadRuntimePlugin(
-        "const total = 10, count = 4, earned = 6\nconst half = total / count + earned / 2\nimport { host } from '@hermes/plugin-sdk'\nconst label = `n=${half}`\nexport default { id: 'division', register() { void host; void label } }",
+        "const total = 10, count = 4, earned = 6\nconst half = total / count + earned / 2\nimport { host } from '@moor/plugin-sdk'\nconst label = `n=${half}`\nexport default { id: 'division', register() { void host; void label } }",
         'division'
       )
 
@@ -1194,8 +1194,8 @@ describe('manual "Reload desktop plugins" (#91503)', () => {
 
 describe('linked dev package: the source checkout drives the desktop half', () => {
   it('watches the SOURCE plugin.js and a save there re-syncs the copy and reloads it', async () => {
-    const root = '/local/.hermes/desktop-plugins'
-    const sourceDir = '/local/.hermes/plugins/devpkg/desktop'
+    const root = '/local/.moor/desktop-plugins'
+    const sourceDir = '/local/.moor/plugins/devpkg/desktop'
     desktopPluginsRoot.mockResolvedValue(root)
     readDir.mockImplementation(async dir => {
       if (dir === root) {
@@ -1205,7 +1205,7 @@ describe('linked dev package: the source checkout drives the desktop half', () =
       if (dir === `${root}/devpkg`) {
         return {
           entries: [
-            { isDirectory: false, name: '.hermes-package.json', path: `${root}/devpkg/.hermes-package.json` },
+            { isDirectory: false, name: '.moor-package.json', path: `${root}/devpkg/.moor-package.json` },
             { isDirectory: false, name: 'plugin.js', path: `${root}/devpkg/plugin.js` }
           ]
         }
@@ -1219,7 +1219,7 @@ describe('linked dev package: the source checkout drives the desktop half', () =
     Object.assign(globalThis, { __devV1: registerV1, __devV2: registerV2 })
     let copy = 'export default { id: "devpkg", register: globalThis.__devV1 }'
     readFileText.mockImplementation(async file =>
-      file.endsWith('.hermes-package.json')
+      file.endsWith('.moor-package.json')
         ? { text: JSON.stringify({ linked: true, package: 'devpkg', source: sourceDir, sourceMtimeMs: 1 }) }
         : { text: copy }
     )
@@ -1232,7 +1232,7 @@ describe('linked dev package: the source checkout drives the desktop half', () =
       return [`${root}/devpkg`]
     })
 
-    Object.assign((window as unknown as { hermesDesktop: object }).hermesDesktop, { reconcileDesktopPlugins })
+    Object.assign((window as unknown as { moorDesktop: object }).moorDesktop, { reconcileDesktopPlugins })
 
     const createObjectURL = vi
       .spyOn(URL, 'createObjectURL')

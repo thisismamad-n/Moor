@@ -106,10 +106,10 @@ def test_launch_profiles_own_worker_keeps_its_credentials(tmp_path, monkeypatch)
     assert captured and captured[0].get("OPENAI_API_KEY") == "dispatcher-launch-key"
 
 
-def test_worker_for_another_profile_can_still_import_hermes(profile_b, tmp_path, monkeypatch):
-    """The routed-profile scrub strips Hermes-owned PYTHONPATH entries, but the worker IS Hermes
-    (`-m hermes_cli.kanban_worker_client`): a PYTHONPATH-launched dispatcher must hand it a tree
-    it can import, or it dies on `No module named 'hermes_cli'` before reaching the owner."""
+def test_worker_for_another_profile_can_still_import_moor(profile_b, tmp_path, monkeypatch):
+    """The routed-profile scrub strips moor-owned PYTHONPATH entries, but the worker IS Moor
+    (`-m moor_cli.kanban_worker_client`): a PYTHONPATH-launched dispatcher must hand it a tree
+    it can import, or it dies on `No module named 'moor_cli'` before reaching the owner."""
     repo_root = Path(kanban_db_dispatch.__file__).resolve().parent.parent
     monkeypatch.setenv("PYTHONPATH", str(repo_root))
     env = _spawn_env_for_profile_b(monkeypatch, tmp_path)

@@ -27,7 +27,7 @@ def _make_task(kb, *, assignee: str):
 
 def test_default_spawn_pins_assignee_profile_cli_toolsets(monkeypatch, tmp_path):
     """The transport client reaches the assigned profile with its exact run claim."""
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     profile = root / "profiles" / "elias"
     profile.mkdir(parents=True)
     profile.joinpath("config.yaml").write_text(
@@ -76,22 +76,22 @@ agent:
     pid = kbd._default_spawn(_make_task(kb, assignee="elias"), str(workspace))
 
     assert pid == 4242
-    assert captured["env"]["HERMES_HOME"] == str(profile)
-    assert captured["env"]["HERMES_KANBAN_TASK"] == "t_spawn_tools"
-    assert captured["cmd"][-2:] == ["-m", "hermes_cli.kanban_worker_client"]
-    assert captured["env"]["HERMES_KANBAN_RUN_ID"] == "7"
-    assert captured["env"]["HERMES_KANBAN_CLAIM_LOCK"] == "lock"
+    assert captured["env"]["MOOR_HOME"] == str(profile)
+    assert captured["env"]["MOOR_KANBAN_TASK"] == "t_spawn_tools"
+    assert captured["cmd"][-2:] == ["-m", "moor_cli.kanban_worker_client"]
+    assert captured["env"]["MOOR_KANBAN_RUN_ID"] == "7"
+    assert captured["env"]["MOOR_KANBAN_CLAIM_LOCK"] == "lock"
 
 
 def test_default_spawn_does_not_pass_mutable_launch_overrides(monkeypatch, tmp_path):
     """Owner policy reads overrides from the claimed card, not executable argv."""
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".moor"
     (root / "profiles" / "elias").mkdir(parents=True)
     root.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
     monkeypatch.setenv("MOOR_HOME", str(root))
 
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_dispatch as kbd
+    from moor_cli import kanban_db as kb
+    from moor_cli import kanban_db_dispatch as kbd
 
     monkeypatch.setattr(kbd, "_resolve_moor_argv", lambda: ["moor"])
     captured = {}
@@ -112,7 +112,7 @@ def test_default_spawn_does_not_pass_mutable_launch_overrides(monkeypatch, tmp_p
     kbd._default_spawn(task, str(workspace))
 
     # Mutable model strings are not launch authority; the owner reads the claimed card.
-    assert captured["cmd"][-2:] == ["-m", "hermes_cli.kanban_worker_client"]
+    assert captured["cmd"][-2:] == ["-m", "moor_cli.kanban_worker_client"]
     assert task.model_override not in captured["cmd"]
 
 def test_default_spawn_resolves_env_passthrough_under_multiplex(monkeypatch, tmp_path):
@@ -169,18 +169,18 @@ def test_worker_toolsets_come_from_the_assignee_profile_not_the_parent_config(tm
     from contextlib import closing
     from types import SimpleNamespace
 
-    from hermes_cli import kanban_db as kb
-    from hermes_cli.kanban_db_connect import connect
+    from moor_cli import kanban_db as kb
+    from moor_cli.kanban_db_connect import connect
     from gateway.session_contract import Principal
     from gateway.session_kanban import build_kanban_policy
 
     profile = tmp_path / "profiles" / "elias"
     profile.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_KANBAN_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(profile))
+    monkeypatch.setenv("MOOR_KANBAN_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(profile))
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
-    monkeypatch.delenv("HERMES_KANBAN_DB", raising=False)
-    monkeypatch.setattr("hermes_cli.profiles.resolve_profile_env", lambda name: str(profile))
+    monkeypatch.delenv("MOOR_KANBAN_DB", raising=False)
+    monkeypatch.setattr("moor_cli.profiles.resolve_profile_env", lambda name: str(profile))
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     kb.create_board("owned")  # explicit creation; connect() never creates a board (#43243)
@@ -194,7 +194,7 @@ def test_worker_toolsets_come_from_the_assignee_profile_not_the_parent_config(tm
     params = dict(board="owned", task_id=task.id, run_id=task.current_run_id, claim_lock=task.claim_lock)
 
     assignee_config = {"model": {"default": "m", "provider": "custom"},
-                       "platform_toolsets": {"cli": ["terminal", "web"]}, "toolsets": ["hermes-cli"]}
+                       "platform_toolsets": {"cli": ["terminal", "web"]}, "toolsets": ["moor-cli"]}
     policy, _ = build_kanban_policy(connection, params, assignee_config)
     assert {"terminal", "web", "kanban"} <= set(policy.toolsets)
 

@@ -559,8 +559,8 @@ async def test_request_restart_skips_wait_for_cron_run_past_inflight_allowance(m
     """
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
+    monkeypatch.delenv("MOOR_AGENT_TIMEOUT", raising=False)
     monkeypatch.setattr("cron.jobs.load_jobs", list)
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
@@ -637,7 +637,7 @@ async def test_request_restart_skips_wait_for_scope_isolated_cron_worker(monkeyp
     """
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr("cron.jobs.load_jobs", list)
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
@@ -671,7 +671,7 @@ async def test_request_restart_still_waits_for_worker_without_its_own_scope(monk
     """
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path))
     monkeypatch.setattr("cron.jobs.load_jobs", list)
     runner, _adapter = make_restart_runner()
     runner._restart_after_turn_timeout = 300.0
@@ -693,7 +693,7 @@ async def test_request_restart_still_waits_for_worker_without_its_own_scope(monk
 def _register_in_profile(monkeypatch, sched, home, job_id):
     """Claim ``job_id`` in-flight under profile ``home`` (the multiplexed ticker binds it per tick)."""
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     assert sched.try_register_running_job(job_id)
 
 
@@ -734,7 +734,7 @@ def test_same_job_id_wedged_in_one_profile_does_not_hide_live_run_in_another(mon
     """
     import cron.scheduler as sched
 
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("MOOR_AGENT_TIMEOUT", raising=False)
     monkeypatch.setattr("cron.jobs.load_jobs", list)
     runner, _adapter = make_restart_runner()
     home_a, home_b = tmp_path / "profile-a", tmp_path / "profile-b"

@@ -8,14 +8,14 @@ sent.  Moving the ``add_middleware(CORSMiddleware, …)`` call *after*
 all ``@app.middleware("http")`` registrations makes CORS outermost so
 preflights are answered before auth runs.
 
-See: https://github.com/NousResearch/hermes-agent/issues/59052
+See: https://github.com/thisismamad-n/Moor/issues/59052
 """
 
 from __future__ import annotations
 
 import pytest
 
-from hermes_cli import web_server
+from moor_cli import web_server
 
 pytest.importorskip("starlette.testclient")
 from starlette.testclient import TestClient
@@ -36,7 +36,7 @@ def test_options_preflight_returns_cors_headers(client):
         headers={
             "Origin": "http://127.0.0.1:8092",
             "Access-Control-Request-Method": "GET",
-            "Access-Control-Request-Headers": "x-hermes-session-token",
+            "Access-Control-Request-Headers": "x-moor-session-token",
         },
     )
     assert resp.status_code == 200

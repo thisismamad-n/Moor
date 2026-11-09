@@ -476,7 +476,7 @@ def _kill_detached_leftovers(temproot: str) -> None:
     server) leaves that group, is reparented to init when its parent exits, and
     used to run forever: 215 orphan gateways (~52 GB RSS) piled up on one host.
     Every descendant carries the attempt's unique temproot in its environment
-    (``PYTEST_DEBUG_TEMPROOT``/``TMPDIR``, or a ``HOME``/``HERMES_HOME`` a fixture
+    (``PYTEST_DEBUG_TEMPROOT``/``TMPDIR``, or a ``HOME``/``MOOR_HOME`` a fixture
     made under it), so it names exactly this attempt's processes and nothing else.
     Linux-only (``/proc``); elsewhere the process-group kill is all there is.
     """
@@ -1482,10 +1482,10 @@ def main() -> int:
 
     # Parse --slice (or MOOR_TEST_SLICE) early so we can exit on bad input
     # before doing any expensive discovery.
-    slice_raw = args.slice or os.environ.get("HERMES_TEST_SLICE")
+    slice_raw = args.slice or os.environ.get("MOOR_TEST_SLICE")
     # Read once, here: test processes inherit this env, and a runner they start (the
     # runner's own probe tests) must run its whole file set, not "its" slice of it.
-    os.environ.pop("HERMES_TEST_SLICE", None)
+    os.environ.pop("MOOR_TEST_SLICE", None)
     slice_index: int | None = None
     slice_count: int = 1
     if slice_raw:

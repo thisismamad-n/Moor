@@ -19,8 +19,8 @@ from unittest.mock import patch
 
 import pytest
 
-from hermes_cli.model_switch import switch_model
-from hermes_cli.providers import host_mandated_api_mode
+from moor_cli.model_switch import switch_model
+from moor_cli.providers import host_mandated_api_mode
 
 _MOCK_VALIDATION = {
     "accepted": True,
@@ -51,8 +51,8 @@ def _run_openai_switch(
     registry = _MODELS_DEV_WITH_META if models_dev_registry is None else models_dev_registry
     with (
         patch("agent.models_dev.fetch_models_dev", lambda *a, **k: registry),
-        patch("hermes_cli.model_switch.resolve_alias", return_value=None),
-        patch("hermes_cli.model_switch.list_provider_models", return_value=[]),
+        patch("moor_cli.model_switch.resolve_alias", return_value=None),
+        patch("moor_cli.model_switch.list_provider_models", return_value=[]),
         patch(
             "moor_cli.runtime_provider.resolve_runtime_provider",
             return_value={

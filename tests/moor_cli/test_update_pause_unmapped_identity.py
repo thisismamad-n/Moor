@@ -5,9 +5,9 @@ replays. Two homes can run identical selectorless argv, their environment pickin
 readiness predicate must also match the home the paused runtime ran on: otherwise home B's gateway,
 already back after a partial recovery, retires home A's debt while A stays down.
 
-Real processes (argv shaped like ``hermes gateway run``, each under its own ``HERMES_HOME``) and the
+Real processes (argv shaped like ``moor gateway run``, each under its own ``MOOR_HOME``) and the
 real predicate; the fleet discovery that hands it candidate PIDs is the only thing bypassed. The
-replay restores that home too: the respawn's ``HERMES_HOME`` is the paused runtime's, not the updater's.
+replay restores that home too: the respawn's ``MOOR_HOME`` is the paused runtime's, not the updater's.
 """
 
 from __future__ import annotations
@@ -21,20 +21,20 @@ import psutil
 import pytest
 
 from gateway.status import get_process_start_time
-from hermes_cli.update_cmd_windows import _unmapped_ready_filter
+from moor_cli.update_cmd_windows import _unmapped_ready_filter
 from tests.waiting import wait_until
 
 
 @pytest.fixture
 def spawn(tmp_path):
-    entry = tmp_path / "bin" / "hermes"  # a ``hermes`` entry token: the cmdline reads as a gateway
+    entry = tmp_path / "bin" / "moor"  # a ``moor`` entry token: the cmdline reads as a gateway
     entry.parent.mkdir()
     entry.write_text("import time\ntime.sleep(60)\n", encoding="utf-8")
     argv = [sys.executable, str(entry), "gateway", "run"]
     procs: list[subprocess.Popen] = []
 
     def _spawn(home) -> subprocess.Popen:
-        proc = subprocess.Popen(argv, env={**os.environ, "HERMES_HOME": str(home)})
+        proc = subprocess.Popen(argv, env={**os.environ, "MOOR_HOME": str(home)})
         procs.append(proc)
         # Popen returns once exec has begun, before the kernel publishes the new image's argv and
         # environment: /proc/<pid>/cmdline reads empty for that instant. A gateway is running.
@@ -51,7 +51,7 @@ def spawn(tmp_path):
 @pytest.mark.spawns_gateway_lookalike  # stub children that sleep; the fixture reaps them
 def test_an_equal_argv_gateway_of_another_home_never_retires_the_unmapped_debt(spawn):
     spawn, argv = spawn
-    root = os.environ["HERMES_HOME"]  # the sandboxed home this update owns, with two profiles
+    root = os.environ["MOOR_HOME"]  # the sandboxed home this update owns, with two profiles
     home_a, home_b = (os.path.join(root, "profiles", name) for name in ("a", "b"))
     os.makedirs(home_a)
     os.makedirs(home_b)
@@ -70,10 +70,10 @@ def test_an_equal_argv_gateway_of_another_home_never_retires_the_unmapped_debt(s
 
 @pytest.mark.platforms("windows")  # the spec overlays the environment only on Windows
 def test_an_unmapped_replay_runs_on_the_home_its_runtime_ran_on(tmp_path):
-    from hermes_cli.gateway_windows import windowless_gateway_restart_spec
+    from moor_cli.gateway_windows import windowless_gateway_restart_spec
 
     paused_home = tmp_path / "profiles" / "a"
     paused_home.mkdir(parents=True)
     _argv, _cwd, env = windowless_gateway_restart_spec(
-        [sys.executable, "-m", "hermes_cli.main", "gateway", "run"], home=str(paused_home))
-    assert env["HERMES_HOME"] == str(paused_home.resolve()), "the replay ran on the updater's home"
+        [sys.executable, "-m", "moor_cli.main", "gateway", "run"], home=str(paused_home))
+    assert env["MOOR_HOME"] == str(paused_home.resolve()), "the replay ran on the updater's home"

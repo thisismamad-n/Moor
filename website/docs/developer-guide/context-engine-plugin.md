@@ -191,7 +191,7 @@ What the host guarantees:
   Never assume per-row uniqueness in the active set; key your own state on
   the uid and treat the later row as the current version.
 - **Tool calls get per-occurrence ids too.** Provider tool-call ids repeat
-  (Hermes mints deterministic `call_<12hex>` ids for identical calls, and models
+  (Moor mints deterministic `call_<12hex>` ids for identical calls, and models
   reuse ids), so an assistant message carries `_tool_call_uids`, a
   `{tool_call_id: uid}` map for its `tool_calls`, and each tool-result message
   carries the matching `_tool_call_uid`. Calls that repeat a provider id inside

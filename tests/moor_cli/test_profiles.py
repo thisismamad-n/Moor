@@ -255,7 +255,7 @@ class TestCreateProfile:
 
     def test_clone_config_copies_source_plugins(self, profile_env):
         tmp_path = profile_env
-        default_home = tmp_path / ".hermes"
+        default_home = tmp_path / ".moor"
         plugin_dir = default_home / "plugins" / "example-plugin"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text("name: example-plugin\n")
@@ -272,14 +272,14 @@ class TestCreateProfile:
     def test_clone_config_keeps_plugin_provenance_and_skips_install_staging(self, profile_env):
         """A catalog-installed memory provider keeps its install record in the clone, so the clone
         runs (and updates) the source's exact revision; an in-flight install staging dir stays behind."""
-        plugins = profile_env / ".hermes" / "plugins"
+        plugins = profile_env / ".moor" / "plugins"
         (plugins / "acme-memory").mkdir(parents=True)
         (plugins / "acme-memory" / "plugin.yaml").write_text("name: acme-memory\nkind: memory\n")
         (plugins / "acme-memory" / "__pycache__").mkdir()
         (plugins / ".install-abc123" / "plugin").mkdir(parents=True)
         record = '{"acme-memory": {"pinned": true, "revision": "%s", "source": "https://example.invalid/a.git"}}' % ("a" * 40)
         (plugins / ".install-metadata.json").write_text(record)
-        (profile_env / ".hermes" / "config.yaml").write_text("memory:\n  provider: acme-memory\n")
+        (profile_env / ".moor" / "config.yaml").write_text("memory:\n  provider: acme-memory\n")
 
         cloned = create_profile("coder", clone_config=True, no_alias=True) / "plugins"
 
@@ -309,7 +309,7 @@ class TestCreateProfile:
     def test_clone_sync_imports_carries_manifest_but_never_links_profiles(self, profile_env):
         """--sync-imports copies import-sync.json (a pointer at EXTERNAL agent trees) and nothing
         else changes: the clone still gets its own config/skills copies, never a live link."""
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
         manifest = {"version": 1, "agents": {"claude-code": {
             "source": str(profile_env / ".claude"), "digest": "d", "overwrite": False,
@@ -466,7 +466,7 @@ class TestCreateProfile:
     def test_clone_all_skips_special_files(self, profile_env):
         # A live source profile holds special files copytree cannot copy (e.g. a suffixless
         # browser control socket); one of them must not abort the whole clone.
-        default_home = profile_env / ".hermes"
+        default_home = profile_env / ".moor"
         (default_home / "config.yaml").write_text("model: test", encoding="utf-8")
         browser_dir = default_home / "home" / ".agent-browser"
         browser_dir.mkdir(parents=True)

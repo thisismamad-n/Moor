@@ -34,12 +34,12 @@ from moor_cli.middleware import VALID_MIDDLEWARE
 from moor_cli.plugin_capabilities import plugin_capability_granted
 from moor_cli.relay_plugin_cutover import RELAY_PLUGINS_CONFIG_ENV, legacy_relay_plugin_keys
 # Sibling modules' names are re-exported here (origin) so plugins and tests keep one import path.
-from hermes_cli.plugins_manifest import (
+from moor_cli.plugins_manifest import (
     _CONFIG_SCHEMA_TYPES, SUPPORTED_MANIFEST_VERSION, PluginManifest, _portable_data_namespace,
     manifest_key, parse_manifest_file, resolve_module_origin, resolve_plugin_load_order,
     validate_config_schema,
 )
-from hermes_cli.plugins_discovery import (
+from moor_cli.plugins_discovery import (
     ENTRY_POINTS_GROUP, _get_disabled_plugins, _get_enabled_plugins, collect_directory_manifests,
     discover_entrypoint_manifests, gate_manifest, plugin_discovery_suppressed, resolve_manifest_winners,
     scan_directory,
@@ -48,8 +48,8 @@ from moor_cli.plugins_loader import (
     PluginLoaderMixin, _BARE_MODULE_SCOPE, _MODULE_NAMESPACE_LOCK, _NS_PARENT, _evict_modules,
     _plugin_home_scope, _serialized_replacement, in_plugin_load_worker,
 )
-from hermes_cli.plugins_dispatch import (
-    DEFAULT_SYSTEM_PROMPT_SECTION_MAX_CHARS, HERMES_EVENT_NAMESPACE, MAX_SYSTEM_PROMPT_SECTION_CHARS,
+from moor_cli.plugins_dispatch import (
+    DEFAULT_SYSTEM_PROMPT_SECTION_MAX_CHARS, MOOR_EVENT_NAMESPACE, MAX_SYSTEM_PROMPT_SECTION_CHARS,
     MAX_SYSTEM_PROMPT_SECTIONS_TOTAL_CHARS, PLUGIN_SECTIONS_END, PLUGIN_SECTIONS_START,
     SYSTEM_PROMPT_SECTION_POSITIONS, _EVENT_EMIT_DEPTH_CAP, _EVENT_PENDING_CAP,
     _HOOK_CALLBACK_TIMEOUT_SECS, _HOOK_TIMEOUT_SUPPRESSION_SECONDS, _MAX_HOOK_CALLBACK_TIMEOUT_SECS,
@@ -57,10 +57,10 @@ from hermes_cli.plugins_dispatch import (
     RenderedPluginSystemPromptSection, _EventSubscription, format_system_prompt_sections,
     is_valid_system_prompt_section_id, resolve_plugin_command_result,
 )
-from hermes_cli.plugins_capability_ctx import PluginCapabilityCtxMixin
-from hermes_cli.plugins_ledger import PluginLedgerMixin, PluginRegistration
-from hermes_cli.plugins_registrars import _SCOPED_PROVIDER_REGISTRARS, make_scoped_provider_registrar
-from hermes_cli.plugins_state import (
+from moor_cli.plugins_capability_ctx import PluginCapabilityCtxMixin
+from moor_cli.plugins_ledger import PluginLedgerMixin, PluginRegistration
+from moor_cli.plugins_registrars import _SCOPED_PROVIDER_REGISTRARS, make_scoped_provider_registrar
+from moor_cli.plugins_state import (
     PluginState, _locked_plugin_state, _nested_plugin_mapping, _nested_plugin_value,
     _plugin_relative_segments, _plugin_settings_entry, save_plugin_setting,
 )
@@ -591,34 +591,34 @@ class PluginContext(PluginCapabilityCtxMixin):
     ) -> bool:
         """Queue *content* for a session (``session_key``) or a chat in this plugin's own profile
         (``origin``); ``True`` means a host accepted it. Contract: plugins_injection.py, plugin docs."""
-        from hermes_cli.plugins_injection import inject_plugin_message
+        from moor_cli.plugins_injection import inject_plugin_message
         return inject_plugin_message(self, content, role, session_key=session_key, origin=origin)
 
     def session_cwd(self) -> str:
         """The calling session's recorded cwd, never the gateway's own (``plugin_session``)."""
-        from hermes_cli.plugin_session import context_cwd
+        from moor_cli.plugin_session import context_cwd
         return context_cwd(self._manager)
 
     def session_surface(self) -> str:
         """The calling session's client (``cli``/``tui``/``desktop``/``acp``) or messaging platform."""
-        from hermes_cli.plugin_session import context_surface
+        from moor_cli.plugin_session import context_surface
         return context_surface(self._manager)
 
     def post_message(self, text: str) -> Any:
         """Post *text* into the session bound to this call; the handle's ``edit(text)`` updates it in
         place. Never raises (``ok=False`` + ``error`` with no conversation): ``plugin_messages.py``."""
-        from hermes_cli.plugin_messages import post
+        from moor_cli.plugin_messages import post
         return post(self, text)
 
     async def apost_message(self, text: str) -> Any:
         """``post_message`` for async code on the gateway loop (edit with ``await handle.aedit``)."""
-        from hermes_cli.plugin_messages import apost
+        from moor_cli.plugin_messages import apost
         return await apost(self, text)
 
     def ask_choice(self, question: str, choices: list) -> Optional[str]:
         """From a sync slash-command handler: ask its user to pick one of *choices* (``str`` or
         ``{value, label?, description?}``); the value, or None if unanswerable: ``plugin_choices.py``."""
-        from hermes_cli.plugin_choices import ask_choice
+        from moor_cli.plugin_choices import ask_choice
         return ask_choice(question, choices)
 
     def _gateway_injection_allowed(self) -> bool:
@@ -866,7 +866,7 @@ class PluginContext(PluginCapabilityCtxMixin):
         ``defaults``, then user config in ``auxiliary.<key>``). An unknown or self-referential
         ``inherit_from`` logs a warning and registers the task without inheritance.
         Raises ``ValueError`` for an empty/invalid key, a built-in key, or another plugin's key."""
-        from hermes_cli.plugins_aux_tasks import build_auxiliary_task_entry
+        from moor_cli.plugins_aux_tasks import build_auxiliary_task_entry
         existing = self._manager._aux_tasks.get(key)
         entry = build_auxiliary_task_entry(
             self.manifest.name, self.plugin_id, key, display_name=display_name, description=description,
@@ -1012,7 +1012,7 @@ class PluginContext(PluginCapabilityCtxMixin):
         self._manager._subscribe_event(self.plugin_id, event, callback)
         logger.debug("Plugin %s subscribed to event: %s", self.manifest.name, event)
 
-    from hermes_cli.plugins_content import register_automation_blueprint, register_skill
+    from moor_cli.plugins_content import register_automation_blueprint, register_skill
 
 # -- scoped provider registrars ------------------------------------------------------------------
 # One generated ``register_<category>_provider`` method per row of plugins_registrars.py's table.
@@ -1158,7 +1158,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
         self._persistent_carryover: list[PluginRegistration] = []
         # Deferred platforms whose client tools registered at discovery (see
         # _register_deferred_platform_tools): imported package (don't re-execute on materialize)
-        # and contributed tool names (so `hermes plugins list` still attributes them).
+        # and contributed tool names (so `moor plugins list` still attributes them).
         self._predeclared_modules: dict[str, types.ModuleType] = {}
         self._predeclared_tools: dict[str, list[str]] = {}
 
@@ -1276,7 +1276,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
         enabled_names: list[str] = []
         if plugin_sources:
             try:
-                from hermes_cli.config import load_config
+                from moor_cli.config import load_config
                 secrets = (load_config() or {}).get("secrets") or {}
             except Exception:
                 secrets = {}
@@ -1308,7 +1308,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
             from moor_constants import get_moor_home
             home = get_moor_home()
             reset_secret_source_cache(home)
-            load_hermes_dotenv(hermes_home=home)
+            load_moor_dotenv(moor_home=home)
             # A scope installed for this home was frozen BEFORE these sources existed — a routed cron
             # fire builds its scope in run_one_job and only then, on its first agent build, discovers
             # plugins; under multiplex semantics the load above is hydrate-only, so fold the values
@@ -1338,7 +1338,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
         enabled = _get_enabled_plugins()  # None = opt-in default (nothing enabled)
         stale_relay_keys = legacy_relay_plugin_keys(enabled)
         if stale_relay_keys:
-            logger.warning("Removed Hermes plugin %s is still listed in plugins.enabled; "
+            logger.warning("Removed Moor plugin %s is still listed in plugins.enabled; "
                            "remove it and configure a standard user or system Relay plugins.toml, or use %s "
                            "for an explicit user-file override",
                            ", ".join(stale_relay_keys), RELAY_PLUGINS_CONFIG_ENV)
@@ -1427,8 +1427,8 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
             if not manifest.portable or names & disabled or not names & enabled:
                 continue
             try:  # lazy: this is a startup probe, keep agent_plugins unimported unless needed
-                from hermes_cli.agent_plugins import _discover_mcp
-                if _discover_mcp(Path(manifest.path), get_hermes_home() / "plugin-data"
+                from moor_cli.agent_plugins import _discover_mcp
+                if _discover_mcp(Path(manifest.path), get_moor_home() / "plugin-data"
                                  / (manifest.data_namespace or lookup_key), [], create_data=False):
                     return True
             except (OSError, RuntimeError, ValueError):
@@ -2134,7 +2134,7 @@ def get_plugin_auxiliary_tasks() -> list[dict[str, Any]]:
 
 
 def get_plugin_toolsets() -> list[tuple]:
-    """Plugin toolsets as ``(key, label, description)`` tuples for the ``hermes tools`` TUI."""
+    """Plugin toolsets as ``(key, label, description)`` tuples for the ``moor tools`` TUI."""
     manager = get_plugin_manager()
     if not manager._plugin_tool_names:
         return []

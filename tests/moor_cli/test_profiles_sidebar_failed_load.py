@@ -14,7 +14,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _uncached_sidebar(monkeypatch):
-    from hermes_cli.web_routers import profiles as profiles_routes
+    from moor_cli.web_routers import profiles as profiles_routes
 
     monkeypatch.setattr(profiles_routes, "_SIDEBAR_CACHE_TTL_SECONDS", 0.0)
     profiles_routes._sidebar_profile_cache_clear()
@@ -22,17 +22,17 @@ def _uncached_sidebar(monkeypatch):
 
 
 @pytest.fixture
-def profiles_on_disk(tmp_path, monkeypatch, _isolate_hermes_home):
-    from hermes_cli import profiles
-    from hermes_constants import get_hermes_home
+def profiles_on_disk(tmp_path, monkeypatch, _isolate_moor_home):
+    from moor_cli import profiles
+    from moor_constants import get_moor_home
 
-    default_home = get_hermes_home()
+    default_home = get_moor_home()
     profiles_root = default_home / "profiles"
     worker_home = profiles_root / "worker"
     for home in (default_home, worker_home):
         home.mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("{}\n", encoding="utf-8")
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: default_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
     return {"default": default_home, "worker": worker_home}
 
@@ -44,18 +44,18 @@ def client(monkeypatch, profiles_on_disk):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import hermes_state
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
-    from hermes_constants import get_hermes_home
+    import moor_state
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_constants import get_moor_home
 
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+    monkeypatch.setattr(moor_state, "DEFAULT_DB_PATH", get_moor_home() / "state.db")
     http = TestClient(app)
     http.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return http
 
 
 def _seed_session(home, session_id, *, source="cli"):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path=home / "state.db")
     try:
@@ -85,14 +85,14 @@ class TestSidebarFailedLoad:
         self, client, profiles_on_disk, monkeypatch
     ):
         _seed_session(profiles_on_disk["worker"], "worker-chat")
-        import hermes_state
+        import moor_state
 
         def boom(self, *args, **kwargs):
             raise sqlite3.OperationalError(
                 "no such column: s.compression_ineffective_count"
             )
 
-        monkeypatch.setattr(hermes_state.SessionDB, "list_sessions_rich", boom)
+        monkeypatch.setattr(moor_state.SessionDB, "list_sessions_rich", boom)
 
         payload = _sidebar(client, "worker")
 
@@ -106,32 +106,32 @@ class TestSidebarFailedLoad:
     ):
         home = profiles_on_disk["worker"]
         _seed_session(home, "worker-chat")
-        from hermes_cli import web_server_sessions as sessions_mod
+        from moor_cli import web_server_sessions as sessions_mod
 
         monkeypatch.setattr(
             sessions_mod,
             "_session_db_read_probe_statements",
             lambda: ('SELECT "sessions"."not_a_real_column" FROM "sessions" LIMIT 0',),
         )
-        import hermes_state
+        import moor_state
 
         writable_opens = []
-        real_init = hermes_state.SessionDB.__init__
+        real_init = moor_state.SessionDB.__init__
 
         def counting_init(self, *args, **kwargs):
             if not kwargs.get("read_only", False):
                 writable_opens.append(1)
             return real_init(self, *args, **kwargs)
 
-        monkeypatch.setattr(hermes_state.SessionDB, "__init__", counting_init)
-        real_list = hermes_state.SessionDB.list_sessions_rich
+        monkeypatch.setattr(moor_state.SessionDB, "__init__", counting_init)
+        real_list = moor_state.SessionDB.list_sessions_rich
 
         def list_then_miss(self, *args, **kwargs):
             if str(getattr(self, "_db_path", home / "state.db")):
                 raise sqlite3.OperationalError("no such column: s.not_a_real_column")
             return real_list(self, *args, **kwargs)
 
-        monkeypatch.setattr(hermes_state.SessionDB, "list_sessions_rich", list_then_miss)
+        monkeypatch.setattr(moor_state.SessionDB, "list_sessions_rich", list_then_miss)
 
         first = _sidebar(client, "worker")
         second = _sidebar(client, "worker")
@@ -141,7 +141,7 @@ class TestSidebarFailedLoad:
             _assert_failed_load(payload["recents"], "worker")
 
     def test_healthy_empty_store_stays_an_empty_list(self, client, profiles_on_disk):
-        from hermes_state import SessionDB
+        from moor_state import SessionDB
 
         SessionDB(db_path=profiles_on_disk["worker"] / "state.db").close()
 
@@ -156,9 +156,9 @@ class TestSidebarFailedLoad:
     ):
         _seed_session(profiles_on_disk["default"], "default-chat")
         _seed_session(profiles_on_disk["worker"], "worker-chat")
-        import hermes_state
+        import moor_state
 
-        real_list = hermes_state.SessionDB.list_sessions_rich
+        real_list = moor_state.SessionDB.list_sessions_rich
         worker_db = (profiles_on_disk["worker"] / "state.db").resolve()
 
         def explode_worker(self, *args, **kwargs):
@@ -166,7 +166,7 @@ class TestSidebarFailedLoad:
                 raise sqlite3.OperationalError("database is locked")
             return real_list(self, *args, **kwargs)
 
-        monkeypatch.setattr(hermes_state.SessionDB, "list_sessions_rich", explode_worker)
+        monkeypatch.setattr(moor_state.SessionDB, "list_sessions_rich", explode_worker)
 
         payload = _sidebar(client, "all")
 

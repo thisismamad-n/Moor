@@ -1,4 +1,4 @@
-import { randomUuid, SLASH_COMMAND_RE } from '@hermes/shared'
+import { randomUuid, SLASH_COMMAND_RE } from '@moor/shared'
 import { atom } from 'nanostores'
 
 import {
@@ -86,7 +86,7 @@ export type ResolvedQueuedPromptTransport =
 /**
  * Frozen terminal transport for queued entries, keyed by stable `queuedPromptId`.
  * Memory-only on purpose: persisting selection CONTENTS in
- * `hermes.desktop.composerQueue.v1` would survive renderer restart as stale
+ * `moor.desktop.composerQueue.v1` would survive renderer restart as stale
  * secrets-adjacent terminal output, and label reuse after reload cannot
  * reconstruct the original pane (#77078).
  */

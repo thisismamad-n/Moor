@@ -247,7 +247,7 @@ class TestGatewayRunnerInjection:
         profile_routes for a real inbound envelope — the original bug was a bare
         ``SignalAdapter(config)`` with no runner."""
         from gateway.config import PlatformConfig
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
 
         discover_plugins()  # the gateway does this at startup; Signal is a plugin platform now
 

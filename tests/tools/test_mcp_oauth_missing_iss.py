@@ -22,7 +22,7 @@ from mcp.client.auth.oauth2 import OAuthClientProvider
 from mcp.client.auth.utils import validate_authorization_response_iss
 from mcp.shared.auth import AuthorizationCodeResult, OAuthMetadata
 
-from tools.mcp_oauth_provider import HermesProviderMixin
+from tools.mcp_oauth_provider import MoorProviderMixin
 
 
 class _Provider(MoorProviderMixin, OAuthClientProvider):

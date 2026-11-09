@@ -1,5 +1,5 @@
 name: excel_line
-repo: https://github.com/kalice-vi/hermes-excel-line
+repo: https://github.com/kalice-vi/moor-excel-line
 sha: a48cc5a9d1763e7bbc21b28fb12ed1289870150c
 description: Excel-backed hierarchical long-term memory tree (10-row cap per workbook, dynamic branching, leaf pointers). Classifier defaults to the host model; third-party keyless rotation is opt-in.
 maintainer: kalice-vi

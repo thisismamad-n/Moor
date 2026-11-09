@@ -25,9 +25,9 @@ BRANCH="master"
 INSTALL_COMMIT=""
 # The update channel to install: stable (the latest published release, the default for the
 # official repository's main line) or main (every commit). An explicit choice is persisted.
-CHANNEL="${HERMES_INSTALL_CHANNEL:-}"
-INSTALL_DIR="${HERMES_INSTALL_DIR:-}"
-HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+CHANNEL="${MOOR_INSTALL_CHANNEL:-}"
+INSTALL_DIR="${MOOR_INSTALL_DIR:-}"
+MOOR_HOME="${MOOR_HOME:-$HOME/.moor}"
 STAGE=""
 WANT_MANIFEST=false
 JSON=false
@@ -45,7 +45,7 @@ INSTALL_IN_STAGE=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --branch|-Branch|--commit|-Commit|--channel|-Channel|--dir|--hermes-home|-HermesHome|--stage|-Stage)
+        --branch|-Branch|--commit|-Commit|--channel|-Channel|--dir|--moor-home|-MoorHome|--stage|-Stage)
             option="$1"
             if [ $# -lt 2 ] || [ -z "$2" ] || [[ "$2" == -* ]]; then
                 printf '%s needs a value\n' "$option" >&2
@@ -70,20 +70,20 @@ while [ $# -gt 0 ]; do
         --verbose|-Verbose) VERBOSE=true; shift ;;
         -h|--help)
             echo "Usage: install.sh [--channel stable|main] [--branch NAME] [--commit SHA]"
-            echo "                  [--dir PATH] [--hermes-home PATH]"
+            echo "                  [--dir PATH] [--moor-home PATH]"
             echo "                  [--manifest] [--stage NAME] [--json]"
             echo "                  [--non-interactive] [--include-desktop] [--verbose]"
             echo "                  [--skip-browser] [--skip-computer-use]"
             echo
             echo "  --channel       stable (default): the latest published release, then release"
-            echo "                  to release. main: every commit. Also HERMES_INSTALL_CHANNEL;"
-            echo "                  an explicit choice is saved like 'hermes update --set-channel'."
+            echo "                  to release. main: every commit. Also MOOR_INSTALL_CHANNEL;"
+            echo "                  an explicit choice is saved like 'moor update --set-channel'."
             echo "  --skip-browser  Do not install the browser (Chromium). Alias: --no-playwright."
-            echo "                  Remembered by later installs and 'hermes update';"
-            echo "                  undo with 'hermes pm install chromium'."
+            echo "                  Remembered by later installs and 'moor update';"
+            echo "                  undo with 'moor pm install chromium'."
             echo "  --skip-computer-use"
             echo "                  Do not install the computer-use driver (cua-driver). Remembered"
-            echo "                  the same way; undo with 'hermes pm install cua-driver'."
+            echo "                  the same way; undo with 'moor pm install cua-driver'."
             exit 0 ;;
         *) echo "unknown option: $1" >&2; exit 1 ;;
     esac
@@ -94,8 +94,8 @@ case "$CHANNEL" in
     *) printf -- '--channel must be stable or main, not %s\n' "$CHANNEL" >&2; exit 2 ;;
 esac
 
-INSTALL_DIR="${INSTALL_DIR:-$HERMES_HOME/hermes-agent}"
-export HERMES_HOME
+INSTALL_DIR="${INSTALL_DIR:-$MOOR_HOME/moor-agent}"
+export MOOR_HOME
 
 INSTALL_LOG="$MOOR_HOME/logs/install.log"
 
@@ -116,7 +116,7 @@ log_error() { printf '%s✗%s %s\n' "$C_RED" "$C_NC" "$1" >&2; }
 # $2: closed failure class for the local install receipt (write_install_receipt).
 fail() { STAGE_REASON="$1"; FAILURE_CLASS="${2:-other}"; log_error "$1"; exit 1; }
 # The last failed run_logged command's own error line (git's "fatal: ..."), so a
-# failure reason -- which Hermes-Setup shows as-is -- names the cause, not just the step.
+# failure reason -- which moor-setup shows as-is -- names the cause, not just the step.
 RUN_LOGGED_ERROR=""
 native_detail() { [ -z "$RUN_LOGGED_ERROR" ] || printf ': %s' "$RUN_LOGGED_ERROR"; }
 # Pick the error line from a command's output on stdin: the first fatal:/error:
@@ -135,14 +135,14 @@ error_line() {
 
 # One local receipt per full-ladder run, under the profile's shared-metrics dir.
 # Only closed tokens and two timestamps (never STAGE_REASON, paths or URLs); the
-# installer never sends anything. Hermes reports it as hermes.install.run on a
+# installer never sends anything. Moor reports it as moor.install.run on a
 # later start only while shared metrics collection is on, and deletes it
 # unreported when collection is off. Best effort: never fails the install.
 write_install_receipt() {
     # $1 outcome, $2 failed stage, $3 failure class. One file per run: the first writer wins.
     # A failed write (full disk) removes its partial temp file: the reader never sees dotfiles.
     {
-        local dir="$HERMES_HOME/telemetry/shared_metrics/pending_installs" id="$INSTALL_RUN_ID"
+        local dir="$MOOR_HOME/telemetry/shared_metrics/pending_installs" id="$INSTALL_RUN_ID"
         [ -n "$id" ] && [ ! -e "$dir/$id.json" ] && mkdir -p "$dir" && {
             printf '{"id":"%s","installer":"install_sh","outcome":"%s","failed_stage":"%s","failure_class":"%s","started_at":%s,"finished_at":%s}\n' \
                 "$id" "$1" "$2" "$3" "$INSTALL_STARTED" "$(date +%s)" > "$dir/.$id.tmp" \
@@ -230,7 +230,7 @@ run_logged() {
         log "$label"
         local err rc
         err="$(mktemp 2>/dev/null)" || { "$@"; return; }
-        # stderr still streams (Hermes-Setup logs it); a copy names the failure.
+        # stderr still streams (moor-setup logs it); a copy names the failure.
         { "$@" 2>&1 1>&3 | tee "$err" >&2; } 3>&1
         rc=${PIPESTATUS[0]}
         [ "$rc" -eq 0 ] || RUN_LOGGED_ERROR="$(error_line < "$err")"
@@ -362,14 +362,14 @@ uv_bootstrap_target() {
 UV_CMD=""
 ensure_uv() {
     [ -n "$UV_CMD" ] && return 0
-    # Always the pinned artifact, never a uv already on PATH: Hermes runs only
+    # Always the pinned artifact, never a uv already on PATH: Moor runs only
     # its own packaged toolchain.
     local _target
     if ! _target="$(uv_bootstrap_target)"; then
-        fail "no pinned uv build for this platform ($(uname -s) $(uname -m)); Hermes does not support this host" unsupported_platform
+        fail "no pinned uv build for this platform ($(uname -s) $(uname -m)); Moor does not support this host" unsupported_platform
     fi
     if ! uv_bootstrap_pin "$_target"; then
-        fail "no pinned uv artifact for $_target; Hermes does not support this host" unsupported_platform
+        fail "no pinned uv artifact for $_target; Moor does not support this host" unsupported_platform
     fi
     local _store="${MOOR_RUNTIME_DIR:-$MOOR_HOME/tools}"
     local _entry="$_store/uv-$UV_PIN_VERSION-$_target"
@@ -436,7 +436,7 @@ check_platform() {
     # install the phone cannot run (no Android wheels in the lock). The
     # signed APT package is the only supported shape there.
     if [ -n "${TERMUX_VERSION:-}" ] || case "${PREFIX:-}" in *com.termux/files/usr*) true ;; *) false ;; esac; then
-        fail "Termux is installed from its APT repository, not install.sh: pkg install hermes-agent (setup: https://hermes-agent.nousresearch.com/docs/getting-started/termux)" unsupported_platform
+        fail "Termux is installed from its APT repository, not install.sh: pkg install moor-agent (setup: https://hermes-agent.nousresearch.com/docs/getting-started/termux)" unsupported_platform
     fi
     case "$(uname -s 2>/dev/null)" in
         Linux*) : ;;
@@ -480,7 +480,7 @@ stage_result() {
     if [ "$ok" = false ] && [ "${INSTALL_LADDER:-false}" = true ]; then
         local class="${FAILURE_CLASS:-other}"
         # A user abort beats the stage's own class: a child that caught Ctrl-C and exited 1
-        # (pm, source_completion, `hermes setup`) still reaches the stage's `|| fail ... <class>`.
+        # (pm, source_completion, `moor setup`) still reaches the stage's `|| fail ... <class>`.
         case "$code" in 129|130|143) class=interrupted ;; esac
         [ "${STAGE_INTERRUPTED:-false}" = false ] || class=interrupted
         write_install_receipt failed "${STAGE//-/_}" "$class"
@@ -565,7 +565,7 @@ install_macos_git() {
         log_warn "xcode-select --install: $(printf '%s\n' "$_xs" | error_line)"
     fi
     local _remedy="Install Apple's Command Line Tools (run: xcode-select --install), then re-run this installer."
-    # Hermes-Setup drives stages with --json: no stage timeout, a Cancel
+    # moor-setup drives stages with --json: no stage timeout, a Cancel
     # button, and these log lines show as progress, so it waits too.
     if [ "$JSON" != true ] && { [ "$NON_INTERACTIVE" = true ] || ! has_terminal; }; then
         fail "git needs Apple's Command Line Tools. $_remedy" git_missing
@@ -616,11 +616,11 @@ stage_prerequisites() {
 }
 
 # The update channel this install chose (config.yaml update.installs.<id>.channel,
-# id = sha16 of the canonical install path, as hermes_cli.update_channel keys it).
-# Pre-Python reader of the block YAML Hermes writes; anything it cannot read prints
+# id = sha16 of the canonical install path, as moor_cli.update_channel keys it).
+# Pre-Python reader of the block YAML Moor writes; anything it cannot read prints
 # nothing, which keeps the plain branch behaviour.
 chosen_channel() {
-    local config="$HERMES_HOME/config.yaml" root id
+    local config="$MOOR_HOME/config.yaml" root id
     [ -f "$config" ] || return 0
     root="$(cd "$INSTALL_DIR" 2>/dev/null && pwd -P)" || return 0
     if command -v sha256sum >/dev/null 2>&1; then id="$(printf '%s' "$root" | sha256sum)"
@@ -645,24 +645,24 @@ chosen_channel() {
 }
 
 # Forks and mirrors publish no official releases; they keep following their branch, as
-# hermes_cli.update_channel.default_channel decides.
+# moor_cli.update_channel.default_channel decides.
 is_official_repo() {
     printf '%s' "$1" | tr '[:upper:]' '[:lower:]' \
         | grep -Eq '^(https://github\.com/|git@github\.com:|ssh://git@github\.com/)nousresearch/hermes-agent(\.git)?/?$'
 }
 
-# The latest published stable release (vX.Y.Z), the release `hermes update` resolves for the
+# The latest published stable release (vX.Y.Z), the release `moor update` resolves for the
 # stable channel. github.com's /releases/latest redirect answers when the API quota is spent, and
 # origin's highest vX.Y.Z tag (final tags are pushed by the publication run) when github.com's web
 # endpoints are unreachable but git is not. $1 is the origin URL. Prints nothing when none answers.
 latest_stable_release() {
     local tag
     tag="$(curl -fsSL --connect-timeout 5 --max-time 20 -H 'Accept: application/vnd.github+json' \
-        https://api.github.com/repos/NousResearch/hermes-agent/releases/latest 2>/dev/null \
+        https://api.github.com/repos/thisismamad-n/Moor/releases/latest 2>/dev/null \
         | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
     if ! valid_stable_tag "$tag"; then
         tag="$(curl -fsSI --connect-timeout 5 --max-time 20 \
-            https://github.com/NousResearch/hermes-agent/releases/latest 2>/dev/null \
+            https://github.com/thisismamad-n/Moor/releases/latest 2>/dev/null \
             | tr -d '\r' | sed -n 's#^[Ll]ocation:.*/releases/tag/\([^/]*\)$#\1#p' | tail -n 1)"
     fi
     if ! valid_stable_tag "$tag"; then
@@ -671,7 +671,7 @@ latest_stable_release() {
     fi
     if valid_stable_tag "$tag"; then printf '%s' "$tag"; fi
 }
-# Same shape as hermes_cli.update_channel.STABLE_TAG_RE.
+# Same shape as moor_cli.update_channel.STABLE_TAG_RE.
 valid_stable_tag() {
     printf '%s' "$1" | grep -Eq '^v(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
 }
@@ -697,7 +697,7 @@ fetch_release() {
 }
 
 # Stable applies but cannot be reached. A fresh install stops (installing main instead would be
-# a channel nobody chose); a rerun keeps its checkout for `hermes update`, unless stable was
+# a channel nobody chose); a rerun keeps its checkout for `moor update`, unless stable was
 # asked for by name. $1 says what failed.
 stable_unreachable() {
     if [ -d "$INSTALL_DIR/.git" ] && [ "$CHANNEL" != stable ]; then
@@ -713,7 +713,7 @@ stage_repository() {
     # initial commit, where stash/checkout abort ("You do not have the
     # initial commit yet", #40998); a killed update or a sync tool can leave
     # one git rejects outright (empty HEAD, a gitdir: file pointing nowhere),
-    # where `hermes update` cannot fetch. Move it aside -- never delete it, it
+    # where `moor update` cannot fetch. Move it aside -- never delete it, it
     # may hold something the user wants -- and clone fresh below.
     if [ -e "$INSTALL_DIR/.git" ] && ! git -C "$INSTALL_DIR" rev-parse --verify HEAD >/dev/null 2>&1; then
         local broken
@@ -722,20 +722,20 @@ stage_repository() {
         mv "$INSTALL_DIR" "$broken" || fail "cannot move $INSTALL_DIR aside" filesystem_error
     fi
     if [ -d "$INSTALL_DIR/.git" ]; then
-        # A chosen channel (stable, a preview) owns where this checkout sits: `hermes update`
+        # A chosen channel (stable, a preview) owns where this checkout sits: `moor update`
         # moves it. Switching it to the installer's branch would leave it on main while its
         # channel still says otherwise, and the next check would offer the release as an update.
         # Only an explicit --commit pin outranks the choice.
         # An explicit --channel is a new choice and replaces the recorded one.
         [ -n "$INSTALL_COMMIT" ] || [ -n "$CHANNEL" ] || channel="$(chosen_channel)"
-        # An explicit HERMES_REPO_URL names the source for reruns too, not
+        # An explicit MOOR_REPO_URL names the source for reruns too, not
         # just the first clone.
-        if [ -n "${HERMES_REPO_URL:-}" ]; then
+        if [ -n "${MOOR_REPO_URL:-}" ]; then
             git -C "$INSTALL_DIR" remote set-url origin "$REPO_URL" || fail "cannot point origin at $REPO_URL" git_fetch_failed
         fi
-        # No recorded choice: an official checkout tracks stable, as `hermes update` does.
+        # No recorded choice: an official checkout tracks stable, as `moor update` does.
         if [ -z "$channel" ]; then
-            # The configured URL, as hermes_cli.update_channel reads it (`remote get-url`
+            # The configured URL, as moor_cli.update_channel reads it (`remote get-url`
             # applies insteadOf rewrites).
             origin="$(git -C "$INSTALL_DIR" config --get remote.origin.url 2>/dev/null)" || origin=""
             release="$(stable_target "$origin")"
@@ -773,7 +773,7 @@ stage_repository() {
                 || log_warn "could not disable fetch.writeCommitGraph in $INSTALL_DIR"
             # A treeless (tree:0) checkout from a late-September installer downloads whole
             # directory snapshots again on every history walk (#129514). Fetch its trees once; the
-            # new filter is recorded only after that succeeds, so `hermes update` retries otherwise.
+            # new filter is recorded only after that succeeds, so `moor update` retries otherwise.
             if [ "$(git -C "$INSTALL_DIR" config --get remote.origin.partialclonefilter)" = tree:0 ]; then
                 if run_logged --may-fail "Fetching directory history once (treeless checkout)" \
                     git -C "$INSTALL_DIR" -c gc.auto=0 -c maintenance.auto=false fetch --refetch \
@@ -781,12 +781,12 @@ stage_repository() {
                     git -C "$INSTALL_DIR" config remote.origin.partialclonefilter blob:none \
                         || log_warn "could not record the blobless filter in $INSTALL_DIR"
                 else
-                    log_warn "could not fetch the directory history; the next hermes update retries it"
+                    log_warn "could not fetch the directory history; the next moor update retries it"
                 fi
             fi
         fi
         if [ -n "$channel" ]; then
-            log "Keeping its checkout: \`hermes update\` moves it (\`hermes update --set-channel main\` follows main)"
+            log "Keeping its checkout: \`moor update\` moves it (\`moor update --set-channel main\` follows main)"
             return 0
         fi
         if [ -n "$release" ] && ! fetch_release "$INSTALL_DIR"; then
@@ -796,14 +796,14 @@ stage_repository() {
         if [ -n "$release" ]; then
             # A rerun only moves a checkout forward onto the release. Any other move (a main
             # checkout diverged from a release cut on release/*, one already past it, a shallow
-            # one that cannot tell) is `hermes update`'s: it refuses a release that predates the
+            # one that cannot tell) is `moor update`'s: it refuses a release that predates the
             # session stores this checkout wrote (update_downgrade_guard).
             if git -C "$INSTALL_DIR" merge-base --is-ancestor "$release" HEAD 2>/dev/null; then
-                log "Keeping its checkout: it already has $release (\`hermes update\` moves it to the next release)"
+                log "Keeping its checkout: it already has $release (\`moor update\` moves it to the next release)"
                 return 0
             fi
             if ! git -C "$INSTALL_DIR" merge-base --is-ancestor HEAD "$release" 2>/dev/null; then
-                log "Keeping its checkout: $release does not descend from it (\`hermes update\` decides that move)"
+                log "Keeping its checkout: $release does not descend from it (\`moor update\` decides that move)"
                 return 0
             fi
         else
@@ -825,12 +825,12 @@ stage_repository() {
                 git -C "$INSTALL_DIR" reset -q || fail "cannot clear the unmerged index in $INSTALL_DIR" local_changes_blocked
             fi
             run_logged "Stashing local changes" \
-                git -C "$INSTALL_DIR" stash push --include-untracked -m "hermes-install-autostash-$stamp" \
+                git -C "$INSTALL_DIR" stash push --include-untracked -m "moor-install-autostash-$stamp" \
                 || fail "could not stash local changes in $INSTALL_DIR; commit or move them aside, then rerun" local_changes_blocked
-            log_warn "local changes stashed as hermes-install-autostash-$stamp"
+            log_warn "local changes stashed as moor-install-autostash-$stamp"
         fi
         if [ -n "$release" ]; then
-            # Detached at the release commit, the way `hermes update` places a stable checkout;
+            # Detached at the release commit, the way `moor update` places a stable checkout;
             # branches (and any commits on them) stay where they are.
             run_logged "Checking out $release" git -C "$INSTALL_DIR" checkout --detach "$release" \
                 || fail "git checkout failed$(native_detail)" git_checkout_failed
@@ -863,7 +863,7 @@ stage_repository() {
                     || rescue_kind="orphan"
                 prior="$(git -C "$INSTALL_DIR" rev-parse --short=12 HEAD)" \
                     || fail "cannot identify commits before reset" git_reset_failed
-                rescue_ref="refs/hermes-update-backups/$rescue_kind-$BRANCH-$stamp-$prior"
+                rescue_ref="refs/moor-update-backups/$rescue_kind-$BRANCH-$stamp-$prior"
                 git -C "$INSTALL_DIR" update-ref "$rescue_ref" HEAD \
                     || fail "cannot back up $dropped local commit(s); refusing to reset" git_reset_failed
                 log_warn "$dropped commit(s) not on origin/$BRANCH backed up to $rescue_ref"
@@ -881,7 +881,7 @@ stage_repository() {
             if [ -d "$INSTALL_DIR" ] && [ ! -L "$INSTALL_DIR" ] && [ -z "$(ls -A "$INSTALL_DIR")" ]; then
                 rmdir "$INSTALL_DIR" || fail "cannot replace empty $INSTALL_DIR" filesystem_error
             else
-                fail "$INSTALL_DIR exists and is not a Hermes git checkout. Move it aside, or install elsewhere with --dir <path>." dir_not_checkout
+                fail "$INSTALL_DIR exists and is not a Moor git checkout. Move it aside, or install elsewhere with --dir <path>." dir_not_checkout
             fi
         fi
         mkdir -p "$(dirname "$INSTALL_DIR")"
@@ -893,7 +893,7 @@ stage_repository() {
         # Phase lines ("Receiving objects: 42%") feed the status line; git
         # prints none to a pipe unless asked.
         if quiet_output; then progress=(--progress); fi
-        staged="$(mktemp -d "$(dirname "$INSTALL_DIR")/.hermes-clone-XXXXXX")" || fail "cannot stage clone" filesystem_error
+        staged="$(mktemp -d "$(dirname "$INSTALL_DIR")/.moor-clone-XXXXXX")" || fail "cannot stage clone" filesystem_error
         for attempt in 1 2 3; do
             # Blobless: every commit, tree and release tag (runtime identity is
             # the nearest reachable release; --commit pins and branch switches
@@ -961,7 +961,7 @@ stage_repository() {
         rmdir "$staged"
         # A treeless checkout must never write a commit-graph: over a graph with
         # changed-path data that lazy-fetches the trees of every unseen commit, in a
-        # loop (#127711). gc.auto stays on: `hermes update` folds lazy-fetch packs with
+        # loop (#127711). gc.auto stays on: `moor update` folds lazy-fetch packs with
         # `gc --auto`.
         git -C "$INSTALL_DIR" config maintenance.commit-graph.enabled false \
             || log_warn "could not disable maintenance.commit-graph.enabled in $INSTALL_DIR"
@@ -969,7 +969,7 @@ stage_repository() {
             || log_warn "could not disable gc.writeCommitGraph in $INSTALL_DIR"
         git -C "$INSTALL_DIR" config fetch.writeCommitGraph false \
             || log_warn "could not disable fetch.writeCommitGraph in $INSTALL_DIR"
-        log_success "Hermes Agent cloned"
+        log_success "Moor Agent cloned"
     fi
     if [ -n "$INSTALL_COMMIT" ] && [ "$pinned" = false ]; then
         # A rerun over an existing checkout pins here (a fresh clone pinned
@@ -1022,8 +1022,8 @@ bootstrap_python() {
 bootstrap_pm() {
     local boot_py
     local pm_args=(install)
-    # PM records the opt-outs, so later installs and `hermes update` keep the
-    # tools off until `hermes pm install <name>` opts back in.
+    # PM records the opt-outs, so later installs and `moor update` keep the
+    # tools off until `moor pm install <name>` opts back in.
     # Legacy spelling on purpose: the stable PM this script installs by default
     # rejects `chromium`, and newer PMs read `agent-browser` as `chromium`.
     [ "$SKIP_BROWSER" = true ] && pm_args+=(--without agent-browser)
@@ -1071,7 +1071,7 @@ append_shell_path() {
         return 0
     fi
     mkdir -p "$(dirname "$rc")"
-    printf '\n# Hermes Agent command\n%s\n' "$line" >> "$rc" || fail "cannot update PATH in $rc" filesystem_error
+    printf '\n# Moor Agent command\n%s\n' "$line" >> "$rc" || fail "cannot update PATH in $rc" filesystem_error
     log_success "added ~/.local/bin to PATH in $rc"
 }
 
@@ -1116,8 +1116,8 @@ stage_products() {
     if [ "$INCLUDE_DESKTOP" = true ] || desktop_product_present; then
         args+=(--desktop)
     fi
-    (cd "$INSTALL_DIR" && run_logged "Building the hermes command and apps" \
-        "$boot_py" -I -B -X utf8 hermes_cli/source_completion.py "${args[@]}") \
+    (cd "$INSTALL_DIR" && run_logged "Building the moor command and apps" \
+        "$boot_py" -I -B -X utf8 moor_cli/source_completion.py "${args[@]}") \
         || fail "app products or command publication failed" products_build_failed
     wire_shell_path
     log_success "app products and moor command ready"
@@ -1156,7 +1156,7 @@ stage_setup() {
         log "setup skipped (no terminal); run 'moor setup' after install"
         return 0
     fi
-    "$INSTALL_DIR/.hermes/bin/hermes" setup </dev/tty || fail "setup failed" setup_failed
+    "$INSTALL_DIR/.moor/bin/moor" setup </dev/tty || fail "setup failed" setup_failed
 }
 
 stage_gateway() {
@@ -1166,7 +1166,7 @@ stage_gateway() {
         return 0
     fi
     # Setup installs the service when it handles the gateway; ask only if it did not.
-    "$INSTALL_DIR/.hermes/bin/hermes" gateway install --if-missing </dev/tty || fail "gateway installation failed" gateway_failed
+    "$INSTALL_DIR/.moor/bin/moor" gateway install --if-missing </dev/tty || fail "gateway installation failed" gateway_failed
 }
 
 stage_complete() {
@@ -1179,10 +1179,10 @@ stage_complete() {
         mv -f "$INSTALL_DIR/.moor-bootstrap-complete.tmp" "$INSTALL_DIR/.moor-bootstrap-complete"
     fi
     if [ -n "$CHANNEL" ]; then
-        "$INSTALL_DIR/.hermes/bin/hermes" update --set-channel "$CHANNEL" \
+        "$INSTALL_DIR/.moor/bin/moor" update --set-channel "$CHANNEL" \
             || fail "could not save the $CHANNEL update channel" other
     fi
-    log_success "Hermes Agent install complete. Run: hermes"
+    log_success "Moor Agent install complete. Run: moor"
 }
 
 print_path_reload_hint() {

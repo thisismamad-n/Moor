@@ -20,8 +20,8 @@ from contextlib import closing, contextmanager
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
-from hermes_state_holders import read_only_db_uri
-from hermes_cli.backup_sqlite import _safe_copy_db
+from moor_state_holders import read_only_db_uri
+from moor_cli.backup_sqlite import _safe_copy_db
 from utils import (
     _preserve_file_mode, _preserve_file_owner, _restore_file_mode, _restore_file_owner, atomic_replace,
     mkstemp_beside,
@@ -128,17 +128,17 @@ def _restore_auth_json(src: Path, dst: Path) -> bool:
         and isinstance(snapshot_store.get("systems"), dict)
     ):
         systems = snapshot_store["systems"]
-        providers = {"nous": systems["nous_portal"]} if "nous_portal" in systems else {}
+        providers = {"moor": systems["moor_portal"]} if "moor_portal" in systems else {}
         # Match auth._load_auth_store's migration shape exactly: the legacy
         # "systems" container itself is obsolete and must not be written back.
         snapshot_store = {
             "providers": providers,
-            "active_provider": "nous" if providers else None,
+            "active_provider": "moor" if providers else None,
         }
 
     try:
-        from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
-        from hermes_cli.auth_oauth_grants import (
+        from moor_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+        from moor_cli.auth_oauth_grants import (
             merge_snapshot_auth_preserving_live_single_use_grants,
         )
 
@@ -165,7 +165,7 @@ def _safe_restore_db(src: Path, dst: Path) -> bool:
     ``state.db`` epoch floor cannot be proven.
     """
     from gateway.runtime_ownership import OwnershipConflict, exclusive_maintenance
-    from hermes_cli.backup import verify_sqlite_integrity
+    from moor_cli.backup import verify_sqlite_integrity
 
     # backup() copies pages without validating their contents; its fallback
     # copies bytes even when SQLite rejected the source. Neither may touch the
@@ -199,7 +199,7 @@ def _restore_destination_epoch(dst: Path) -> int:
     except (OSError, sqlite3.Error, ValueError) as exc:
         raise OSError(
             f"Cannot read the canonical runtime epoch at {dst}; refusing in-place restore. "
-            "Use `hermes sessions recover --source <snapshot> --output <separate-path>` "
+            "Use `moor sessions recover --source <snapshot> --output <separate-path>` "
             "to salvage transcripts into a separate output."
         ) from exc
 
@@ -635,7 +635,7 @@ def _import_db_member_exclusive(
             dst.flush()
             os.fsync(dst.fileno())
         if not _safe_restore_db(Path(tmp_name), target):
-            from hermes_cli.backup import verify_sqlite_integrity
+            from moor_cli.backup import verify_sqlite_integrity
 
             # Re-check only on failure so the user gets the real cause; the
             # detailed integrity message was already logged by _safe_restore_db.

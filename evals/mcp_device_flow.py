@@ -157,7 +157,7 @@ main()
             tokens = json.loads(token_path.read_text())
             tokens["expires_at"] = time.time() - 60
             token_path.write_text(json.dumps(tokens))
-            refreshed = subprocess.run([sys.executable, "-m", "hermes_cli.main", "mcp", "test", "fixture"],
+            refreshed = subprocess.run([sys.executable, "-m", "moor_cli.main", "mcp", "test", "fixture"],
                                        cwd=repo, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30, check=False)
             refresh_output = refreshed.stdout + refreshed.stderr
         return {"mode": mode, "returncode": result.returncode, "output": result.stdout + result.stderr,

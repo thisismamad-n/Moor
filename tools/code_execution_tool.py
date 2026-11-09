@@ -191,7 +191,7 @@ def _sandbox_failure_hint(stderr_text: str, enabled_tools=None) -> Optional[str]
     return None
 
 
-def generate_hermes_tools_module(enabled_tools: list[str],
+def generate_moor_tools_module(enabled_tools: list[str],
                                  transport: str = "uds") -> str:
     """Source of the moor_tools.py stub module for SANDBOX_ALLOWED_TOOLS ∩ *enabled_tools*.
     ``transport``: ``"uds"`` (local socket client) or ``"file"`` (file RPC, remote backends)."""
@@ -474,11 +474,11 @@ def _ship_env_file_and_launch(env, remote_dir: str, env_name: str, launch: str, 
     The subshell is load-bearing: every env.execute() runs inside the backend's
     session wrapper, which re-dumps ``export -p`` into the shared session
     snapshot after each command. A plain ``set -a; . file`` in the outer shell
-    would export HERMES_RPC_TOKEN/PYTHONPATH/TZ into that snapshot and re-export
+    would export MOOR_RPC_TOKEN/PYTHONPATH/TZ into that snapshot and re-export
     them into every later command on the backend (the #71296 snapshot-leak
     class). The token also stays off the remote shell's argv, which co-tenant
     users can read via ps for the command's lifetime."""
-    env_map = {"HERMES_RPC_DIR": rpc_dir, "HERMES_RPC_TOKEN": rpc_token,
+    env_map = {"MOOR_RPC_DIR": rpc_dir, "MOOR_RPC_TOKEN": rpc_token,
                "PYTHONDONTWRITEBYTECODE": "1", **extra_env}
     tz = get_timezone_name()  # routed profile's timezone, not the bridged default's
     if tz:
@@ -619,7 +619,7 @@ def _run_remote_per_call(env, env_type: str, code: str, effective_task_id: str,
                   max_tool_calls, sandbox_tools, stop_event, rpc_token))
         rpc_thread.start()
         # The token travels in a sourced env file, never in argv. No umask on
-        # the launch command: the 700 dirs + explicit 0600 writes cover Hermes'
+        # the launch command: the 700 dirs + explicit 0600 writes cover Moor'
         # files, and user code keeps the remote's default file modes.
         launch_cmd = _ship_env_file_and_launch(
             env, sandbox_dir, "sandbox.env", "exec python3 script.py",
@@ -679,7 +679,7 @@ def _execute_remote(code: str, task_id: Optional[str], enabled_tools: Optional[l
             # run-to-completion transport. Spawn failure falls OPEN to the per-call
             # path below so a degraded remote host never blocks execution.
             try:
-                # --- Session-kernel path (hermes-agent#96873) ------------------- Same always-on model as
+                # --- Session-kernel path (moor-agent#96873) ------------------- Same always-on model as
                 # local: one persistent kernel per owner, rebuilt on the run-to-completion transport (detached
                 # runner + file cell protocol).
                 from tools.code_kernel_remote import execute_in_remote_kernel
@@ -783,7 +783,7 @@ def execute_code(
     if _guard.get("user_approved"):
         from tools.interrupt import clear_current_thread_interrupt
         clear_current_thread_interrupt()
-    from hermes_cli.observability.shared_metrics_loop import record_execution_backend
+    from moor_cli.observability.shared_metrics_loop import record_execution_backend
     if env_type != "local":
         return record_execution_backend("code", "remote", _execute_remote(code, task_id, enabled_tools, reset=bool(reset)))
     from tools.interrupt import is_interrupted as _is_interrupted

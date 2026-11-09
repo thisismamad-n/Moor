@@ -1,10 +1,10 @@
-function Invoke-HermesProbe {
+function Invoke-MoorProbe {
     param([Parameter(Mandatory = $true)][string]$Exe, [string[]]$Arguments = @())
     # Every launcher probe is bounded (60 s): a launcher that hangs (a stuck
     # import, an AV scan) fails the probe instead of parking the hand-off
     # forever after the Desktop already closed. Timeout kills the probe tree.
     # windows.ps1 -ProbeTimeoutSeconds sets the bound for tests.
-    $timeout = if ($HermesProbeTimeoutSeconds -gt 0) { $HermesProbeTimeoutSeconds } else { 60 }
+    $timeout = if ($MoorProbeTimeoutSeconds -gt 0) { $MoorProbeTimeoutSeconds } else { 60 }
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $Exe
     $psi.Arguments = (@($Arguments) | ForEach-Object { '"{0}"' -f ($_ -replace '"', '\"') }) -join ' '
@@ -40,7 +40,7 @@ function Invoke-HermesProbe {
     return @{ Code = $process.ExitCode; Output = $text; TimedOut = $false }
 }
 
-function Get-HermesRuntimeCommand {
+function Get-MoorRuntimeCommand {
     param(
         [Parameter(Mandatory = $true)][string]$InstallRoot,
         [string]$Module = 'moor_cli.main'
@@ -51,7 +51,7 @@ function Get-HermesRuntimeCommand {
     foreach ($name in @('moor.exe', 'moor.cmd')) {
         $launcher = Join-Path $InstallRoot ".moor\bin\$name"
         if (Test-Path -LiteralPath $launcher -PathType Leaf) {
-            $probe = Invoke-HermesProbe $launcher @('--print-runtime-command', '--module', $Module)
+            $probe = Invoke-MoorProbe $launcher @('--print-runtime-command', '--module', $Module)
             if ($probe.TimedOut) { throw "Installation launcher did not answer within the probe timeout: $launcher" }
             if ($probe.Code) { throw "Installation launcher failed (exit $($probe.Code)): $launcher" }
             $command = @(($probe.Output | ConvertFrom-Json))
@@ -74,7 +74,7 @@ function Get-HermesRuntimeCommand {
             foreach ($name in @('moor.exe', 'moor.cmd')) {
                 $legacy = Join-Path $directory $name
                 if (-not (Test-Path -LiteralPath $legacy -PathType Leaf)) { continue }
-                $probe = Invoke-HermesProbe $legacy @('--version')
+                $probe = Invoke-MoorProbe $legacy @('--version')
                 $version = $probe.Output
                 if ($probe.TimedOut -or $probe.Code -or $version -notmatch '(?m)^Install directory: (.+)\r?$') { continue }
                 $reported = [IO.Path]::GetFullPath($Matches[1].Trim()).TrimEnd('\', '/')

@@ -4,7 +4,7 @@ import {
   JsonRpcGatewayClient,
   type ServerRequest,
   type ServerRequestHandler
-} from '@hermes/shared'
+} from '@moor/shared'
 import { map, type MapStore } from 'nanostores'
 
 import type { MoorApiRequest } from '@/global'
@@ -59,7 +59,7 @@ const ATTACH_REQUIRED = new Set([
 // (`session_key`) is the same CAS mutation on a sidebar row.
 const PARENT_ATTACH_REQUIRED = new Set(['session.branch_stored', 'session.branch_whole', 'session.workspace.move'])
 
-// Canonical-only identity keys. The legacy `hermes serve` contract refuses an unknown key as
+// Canonical-only identity keys. The legacy `moor serve` contract refuses an unknown key as
 // version skew (4000), so they are stripped on a non-canonical dial. `prompt.submit` keeps its
 // `submission_id` on purpose: the submit path retries identityless on that exact refusal and
 // records the send as legacy-attempted, which a silent strip here would hide. A message-level
@@ -92,12 +92,12 @@ function remainingRequestBudget(deadline: number, signal?: AbortSignal): number 
   if (deadline === Number.POSITIVE_INFINITY) { return 0 }
   const remaining = deadline - Date.now()
 
-  if (remaining <= 0) { throw new Error('Hermes gateway request timed out') }
+  if (remaining <= 0) { throw new Error('Moor gateway request timed out') }
 
   return remaining
 }
 
-export class HermesGateway extends JsonRpcGatewayClient {
+export class MoorGateway extends JsonRpcGatewayClient {
   private canonical = false
   private readonly protocol = new CanonicalDesktopProtocol()
   private readonly promptHandlers = new Set<ServerRequestHandler>()
@@ -474,7 +474,7 @@ export class HermesGateway extends JsonRpcGatewayClient {
   }
 
   private requireConnectionGeneration(generation: number): void {
-    if (generation !== this.connectionGeneration) { throw new Error('Hermes gateway connection changed; reopen the session') }
+    if (generation !== this.connectionGeneration) { throw new Error('Moor gateway connection changed; reopen the session') }
   }
 
   // Resume the session (and, for branch-like methods, its parent) on THIS socket before a
@@ -531,7 +531,7 @@ export class HermesGateway extends JsonRpcGatewayClient {
         console.error(`[gateway] server request handler crashed for ${request.method} (${request.id}):`, error),
       // The channel already answered -32601; note the missing registry in devtools.
       onUnhandledRequest: request =>
-        console.warn(`[gateway] Hermes Desktop has no server-request registry for ${request.method} (${request.id})`),
+        console.warn(`[gateway] Moor Desktop has no server-request registry for ${request.method} (${request.id})`),
       requestTimeoutMs: DEFAULT_GATEWAY_REQUEST_TIMEOUT_MS,
       socketFactory: openGatewaySocket
     })
@@ -621,12 +621,12 @@ export function resolveOwnerNow(owner?: OwnerScope): ResolvedOwner {
   }
 }
 
-/** `hermesApi` for a resolved owner: its tags are sent verbatim, with no
+/** `moorApi` for a resolved owner: its tags are sent verbatim, with no
  *  ambient connection spread underneath. An untagged half stays untagged. A
  *  named profile is always explicit here, so it carries the foreground
  *  priority `profileScoped` gives explicit profiles (voice is user-driven). */
-export function hermesApiAs<T>(owner: ResolvedOwner, request: HermesApiRequest): Promise<T> {
-  return window.hermesDesktop.api<T>({
+export function moorApiAs<T>(owner: ResolvedOwner, request: MoorApiRequest): Promise<T> {
+  return window.moorDesktop.api<T>({
     ...(owner.connectionId ? { connectionId: owner.connectionId } : {}),
     ...(owner.profile ? { priority: 'foreground' as const, profile: owner.profile } : {}),
     ...request

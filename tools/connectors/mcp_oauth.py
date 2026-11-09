@@ -180,7 +180,7 @@ def run_worker(
             if home_token is not None:
                 reset_moor_home_override(home_token)
     except Exception as exc:
-        from hermes_cli.mcp_config import probe_failure_class
+        from moor_cli.mcp_config import probe_failure_class
         from tools.mcp_dashboard_oauth import exception_message
         msg = exception_message(exc)
         with suppress(Exception):

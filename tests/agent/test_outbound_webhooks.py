@@ -587,7 +587,7 @@ class TestDelivery:
             "import sys\n"
             f"sys.path.insert(0, {str(Path(outbound_webhooks.__file__).resolve().parents[1])!r})\n"
             "from agent import outbound_webhooks\n"
-            "from hermes_cli.plugins import get_plugin_manager\n"
+            "from moor_cli.plugins import get_plugin_manager\n"
             f"cfg = {cfg!r}\n"
             "outbound_webhooks.register_from_config(cfg)\n"
             "get_plugin_manager().invoke_hook('on_session_end', session_id='exit_test')\n"

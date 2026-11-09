@@ -4,19 +4,19 @@ import pytest
 
 
 @pytest.fixture()
-def isolated_profiles(tmp_path, monkeypatch, _isolate_hermes_home):
+def isolated_profiles(tmp_path, monkeypatch, _isolate_moor_home):
     """Route dashboard cron storage to an isolated default profile."""
-    from hermes_constants import get_hermes_home
-    from hermes_cli import profiles
+    from moor_constants import get_moor_home
+    from moor_cli import profiles
 
-    default_home = get_hermes_home()
+    default_home = get_moor_home()
     (default_home / "cron").mkdir(parents=True, exist_ok=True)
     (default_home / "config.yaml").write_text(
         "model: test-model\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: default_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: default_home / "profiles")
     return default_home
 
@@ -28,14 +28,14 @@ def client(monkeypatch, isolated_profiles):
     except ImportError:
         pytest.skip("fastapi/starlette not installed")
 
-    import hermes_state
-    from hermes_constants import get_hermes_home
-    from hermes_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
+    import moor_state
+    from moor_constants import get_moor_home
+    from moor_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
     monkeypatch.setattr(
-        hermes_state,
+        moor_state,
         "DEFAULT_DB_PATH",
-        get_hermes_home() / "state.db",
+        get_moor_home() / "state.db",
     )
     test_client = TestClient(app)
     test_client.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN

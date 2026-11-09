@@ -23,7 +23,7 @@ from tools.tts_tool_providers import _tts_response_format_from_path
 logger = logging.getLogger("tools.tts_tool")
 
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini-tts"
-# Speech models the managed Nous audio gateway serves (it bills a model only when NAS has a priced
+# Speech models the managed Moor audio gateway serves (it bills a model only when NAS has a priced
 # rule for it, so anything else fails closed). Others are coerced to DEFAULT_OPENAI_MODEL.
 MANAGED_OPENAI_TTS_MODELS = frozenset({"gpt-4o-mini-tts", "tts-1", "tts-1-hd"})
 DEFAULT_OPENAI_VOICE = "alloy"
@@ -148,7 +148,7 @@ def _generate_openai_tts(
 
 
 def _generate_deepinfra_tts(text: str, output_path: str, tts_config: dict[str, Any]) -> str:
-    """Resolve DeepInfra credentials/model (live ``hermes_cli.models`` catalog, no hardcoded ids), then
+    """Resolve DeepInfra credentials/model (live ``moor_cli.models`` catalog, no hardcoded ids), then
     delegate to the OpenAI-compatible handler."""
     api_key = _origin()._resolve_provider_key("DEEPINFRA_API_KEY", "deepinfra")
     if not api_key:

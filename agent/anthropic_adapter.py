@@ -1,4 +1,4 @@
-"""Anthropic Messages API adapter: client construction + the Messages call for Hermes's
+"""Anthropic Messages API adapter: client construction + the Messages call for Moor's
 OpenAI-style internals. Auth: Console API keys (``sk-ant-api*``/``-usr*``/``-svc*``/``-admin*``) ->
 x-api-key; OAuth setup-tokens (``sk-ant-oat*``) and Claude Code credentials -> Bearer + beta header.
 Endpoint predicates, payload conversion and credentials live in ``agent/anthropic_{endpoints,
@@ -285,7 +285,7 @@ def find_claude_code_cli(command: str) -> Optional[str]:
     agree with version detection about whether the CLI is installed under a GUI/service PATH."""
     if command not in _CLAUDE_CODE_NAMES:
         return None
-    from hermes_platform.resolver import locate_command
+    from moor_platform.resolver import locate_command
 
     found = locate_command(command, known_dirs=_CLAUDE_CODE_PREFIXES).command
     return found[0] if found else None
@@ -539,7 +539,7 @@ def build_anthropic_bedrock_client(region: str, timeout: float | None = None):
                   "aws_session_token": scoped.get("aws_session_token"), "aws_profile": scoped.get("profile_name")}
     return sdk.AnthropicBedrock(
         aws_region=region, timeout=_client_timeout(timeout), **{k: v for k, v in aws_kwargs.items() if v},
-        max_retries=0,  # retry belongs to hermes's outer loop (honors Retry-After)
+        max_retries=0,  # retry belongs to moor's outer loop (honors Retry-After)
         default_headers={**_beta_header([*_COMMON_BETAS, _CONTEXT_1M_BETA]), **bedrock_guardrail_headers()},
     )
 
@@ -618,7 +618,7 @@ def _thinking_kwargs(reasoning_config: dict[str, Any], model: str, effective_max
     """Map ``reasoning_config`` to Anthropic thinking kwargs. Adaptive models (Claude 4.6+,
     Kimi/Moonshot) get ``thinking.type=adaptive`` + ``output_config.effort``; older models and
     manual-only compat endpoints (MiniMax) get budget_tokens. Haiku through 4.5 gets none. On
-    4.7+ ``thinking.display`` defaults to "omitted", hiding the reasoning Hermes shows in its CLI,
+    4.7+ ``thinking.display`` defaults to "omitted", hiding the reasoning Moor shows in its CLI,
     so "summarized" is requested to keep the activity feed populated."""
     if reasoning_config.get("enabled") is False:
         # Adaptive models think by DEFAULT, so omitting the parameter is not a disable — the user

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import profiles
+from moor_cli import profiles
 
 
 @pytest.fixture(autouse=True)
@@ -88,7 +88,7 @@ def test_the_raw_config_reader_keeps_its_uncached_contract(profile_dir):
 
 def test_config_model_cache_is_keyed_on_the_backend_version_not_the_local_file(profile_dir, monkeypatch):
     """The user layer changes through the config backend, which need not touch the local file."""
-    from hermes_cli import config_backend
+    from moor_cli import config_backend
 
     assert profiles._read_config_model(profile_dir) == ("gpt-4o", "openai")
     version = [("v2",)]

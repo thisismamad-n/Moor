@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-from hermes_cli import gateway_chat
-import hermes_cli.gateway_chat_startup as startup
+from moor_cli import gateway_chat
+import moor_cli.gateway_chat_startup as startup
 
 
 def _args(path, fmt="text"):

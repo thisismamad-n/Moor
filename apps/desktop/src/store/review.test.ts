@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ClientSessionState } from '@/app/types'
-import type { HermesReviewFile, HermesReviewShipInfo } from '@/global'
+import type { MoorReviewFile, MoorReviewShipInfo } from '@/global'
 
 import {
   $reviewCommitDefault,
@@ -124,7 +124,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.clearAllTimers()
   vi.useRealTimers()
-  delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+  delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
 })
 
 describe('refreshReview', () => {
@@ -202,8 +202,8 @@ describe('refreshReview', () => {
   it('keeps a new repository loading when the previous request rejects during the debounce gap', async () => {
     vi.useFakeTimers()
 
-    const repoA = deferred<{ files: HermesReviewFile[] }>()
-    const repoB = deferred<{ files: HermesReviewFile[] }>()
+    const repoA = deferred<{ files: MoorReviewFile[] }>()
+    const repoB = deferred<{ files: MoorReviewFile[] }>()
 
     const review = stubReview({
       list: vi.fn((cwd: string) => (cwd === '/repo-a' ? repoA.promise : repoB.promise))
@@ -236,7 +236,7 @@ describe('refreshReview', () => {
   })
 
   it('does not let an older list response clear a newer direct selection', async () => {
-    const pendingList = deferred<{ files: HermesReviewFile[] }>()
+    const pendingList = deferred<{ files: MoorReviewFile[] }>()
     stubReview({ list: vi.fn(() => pendingList.promise), diff: vi.fn(async () => 'new diff') })
     $reviewOpen.set(true)
 
@@ -251,8 +251,8 @@ describe('refreshReview', () => {
   })
 
   it('does not let an older finally clear a newer in-flight refresh spinner', async () => {
-    const first = deferred<{ files: HermesReviewFile[] }>()
-    const second = deferred<{ files: HermesReviewFile[] }>()
+    const first = deferred<{ files: MoorReviewFile[] }>()
+    const second = deferred<{ files: MoorReviewFile[] }>()
     let call = 0
     stubReview({ list: vi.fn(() => (++call === 1 ? first.promise : second.promise)) })
     $reviewOpen.set(true)
@@ -450,7 +450,7 @@ describe('view state', () => {
 
   it('keeps openReviewForPath ownership when a debounced refresh was already pending', async () => {
     vi.useFakeTimers()
-    const directList = deferred<{ files: HermesReviewFile[] }>()
+    const directList = deferred<{ files: MoorReviewFile[] }>()
     const review = stubReview({ list: vi.fn(() => directList.promise), diff: vi.fn(async () => 'target diff') })
     $reviewOpen.set(true)
 
@@ -689,7 +689,7 @@ describe('turn baseline capture', () => {
   })
 
   it('leaves the baseline empty when there is no git bridge', async () => {
-    delete (window as unknown as { hermesDesktop?: unknown }).hermesDesktop
+    delete (window as unknown as { moorDesktop?: unknown }).moorDesktop
 
     $sessionStates.set({ rt_nobridge: sessionState(true, '/repo') })
 

@@ -1,15 +1,15 @@
 """Classic-CLI slash commands reach shared metrics once each: canonical name, surface ``cli``."""
 
-from cli import HermesCLI
+from cli import MoorCLI
 
 
 def test_cli_counts_each_typed_slash_command_once(monkeypatch):
     calls = []
     monkeypatch.setattr(
-        "hermes_cli.observability.shared_metrics_events.record_slash_command", lambda **kw: calls.append(kw))
+        "moor_cli.observability.shared_metrics_events.record_slash_command", lambda **kw: calls.append(kw))
     ran = []
-    monkeypatch.setattr(HermesCLI, "_cmd_new", lambda self, cmd: ran.append(cmd))
-    cli = object.__new__(HermesCLI)
+    monkeypatch.setattr(MoorCLI, "_cmd_new", lambda self, cmd: ran.append(cmd))
+    cli = object.__new__(MoorCLI)
     cli.config = {"quick_commands": {"rs": {"type": "alias", "target": "/reset"}}}
 
     cli.process_command("/reset")

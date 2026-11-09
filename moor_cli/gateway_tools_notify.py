@@ -19,7 +19,7 @@ import queue
 
 def gateway_store(cli):
     """The CLI's gateway session store, or None (a test double / an unavailable store)."""
-    from hermes_cli.gateway_session_store import GatewaySessionStore
+    from moor_cli.gateway_session_store import GatewaySessionStore
     store = getattr(cli, "_session_db", None)
     return store if isinstance(store, GatewaySessionStore) else None
 
@@ -52,7 +52,7 @@ def queue_admitted_turn(cli, store) -> None:
             recover_queued(cli, store)
             return
         if isinstance(frame, Exception):
-            from hermes_cli.gateway_connection import lost_before
+            from moor_cli.gateway_connection import lost_before
             if lost_before(frame, getattr(connection, "epoch", None)):
                 continue  # a connection a reconnect already replaced
             events.put(frame)  # the disconnect belongs to the next turn
@@ -62,7 +62,7 @@ def queue_admitted_turn(cli, store) -> None:
             continue
         if params.get("type") == "review.summary":
             # The background review (/refine, the post-turn review) reports after its turn settled.
-            from hermes_cli.gateway_agent import review_summary_line
+            from moor_cli.gateway_agent import review_summary_line
             line = review_summary_line(params.get("payload"))
             if line:
                 cli._agent_status_print(line)
@@ -125,7 +125,7 @@ def recover_queued(cli, store) -> None:
     Settled: adopted with its saved result, painted without a pump. One that never ran (cancelled,
     rejected) is forgotten: the only point where ``queued_inputs`` drops a row unpainted.
     """
-    from hermes_cli.gateway_client import GatewayClientError
+    from moor_cli.gateway_client import GatewayClientError
     state = store.connection.state(getattr(cli, "session_id", None))
     if not state.queued_inputs or (state.recovered_seq == state.pending_seq and not state.missed):
         return

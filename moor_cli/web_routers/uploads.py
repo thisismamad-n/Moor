@@ -1,4 +1,4 @@
-"""Authenticated browser-to-host attachment staging for Hermes Webapp."""
+"""Authenticated browser-to-host attachment staging for Moor Webapp."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import os
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
-from hermes_constants import WEBAPP_ATTACHMENT_MAX_BYTES
-from hermes_cli.staged_uploads import (
+from moor_constants import WEBAPP_ATTACHMENT_MAX_BYTES
+from moor_cli.staged_uploads import (
     publish_staged_upload,
     resolve_upload_home,
     staged_upload_descriptor,
@@ -24,10 +24,10 @@ async def upload_chat_file(
     file: UploadFile = File(...),
     profile: str | None = None,
 ):
-    """Stage one user-selected browser file under the active Hermes profile.
+    """Stage one user-selected browser file under the active Moor profile.
 
     The client never chooses a server path. A unique 0600 file under
-    ``$HERMES_HOME/uploads`` is returned for the existing ``file.attach`` flow.
+    ``$MOOR_HOME/uploads`` is returned for the existing ``file.attach`` flow.
     """
     profile_home = await asyncio.to_thread(resolve_upload_home, profile)
     try:

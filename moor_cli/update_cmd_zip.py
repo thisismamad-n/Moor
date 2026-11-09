@@ -14,23 +14,23 @@ import sys
 from pathlib import Path
 from typing import Collection, Optional
 
-from hermes_cli._early_recovery import _keep_aside
-from hermes_cli._early_recovery_zip import (
+from moor_cli._early_recovery import _keep_aside
+from moor_cli._early_recovery_zip import (
     ZIP_SWAP_JOURNAL, restore_interrupted_zip_swap, write_zip_swap_journal, zip_entry_identity, zip_swap_owner_lock)
-from hermes_cli.update_cmd_common import _record_stop
+from moor_cli.update_cmd_common import _record_stop
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("moor_cli.update_cmd")
 
-_ZIP_STAGING_ARTIFACT_SUFFIXES = ".hermes-update-staging", ".hermes-update-old"
-# Hermes' own root breadcrumbs: the swap journal + its owner lock, and the update/refresh markers.
+_ZIP_STAGING_ARTIFACT_SUFFIXES = ".moor-update-staging", ".moor-update-old"
+# Moor' own root breadcrumbs: the swap journal + its owner lock, and the update/refresh markers.
 # They are never user work, so the dirty-tree guard must not refuse (and wedge) on them.
-_ZIP_HERMES_ROOT_ARTIFACTS = frozenset({
-    ".hermes-update-zip-swap", ".hermes-update-zip-swap.lock", ".update-incomplete", ".lazy-refresh-incomplete"})
+_ZIP_MOOR_ROOT_ARTIFACTS = frozenset({
+    ".moor-update-zip-swap", ".moor-update-zip-swap.lock", ".update-incomplete", ".lazy-refresh-incomplete"})
 # A journal temp a killed writer left (``write_durable_text``'s unpredictable name). The swap never
 # touches it (no ZIP ships it) and nothing deletes it, so admitting it risks no user bytes. A file at
-# the old fixed ``.hermes-update-zip-swap.tmp`` name is no longer Hermes': it blocks (review Z5).
-_ZIP_JOURNAL_TEMP = re.compile(r"\.hermes-update-zip-swap\.[0-9a-f]{12}\.tmp")
+# the old fixed ``.moor-update-zip-swap.tmp`` name is no longer Moor': it blocks (review Z5).
+_ZIP_JOURNAL_TEMP = re.compile(r"\.moor-update-zip-swap\.[0-9a-f]{12}\.tmp")
 
 # Single source of truth for entries the ZIP swap preserves — used by the dirty-tree filter and the swap loop.
 _ZIP_PRESERVED_TOP_LEVEL = {"venv", ".venv", "node_modules", ".git", ".env"}
@@ -41,7 +41,7 @@ _ZIP_PRESERVED_TOP_LEVEL = {"venv", ".venv", "node_modules", ".git", ".env"}
 # `_stage_entries` grafts the live copies into the staged tree so the swap keeps them (#90495).
 _ZIP_PRESERVED_NESTED = {
     "apps": ("desktop/release", "desktop/dist", "desktop/dist-webapp", "desktop/node_modules", "desktop/build"),
-    "hermes_cli": ("web_dist",),
+    "moor_cli": ("web_dist",),
     "scripts": ("whatsapp-bridge/node_modules",),
     "ui-tui": ("dist", "node_modules", "packages/moor-ink/dist"),
     "web": ("node_modules",),
@@ -81,8 +81,8 @@ def _stage_replacement(src: str, dst: str, on_created=None) -> str:
     """Phase 1: copy *src* (dir or file) to a sibling staging path for *dst*; return it.
     Touches nothing live, so a failure here leaves the install untouched. ``on_created(staging)`` runs
     once the staging entry exists (a directory: before it is filled), so the journal can record it."""
-    staging = f"{dst}.hermes-update-staging"
-    backup = f"{dst}.hermes-update-old"
+    staging = f"{dst}.moor-update-staging"
+    backup = f"{dst}.moor-update-old"
     # A prior run may have died mid-swap leaving the backup as the ONLY copy. Restore it BEFORE
     # clearing leftovers, else deleting it then failing to stage (disk exhaustion) leaves a hole.
     if not os.path.lexists(dst) and os.path.lexists(backup):  # a dangling symlink backup is still one (Z3)
@@ -196,13 +196,13 @@ def _commit_staged_replacements(staged, *, on_committed=None, tag: str = "", on_
     A plain file is never absent, not even for one rename: its backup is a hardlink (or, without
     hardlinks, a complete copy) and ``os.replace`` lands the new bytes over it; only directories move
     aside. The root modules every launcher imports first
-    (``hermes_constants``, ``hermes_bootstrap``) therefore always import, and ``hermes_bootstrap`` runs the
-    journal-driven restore even while a killed swap left a directory (``hermes_cli/`` included) moved aside.
+    (``moor_constants``, ``moor_bootstrap``) therefore always import, and ``moor_bootstrap`` runs the
+    journal-driven restore even while a killed swap left a directory (``moor_cli/`` included) moved aside.
     """
     swapped: list[tuple[str, str]] = []  # (dst, backup) in swap order; "" = absent
     try:
         for staging, dst in staged:
-            backup = f"{dst}.hermes-update-old"
+            backup = f"{dst}.moor-update-old"
             if os.path.lexists(backup):  # appeared since staging set leftovers aside: not ours to replace (F78)
                 raise FileExistsError(f"{backup} appeared during the update; it was left in place")
             if os.path.isfile(dst) and not os.path.islink(dst):
@@ -243,7 +243,7 @@ def _zip_overlay_block_reason(
 
     The swap replaces every top-level entry (minus a tiny preserve set) and deletes backups, so uncommitted
     edits and untracked files are gone. Fails closed when git status cannot run. ``staged`` is for the
-    pre-swap re-check: phase 1 leaves ``<entry>.hermes-update-staging`` for those entries, which git
+    pre-swap re-check: phase 1 leaves ``<entry>.moor-update-staging`` for those entries, which git
     reports as untracked; without the filter the re-check always refuses. ``shipped`` is the extracted
     ZIP's top-level entry set once known (the re-check); before the download the tracked root entries stand
     in for it. A gitignored path under a root entry the ZIP does not ship is never touched by the swap.
@@ -252,7 +252,7 @@ def _zip_overlay_block_reason(
     """
     if not (root / ".git").exists():
         return None
-    from hermes_cli.update_custody import run_git
+    from moor_cli.update_custody import run_git
 
     git_cmd = ["git", "-c", "windows.appendAtomically=false"] if sys.platform == "win32" else ["git"]
     result = run_git(
@@ -319,11 +319,11 @@ def _is_zip_preserved_entry_status_line(line: str, shipped: Optional[Collection[
 
 
 def _is_zip_staging_artifact_status_line(line: str, staged: Collection[str] = ()) -> bool:
-    """True when a porcelain status line is Hermes' own: a root breadcrumb, or the staging copy of an
-    entry this run staged. Any other ``*.hermes-update-staging``/``-old`` may be a user's file (a manual
-    ``cp -r tools tools.hermes-update-old``) that staging would delete, so it blocks."""
+    """True when a porcelain status line is Moor' own: a root breadcrumb, or the staging copy of an
+    entry this run staged. Any other ``*.moor-update-staging``/``-old`` may be a user's file (a manual
+    ``cp -r tools tools.moor-update-old``) that staging would delete, so it blocks."""
     top = _status_top_level(line[3:] if len(line) >= 3 else line)
-    return (top in _ZIP_HERMES_ROOT_ARTIFACTS or bool(_ZIP_JOURNAL_TEMP.fullmatch(top))
+    return (top in _ZIP_MOOR_ROOT_ARTIFACTS or bool(_ZIP_JOURNAL_TEMP.fullmatch(top))
             or top in {item + _ZIP_STAGING_ARTIFACT_SUFFIXES[0] for item in staged})
 
 
@@ -332,7 +332,7 @@ def _abort_zip_update_if_dirty_tree() -> None:
 
     See #87304.
     """
-    from hermes_cli.update_cmd import _m
+    from moor_cli.update_cmd import _m
     # Settle an interrupted swap first: only its journal tells its staging/backup siblings apart from a
     # user's lookalike file, and once settled none are left to refuse the retry on.
     restore_interrupted_zip_swap(_m().PROJECT_ROOT)
@@ -454,12 +454,12 @@ def _stage_entries(extracted: str, entries: list[str], project_root: str,
     return staged
 
 
-def _drop_journal_if_clean(root: Path, entries: list[str], suffixes=(".hermes-update-staging",)) -> None:
+def _drop_journal_if_clean(root: Path, entries: list[str], suffixes=(".moor-update-staging",)) -> None:
     """The journal is the only record of the swap's siblings (``<entry><suffix>``): it goes only once
     every one of them is gone, else the next launch's recovery could not tell them from a user's file."""
     left = [item for item in entries if any(os.path.lexists(os.path.join(root, item + x)) for x in suffixes)]
     if left:
-        print(f"  ⚠ Could not remove the update's own copies of {', '.join(left)}; the next `hermes` launch "
+        print(f"  ⚠ Could not remove the update's own copies of {', '.join(left)}; the next `moor` launch "
               "removes them.")
         return
     (root / ZIP_SWAP_JOURNAL).unlink(missing_ok=True)
@@ -468,8 +468,8 @@ def _drop_journal_if_clean(root: Path, entries: list[str], suffixes=(".hermes-up
 def _journaled_stage_and_swap(extracted: str, entries: list[str], root: Path, target_sha) -> list:
     """Stage + swap under the ZIP swap journal and its owner lock (``_early_recovery``), so a kill at
     any point is finished or rolled back by the next launch and no staging/backup sibling leaks."""
-    from hermes_cli import update_cmd_commit as _commit
-    from hermes_cli.update_cmd import _UPDATE_CRITICAL_FILES, _m
+    from moor_cli import update_cmd_commit as _commit
+    from moor_cli.update_cmd import _UPDATE_CRITICAL_FILES, _m
 
     # A previous run killed mid-swap: settle it before staging over its leftovers. A journal it could
     # not settle is that swap's only record: never overwrite it with this run's.
@@ -478,14 +478,14 @@ def _journaled_stage_and_swap(extracted: str, entries: list[str], root: Path, ta
         raise RuntimeError("an interrupted ZIP update could not be settled; see the warning above")
     with zip_swap_owner_lock(root, wait=10.0) as owned:
         if not owned:
-            raise RuntimeError("another `hermes update` is swapping this install right now"
+            raise RuntimeError("another `moor update` is swapping this install right now"
                                if owned.reason == "busy" else f"no ZIP swap lock, no swap ({owned.reason})")
         # A leftover backup counts: _stage_replacement puts it back as the entry before the swap.
         # Each entry also carries the identities recovery needs before it may delete anything (review
         # Z1): its staging copy's, recorded as the copy comes into existence, and the live entry's (the
         # one its backup links or renames), recorded at the swapping phase.
         journal_entries = [[item, any(os.path.lexists(os.path.join(root, item + suffix))
-                                      for suffix in ("", ".hermes-update-old")), "", ""] for item in entries]
+                                      for suffix in ("", ".moor-update-old")), "", ""] for item in entries]
         gen = os.urandom(6).hex()
         write_zip_swap_journal(root, "staging", journal_entries, gen)
 
@@ -543,8 +543,8 @@ def _journaled_stage_and_swap(extracted: str, entries: list[str], root: Path, ta
         # while a backup (or backup temp) the best-effort cleanup could not remove is still on disk:
         # recovery's own terminal check, else that backup is orphaned and wedges the retry (Q1/F79).
         with suppress(OSError):
-            _drop_journal_if_clean(root, entries, (".hermes-update-staging", ".hermes-update-old",
-                                                   f".hermes-update-old.{gen}.tmp"))
+            _drop_journal_if_clean(root, entries, (".moor-update-staging", ".moor-update-old",
+                                                   f".moor-update-old.{gen}.tmp"))
     return staged
 
 
@@ -575,10 +575,10 @@ def _download_and_swap_zip(branch: str, zip_url: str, target_sha: str | None = N
     if zip_url != f"https://api.github.com/repos/{REPO}/zipball/{branch}":
         raise ValueError("Update rejected: archive source is not Moor.")
     print("→ Downloading latest version...")
-    tmp_dir = tempfile.mkdtemp(prefix="hermes-update-")
+    tmp_dir = tempfile.mkdtemp(prefix="moor-update-")
     downloaded = False
     try:
-        zip_path = os.path.join(tmp_dir, f"hermes-agent-{branch}.zip")
+        zip_path = os.path.join(tmp_dir, f"moor-agent-{branch}.zip")
         urlretrieve(zip_url, zip_path)
         downloaded = True
         print("→ Extracting...")
@@ -604,12 +604,12 @@ def _download_and_swap_zip(branch: str, zip_url: str, target_sha: str | None = N
         with suppress(Exception):
             restore_interrupted_zip_swap(_m().PROJECT_ROOT)
             if not (Path(_m().PROJECT_ROOT) / ZIP_SWAP_JOURNAL).exists():
-                from hermes_cli import update_cmd_commit as _commit
+                from moor_cli import update_cmd_commit as _commit
                 _commit.disarm_commit_obligations()  # the old tree is whole again: nothing is owed
         print(f"✗ ZIP update failed: {e}")
         # Two-phase replace commits all or rolls all back, so no mixed tree here — don't push a needless reinstall.
         print("  Your existing install was left in place.")
-        print("  Re-run `hermes update` to retry; if the agent won't start, reinstall from https://hermes-agent.nousresearch.com")
+        print("  Re-run `moor update` to retry; if the agent won't start, reinstall from https://github.com/thisismamad-n/Moor")
         _record_stop(_zip_stop_class(e, downloaded=downloaded))
         _m().sys.exit(1)
     finally:

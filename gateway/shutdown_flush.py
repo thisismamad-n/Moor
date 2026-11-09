@@ -22,7 +22,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
-from hermes_dir_acl import make_user_dir
+from moor_dir_acl import make_user_dir
 
 logger = logging.getLogger(__name__)
 
@@ -443,32 +443,32 @@ def _recover_one_payload(session_db, path: Path, payload: dict[str, Any], *,
 def recover_gateway_pending(runner) -> int:
     """Replay every ``pending_messages`` spool this gateway owns into state.db; return the count.
 
-    ``_get_flush_dir`` follows the active HERMES_HOME, so a routed turn on a multiplexed gateway spools
+    ``_get_flush_dir`` follows the active MOOR_HOME, so a routed turn on a multiplexed gateway spools
     its stalled transcript backlog under ``profiles/<name>/`` and the runtime drain forgets it on
     restart. After the launch home, replay each served profile inside its own home so the default
     store ``recover_pending_spool`` opens is that profile's state.db (#123584). The sessions a pass
     holds back are marked on the session store, so their next live row drains the spool first.
     """
     from gateway.run import _multiplex_profile_homes
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import get_moor_home, reset_moor_home_override, set_moor_home_override
 
     store = runner.session_store
     recovered, held_back = recover_pending_spool(session_resolver=store.resolve_session_id_for_key)
     store.mark_spooled_drop_sessions(held_back)
     if not getattr(runner.config, "multiplex_profiles", False):
         return recovered
-    launch_home = Path(get_hermes_home()).resolve()
+    launch_home = Path(get_moor_home()).resolve()
     for name, home in _multiplex_profile_homes(runner.config):
         if Path(home).resolve() == launch_home or not (Path(home) / "pending_messages").is_dir():
             continue
-        token = set_hermes_home_override(str(home))
+        token = set_moor_home_override(str(home))
         try:
             count, held_back = recover_pending_spool(session_resolver=store.resolve_session_id_for_key)
         except Exception:  # one profile's unreadable spool must not strand the others'
             logger.warning("Pending-message recovery failed for profile %s", name, exc_info=True)
             continue
         finally:
-            reset_hermes_home_override(token)
+            reset_moor_home_override(token)
         recovered += count
         store.mark_spooled_drop_sessions(held_back)
     return recovered

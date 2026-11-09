@@ -9,8 +9,8 @@ from types import SimpleNamespace
 import pytest
 from starlette.testclient import TestClient
 
-from hermes_cli import web_server, web_server_files
-import hermes_cli.web_routers.files as _rt_files
+from moor_cli import web_server, web_server_files
+import moor_cli.web_routers.files as _rt_files
 
 
 def _client_with_app_state():
@@ -248,7 +248,7 @@ def test_browser_file_urls_authenticate_only_with_route_and_path_bound_tickets(
 ):
     """A ticket admits exactly the URL it was minted for: reusable for media
     Range requests, a few retries of that same download, useless for any other file."""
-    from hermes_cli import web_server_file_tickets
+    from moor_cli import web_server_file_tickets
 
     client, root = forced_files_client
     # The Webapp mints file tickets: the browser's file routes exist only there.
@@ -307,7 +307,7 @@ def test_stream_file_uri_uses_host_resolution_without_bypassing_policy(
     client, root = forced_files_client
     artifact = _seed_file(client, root, name="out/a b.mp4")
     if not locked:
-        monkeypatch.delenv("HERMES_DASHBOARD_FILES_ROOT")
+        monkeypatch.delenv("MOOR_DASHBOARD_FILES_ROOT")
 
     params = {"path": artifact.as_uri()}
     response = client.get("/api/files/stream", params=params, headers={"Range": "bytes=1-3"})
@@ -350,7 +350,7 @@ def test_stream_file_uri_uses_host_resolution_without_bypassing_policy(
 @pytest.mark.platforms("windows")
 @pytest.mark.parametrize("uri,expected", [
     ("file:///C:/Users/Alice/video%20clip.mp4", "C:/Users/Alice/video clip.mp4"),
-    ("file://127.0.0.1/hermes-media-test/video%20clip.mp4", "//127.0.0.1/hermes-media-test/video clip.mp4"),
+    ("file://127.0.0.1/moor-media-test/video%20clip.mp4", "//127.0.0.1/moor-media-test/video clip.mp4"),
 ])
 def test_stream_windows_file_uri_reaches_policy_with_absolute_host_path(
     local_files_client, monkeypatch, uri, expected,
@@ -436,7 +436,7 @@ _PNG = base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"\0" * 16).decode()
 def test_a_locked_root_still_reads_back_the_images_the_browser_just_uploaded(
     forced_files_client, monkeypatch, tmp_path,
 ):
-    """With ``HERMES_DASHBOARD_FILES_ROOT`` naming a folder that does not hold the profile home, a
+    """With ``MOOR_DASHBOARD_FILES_ROOT`` naming a folder that does not hold the profile home, a
     pasted image (``<home>/cache/images``) and a picked file (``<home>/uploads/web-*``) still read
     back through ``/api/fs/read-data-url`` to be sent: they are files this server wrote for the
     browser, not part of the managed tree. Every other file in the profile home stays outside the
@@ -444,9 +444,9 @@ def test_a_locked_root_still_reads_back_the_images_the_browser_just_uploaded(
     client, _root = forced_files_client
     # A picked file arrives through the Webapp's upload route, which exists only on the Webapp.
     monkeypatch.setattr(web_server.app.state, "ui_surface", "webapp", raising=False)
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "moor-home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     (home / "uploads").mkdir()
     (home / "uploads" / "notes.txt").write_text("not a staged upload", encoding="utf-8")
     (home / "memories.md").write_text("profile file", encoding="utf-8")

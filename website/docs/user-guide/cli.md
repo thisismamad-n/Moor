@@ -41,15 +41,15 @@ moor chat --provider openrouter  # Force OpenRouter
 moor chat --toolsets "web,terminal,skills"
 
 # Start with one or more skills preloaded (rendered once into the session's prompt)
-hermes chat -s hermes-agent-dev,github-auth
+moor chat -s moor-agent-dev,github-auth
 
 # Resume previous sessions
-hermes --resume <session_id>  # Resume a specific session by ID (-r)
-hermes --resume "my thread"   # Resume by title (latest "#N" continuation in the lineage)
-hermes -c "my thread" --create-if-missing  # Resume that titled session, creating it if absent
-hermes --continue             # Resume the most recent session (bare -c)
-hermes --resume latest        # Same as bare -c
-hermes --resume latest --in ./dir  # Resume ./dir's latest session, staying in ./dir
+moor --resume <session_id>  # Resume a specific session by ID (-r)
+moor --resume "my thread"   # Resume by title (latest "#N" continuation in the lineage)
+moor -c "my thread" --create-if-missing  # Resume that titled session, creating it if absent
+moor --continue             # Resume the most recent session (bare -c)
+moor --resume latest        # Same as bare -c
+moor --resume latest --in ./dir  # Resume ./dir's latest session, staying in ./dir
 
 # Verbose mode (debug output)
 moor chat --verbose
@@ -61,38 +61,38 @@ moor -w -z "Fix issue #123"     # Single query in worktree
 
 ### Worktree cleanup
 
-`hermes -w` sessions create disposable worktrees under `<repo>/.worktrees/`.
-With `hermes --tui -w`, closing the terminal detaches from the gateway-owned
+`moor -w` sessions create disposable worktrees under `<repo>/.worktrees/`.
+With `moor --tui -w`, closing the terminal detaches from the gateway-owned
 session. A clean worktree is removed with its branch on quit unless something
 still needs it. It is retained when it has uncommitted changes or unpushed
 commits, when the gateway still has a turn queued or running there, when a
 session in it has an active `/loop`, `/heartbeat` or `/goal`, when an enabled
 cron job runs in it or is bound to such a session, or when another viewer (a
 Desktop window, say) still holds that session. Resuming a session uses its
-working directory: if quit removed the worktree, `hermes --tui --resume <id>`,
-`hermes --tui -c` and the classic `hermes --resume`/`-c` recreate it at the same
+working directory: if quit removed the worktree, `moor --tui --resume <id>`,
+`moor --tui -c` and the classic `moor --resume`/`-c` recreate it at the same
 path before attaching (on its branch if that still exists, else on a new branch
 of the same name from the repo's current `HEAD`). Only worktrees that
-`hermes --tui -w` itself created are recreated. The quit-time check reads the
+`moor --tui -w` itself created are recreated. The quit-time check reads the
 session store and then removes the tree; a viewer that attaches and submits in
 the moment between the two is not seen, so that turn can find its directory
 gone.
-A sweep runs automatically at `hermes -w` startup and every 6 hours from the
+A sweep runs automatically at `moor -w` startup and every 6 hours from the
 cron ticker: idle clean+merged trees are removed, and idle trees with
 uncommitted changes or unpushed commits are **archived, then removed**
-(restorable with `hermes worktree restore <name>`; see
+(restorable with `moor worktree restore <name>`; see
 [Stale worktree sweep](./git-worktrees.md#stale-worktree-sweep-and-restore)).
 Reclaim or inspect explicitly:
 
 ```bash
-hermes worktree list              # audit: age, size, verdict, reason per tree + archives
-hermes worktree list --json       # machine-readable audit (trees, external trees, branches, archives)
-hermes worktree prune             # run the sweep now + delete merged branches
-hermes worktree prune --dry-run   # print every archive/remove/skip decision and why; changes nothing
-hermes worktree restore <name>    # recreate an archived tree (add --path DIR to put it elsewhere)
-hermes worktree prune --older-than 7   # only reap trees idle for 7+ days
-hermes worktree prune --trees-only     # leave local branches alone
-hermes worktree prune --branches-only  # leave worktrees alone
+moor worktree list              # audit: age, size, verdict, reason per tree + archives
+moor worktree list --json       # machine-readable audit (trees, external trees, branches, archives)
+moor worktree prune             # run the sweep now + delete merged branches
+moor worktree prune --dry-run   # print every archive/remove/skip decision and why; changes nothing
+moor worktree restore <name>    # recreate an archived tree (add --path DIR to put it elsewhere)
+moor worktree prune --older-than 7   # only reap trees idle for 7+ days
+moor worktree prune --trees-only     # leave local branches alone
+moor worktree prune --branches-only  # leave worktrees alone
 ```
 
 Worktrees registered **outside** `.worktrees/` (created by hand or by another
@@ -109,7 +109,7 @@ touches the tree the session is running in).
 Safety guarantees (all modes, any age):
 
 - Uncommitted changes and **unique unpushed commits** are never deleted
-  without a restorable archive (`refs/hermes/archive/<tree>`); with
+  without a restorable archive (`refs/moor/archive/<tree>`); with
   `worktrees.archive_dirty: false` they are never deleted at all — commits that were
   rebase/squash-merged upstream are detected via `git cherry`
   patch-equivalence and count as merged, which is what lets the dominant
@@ -125,7 +125,7 @@ Safety guarantees (all modes, any age):
   removed but its **branch ref is kept**, so the lane is one
   `git worktree add .worktrees/<name> <branch>` away from restored. If the
   remote can't be reached, the tree is preserved.
-- Trees **in use** are never touched: a running hermes session's lock, or any
+- Trees **in use** are never touched: a running moor session's lock, or any
   live process whose working directory (or, on Linux, an open file) is inside
   the tree. Each tree is checked again right before it is archived or removed,
   and again after its archive is built; a tree that changed meanwhile is kept.
@@ -145,7 +145,7 @@ Safety guarantees (all modes, any age):
 
 The same sweep also runs from the cron scheduler (at most once every 6 hours
 per profile, in the background) over every repository the profile created a
-worktree in, so gateway-only machines — where nobody launches `hermes -w` for
+worktree in, so gateway-only machines — where nobody launches `moor -w` for
 days — no longer accumulate scratch trees between CLI sessions.
 
 When `.worktrees/` grows past 10 trees or 5 GB, startup prints a one-line
@@ -173,7 +173,7 @@ for the exact supported subset and trust boundary.
 ## Interface Layout
 
 :::info The classic CLI is a gateway client
-`hermes chat` (and the bare `hermes` prompt when `display.interface` is `cli`) no longer runs the agent inside your terminal process. It discovers or starts the profile's gateway (`hermes gateway ensure`), creates or resumes the session there, and attaches over the gateway's local WebSocket — the same session a Desktop window, the TUI, or a Telegram topic can open at the same time. Closing the terminal detaches (`Detached; accepted work continues at the gateway.`); it does not cancel the turn. Your working directory, `--model`, `--provider`, `--reasoning`, `--toolsets`, `--max-turns`, `--skills`, `--checkpoints`, `--yolo`, `--accept-hooks`, `--pass-session-id`, `--ignore-rules`, `--base-url`/`--api-key`, and `--safe-mode`/`--ignore-user-config` are frozen into the session at creation; `--resume` may repeat the same values but cannot change them. `--resume <id-or-title>` and `-c <title>` name the session; the gateway resolves the title (exact id first, then the latest `"<title> #N"` continuation, followed to its live tip) among the sessions you may read, and reports `No session found matching '…'` (exit 1) otherwise. Bare `-c` and `--resume latest` resume this workspace's most recent CLI session through the gateway. `-c <title> --create-if-missing` creates a session with that title when none exists and resumes it when one does, so programmatic callers (Bot Mode's `Bot Chat` turns) get a deterministic thread. Options that only make sense for an in-process agent — `--image`, `--worktree`/`-w`, `--no-restore-cwd`, `--run-budget`, `--verbose`/`-v`, `--compact`, and `--create-if-missing` without `-c <name>` — are refused up front (`Unsupported gateway CLI options: …`, exit 2); the refusal lists, per flag, where that capability lives now (the TUI flag, the `config.yaml` key, or the `hermes` subcommand), and nothing falls back to a local agent. A `--safe-mode` / `--ignore-user-config` launch reads no profile default model, so it must name one; the refusal prints a complete example such as `hermes chat --safe-mode --provider openrouter --model anthropic/claude-sonnet-4 -q "hello"`. In this mode the slash surface is `/stop`, `/approve <id> <choice>`, `/answer <id> <text>`, `/discard <admission_id>`, `/branch [title]`, `/model <model> [--provider name]`, `/compress [here [N] | <focus>] [--preview]`, `/yolo [on|off]`, `/help` and `/quit`; other slash commands print `Unsupported gateway CLI command; use /help.` Use the TUI (`hermes --tui`) for the full slash registry.
+`moor chat` (and the bare `moor` prompt when `display.interface` is `cli`) no longer runs the agent inside your terminal process. It discovers or starts the profile's gateway (`moor gateway ensure`), creates or resumes the session there, and attaches over the gateway's local WebSocket — the same session a Desktop window, the TUI, or a Telegram topic can open at the same time. Closing the terminal detaches (`Detached; accepted work continues at the gateway.`); it does not cancel the turn. Your working directory, `--model`, `--provider`, `--reasoning`, `--toolsets`, `--max-turns`, `--skills`, `--checkpoints`, `--yolo`, `--accept-hooks`, `--pass-session-id`, `--ignore-rules`, `--base-url`/`--api-key`, and `--safe-mode`/`--ignore-user-config` are frozen into the session at creation; `--resume` may repeat the same values but cannot change them. `--resume <id-or-title>` and `-c <title>` name the session; the gateway resolves the title (exact id first, then the latest `"<title> #N"` continuation, followed to its live tip) among the sessions you may read, and reports `No session found matching '…'` (exit 1) otherwise. Bare `-c` and `--resume latest` resume this workspace's most recent CLI session through the gateway. `-c <title> --create-if-missing` creates a session with that title when none exists and resumes it when one does, so programmatic callers (Bot Mode's `Bot Chat` turns) get a deterministic thread. Options that only make sense for an in-process agent — `--image`, `--worktree`/`-w`, `--no-restore-cwd`, `--run-budget`, `--verbose`/`-v`, `--compact`, and `--create-if-missing` without `-c <name>` — are refused up front (`Unsupported gateway CLI options: …`, exit 2); the refusal lists, per flag, where that capability lives now (the TUI flag, the `config.yaml` key, or the `moor` subcommand), and nothing falls back to a local agent. A `--safe-mode` / `--ignore-user-config` launch reads no profile default model, so it must name one; the refusal prints a complete example such as `moor chat --safe-mode --provider openrouter --model anthropic/claude-sonnet-4 -q "hello"`. In this mode the slash surface is `/stop`, `/approve <id> <choice>`, `/answer <id> <text>`, `/discard <admission_id>`, `/branch [title]`, `/model <model> [--provider name]`, `/compress [here [N] | <focus>] [--preview]`, `/yolo [on|off]`, `/help` and `/quit`; other slash commands print `Unsupported gateway CLI command; use /help.` Use the TUI (`moor --tui`) for the full slash registry.
 :::
 
 If a running turn loses its owner while your finite CLI query is queued, the CLI
@@ -181,8 +181,8 @@ exits with code `3`. Your accepted input stays queued. Resume the printed sessio
 interactively, inspect the unknown turn, and use `/discard <admission_id>` to
 acknowledge it before continuing. Do not resend the queued input.
 
-<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the Hermes CLI layout showing the banner, conversation area, and fixed input prompt." />
-<p className="docs-figure-caption">The Hermes CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
+<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the Moor CLI layout showing the banner, conversation area, and fixed input prompt." />
+<p className="docs-figure-caption">The Moor CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
 
 ### Layout styles
 
@@ -198,7 +198,7 @@ acknowledge it before continuing. Do not resend the queued input.
 │ +def multiply(a, b):
 │ +    return a * b
 ✗ $ pytest -q  0.4s [exit 1]
-☤ Hermes
+☤ Moor
 Added multiply; pytest isn't installed here, so I ran the tests directly: 2 passed.
 ─ 15.0s · edited 1 file +4 -0 · read 2 files · 8:27 AM
 ── ⠹ Running tests · 14s ─────────────────────────── Add multiply to calc.py ─
@@ -274,8 +274,8 @@ On macOS, `F6`/`F7` mean the physical function keys, not the media/system contro
 | `Ctrl+C` | Clear a typed draft first (even while the agent works); with an empty prompt, interrupt the agent (double-press within 2s to force exit) |
 | `Ctrl+T` / `F6` | Open the full-screen live work monitor (subagents and background processes) without losing the composer draft. The live dock appears automatically above the status bar; arrows select a worker or process, `Enter` shows its recent log, `s` steers a worker, and `x` requests stop with confirmation. See [Monitoring subagents](./features/delegation.md#monitoring-running-subagents-agents). |
 | `Ctrl+R` / `F7` | Toggle the live work dock between its multi-row preview and a single summary line without moving composer focus. `Ctrl+R` is the reliable fallback when macOS reserves the function-key row. Besides subagents and background processes, the dock shows a standing `/goal` (active, parked or paused, with turns used) on its top row and the prompts waiting in `/queue` on its bottom rows. |
-| `Ctrl+D` | Exit (on an empty prompt; with text it deletes under the cursor). While the gateway runs a turn, it exits and leaves the turn running: the gateway finishes it, ends the session afterwards, and `hermes --resume` shows the reply. A turn that asks a question (approval or clarify) meanwhile waits for its timeout or for you to resume. Use `Ctrl+C` to stop the turn instead. |
-| `Ctrl+Z` | Suspend Hermes to background (Unix only). Run `fg` in the shell to resume. |
+| `Ctrl+D` | Exit (on an empty prompt; with text it deletes under the cursor). While the gateway runs a turn, it exits and leaves the turn running: the gateway finishes it, ends the session afterwards, and `moor --resume` shows the reply. A turn that asks a question (approval or clarify) meanwhile waits for its timeout or for you to resume. Use `Ctrl+C` to stop the turn instead. |
+| `Ctrl+Z` | Suspend Moor to background (Unix only). Run `fg` in the shell to resume. |
 | `Tab` | Accept auto-suggestion (ghost text) or autocomplete slash commands. While the agent is working in the `modern` layout, `Tab` on a typed message queues it for the next turn |
 | `!<command>` | **Shell mode** — run a shell command yourself without spending a model turn (e.g. `!git status`, `!pytest -x`). See below. |
 
@@ -562,15 +562,15 @@ Messages:       28 (5 user, 18 tool calls)
 Resume options:
 
 ```bash
-hermes --continue                          # Resume the most recent CLI session
-hermes -c                                  # Short form
-hermes -c "my project"                     # Resume a named session (latest in lineage)
-hermes -c "my project" --create-if-missing # Same, creating the titled session if none exists
-hermes --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
-hermes --resume "refactoring auth"         # Resume by title
-hermes --resume latest                     # Resume the most recent session (same as -c)
-hermes --resume latest --in ./my-project   # Latest session for ./my-project's workspace
-hermes -r 20260225_143052_a1b2c3           # Short form
+moor --continue                          # Resume the most recent CLI session
+moor -c                                  # Short form
+moor -c "my project"                     # Resume a named session (latest in lineage)
+moor -c "my project" --create-if-missing # Same, creating the titled session if none exists
+moor --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
+moor --resume "refactoring auth"         # Resume by title
+moor --resume latest                     # Resume the most recent session (same as -c)
+moor --resume latest --in ./my-project   # Latest session for ./my-project's workspace
+moor -r 20260225_143052_a1b2c3           # Short form
 ```
 
 Resuming restores the full conversation history from SQLite. The agent sees all previous messages, tool calls, and responses — just as if you never left.

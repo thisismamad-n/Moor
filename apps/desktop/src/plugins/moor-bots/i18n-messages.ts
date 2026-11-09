@@ -358,7 +358,7 @@ export type BotsMessages = {
     portalNotInstalled: string
     portalUnsupported: string
     portalUnavailable: string
-    /** Managed runtimes (Hermes Cloud): updates are the platform's job, not the user's. */
+    /** Managed runtimes (Moor Cloud): updates are the platform's job, not the user's. */
     portalUnavailableManaged: string
     managedNotIncludedTitle: string
     managedNotIncludedBody: string

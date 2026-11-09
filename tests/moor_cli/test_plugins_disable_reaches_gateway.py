@@ -1,4 +1,4 @@
-"""``hermes plugins disable`` must reach the running gateway, or say a restart is needed (LC-3).
+"""``moor plugins disable`` must reach the running gateway, or say a restart is needed (LC-3).
 
 Under one gateway the daemon holds the plugin manager for every session, so "takes effect on next
 session" was false: new sessions kept the disabled plugin's hooks and tools until a restart. The
@@ -11,27 +11,27 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import plugins_cmd
-from hermes_cli.config import load_config, save_config
+from moor_cli import plugins_cmd
+from moor_cli.config import load_config, save_config
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes-home"
-    plugin_dir = hermes_home / "plugins" / "probe"
+    moor_home = tmp_path / "moor-home"
+    plugin_dir = moor_home / "plugins" / "probe"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text("name: probe\nversion: '1.0'\n", encoding="utf-8")
     (plugin_dir / "__init__.py").write_text("def register(ctx):\n    pass\n", encoding="utf-8")
-    (hermes_home / "config.yaml").write_text("plugins:\n  enabled: [probe]\n  disabled: []\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    (moor_home / "config.yaml").write_text("plugins:\n  enabled: [probe]\n  disabled: []\n", encoding="utf-8")
+    monkeypatch.setenv("MOOR_HOME", str(moor_home))
 
     def admit(enabled, disabled, **_kwargs):
         cfg = load_config()
         cfg["plugins"] = {"enabled": sorted(enabled), "disabled": sorted(disabled)}
         save_config(cfg)
 
-    monkeypatch.setattr("hermes_cli.plugins_admission.admit_plugin_set_change", admit)
-    return hermes_home
+    monkeypatch.setattr("moor_cli.plugins_admission.admit_plugin_set_change", admit)
+    return moor_home
 
 
 def _gateway(monkeypatch, answer, *, shared=None):
@@ -59,7 +59,7 @@ def test_disable_unloads_the_plugin_from_the_running_gateway(home, monkeypatch, 
 
 def test_the_gateways_forced_rediscovery_drops_a_disabled_plugins_hook(home):
     """What the ``reload-plugins`` verb runs: the reloaded manager no longer offers the plugin's hook."""
-    from hermes_cli import plugins
+    from moor_cli import plugins
 
     (home / "plugins" / "probe" / "__init__.py").write_text(
         "def _probe_hook(**kwargs):\n    return None\n\n"
@@ -98,7 +98,7 @@ def test_an_explicit_refusal_is_reported_not_called_silence(home, monkeypatch, c
 def shared_root(tmp_path, monkeypatch):
     root = tmp_path / "shared-root"
     root.mkdir()
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("moor_constants.get_default_moor_root", lambda: root)
     return root
 
 
@@ -129,7 +129,7 @@ def test_disable_without_an_answering_gateway_says_a_restart_is_needed(home, mon
 
     out = capsys.readouterr().out
     assert "next session" not in out
-    assert "hermes gateway restart" in out
+    assert "moor gateway restart" in out
 
 
 def test_disable_says_the_running_gateway_unloaded_it(home, monkeypatch, capsys):
@@ -142,14 +142,14 @@ def test_disable_says_the_running_gateway_unloaded_it(home, monkeypatch, capsys)
     assert "running gateway reloaded its plugins and unloaded probe" in out, out
     assert "new sessions" not in out, out
     # callbacks the plugin already wired into platform adapters outlive the reload (plugin guide)
-    assert "platform hooks it already wired up stay until" in out and "hermes gateway restart" in out, out
+    assert "platform hooks it already wired up stay until" in out and "moor gateway restart" in out, out
 
 
 @pytest.mark.parametrize("reloaded", [True, False])
 def test_enable_prints_only_the_outcome_that_applies(home, monkeypatch, capsys, reloaded):
     """``enable`` knows whether the running gateway took the plugin: it prints that outcome, never
     "Takes effect on next session." above a line saying it is active in the running gateway now."""
-    from hermes_cli import plugins_activation
+    from moor_cli import plugins_activation
     save_config({**load_config(), "plugins": {"enabled": [], "disabled": ["probe"]}})
     outcome = {"gateway_reloaded": reloaded, "restart_required": not reloaded,
                "activation": {"activated_now": {"hooks": 1}} if reloaded else None}
@@ -162,4 +162,4 @@ def test_enable_prints_only_the_outcome_that_applies(home, monkeypatch, capsys, 
     out = " ".join(capsys.readouterr().out.split())
     assert "Plugin probe enabled." in out and "next session" not in out, out
     assert ("active in the running gateway now" in out) is reloaded, out
-    assert ("hermes gateway restart" in out) is (not reloaded), out
+    assert ("moor gateway restart" in out) is (not reloaded), out

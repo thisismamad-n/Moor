@@ -116,20 +116,20 @@ def record_home(record) -> Path:
 
 
 def launched_by_other_tenant(owner_home: Path | str, our_home: Path | str) -> bool:
-    """Was the owner launched from ANOTHER Hermes root (a second tenant on this host)?
+    """Was the owner launched from ANOTHER Moor root (a second tenant on this host)?
 
-    The host record and lock are per OS user, and two tenants (separate ``HERMES_HOME`` roots)
+    The host record and lock are per OS user, and two tenants (separate ``MOOR_HOME`` roots)
     each expose a profile named ``default``: tenant A's multiplexer "serving default" is a name
     collision for tenant B, never coverage, so it is not this tenant's host gateway (#121352).
     A legacy record with no ``home`` proves nothing and counts as ours.
     """
     if not str(owner_home or ""):
         return False
-    from gateway.status import _same_hermes_home
-    from hermes_constants import get_default_hermes_root
+    from gateway.status import _same_moor_home
+    from moor_constants import get_default_moor_root
 
-    return not _same_hermes_home(get_default_hermes_root(home=owner_home),
-                                 get_default_hermes_root(home=our_home))
+    return not _same_moor_home(get_default_moor_root(home=owner_home),
+                                 get_default_moor_root(home=our_home))
 
 
 def _identify(home: Path) -> Optional[dict]:
@@ -147,7 +147,7 @@ def _served_from_identity(identity: dict) -> tuple[str, ...]:
     it serves its own profile and nothing else, which is not the same as "unknown".
 
     The unified runtime publishes each served profile as ``{"profile_id", "home"}`` (what
-    ``hermes_cli.gateway_runtime`` matches homes against); older gateways published bare names.
+    ``moor_cli.gateway_runtime`` matches homes against); older gateways published bare names.
     Both spell the same roster, so a dict entry is reduced to its profile name here."""
     served = identity.get("served_profiles")
     if isinstance(served, list) and served:

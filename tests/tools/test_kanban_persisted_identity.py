@@ -94,8 +94,8 @@ def test_a_dispatched_worker_keeps_its_pinned_identity_and_an_unnamed_caller_sta
     assert json.loads(kt._handle_comment({"task_id": tid, "body": "from env"}))["ok"]
     assert _last_comment_author(tid) == "pinned-bot"
 
-    monkeypatch.delenv("HERMES_PROFILE")
-    from hermes_cli import profiles
+    monkeypatch.delenv("MOOR_PROFILE")
+    from moor_cli import profiles
     monkeypatch.setattr(profiles, "get_active_profile_name", lambda: "")
     assert json.loads(kt._handle_comment({"task_id": tid, "body": "anon"}))["ok"]
     assert _last_comment_author(tid) == "worker"

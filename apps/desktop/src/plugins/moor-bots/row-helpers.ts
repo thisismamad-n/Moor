@@ -26,7 +26,7 @@ export const A2A_PREFIX_RE = /^Message from (?:agent '[^']+'|🤖[^:]+):\s*/i
  *  starts with the delivery prefix is a bot-to-bot message — the receiving
  *  bot's row should show WHO sent it, not present it as the human's chat.
  *  `roster` + `connectionId` name the sender's row on the receiver's source,
- *  so its handle follows the roster (a real 'hermes' profile keeps @hermes). */
+ *  so its handle follows the roster (a real 'moor' profile keeps @moor). */
 export function previewKind(
   preview: null | string | undefined,
   roster: readonly Partial<RosterRow>[] = [],

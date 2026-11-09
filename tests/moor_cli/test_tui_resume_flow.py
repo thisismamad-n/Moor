@@ -175,10 +175,10 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
 
 @pytest.mark.parametrize("run_fails", [False, True], ids=["success", "failure"])
 def test_oneshot_closes_its_relay_root_before_agent_teardown(monkeypatch, run_fails):
-    """hermes -z hard-exits past atexit, so _run_agent itself must finalize the Relay root it opened:
+    """moor -z hard-exits past atexit, so _run_agent itself must finalize the Relay root it opened:
     keyed to the id at turn entry (compression may rotate it), on failure too, before agent.close()."""
-    from hermes_cli import lifecycle
-    from hermes_cli.oneshot import _run_agent
+    from moor_cli import lifecycle
+    from moor_cli.oneshot import _run_agent
 
     events = []
 
@@ -208,17 +208,17 @@ def test_oneshot_closes_its_relay_root_before_agent_teardown(monkeypatch, run_fa
         return module
 
     monkeypatch.setitem(sys.modules, "run_agent", mod("run_agent", AIAgent=FakeAgent))
-    monkeypatch.setitem(sys.modules, "hermes_state_registry", mod("hermes_state_registry", acquire=lambda db_path=None: None))
-    monkeypatch.setitem(sys.modules, "hermes_cli.config", mod("hermes_cli.config", load_config=lambda: {"model": {"default": "m"}}))
-    monkeypatch.setitem(sys.modules, "hermes_cli.models",
-                        mod("hermes_cli.models", detect_provider_for_model=lambda *_a, **_k: None))
-    monkeypatch.setitem(sys.modules, "hermes_cli.runtime_provider", mod(
-        "hermes_cli.runtime_provider",
+    monkeypatch.setitem(sys.modules, "moor_state_registry", mod("moor_state_registry", acquire=lambda db_path=None: None))
+    monkeypatch.setitem(sys.modules, "moor_cli.config", mod("moor_cli.config", load_config=lambda: {"model": {"default": "m"}}))
+    monkeypatch.setitem(sys.modules, "moor_cli.models",
+                        mod("moor_cli.models", detect_provider_for_model=lambda *_a, **_k: None))
+    monkeypatch.setitem(sys.modules, "moor_cli.runtime_provider", mod(
+        "moor_cli.runtime_provider",
         resolve_runtime_with_fallback=lambda _cfg, **_k: ({"api_key": "k", "base_url": "u", "provider": "p",
                                                            "api_mode": "chat_completions", "credential_pool": None}, None),
     ))
-    monkeypatch.setitem(sys.modules, "hermes_cli.tools_config",
-                        mod("hermes_cli.tools_config", _get_platform_tools=lambda *_a, **_k: set()))
+    monkeypatch.setitem(sys.modules, "moor_cli.tools_config",
+                        mod("moor_cli.tools_config", _get_platform_tools=lambda *_a, **_k: set()))
     monkeypatch.setattr(lifecycle, "finalize_session", lambda **kw: events.append(("finalize", kw)))
 
     if run_fails:
@@ -267,10 +267,10 @@ def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
     assert env["NODE_ENV"] == "production"
 
 
-def test_launch_tui_prefers_launch_cwd_over_inherited_hermes_cwd(monkeypatch, main_mod, tmp_path):
-    """The directory `hermes --tui` was run from outranks an inherited HERMES_CWD.
+def test_launch_tui_prefers_launch_cwd_over_inherited_moor_cwd(monkeypatch, main_mod, tmp_path):
+    """The directory `moor --tui` was run from outranks an inherited MOOR_CWD.
 
-    A shell export - or an outer `hermes --tui` - leaves HERMES_CWD naming a real but stale
+    A shell export - or an outer `moor --tui` - leaves MOOR_CWD naming a real but stale
     directory, and ui-tui/src/gatewayClient.ts:478 starts the gateway in whatever it names,
     so the session reads files and completions from the wrong project (#49637).
     """
@@ -278,8 +278,8 @@ def test_launch_tui_prefers_launch_cwd_over_inherited_hermes_cwd(monkeypatch, ma
     launch = tmp_path / "launch-project"
     stale.mkdir()
     launch.mkdir()
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
-    monkeypatch.setenv("HERMES_CWD", str(stale))
+    monkeypatch.setenv("MOOR_PYTHON", sys.executable)
+    monkeypatch.setenv("MOOR_CWD", str(stale))
     monkeypatch.chdir(launch)
 
     captured = {}
@@ -293,7 +293,7 @@ def test_launch_tui_prefers_launch_cwd_over_inherited_hermes_cwd(monkeypatch, ma
     with pytest.raises(SystemExit):
         main_mod._launch_tui()
 
-    handed_to_tui = Path(captured["env"]["HERMES_CWD"]).resolve()
+    handed_to_tui = Path(captured["env"]["MOOR_CWD"]).resolve()
     assert handed_to_tui == launch.resolve(), "the TUI gateway must start where the user launched"
     assert handed_to_tui != stale.resolve()
 
@@ -304,8 +304,8 @@ def test_launch_tui_worktree_still_outranks_the_launch_cwd(monkeypatch, main_mod
     launch = tmp_path / "launch-project"
     worktree.mkdir()
     launch.mkdir()
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
-    monkeypatch.setenv("HERMES_CWD", str(tmp_path))
+    monkeypatch.setenv("MOOR_PYTHON", sys.executable)
+    monkeypatch.setenv("MOOR_CWD", str(tmp_path))
     monkeypatch.chdir(launch)
 
     captured = {}
@@ -320,9 +320,9 @@ def test_launch_tui_worktree_still_outranks_the_launch_cwd(monkeypatch, main_mod
     with pytest.raises(SystemExit):
         main_mod._launch_tui(worktree=True)
 
-    assert captured["env"]["HERMES_CWD"] == str(worktree)
+    assert captured["env"]["MOOR_CWD"] == str(worktree)
     assert captured["env"]["TERMINAL_CWD"] == str(worktree)
-    assert Path(captured["env"]["HERMES_CWD"]).resolve() != launch.resolve()
+    assert Path(captured["env"]["MOOR_CWD"]).resolve() != launch.resolve()
 
 
 @pytest.mark.parametrize("backend", ["local", "docker"])
@@ -335,12 +335,12 @@ def test_launch_tui_local_session_starts_in_launch_dir_not_terminal_cwd(monkeypa
     launch = tmp_path / "launch-project"
     configured.mkdir()
     launch.mkdir()
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["MOOR_HOME"]) / "config.yaml").write_text(
         f"terminal:\n  backend: {backend}\n  cwd: {configured}\n", encoding="utf-8")
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.delenv("TERMINAL_CWD", raising=False)
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
-    monkeypatch.setenv("HERMES_TUI_CWD", str(tmp_path))  # stale, from an outer launcher
+    monkeypatch.setenv("MOOR_PYTHON", sys.executable)
+    monkeypatch.setenv("MOOR_TUI_CWD", str(tmp_path))  # stale, from an outer launcher
     monkeypatch.chdir(launch)
 
     captured = {}
@@ -356,21 +356,21 @@ def test_launch_tui_local_session_starts_in_launch_dir_not_terminal_cwd(monkeypa
 
     env = captured["env"]
     if backend == "local":
-        assert Path(env["HERMES_TUI_CWD"]).resolve() == launch.resolve()
+        assert Path(env["MOOR_TUI_CWD"]).resolve() == launch.resolve()
         assert Path(env["TERMINAL_CWD"]).resolve() == launch.resolve()
     else:
-        assert "HERMES_TUI_CWD" not in env
+        assert "MOOR_TUI_CWD" not in env
         assert Path(env["TERMINAL_CWD"]).resolve() == configured.resolve()
 
 
-@pytest.mark.parametrize("flag", ["HERMES_SAFE_MODE", "HERMES_IGNORE_USER_CONFIG"])
+@pytest.mark.parametrize("flag", ["MOOR_SAFE_MODE", "MOOR_IGNORE_USER_CONFIG"])
 def test_launch_tui_bypass_without_model_refuses_before_the_tui_starts(monkeypatch, main_mod, capsys, flag):
-    """`hermes --tui --safe-mode` (or an exported HERMES_IGNORE_USER_CONFIG=1) reads no profile
+    """`moor --tui --safe-mode` (or an exported MOOR_IGNORE_USER_CONFIG=1) reads no profile
     default model: the owner refuses session.create with bare invalid_params, so the launcher must
     say "pass --model" before spawning the TUI, as classic chat does."""
     monkeypatch.setenv(flag, "1")
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)  # never resolve a python over the real PATH
+    monkeypatch.delenv("MOOR_MODEL", raising=False)
+    monkeypatch.setenv("MOOR_PYTHON", sys.executable)  # never resolve a python over the real PATH
     monkeypatch.setattr(main_tui_launch, "_make_tui_argv",
                         lambda tui_dir, tui_dev: (["node", "dist/entry.js"], Path(".")))
     spawned = []
@@ -381,4 +381,4 @@ def test_launch_tui_bypass_without_model_refuses_before_the_tui_starts(monkeypat
     assert "pass --model explicitly" in capsys.readouterr().err
     with pytest.raises(SystemExit):
         main_mod._launch_tui(model="stub-model")
-    assert spawned and spawned[-1][flag] == "1" and spawned[-1]["HERMES_MODEL"] == "stub-model"
+    assert spawned and spawned[-1][flag] == "1" and spawned[-1]["MOOR_MODEL"] == "stub-model"

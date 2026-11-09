@@ -210,12 +210,12 @@ function isModuleMimeError(message: string): boolean {
  * segfaults inside PrintCore — the whole app dies before any dialog
  * appears. Stub `print` in the guest so the native panel is never built;
  * the warn surfaces in the preview console via the existing pipe. The
- * `__hermesPrintGuard` flag keeps re-arms idempotent. Full print-to-PDF
+ * `__moorPrintGuard` flag keeps re-arms idempotent. Full print-to-PDF
  * routing is the follow-up; this stops the crash.
  */
 const PREVIEW_PRINT_GUARD_SCRIPT =
-  '(function(){if(window.__hermesPrintGuard)return;window.__hermesPrintGuard=true;' +
-  'window.print=function(){console.warn("[Hermes] Printing is disabled in the in-app preview. ' +
+  '(function(){if(window.__moorPrintGuard)return;window.__moorPrintGuard=true;' +
+  'window.print=function(){console.warn("[Moor] Printing is disabled in the in-app preview. ' +
   'Open the page in your browser to print.");};})()'
 
 function PreviewLoadError({
@@ -1127,7 +1127,7 @@ export function PreviewPane({
     const webview = document.createElement('webview') as PreviewWebview
     // A page with no background of its own shows white, as in a browser and the remote HTML frame below.
     webview.className = 'flex h-full w-full flex-1 bg-white'
-    webview.setAttribute('partition', 'persist:hermes-preview')
+    webview.setAttribute('partition', 'persist:moor-preview')
     webview.setAttribute('src', initialUrl)
     webview.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes')
 

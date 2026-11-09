@@ -65,7 +65,7 @@ def test_deepinfra_catalog_is_fetched_with_each_profiles_key(homes, monkeypatch)
     a, b = homes
     (a / ".env").write_text("DEEPINFRA_API_KEY=key-A\n", encoding="utf-8")
     (b / ".env").write_text("DEEPINFRA_API_KEY=key-B\n", encoding="utf-8")
-    from hermes_cli import models
+    from moor_cli import models
 
     monkeypatch.setattr(models, "_deepinfra_catalog_cache", {})
     monkeypatch.setattr(models, "_deepinfra_catalog_neg_cache", {})
@@ -81,12 +81,12 @@ def test_deepinfra_catalog_is_fetched_with_each_profiles_key(homes, monkeypatch)
         assert models._fetch_deepinfra_models() == ["di/model-B"]
 
 
-def test_nous_reasoning_caps_follow_each_profiles_portal(homes, monkeypatch):
+def test_moor_reasoning_caps_follow_each_profiles_portal(homes, monkeypatch):
     a, b = homes
-    (a / ".env").write_text("NOUS_INFERENCE_BASE_URL=https://portal-a.example/v1\n", encoding="utf-8")
-    (b / ".env").write_text("NOUS_INFERENCE_BASE_URL=https://portal-b.example/v1\n", encoding="utf-8")
-    from hermes_cli import models
-    import hermes_cli.models_reasoning_caps as caps
+    (a / ".env").write_text("MOOR_INFERENCE_BASE_URL=https://portal-a.example/v1\n", encoding="utf-8")
+    (b / ".env").write_text("MOOR_INFERENCE_BASE_URL=https://portal-b.example/v1\n", encoding="utf-8")
+    from moor_cli import models
+    import moor_cli.models_reasoning_caps as caps
 
     for attr, value in (("_moor_reasoning_caps_cache", None), ("_moor_reasoning_caps_failed_at", None),
                         ("_moor_caps_disk_checked", False), ("_moor_caps_warm_started", False)):
@@ -106,7 +106,7 @@ def test_nous_reasoning_caps_follow_each_profiles_portal(homes, monkeypatch):
 
 def test_swr_refresh_runs_as_the_profile_that_spawned_it(homes):
     a, b = homes
-    from hermes_cli import models
+    from moor_cli import models
 
     seen: dict[str, str] = {}
     done = threading.Event()
@@ -153,7 +153,7 @@ def test_model_catalog_in_process_copy_is_bound_to_its_cache_file(homes, monkeyp
 
 def test_openrouter_curated_list_is_per_profile(homes, monkeypatch):
     a, b = homes
-    from hermes_cli import models
+    from moor_cli import models
 
     for home in (a, b):
         (home / "config.yaml").write_text("model_catalog:\n  ttl_minutes: 600\n", encoding="utf-8")
@@ -170,7 +170,7 @@ def test_openrouter_curated_list_is_per_profile(homes, monkeypatch):
 
 def test_banner_skills_are_the_routed_profiles(homes):
     a, b = homes
-    from hermes_cli import banner
+    from moor_cli import banner
 
     for home, tag in ((a, "a"), (b, "b")):
         skill = home / "skills" / f"skill_{tag}"
@@ -188,9 +188,9 @@ def test_banner_skills_are_the_routed_profiles(homes):
 
 def test_failed_guest_mint_only_suppresses_that_profile(homes, monkeypatch, tmp_path):
     a, b = homes
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared"))
-    import hermes_cli.anon_auth as anon
-    from hermes_cli import auth_nous
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared"))
+    import moor_cli.anon_auth as anon
+    from moor_cli import auth_moor
 
     anon.reset_mint_memo_for_tests()
     status = {"code": 429}

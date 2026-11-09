@@ -1064,7 +1064,7 @@ def _repair_state_db_schema_locked(
 
 def _unlink_db_triple(path: Path) -> Optional[str]:
     """Remove *path* and every SQLite sidecar; return any cleanup failure."""
-    from hermes_state import _IS_WINDOWS
+    from moor_state import _IS_WINDOWS
     failures: list[str] = []
     for victim in (path, *_sidecars(path)):
         for attempt in range(10):

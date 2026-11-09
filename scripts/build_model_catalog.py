@@ -1,5 +1,5 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
-"""Build the Hermes Model Catalog — a centralized JSON manifest of curated models.
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-moor-env" python3 "$0" "$@"'
+"""Build the Moor Model Catalog — a centralized JSON manifest of curated models.
 
 This script reads the in-repo hardcoded curated lists (``OPENROUTER_MODELS``,
 ``_PROVIDER_MODELS["moor"]``) and writes them to a JSON manifest that the
@@ -33,7 +33,7 @@ sys.path.insert(0, REPO_ROOT)
 # Ensure MOOR_HOME is set for imports that touch it at module level.
 os.environ.setdefault("MOOR_HOME", os.path.join(os.path.expanduser("~"), ".moor"))
 
-from hermes_cli.models import (
+from moor_cli.models import (
     OPENROUTER_MODELS,
     PREFERRED_SILENT_DEFAULT_MODEL,
     _PROVIDER_MODELS,

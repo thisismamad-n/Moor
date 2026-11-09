@@ -1,4 +1,4 @@
-import type { PlanUsage } from '@hermes/shared'
+import type { PlanUsage } from '@moor/shared'
 import type {
   BillingAutoReload,
   BillingCardInfo,

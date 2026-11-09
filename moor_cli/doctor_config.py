@@ -72,7 +72,7 @@ def collect_relay_plugin_cutover_findings(raw_config: dict | None, env_map: dict
             if name not in effective_env and os.environ.get(name) is not None:
                 effective_env[name] = os.environ[name]
     if not str(effective_env.get(RELAY_PLUGINS_CONFIG_ENV, "")).strip():
-        findings += [(name, f"run `hermes migrate relay` to generate relay-plugins.toml and set {RELAY_PLUGINS_CONFIG_ENV}; "
+        findings += [(name, f"run `moor migrate relay` to generate relay-plugins.toml and set {RELAY_PLUGINS_CONFIG_ENV}; "
                             "this legacy variable is now ignored and does not configure an exporter")
                      for name in configured_legacy_relay_env_vars(effective_env)]
     return findings
@@ -98,7 +98,7 @@ def report_deprecated_config_and_env(raw_config: dict | None = None, env_map: di
 
 @doctor_check("Relay plugin check failed: {e}")
 def _check_relay_plugins(should_fix: bool, f: Finding) -> None:
-    """Name the plugins.toml files Relay applies to Hermes, including ones outside the Hermes home."""
+    """Name the plugins.toml files Relay applies to Moor, including ones outside the Moor home."""
     from agent.relay_runtime import resolve_plugin_sources
     try:
         sources = resolve_plugin_sources()
@@ -108,7 +108,7 @@ def _check_relay_plugins(should_fix: bool, f: Finding) -> None:
         check_ok("NeMo Relay is not available on this platform")
         return
     except Exception as exc:
-        check_warn("Relay plugin configuration could not be read", "(Hermes runs without Relay plugins)")
+        check_warn("Relay plugin configuration could not be read", "(Moor runs without Relay plugins)")
         _relay_info_lines(cause for cause in (exc, exc.__cause__) if cause is not None)
         f.manual_issues.append("Fix the Relay plugin configuration shown under NeMo Relay Plugins.")
         return
@@ -116,13 +116,13 @@ def _check_relay_plugins(should_fix: bool, f: Finding) -> None:
         check_ok("No Relay plugin files found")
         return
     if sources.errors:
-        check_warn("Relay will reject this plugin configuration", "(Hermes runs without Relay plugins)")
+        check_warn("Relay will reject this plugin configuration", "(Moor runs without Relay plugins)")
         f.manual_issues.append("Fix the Relay plugin configuration shown under NeMo Relay Plugins.")
     else:
         # Validation cannot load dynamic plugins, so Relay reports what it cannot confirm as a warning.
         report = check_warn if sources.warnings else check_ok
         if sources.enabled:
-            report("Relay plugins enabled", "(applies to every profile a Hermes process hosts)")
+            report("Relay plugins enabled", "(applies to every profile a Moor process hosts)")
         else:
             report("Relay plugin files found, nothing enabled")
     _relay_info_lines((*sources.config_paths, *sources.errors, *sources.warnings))
@@ -308,9 +308,9 @@ def _validate_model_config(config_path, issues: list) -> None:
 def _validate_auxiliary_config(config_path, issues: list) -> None:
     """Resolve every routed ``auxiliary.<task>`` block through the real entry point the tasks use and report
     the ones that fail — an unresolvable block otherwise silently runs the task on the main model (#116055)."""
-    from hermes_cli.config import read_user_config_raw
-    from hermes_cli.left_core_migration import provider_install_hint
-    from hermes_cli.runtime_provider import resolve_runtime_provider
+    from moor_cli.config import read_user_config_raw
+    from moor_cli.left_core_migration import provider_install_hint
+    from moor_cli.runtime_provider import resolve_runtime_provider
     from utils import base_url_hostname
     aux = read_user_config_raw(config_path).get("auxiliary")
     routed = {name: block for name, block in (aux.items() if isinstance(aux, dict) else ())
@@ -338,11 +338,11 @@ def _validate_auxiliary_config(config_path, issues: list) -> None:
 @doctor_check()
 def _check_config_file(should_fix: bool, f: Finding) -> None:
     """config.yaml presence (project cli-config.yaml as fallback); model/provider validation."""
-    from hermes_cli.config_backend import config_exists, get_config_backend
-    from hermes_cli.doctor import HERMES_HOME, PROJECT_ROOT, _DHH
-    config_path = HERMES_HOME / 'config.yaml'
+    from moor_cli.config_backend import config_exists, get_config_backend
+    from moor_cli.doctor import MOOR_HOME, PROJECT_ROOT, _DHH
+    config_path = MOOR_HOME / 'config.yaml'
     backend = get_config_backend()
-    if not backend.supports_file_tooling() and not _check_config_backend(backend, HERMES_HOME, f):
+    if not backend.supports_file_tooling() and not _check_config_backend(backend, MOOR_HOME, f):
         return
     if config_exists(config_path):
         if backend.supports_file_tooling():
@@ -398,7 +398,7 @@ def _drift_config_version(f: Finding, should_fix: bool, config_path) -> None:
 
 def _drift_stale_root_keys(f: Finding, should_fix: bool, config_path) -> None:
     """Root-level ``provider``/``base_url`` belong under ``model:`` (raw-file diagnostic)."""
-    from hermes_cli.config import atomic_config_replace, read_user_config_raw
+    from moor_cli.config import atomic_config_replace, read_user_config_raw
     raw_config = read_user_config_raw(config_path)
     stale_root_keys = [k for k in ("provider", "base_url") if k in raw_config and isinstance(raw_config[k], str)]
     if not stale_root_keys:
@@ -553,9 +553,9 @@ def _check_config_drift(should_fix: bool, f: Finding) -> None:
 
     Each step is independent and best-effort: a failure in one never hides the next.
     """
-    from hermes_cli.config_backend import config_exists
-    from hermes_cli.doctor import HERMES_HOME
-    config_path = HERMES_HOME / 'config.yaml'
+    from moor_cli.config_backend import config_exists
+    from moor_cli.doctor import MOOR_HOME
+    config_path = MOOR_HOME / 'config.yaml'
     if not config_exists(config_path):
         config_path = None
     for step in _CONFIG_DRIFT_STEPS if config_path else (_drift_deprecations,):
@@ -582,8 +582,8 @@ def _check_xai_retirement(should_fix: bool, f: Finding) -> None:
 
 @doctor_check("Session reset check skipped", "({e})")
 def _check_retired_session_reset(should_fix: bool, f: Finding) -> None:
-    from hermes_cli.config_effective import load_user_config_effective
-    from hermes_cli.session_reset_retirement import format_notice, reset_plugin_enabled, retired_reset_policy
+    from moor_cli.config_effective import load_user_config_effective
+    from moor_cli.session_reset_retirement import format_notice, reset_plugin_enabled, retired_reset_policy
     found = retired_reset_policy(load_user_config_effective())
     if found is None:
         check_ok("No idle/daily session_reset policy configured")

@@ -75,7 +75,7 @@ def test_main_timestamps_each_stderr_line(tmp_path):
 
 def test_wrapper_timestamps_child_stdout_into_its_own_stdout(tmp_path):
     """launchd appends the wrapper's stdout to gateway.log; a raw print() there has no stamp,
-    so ``hermes logs gateway --since`` can never filter it out."""
+    so ``moor logs gateway --since`` can never filter it out."""
     stdout_log = tmp_path / "gateway.log"
     error_log = tmp_path / "gateway.error.log"
     code = (
@@ -89,7 +89,7 @@ def test_wrapper_timestamps_child_stdout_into_its_own_stdout(tmp_path):
 
     with open(stdout_log, "ab") as out:
         rc = subprocess.run(
-            [sys.executable, "-m", "hermes_cli.stderr_timestamp", "--error-log", str(error_log), "--",
+            [sys.executable, "-m", "moor_cli.stderr_timestamp", "--error-log", str(error_log), "--",
              sys.executable, "-c", code],
             stdout=out,
             timeout=30,
@@ -186,7 +186,7 @@ def test_main_injects_flag_into_stale_gateway_child(tmp_path, monkeypatch):
         f"Path({str(marker_path)!r}).write_text("
         "'\\n'.join(sys.argv[1:]), encoding='utf-8')\n",
     )
-    stale = [sys.executable, script, "-m", "hermes_cli.main", "gateway", "run", "--replace"]
+    stale = [sys.executable, script, "-m", "moor_cli.main", "gateway", "run", "--replace"]
 
     rc = stderr_timestamp.main(
         ["--error-log", str(log_path), "--", *stale]
@@ -259,7 +259,7 @@ def test_main_maps_gateway_ex_config_to_clean_stop(tmp_path):
     turn gateway EX_CONFIG (78) into that clean stop without swallowing the
     please-restart code (75) or a non-gateway child's 78."""
     log_path = tmp_path / "gateway.error.log"
-    gateway_tail = ["-m", "hermes_cli.main", "gateway", "run"]
+    gateway_tail = ["-m", "moor_cli.main", "gateway", "run"]
     exit_config = _script(tmp_path, "exit_config.py", f"raise SystemExit({GATEWAY_FATAL_CONFIG_EXIT_CODE})\n")
     exit_restart = _script(tmp_path, "exit_restart.py", f"raise SystemExit({GATEWAY_SERVICE_RESTART_EXIT_CODE})\n")
 

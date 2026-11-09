@@ -28,11 +28,11 @@ from moor_cli.tools_config import (
 
 def test_all_invalid_platform_toolsets_logs_runtime_warning(caplog):
     """#38798: an explicit platform config whose toolset names are all invalid
-    (e.g. 'not-a-real-toolset' instead of 'hermes-cli') must warn at resolve
+    (e.g. 'not-a-real-toolset' instead of 'moor-cli') must warn at resolve
     time so an already-corrupted config is caught at runtime, not just during
-    migration. (The legacy 'hermes' alias resolves via _LEGACY_TOOLSET_ALIASES
+    migration. (The legacy 'moor' alias resolves via _LEGACY_TOOLSET_ALIASES
     since #41579, so it is no longer an invalid name.)"""
-    import hermes_cli.tools_config as _tc
+    import moor_cli.tools_config as _tc
     # The runtime warning fires once per platform per process; clear the guard
     # so this test is deterministic regardless of prior resolutions.
     _tc._warned_invalid_platform_toolsets.discard("cli")
@@ -58,12 +58,12 @@ def test_valid_platform_toolsets_no_runtime_warning(caplog):
 @pytest.mark.parametrize("platform", ["teams", "google_chat", "homeassistant"])
 def test_unloaded_plugin_platform_toolset_no_runtime_warning(caplog, platform):
     """Bundled and catalog plugin-platform entries are valid before plugin loading."""
-    import hermes_cli.tools_config as _tc
+    import moor_cli.tools_config as _tc
 
     _tc._warned_invalid_platform_toolsets.discard(platform)
-    config = {"platform_toolsets": {platform: [f"hermes-{platform}"]}}
+    config = {"platform_toolsets": {platform: [f"moor-{platform}"]}}
 
-    with caplog.at_level(logging.WARNING, logger="hermes_cli.tools_config"):
+    with caplog.at_level(logging.WARNING, logger="moor_cli.tools_config"):
         _get_platform_tools(config, platform)
 
     assert not any("#38798" in r.getMessage() for r in caplog.records)
@@ -163,19 +163,19 @@ def test_discord_toolsets_do_not_leak_to_other_platforms():
 
 
 
-def test_get_platform_tools_legacy_hermes_alias_expands():
-    """Legacy ``"hermes"`` toolset name must expand to ``"hermes-cli"`` and
-    ``"hermes-api-server"`` so that tools are not silently dropped.
+def test_get_platform_tools_legacy_moor_alias_expands():
+    """Legacy ``"moor"`` toolset name must expand to ``"moor-cli"`` and
+    ``"moor-api-server"`` so that tools are not silently dropped.
 
     Regression test for issue #41579.
     """
-    config = {"platform_toolsets": {"cli": ["hermes", "kanban"]}}
+    config = {"platform_toolsets": {"cli": ["moor", "kanban"]}}
 
     enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
 
-    # Must resolve to the same toolset as a plain "hermes-cli" config.
+    # Must resolve to the same toolset as a plain "moor-cli" config.
     reference = _get_platform_tools(
-        {"platform_toolsets": {"cli": ["hermes-cli", "kanban"]}},
+        {"platform_toolsets": {"cli": ["moor-cli", "kanban"]}},
         "cli",
         include_default_mcp_servers=False,
     )
@@ -186,13 +186,13 @@ def test_get_platform_tools_legacy_hermes_alias_expands():
     assert enabled
 
 
-def test_get_platform_tools_legacy_hermes_alias_alone():
-    """``"hermes"`` alone (no other toolsets) must still produce tools."""
-    config = {"platform_toolsets": {"cli": ["hermes"]}}
+def test_get_platform_tools_legacy_moor_alias_alone():
+    """``"moor"`` alone (no other toolsets) must still produce tools."""
+    config = {"platform_toolsets": {"cli": ["moor"]}}
 
     enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
     reference = _get_platform_tools(
-        {"platform_toolsets": {"cli": ["hermes-cli", "hermes-api-server"]}},
+        {"platform_toolsets": {"cli": ["moor-cli", "moor-api-server"]}},
         "cli",
         include_default_mcp_servers=False,
     )
@@ -441,16 +441,16 @@ class TestChromiumPostSetup:
         error = (pm.InstallError("chromium", "fatal: network error") if failure == "pm"
                  else RuntimeError("worker exited unsuccessfully"))
         with patch("pm.ensure", side_effect=error), patch(
-            "hermes_cli.browser_runtime.chromium_executable", return_value=None
-        ), patch("hermes_cli.browser_runtime.BAKED_EXECUTABLE_FILE", tmp_path / "absent"), patch(
-            "hermes_constants.is_termux", return_value=False
-        ), patch("hermes_cli.tools_config_post_setup._print_warning") as warn, patch(
-            "hermes_cli.tools_config_post_setup._print_info"
+            "moor_cli.browser_runtime.chromium_executable", return_value=None
+        ), patch("moor_cli.browser_runtime.BAKED_EXECUTABLE_FILE", tmp_path / "absent"), patch(
+            "moor_constants.is_termux", return_value=False
+        ), patch("moor_cli.tools_config_post_setup._print_warning") as warn, patch(
+            "moor_cli.tools_config_post_setup._print_info"
         ) as info:
             _run_post_setup("chromium")
 
         assert any(str(error) in c.args[0] for c in warn.call_args_list)
-        assert any("hermes tools post-setup chromium" in c.args[0] for c in info.call_args_list)
+        assert any("moor tools post-setup chromium" in c.args[0] for c in info.call_args_list)
 
 
 class TestBrowserExecEngineCheckedForEveryBrowserRow:
@@ -461,22 +461,22 @@ class TestBrowserExecEngineCheckedForEveryBrowserRow:
         with patch("moor_cli.tools_config_post_setup._ensure_browser_use_cli") as ensure, patch(
             "shutil.which", return_value=None
         ), patch("subprocess.run"), patch("pm.ensure"), patch(
-            "hermes_cli.browser_runtime.chromium_executable", return_value="/pm/chrome"
+            "moor_cli.browser_runtime.chromium_executable", return_value="/pm/chrome"
         ), patch("tools.browser_lightpanda.find_lightpanda_binary", return_value=None):
             _run_post_setup(key)
         ensure.assert_called_once()
 
     def test_ensure_helper_missing_harness_is_non_fatal(self):
-        """A missing harness must warn and point at `hermes update`, never raise."""
-        from hermes_cli.tools_config import _ensure_browser_use_cli
+        """A missing harness must warn and point at `moor update`, never raise."""
+        from moor_cli.tools_config import _ensure_browser_use_cli
 
         with patch("tools.browser_use_cli._find_cli", return_value=None), patch(
-            "hermes_cli.tools_config_post_setup._print_warning"
-        ) as warn, patch("hermes_cli.tools_config_post_setup._print_info") as info:
+            "moor_cli.tools_config_post_setup._print_warning"
+        ) as warn, patch("moor_cli.tools_config_post_setup._print_info") as info:
             _ensure_browser_use_cli()  # must not raise
 
         assert any("browser-harness" in c.args[0] for c in warn.call_args_list)
-        assert any("hermes update" in c.args[0] for c in info.call_args_list)
+        assert any("moor update" in c.args[0] for c in info.call_args_list)
 
 
 class TestImagegenBackendRegistry:
@@ -577,7 +577,7 @@ class TestImagegenModelPicker:
 
 def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
     """A plugin toolset whose key is also a CONFIGURABLE_TOOLSETS entry must not
-    be listed twice — otherwise `hermes tools` → "reconfigure existing" shows
+    be listed twice — otherwise `moor tools` → "reconfigure existing" shows
     the same toolset two rows in a row.
     """
     from moor_cli.tools_config import _get_effective_configurable_toolsets
@@ -634,7 +634,7 @@ def test_vision_picker_custom_endpoint(tmp_path, monkeypatch):
 
 
 def test_visible_providers_reuses_logged_out_feature_snapshot(monkeypatch):
-    from hermes_cli import tools_config
+    from moor_cli import tools_config
 
     account = MoorPortalAccountInfo(
         logged_in=False,
@@ -666,7 +666,7 @@ def test_visible_providers_reuses_logged_out_feature_snapshot(monkeypatch):
 
 
 def test_visible_providers_reuses_pool_video_feature_snapshot(monkeypatch):
-    from hermes_cli import tools_config
+    from moor_cli import tools_config
 
     account = MoorPortalAccountInfo(
         logged_in=True,
@@ -715,8 +715,8 @@ def _managed_image_row() -> dict:
 
 
 def test_exactly_one_image_row_is_active_for_a_managed_selection(monkeypatch):
-    from hermes_cli import tools_config
-    from hermes_cli.tools_config_providers import _plugin_image_gen_providers
+    from moor_cli import tools_config
+    from moor_cli.tools_config_providers import _plugin_image_gen_providers
 
     monkeypatch.setattr(
         tools_config, "get_moor_subscription_features",
@@ -730,8 +730,8 @@ def test_exactly_one_image_row_is_active_for_a_managed_selection(monkeypatch):
 
 
 def test_gui_model_catalog_for_the_managed_row_spans_every_managed_gateway(monkeypatch):
-    from hermes_cli import tools_config
-    from hermes_cli.web_routers.tools import _resolve_toolset_model_plugin, _toolset_model_catalog
+    from moor_cli import tools_config
+    from moor_cli.web_routers.tools import _resolve_toolset_model_plugin, _toolset_model_catalog
     from plugins.image_gen.krea import KREA_MODEL_IDS
     from tools.image_generation_catalog import FAL_MODELS
 
@@ -748,8 +748,8 @@ def test_gui_model_catalog_for_the_managed_row_spans_every_managed_gateway(monke
 
 
 def test_pool_only_account_is_offered_fal_models_only(monkeypatch):
-    from hermes_cli import tools_config
-    from hermes_cli.tools_config_providers import _managed_image_catalog
+    from moor_cli import tools_config
+    from moor_cli.tools_config_providers import _managed_image_catalog
 
     pool = MoorPortalAccountInfo(
         logged_in=True, source="jwt", fresh=False, paid_service_access=False,

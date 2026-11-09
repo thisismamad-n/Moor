@@ -82,7 +82,7 @@ runs when you type `sessions optimize` in the Desktop console. `optimize-storage
 while it runs: whenever another process holds the database (under `--force`, or one that opens it
 mid-run) it pauses between chunks so that process's writes get through, which makes it much slower.
 
-`hermes sessions prune` is the exception while the gateway is running: the gateway owns
+`moor sessions prune` is the exception while the gateway is running: the gateway owns
 `state.db`, so prune shows its preview from a read-only view and the gateway itself deletes
 the selected sessions (skipping any with a turn still running). It refuses as above only when
 no gateway is running and some other process holds the database.

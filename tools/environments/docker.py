@@ -22,7 +22,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from hermes_constants import get_hermes_home
+from moor_constants import get_moor_home
 from tools.environments.base import BaseEnvironment, EnvironmentConnectionError, _SHELL_ENV_NAME_RE, get_sandbox_dir
 from tools.terminal_tool_config import (
     _host_path_key, _is_windows_drive_path, cwd_follows_host_mount, home_profile_name,
@@ -49,11 +49,11 @@ _DOCKER_SEARCH_PATHS = [
 
 _docker_executable: Optional[str] = None  # resolved once, cached
 _ENV_VAR_NAME_RE = _SHELL_ENV_NAME_RE
-_ENVIRONMENT_LABEL_KEY = "hermes-environment"
+_ENVIRONMENT_LABEL_KEY = "moor-environment"
 # Stamped at create time on per-workspace persistent containers (task key ``<base>:ws:<digest>``)
 # with the digest as its value. The orphan reaper reads it to spare a container the idle reaper
-# stopped on purpose; ``hermes-task-id`` cannot serve, it is truncated to 63 chars.
-_WORKSPACE_LABEL_KEY = "hermes-workspace"
+# stopped on purpose; ``moor-task-id`` cannot serve, it is truncated to 63 chars.
+_WORKSPACE_LABEL_KEY = "moor-workspace"
 _WORKSPACE_TASK_RE = re.compile(r":ws:([0-9a-f]{16})$")
 
 
@@ -115,7 +115,7 @@ _sandbox_dir_name = sanitize_task_id_for_path
 
 
 def _get_active_profile_name() -> str:
-    """Active Hermes profile name (the container key's own lookup), or ``"default"`` on error. Resolved
+    """Active Moor profile name (the container key's own lookup), or ``"default"`` on error. Resolved
     at container-create time so a container stays tagged with its creator even if the process switches
     profiles."""
     return home_profile_name()
@@ -156,7 +156,7 @@ def _is_volatile_mount_spec(spec: str) -> bool:
         return False
 
 
-def _reuse_environment_fingerprint(*, image: str, mount_args: list[str], hermes_home: str) -> str:
+def _reuse_environment_fingerprint(*, image: str, mount_args: list[str], moor_home: str) -> str:
     """Hash immutable configuration so reuse cannot silently attach to stale mounts.
 
     Hash requested values rather than exposing profile paths and volume sources in labels.
@@ -167,13 +167,13 @@ def _reuse_environment_fingerprint(*, image: str, mount_args: list[str], hermes_
     matched for users with any symlink under ``skills/``. The container path stays in the
     hash, so moving where that mount lands still forces a fresh container.
     """
-    normalized_home = os.path.normcase(os.path.abspath(os.path.expanduser(hermes_home)))
+    normalized_home = os.path.normcase(os.path.abspath(os.path.expanduser(moor_home)))
     canonical_mounts = [
         (f"<volatile-tempdir-mount>:{spec.split(':', 1)[1]}"
          if _is_volatile_mount_spec(spec) else spec)
         for spec in mount_args]
     payload = json.dumps(
-        {"image": image, "mount_args": canonical_mounts, "hermes_home": normalized_home},
+        {"image": image, "mount_args": canonical_mounts, "moor_home": normalized_home},
         sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:24]
 
@@ -228,9 +228,9 @@ def reap_orphan_containers(
 
 def _is_idle_workspace_container(docker_exe: str, container_id: str) -> bool:
     """A persistent per-workspace container (task key ``<base>:ws:<digest>``, stamped with the
-    ``hermes-workspace=<digest>`` label at create time) that the idle reaper STOPPED on purpose
+    ``moor-workspace=<digest>`` label at create time) that the idle reaper STOPPED on purpose
     (``DockerEnvironment.stop_idle``): it is that workspace's sandbox, restarted on next use, not an
-    orphan. Reads the dedicated label, never the 63-char-truncated ``hermes-task-id``, whose
+    orphan. Reads the dedicated label, never the 63-char-truncated ``moor-task-id``, whose
     ``_ws_<digest>`` suffix a long profile name cuts. Unknown (inspect failed) reads as not one."""
     result = _docker_query(
         [docker_exe, "inspect", "--format", f'{{{{index .Config.Labels "{_WORKSPACE_LABEL_KEY}"}}}}', container_id],
@@ -335,7 +335,7 @@ _BASE_SECURITY_ARGS = [
 
 # Fork-bomb guard, applied only when the pids cgroup controller is available. The pids cgroup counts
 # THREADS, and a sandbox that hosts the Bot Screen runs a desktop in here: measured on
-# hermes-sandbox:desktop, the idle container is 2 tasks, Xvnc + Xfce + dbus 44, one Chromium with one
+# moor-sandbox:desktop, the idle container is 2 tasks, Xvnc + Xfce + dbus 44, one Chromium with one
 # tab 212, plus the agent's own Chromium with two tabs 488. The old 256 was hit in normal
 # use and every further `docker exec` (browser command, cua-driver, thumbnail, CDP forward) died with
 # runc's "procReady not received". 2048 leaves room for a working browser and is still three orders of
@@ -692,7 +692,7 @@ class DockerEnvironment(BaseEnvironment):
         self._init_env_values: dict[str, str] = {}
         self._workspace_dir: Optional[str] = None
         self._home_dir: Optional[str] = None
-        # (host_dir, container_path) of the Hermes-created sandbox bind mounts; owner handback targets.
+        # (host_dir, container_path) of the moor-created sandbox bind mounts; owner handback targets.
         self._sandbox_mounts: list[tuple[str, str]] = []
         logger.info("DockerEnvironment volumes: %s", volumes)
         if volumes is not None and not isinstance(volumes, list):
@@ -763,7 +763,7 @@ class DockerEnvironment(BaseEnvironment):
         if not shared_container_key:
             self._labels[_ENVIRONMENT_LABEL_KEY] = _reuse_environment_fingerprint(
                 image=image, mount_args=[*writable_args, *volume_args],
-                hermes_home=str(get_hermes_home()))
+                moor_home=str(get_moor_home()))
         # Saved for container recreation on "No such container" recovery.
         self._image = image
         self._image_pinned = image_pinned
@@ -850,7 +850,7 @@ class DockerEnvironment(BaseEnvironment):
     def _mount_args(self, volumes, host_cwd, auto_mount_cwd, task_id) -> tuple[list[str], list[str]]:
         """``(volume_args, writable_args)`` for user volumes, host cwd and /workspace,/root.
 
-        Persistent mode bind-mounts from TERMINAL_SANDBOX_DIR (default ~/.hermes/sandboxes/).
+        Persistent mode bind-mounts from TERMINAL_SANDBOX_DIR (default ~/.moor/sandboxes/).
         A configured host working directory is bound even when another volume already
         claims ``/workspace``: at ``/workspace`` when that path is free, otherwise at
         a second mount. ``host_cwd`` / ``host_cwd_mount`` tell tools which container
@@ -938,7 +938,7 @@ class DockerEnvironment(BaseEnvironment):
         # A container built from another image. Explicitly configured image (config.yaml /
         # TERMINAL_DOCKER_IMAGE): the user changed it, so the old container is not their sandbox any
         # more — recreate (the image is immutable after creation). Default image: a default flip
-        # (nikolaik base -> hermes-sandbox:desktop) must not replace a sandbox someone has state in;
+        # (nikolaik base -> moor-sandbox:desktop) must not replace a sandbox someone has state in;
         # keep it and let the CLI / Screen pane ask. Same rule Modal (snapshot wins) and Daytona
         # (labeled sandbox wins) already apply.
         actual_image = self._container_image(container_id)
@@ -946,7 +946,7 @@ class DockerEnvironment(BaseEnvironment):
             if not self._image_pinned:
                 logger.warning(
                     "Existing container %s runs image %s; the default docker_image is now %s. Keeping "
-                    "the existing sandbox — approve the switch with `hermes config set "
+                    "the existing sandbox — approve the switch with `moor config set "
                     "terminal.docker_image %s` (files in /root and /workspace carry over) or pin the "
                     "current image to stop this notice (task=%s, profile=%s).",
                     container_id[:12], actual_image, self._image, self._image, task_label, profile_name)
@@ -1360,7 +1360,7 @@ class DockerEnvironment(BaseEnvironment):
 
     def _start_teardown(self, work, log_id: str) -> None:
         """Run *work* on a daemon thread the atexit drain joins."""
-        t = threading.Thread(target=work, daemon=True, name=f"hermes-cleanup-{log_id}")
+        t = threading.Thread(target=work, daemon=True, name=f"moor-cleanup-{log_id}")
         with _TEARDOWN_LOCK:
             _TEARDOWN_THREADS.add(t)
         t.start()

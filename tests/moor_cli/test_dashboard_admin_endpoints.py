@@ -393,7 +393,7 @@ class TestWebhookEndpoints:
         # A re-POST is a general update, not an enable: an explicit disable must survive it.
         assert self.client.put("/api/webhooks/todoist/enabled", json={"enabled": False}).status_code == 200
         assert self.client.post("/api/webhooks", json={"name": "todoist", "deliver": "log"}).status_code == 200
-        from hermes_cli.webhook import _load_subscriptions
+        from moor_cli.webhook import _load_subscriptions
         assert _load_subscriptions()["todoist"]["enabled"] is False
 
     def test_enable_platform_starts_gateway_restart(self, monkeypatch):
@@ -804,7 +804,7 @@ class TestUpdateCheckEndpoint:
 
         monkeypatch.setattr(_cfg_mod, "detect_install_method", lambda *a, **k: "git")
         # Stub the shared checker so the contract is deterministic (no network).
-        from hermes_cli import banner
+        from moor_cli import banner
 
         monkeypatch.setattr("moor_cli.source_check.check_for_updates", lambda **kw: {"behind": 5, "commits": []})
 
@@ -831,12 +831,12 @@ class TestUpdateCheckEndpoint:
     @pytest.mark.parametrize("held", [True, False], ids=["held", "rollback"])
     def test_release_message_names_only_a_known_version(self, monkeypatch, version, held):
         monkeypatch.setattr(_cfg_mod, "detect_install_method", lambda *a, **k: "git")
-        monkeypatch.setattr("hermes_cli.source_check.check_for_updates", lambda **kw: {
+        monkeypatch.setattr("moor_cli.source_check.check_for_updates", lambda **kw: {
             "behind": 0 if held else -1, "held": "downgrade" if held else None,
             "rollback": not held, "sourceVersion": version, "channel": "preview", "commits": [],
         })
 
-        response = self.client.get("/api/hermes/update/check")
+        response = self.client.get("/api/moor/update/check")
         assert response.status_code == 200
         body = response.json()
         release = "preview release" + (f" v{version}" if version else "")
@@ -870,7 +870,7 @@ class TestUpdateCheckEndpoint:
         # as a copyable shell line, so prose here is a fake command.
         assert body["update_command"] == ""
 
-        refused = self.client.post("/api/hermes/update").json()
+        refused = self.client.post("/api/moor/update").json()
         assert refused["ok"] is False
         assert refused["error"] == "dashboard_update_managed_externally"
         assert refused["update_command"] == ""
@@ -1020,18 +1020,18 @@ def test_spawn_moor_action_scrubs_gateway_loop_guard_env(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# _spawn_hermes_action breakaway fallback (#139592)
+# _spawn_moor_action breakaway fallback (#139592)
 # ---------------------------------------------------------------------------
 
 @pytest.mark.platforms("windows")
-def test_spawn_hermes_action_retries_without_breakaway_when_job_denies(monkeypatch, tmp_path):
+def test_spawn_moor_action_retries_without_breakaway_when_job_denies(monkeypatch, tmp_path):
     """A parent job object that forbids breakaway (an Electron/Tauri-launched dashboard, some
     Windows Terminal configs) refuses CREATE_BREAKAWAY_FROM_JOB with access-denied. The action
     must still spawn — retried without the flag — and the refusal must land in the action log,
     which otherwise shows a bare started-header and no reason (#139592).
     """
-    import hermes_cli.web_server as ws
-    from hermes_cli import _subprocess_compat
+    import moor_cli.web_server as ws
+    from moor_cli import _subprocess_compat
 
     monkeypatch.setattr(_web_server_gateway, "_ACTION_LOG_DIR", tmp_path)
     monkeypatch.setattr(_web_server_gateway, "_ACTION_PROCS", {})
@@ -1051,7 +1051,7 @@ def test_spawn_hermes_action_retries_without_breakaway_when_job_denies(monkeypat
 
     monkeypatch.setattr(ws.subprocess, "Popen", _fake_popen)
 
-    proc = _web_server_gateway._spawn_hermes_action(["gateway", "restart"], "gateway-restart")
+    proc = _web_server_gateway._spawn_moor_action(["gateway", "restart"], "gateway-restart")
 
     assert proc.pid == 4321
     assert flags_seen == [
@@ -1062,10 +1062,10 @@ def test_spawn_hermes_action_retries_without_breakaway_when_job_denies(monkeypat
     assert "retrying without CREATE_BREAKAWAY_FROM_JOB" in log
 
 
-def test_spawn_hermes_action_records_a_failed_spawn_and_reraises(monkeypatch, tmp_path):
+def test_spawn_moor_action_records_a_failed_spawn_and_reraises(monkeypatch, tmp_path):
     """A spawn that never happened leaves the reason in the action log (previously a bare
     started-header) and still raises to the endpoint (#139592)."""
-    import hermes_cli.web_server as ws
+    import moor_cli.web_server as ws
 
     monkeypatch.setattr(_web_server_gateway, "_ACTION_LOG_DIR", tmp_path)
     monkeypatch.setattr(_web_server_gateway, "_ACTION_PROCS", {})
@@ -1076,7 +1076,7 @@ def test_spawn_hermes_action_records_a_failed_spawn_and_reraises(monkeypatch, tm
     monkeypatch.setattr(ws.subprocess, "Popen", _fake_popen)
 
     with pytest.raises(FileNotFoundError):
-        _web_server_gateway._spawn_hermes_action(["gateway", "restart"], "gateway-restart")
+        _web_server_gateway._spawn_moor_action(["gateway", "restart"], "gateway-restart")
 
     log = (tmp_path / _web_server_gateway._ACTION_LOG_FILES["gateway-restart"]).read_text()
     assert "spawn failed" in log
@@ -1090,8 +1090,8 @@ def test_named_profile_action_isolates_parent_env_and_loads_target_env(monkeypat
     import sys
     from pathlib import Path
 
-    from hermes_cli import env_loader
-    import hermes_cli.web_server as ws
+    from moor_cli import env_loader
+    import moor_cli.web_server as ws
 
     user_home = tmp_path / "user"
     default_home = user_home / ".moor"
@@ -1246,8 +1246,8 @@ def test_desktop_lifespan_reaps_orphans_with_a_startup_grace(monkeypatch):
     Asserting only "the reaper ran" would not catch a revert to the bare
     ``_reap_unsupervised_gateway_orphans()`` call, which is exactly the regression.
     """
-    import hermes_cli.web_server as ws
-    from hermes_cli.dashboard_procs import _REAP_MIN_AGE_SECONDS
+    import moor_cli.web_server as ws
+    from moor_cli.dashboard_procs import _REAP_MIN_AGE_SECONDS
 
     seen = {}
 
@@ -1255,11 +1255,11 @@ def test_desktop_lifespan_reaps_orphans_with_a_startup_grace(monkeypatch):
         seen["min_age_s"] = min_age_s
         return False
 
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
-    monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
+    monkeypatch.setenv("MOOR_DESKTOP", "1")
+    monkeypatch.setenv("MOOR_DASHBOARD_SESSION_TOKEN", "desktop-spawn-token")
     monkeypatch.setattr(ws, "_warm_gateway_module", lambda: None)
     monkeypatch.setattr(ws, "_start_desktop_cron_ticker", lambda *_args: None)
-    monkeypatch.setattr("hermes_cli.gateway._reap_unsupervised_gateway_orphans", _fake_reap)
+    monkeypatch.setattr("moor_cli.gateway._reap_unsupervised_gateway_orphans", _fake_reap)
 
     client, _header = _client()
     with client:

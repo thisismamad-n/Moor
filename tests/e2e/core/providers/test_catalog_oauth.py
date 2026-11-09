@@ -92,10 +92,10 @@ class Home:
             "TMPDIR": str(self.home), "MOOR_SHARED_AUTH_DIR": str(self.home / "shared"),
             "CODEX_HOME": str(self.home / ".codex"),
             # Child HOME is the fixture home, so its state.db is tmp_path's (guard's documented escape).
-            "HERMES_STATE_DB_GUARD_BYPASS": "1",
+            "MOOR_STATE_DB_GUARD_BYPASS": "1",
             # A turn boots the gateway; like every gateway harness, the hermetic run opts out of
             # lazy installs (PM downloads).
-            "HERMES_DISABLE_LAZY_INSTALLS": "1",
+            "MOOR_DISABLE_LAZY_INSTALLS": "1",
             **self.sentinel.proxy_env()})
         env.update(extra or {})
         return env
@@ -103,7 +103,7 @@ class Home:
     def run(self, argv: list[str], extra_env: dict[str, str] | None = None,
             timeout: float = TURN_TIMEOUT) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, "-m", "hermes_cli.main", *argv], cwd=str(self.home), env=self.env(extra_env),
+            [sys.executable, "-m", "moor_cli.main", *argv], cwd=str(self.home), env=self.env(extra_env),
             stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout, check=False)
 
 

@@ -245,7 +245,7 @@ class TestClassifyApiError:
                 ),
             },
         )
-        result = classify_api_error(e, provider="nous", model="meituan/longcat-2.0:free")
+        result = classify_api_error(e, provider="moor", model="meituan/longcat-2.0:free")
         assert result.reason == FailoverReason.model_not_found
         assert result.retryable is False
         assert result.should_fallback is True

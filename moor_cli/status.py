@@ -10,16 +10,16 @@ from types import SimpleNamespace
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-from hermes_cli.auth import AuthError, resolve_provider
-from hermes_cli.colors import Colors, color
-from hermes_cli.config import get_env_path, get_env_value, get_hermes_home, load_config
-from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, DEFAULT_VERCEL_IMAGE
-from hermes_cli.models import provider_label
-from hermes_cli.runtime_provider import resolve_requested_provider
-from hermes_cli.vercel_auth import describe_vercel_auth
-from hermes_cli.status_auth import (  # renderers wired into _SECTIONS below
-    _render_api_keys, _render_apikey_providers, _render_auth_providers, _render_nous_gateway)
-from hermes_constants import OPENROUTER_MODELS_URL
+from moor_cli.auth import AuthError, resolve_provider
+from moor_cli.colors import Colors, color
+from moor_cli.config import get_env_path, get_env_value, get_moor_home, load_config
+from moor_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, DEFAULT_VERCEL_IMAGE
+from moor_cli.models import provider_label
+from moor_cli.runtime_provider import resolve_requested_provider
+from moor_cli.vercel_auth import describe_vercel_auth
+from moor_cli.status_auth import (  # renderers wired into _SECTIONS below
+    _render_api_keys, _render_apikey_providers, _render_auth_providers, _render_moor_gateway)
+from moor_constants import OPENROUTER_MODELS_URL
 
 
 def check_mark(ok: bool) -> str:
@@ -196,7 +196,7 @@ def _render_platforms(ctx):
     try:
         from gateway.config import load_gateway_config
         from gateway.platform_registry import platform_registry
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()  # labels come from the plugin entries
         cfg = load_gateway_config()
     except Exception:
@@ -250,7 +250,7 @@ def _load_json(path: Path, encoding: str = "utf-8"):
 
 def _cron_summary() -> str:
     """``N active, M total`` jobs line, shared by the full and short status renderers."""
-    jobs_file = get_hermes_home() / "cron" / "jobs.json"
+    jobs_file = get_moor_home() / "cron" / "jobs.json"
     if not jobs_file.exists():
         return "0"
     try:
@@ -272,8 +272,8 @@ def _render_sessions(ctx):
     # Gateway session count: state.db is the source of truth; fall back to sessions.json for
     # pre-migration installs.
     try:
-        from hermes_state import SessionDB
-        db = SessionDB(db_path=get_hermes_home() / "state.db", read_only=True)
+        from moor_state import SessionDB
+        db = SessionDB(db_path=get_moor_home() / "state.db", read_only=True)
         try:
             gateway_rows = db.list_gateway_sessions(active_only=True) or []
         finally:
@@ -361,8 +361,8 @@ def _connected_platform_labels() -> list:
 
 def _authenticated_provider_names() -> list:
     """The providers the /model picker offers: cached catalogs only, no endpoint probes."""
-    from hermes_cli.inventory import load_picker_context
-    from hermes_cli.model_switch import list_authenticated_providers
+    from moor_cli.inventory import load_picker_context
+    from moor_cli.model_switch import list_authenticated_providers
     pick = load_picker_context()
     return [row["name"] for row in list_authenticated_providers(
         user_providers=pick.user_providers, custom_providers=pick.custom_providers,
@@ -371,7 +371,7 @@ def _authenticated_provider_names() -> list:
 
 
 def _gateway_state() -> tuple:
-    from hermes_cli.gateway import get_gateway_runtime_snapshot, named_profile_served_by_running_multiplexer
+    from moor_cli.gateway import get_gateway_runtime_snapshot, named_profile_served_by_running_multiplexer
     if get_gateway_runtime_snapshot().running:
         return True, "running"
     if named_profile_served_by_running_multiplexer():  # satellite profile: no gateway.pid of its own
@@ -389,7 +389,7 @@ def _summary_row(label: str, probe, empty: str) -> None:
 
 
 def _render_summary(ctx):
-    """Default ``hermes status``: one line per component; ``--full`` prints every section."""
+    """Default ``moor status``: one line per component; ``--full`` prints every section."""
     _render_header(ctx)
     print()
     _load_ctx_config(ctx)
@@ -403,11 +403,11 @@ def _render_summary(ctx):
         _kv("Gateway:", "unknown")
     _summary_row("Platforms:", _connected_platform_labels, "none configured")
     _kv("Jobs:", _cron_summary())
-    _banner(("  Run 'hermes status --full' for every section",), Colors.DIM)
+    _banner(("  Run 'moor status --full' for every section",), Colors.DIM)
     print()
 
 
-# Print order of `hermes status`; each renderer takes the shared _StatusContext.
+# Print order of `moor status`; each renderer takes the shared _StatusContext.
 _SECTIONS = (
     _render_header, _render_environment, _render_api_keys, _render_auth_providers, _render_moor_gateway,
     _render_apikey_providers, _render_terminal, _render_platforms, _render_gateway, _render_cron,
@@ -416,9 +416,9 @@ _SECTIONS = (
 
 def show_status(args):
     """One-screen summary by default; ``--full``/``--deep`` print every section."""
-    # Shared by section renderers: config, --deep, and the Nous login facts Auth Providers derives
-    # for the later Nous Tool Gateway section.
-    ctx = SimpleNamespace(deep=getattr(args, 'deep', False), config={}, nous_logged_in=False,
-                          nous_inference_present=False, nous_account_info=None)
+    # Shared by section renderers: config, --deep, and the Moor login facts Auth Providers derives
+    # for the later Moor Tool Gateway section.
+    ctx = SimpleNamespace(deep=getattr(args, 'deep', False), config={}, moor_logged_in=False,
+                          moor_inference_present=False, moor_account_info=None)
     for render in _SECTIONS if getattr(args, 'full', False) or ctx.deep else (_render_summary,):
         render(ctx)

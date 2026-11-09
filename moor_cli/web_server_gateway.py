@@ -13,8 +13,8 @@ import time
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from hermes_cli._subprocess_compat import windows_detach_flags, windows_detach_flags_without_breakaway
-from hermes_cli.config import get_hermes_home
+from moor_cli._subprocess_compat import windows_detach_flags, windows_detach_flags_without_breakaway
+from moor_cli.config import get_moor_home
 
 # Same logger the code used before extraction (record parity).
 _log = logging.getLogger("moor_cli.web_server")
@@ -347,8 +347,8 @@ def _named_profile_from_action(subcommand: list[str]) -> Optional[str]:
 def _is_host_gateway_spawn(subcommand: list[str]) -> bool:
     """True when *subcommand* starts the host multiplexer, not a named profile's own gateway.
 
-    ``hermes gateway restart`` and ``hermes -p default gateway restart`` are the host.
-    ``hermes -p coder gateway stop`` is not.
+    ``moor gateway restart`` and ``moor -p default gateway restart`` are the host.
+    ``moor -p coder gateway stop`` is not.
     """
     profile = _named_profile_from_action(subcommand)
     if profile not in (None, "default"):
@@ -365,7 +365,7 @@ def _is_host_gateway_spawn(subcommand: list[str]) -> bool:
 def _profile_action_environment(
     subcommand: list[str], env_overrides: Optional[dict[str, str]] = None,
 ) -> dict[str, str]:
-    """Environment for a detached ``hermes <subcommand>`` action.
+    """Environment for a detached ``moor <subcommand>`` action.
 
     The dashboard loads its own profile's ``.env`` into process-global ``os.environ``. Copying
     that mapping verbatim into ``moor -p <other> ...`` lets the named child see the dashboard
@@ -375,7 +375,7 @@ def _profile_action_environment(
 
     Named-profile actions therefore start from Moor' standard scrubbed subprocess env, then drop
     the profile-managed keys plus every key declared by the dashboard/default profile dotenv files
-    and their hydrated secret sources, and pin ``HERMES_HOME`` to the target profile. The child's
+    and their hydrated secret sources, and pin ``MOOR_HOME`` to the target profile. The child's
     normal startup then loads that profile's own ``.env``. A host-gateway verb (bare ``gateway``
     or ``-p default gateway``) starts from ``host_gateway_child_env`` so a named-profile dashboard
     cannot donate its dotenv to the multiplexer. Other actions without a profile selector keep
@@ -475,7 +475,7 @@ def _action_targets_system_gateway(subcommand: list[str]) -> bool:
         reset_moor_home_override(token)
 
 
-def _spawn_hermes_action(
+def _spawn_moor_action(
     subcommand: list[str], name: str, *, env_overrides: Optional[dict[str, str]] = None
 ) -> subprocess.Popen:
     """Spawn ``moor <subcommand>`` detached (via ``moor_cli.main``) and record the handle."""
@@ -485,13 +485,13 @@ def _spawn_hermes_action(
     section_start = os.fstat(log_file.fileno()).st_size
     # The header carries the action id durably: the update's completion marker lands in the ROOT
     # update.log every profile shares, and only this id ties one to the action THIS log started.
-    action_id = (env_overrides or {}).get("HERMES_ACTION_ID")
+    action_id = (env_overrides or {}).get("MOOR_ACTION_ID")
     stamp = time.strftime('%Y-%m-%d %H:%M:%S') + (f" {action_id}" if action_id else "")
     log_file.write(f"\n=== {name} started {stamp} ===\n".encode())
     if action_id:
         # ...and a sidecar keeps it once build output pushes the header past the status route's
         # bounded tail, or the log rotates: a restarted dashboard still knows which action it ran.
-        from hermes_cli.runtime_state import _atomic_bytes
+        from moor_cli.runtime_state import _atomic_bytes
         _atomic_bytes(_ACTION_LOG_DIR / f"{name}.action_id", action_id.encode("ascii"))
 
     from moor_cli._launchers import runtime_command
@@ -565,7 +565,7 @@ def _spawn_hermes_action(
 
 def _own_profile_selector(profile: Optional[str]) -> Optional[str]:
     """The profile a lifecycle verb addresses: the explicit selector, else the process's own
-    profile (a pooled Desktop ``hermes --profile X serve`` answers ``/api/gateway/*`` without
+    profile (a pooled Desktop ``moor --profile X serve`` answers ``/api/gateway/*`` without
     ``?profile=``; an unscoped verb there is about X). The default home resolves to the literal
     ``"default"`` selector, never to a bare argv: a selector-less child re-reads the sticky
     ``active_profile`` and would act on another profile's gateway (and skips the named-target
@@ -573,20 +573,20 @@ def _own_profile_selector(profile: Optional[str]) -> Optional[str]:
     requested = (profile or "").strip()
     if requested:
         return requested
-    from hermes_constants import get_process_hermes_home, profile_name_for_home
-    return profile_name_for_home(get_process_hermes_home()) or None
+    from moor_constants import get_process_moor_home, profile_name_for_home
+    return profile_name_for_home(get_process_moor_home()) or None
 
 
 def _gateway_subcommand(profile: Optional[str], verb: str) -> list[str]:
-    """``hermes [-p X] gateway <verb>`` argv for a dashboard lifecycle action. A profile served by the
+    """``moor [-p X] gateway <verb>`` argv for a dashboard lifecycle action. A profile served by the
     live default multiplexer has no gateway of its own: ``restart`` targets the multiplexer (the process
     that actually serves X — a ``-p X gateway restart`` child only exits 78 into the action log while the
     UI reports "restarted"); ``start``/``stop`` are refused by the caller (``multiplexed_profile_refusal``).
     The multiplexer is addressed as ``-p default`` explicitly: a bare ``gateway restart`` spawned from a
-    pooled ``--profile X serve`` would inherit X's ``HERMES_HOME`` and hit the same exit-78 refusal. The
+    pooled ``--profile X serve`` would inherit X's ``MOOR_HOME`` and hit the same exit-78 refusal. The
     selector is explicit for the default home too: a bare child re-reads the sticky ``active_profile``
     and would restart another profile's gateway."""
-    from hermes_cli.web_server_profiles import _profile_cli_args
+    from moor_cli.web_server_profiles import _profile_cli_args
     profile = _own_profile_selector(profile)
     args = _profile_cli_args(profile)
     if profile and verb == "restart" and multiplexed_profile_refusal(profile, verb) is not None:
@@ -666,8 +666,8 @@ def multiplexed_profile_refusal(profile: Optional[str], verb: str) -> Optional[s
 def live_session_refusal(profile: Optional[str], verb: str) -> Optional[str]:
     """Refusal text when the gateway ``verb`` would act on has live sessions, else None. Asked before
     spawning: the child refuses the same way, but into an action log the UI never reads."""
-    from hermes_cli.gateway_lifecycle_guards import refusal_lines
-    from hermes_cli.web_server_profiles import _resolve_profile_dir
+    from moor_cli.gateway_lifecycle_guards import refusal_lines
+    from moor_cli.web_server_profiles import _resolve_profile_dir
     homes = [_resolve_profile_dir(_own_profile_selector(profile) or "default")]
     from gateway.host_attach import host_gateway
     owner = host_gateway()
@@ -682,7 +682,7 @@ def _restart_gateway_after(profile: Optional[str], *, what: str, label: str) -> 
     spawn is reported (``restart_started: False`` + ``restart_error``) so the UI can fall back to
     its manual restart banner instead of failing the request. Live sessions refuse it the same way,
     with ``restart_busy`` set so a UI can say so in its own words."""
-    from hermes_cli.web_server import _spawn_gateway_restart
+    from moor_cli.web_server import _spawn_gateway_restart
     refusal = live_session_refusal(profile, "restart")
     if refusal:
         return {"restart_started": False, "restart_error": refusal, "restart_busy": True}
@@ -702,7 +702,7 @@ _RESTART_REASON_MAX = 300
 
 def _restart_log_last_line(pid: int) -> str:
     """The last line the ``gateway-restart`` child *pid* wrote to its log, or ``""``: its section
-    runs from the offset ``_spawn_hermes_action`` recorded to the next spawn's header."""
+    runs from the offset ``_spawn_moor_action`` recorded to the next spawn's header."""
     start = _ACTION_LOG_STARTS.get("gateway-restart")
     if start is None or start[0] != pid:
         return ""
@@ -727,7 +727,7 @@ def gateway_restart_failure(profile: Optional[str]) -> Optional[dict[str, Any]]:
     succeeded, or when this process started none. A child that exits nonzero leaves the old
     gateway serving the old config, so a UI waiting for the new one learns here that none is coming.
     ``pid`` is the ``restart_pid`` the restart answered, so the UI ignores an older restart."""
-    from hermes_cli import web_server
+    from moor_cli import web_server
     recent = web_server._LAST_GATEWAY_RESTART
     if recent is None:
         return None

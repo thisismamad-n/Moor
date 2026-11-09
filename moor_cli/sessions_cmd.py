@@ -14,9 +14,9 @@ import sys
 from functools import partial
 from pathlib import Path
 
-from hermes_cli.cli_output import print_truncated
-from hermes_cli.sessions_cmd_browse import _relative_time, _session_browse_picker
-from hermes_state_errors import SessionActiveWriteGuardError
+from moor_cli.cli_output import print_truncated
+from moor_cli.sessions_cmd_browse import _relative_time, _session_browse_picker
+from moor_state_errors import SessionActiveWriteGuardError
 
 
 def get_moor_home():
@@ -47,7 +47,7 @@ def _confirm_prompt(prompt: str) -> bool | None:
     except EOFError:
         print()
         # isatty() alone is True for Windows NUL; the console check keeps `< NUL` unattended (#113977).
-        from hermes_cli.gateway_windows import _stdin_console_mode_ok, _stdin_is_interactive
+        from moor_cli.gateway_windows import _stdin_console_mode_ok, _stdin_is_interactive
         return False if _stdin_is_interactive(isatty=sys.stdin.isatty(), console_mode_ok=_stdin_console_mode_ok()) else None
 
 
@@ -129,7 +129,7 @@ def _cmd_repair(args):
     if not db_path.exists():
         print(f"No session database at {db_path} (nothing to repair).")
         return
-    from hermes_state_reconcile import repair_declarative_schema, schema_drift_reason
+    from moor_state_reconcile import repair_declarative_schema, schema_drift_reason
     # A missing canonical sessions table is not additive upgrade drift: creating
     # an empty one could hide lost history. Preserve corruption/recovery routing.
     reason = _db_opens_cleanly(db_path)
@@ -305,7 +305,7 @@ def _default_exclude(args):
 
 def _surface_reader(db):
     """``--source cli`` also matches a gateway row stored as ``local`` with that created surface."""
-    from hermes_cli.gateway_session_store import SurfaceLabelReader
+    from moor_cli.gateway_session_store import SurfaceLabelReader
     return SurfaceLabelReader(db)
 
 
@@ -387,7 +387,7 @@ def _cmd_export(db, args):
         from moor_cli.session_export_md import redact_session_data
         return redact_session_data(data)
 
-    from hermes_cli.session_export import SAVE_TRANSCRIPT_FORMATS, export_projection
+    from moor_cli.session_export import SAVE_TRANSCRIPT_FORMATS, export_projection
     # --only is a transcript view too (md/jsonl of what the user saw); md/qmd without --only go to _export_markdown.
     shown = args.format in SAVE_TRANSCRIPT_FORMATS or bool(getattr(args, "only", None))
     projection = export_projection(shown)
@@ -396,7 +396,7 @@ def _cmd_export(db, args):
         """The transfer projection holds every stored row in memory: the console export's per-session
         ``sessions.max_export_messages`` guard (0 disables) runs before any is loaded. ``None`` = the
         sessions a bare export loads."""
-        from hermes_state import SessionExportTooLargeError, resolved_max_export_messages
+        from moor_state import SessionExportTooLargeError, resolved_max_export_messages
         if shown:
             return False
         limit = resolved_max_export_messages()
@@ -667,7 +667,7 @@ def _cmd_delete(db, args):
             return refused
     elif _pinned_note:
         print(f"Warning: deleting a pinned session '{resolved_session_id}'.")
-    from hermes_state_runtime import RuntimeStoreError
+    from moor_state_runtime import RuntimeStoreError
     try:
         if not db.delete_session(resolved_session_id, sessions_dir=_sessions_dir(), exclude_active_write_guards=True):
             return _not_found(args.session_id)
@@ -678,7 +678,7 @@ def _cmd_delete(db, args):
         # The ledger refuses to delete a session with accepted, unfinished turns; say what to do.
         if exc.reason == 'unknown_execution':
             print(f"Cannot delete session '{resolved_session_id}': a turn was lost across a gateway restart. "
-                  f"Acknowledge it first with: hermes sessions discard {resolved_session_id}")
+                  f"Acknowledge it first with: moor sessions discard {resolved_session_id}")
         elif exc.reason == 'session_busy':
             print(f"Cannot delete session '{resolved_session_id}': it has a queued or running turn. "
                   "Wait for it to finish (or stop it), then retry.")
@@ -730,8 +730,8 @@ def _prune_never_active_keyed(db, args):
         return refused
     owner = getattr(args, "owner_endpoint", None)
     if owner is not None:
-        from hermes_cli.gateway_client import GatewayClientError
-        from hermes_cli.sessions_owner import owner_prune, report_owner_failure
+        from moor_cli.gateway_client import GatewayClientError
+        from moor_cli.sessions_owner import owner_prune, report_owner_failure
         try:
             result = owner_prune(owner, never_active_days=days)
         except (GatewayClientError, OSError, TimeoutError) as exc:
@@ -837,8 +837,8 @@ def _cmd_prune_or_archive(db, args, action):
         return refused
     if prune and getattr(args, "owner_endpoint", None) is not None:
         # The live gateway owns the store: it deletes, through the housekeeping retirement path.
-        from hermes_cli.gateway_client import GatewayClientError
-        from hermes_cli.sessions_owner import owner_prune, report_owner_failure
+        from moor_cli.gateway_client import GatewayClientError
+        from moor_cli.sessions_owner import owner_prune, report_owner_failure
         try:
             print(f"Pruned {owner_prune(args.owner_endpoint, filters=filters)['deleted']} session(s).")
         except (GatewayClientError, OSError, TimeoutError) as exc:
@@ -1111,10 +1111,10 @@ def _cmd_optimize_storage(db, args):
     print("✓ Search index optimized.")
     _print_size_change(db, before_mb, prefix="  ")
     if result.get("vacuum_skipped") == "in_use":
-        print("  (VACUUM skipped: another process is using the database. Re-run `hermes sessions optimize` "
+        print("  (VACUUM skipped: another process is using the database. Re-run `moor sessions optimize` "
               "with it closed to reclaim freed space.)")
     elif result.get("vacuumed") is False:
-        print("  (VACUUM was skipped or failed — run `hermes sessions optimize` later to reclaim freed space.)")
+        print("  (VACUUM was skipped or failed — run `moor sessions optimize` later to reclaim freed space.)")
 
 
 def _cmd_repair_routing(db, args):
@@ -1360,12 +1360,12 @@ def _cmd_set_journal_mode(args):
 
 
 def _cmd_discard(args):
-    from hermes_cli.sessions_discard import cmd_discard
+    from moor_cli.sessions_discard import cmd_discard
     return cmd_discard(args)
 
 
 def _cmd_adopt(args):
-    from hermes_cli.sessions_adopt import cmd_adopt
+    from moor_cli.sessions_adopt import cmd_adopt
     return cmd_adopt(args)
 
 
@@ -1408,8 +1408,8 @@ def cmd_sessions(args, sessions_parser=None):
     pre = _PRE_DB_HANDLERS.get(action)
     if pre is not None:
         return pre(args)
-    from hermes_state import SessionDB
-    from hermes_constants import get_hermes_home
+    from moor_state import SessionDB
+    from moor_constants import get_moor_home
     # Verified deletion is an explicit mutation, not a read-only export.
     deleting_export = (
         action == "export" and getattr(args, "delete_after_verified", False)
@@ -1420,11 +1420,11 @@ def cmd_sessions(args, sessions_parser=None):
     if action == "prune":
         # The always-on gateway owns the store: this process only reads the preview, the owner
         # deletes. No gateway: the local prune below, behind the holder scan, as before.
-        from hermes_cli.sessions_owner import live_owner
+        from moor_cli.sessions_owner import live_owner
         args.owner_endpoint = live_owner()
         observational = args.owner_endpoint is not None
     # A served-profile process has no single default home: pass the store path explicitly.
-    path = get_hermes_home() / "state.db"
+    path = get_moor_home() / "state.db"
     try:
         db = SessionDB(db_path=path, read_only=observational)
     except Exception as e:
@@ -1442,7 +1442,7 @@ def cmd_sessions(args, sessions_parser=None):
             return
         if (action in _HELD_STORE_ACTIONS and not getattr(args, "dry_run", False) and not getattr(args, "force", False)
                 and getattr(args, "owner_endpoint", None) is None):
-            from hermes_state_holders import held_store_refusal
+            from moor_state_holders import held_store_refusal
             # Same path the SessionDB above opened, so the scan never depends on the db object.
             refusal = held_store_refusal(path, command=action)
             if refusal:

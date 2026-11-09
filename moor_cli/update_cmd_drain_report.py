@@ -84,11 +84,11 @@ def read_active_work(home: Optional[Path] = None) -> Optional[list]:
 
 
 def _tui_command(home: Optional[Path]) -> str:
-    """The TUI command that opens *home*'s profile: a bare ``hermes`` opens the default one."""
-    from hermes_constants import profile_name_for_home
+    """The TUI command that opens *home*'s profile: a bare ``moor`` opens the default one."""
+    from moor_constants import profile_name_for_home
 
     name = profile_name_for_home(home)
-    return f"hermes -p {name} --tui" if name and name != "default" else "hermes --tui"
+    return f"moor -p {name} --tui" if name and name != "default" else "moor --tui"
 
 
 def format_drain_report(work: Optional[list], *, remaining_s: float, home: Optional[Path] = None) -> str:

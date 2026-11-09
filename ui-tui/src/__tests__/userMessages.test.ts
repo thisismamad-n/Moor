@@ -1,4 +1,4 @@
-import { JsonRpcGatewayError } from '@hermes/shared/json-rpc-channel'
+import { JsonRpcGatewayError } from '@moor/shared/json-rpc-channel'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
@@ -61,7 +61,7 @@ describe('describeTurnFailure', () => {
     })
 
     expect(text).not.toContain('/retry')
-    expect(text).toContain('hermes model')
+    expect(text).toContain('moor model')
   })
 
   it('falls back to the layer copy, and to a generic title, when the code is unknown', () => {
@@ -259,7 +259,7 @@ describe('backend lifecycle copy', () => {
     expect(stderrLooksLikeProblem('Traceback (most recent call last):')).toBe(true)
     expect(stderrLooksLikeProblem('[gateway-turn] ValueError: nope')).toBe(true)
     expect(stderrLooksLikeProblem('ValueError: nope')).toBe(true)
-    expect(stderrLooksLikeProblem('INFO hermes.mcp: discovered 3 servers')).toBe(false)
+    expect(stderrLooksLikeProblem('INFO moor.mcp: discovered 3 servers')).toBe(false)
     // The canonical bootstrap's verdict (and its remedy line) is the reason a TUI cannot connect.
     expect(stderrLooksLikeProblem('gateway incompatible: runtime_protocol')).toBe(true)
     expect(stderrLooksLikeProblem('gateway inaccessible: profile_parked')).toBe(true)

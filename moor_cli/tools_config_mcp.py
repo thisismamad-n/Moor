@@ -187,7 +187,7 @@ def _apply_mcp_change(config: dict, targets: list[str], action: str) -> set[str]
 def _print_tools_list(enabled_toolsets: set, mcp_servers: dict, platform: str = "cli", stripped: dict | None = None):
     """Print a summary of enabled/disabled toolsets and MCP tool filters. ``stripped`` is
     ``tools_config.toolsets_partially_stripped`` output: enabled rows that agent.disabled_toolsets cuts down."""
-    from hermes_cli.tools_config import CONFIGURABLE_TOOLSETS, _get_effective_configurable_toolsets
+    from moor_cli.tools_config import CONFIGURABLE_TOOLSETS, _get_effective_configurable_toolsets
 
     effective_all = _get_effective_configurable_toolsets()
     effective = [(k, l, d) for (k, l, d) in effective_all if _toolset_allowed_for_platform(k, platform)]
@@ -251,14 +251,14 @@ def tools_disable_enable_command(args):
     platform = getattr(args, "platform", "cli")
     config = load_config()
 
-    from hermes_cli.tools_config import PLATFORMS
+    from moor_cli.tools_config import PLATFORMS
     valid_platforms = PLATFORMS if platform in PLATFORMS else _known_tool_platforms()  # built-ins load no plugin
     if platform not in valid_platforms:
         _print_error(f"Unknown platform '{platform}'. Valid: {', '.join(sorted(valid_platforms))}")
         return
 
     if action == "list":
-        from hermes_cli.tools_config import toolsets_partially_stripped
+        from moor_cli.tools_config import toolsets_partially_stripped
         enabled = _get_platform_tools(config, platform, include_default_mcp_servers=False)
         _print_tools_list(enabled, config.get("mcp_servers") or {}, platform, toolsets_partially_stripped(config, enabled))
         return

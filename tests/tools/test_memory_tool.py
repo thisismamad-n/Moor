@@ -991,7 +991,7 @@ class TestBackgroundReviewDeleteGate:
         assert record["origin"] == "background_review"
 
     def test_patch_staged_in_background_review(self, store, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path))
         store.add("memory", "entry the fork must not rewrite")
         token = set_current_write_origin("background_review")
         try:

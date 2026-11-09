@@ -12,14 +12,14 @@ from pathlib import Path
 from fastapi import HTTPException
 from starlette.responses import JSONResponse
 
-HEADER = 'x-hermes-gateway-ticket'
+HEADER = 'x-moor-gateway-ticket'
 
 
 def native_profile_scope(request):
     """Resolve the request's implicit selectors (omitted / '' / 'current') in the TICKET's home.
 
     ``_own_profile`` lets those selectors through unbound; the routes then resolve
-    ``get_hermes_home()`` / ``_default_db_path()``, which is the launch home unless the
+    ``get_moor_home()`` / ``_default_db_path()``, which is the launch home unless the
     task-local override says otherwise. A secondary-profile ticket must read and write its
     own profile, never the launch profile's dashboard state. The launch profile's own ticket
     binds its home override too, so it never inherits a foreign override that happens to be
@@ -34,17 +34,17 @@ def grant_home_scope(grant):
     if grant is None:
         yield
         return
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     home = Path(grant['profile_id'])
-    token = set_hermes_home_override(str(home))
+    token = set_moor_home_override(str(home))
     try:
         yield
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _own_profile(value, profile_id, *, current=True):
-    from hermes_cli.web_server_profiles import _resolve_profile_dir
+    from moor_cli.web_server_profiles import _resolve_profile_dir
 
     if value is None or (isinstance(value, str) and current
                          and (not value.strip() or value.strip().lower() == 'current')):
@@ -110,7 +110,7 @@ async def _check_profile_scope(request, profile_id):
                 raise PermissionError('profile_scope_mismatch')
 
 
-# ``/api/profiles/<suffix>`` collection routes, by method (hermes_cli/web_routers/profiles.py). Every
+# ``/api/profiles/<suffix>`` collection routes, by method (moor_cli/web_routers/profiles.py). Every
 # other method on these paths is the per-profile ``/api/profiles/{name}`` route of a profile NAMED
 # ``active``/``import``/``sessions``/…: valid profile names (PROFILE_ID_RE, not reserved).
 # Desktop mirror: apps/desktop/electron/profile-routes.ts.
@@ -153,11 +153,11 @@ def _check_registry_scope(request, profile_id, launch_home):
     if launch_home is None:
         # Fail closed: with no known launch home the guard below cannot tell it apart.
         raise PermissionError('profile_scope_mismatch')
-    from hermes_constants import get_default_hermes_root, hermes_home_key
-    # Compared by hermes_home_key, as SessionAuthorities keys homes (symlinks, case, separators).
-    launch = hermes_home_key(launch_home)
-    if hermes_home_key(profile_id) == launch and not (
-            request.method == 'PATCH' and launch == hermes_home_key(get_default_hermes_root())):
+    from moor_constants import get_default_moor_root, moor_home_key
+    # Compared by moor_home_key, as SessionAuthorities keys homes (symlinks, case, separators).
+    launch = moor_home_key(launch_home)
+    if moor_home_key(profile_id) == launch and not (
+            request.method == 'PATCH' and launch == moor_home_key(get_default_moor_root())):
         raise PermissionError('profile_scope_mismatch')
 
 
@@ -196,7 +196,7 @@ def _native_store(conn, tickets):
     descriptor = getattr(runner, 'session_runtime_descriptor', {})
     authorities = all_authorities(runner)
     store = getattr(runner, 'session_ticket_store', None)
-    peer = conn.scope.get('hermes.gateway_socket_peer')
+    peer = conn.scope.get('moor.gateway_socket_peer')
     if (len(tickets) != 1 or 'origin' in conn.headers or not peer
             or peer[0] not in {'127.0.0.1', '::1'}
             or descriptor.get('state') != 'ready'
@@ -255,7 +255,7 @@ def redeem_audio_ws(ws):
     grant in the same gateway subprotocol (``gateway/run_api.py``), under the HTTP seam's
     peer/Origin/served-profile rules. The upgrade's ``profile`` selectors must name the grant's home.
     """
-    from hermes_cli.web_server_boundary import _gateway_ws_ticket_from_subprotocol
+    from moor_cli.web_server_boundary import _gateway_ws_ticket_from_subprotocol
     ticket, reason = _gateway_ws_ticket_from_subprotocol(ws)
     gate = _native_store(ws, [ticket]) if reason == 'ok' and ws.url.path in AUDIO_STREAM_PATHS else None
     if gate is None:

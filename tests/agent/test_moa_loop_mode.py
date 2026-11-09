@@ -471,15 +471,15 @@ def test_max_iterations_summary_keeps_the_data_use_requirement_on_every_moa_slot
     from agent.chat_completion_helpers import handle_max_iterations
     from agent.message_metadata import data_use_requirement
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     (home / "config.yaml").write_text(
         "moa:\n  default_preset: review\n  presets:\n    review:\n"
-        "      reference_models:\n        - provider: nous\n          model: ref-model\n"
-        "      aggregator:\n        provider: nous\n        model: agg-model\n",
+        "      reference_models:\n        - provider: moor\n          model: ref-model\n"
+        "      aggregator:\n        provider: moor\n        model: agg-model\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     calls = []
 
     def fake_call_llm(**kwargs):

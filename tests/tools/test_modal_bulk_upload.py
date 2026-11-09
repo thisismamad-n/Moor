@@ -155,7 +155,7 @@ class TestModalBulkUpload:
         buf = io.BytesIO(tar_data)
         with tarfile.open(fileobj=buf, mode="r:gz") as tar:
             names = tar.getnames()
-            assert "root/.hermes/large.bin" in names
+            assert "root/.moor/large.bin" in names
 
 
 class TestModalCommandStdin:

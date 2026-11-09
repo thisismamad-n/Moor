@@ -841,7 +841,7 @@ Moor 中的每个模型槽位 —— 辅助任务、压缩、回退 —— 使�
 
 当设置 `base_url` 时，Moor 忽略 provider 并直接调用该端点（使用 `api_key` 或 `OPENAI_API_KEY` 进行认证）。当仅设置 `provider` 时，Moor 使用该 provider 的内置认证和基础 URL。
 
-辅助任务的可用 providers：`auto`、`main`，以及[provider 注册表](../reference/environment-variables.md)中的任何 provider —— `openrouter`、`nous`、`openai-codex`、`anthropic`、`gemini`、`qwen-oauth`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`deepseek`、`nvidia`、`xai`、`xai-oauth`、`ollama-cloud`、`alibaba`、`bedrock`、`huggingface`、`arcee`、`xiaomi`、`kilocode`、`opencode-zen`、`opencode-go`、`ai-gateway`、`azure-foundry` —— 或您 `custom_providers` 列表中任何命名的自定义 provider（例如 `provider: "beans"`）。
+辅助任务的可用 providers：`auto`、`main`，以及[provider 注册表](../reference/environment-variables.md)中的任何 provider —— `openrouter`、`moor`、`openai-codex`、`anthropic`、`gemini`、`qwen-oauth`、`zai`、`kimi-coding`、`kimi-coding-cn`、`minimax`、`minimax-cn`、`minimax-oauth`、`deepseek`、`nvidia`、`xai`、`xai-oauth`、`ollama-cloud`、`alibaba`、`bedrock`、`huggingface`、`arcee`、`xiaomi`、`kilocode`、`opencode-zen`、`opencode-go`、`ai-gateway`、`azure-foundry` —— 或您 `custom_providers` 列表中任何命名的自定义 provider（例如 `provider: "beans"`）。
 
 :::tip MiniMax OAuth
 `minimax-oauth` 通过浏览器 OAuth 登录（无需 API 密钥）。运行 `moor model` 并选择 **MiniMax (OAuth)** 进行认证。辅助任务自动使用 `MiniMax-M2.7-highspeed`。参阅 [MiniMax OAuth 指南](../guides/minimax-oauth.md)。
@@ -1030,7 +1030,7 @@ auxiliary:
     model: "qwen2.5-vl"
 ```
 
-`base_url` 优先于 `provider`，因此这是将辅助任务路由到特定端点的最明确方式。对于直接端点覆盖，Hermes 使用配置的 `api_key` 或回退到 `OPENAI_API_KEY`；它不会为该自定义端点重用 `OPENROUTER_API_KEY`。两者都未设置时，只有当 `base_url` 与主端点的源（scheme、主机和端口）完全相同时，才会重用主模型的密钥。主端点是会话当前运行的端点（`/model` 切换后即为切换后的端点），并且只与它自己的密钥配对，绝不会使用另一个端点的密钥。
+`base_url` 优先于 `provider`，因此这是将辅助任务路由到特定端点的最明确方式。对于直接端点覆盖，Moor 使用配置的 `api_key` 或回退到 `OPENAI_API_KEY`；它不会为该自定义端点重用 `OPENROUTER_API_KEY`。两者都未设置时，只有当 `base_url` 与主端点的源（scheme、主机和端口）完全相同时，才会重用主模型的密钥。主端点是会话当前运行的端点（`/model` 切换后即为切换后的端点），并且只与它自己的密钥配对，绝不会使用另一个端点的密钥。
 
 **使用 OpenAI API 密钥进行视觉：**
 ```yaml
@@ -1547,12 +1547,12 @@ browser:
   command_timeout: 30            # Chromium 启动超时下限（秒）
   headed: false                  # true = 显示 Chromium 窗口（本地）；轮次之间保持浏览器打开
   engine: auto                   # auto（Chromium）| lightpanda（"chrome" 视为 auto）
-  # Hermes 启动的本地 Chromium
+  # Moor 启动的本地 Chromium
   executable_path: ""            # 覆盖 Chromium 程序；"" = 打包的 Chromium
   user_data_dir: ""              # 所有会话共享的持久 profile；"" = 每个会话使用全新 profile
   chromium_args: []              # 额外的 Chromium 命令行参数，例如 ["--lang=de-DE"]
-  # 云端浏览器选择（由 `hermes tools` → Browser Automation 写入）
-  cloud_provider: local          # local | browserbase | browser-use | firecrawl | nous | <提供商插件>；未设置 = 根据凭据自动检测
+  # 云端浏览器选择（由 `moor tools` → Browser Automation 写入）
+  cloud_provider: local          # local | browserbase | browser-use | firecrawl | moor | <提供商插件>；未设置 = 根据凭据自动检测
   auto_local_for_private_urls: true  # 使用云端提供商时，在本地 Chromium 中打开 LAN/localhost URL
   allow_private_urls: false      # 允许私有/内部地址（localhost、192.168.x.x 等）
   # 可选 CDP 覆盖 —— 设置后，浏览器工具附加到您自己的
@@ -1564,9 +1564,9 @@ browser:
   dialog_timeout_s: 300          # must_respond 下的安全自动关闭（秒）
 ```
 
-**可执行文件解析顺序。** Hermes 启动它找到的第一个 Chromium：`browser.executable_path` → Hermes 包管理器安装的 Chromium（`hermes pm install chromium`）→ `/etc/hermes/chromium-executable-path`（官方 Docker 镜像）→ `PATH` 上的系统 `chromium` / `chromium-browser`（Termux 以及没有打包构建的平台）。都找不到时，浏览器工具会给出提示，而不是静默失败。
+**可执行文件解析顺序。** Moor 启动它找到的第一个 Chromium：`browser.executable_path` → Moor 包管理器安装的 Chromium（`moor pm install chromium`）→ `/etc/moor/chromium-executable-path`（官方 Docker 镜像）→ `PATH` 上的系统 `chromium` / `chromium-browser`（Termux 以及没有打包构建的平台）。都找不到时，浏览器工具会给出提示，而不是静默失败。
 
-**关闭浏览功能。** 浏览器没有配置开关：通过 `hermes tools`（或 `hermes tools disable browser [--platform NAME]`）禁用 `browser` 工具集。
+**关闭浏览功能。** 浏览器没有配置开关：通过 `moor tools`（或 `moor tools disable browser [--platform NAME]`）禁用 `browser` 工具集。
 
 **对话框策略：**
 
@@ -1576,7 +1576,7 @@ browser:
 
 完整对话框工作流请参阅[浏览器功能页面](./features/browser.md#browser_dialog)。
 
-**已移除的键（自动迁移）。** `browser.backend` 已移除——`browser_exec` 是唯一的浏览器路径。旧的 `backend: "off"` 会在更新时被删除，并一次性提示改为禁用 `browser` 工具集；其他值会被静默删除。`snapshot_threshold`、`record_sessions`、`allow_unsafe_evaluate` 和 `restrict_evaluate` 属于已移除的内置浏览器工具，不再生效。`browser.camofox.*` 键由 Camofox 插件（`hermes plugins install camofox`）读取，而非核心。旧的 `AGENT_BROWSER_*` 环境变量不再被读取；更新时，若对应键未设置，会把 profile 的 `.env` 中的值复制过去（`AGENT_BROWSER_EXECUTABLE_PATH` → `executable_path`、`AGENT_BROWSER_PROFILE` → `user_data_dir`、`AGENT_BROWSER_ARGS` → `chromium_args`、`AGENT_BROWSER_HEADED` → `headed`、`AGENT_BROWSER_ENGINE` → `engine`）。
+**已移除的键（自动迁移）。** `browser.backend` 已移除——`browser_exec` 是唯一的浏览器路径。旧的 `backend: "off"` 会在更新时被删除，并一次性提示改为禁用 `browser` 工具集；其他值会被静默删除。`snapshot_threshold`、`record_sessions`、`allow_unsafe_evaluate` 和 `restrict_evaluate` 属于已移除的内置浏览器工具，不再生效。`browser.camofox.*` 键由 Camofox 插件（`moor plugins install camofox`）读取，而非核心。旧的 `AGENT_BROWSER_*` 环境变量不再被读取；更新时，若对应键未设置，会把 profile 的 `.env` 中的值复制过去（`AGENT_BROWSER_EXECUTABLE_PATH` → `executable_path`、`AGENT_BROWSER_PROFILE` → `user_data_dir`、`AGENT_BROWSER_ARGS` → `chromium_args`、`AGENT_BROWSER_HEADED` → `headed`、`AGENT_BROWSER_ENGINE` → `engine`）。
 
 ## 时区
 
@@ -1703,7 +1703,7 @@ delegation:
 
 **线路协议（`api_mode`）：** Moor 从 `delegation.base_url` 自动检测线路协议（例如以 `/anthropic` 结尾的路径 → `anthropic_messages`；Codex/原生 Anthropic/Kimi-coding 主机名保留其现有检测）。对于启发式无法分类的端点 —— 例如 Azure AI Foundry、MiniMax、Zhipu GLM 或前置 Anthropic 形状后端的 LiteLLM 代理 —— 请将 `delegation.api_mode` 显式设置为 `chat_completions`、`codex_responses` 或 `anthropic_messages` 之一。留空（默认）以保持自动检测。
 
-委托 provider 使用与 CLI/gateway 启动相同的凭据解析。所有配置的 provider 均受支持：`openrouter`、`nous`、`zai`、`kimi-coding`、`minimax`、`minimax-cn`。设置 provider 时，系统自动解析正确的基础 URL、API 密钥和 API 模式 —— 无需手动凭据连接。
+委托 provider 使用与 CLI/gateway 启动相同的凭据解析。所有配置的 provider 均受支持：`openrouter`、`moor`、`zai`、`kimi-coding`、`minimax`、`minimax-cn`。设置 provider 时，系统自动解析正确的基础 URL、API 密钥和 API 模式 —— 无需手动凭据连接。
 
 **优先级：** 配置中的 `delegation.base_url` → 配置中的 `delegation.provider` → 父 provider（继承）。配置中的 `delegation.model` → 父模型（继承）。仅设置 `model` 而不设置 `provider` 仅更改模型名称，同时保留父级凭据（适用于在同一 provider（如 OpenRouter）内切换模型）。
 

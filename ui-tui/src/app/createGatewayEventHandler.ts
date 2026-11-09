@@ -1,10 +1,10 @@
 import { execFile } from 'child_process'
 
-import { forceRedraw, onTerminalBackground, onTerminalForeground } from '@hermes/ink'
-import { stripAnsi } from '@hermes/shared/ansi'
-import { relativeLuminance } from '@hermes/shared/color'
-import type { MessageDeltaPayload, SubagentStatus, Usage } from '@hermes/shared/gateway-events'
-import type { UsageLimit } from '@hermes/shared/plan-usage'
+import { forceRedraw, onTerminalBackground, onTerminalForeground } from '@moor/ink'
+import { stripAnsi } from '@moor/shared/ansi'
+import { relativeLuminance } from '@moor/shared/color'
+import type { MessageDeltaPayload, SubagentStatus, Usage } from '@moor/shared/gateway-events'
+import type { UsageLimit } from '@moor/shared/plan-usage'
 
 import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
 import { STREAM_BATCH_MS } from '../config/timing.js'
@@ -728,7 +728,7 @@ function confirmBillingWall(
       confirmLabel: copy.confirmLabel,
       detail: copy.detail,
       onConfirm: () => {
-        if (block.is_nous) {
+        if (block.is_moor) {
           submitRef.current('/topup')
         } else if (block.billing_url) {
           openExternalUrl(block.billing_url)

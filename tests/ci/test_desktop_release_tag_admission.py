@@ -181,10 +181,10 @@ def _run_admission(clone: Path, tag: str, claim_tag: str) -> subprocess.Complete
         GITHUB_OUTPUT=str(gh_output),
         RELEASE_PHASE="candidate",
         # Stable runs from the default branch; GITHUB_SHA is not the claim commit.
-        GITHUB_REPOSITORY="example/hermes-agent",
+        GITHUB_REPOSITORY="example/moor-agent",
         GITHUB_EVENT_NAME="workflow_dispatch",
         GITHUB_REF="refs/heads/main",
-        GITHUB_WORKFLOW_REF="example/hermes-agent/.github/workflows/stable-release.yml@refs/heads/main",
+        GITHUB_WORKFLOW_REF="example/moor-agent/.github/workflows/stable-release.yml@refs/heads/main",
         GITHUB_SHA="e" * 40,
         PYTHONPATH=str(_REPO),
     )

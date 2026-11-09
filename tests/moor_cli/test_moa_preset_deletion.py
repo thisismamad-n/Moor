@@ -8,7 +8,7 @@ in config.yaml forever. ``presets`` is authoritative on write; undeclared
 sibling keys (``save_traces``, ``trace_dir``) must still survive (#58819), and
 other config sections must not be clobbered (#89184).
 
-Real config pipeline against a temp HERMES_HOME — a mocked save cannot show the
+Real config pipeline against a temp MOOR_HOME — a mocked save cannot show the
 merge that caused the bug.
 """
 
@@ -24,8 +24,8 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli.web_models import MoaConfigPayload, MoaModelSlot, MoaPresetPayload
-from hermes_cli.web_routers.models import set_moa_models
+from moor_cli.web_models import MoaConfigPayload, MoaModelSlot, MoaPresetPayload
+from moor_cli.web_routers.models import set_moa_models
 
 
 def _preset(model: str) -> MoaPresetPayload:
@@ -45,7 +45,7 @@ def _on_disk(home) -> dict:
 def _seed(home, monkeypatch, moa: dict, **sections) -> None:
     from ruamel.yaml import YAML
 
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     with (home / "config.yaml").open("w", encoding="utf-8") as fh:
         YAML(typ="rt").dump({"moa": moa, **sections}, fh)
 
@@ -75,7 +75,7 @@ def _three_presets() -> dict:
 
 def test_omitted_preset_is_deleted_from_disk(tmp_path, monkeypatch):
     """The whole point: a preset the payload omits must not survive the save."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _seed(home, monkeypatch, _three_presets())
 
@@ -97,8 +97,8 @@ def test_deletion_survives_autosave_restart_and_backup_with_sparse_yaml(tmp_path
     """The real HTTP save keeps user YAML intact and never revives omitted names."""
     from starlette.testclient import TestClient
 
-    from hermes_cli.config import load_config, read_raw_config
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli.config import load_config, read_raw_config
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
 
     moa = _three_presets()
     moa.update(privacy_filter="full", save_traces=True, trace_dir="/custom/traces")
@@ -115,7 +115,7 @@ def test_deletion_survives_autosave_restart_and_backup_with_sparse_yaml(tmp_path
     # Backup filenames have second precision. Model a later edit explicitly so
     # this checks MoA fallback merging, not the upstream same-second collision
     # (which can leave ANY config setting's backup stale).
-    from hermes_cli import config_backups
+    from moor_cli import config_backups
 
     with monkeypatch.context() as clock:
         clock.setattr(config_backups.time, "strftime", lambda _fmt: "20000101-000000")
@@ -157,7 +157,7 @@ def test_deletion_survives_autosave_restart_and_backup_with_sparse_yaml(tmp_path
 
     # Fresh imports use the actual saved YAML, then the persisted last-good backup.
     probe = (
-        "import json; from hermes_cli.config import load_config; "
+        "import json; from moor_cli.config import load_config; "
         "print(json.dumps(sorted(load_config()['moa']['presets'])))"
     )
     for broken in (False, True):
@@ -166,7 +166,7 @@ def test_deletion_survives_autosave_restart_and_backup_with_sparse_yaml(tmp_path
         result = subprocess.run(
             [sys.executable, "-B", "-c", probe],
             cwd=Path(__file__).resolve().parents[2],
-            env={**os.environ, "HERMES_HOME": str(tmp_path)},
+            env={**os.environ, "MOOR_HOME": str(tmp_path)},
             capture_output=True, text=True, check=True, timeout=30,
         )
         assert json.loads(result.stdout.splitlines()[-1]) == sorted(survivors)
@@ -176,7 +176,7 @@ def test_deletion_survives_autosave_restart_and_backup_with_sparse_yaml(tmp_path
 
 def test_deletion_preserves_undeclared_moa_keys_and_other_sections(tmp_path, monkeypatch):
     """Authoritative presets must not cost us #58819 (save_traces) or #89184 (siblings)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     moa = _three_presets()
     moa.update(save_traces=True, trace_dir="/custom/traces")
@@ -205,8 +205,8 @@ def test_moa_save_preserves_a_concurrent_partial_config_write(tmp_path, monkeypa
 
     from starlette.testclient import TestClient
 
-    from hermes_cli import config as config_mod
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli import config as config_mod
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
 
     _seed(tmp_path, monkeypatch, _three_presets(), display={"skin": "slate"})
     read_complete, resume_read = threading.Event(), threading.Event()
@@ -263,8 +263,8 @@ def test_moa_save_refuses_transient_read_failure_without_losing_config(tmp_path,
     """A recovered second read must not turn the first read's fallback into a full write."""
     from starlette.testclient import TestClient
 
-    from hermes_cli import config as config_mod
-    from hermes_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
+    from moor_cli import config as config_mod
+    from moor_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
 
     _seed(tmp_path, monkeypatch, _three_presets(), operator_settings={"keep": None})
     config_path = tmp_path / "config.yaml"
@@ -304,7 +304,7 @@ def test_moa_save_refuses_transient_read_failure_without_losing_config(tmp_path,
 
 def test_adding_a_preset_still_works(tmp_path, monkeypatch):
     """Authoritative writes must not break the add/edit path."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _seed(home, monkeypatch, _three_presets())
 
@@ -328,11 +328,11 @@ def test_adding_a_preset_still_works(tmp_path, monkeypatch):
 
 def test_named_map_does_not_receive_schema_default_on_load(tmp_path, monkeypatch):
     """An explicit named map owns its names; loader defaults must not add ``default``."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _seed(home, monkeypatch, _three_presets())
 
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
 
     loaded = load_config()
     assert set(loaded["moa"]["presets"]) == {"keep_a", "doomed", "keep_b"}
@@ -340,24 +340,24 @@ def test_named_map_does_not_receive_schema_default_on_load(tmp_path, monkeypatch
 
 def test_named_map_stays_authoritative_in_a_fresh_process_and_backup_fallback(tmp_path, monkeypatch):
     """A restart and last-known-good fallback must not reinsert the schema ``default``."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _seed(home, monkeypatch, _three_presets())
 
-    from hermes_cli.config import load_config
+    from moor_cli.config import load_config
 
     # The first valid load creates the real ``good`` backup used by a fresh process.
     assert set(load_config()["moa"]["presets"]) == {"keep_a", "doomed", "keep_b"}
     (home / "config.yaml").write_text("moa: [unterminated\n", encoding="utf-8")
 
     probe = (
-        "import json; from hermes_cli.config import load_config; "
+        "import json; from moor_cli.config import load_config; "
         "print(json.dumps(sorted(load_config()['moa']['presets'])))"
     )
     result = subprocess.run(
         [sys.executable, "-B", "-c", probe],
         cwd=__import__("pathlib").Path(__file__).resolve().parents[2],
-        env={**os.environ, "HERMES_HOME": str(home)},
+        env={**os.environ, "MOOR_HOME": str(home)},
         capture_output=True,
         text=True,
         check=True,
@@ -368,13 +368,13 @@ def test_named_map_stays_authoritative_in_a_fresh_process_and_backup_fallback(tm
 
 def test_missing_moa_map_still_receives_schema_defaults(tmp_path, monkeypatch):
     """Without a user MoA map, the built-in default remains available."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("MOOR_HOME", str(home))
     (home / "config.yaml").write_text("model: {}\n", encoding="utf-8")
 
-    from hermes_cli.config import DEFAULT_CONFIG, load_config
-    from hermes_cli.moa_config import normalize_moa_config
+    from moor_cli.config import DEFAULT_CONFIG, load_config
+    from moor_cli.moa_config import normalize_moa_config
 
     actual = normalize_moa_config(load_config()["moa"])
     expected = normalize_moa_config(DEFAULT_CONFIG["moa"])
@@ -383,7 +383,7 @@ def test_missing_moa_map_still_receives_schema_defaults(tmp_path, monkeypatch):
 
 def test_deletion_preserves_privacy_filter_and_retained_preset_metadata(tmp_path, monkeypatch):
     """A MoA edit must not reset an undeclared privacy policy or metadata."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     moa = _three_presets()
     moa.update(
@@ -415,7 +415,7 @@ def test_legacy_flat_update_preserves_named_presets_and_valid_default(
     tmp_path, monkeypatch, include_presets
 ):
     """Older flat clients preserve named presets and a valid persisted active selection."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     seeded = _three_presets()
     seeded["active_preset"] = "keep_b"
@@ -446,7 +446,7 @@ def test_legacy_flat_update_preserves_named_presets_and_valid_default(
     }
     # Legacy flat fields represent the saved default preset. Runtime resolution uses
     # default_preset when no preset name is explicitly requested; active_preset is metadata.
-    from hermes_cli.moa_config import resolve_moa_preset
+    from moor_cli.moa_config import resolve_moa_preset
 
     assert resolve_moa_preset(moa)["reference_models"] == moa["presets"]["keep_a"]["reference_models"]
     assert moa["presets"]["keep_b"] == seeded["presets"]["keep_b"]
@@ -455,7 +455,7 @@ def test_legacy_flat_update_preserves_named_presets_and_valid_default(
 
 def test_legacy_flat_update_with_named_default_and_empty_map_does_not_fail(tmp_path, monkeypatch):
     """A legacy flat payload's default_preset field cannot rename its synthesized map."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".moor"
     home.mkdir()
     _seed(home, monkeypatch, _three_presets())
 

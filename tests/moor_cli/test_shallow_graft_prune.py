@@ -116,8 +116,8 @@ def test_prune_is_idempotent_and_noop_without_grafts(tmp_path):
 
 
 def test_update_check_prunes_and_reports_count(tmp_path, monkeypatch, capsys):
-    """`hermes update --check` prunes grafts after its depth-1 fetch and reports the prune."""
-    from hermes_cli import update_cmd
+    """`moor update --check` prunes grafts after its depth-1 fetch and reports the prune."""
+    from moor_cli import update_cmd
 
     clone = _mk_shallow_scenario(tmp_path)
     assert len(_shallow_lines(clone)) == 3

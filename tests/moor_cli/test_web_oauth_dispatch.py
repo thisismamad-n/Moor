@@ -676,7 +676,7 @@ def test_qwen_status_card_carries_the_getter_expiry_token_and_auth_file():
         "logged_in": True, "auth_file": "/home/u/.qwen/oauth_creds.json", "source": "qwen-cli",
         "api_key": "qwen-access-token-secret-xyz", "expires_at_ms": expires_at_ms,
     }
-    with patch("hermes_cli.auth.get_qwen_auth_status", return_value=qwen_status):
+    with patch("moor_cli.auth.get_qwen_auth_status", return_value=qwen_status):
         out = _rt_oauth._resolve_provider_status("qwen-oauth", None)
 
     assert out["logged_in"] is True
@@ -700,8 +700,8 @@ def test_dashboard_poller_saves_only_into_the_profile_the_login_started_in(tmp_p
     profile up by session id AFTER the provider answered; a cancel (DELETE) or the 15-minute sweep
     had removed the registry entry by then, so the tokens landed in the dashboard's launch profile
     (the Codex path was fixed the same way as IA-01). A cancelled login saves nothing."""
-    from hermes_cli import auth as auth_mod
-    from hermes_constants import get_hermes_home
+    from moor_cli import auth as auth_mod
+    from moor_constants import get_moor_home
 
     coder_home = _make_profile_home(tmp_path, monkeypatch, profile="coder")
     saved_into = []
@@ -716,7 +716,7 @@ def test_dashboard_poller_saves_only_into_the_profile_the_login_started_in(tmp_p
         return {"access_token": "at", "refresh_token": "rt", "id_token": "", "expires_in": 3600,
                 "expired_in": 3600, "token_type": "Bearer"}
 
-    record = lambda *_a, **_k: saved_into.append(str(get_hermes_home()))
+    record = lambda *_a, **_k: saved_into.append(str(get_moor_home()))
     if provider == "xai-oauth":
         sess.update(device_code="dc", expires_at=time.time() + 600, interval=1)
         monkeypatch.setattr(auth_mod, "_xai_oauth_discovery", lambda *a, **k: {"token_endpoint": "https://x.test/t"})

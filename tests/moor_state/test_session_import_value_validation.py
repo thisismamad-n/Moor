@@ -15,7 +15,7 @@ import json
 
 import pytest
 
-from hermes_state import SessionDB
+from moor_state import SessionDB
 
 
 @pytest.fixture()

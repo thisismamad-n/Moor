@@ -41,7 +41,7 @@ POLL = 0.02
 DEADLINE = 120.0
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
-# Per-platform send/edit semantics (what the real service enforces, not what Hermes believes).
+# Per-platform send/edit semantics (what the real service enforces, not what Moor believes).
 PROFILES: dict[str, dict[str, Any]] = {
     "telegram": {"max_len": 4096, "edits": True, "threads": False},
     "discord": {"max_len": 2000, "edits": True, "threads": True},
@@ -523,8 +523,8 @@ class GatewayProcess:
             "MOOR_STATE_DB_GUARD_BYPASS": "1",
             "MOOR_GATEWAY_LOCK_DIR": str(self.root / "gateway-locks"),
             "TZ": "UTC", "PYTHONHASHSEED": "0", "PYTHONUNBUFFERED": "1", "C12_PARENT_PID": str(os.getpid()),
-            "HERMES_DISABLE_LAZY_INSTALLS": "1",
-            "AWS_EC2_METADATA_DISABLED": "true", "HERMES_HONCHO_HOST": "hermes",
+            "MOOR_DISABLE_LAZY_INSTALLS": "1",
+            "AWS_EC2_METADATA_DISABLED": "true", "MOOR_HONCHO_HOST": "moor",
             "PYTHONPATH": f"{REPO_ROOT}{os.pathsep}{os.environ.get('PYTHONPATH', '')}".rstrip(os.pathsep),
         })
         return env

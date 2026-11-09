@@ -287,7 +287,7 @@ async function flushAsync() {
 it('loads and tracks saved gateways without mounting the statusbar or Settings', async () => {
   const desktop = fakeDesktop()
   const bootFetch = deferred<void>()
-  type Listener = Parameters<NonNullable<NonNullable<Window['hermesDesktop']['connections']>['onChanged']>>[0]
+  type Listener = Parameters<NonNullable<NonNullable<Window['moorDesktop']['connections']>['onChanged']>>[0]
   const listeners = new Set<Listener>()
 
   let registry: DesktopConnectionsRegistry = {
@@ -378,7 +378,7 @@ describe('default-route profile adoption', () => {
         getGatewayWsUrlFor: vi.fn(async () => coderConn.wsUrl)
       }
 
-      ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+      ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
 
       try {
         render(<Harness />)
@@ -2689,7 +2689,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
         )
       }
 
-      ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+      ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
       render(<Harness />)
       await flushAsync()
       const primarySocket = FakeWebSocket.instances[0]
@@ -2737,7 +2737,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
       )
     }
 
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     render(<Harness />)
     await flushAsync()
     expect(FakeWebSocket.instances[0].url).toBe(oldPrimary.wsUrl)
@@ -2794,7 +2794,7 @@ describe('useGatewayBoot remote reconnect loop (real hook, fake socket)', () => 
       })
     }
 
-    ;(window as { hermesDesktop?: unknown }).hermesDesktop = desktop
+    ;(window as { moorDesktop?: unknown }).moorDesktop = desktop
     render(<Harness />)
     await flushAsync()
     expect(FakeWebSocket.instances[0].url).toBe(oldPrimary.wsUrl)

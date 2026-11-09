@@ -1,7 +1,7 @@
-import { type PromptSubmitResult, randomUuid } from '@hermes/shared'
+import { type PromptSubmitResult, randomUuid } from '@moor/shared'
 import { type MutableRefObject, useCallback } from 'react'
 
-import { getSession, PROMPT_SUBMIT_REQUEST_TIMEOUT_MS } from '@/hermes'
+import { getSession, PROMPT_SUBMIT_REQUEST_TIMEOUT_MS } from '@/moor'
 import { translateNow, type Translations } from '@/i18n'
 import { type ChatMessage, finalizeInterruptedMessages, textPart } from '@/lib/chat-messages'
 import { optimisticAttachmentRef } from '@/lib/chat-runtime'
@@ -41,7 +41,7 @@ import {
 } from '@/store/session'
 import { profileScopeForSessionOwner } from '@/store/session-request-router'
 import { $sessionStates, $sessionTiles } from '@/store/session-states'
-import type { SessionInfo } from '@/types/hermes'
+import type { SessionInfo } from '@/types/moor'
 
 import { cronRunWriteGateApplies, refreshCronRunWriteGate } from '../../../cron/open-cron-run'
 import type { ClientSessionState } from '../../../types'
@@ -1166,7 +1166,7 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
                   }
 
                   // 4094 is an explicit PRE-admission capability refusal; 4000 is the
-                  // legacy `hermes serve` contract refusing `submission_id` as an unknown
+                  // legacy `moor serve` contract refusing `submission_id` as an unknown
                   // key (version skew) before any handler ran. Both are pre-admission and
                   // safe to retry identityless. Never downgrade on a timeout, malformed
                   // ACK or an ambiguous retry.

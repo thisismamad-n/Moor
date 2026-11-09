@@ -1,8 +1,8 @@
 """Routes only the Webapp or native Desktop's Web Access pane use exist only on the surfaces that use them.
 
-One dashboard app serves every surface: the standalone ``hermes dashboard``, the headless
-``hermes serve``, the gateway's own listener for native clients, and the gateway's Webapp. The surface
-policy (``hermes_cli.web_server_surface``) says which of them serve:
+One dashboard app serves every surface: the standalone ``moor dashboard``, the headless
+``moor serve``, the gateway's own listener for native clients, and the gateway's Webapp. The surface
+policy (``moor_cli.web_server_surface``) says which of them serve:
 
 - ``/api/webapp-access/*``: native Desktop's Web Access pane, which calls the gateway's own listener
   (the private one, or the Webapp's when it is on);
@@ -19,8 +19,8 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 
-from hermes_cli import web_server
-from tests.hermes_cli.native_gateway_client import native_desktop_client
+from moor_cli import web_server
+from tests.moor_cli.native_gateway_client import native_desktop_client
 
 WEB_ACCESS = (("get", "/api/webapp-access/status", None), ("post", "/api/webapp-access/start", {}),
               ("post", "/api/webapp-access/stop", None), ("post", "/api/webapp-access/restart", None))
@@ -30,8 +30,8 @@ WEB_ACCESS = (("get", "/api/webapp-access/status", None), ("post", "/api/webapp-
 def nothing_acts(monkeypatch):
     """No route under test may build, register, write config or restart a gateway: a handler that
     runs answers 500 instead of acting."""
-    import hermes_cli.web_server_gateway as gateway
-    from hermes_cli import webapp, webapp_access
+    import moor_cli.web_server_gateway as gateway
+    from moor_cli import webapp, webapp_access
 
     def refuse(*_args, **_kwargs):
         raise AssertionError("a Web Access handler ran")
@@ -47,7 +47,7 @@ def nothing_acts(monkeypatch):
 
 
 def _owner_client() -> TestClient:
-    """The loopback session token's holder: the standalone dashboard's page, ``hermes serve``'s
+    """The loopback session token's holder: the standalone dashboard's page, ``moor serve``'s
     spawner, or a tab of the loopback Webapp."""
     client = TestClient(web_server.app, raise_server_exceptions=False)
     client.headers[web_server._SESSION_HEADER_NAME] = web_server._SESSION_TOKEN
@@ -65,30 +65,30 @@ def _web_access_statuses(client: TestClient) -> list[int]:
             for method, path, body in WEB_ACCESS]
 
 
-@pytest.mark.parametrize("serves_spa", [True, False], ids=["hermes-dashboard", "hermes-serve"])
+@pytest.mark.parametrize("serves_spa", [True, False], ids=["moor-dashboard", "moor-serve"])
 def test_the_standalone_dashboard_and_serve_have_neither_web_access_nor_browser_file_routes(
         monkeypatch, serves_spa):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     monkeypatch.setattr(web_server.app.state, "serves_spa", serves_spa, raising=False)
     client = _owner_client()
 
     assert _browser_file_statuses(client) == (404, 404)
     assert _web_access_statuses(client) == [404] * len(WEB_ACCESS)
-    assert not (get_hermes_home() / "uploads").exists()
+    assert not (get_moor_home() / "uploads").exists()
 
 
 def test_the_gateways_own_listener_serves_web_access_but_not_the_browser_file_routes(monkeypatch):
     """With the Webapp off, native Desktop's Web Access pane works on the gateway's listener; the
     browser's file routes, which only the Webapp calls, are not there."""
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     native = native_desktop_client(monkeypatch)
 
     assert native.get("/api/webapp-access/status").status_code == 200
     assert native.post("/api/webapp-access/start", json={}).status_code == 422  # reached its handler
     assert _browser_file_statuses(native) == (404, 404)
-    assert not (get_hermes_home() / "uploads").exists()
+    assert not (get_moor_home() / "uploads").exists()
 
 
 def test_the_webapp_serves_web_access_and_the_browser_file_routes(monkeypatch):
@@ -106,7 +106,7 @@ def test_chat_upload_bodies_are_capped_before_parsing_only_on_the_webapp(surface
     surface but the Webapp, as on main; the Webapp refuses it with 413 before reading the body."""
     import asyncio
 
-    from hermes_cli.web_upload_limit import CHAT_IMAGE_BODY_MAX_BYTES, ChatFileUploadLimitMiddleware
+    from moor_cli.web_upload_limit import CHAT_IMAGE_BODY_MAX_BYTES, ChatFileUploadLimitMiddleware
 
     reached, sent = [], []
 

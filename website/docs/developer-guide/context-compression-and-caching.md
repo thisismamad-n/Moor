@@ -238,7 +238,7 @@ text, the focus topic or error messages.
   `gateway_hygiene` or `overflow`. An automatic caller that passes no label
   reads `auto`; a refusal before any attempt began (pool saturation) reads
   `unknown`.
-- `route` is `hermes` for the local compressor and `codex_app_server` when the
+- `route` is `moor` for the local compressor and `codex_app_server` when the
   Codex thread owns compaction.
 - `commit_status` is `committed`, `aborted`, `failed`, `skipped` or `blocked`.
   A `blocked` attempt was refused by an automatic guard; its `failure_class`
@@ -268,11 +268,11 @@ text, the focus topic or error messages.
   for like. `tool_results_pruned` and `reasoning_items_pruned` count the
   deterministic passes that ran before and after the summary.
 
-The opt-in `hermes.compression.count` shared metric keeps coarse triggers
+The opt-in `moor.compression.count` shared metric keeps coarse triggers
 (`auto`, `manual`, `overflow`) and counts only attempts the local compressor
 ran; blocked and Codex-routed attempts appear in the log line only. When the
 NeMo Relay runtime is live, the same record, plus micro-compaction passes and
-committed proactive prunes, is also emitted as a `hermes.compaction` mark (see
+committed proactive prunes, is also emitted as a `moor.compaction` mark (see
 [NeMo Relay Shared Metrics](./relay-shared-metrics.md#compaction-marks)).
 
 
@@ -322,7 +322,7 @@ auxiliary:
 | `idle_compact_after_seconds` | `0` | ≥0 seconds | Opt-in: compact up front when a session resumes after this many seconds idle (0 = disabled). Skips when context ≤ threshold × target_ratio; honors cooldown/anti-thrash/lock guards |
 | `codex_gpt55_autoraise` | `true` | bool | Raise the trigger to 85% for gpt-5.4/5.5/5.6 and gpt-6 Astra on the ChatGPT Codex OAuth route (see below). Set `false` to keep the global `threshold` |
 | `codex_gpt55_autoraise_notice` | `true` | bool | Show the one-time Codex gpt-5.5 autoraise notice. Set `false` to keep the 85% autoraise but suppress the banner |
-| `codex_app_server_auto` | `native` | `native`, `hermes`, `off` | Thread-compaction mode for Codex app-server sessions (see below) |
+| `codex_app_server_auto` | `native` | `native`, `moor`, `off` | Thread-compaction mode for Codex app-server sessions (see below) |
 | `codex_responses_native` | `false` | bool | Opt in to OpenAI's server-side compaction on the Responses API. Engages for gpt-5.6-family models on the direct OpenAI API or a ChatGPT Codex subscription, and `gpt-6-astra` (including its `-900k` picker alias) on official Codex OAuth (see below) |
 | `codex_responses_compact_threshold` | `null` | `null` or positive integer | Server-side compaction trigger, read **only when `codex_responses_native: true`** — it never changes when local compression fires; the local trigger is `threshold` (ratio) capped by `threshold_tokens`. `null` follows the resolved local compression trigger with an 8,192 token safety margin. A positive integer remains absolute and only clamps downward when required. Invalid values use automatic behavior. Automatic mode falls back to `200000` when no usable local trigger exists |
 | `in_place` | `true` | bool | Compact on the same session id instead of rotating to a new one (see below) |
@@ -447,7 +447,7 @@ window is strictly opt-in.
 
 To use the large window, pick the explicit `-900k` variant in `/model` (e.g.
 `gpt-6.1-sol-900k`, `gpt-6-sol-900k`, `gpt-6-luna-900k`, `gpt-5.6-sol-900k`,
-`gpt-5.6-terra-900k`, `gpt-5.6-luna-900k`, `gpt-5.4-900k`). These are Hermes-side aliases: the suffix is stripped before
+`gpt-5.6-terra-900k`, `gpt-5.6-luna-900k`, `gpt-5.4-900k`). These are moor-side aliases: the suffix is stripped before
 the model id is sent to the backend, and pricing/usage accounting treats them
 as the base model. Slugs that genuinely enforce 272K (gpt-5.5, gpt-5.4-mini)
 have no `-900k` variant. When the authenticated Codex catalog publishes a
@@ -678,7 +678,7 @@ session or gateway agent rebuild), `agent/prepared_compaction.py` writes the nex
 the trigger fires. When the last provider-reported prompt count is within 12% of the trigger
 (`threshold_tokens`) below it, the turn loop starts one background pass, before a tool batch runs or
 at turn end. Turn-end passes are skipped for cron runs, delegated children and one-shot sessions
-(`hermes chat -q`, `-z`), whose agents end with the turn. The pass plans the same window `compress()` plans (`_plan_compaction_window`) and calls
+(`moor chat -q`, `-z`), whose agents end with the turn. The pass plans the same window `compress()` plans (`_plan_compaction_window`) and calls
 the same `_generate_summary` on a copy of the compressor and of the window's messages, so the live
 transcript, the system prompt and the prompt cache are untouched until compaction. There is one pass
 per compaction: while a summary is held, no further pass starts, however much the prompt grows.
@@ -719,7 +719,7 @@ eviction, a rewind, `close()`) also cancels a running pass. A held summary there
 agent that lives across turns (interactive CLI, TUI/Desktop and messaging sessions); a `-q --resume`
 chain builds a new agent per run and gets no head start. Pass log lines carry `session=<id>`, and
 opt-in shared metrics count adoption and every pass and splice outcome
-(`hermes.prepared_compaction.count`, see the shared-metrics guide). Plugin context engines,
+(`moor.prepared_compaction.count`, see the shared-metrics guide). Plugin context engines,
 Codex app-server sessions, native Responses compaction and micro-compaction are not prepared.
 
 

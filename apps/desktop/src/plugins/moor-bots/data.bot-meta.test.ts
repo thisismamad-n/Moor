@@ -389,8 +389,8 @@ describe("a bot is named by its own backend, never by another bot's cached recor
             profiles: [
               {
                 name: 'default',
-                ui_meta: { 'hermes-bots': { color: '#0000ff', groups: [] } },
-                ui_meta_revisions: { 'hermes-bots': revision }
+                ui_meta: { 'moor-bots': { color: '#0000ff', groups: [] } },
+                ui_meta_revisions: { 'moor-bots': revision }
               }
             ]
           }
@@ -403,7 +403,7 @@ describe("a bot is named by its own backend, never by another bot's cached recor
           if (configures.length === 1) {
             revision = 4
 
-            return { applied: { ui_meta: false, ui_meta_conflicts: { 'hermes-bots': { actual: 4, expected: 3 } } } }
+            return { applied: { ui_meta: false, ui_meta_conflicts: { 'moor-bots': { actual: 4, expected: 3 } } } }
           }
 
           return { applied: { ui_meta: true } }
@@ -416,11 +416,11 @@ describe("a bot is named by its own backend, never by another bot's cached recor
     await expect(saveBotMeta(vps, { groups: ['room'] })).resolves.toMatchObject({ serverOutcome: 'persisted' })
 
     expect(configures.map(params => params.ui_meta_expected_revisions)).toEqual([
-      { 'hermes-bots': 3 },
-      { 'hermes-bots': 4 }
+      { 'moor-bots': 3 },
+      { 'moor-bots': 4 }
     ])
     // The local cache's stale title and color never travel: only the patch rides the server's copy.
-    expect(configures.at(-1)?.ui_meta).toEqual({ 'hermes-bots': { color: '#0000ff', groups: ['room'] } })
+    expect(configures.at(-1)?.ui_meta).toEqual({ 'moor-bots': { color: '#0000ff', groups: ['room'] } })
   })
 
   it('names, tags, and prompts the bot with what its backend reports', () => {

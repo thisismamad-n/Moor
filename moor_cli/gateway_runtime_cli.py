@@ -15,20 +15,20 @@ def ensure_exit_code(result) -> int:
 
 
 def cmd_gateway_ensure(args) -> None:
-    from hermes_constants import get_hermes_home
-    from hermes_cli.gateway_runtime import ensure_gateway_runtime
+    from moor_constants import get_moor_home
+    from moor_cli.gateway_runtime import ensure_gateway_runtime
 
     try:
         # Legacy imported utilities can print; protocol stdout belongs only to us.
         with redirect_stdout(sys.stderr):
-            result = ensure_gateway_runtime(get_hermes_home(), timeout=float(args.timeout))
+            result = ensure_gateway_runtime(get_moor_home(), timeout=float(args.timeout))
         payload = asdict(result)
         if result.endpoint:
             payload["endpoint"]["capabilities"] = sorted(result.endpoint.capabilities)
         # The code THIS client (and any gateway it starts) runs, resolved exactly like the owner's
         # ``endpoint.code_sha``: a client that sees them differ is attached to a gateway that
-        # outlived ``hermes update`` and must restart it rather than re-attach.
-        from hermes_cli.version_info import get_code_identity
+        # outlived ``moor update`` and must restart it rather than re-attach.
+        from moor_cli.version_info import get_code_identity
         payload["client_code_sha"] = get_code_identity().get("sha")
         code = ensure_exit_code(result)
     except (ValueError, TypeError):

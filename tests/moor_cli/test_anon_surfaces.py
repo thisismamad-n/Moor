@@ -22,14 +22,14 @@ from moor_cli import (
     anon_auth,
     auth_commands,
     guest_handoff,
-    nous_account,
-    nous_auth_keepalive,
+    moor_account,
+    moor_auth_keepalive,
     portal_cli,
     status_auth,
 )
-from hermes_cli.auth import _load_auth_store
-from hermes_constants import get_hermes_home
-from tests.hermes_cli.anon_portal import as_local_desktop_backend, off_local_desktop
+from moor_cli.auth import _load_auth_store
+from moor_constants import get_moor_home
+from tests.moor_cli.anon_portal import as_local_desktop_backend, off_local_desktop
 
 WELCOME = "https://welcome-api.nousresearch.com/v1"
 # Words that must never appear on a user-facing free-tier surface.
@@ -70,7 +70,7 @@ def _account_state() -> dict:
 
 @pytest.fixture
 def isolated_store(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("MOOR_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
     # The welcome trial carries inference only on the desktop's local backend.
     as_local_desktop_backend(monkeypatch)
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
@@ -134,9 +134,9 @@ def test_real_account_keeps_account_rendering(isolated_store, capsys):
 def test_anonymous_tier_matches_case_and_whitespace_insensitively(isolated_store, tier):
     """The tier claim is wire data; casing must not hand a guest billing copy instead of the sign-in copy."""
     _write_auth({**_guest_state(), "account_tier": tier, "access_token": _jwt(account_tier=tier)})
-    info = nous_account.get_nous_portal_account_info()
+    info = moor_account.get_moor_portal_account_info()
     assert info.is_anonymous_tier
-    assert nous_account.format_nous_portal_entitlement_message(info) == nous_account.FREE_TIER_NEEDS_ACCOUNT
+    assert moor_account.format_moor_portal_entitlement_message(info) == moor_account.FREE_TIER_NEEDS_ACCOUNT
 
 
 def test_guest_whose_lookup_fails_still_gets_the_sign_in_copy(isolated_store, monkeypatch):
@@ -145,11 +145,11 @@ def test_guest_whose_lookup_fails_still_gets_the_sign_in_copy(isolated_store, mo
     state = {**_guest_state(), "access_token": _jwt(exp=int(time.time()) + 30),
              "portal_base_url": "http://127.0.0.1:9"}
     _write_auth(state)
-    monkeypatch.setattr(nous_account, "_fetch_nous_account_info",
+    monkeypatch.setattr(moor_account, "_fetch_moor_account_info",
                         lambda *a, **k: (_ for _ in ()).throw(RuntimeError("portal down")))
-    info = nous_account.get_nous_portal_account_info()
+    info = moor_account.get_moor_portal_account_info()
     assert info.error is not None and info.is_anonymous_tier
-    assert nous_account.format_nous_portal_entitlement_message(info) == nous_account.FREE_TIER_NEEDS_ACCOUNT
+    assert moor_account.format_moor_portal_entitlement_message(info) == moor_account.FREE_TIER_NEEDS_ACCOUNT
 
 
 def test_keepalive_does_not_start_for_free_tier(isolated_store, monkeypatch):
@@ -164,26 +164,26 @@ def test_keepalive_does_not_start_for_free_tier(isolated_store, monkeypatch):
             return True
         def join(self, timeout=None):
             pass
-    monkeypatch.setattr(nous_auth_keepalive.threading, "Thread", _Thread)
-    monkeypatch.setattr(nous_auth_keepalive, "_keepalive_thread", None)
-    from hermes_cli import guest_handoff
+    monkeypatch.setattr(moor_auth_keepalive.threading, "Thread", _Thread)
+    monkeypatch.setattr(moor_auth_keepalive, "_keepalive_thread", None)
+    from moor_cli import guest_handoff
     monkeypatch.setattr(guest_handoff, "_worker_thread", None)
 
     _write_auth(_guest_state())
-    assert nous_auth_keepalive.start_nous_auth_keepalive(interval_seconds=900) is None
+    assert moor_auth_keepalive.start_moor_auth_keepalive(interval_seconds=900) is None
     # The free-tier handoff retry worker runs in a guest process too; the token keepalive does not.
-    assert started == ["nous-guest-handoff"]
+    assert started == ["moor-guest-handoff"]
 
     _write_auth(_account_state())
-    thread = nous_auth_keepalive.start_nous_auth_keepalive(interval_seconds=900)
-    assert thread is not None and started == ["nous-guest-handoff", "nous-auth-keepalive"]
-    monkeypatch.setattr(nous_auth_keepalive, "_keepalive_thread", None)
+    thread = moor_auth_keepalive.start_moor_auth_keepalive(interval_seconds=900)
+    assert thread is not None and started == ["moor-guest-handoff", "moor-auth-keepalive"]
+    monkeypatch.setattr(moor_auth_keepalive, "_keepalive_thread", None)
 
 
 _HANDOFF_VIEWS = [
     *({"state": "claimed", "account_email": "person@example.test", "connectors_kind": kind,
        "moved_toolkits": ["gmail"], "dropped_toolkits": ["slack"]} for kind in ("moved", "conflict", "none")),
-    # The retrying line names Hermes as a subject ("Hermes keeps trying"), not a command; it is not checked here.
+    # The retrying line names Moor as a subject ("Moor keeps trying"), not a command; it is not checked here.
     {"state": "failed", "error": "no_destination"}, {"state": "gone", "probably_moved": True},
 ]
 
@@ -232,6 +232,6 @@ def test_a_claimed_guest_reads_as_the_free_tier_on_the_cli_too(isolated_store, m
     off_local_desktop(monkeypatch)
     _write_auth(_guest_state())
 
-    auth_commands.auth_status_command(SimpleNamespace(provider="nous"))
+    auth_commands.auth_status_command(SimpleNamespace(provider="moor"))
     text = capsys.readouterr().out
     assert "free tier" in text.lower()

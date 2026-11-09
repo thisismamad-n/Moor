@@ -1354,7 +1354,7 @@ class GatewayShutdownMixin(GatewaySessionEndMixin):
     # Restart orchestration
     @staticmethod
     def _restart_watcher_env() -> dict:
-        """Watcher env minus ``_HERMES_GATEWAY`` (else the CLI's self-restart guard refuses; gateway stays down).
+        """Watcher env minus ``_MOOR_GATEWAY`` (else the CLI's self-restart guard refuses; gateway stays down).
 
         The host multiplexer is respawned with ``host_gateway_child_env`` (default-root
         secrets via ``served_profile_child_env``, not ``os.environ.copy()``). A standalone
@@ -1362,12 +1362,12 @@ class GatewayShutdownMixin(GatewaySessionEndMixin):
         already on the default root, is the host.
         """
         from gateway.config_loader import drop_bridged_env
-        from hermes_constants import get_default_hermes_root, get_hermes_home
+        from moor_constants import get_default_moor_root, get_moor_home
         from tools.environments.local import host_gateway_child_env, served_profile_child_env
 
-        home = get_hermes_home()
+        home = get_moor_home()
         try:
-            on_default = home.resolve() == get_default_hermes_root().resolve()
+            on_default = home.resolve() == get_default_moor_root().resolve()
         except Exception:
             on_default = False
         # ``resolve_multiplex_mode`` settles the default-on/unset decision before
@@ -1401,7 +1401,7 @@ class GatewayShutdownMixin(GatewaySessionEndMixin):
                 target_home=home, inherit_credentials=True,
             )
         watcher_env = drop_bridged_env(watcher_env)
-        watcher_env.pop("_HERMES_GATEWAY", None)
+        watcher_env.pop("_MOOR_GATEWAY", None)
         return watcher_env
 
     @staticmethod
@@ -1414,7 +1414,7 @@ class GatewayShutdownMixin(GatewaySessionEndMixin):
         watcher_env = GatewayShutdownMixin._restart_watcher_env()
         # host_gateway_child_env does not copy the parent dotenv. The watcher
         # still has to run inside the venv this process is using, or the
-        # respawn cannot import hermes.
+        # respawn cannot import moor.
         if not watcher_env.get("VIRTUAL_ENV"):
             inherited = os.environ.get("VIRTUAL_ENV")
             if inherited:
@@ -2109,7 +2109,7 @@ class GatewayShutdownMixin(GatewaySessionEndMixin):
     async def _stop_persist_exit_state(self, ctx: GatewayShutdownMixin._StopContext) -> None:
         """Clean-shutdown marker, restart markers, terminal runtime status; process bootstrap
         releases PID/lock ownership after the writer drain."""
-        from gateway.run import _hermes_home, _shutdown_gateway_health_export
+        from gateway.run import _moor_home, _shutdown_gateway_health_export
         if getattr(self, "_startup_cleanup_only", False):  # start never ran: keep startup_failed + crash markers
             return _shutdown_gateway_health_export(self)
         # Clean-shutdown marker skips crash-turn recovery next boot; a timed-out drain left

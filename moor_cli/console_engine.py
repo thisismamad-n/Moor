@@ -39,7 +39,7 @@ class ConsoleCommand:
     path: tuple[str, ...]
     usage: str
     summary: str
-    handler: Callable[[HermesConsoleEngine, list[str]], str]
+    handler: Callable[[MoorConsoleEngine, list[str]], str]
     mutating: bool = False
     confirmation: str = ""
 
@@ -334,7 +334,7 @@ _SEND_SURFACE = _CliSurface("adder", "moor_cli.send_cmd", "register_send_subpars
 
 
 def _register_command_family(
-    engine: HermesConsoleEngine, root: str, surface: _CliSurface, paths: str) -> None:
+    engine: MoorConsoleEngine, root: str, surface: _CliSurface, paths: str) -> None:
     summaries = _surface_summaries(surface, root)
     namespace_update = _apply_confirmed_defaults if surface.kind in _CONFIRMED_KINDS else None
     for child_path, mutating in _paths(paths):
@@ -354,22 +354,22 @@ _BLOCKED_TOP = frozenset(
     "oneshot proxy serve setup uninstall update whatsapp whatsapp-cloud".split())
 
 _BLOCKED_PAIRS = {
-    ("config", "edit"): "`config edit` opens an editor and is not available in Hermes Console.",
-    ("profile", "alias"): "`profile alias` creates shell wrappers and is not available in Hermes Console.",
-    ("skills", "config"): "`skills config` is interactive and is not available in Hermes Console.",
-    ("skills", "publish"): "`skills publish` is not available in Hermes Console.",
-    ("portal", "login"): "`portal login` is interactive and is not available in Hermes Console.",
-    ("portal", "open"): "`portal open` opens a browser and is not available in Hermes Console.",
-    ("kanban", "tail"): "`kanban tail` streams output and is not available in Hermes Console.",
-    ("kanban", "watch"): "`kanban watch` streams output and is not available in Hermes Console.",
-    ("kanban", "daemon"): "`kanban daemon` starts a service and is not available in Hermes Console.",
-    ("kanban", "dispatcher"): "`kanban dispatcher` starts a worker and is not available in Hermes Console.",
-    ("kanban", "swarm"): "`kanban swarm` starts agent work and is not available in Hermes Console.",
-    ("kanban", "decompose"): "`kanban decompose` starts agent work and is not available in Hermes Console.",
-    ("kanban", "specify"): "`kanban specify` starts agent work and is not available in Hermes Console.",
-    ("kanban", "gc"): "`kanban gc` is not available in Hermes Console.",
-    ("sessions", "delete"): "`sessions delete` and `sessions prune` are not available in Hermes Console.",
-    ("sessions", "prune"): "`sessions delete` and `sessions prune` are not available in Hermes Console.",
+    ("config", "edit"): "`config edit` opens an editor and is not available in Moor Console.",
+    ("profile", "alias"): "`profile alias` creates shell wrappers and is not available in Moor Console.",
+    ("skills", "config"): "`skills config` is interactive and is not available in Moor Console.",
+    ("skills", "publish"): "`skills publish` is not available in Moor Console.",
+    ("portal", "login"): "`portal login` is interactive and is not available in Moor Console.",
+    ("portal", "open"): "`portal open` opens a browser and is not available in Moor Console.",
+    ("kanban", "tail"): "`kanban tail` streams output and is not available in Moor Console.",
+    ("kanban", "watch"): "`kanban watch` streams output and is not available in Moor Console.",
+    ("kanban", "daemon"): "`kanban daemon` starts a service and is not available in Moor Console.",
+    ("kanban", "dispatcher"): "`kanban dispatcher` starts a worker and is not available in Moor Console.",
+    ("kanban", "swarm"): "`kanban swarm` starts agent work and is not available in Moor Console.",
+    ("kanban", "decompose"): "`kanban decompose` starts agent work and is not available in Moor Console.",
+    ("kanban", "specify"): "`kanban specify` starts agent work and is not available in Moor Console.",
+    ("kanban", "gc"): "`kanban gc` is not available in Moor Console.",
+    ("sessions", "delete"): "`sessions delete` and `sessions prune` are not available in Moor Console.",
+    ("sessions", "prune"): "`sessions delete` and `sessions prune` are not available in Moor Console.",
 }
 
 
@@ -439,7 +439,7 @@ class MoorConsoleEngine:
 
     def register(
         self, path: Iterable[str], usage: str, summary: str,
-        handler: Callable[[HermesConsoleEngine, list[str]], str], *,
+        handler: Callable[[MoorConsoleEngine, list[str]], str], *,
         mutating: bool = False, confirmation: str = "") -> None:
         key = tuple(path)
         self.commands[key] = ConsoleCommand(key, usage, summary, handler, mutating, confirmation)
@@ -553,15 +553,15 @@ _version = _simple_command(
 
 def _status(_engine: MoorConsoleEngine, args: list[str]) -> str:
     _expect_no_args(args, "status")
-    from hermes_cli.status import show_status
+    from moor_cli.status import show_status
     output = _capture_output(lambda: show_status(SimpleNamespace(full=True, deep=False)))
     return _strip_console_status_footer(output)
 
 
 _doctor = _simple_command(
-    "doctor", "hermes_cli.doctor", "run_doctor", lambda: (SimpleNamespace(fix=False, ack=None),))
-_config_show = _simple_command("config show", "hermes_cli.config_show", "show_config")
-_cron_status = _simple_command("cron status", "hermes_cli.cron", "cron_status")
+    "doctor", "moor_cli.doctor", "run_doctor", lambda: (SimpleNamespace(fix=False, ack=None),))
+_config_show = _simple_command("config show", "moor_cli.config_show", "show_config")
+_cron_status = _simple_command("cron status", "moor_cli.cron", "cron_status")
 
 
 def _logs(_engine: MoorConsoleEngine, args: list[str]) -> str:
@@ -649,7 +649,7 @@ def _config_migrate(_engine: MoorConsoleEngine, args: list[str]) -> None:
 
 def _guard_exports(db, session_ids: list[str]) -> None:
     """Per-session export budget: only an individual runaway transcript trips it; 0 disables."""
-    from hermes_state import SessionExportTooLargeError
+    from moor_state import SessionExportTooLargeError
     try:
         db.assert_exports_safe(session_ids)
     except SessionExportTooLargeError as exc:
@@ -657,8 +657,8 @@ def _guard_exports(db, session_ids: list[str]) -> None:
 
 
 @_captured
-def _sessions_export(_engine: HermesConsoleEngine, args: list[str]) -> None:
-    from hermes_cli.session_export import export_projection
+def _sessions_export(_engine: MoorConsoleEngine, args: list[str]) -> None:
+    from moor_cli.session_export import export_projection
 
     ns = _parse("sessions export", args, "output", "--source", "--session-id")
     with _session_db() as db:

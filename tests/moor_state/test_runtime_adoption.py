@@ -2,8 +2,8 @@ import sqlite3
 
 import pytest
 
-from hermes_state import SessionDB
-import hermes_state_runtime as rt
+from moor_state import SessionDB
+import moor_state_runtime as rt
 
 
 def append(db, *, epoch, sequence, content, **assignment):

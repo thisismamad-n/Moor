@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from hermes_state_runtime import RuntimeStoreError, mutate_worker_execution
-from tests.hermes_state.test_runtime_worker_lifecycle import setup_store
+from moor_state_runtime import RuntimeStoreError, mutate_worker_execution
+from tests.moor_state.test_runtime_worker_lifecycle import setup_store
 
 
 def test_worker_labels_keep_rank_and_reject_late_generations(tmp_path):

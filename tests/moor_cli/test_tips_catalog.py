@@ -1,4 +1,4 @@
-"""hermes_cli.tips reads its catalog through i18n: count follows the English catalog, text follows the
+"""moor_cli.tips reads its catalog through i18n: count follows the English catalog, text follows the
 active language, and a partial translation falls back to English per tip."""
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import pytest
 
 from agent import i18n
 from agent.i18n import t
-from hermes_cli import tips
+from moor_cli import tips
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +36,7 @@ def test_pickers_follow_active_language_with_english_fallback(tmp_path, monkeypa
         "tips:\n  t001: 'first'\n  t002: 'second'\n  placeholder:\n    p01: 'ask'\n", encoding="utf-8")
     (tmp_path / "de.yaml").write_text("tips:\n  t001: 'erstens'\n", encoding="utf-8")
     monkeypatch.setattr(i18n, "_locales_dir", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_LANGUAGE", "de")
+    monkeypatch.setenv("MOOR_LANGUAGE", "de")
     i18n.reset_language_cache()
     tips.reset_tips_cache()
     try:

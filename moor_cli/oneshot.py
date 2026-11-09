@@ -134,7 +134,7 @@ def _build_preloaded_skills_prompt(skills: object = None) -> str | None:
         if not loaded_skills:
             raise ValueError(format_missing_skills(missing_skills))
         logging.warning(
-            "Skipping %s. Continuing with: %s. List available skills with `hermes skills list`.",
+            "Skipping %s. Continuing with: %s. List available skills with `moor skills list`.",
             format_missing_skills(missing_skills),
             ", ".join(loaded_skills),
         )
@@ -462,7 +462,7 @@ def _load_resume_target(session_db, resume: Optional[str]) -> tuple[Optional[str
         raise RuntimeError(f"session not found: {resume}")
     # A Kanban worker transcript resumes only through a dispatcher-owned run (#68779): a
     # quiet one-shot resume would be a write-capable process the board cannot observe.
-    from hermes_cli.kanban_resume_guard import kanban_resume_refusal
+    from moor_cli.kanban_resume_guard import kanban_resume_refusal
     if (kanban_refusal := kanban_resume_refusal(session_db, resolved)) is not None:
         raise RuntimeError(f"cannot resume session {resume}: {kanban_refusal}")
     session_db.assert_resume_safe(resolved, tip_only=True)
@@ -588,7 +588,7 @@ def _run_agent(
             session_id=resume_sid,
             credential_pool=runtime.get("credential_pool"),
             fallback_model=get_fallback_chain(cfg) or None,
-            # The resolved provider's request body (a custom entry's extra_body), as `hermes chat` passes it.
+            # The resolved provider's request body (a custom entry's extra_body), as `moor chat` passes it.
             request_overrides=runtime.get("request_overrides"),
             ephemeral_system_prompt=skills_prompt,
             reasoning_config=reasoning_config,
@@ -644,7 +644,7 @@ def _close_agent(agent, session_db, relay_session_id=None) -> None:
         if relay_session_id:
             # run_conversation ends the turn but keeps the Relay root resumable; one-shot has no
             # next turn and os._exit skips atexit, so close the root (and fire on_session_finalize).
-            from hermes_cli.lifecycle import finalize_session
+            from moor_cli.lifecycle import finalize_session
 
             _quietly("session finalize", lambda: finalize_session(
                 session_id=relay_session_id, platform=getattr(agent, "platform", None) or "cli",

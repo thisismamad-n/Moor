@@ -104,7 +104,7 @@ def _run_version(env_overrides: dict) -> subprocess.CompletedProcess:
     # --version's update check is not under test; offline it answers at once instead of
     # waiting out GitHub's 30 s API and 60 s ls-remote timeouts (the test's own budget).
     env = {**os.environ, **_OFFLINE, **env_overrides}
-    env.pop("HERMES_DEV", None)
+    env.pop("MOOR_DEV", None)
     return subprocess.run(
         [sys.executable, "-m", "moor_cli.main", "--version"],
         capture_output=True,

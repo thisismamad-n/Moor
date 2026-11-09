@@ -594,20 +594,20 @@ def published_scopes_signature() -> tuple:
     Only command maps/catalogs refetch; a conversation's stored system prompt is never rebuilt.
     """
     from agent.runtime_cwd import reset_session_cwd, set_session_cwd
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     with _publish_lock:
         keys = list(_skill_commands_by_key)
     scopes = sorted({(home, project) for _platform, home, project in keys if home})[:_MAX_WATCHED_SCOPES]
     rows = [("", None, _skill_dirs_signature())]
     for home, project in scopes:
-        home_token = set_hermes_home_override(home)
+        home_token = set_moor_home_override(home)
         # No project: an empty session cwd would fall back to the process cwd; "/" resolves no repo.
         cwd_token = set_session_cwd(project or os.path.sep)
         try:
             rows.append((home, project, _skill_dirs_signature()))
         finally:
             reset_session_cwd(cwd_token)
-            reset_hermes_home_override(home_token)
+            reset_moor_home_override(home_token)
     return tuple(rows)
 
 
@@ -657,7 +657,7 @@ def get_skill_commands() -> dict[str, dict[str, Any]]:
 
 # Plugin projection cache. The projection re-parses every plugin SKILL.md and sits on the
 # per-keystroke completion path (94 ms per Tab measured with 60 plugin skills), so it is reused
-# while its tag holds: the resolved Hermes home (plugin managers are home-keyed, so profiles never
+# while its tag holds: the resolved Moor home (plugin managers are home-keyed, so profiles never
 # share a registry) plus the registered qualified names (a plugin enable/disable/install changes
 # them). ``reload_skills()`` drops it explicitly to pick up edited SKILL.md files.
 _plugin_skill_commands: dict[str, dict[str, Any]] = {}
@@ -679,15 +679,15 @@ def get_plugin_skill_commands() -> dict[str, dict[str, Any]]:
     config-only disable takes effect without a rescan.
     """
     from agent.skill_utils import get_disabled_skill_names
-    from hermes_cli.plugins import discover_plugins, get_plugin_manager
-    from hermes_cli.plugins_content import plugin_skill_owners
-    from hermes_cli.plugins_discovery import _get_disabled_plugins
-    from hermes_constants import get_hermes_home
+    from moor_cli.plugins import discover_plugins, get_plugin_manager
+    from moor_cli.plugins_content import plugin_skill_owners
+    from moor_cli.plugins_discovery import _get_disabled_plugins
+    from moor_constants import get_moor_home
 
     discover_plugins()  # no-op once this home is discovered
     manager = get_plugin_manager()
     metadata = manager.list_plugin_skill_metadata()
-    tag = (str(get_hermes_home()), tuple(str(m.get("name") or "") for m in metadata))
+    tag = (str(get_moor_home()), tuple(str(m.get("name") or "") for m in metadata))
     with _publish_lock:
         cached, is_fresh = _plugin_skill_commands, _plugin_skill_commands_tag == tag
     if not is_fresh:

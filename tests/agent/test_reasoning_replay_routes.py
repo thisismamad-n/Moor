@@ -38,7 +38,7 @@ def _wire(provider, base_url, model="m", rejected=()):
     ("custom", "https://api.cerebras.ai/v1", "m", set()),
     ("fireworks", "https://api.fireworks.ai/inference/v1", "m", {"reasoning_content"}),
     # OpenRouter-format gateways, incl. the Portal (#118182 does not reproduce)
-    ("nous", "https://inference-api.nousresearch.com/v1", "z-ai/glm-5.3",
+    ("moor", "https://inference-api.nousresearch.com/v1", "z-ai/glm-5.3",
      {"reasoning_content", "reasoning", "reasoning_details"}),
     ("kilocode", "https://api.kilo.ai/api/gateway", "m", {"reasoning_content", "reasoning", "reasoning_details"}),
     ("novita", "https://api.novita.ai/openai/v1", "m", {"reasoning_content", "reasoning_details"}),
@@ -76,7 +76,7 @@ class _Rejection(Exception):
 
 def _agent(model, db=None):
     return SimpleNamespace(
-        provider="nous", model=model, base_url="https://inference-api.nousresearch.com/v1",
+        provider="moor", model=model, base_url="https://inference-api.nousresearch.com/v1",
         api_mode="chat_completions", _force_ascii_payload=False, _image_rejecting_models=set(),
         log_prefix="", _vprint=lambda *a, **k: None, session_id="s1" if db else None, _session_db=db,
     )
@@ -92,7 +92,7 @@ def _recover(agent, body, sent):
 
 
 def test_named_field_rejection_strips_once_per_model_and_never_loops(tmp_path):
-    from hermes_state import SessionDB
+    from moor_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session("s1", source="cli", model="z-ai/glm-5.3-flash:US")
@@ -105,10 +105,10 @@ def test_named_field_rejection_strips_once_per_model_and_never_loops(tmp_path):
     assert not rejected_reasoning_carriers(lane)
 
     assert _recover(lane, body, sent) is True
-    rejected = lane._reasoning_rejecting_routes[("nous", "inference-api.nousresearch.com", "z-ai/glm-5.3-flash:US")]
+    rejected = lane._reasoning_rejecting_routes[("moor", "inference-api.nousresearch.com", "z-ai/glm-5.3-flash:US")]
     assert rejected == {"reasoning", "reasoning_details"}
     # The retry re-shapes the same api_messages for the narrowed route: reasoning_content survives.
-    route = reasoning_replay_route("chat_completions", "nous", lane.model, lane.base_url, rejected=rejected)
+    route = reasoning_replay_route("chat_completions", "moor", lane.model, lane.base_url, rejected=rejected)
     reapply_reasoning_echo(sent, route.pad, route.carriers)
     assert sent[1]["reasoning_content"] == "thought"
     assert "reasoning" not in sent[1] and "reasoning_details" not in sent[1]
@@ -117,7 +117,7 @@ def test_named_field_rejection_strips_once_per_model_and_never_loops(tmp_path):
     # A resumed process (fresh agent, same session) never re-learns it with another 400.
     assert rejected_reasoning_carriers(_agent(lane.model, db)) == {"reasoning", "reasoning_details"}
     # A sibling model on the same gateway keeps every carrier.
-    sibling = reasoning_replay_route("chat_completions", "nous", "moonshotai/kimi-k3", lane.base_url)
+    sibling = reasoning_replay_route("chat_completions", "moor", "moonshotai/kimi-k3", lane.base_url)
     assert "reasoning_details" in sibling.carriers
 
 

@@ -12,7 +12,7 @@ import threading
 import time
 
 from agent.i18n import t
-from hermes_cli.cli_render import (
+from moor_cli.cli_render import (
     _chrome_floor,
     _hold_paints,
     _output_history_rows,

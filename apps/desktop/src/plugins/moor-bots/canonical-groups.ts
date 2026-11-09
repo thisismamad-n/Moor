@@ -1,4 +1,4 @@
-import { host, randomUuid } from '@hermes/plugin-sdk'
+import { host, randomUuid } from '@moor/plugin-sdk'
 
 import type { GroupMember } from './types'
 

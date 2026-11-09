@@ -100,7 +100,7 @@ def test_share_moor_client_text_gets_upload_safe_log_redaction(captured_upload):
 def test_redacted_support_egress_scrubs_structured_values_and_errors(
     captured_upload, monkeypatch
 ):
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
 
     canaries = {
         "url": "r36_REDACTED_url_canary_0123456789",
@@ -110,7 +110,7 @@ def test_redacted_support_egress_scrubs_structured_values_and_errors(
         "bearer": "r36_REDACTED_bearer_canary_0123456789",
         "error": "r36_REDACTED_error_canary_0123456789",
     }
-    home = get_hermes_home()
+    home = get_moor_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "fallback_providers:\n"
@@ -146,7 +146,7 @@ def test_redacted_support_egress_scrubs_structured_values_and_errors(
 
     # An oversized client value is scrubbed through a bounded window (line-aligned
     # when a line ends in [2x, 3x) cap), with the same capped output as a full scrub.
-    import hermes_cli.debug_redaction as dr
+    import moor_cli.debug_redaction as dr
 
     real_redact, scrubbed_sizes = dr.redact_debug_support_text, []
 
@@ -168,7 +168,7 @@ def test_redacted_support_egress_scrubs_structured_values_and_errors(
     monkeypatch.setattr(dr, "redact_debug_support_text", real_redact)
     assert max(scrubbed_sizes) <= 3 * 8_000
 
-    import hermes_cli.diagnostics_upload as du
+    import moor_cli.diagnostics_upload as du
 
     def _fail(_blob: bytes) -> dict:
         # The tail is already scrubbed (a wrapped inner error); re-scrubbing it
@@ -182,7 +182,7 @@ def test_redacted_support_egress_scrubs_structured_values_and_errors(
             + " --header X-API-Key Basic [REDACTED]"
         )
 
-    monkeypatch.setattr(du, "share_to_nous", _fail)
+    monkeypatch.setattr(du, "share_to_moor", _fail)
     failure = _handler()("rid-structured-error", {})["result"]
     assert failure["ok"] is False
     assert canaries["error"] not in failure["error"]
@@ -215,7 +215,7 @@ def test_redacted_support_egress_scrubs_structured_values_and_errors(
         assert key not in real_redact(leaky)
 
 
-def test_share_nous_linkless_success_is_a_failure(monkeypatch):
+def test_share_moor_linkless_success_is_a_failure(monkeypatch):
     """ok:true with neither view_url nor id would strand the user with an
     unreferencable upload — surface it as a structured failure instead."""
     import moor_cli.diagnostics_upload as du

@@ -111,8 +111,8 @@ def _cron_default_profile() -> str:
 
 
 def _cron_profile_home(profile: Optional[str]) -> tuple[str, Path]:
-    """Resolve a profile query value to (profile_name, HERMES_HOME)."""
-    from hermes_cli import profiles as profiles_mod
+    """Resolve a profile query value to (profile_name, MOOR_HOME)."""
+    from moor_cli import profiles as profiles_mod
     raw = (profile or _cron_default_profile()).strip() or "default"
     try:
         canon = profiles_mod.normalize_profile_name(raw)

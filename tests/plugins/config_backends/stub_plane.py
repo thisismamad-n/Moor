@@ -25,9 +25,9 @@ from plugins.config_backends.remote.paths import decode, encode
 from plugins.config_backends.remote.values import secret_literal_path
 
 TOKEN = "plane-token-1"
-# Cloud mode: the agent sends its Nous Portal access token; the stub also serves the Portal's
-# refresh route (``/api/oauth/token``), which hands out NOUS_TOKEN.
-NOUS_TOKEN = "nous-access-token-1"
+# Cloud mode: the agent sends its Moor Portal access token; the stub also serves the Portal's
+# refresh route (``/api/oauth/token``), which hands out MOOR_TOKEN.
+MOOR_TOKEN = "moor-access-token-1"
 CLIENT_ID = "agent-client"
 CLIENT_SECRET = "agent-secret"
 INSTANCE = "inst-0001"
@@ -69,8 +69,8 @@ class StubPlane:
         self.fail_status: Optional[int] = None   # every /self request returns this
         self.requests: list[dict[str, Any]] = []
         self.token_requests = 0
-        self.nous_refreshes = 0
-        self.home: Optional[Path] = None  # the test's HERMES_HOME, set by the fixture
+        self.moor_refreshes = 0
+        self.home: Optional[Path] = None  # the test's MOOR_HOME, set by the fixture
         self.lock = threading.Lock()
         self._server = ThreadingHTTPServer(("127.0.0.1", 0), self._handler())
         self.url = f"http://127.0.0.1:{self._server.server_address[1]}"
@@ -137,8 +137,8 @@ class StubPlane:
                 if self.path == "/api/oauth/token":
                     self.rfile.read(int(self.headers.get("Content-Length") or 0))  # a form body
                     with plane.lock:
-                        plane.nous_refreshes += 1
-                    return self._send(200, {"access_token": NOUS_TOKEN, "refresh_token": "nous-refresh-2",
+                        plane.moor_refreshes += 1
+                    return self._send(200, {"access_token": MOOR_TOKEN, "refresh_token": "moor-refresh-2",
                                             "token_type": "Bearer", "expires_in": 3600})
                 if self.path != "/token":
                     return self._send(404, {"error": "not_found"})
@@ -160,13 +160,13 @@ class StubPlane:
                     plane.requests.append({
                         "method": method, "profile": profile, "body": body,
                         "auth": self.headers.get("Authorization"),
-                        "instance": self.headers.get("X-Hermes-Instance-Id"),
+                        "instance": self.headers.get("X-moor-instance-Id"),
                         "if_none_match": self.headers.get("If-None-Match")})
                     if plane.fail_status is not None:
                         return self._send(plane.fail_status, {"error": "unavailable", "message": "stub outage"})
-                    if self.headers.get("Authorization") not in (f"Bearer {TOKEN}", f"Bearer {NOUS_TOKEN}"):
+                    if self.headers.get("Authorization") not in (f"Bearer {TOKEN}", f"Bearer {MOOR_TOKEN}"):
                         return self._send(401, {"error": "unauthorized", "message": "bad token"})
-                    if self.headers.get("X-Hermes-Instance-Id") != INSTANCE:
+                    if self.headers.get("X-moor-instance-Id") != INSTANCE:
                         return self._send(403, {"error": "config_agent_unknown", "message": "unknown instance"})
                     if method == "GET":
                         eff = plane.effective(profile)
@@ -232,9 +232,9 @@ class StubPlane:
 
 def remote_env(plane: StubPlane) -> dict[str, str]:
     return {
-        "HERMES_CONFIG_BACKEND": "remote",
-        "HERMES_CONFIG_REMOTE_URL": plane.url,
-        "HERMES_CONFIG_INSTANCE_ID": INSTANCE,
+        "MOOR_CONFIG_BACKEND": "remote",
+        "MOOR_CONFIG_REMOTE_URL": plane.url,
+        "MOOR_CONFIG_INSTANCE_ID": INSTANCE,
         "GATEWAY_RELAY_IDP_TOKEN_URL": f"{plane.url}/token",
         "GATEWAY_RELAY_IDP_CLIENT_ID": CLIENT_ID,
         "GATEWAY_RELAY_IDP_CLIENT_SECRET": CLIENT_SECRET,

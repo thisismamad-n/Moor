@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router'
 import type * as ReactRouterDom from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ToolsetConfig, WebCapability } from '@/types/hermes'
+import type { ToolsetConfig, WebCapability } from '@/types/moor'
 
 // Collect the component graph before the behavioral test deadline starts.
 import { ToolsetConfigPanel } from './toolset-config-panel'
@@ -420,10 +420,10 @@ describe('ToolsetConfigPanel', () => {
           {
             name: 'Lightpanda',
             badge: 'local',
-            tag: 'Zig headless browser spawned by Hermes, text-only (no screenshots)',
+            tag: 'Zig headless browser spawned by Moor, text-only (no screenshots)',
             env_vars: [],
             post_setup: 'lightpanda',
-            requires_nous_auth: false,
+            requires_moor_auth: false,
             is_active: true
           }
         ]
@@ -468,10 +468,10 @@ describe('ToolsetConfigPanel', () => {
           {
             name: 'Lightpanda',
             badge: 'local',
-            tag: 'Zig headless browser spawned by Hermes, text-only (no screenshots)',
+            tag: 'Zig headless browser spawned by Moor, text-only (no screenshots)',
             env_vars: [],
             post_setup: 'lightpanda',
-            requires_nous_auth: false,
+            requires_moor_auth: false,
             is_active: true
           }
         ]
@@ -627,10 +627,10 @@ describe('ToolsetConfigPanel', () => {
             {
               name: 'Lightpanda',
               badge: 'free',
-              tag: 'Zig headless browser spawned by Hermes, text-only (no screenshots)',
+              tag: 'Zig headless browser spawned by Moor, text-only (no screenshots)',
               env_vars: [],
               post_setup: 'lightpanda',
-              requires_nous_auth: false,
+              requires_moor_auth: false,
               is_active: true,
               status: 'ready'
             }
@@ -655,10 +655,10 @@ describe('ToolsetConfigPanel', () => {
             {
               name: 'Lightpanda',
               badge: 'free',
-              tag: 'Zig headless browser spawned by Hermes, text-only (no screenshots)',
+              tag: 'Zig headless browser spawned by Moor, text-only (no screenshots)',
               env_vars: [],
               post_setup: 'lightpanda',
-              requires_nous_auth: false,
+              requires_moor_auth: false,
               is_active: true,
               status: 'ready'
             }
@@ -694,7 +694,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Managed Browser Use billed to your subscription',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: true,
+            requires_moor_auth: true,
             is_active: false,
             status: 'needs_auth'
           }
@@ -898,7 +898,7 @@ describe('ToolsetConfigPanel', () => {
             tag: 'Full search + extract',
             env_vars: [],
             post_setup: null,
-            requires_nous_auth: false,
+            requires_moor_auth: false,
             is_active: true,
             status: 'ready',
             web_backend: 'firecrawl',
@@ -932,15 +932,15 @@ describe('ToolsetConfigPanel', () => {
       await waitFor(() => expect(screen.getByText('Search: firecrawl')).toBeTruthy())
     })
 
-    it('lights the Nous row for a gateway-served capability and the BYOK row for the own-key one', async () => {
-      const nous = {
-        name: 'Nous Subscription',
+    it('lights the Moor row for a gateway-served capability and the BYOK row for the own-key one', async () => {
+      const moor = {
+        name: 'Moor Subscription',
         badge: 'subscription',
         tag: 'Managed web search and extract billed to your subscription',
         env_vars: [],
         post_setup: null,
-        requires_nous_auth: true,
-        managed_nous_feature: 'web',
+        requires_moor_auth: true,
+        managed_moor_feature: 'web',
         is_active: false,
         status: 'ready' as const,
         web_backend: 'firecrawl',
@@ -948,22 +948,22 @@ describe('ToolsetConfigPanel', () => {
       }
 
       // Search through the gateway, extract on the user's own Firecrawl key:
-      // both rows share web_backend 'firecrawl', only the *_via_nous flags tell them apart.
+      // both rows share web_backend 'firecrawl', only the *_via_moor flags tell them apart.
       getToolsetConfig.mockResolvedValue(
         webConfig({
           active_search_backend: 'perplexity',
           active_extract_backend: 'firecrawl',
-          search_via_nous: true,
-          extract_via_nous: false,
-          providers: [...webConfig().providers, nous]
+          search_via_moor: true,
+          extract_via_moor: false,
+          providers: [...webConfig().providers, moor]
         })
       )
 
       render(<ToolsetConfigPanel onConfiguredChange={vi.fn()} toolset="web" />)
 
-      expect(await screen.findByText('Search: Nous Subscription')).toBeTruthy()
+      expect(await screen.findByText('Search: Moor Subscription')).toBeTruthy()
       expect(screen.getByText('Extract: firecrawl')).toBeTruthy()
-      const nousRow = screen.getByRole('button', { name: /Nous Subscription/ })
+      const nousRow = screen.getByRole('button', { name: /Moor Subscription/ })
       const byokRow = screen.getByRole('button', { name: /^Firecrawl/ })
       expect(within(nousRow).getByText('Search backend')).toBeTruthy()
       expect(within(nousRow).queryByText('Extract backend')).toBeNull()

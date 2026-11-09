@@ -1295,19 +1295,19 @@ class TestCronRunHistoryFallback:
     def test_output_doc_timestamps_honor_configured_timezone(
         self, isolated_profiles, monkeypatch, no_session_rows
     ):
-        """The filename stem is written by save_job_output via hermes_time.now()
+        """The filename stem is written by save_job_output via moor_time.now()
         — the configured zone. Reading it back must use that zone, not the
         server's (review of #61403: a fixed-offset snapshot was off by hours
-        when HERMES_TIMEZONE differs from the server zone)."""
+        when MOOR_TIMEZONE differs from the server zone)."""
         from zoneinfo import ZoneInfo
-        from hermes_time import _tz_cache
+        from moor_time import _tz_cache
 
         job_id = "job-tz"
         home = isolated_profiles["default"]
         # Wall time 2026-07-10_00-14-10 in Asia/Taipei (+08:00) = 2026-07-09 16:14:10 UTC.
         self._write_output_doc(monkeypatch, home, job_id, "2026-07-10_00-14-10.md", "tz output\n")
 
-        monkeypatch.setenv("HERMES_TIMEZONE", "Asia/Taipei")
+        monkeypatch.setenv("MOOR_TIMEZONE", "Asia/Taipei")
         _tz_cache.clear()
 
         monkeypatch.setattr(_rt_cron, "_job_owner_profile", lambda _job_id, _profile: "default")
@@ -1321,7 +1321,7 @@ class TestCronRunHistoryFallback:
         try:
             result = _rt_cron._list_cron_job_runs_sync(job_id, limit=5)
         finally:
-            monkeypatch.delenv("HERMES_TIMEZONE", raising=False)
+            monkeypatch.delenv("MOOR_TIMEZONE", raising=False)
             _tz_cache.clear()
 
         started = result["runs"][0]["started_at"]
@@ -1468,11 +1468,11 @@ class TestCronRunHistoryFallback:
     ):
         """Review of #42433: the filename stem is written with the OWNER
         profile's configured zone. A cross-profile request must decode it in
-        that zone — not the dashboard's — with no global HERMES_TIMEZONE set
+        that zone — not the dashboard's — with no global MOOR_TIMEZONE set
         (both profiles configure config.yaml timezones, so a shared env var
         cannot mask the mix-up)."""
         from zoneinfo import ZoneInfo
-        from hermes_time import _tz_cache
+        from moor_time import _tz_cache
 
         job_id = "job-owner-tz"
         worker_home = isolated_profiles["worker_alpha"]
@@ -1523,14 +1523,14 @@ class TestCronRunHistoryFallback:
             return datetime.strptime(name, "%Y-%m-%d_%H-%M-%S").replace(tzinfo=ZoneInfo("UTC"))
 
         # Attempt 1 (10:00): succeeded; its doc survives.
-        monkeypatch.setattr(cron_executions, "_hermes_now", lambda: _at("2026-09-25_10-00-00"))
+        monkeypatch.setattr(cron_executions, "_moor_now", lambda: _at("2026-09-25_10-00-00"))
         first = cron_executions.create_execution(job_id, source="direct")
-        monkeypatch.setattr(cron_executions, "_hermes_now", lambda: _at("2026-09-25_10-00-30"))
+        monkeypatch.setattr(cron_executions, "_moor_now", lambda: _at("2026-09-25_10-00-30"))
         cron_executions.finish_execution(first["id"], success=True)
         # Attempt 2 (10:01): failed; its doc is gone.
-        monkeypatch.setattr(cron_executions, "_hermes_now", lambda: _at("2026-09-25_10-01-00"))
+        monkeypatch.setattr(cron_executions, "_moor_now", lambda: _at("2026-09-25_10-01-00"))
         second = cron_executions.create_execution(job_id, source="direct")
-        monkeypatch.setattr(cron_executions, "_hermes_now", lambda: _at("2026-09-25_10-01-20"))
+        monkeypatch.setattr(cron_executions, "_moor_now", lambda: _at("2026-09-25_10-01-20"))
         cron_executions.finish_execution(second["id"], success=False, error="new run failed")
         self._write_output_doc(monkeypatch, home, job_id, "2026-09-25_10-00-00.md", "successful older run\n")
 

@@ -14,7 +14,7 @@ from typing import Any, Dict, NamedTuple, Optional, Tuple
 
 from agent.error_classifier import FailoverReason
 from agent.stream_max_lifetime import StreamLifetimeExceeded
-from hermes_constants import display_hermes_home
+from moor_constants import display_moor_home
 
 # Failure codes minted by loop sites that are not provider verdicts (see module docstring).
 SITE_FAILURE_CODES = frozenset({
@@ -357,7 +357,7 @@ _ONE_OFF_COPY: dict[str, str] = {
     # Rides failure_reason="truncated": args were cut mid-JSON but the model never reported
     # an output-length stop, so don't claim it hit one (#91717).
     "truncated_unreported": (
-        "The model's action arrived cut off partway through, so Hermes didn't run it. Nothing was changed. The model didn't report hitting its output "
+        "The model's action arrived cut off partway through, so Moor didn't run it. Nothing was changed. The model didn't report hitting its output "
         "limit, so this was most likely a dropped connection or a provider/router cutting the "
         "reply short. Send /retry; if it keeps happening, ask for the work in smaller steps."
     ),

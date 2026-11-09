@@ -199,27 +199,27 @@ def _agent_path_scope(profile_home: Path | None = None) -> Iterator[None]:
     Translation and the unmapped-path classification both run inside this scope, so they
     agree about the backend.
     """
-    from hermes_cli.config import get_hermes_home
-    from hermes_constants import (
-        get_hermes_home_override, get_process_hermes_home, reset_hermes_home_override,
-        set_hermes_home_override,
+    from moor_cli.config import get_moor_home
+    from moor_constants import (
+        get_moor_home_override, get_process_moor_home, reset_moor_home_override,
+        set_moor_home_override,
     )
     from tools.terminal_scope import get_terminal_scope, install_profile_terminal_scope, reset_terminal_scope
 
     home_token = scope_token = None
-    if profile_home is not None and Path(profile_home).resolve() != get_hermes_home().resolve():
-        home_token = set_hermes_home_override(str(profile_home))
+    if profile_home is not None and Path(profile_home).resolve() != get_moor_home().resolve():
+        home_token = set_moor_home_override(str(profile_home))
     try:
-        foreign_override = (get_hermes_home_override() is not None
-                            and get_hermes_home().resolve() != get_process_hermes_home().resolve())
+        foreign_override = (get_moor_home_override() is not None
+                            and get_moor_home().resolve() != get_process_moor_home().resolve())
         if home_token is not None or (foreign_override and get_terminal_scope() is None):
-            scope_token = install_profile_terminal_scope(get_hermes_home())
+            scope_token = install_profile_terminal_scope(get_moor_home())
         yield
     finally:
         if scope_token is not None:
             reset_terminal_scope(scope_token)
         if home_token is not None:
-            reset_hermes_home_override(home_token)
+            reset_moor_home_override(home_token)
 
 
 def _agent_container_path(
@@ -244,7 +244,7 @@ def _agent_container_path(
     if not raw.startswith("/") or raw.startswith("//") or ".." in raw.split("/"):
         return None
     try:
-        from hermes_cli.config import get_hermes_home
+        from moor_cli.config import get_moor_home
         from tools.terminal_scope import (
             build_profile_terminal_scope, get_terminal_scope, reset_terminal_scope, set_terminal_scope,
         )
@@ -254,7 +254,7 @@ def _agent_container_path(
             translated = _translate_agent_path(candidate, workspace_key, own_sandbox_only, workspace_cwd)
             if translated is not None or get_terminal_scope() is not None:
                 return translated
-            token = set_terminal_scope(build_profile_terminal_scope(get_hermes_home()))
+            token = set_terminal_scope(build_profile_terminal_scope(get_moor_home()))
             try:
                 return _translate_agent_path(candidate, workspace_key, own_sandbox_only, workspace_cwd)
             finally:
@@ -479,7 +479,7 @@ def _managed_response_meta(policy: ManagedFilesPolicy) -> dict[str, Any]:
 
 
 def _hosted_fs_path_allowed(root: Path, target: Path) -> bool:
-    from hermes_cli.web_routers.files import _is_sensitive_path
+    from moor_cli.web_routers.files import _is_sensitive_path
 
     resolved = _canonical_path(target)
     return (_path_is_under(root, resolved)

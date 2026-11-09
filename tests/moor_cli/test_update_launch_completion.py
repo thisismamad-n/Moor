@@ -40,7 +40,7 @@ def completion_tail(monkeypatch):
         spawned.kwargs = kwargs
         return subprocess.CompletedProcess(command, spawned.exit_code)
 
-    from hermes_cli import update_custody
+    from moor_cli import update_custody
 
     monkeypatch.setattr(update_custody, "run", run)
     return spawned
@@ -64,9 +64,9 @@ def _committed_checkout(tmp_path, monkeypatch):
     Mirrors a fresh official install: the installer ran the full tail and
     recorded the tree, so launching at the same commit owes no rebuild.
     """
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
-    from hermes_cli.source_stamp import write_source_stamp
+    from moor_cli.source_stamp import write_source_stamp
 
     root = tmp_path / "checkout"
     root.mkdir()
@@ -78,9 +78,9 @@ def _committed_checkout(tmp_path, monkeypatch):
         subprocess.run(["git", *args], cwd=root, check=True,
                          capture_output=True, timeout=30)
     assert write_source_stamp(root)["dirty"] is False
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("MOOR_DISABLE_LAZY_INSTALLS", raising=False)
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda _, **__: Path(sys.executable))
     return root
 
@@ -89,7 +89,7 @@ def _committed_checkout(tmp_path, monkeypatch):
 def test_completed_tree_discharges_only_a_marker_older_than_its_stamp(
         tmp_path, monkeypatch, completion_tail, marker_age, owed):
     """Fresh install under a preserved home (#123314): a marker armed before the stamp
-    owes no rebuild of the same SHA. One armed after it (a same-commit `hermes update`
+    owes no rebuild of the same SHA. One armed after it (a same-commit `moor update`
     that failed or was killed) is newer debt and the launch still finishes it."""
     import pm
 
@@ -105,7 +105,7 @@ def test_completed_tree_discharges_only_a_marker_older_than_its_stamp(
 
 @pytest.mark.parametrize("edited", [False, True])
 def test_pristine_home_provisions_dependencies_without_rebuild(tmp_path, monkeypatch, completion_tail, edited):
-    """Pristine HERMES_HOME on a freshly installed tree (#123314): with no facts the venv
+    """Pristine MOOR_HOME on a freshly installed tree (#123314): with no facts the venv
     needs provisioning, but the stamp names a clean HEAD so no product rebuild is owed.
     Local edits since the stamp void that proof: the tail runs as before."""
     import pm
@@ -129,7 +129,7 @@ def test_adoption_stamp_never_discharges_an_owed_tail(tmp_path, monkeypatch, com
     import pm
 
     root = _committed_checkout(tmp_path, monkeypatch)
-    blessed = tmp_path / "home/hermes-agent"
+    blessed = tmp_path / "home/moor-agent"
     blessed.parent.mkdir(parents=True)
     root.rename(blessed)
     (blessed / "install-stamp.json").unlink()
@@ -200,10 +200,10 @@ def test_failed_completion_tail_is_retried_without_rebuilding_dependencies(tmp_p
 def test_prepared_completion_import_does_not_start_another_tail(tmp_path, monkeypatch, completion_tail, script):
     """Maintenance imports the CLI while its own completion marker is still present."""
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
     root = _self_checkout(tmp_path, monkeypatch)
-    worker = root / "hermes_cli" / script
+    worker = root / "moor_cli" / script
     worker.parent.mkdir()
     worker.touch()
     venv_sync.arm_completion(root)
@@ -219,10 +219,10 @@ def test_prepared_completion_import_does_not_start_another_tail(tmp_path, monkey
 def test_same_named_script_outside_the_checkout_still_repairs(tmp_path, monkeypatch, completion_tail):
     """Only this checkout's own tail is exempt: another tree's worker still owes this one's repair."""
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
     root = _self_checkout(tmp_path, monkeypatch)
-    foreign = tmp_path / "other" / "hermes_cli" / "source_completion.py"
+    foreign = tmp_path / "other" / "moor_cli" / "source_completion.py"
     foreign.parent.mkdir(parents=True)
     foreign.touch()
     venv_sync.arm_completion(root)
@@ -353,7 +353,7 @@ def test_failed_dependency_sync_backs_off_only_for_the_same_inputs(tmp_path, mon
     """A failed launch sync counts toward the retry bound, so relaunches stop redoing the same
     failing repair (#139952); a corrected source update is a different repair and runs."""
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
     root = _self_checkout(tmp_path, monkeypatch)
     syncs = []
@@ -465,14 +465,14 @@ def test_gateway_status_skips_pending_source_update_completion(tmp_path, monkeyp
 
     assert venv_sync.prepare_launch(root, ["gateway", "status"]) is None
     assert completion_tail == []
-    assert pending.is_file(), "a status query must leave the update tail for `hermes gateway restart`"
+    assert pending.is_file(), "a status query must leave the update tail for `moor gateway restart`"
 
 
 @pytest.mark.parametrize("marker,value,owed_by_cli", [
-    ("HERMES_SUPERVISED_CHILD", "1", True),
-    ("HERMES_S6_SUPERVISED_CHILD", "true", True),
-    ("HERMES_SUPERVISED_CHILD", "0", False),
-    ("HERMES_SUPERVISED_CHILD", "false", False),
+    ("MOOR_SUPERVISED_CHILD", "1", True),
+    ("MOOR_S6_SUPERVISED_CHILD", "true", True),
+    ("MOOR_SUPERVISED_CHILD", "0", False),
+    ("MOOR_SUPERVISED_CHILD", "false", False),
 ])
 def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
     tmp_path, monkeypatch, capsys, completion_tail, marker, value, owed_by_cli
@@ -481,11 +481,11 @@ def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
 
     systemd/launchd/s6 restart the gateway under a policy; with a marker that never
     clears, each boot would rebuild the completion environment until the disk fills.
-    The obligation stays with `hermes update`. An off value (`0`/`false`) is not a
+    The obligation stays with `moor update`. An off value (`0`/`false`) is not a
     supervised launch and still repays the tail.
     """
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
     root = _self_checkout(tmp_path, monkeypatch)
     pending = venv_sync.completion_pending_path(root)
@@ -493,8 +493,8 @@ def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
     pending.write_text("owed\n")
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: True)
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda _, **__: Path(sys.executable))
-    monkeypatch.delenv("HERMES_SUPERVISED_CHILD", raising=False)
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("MOOR_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("MOOR_S6_SUPERVISED_CHILD", raising=False)
     monkeypatch.setenv(marker, value)
 
     assert venv_sync.prepare_launch(root, ["gateway", "run"]) is None
@@ -502,7 +502,7 @@ def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
         assert completion_tail == []
         assert pending.is_file(), "a supervised child discharged an obligation the CLI still owes"
         out, err = capsys.readouterr()
-        assert out == "" and err.count("run `hermes update`") == 1
+        assert out == "" and err.count("run `moor update`") == 1
     else:
         assert len(completion_tail) == 1
         assert not pending.is_file()
@@ -520,14 +520,14 @@ def test_supervised_launch_with_stale_dependencies_still_syncs(
     exemption above must not swallow this one-shot condition.
     """
     import pm
-    from hermes_cli import _launchers
+    from moor_cli import _launchers
 
     root = _self_checkout(tmp_path, monkeypatch)
     syncs = []
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: False)
     monkeypatch.setattr(pm, "sync_venv", lambda *a, **kw: syncs.append(a))
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda _, **__: Path(sys.executable))
-    monkeypatch.setenv("HERMES_SUPERVISED_CHILD", "1")
+    monkeypatch.setenv("MOOR_SUPERVISED_CHILD", "1")
 
     venv_sync.prepare_launch(root, ["gateway", "run"])
     assert syncs, "a supervised child booted on a stale dependency graph without syncing"

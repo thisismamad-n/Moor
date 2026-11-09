@@ -117,7 +117,7 @@ def _mint(command: str, label: str) -> tuple[str, Optional[float]]:
 class CommandTokenSource:
     """Callable returning a bearer token, cached until shortly before expiry."""
 
-    hermes_credential_source = KEY_CMD  # display label source; read without calling (agent.credential_source)
+    moor_credential_source = KEY_CMD  # display label source; read without calling (agent.credential_source)
 
     def __init__(self, command: str, label: str = "custom") -> None:
         self._command = command

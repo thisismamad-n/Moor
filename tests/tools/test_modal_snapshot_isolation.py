@@ -59,11 +59,11 @@ def _install_modal_test_modules(
 ):
     _reset_modules(("tools", "moor_cli", "modal"))
 
-    hermes_cli = types.ModuleType("hermes_cli")
-    hermes_cli.__path__ = [str(REPO_ROOT / "hermes_cli")]  # type: ignore[attr-defined]
-    sys.modules["hermes_cli"] = hermes_cli
-    hermes_home = tmp_path / "hermes-home"
-    os.environ["HERMES_HOME"] = str(hermes_home)
+    moor_cli = types.ModuleType("moor_cli")
+    moor_cli.__path__ = [str(REPO_ROOT / "moor_cli")]  # type: ignore[attr-defined]
+    sys.modules["moor_cli"] = moor_cli
+    moor_home = tmp_path / "moor-home"
+    os.environ["MOOR_HOME"] = str(moor_home)
 
     tools_package = types.ModuleType("tools")
     tools_package.__path__ = [str(TOOLS_DIR)]  # type: ignore[attr-defined]
@@ -238,7 +238,7 @@ def test_resolve_modal_image_uses_snapshot_ids_and_registry_images(tmp_path):
 
 def test_persistent_cleanup_snapshots_without_expiry(tmp_path, monkeypatch):
     """The SDK default retains a filesystem snapshot for 30 days; an idle persistent
-    sandbox would then silently restart from the base image, so Hermes must opt out."""
+    sandbox would then silently restart from the base image, so Moor must opt out."""
     state = _install_modal_test_modules(tmp_path, snapshot_id="im-fresh")
     modal_module = _load_module("tools.environments.modal", TOOLS_DIR / "environments" / "modal.py")
     monkeypatch.setattr(modal_module, "ensure_lazy_dep", lambda extra: None)
@@ -255,7 +255,7 @@ def test_concurrent_snapshot_stores_keep_both_tasks(tmp_path, monkeypatch):
     second store must not be overwritten by the first one's stale read of the file."""
     import threading
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor-home"))
     import tools.environments.base as base_module
     import tools.environments.modal as modal_module
     from tests.lock_contention import watch_file_lock_contention
@@ -301,10 +301,10 @@ def test_snapshot_store_update_proceeds_when_the_lock_is_unavailable(tmp_path, m
     fallback deletes the failed snapshot id and then retries with the base image."""
     import contextlib
 
-    import hermes_cli.auth as auth_module
+    import moor_cli.auth as auth_module
     import tools.environments.modal as modal_module
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes-home"))
+    monkeypatch.setenv("MOOR_HOME", str(tmp_path / "moor-home"))
 
     @contextlib.contextmanager
     def wedged_lock(*_args, **_kwargs):

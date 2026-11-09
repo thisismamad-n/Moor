@@ -263,7 +263,7 @@ _PLATFORM_STORE_BUNDLE: Optional[str] = None
 
 
 def _platform_store_bundle() -> Optional[str]:
-    """The OS store's CA certificates written once to a PEM file under HERMES_HOME."""
+    """The OS store's CA certificates written once to a PEM file under MOOR_HOME."""
     global _PLATFORM_STORE_BUNDLE
     if _PLATFORM_STORE_BUNDLE and Path(_PLATFORM_STORE_BUNDLE).is_file():
         return _PLATFORM_STORE_BUNDLE
@@ -272,10 +272,10 @@ def _platform_store_bundle() -> Optional[str]:
     certs = ctx.get_ca_certs(binary_form=True)
     if not certs:
         return None
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from utils import atomic_write_text
 
-    path = get_hermes_home() / "cache" / "platform-ca-bundle.pem"
+    path = get_moor_home() / "cache" / "platform-ca-bundle.pem"
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         atomic_write_text(path, "".join(ssl.DER_cert_to_PEM_cert(der) for der in certs))

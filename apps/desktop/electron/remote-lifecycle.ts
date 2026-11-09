@@ -42,7 +42,7 @@ const READY_RE = READY_IN_MERGED_OUTPUT_RE // the remote log is `>> log 2>&1`: m
 const REMOTE_LOCK_DIR = '~/.moor/desktop-ssh'
 const SUPPORTED_REMOTE_OS = new Set(['Linux', 'Darwin'])
 // On a busy remote host a healthy cold boot can take 60-150s before the
-// freshly spawned `hermes serve --isolated` prints its READY line (event-loop
+// freshly spawned `moor serve --isolated` prints its READY line (event-loop
 // stalls of 5-27s each during spawn storms are routine). The historical 45s
 // budget gave up milliseconds before a healthy backend announced ready and
 // surfaced a timeout toast (issue #94642). A roomier default absorbs the
@@ -69,12 +69,12 @@ function classifySshReuseProof(proof, spawnNonce) {
 
 /**
  * Resolve the remote ready-port deadline. Honors the
- * HERMES_DESKTOP_REMOTE_READY_TIMEOUT_MS env override (for users on busy
+ * MOOR_DESKTOP_REMOTE_READY_TIMEOUT_MS env override (for users on busy
  * hosts whose cold boots routinely exceed the default), clamped to a sane
  * floor so a bad value can't make boot flakier than the default.
  */
 function resolveReadyTimeoutMs(env = process.env) {
-  const parsed = Number(env.HERMES_DESKTOP_REMOTE_READY_TIMEOUT_MS)
+  const parsed = Number(env.MOOR_DESKTOP_REMOTE_READY_TIMEOUT_MS)
 
   if (Number.isFinite(parsed) && parsed > 0) {
     return Math.max(MIN_READY_TIMEOUT_MS, Math.round(parsed))
@@ -327,7 +327,7 @@ async function probeRemoteMoorHome(ssh) {
  * (remote-update-marker-programs.ts); it never imports the changing checkout.
  * Absence or a confirmed-dead claim (owner and delegate) is clear, and a dead
  * claim is unlinked under `<marker>.lock` unless the checkout lock is still
- * held (HELD: a killed updater's child is still running). `hermesPath`, once
+ * held (HELD: a killed updater's child is still running). `moorPath`, once
  * located, adds its checkout to the probed ones. Every parse, read, lock, or
  * transport uncertainty fails closed so a Desktop relaunch cannot start
  * `serve` beside an updater that survived the old app process.
@@ -343,14 +343,14 @@ async function probeRemoteMoorHome(ssh) {
  * Python compiles the whole program before running it and the gate never reads
  * stdin, so argv stays a few dozen bytes however the judge grows.
  */
-async function assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath = '') {
-  const marker = expandRemotePath(`${remoteInstallRoot(hermesHome)}/.hermes-update-in-progress`)
-  const hermes = hermesPath ? ` '' ${expandRemotePath(hermesPath)}` : ''
+async function assertRemoteInstallUpdateClear(ssh, moorHome, moorPath = '') {
+  const marker = expandRemotePath(`${remoteInstallRoot(moorHome)}/.moor-update-in-progress`)
+  const moor = moorPath ? ` '' ${expandRemotePath(moorPath)}` : ''
   let observation = ''
 
   try {
     observation =
-      String(await ssh.exec(`python3 - ${marker}${hermes}`, { stdinData: REMOTE_MARKER_GATE_PY }))
+      String(await ssh.exec(`python3 - ${marker}${moor}`, { stdinData: REMOTE_MARKER_GATE_PY }))
         .trim()
         .split(/\r?\n/)
         .pop() || ''
@@ -369,24 +369,24 @@ async function assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath = '') 
 
   const error: any = new Error(
     live
-      ? `Remote Hermes update process ${live[1]} is still running; SSH startup is paused.`
+      ? `Remote Moor update process ${live[1]} is still running; SSH startup is paused.`
       : observation === 'HELD'
-        ? 'A process the remote Hermes update started still holds the install; SSH startup is paused.'
-        : 'The remote Hermes update marker is unreadable, malformed, or locked; refusing SSH startup.'
+        ? 'A process the remote Moor update started still holds the install; SSH startup is paused.'
+        : 'The remote Moor update marker is unreadable, malformed, or locked; refusing SSH startup.'
   )
 
   error.kind = 'update-in-progress'
   throw error
 }
 
-async function listRemoteHermesProfiles(ssh, platform: any = null) {
+async function listRemoteMoorProfiles(ssh, platform: any = null) {
   if (platform?.os === 'Windows') {
     const { listWindowsRemoteProfiles } = await import('./windows-remote-inventory')
 
     return listWindowsRemoteProfiles(ssh, platform)
   }
 
-  const home = assertSafeRemoteHome(await probeRemoteHermesHome(ssh))
+  const home = assertSafeRemoteHome(await probeRemoteMoorHome(ssh))
   const dir = expandRemotePath(`${home}/profiles`)
   let listing = ''
 
@@ -409,7 +409,7 @@ async function readRemoteInstallId(ssh, platform: any = null) {
     return readWindowsRemoteInstallId(ssh, platform)
   }
 
-  // The stable backend identity the roster collapses on (`hermes_cli/install_identity.py`:
+  // The stable backend identity the roster collapses on (`moor_cli/install_identity.py`:
   // `<install root>/install_id`, opaque hex). Read from the INSTALL root, so an ssh connection
   // pinned to `<root>/profiles/<name>` reports the same id as one pointed at the root — they are
   // one backend. Read-only: a missing file is left missing (minting identity is the install's job,
@@ -988,16 +988,16 @@ finally:
 
 // Run `command` under the updaters' marker lock: REMOTE_MARKER_GATE_PY holds
 // `<marker>.lock` (the sidecar Python update_lock and marker.sh flock), clears a
-// dead claim while `hermes`'s checkout lock is free, and refuses (exit 75) a
+// dead claim while `moor`'s checkout lock is free, and refuses (exit 75) a
 // live, unreadable, or checkout-held one, then keeps the
 // lock across the spawn and the initial lockfile publication. The descriptor
 // is close-on-exec and passed only to the outer shell; each detached child
-// closes it before execing Hermes. markerPath is expandRemotePath() output — a
+// closes it before execing Moor. markerPath is expandRemotePath() output — a
 // complete shell word ("$HOME"'/…' or '/abs/…') embedded raw so $HOME expands
-// remotely; a second shq() would hand python the quote characters. `hermes`
+// remotely; a second shq() would hand python the quote characters. `moor`
 // is the same kind of word (expandRemotePath of the located executable).
-function withRemoteUpdateMutex(command, markerPath, hermes) {
-  return `python3 -c ${shq(REMOTE_MARKER_GATE_PY)} ${markerPath} ${shq(command)} ${hermes}`
+function withRemoteUpdateMutex(command, markerPath, moor) {
+  return `python3 -c ${shq(REMOTE_MARKER_GATE_PY)} ${markerPath} ${shq(command)} ${moor}`
 }
 
 /**
@@ -1119,8 +1119,8 @@ async function terminateOwnedDashboardForUpdate(ssh, expected) {
 // Detach so the backend survives the SSH channel closing: setsid (Linux)
 // starts a new session; macOS has no setsid, so fall back to nohup (HUP-immune;
 // fd-detachment is already handled by </dev/null + redirect + &).
-function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
-  const hermes = expandRemotePath(hermesPath)
+function buildSpawnCommand(moorPath, profile, opts: any = {}) {
+  const moor = expandRemotePath(moorPath)
   // The roster/SSH bridge hands us the profile verbatim: a non-slug value must never
   // cross into the remote spawn argv, where the CLI used to str()-coerce it into a
   // phantom profiles/0/ directory (#88842).
@@ -1153,7 +1153,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
 
   const dashCmd =
     `ulimit -n ${REMOTE_NOFILE_SOFT_LIMIT} 2>/dev/null || true; ` +
-    `exec env HERMES_DESKTOP=1 ${hermes} ${profileArgs}${subCmd}`
+    `exec env MOOR_DESKTOP=1 ${moor} ${profileArgs}${subCmd}`
 
   const detachedShell: string = `eval "exec $1>&-"; ${dashCmd} </dev/null >> ${logPath} 2>&1 & echo $!`
   // The inner shell backgrounds Moor and reports its PID; backgrounding the
@@ -1166,7 +1166,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
         `${detachedSpawn}; ` +
         `${markerAbsent} || { kill "$child" 2>/dev/null || true; wait "$child" 2>/dev/null || true; exit 75; }; echo "$child"`,
       marker,
-      hermes
+      moor
     )
   }
 
@@ -1208,7 +1208,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
       `printf '%s' "$lock_json" > "$temporary_lock" && mv -f "$temporary_lock" "$lock" || { kill "$child" 2>/dev/null || true; wait "$child" 2>/dev/null || true; exit 76; }; ` +
       `echo "$child"`,
     marker,
-    hermes
+    moor
   )
 }
 
@@ -1242,7 +1242,7 @@ function remoteProfileMissingError(output) {
   const createCommand = match[2]?.trim()
 
   const err: any = new Error(
-    `The remote Hermes profile '${profile}' does not exist. ` +
+    `The remote Moor profile '${profile}' does not exist. ` +
       `Select an existing remote profile${createCommand ? ` or create it with: ${createCommand}` : '.'}`
   )
 
@@ -1295,7 +1295,7 @@ async function scrapeReadyPort(ssh, logPath, { timeoutMs = resolveReadyTimeoutMs
 
 async function spawnRemoteDashboard(
   ssh,
-  { hermesPath, profile, token, ownershipId, hermesHome = '~/.hermes', assertInstallClear = async () => {} }
+  { moorPath, profile, token, ownershipId, moorHome = '~/.moor', assertInstallClear = async () => {} }
 ) {
   if (!(await remoteSupportsSshOwnership(ssh, moorPath))) {
     const err: any = new Error(
@@ -1364,7 +1364,7 @@ async function spawnRemoteDashboard(
         spawnNonce,
         tokenFilePath,
         logPath,
-        hermesHome,
+        moorHome,
         ownershipId,
         reservationNonce: spawnNonce,
         lockMetadata: {
@@ -1505,7 +1505,7 @@ async function connect(deps) {
   const {
     ssh,
     profile: requestedProfile = '',
-    remoteHermesPath = '',
+    remoteMoorPath = '',
     ownershipId,
     forward,
     pickLocalPort,
@@ -1596,7 +1596,7 @@ async function connect(deps) {
       }
 
       assertBootstrapNotSuperseded(signal)
-      await assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath)
+      await assertRemoteInstallUpdateClear(ssh, moorHome, moorPath)
       const localPort = await openForward(deps, lock.port)
 
       try {
@@ -1615,7 +1615,7 @@ async function connect(deps) {
         if (reuseClassification === 'authenticated-stale') {
           assertBootstrapNotSuperseded(signal)
           await cancelForwardSafe(deps, localPort, lock.port)
-          await assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath)
+          await assertRemoteInstallUpdateClear(ssh, moorHome, moorPath)
           await cleanupStale(ssh, ownershipId, lock)
         } else if (reuseClassification === 'authenticated-ok') {
           const token = await adoptOwnedServedToken(
@@ -1659,13 +1659,13 @@ async function connect(deps) {
       }
     } else {
       assertBootstrapNotSuperseded(signal)
-      await assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath)
+      await assertRemoteInstallUpdateClear(ssh, moorHome, moorPath)
       await cleanupStale(ssh, ownershipId, lock, pidAlive)
     }
   }
 
   assertBootstrapNotSuperseded(signal)
-  await assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath)
+  await assertRemoteInstallUpdateClear(ssh, moorHome, moorPath)
   const spawnToken = mintToken()
 
   const spawned = await spawnRemoteDashboard(ssh, {
@@ -1673,8 +1673,8 @@ async function connect(deps) {
     profile,
     token: spawnToken,
     ownershipId,
-    hermesHome,
-    assertInstallClear: () => assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath)
+    moorHome,
+    assertInstallClear: () => assertRemoteInstallUpdateClear(ssh, moorHome, moorPath)
   })
 
   if (spawned.existing) {

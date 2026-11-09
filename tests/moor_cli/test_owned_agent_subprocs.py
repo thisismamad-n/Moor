@@ -1,4 +1,4 @@
-"""Long-lived agent/plugin subprocess clients die with the Hermes process that started them.
+"""Long-lived agent/plugin subprocess clients die with the Moor process that started them.
 
 Each kill -9 case drives the REAL production spawn path in two disposable owner processes, SIGKILLs
 one (no atexit, no finally: nothing of ours runs) and requires that owner's child tree to be gone
@@ -17,7 +17,7 @@ from pathlib import Path
 import psutil
 import pytest
 
-from hermes_cli import process_identity
+from moor_cli import process_identity
 
 from tests.waiting import wait_until
 
@@ -72,11 +72,11 @@ _OWNERS = {
         "bridge = out / 'bridge'; bridge.mkdir()\n"
         "(bridge / 'bridge.js').write_text('import os, sys\\nos.execv(sys.executable, ' + repr(child) + ')\\n',\n"
         "                                  encoding='utf-8')\n"
-        "import hermes_constants\n"
+        "import moor_constants\n"
         "from gateway.platforms import whatsapp_common\n"
-        "from hermes_cli.web_routers import messaging\n"
+        "from moor_cli.web_routers import messaging\n"
         "whatsapp_common.resolve_whatsapp_bridge_dir = lambda: bridge\n"
-        "hermes_constants.find_node_executable = lambda name: sys.executable\n"
+        "moor_constants.find_node_executable = lambda name: sys.executable\n"
         "messaging._ensure_whatsapp_bridge_dependencies = lambda bridge_dir: None\n"
         "messaging._spawn_whatsapp_pairing_process(out / 'session', 'bot')\n"
     ),
@@ -87,7 +87,7 @@ _OWNERS = {
         "(bindir / 'git').write_text('#!/bin/sh\\nexec ' + child_cmd + '\\n', encoding='utf-8')\n"
         "(bindir / 'git').chmod(0o755)\n"
         "os.environ['PATH'] = str(bindir) + os.pathsep + os.environ['PATH']\n"
-        "from hermes_cli.git_commit_graph import run_bounded_git\n"
+        "from moor_cli.git_commit_graph import run_bounded_git\n"
         "threading.Thread(target=run_bounded_git, args=(str(out), ['repack', '-d'], 120.0), daemon=True).start()\n"
     ),
     # A command provider that stalls: the owner dies inside its 120 s idle timeout.
@@ -131,7 +131,7 @@ def _start_owner(tmp_path: Path, name: str, site: str) -> tuple[subprocess.Popen
     child_script.write_text(_CHILD, encoding="utf-8")
     home = tmp_path / f"home-{name}"
     home.mkdir()
-    env = dict(os.environ, HERMES_HOME=str(home / ".hermes"), HOME=str(home), HERMES_REAL_HOME=str(home),
+    env = dict(os.environ, MOOR_HOME=str(home / ".moor"), HOME=str(home), MOOR_REAL_HOME=str(home),
                PYTHONPATH=str(REPO))
     with (tmp_path / f"{name}.err").open("w", encoding="utf-8") as err:
         owner = subprocess.Popen([sys.executable, "-c", _owner_source(site), str(out), str(child_script)],
@@ -177,7 +177,7 @@ def _sleeper() -> subprocess.Popen:
 @pytest.fixture
 def owned(monkeypatch):
     """In-process cases: record registrations instead of starting a real supervisor in pytest."""
-    from hermes_cli import process_identity
+    from moor_cli import process_identity
 
     groups: list = []
     monkeypatch.setattr(process_identity, "own_process_groups", lambda pgids: groups.extend(pgids))
@@ -248,7 +248,7 @@ def test_tts_command_owns_then_releases_its_group_after_success_and_idle_kill(mo
 
 
 def test_whatsapp_pairing_terminate_releases_the_process_it_stopped(monkeypatch):
-    from hermes_cli.web_routers import messaging
+    from moor_cli.web_routers import messaging
 
     released = []
     monkeypatch.setattr(process_identity, "release_process_groups", lambda pgids: released.append(list(pgids)))

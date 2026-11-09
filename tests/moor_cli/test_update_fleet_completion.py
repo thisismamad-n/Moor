@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from hermes_cli import update_cmd, update_cmd_fleet, update_cmd_fleet_verify as fleet_verify, update_cmd_maint, update_receipt
-from hermes_constants import get_hermes_home
+from moor_cli import update_cmd, update_cmd_fleet, update_cmd_fleet_verify as fleet_verify, update_cmd_maint, update_receipt
+from moor_constants import get_moor_home
 
 
 @pytest.mark.parametrize(
@@ -50,7 +50,7 @@ def test_fleet_completion_preserves_runtime_verdict_and_restart_obligation(
             update_complete=update_complete,
         )
 
-    receipt = json.loads((get_hermes_home() / "logs/update_receipts/latest.json").read_text())
+    receipt = json.loads((get_moor_home() / "logs/update_receipts/latest.json").read_text())
     # Was "partial" when not healthy: the run is a success; an owed fleet restart is a follow-up.
     assert receipt["outcome"] == "success"
     assert [f["step"] for f in receipt.get("followups", [])] == ([] if state == "current" else ["gateway_restart"])

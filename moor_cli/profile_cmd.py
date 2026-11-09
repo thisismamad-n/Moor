@@ -215,11 +215,11 @@ def _profile_create(args):
             print(f"Full copy from {source_label} (excluding session history, cron jobs, backups, and snapshots).")
         else:
             print(f"Cloned config, .env, SOUL.md, and skills from {source_label}.")
-            from hermes_cli.profiles import cloned_plugin_names
+            from moor_cli.profiles import cloned_plugin_names
             plugin_names = cloned_plugin_names(profile_dir)
             if plugin_names:
                 print(f"Cloned installed plugins too: {', '.join(plugin_names)}.")
-            from hermes_cli.profile_memory_config import cloned_memory_provider
+            from moor_cli.profile_memory_config import cloned_memory_provider
             memory_provider = cloned_memory_provider(profile_dir)
             if memory_provider:
                 print(f"Cloned memory provider config ({memory_provider}) too.")
@@ -423,7 +423,7 @@ def _profile_alias(args):
         if remove_wrapper_script(alias_name):
             print(f"✓ Removed alias '{alias_name}'")
         elif not exists:
-            _die(f"Error: No alias '{alias_name}' and no profile '{name}'. `hermes doctor` lists orphan aliases.")
+            _die(f"Error: No alias '{alias_name}' and no profile '{name}'. `moor doctor` lists orphan aliases.")
         else:
             print(f"No alias '{alias_name}' found to remove.")
         return

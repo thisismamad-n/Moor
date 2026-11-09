@@ -23,7 +23,7 @@ from tools.connectors.portal.wire import (
     ConnectorPolicyWriteResponse,
     ConnectorToolsListing,
 )
-from tools.managed_gateway_auth import read_nous_access_token
+from tools.managed_gateway_auth import read_moor_access_token
 from tools.managed_gateway_identity import connector_headers, log_connector_outcome, response_request_id
 
 

@@ -3,7 +3,7 @@
 
 # Must be the very first import (UTF-8 stdio on Windows). Missing only mid-``moor update``.
 try:
-    import hermes_bootstrap
+    import moor_bootstrap
 except ModuleNotFoundError as exc:
     if exc.name != "moor_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
@@ -48,7 +48,7 @@ from moor_cli.cli_process_notifications import CLIProcessNotificationsMixin
 from moor_cli.cli_init_mixin import CLIInitMixin
 from moor_cli.cli_tui_runtime_mixin import CLITuiRuntimeMixin
 # Extracted clusters (mechanical split, #116911); re-exported here so `cli.<name>` stays the seam.
-from hermes_cli.cli_shutdown import (
+from moor_cli.cli_shutdown import (
     _CLEANUP_STEPS,
     _arm_exit_watchdog,
     _emit_interrupted_session_end,
@@ -70,11 +70,11 @@ from hermes_cli.cli_shutdown import (
     _sync_process_session_id,
     _wait_for_oneshot_background_completions,
 )
-from hermes_cli.cli_auto_maintenance import (
+from moor_cli.cli_auto_maintenance import (
     _run_checkpoint_auto_maintenance,
     _run_state_db_auto_maintenance,
 )
-from hermes_cli.cli_render import (
+from moor_cli.cli_render import (
     ChatConsole,
     _ACCENT,
     _ACCENT_ANSI_DEFAULT,
@@ -141,7 +141,7 @@ from hermes_cli.cli_render import (
     _wrap_panel_text,
     _wrap_panel_text_keep_ws,
 )
-from hermes_cli.cli_config_load import (
+from moor_cli.cli_config_load import (
     _AUXILIARY_TASK_ENV,
     _CWD_PLACEHOLDERS,
     _TERMINAL_ENV_MAPPINGS,
@@ -155,7 +155,7 @@ from hermes_cli.cli_config_load import (
     _resolve_prefill_messages_file,
     load_cli_config,
 )
-from hermes_cli.cli_terminal_input import (
+from moor_cli.cli_terminal_input import (
     _BACKSLASH_LINE_CONTINUATION_RE,
     _DSR_CPR_ESC_RE,
     _DSR_CPR_VISIBLE_RE,
@@ -193,7 +193,7 @@ from hermes_cli.cli_terminal_input import (
     _terminal_supports_extended_enter_keys,
     _termux_example_image_path,
 )
-from hermes_cli.cli_single_query import (
+from moor_cli.cli_single_query import (
     _TERMINAL_PROVIDER_REASONS,
     _TRANSIENT_PROVIDER_REASONS,
     _collect_kanban_task_images,
@@ -330,9 +330,9 @@ realign_markdown_tables = _lazy_shim("agent.markdown_tables", "realign_markdown_
 _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
 
 
-# ~/.hermes/.env first, project .env as dev fallback; user env files override stale shell exports.
-from hermes_constants import get_hermes_home
-from hermes_cli.env_loader import load_hermes_dotenv
+# ~/.moor/.env first, project .env as dev fallback; user env files override stale shell exports.
+from moor_constants import get_moor_home
+from moor_cli.env_loader import load_moor_dotenv
 from agent.i18n import t as _t
 
 _moor_home = get_moor_home()
@@ -558,7 +558,7 @@ def _cleanup_worktree(info: dict[str, str] | None = None) -> None:
     if not Path(wt_path).exists():
         return
     _active_worktree = None
-    from hermes_cli.worktree_exit import apply_exit_choice
+    from moor_cli.worktree_exit import apply_exit_choice
     if apply_exit_choice(info, _cprint):  # an exit-question answer not applied yet (normally none)
         return
 
@@ -577,7 +577,7 @@ def _cleanup_worktree(info: dict[str, str] | None = None) -> None:
             print(f"  {_t('cli.worktree.clean_up_manually', path=wt_path)}")
         return
 
-    from hermes_cli.worktree_ops import removal_blocked
+    from moor_cli.worktree_ops import removal_blocked
     blocked = removal_blocked(wt_path)  # an embedded repo or private ref dies with it
     if blocked:
         _cprint(f"\n\033[33m{_t('cli.worktree.kept_reason', path=wt_path, reason=blocked[1])}\033[0m")
@@ -729,7 +729,7 @@ def get_skill_commands() -> dict:
 def _session_skill_commands(cli) -> dict:
     """Skill commands for ``cli``: on its gateway session the gateway's (its plugin skills included), so
     this process scans no plugin to list them; otherwise this process's own."""
-    from hermes_cli import gateway_plugin_commands
+    from moor_cli import gateway_plugin_commands
     found = gateway_plugin_commands.skills(cli)
     return _ensure_skill_commands() if found is None else found
 
@@ -776,9 +776,9 @@ def save_config_value(key_path: str, value: any) -> bool:
     config_path = get_moor_home() / 'config.yaml'
 
     try:
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(config_path.parent)
-        from hermes_cli.config_backend import write_config_key
+        from moor_constants import mkdir_under_moor_home
+        mkdir_under_moor_home(config_path.parent)
+        from moor_cli.config_backend import write_config_key
         write_config_key(config_path, key_path, value)
         try:  # owner-only: config files contain API keys
             os.chmod(config_path, 0o600)
@@ -1004,7 +1004,7 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
             # A typo'd name must not crash a kanban worker; only a fully-missing set fails loudly.
             if not loaded_skills:
                 raise ValueError(format_missing_skills(missing_skills))
-            logger.warning("Skipping %s. Continuing with: %s. List available skills with `hermes skills list`.",
+            logger.warning("Skipping %s. Continuing with: %s. List available skills with `moor skills list`.",
                            format_missing_skills(missing_skills), ", ".join(loaded_skills))
         if skills_prompt:
             self.system_prompt = "\n\n".join(p for p in (self.system_prompt, skills_prompt) if p).strip()
@@ -1040,18 +1040,18 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
 
     def show_config(self):
         """Display current configuration with kawaii ASCII art."""
-        from hermes_cli.config_backend import config_exists
+        from moor_cli.config_backend import config_exists
         terminal_env = os.getenv("TERMINAL_ENV", "local")
         terminal_cwd = os.getenv("TERMINAL_CWD", os.getcwd())
         terminal_timeout = os.getenv("TERMINAL_TIMEOUT", "60")
 
-        config_path = _hermes_home / 'config.yaml'
+        config_path = _moor_home / 'config.yaml'
         if not config_exists(config_path):
             config_path = Path(__file__).parent / 'cli-config.yaml'
         config_status = _t("cli.config.loaded") if config_exists(config_path) else _t("cli.config.not_found")
-        from hermes_cli.config_backend import get_config_backend
+        from moor_cli.config_backend import get_config_backend
         if not get_config_backend().supports_file_tooling():  # no local file: name where config comes from
-            config_path, config_status = get_config_backend().describe(_hermes_home), ""
+            config_path, config_status = get_config_backend().describe(_moor_home), ""
 
         # ``api_key`` may be a callable bearer provider (Entra ID, Vertex OAuth, key_cmd, ...):
         # label it by its tagged source and never invoke it (that would mint a token just to mask
@@ -1162,7 +1162,7 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
         _cmd_def = _resolve_cmd(_base_word)
         canonical = _cmd_def.name if _cmd_def else _base_word
         if not redispatch and self._slash_metrics_surface:
-            from hermes_cli.observability.shared_metrics_events import record_slash_command
+            from moor_cli.observability.shared_metrics_events import record_slash_command
             record_slash_command(command=canonical, surface=self._slash_metrics_surface)
 
         # A bare `/resume` prompt is one-shot: any other command disarms it so a later
@@ -1176,23 +1176,23 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
             self._pending_resume_sessions = None
 
         entry = self._slash_handler(canonical)
-        from hermes_cli.gateway_setting_commands import run as run_gateway_setting
+        from moor_cli.gateway_setting_commands import run as run_gateway_setting
         if entry is not None and run_gateway_setting(self, canonical, cmd_original):
             return True  # a per-session setting the gateway's handler applied (pre_command fired there)
         # Observer-only pre_command plugin hook (return values ignored; never raises), fired by the gateway
         # for a command this process runs (not a named refusal, not a command with no handler here).
-        from hermes_cli.gateway_cli_commands import REFUSED
-        from hermes_cli.gateway_plugin_commands import observe
+        from moor_cli.gateway_cli_commands import REFUSED
+        from moor_cli.gateway_plugin_commands import observe
         runs = entry is not None and canonical not in REFUSED
         if _cmd_def is not None and not observe(self, _base_word, _slash_args(cmd_original), runs=runs):
-            from hermes_cli.plugins import fire_pre_command_hook
+            from moor_cli.plugins import fire_pre_command_hook
             fire_pre_command_hook(
                 surface="cli", command=canonical, alias_used=_base_word, args_raw=_slash_args(cmd_original),
                 session_key=getattr(self, "session_id", None), platform="cli",
             )
         if entry is None:
             return self._process_unregistered_slash(cmd_original, cmd_lower)
-        from hermes_cli.gateway_cli_commands import run as run_gateway_command
+        from moor_cli.gateway_cli_commands import run as run_gateway_command
         if run_gateway_command(self, canonical, cmd_original):
             return True  # state the gateway session owns (checkpoints, .env, handoff)
         method_name, pass_arg = entry
@@ -1209,7 +1209,7 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
         user_args = cmd_original[len(base_cmd):].strip()
         if bare in quick_commands:
             return self._run_quick_command(base_cmd, quick_commands[bare], user_args)
-        from hermes_cli import gateway_plugin_commands
+        from moor_cli import gateway_plugin_commands
         try:
             plugin = gateway_plugin_commands.lookup(self, bare)  # the gateway's; None off the gateway
         except gateway_plugin_commands.CatalogUnavailable:
@@ -1272,17 +1272,17 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
         return True
 
     def _run_plugin_slash_command(self, base_cmd: str, user_args: str):
-        from hermes_cli import gateway_plugin_commands
+        from moor_cli import gateway_plugin_commands
         answered = gateway_plugin_commands.run(self, base_cmd.lstrip("/"), user_args)
         if answered:
             return answered  # ran beside the plugin's hooks, tools and MCP servers in the gateway, or GONE
-        from hermes_cli.plugin_command_dispatch import invoke_plugin_command
-        from hermes_cli.plugins import get_plugin_command_handler, resolve_plugin_command_result
+        from moor_cli.plugin_command_dispatch import invoke_plugin_command
+        from moor_cli.plugins import get_plugin_command_handler, resolve_plugin_command_result
         plugin_handler = get_plugin_command_handler(base_cmd.lstrip("/"))
         if not plugin_handler:
             return
         session_id = getattr(self, "session_id", None) or ""
-        from hermes_cli.plugin_choices import bind_asker, clarify_asker
+        from moor_cli.plugin_choices import bind_asker, clarify_asker
         try:
             with bind_asker(clarify_asker(self._clarify_callback)):  # ctx.ask_choice: the clarify panel
                 result = resolve_plugin_command_result(invoke_plugin_command(
@@ -1315,7 +1315,7 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
 
     def _run_skill_slash_command(self, base_cmd: str, skill_info: dict, rest: str) -> None:
         """``/<skill> ...``; stacked ``/skill-a /skill-b do XYZ`` loads every leading skill (up to 5)."""
-        from hermes_cli import gateway_plugin_commands
+        from moor_cli import gateway_plugin_commands
         if gateway_plugin_commands.run_skill(self, base_cmd, rest):
             return  # the gateway session's skill, loaded there
         from agent.skill_commands import build_stacked_skill_invocation_message, split_stacked_skill_commands
@@ -1418,7 +1418,7 @@ class MoorCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CL
         app = self._tui_build_application(layout, kb, style)
         _disable_prompt_toolkit_cpr_warning(app)
         app.after_render += self._pet_flush_kitty_frame
-        from hermes_cli.observability.shared_metrics_startup import cli_prompt_ready_handler
+        from moor_cli.observability.shared_metrics_startup import cli_prompt_ready_handler
         app.after_render += cli_prompt_ready_handler()
         self._app = app
 
@@ -1575,7 +1575,7 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
         cli._auto_load_skills_result = ("", [], [])
     if parsed_skills or auto_load_names:
         cli._preload_skills_requested = [*auto_load_names, *(s for s in parsed_skills if s not in auto_load_names)]
-        from hermes_cli.gateway_session_store import GatewaySessionStore
+        from moor_cli.gateway_session_store import GatewaySessionStore
         if isinstance(getattr(cli, "_session_db", None), GatewaySessionStore):
             # The gateway session renders -s at creation and its agent loads skills.auto_load (plugin
             # skills included); this process's prompt never reaches it, so nothing is loaded here.
@@ -1602,7 +1602,7 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
 def _run_legacy_gateway():
     """Legacy `cli.py --gateway` entry: arm the startup watchdog (before importing the gateway graph), then run it."""
     import asyncio
-    from hermes_cli.resource_limits import apply_malloc_arena_max
+    from moor_cli.resource_limits import apply_malloc_arena_max
     apply_malloc_arena_max()  # before the watchdog thread: glibc latches its arena limit
     with suppress(Exception):
         from moor_startup_watchdog import arm_startup_watchdog
@@ -1636,7 +1636,7 @@ def _start_worktree_setup(list_tools, list_toolsets, worktree, w):
     def _create_worktree() -> None:
         try:
             # The session freezes this cwd: recorded so a resume recreates the tree quit removed (N8).
-            _wt_result["info"] = _setup_worktree(sync_base=_sync_base, retain_db=get_hermes_home() / "state.db")
+            _wt_result["info"] = _setup_worktree(sync_base=_sync_base, retain_db=get_moor_home() / "state.db")
         except Exception:
             logger.debug("worktree setup failed", exc_info=True)
             _wt_result["info"] = None
@@ -1740,7 +1740,7 @@ def main(
         from moor_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
 
-    os.environ["HERMES_INTERACTIVE"] = "1"  # terminal_tool: interactive sudo prompts with timeout
+    os.environ["MOOR_INTERACTIVE"] = "1"  # terminal_tool: interactive sudo prompts with timeout
 
     if gateway:
         _run_legacy_gateway()

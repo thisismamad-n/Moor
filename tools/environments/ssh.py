@@ -83,7 +83,7 @@ class SSHEnvironment(BaseEnvironment):
         if sync_files:
             self._ensure_remote_dirs()
             self._sync_manager = FileSyncManager(
-                get_files_fn=lambda: iter_sync_files(f"{self._remote_home}/.hermes"),
+                get_files_fn=lambda: iter_sync_files(f"{self._remote_home}/.moor"),
                 upload_fn=self._scp_upload, delete_fn=self._ssh_delete,
                 bulk_upload_fn=self._ssh_bulk_upload, bulk_download_fn=self._ssh_bulk_download)
             self._sync_manager.sync(force=True)

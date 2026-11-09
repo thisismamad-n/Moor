@@ -1196,7 +1196,7 @@ def build_turn_context(
         )
 
     # System prompt is cached per session for prefix caching. A warm agent (kept across turns)
-    # first adopts any `hermes sessions refresh-prompts` request recorded since it set its prompt.
+    # first adopts any `moor sessions refresh-prompts` request recorded since it set its prompt.
     refresh_warm_prompt(agent, system_message, conversation_history)
     if agent._cached_system_prompt is None:
         restore_or_build_system_prompt(agent, system_message, conversation_history)

@@ -129,8 +129,8 @@ def test_open_url_in_browser_refuses_remote_session(cli, monkeypatch):
     # (4): a remote/SSH session must NOT auto-open — webbrowser.open is never called.
     import webbrowser
 
-    from hermes_cli import auth
-    from hermes_cli import auth_device_flow
+    from moor_cli import auth
+    from moor_cli import auth_device_flow
 
     monkeypatch.setattr(auth, "_is_remote_session", lambda: True, raising=False)
     monkeypatch.setattr(auth_device_flow, "_is_remote_session", lambda: True, raising=False)

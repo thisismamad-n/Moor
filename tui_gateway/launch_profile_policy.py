@@ -109,7 +109,7 @@ def activate_multi_profile_hosting_eagerly() -> bool:
     # Route each home's records to its own logs/ now: the Desktop cron ticker used to be the only
     # caller, and it stands down when a live gateway owns cron, leaving every secondary profile's
     # model/cwd lines in the launch profile's agent.log.
-    from hermes_logging import enable_profile_log_routing
+    from moor_logging import enable_profile_log_routing
     enable_profile_log_routing(sorted(homes))
     return True
 
@@ -174,8 +174,8 @@ def launch_body() -> Iterator[None]:
     profile switches the gateway to fail-closed mid-body, an unscoped read resolves from
     ``launch_secret_scope`` (frozen env + ``.env``) instead of raising ``UnscopedSecretError``."""
     from agent.secret_scope import reset_launch_body_scope, set_launch_body_scope
-    from hermes_constants import get_process_hermes_home
-    home = get_process_hermes_home()
+    from moor_constants import get_process_moor_home
+    home = get_process_moor_home()
     token = set_launch_body_scope(lambda: launch_secret_scope(home))
     try:
         yield
@@ -185,7 +185,7 @@ def launch_body() -> Iterator[None]:
 
 @contextlib.contextmanager
 def launch_profile_runtime_scope(launch_home: str | Path) -> Iterator[None]:
-    """Bind the launch profile's own runtime scope for one body: HERMES_HOME override naming the
+    """Bind the launch profile's own runtime scope for one body: MOOR_HOME override naming the
     launch home, ``launch_secret_scope``, and its terminal policy over the frozen launch
     ``TERMINAL_*`` overlay. For hosts whose launch-profile bodies are not RPC sessions (the
     standalone messaging gateway after a hosted room activated multiplexing, #112878).

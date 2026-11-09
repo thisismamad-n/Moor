@@ -2,7 +2,7 @@
 
 The gateway serves the Webapp (``gateway.webapp_listener``) from the ``webapp:`` block of its home's
 ``config.yaml``, read when it starts, so this writes that home's config and the caller restarts the
-gateway. Sign-in is the user's Nous account (a self-hosted portal client registered with the right
+gateway. Sign-in is the user's Moor account (a self-hosted portal client registered with the right
 callback); a gated bind without it would keep the Webapp off. Two shapes:
 
 - ``lan``: ``webapp.host: 0.0.0.0``, opened at ``http://<this machine's LAN address>:<port>``; the
@@ -11,8 +11,8 @@ callback); a gated bind without it would keep the Webapp off. Two shapes:
   ``webapp.public_url`` engages the gate on the loopback bind and fixes the callback.
 
 Of the config it writes only the ``webapp:`` block; ``dashboard.public_url`` belongs to the standalone
-dashboard, which may sit behind its own tunnel or proxy. Nous sign-in uses a portal client of Web
-Access's own, never the dashboard's ``HERMES_DASHBOARD_OAUTH_CLIENT_ID``, so registering the Webapp's
+dashboard, which may sit behind its own tunnel or proxy. Moor sign-in uses a portal client of Web
+Access's own, never the dashboard's ``MOOR_DASHBOARD_OAUTH_CLIENT_ID``, so registering the Webapp's
 callback cannot change the redirect URI the dashboard's sign-in needs. Its id is kept in a user-only
 file under the gateway home, which the gateway reads when it serves the Webapp; ``.env`` is untouched.
 """
@@ -66,18 +66,18 @@ def _public_url(raw: Optional[str]) -> str:
 
 def gateway_home() -> Path:
     """The home whose gateway serves the current one; its config holds the Webapp's settings."""
-    from hermes_cli.webapp_launcher import _gateway_home
-    from hermes_constants import get_hermes_home
+    from moor_cli.webapp_launcher import _gateway_home
+    from moor_constants import get_moor_home
 
-    return _gateway_home(get_hermes_home())
+    return _gateway_home(get_moor_home())
 
 
-def nous_signed_in() -> bool:
-    """Whether this home holds a Nous account to register sign-in under (a free-tier guest has none).
+def moor_signed_in() -> bool:
+    """Whether this home holds a Moor account to register sign-in under (a free-tier guest has none).
     Refresh-free: it reads the auth store and never spends a refresh token."""
-    from hermes_cli.auth_nous import get_nous_auth_status_local
+    from moor_cli.auth_moor import get_moor_auth_status_local
 
-    status = get_nous_auth_status_local()
+    status = get_moor_auth_status_local()
     return bool(status.get("logged_in") and not status.get("free_tier"))
 
 
@@ -103,9 +103,9 @@ def sign_in_client(home) -> Optional[tuple[str, str]]:
 
 
 def registered_lan_origin(home: Path, port: int) -> Optional[str]:
-    """``http://<LAN address>:<port>`` when Web Access last registered Nous sign-in for *home*'s
+    """``http://<LAN address>:<port>`` when Web Access last registered Moor sign-in for *home*'s
     Webapp on the LAN at that address and *port*, and the address is still this machine's; else None.
-    Sign-in returns only to the callback the Portal has, so ``hermes webapp`` opens this address."""
+    Sign-in returns only to the callback the Portal has, so ``moor webapp`` opens this address."""
     try:
         parts = urlsplit(_registration(home)["callback"])
         recorded_port = parts.port
@@ -118,35 +118,35 @@ def registered_lan_origin(home: Path, port: int) -> Optional[str]:
     return f"http://{parts.hostname}:{port}"
 
 
-def _register_nous_sign_in(callback_url: str) -> None:
+def _register_moor_sign_in(callback_url: str) -> None:
     """Register Web Access's own portal client with *callback_url*, or update it in place, as
-    ``hermes dashboard register --redirect-uri`` does for the dashboard's. It never sends the
+    ``moor dashboard register --redirect-uri`` does for the dashboard's. It never sends the
     dashboard's client id and writes nothing to ``.env``: the Portal may replace a client's redirect
     URI on every registration. The same callback for the same client and Portal is never posted
     twice, so a start with nothing changed asks the Portal nothing."""
-    from hermes_cli.auth import resolve_nous_access_token
-    from hermes_cli.dashboard_register import (
+    from moor_cli.auth import resolve_moor_access_token
+    from moor_cli.dashboard_register import (
         _generate_dashboard_name,
         _register_self_hosted_client,
         _resolve_portal_base_url,
     )
-    from hermes_constants import get_hermes_home
+    from moor_constants import get_moor_home
     from utils import atomic_write_text
 
-    home = get_hermes_home()
-    portal = _resolve_portal_base_url(os.environ.get("HERMES_DASHBOARD_PORTAL_URL"))
+    home = get_moor_home()
+    portal = _resolve_portal_base_url(os.environ.get("MOOR_DASHBOARD_PORTAL_URL"))
     own = sign_in_client(home)
     existing = own[0] if own and own[1] == portal else None
     if existing and _registration(home).get("callback") == callback_url:
         return
     try:
         result = _register_self_hosted_client(
-            access_token=resolve_nous_access_token(),
+            access_token=resolve_moor_access_token(),
             portal_base_url=portal,
             name=None if existing else f"webapp_{_generate_dashboard_name()}",
             custom_redirect_uri=callback_url, existing_client_id=existing)
     except Exception as exc:
-        raise WebappAccessError(f"Couldn't register Nous sign-in: {exc}") from exc
+        raise WebappAccessError(f"Couldn't register Moor sign-in: {exc}") from exc
     path = home / _REGISTRATION_PATH
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     record = {"own_client": True, "portal": portal, "client_id": str(result["client_id"]), "callback": callback_url}
@@ -159,8 +159,8 @@ def plan(mode: str, public_url: Optional[str] = None) -> tuple[str, Optional[int
     pin for :func:`serve`, and the sign-in callback for :func:`register`. Changes nothing but the port
     claim of a standalone profile that has none (:func:`_port_to_serve`), so Start runs it, in the
     config write scope, before any slow or lasting step. A refusal before that claim writes nothing."""
-    if not nous_signed_in():
-        raise WebappAccessError("Sign in to your Nous account under Providers first.")
+    if not moor_signed_in():
+        raise WebappAccessError("Sign in to your Moor account under Providers first.")
     if mode == "lan":
         address = lan_address()
         if address is None:
@@ -174,14 +174,14 @@ def plan(mode: str, public_url: Optional[str] = None) -> tuple[str, Optional[int
         port = _port_to_serve(gateway_home(), host)[1]
     else:
         raise WebappAccessError(f"Unknown access mode {mode!r}.")
-    if not nous_signed_in():
-        raise WebappAccessError("Sign in to your Nous account under Providers first.")
+    if not moor_signed_in():
+        raise WebappAccessError("Sign in to your Moor account under Providers first.")
     return host, port, pinned, f"{url}/auth/callback"
 
 
 #: How many ports above the default Start tries for a standalone profile's Webapp.
 _PORT_SEARCH = 100
-#: Under the Hermes root every profile shares: one standalone profile's gateway at a time chooses and
+#: Under the Moor root every profile shares: one standalone profile's gateway at a time chooses and
 #: saves its Webapp port, so a Start in another gateway's process sees that claim before it chooses.
 _PORT_CLAIM_LOCK = Path("webapp") / "port-claim.lock"
 _PORT_CLAIM_HOLDER = threading.local()
@@ -194,7 +194,7 @@ def _port_to_serve(home: Path, host: str) -> tuple[int, Optional[int]]:
     A ``webapp.port`` in *home*'s config is the user's, and so is the default profile's gateway, which
     serves the documented address (9120 unless set): both keep it, and Start writes no port. A standalone
     profile's gateway with no ``webapp.port`` would find the default port taken by the default gateway's
-    Webapp, so it gets the first port above it that no other Hermes home on this machine claims and
+    Webapp, so it gets the first port above it that no other Moor home on this machine claims and
     nothing listens on now, and Start writes it to that profile's ``webapp.port``: the profile keeps that
     address across restarts, and the gateway, the launcher and the sign-in callback all use it.
 
@@ -203,8 +203,8 @@ def _port_to_serve(home: Path, host: str) -> tuple[int, Optional[int]]:
     this keeps the port, which is that profile's from then on, as one a finished Start writes. *home* is
     the home in scope, whose config :func:`save_config` writes (Start runs in its gateway's scope)."""
     from gateway.webapp_listener import DEFAULT_PORT, webapp_settings
-    from hermes_cli.auth import _file_lock
-    from hermes_constants import named_profile_home
+    from moor_cli.auth import _file_lock
+    from moor_constants import named_profile_home
 
     profile = named_profile_home(home)
     if _own_port(home) is not None or profile is None:
@@ -213,7 +213,7 @@ def _port_to_serve(home: Path, host: str) -> tuple[int, Optional[int]]:
     _create_user_only(lock)
     try:
         with _file_lock(lock, _PORT_CLAIM_HOLDER, _PORT_CLAIM_TIMEOUT_SECONDS,
-                        "Timed out waiting for another Hermes profile to choose its Webapp port"):
+                        "Timed out waiting for another Moor profile to choose its Webapp port"):
             claimed = _claimed_ports(home)
             for port in range(DEFAULT_PORT + 1, DEFAULT_PORT + 1 + _PORT_SEARCH):
                 if port not in claimed and _port_free(host, port):
@@ -238,7 +238,7 @@ def _create_user_only(lock: Path) -> None:
 
 def _save_port(port: int) -> None:
     """Claim *port* as the ``webapp.port`` of the home in scope, changing nothing else."""
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
 
     cfg = load_config()
     webapp = cfg.get("webapp")
@@ -251,7 +251,7 @@ def _own_port(home: Path) -> Optional[object]:
     invalid one by name), or None when neither *home*'s ``config.yaml`` nor the managed scope sets one.
     The effective user config, as the gateway loads it (a managed port wins, and ``save_config`` never
     writes over it), but without the defaults: they name a port for everyone."""
-    from hermes_cli.config_effective import load_user_config_effective
+    from moor_cli.config_effective import load_user_config_effective
 
     try:
         document = load_user_config_effective(Path(home) / "config.yaml")
@@ -262,11 +262,11 @@ def _own_port(home: Path) -> Optional[object]:
 
 
 def _claimed_ports(home: Path) -> set[int]:
-    """The Webapp ports the other Hermes homes beside *home* claim: the default profile's (9120 unless
+    """The Webapp ports the other Moor homes beside *home* claim: the default profile's (9120 unless
     set) and every other profile's own ``webapp.port``, whether or not its gateway runs now. Only that
     setting is read from their configs."""
     from gateway.webapp_listener import DEFAULT_PORT
-    from hermes_constants import named_profile_home
+    from moor_constants import named_profile_home
 
     profile = named_profile_home(home)
     if profile is None:
@@ -295,23 +295,23 @@ def _port_free(host: str, port: int) -> bool:
 
 
 def build_bundle() -> None:
-    """Build the Webapp bundle the gateway serves, with the function ``hermes webapp`` uses (it
+    """Build the Webapp bundle the gateway serves, with the function ``moor webapp`` uses (it
     reuses a current bundle), so Start never turns on a Webapp with nothing to serve."""
-    from hermes_cli.config import get_project_root
-    from hermes_cli.webapp import WebappBuildError, prepare_webapp_renderer
+    from moor_cli.config import get_project_root
+    from moor_cli.webapp import WebappBuildError, prepare_webapp_renderer
 
     try:
         prepare_webapp_renderer(get_project_root())
     except WebappBuildError as exc:
         raise WebappAccessError(
-            f"{str(exc).rstrip('.')}. Run hermes webapp --build-only to see the full output, then start again.") from exc
+            f"{str(exc).rstrip('.')}. Run moor webapp --build-only to see the full output, then start again.") from exc
 
 
 def register(callback_url: str) -> None:
-    """Register Nous sign-in for *callback_url* on Web Access's own portal client, unless it already
+    """Register Moor sign-in for *callback_url* on Web Access's own portal client, unless it already
     carries that callback on this Portal, so the callback follows a changed LAN address or URL.
     Writes no config: it waits on the portal, so callers do it before taking the config lock."""
-    _register_nous_sign_in(callback_url)
+    _register_moor_sign_in(callback_url)
 
 
 def serve(host: str, public_url: str, port: Optional[int] = None) -> None:
@@ -330,7 +330,7 @@ def _write_config(*, enabled: bool, host: str = "", public_url: str = "", port: 
     own-URL mode and drops it for LAN, where the callback follows each request; stopping changes
     only ``enabled``, so the next start offers the same address. ``webapp.port`` is the user's; only a
     standalone profile that has none gets the free one :func:`plan` chose, once."""
-    from hermes_cli.config import load_config, save_config
+    from moor_cli.config import load_config, save_config
 
     cfg = load_config()
     webapp = cfg.get("webapp") if isinstance(cfg.get("webapp"), dict) else {}
@@ -347,7 +347,7 @@ def _gateway_state(home: Path) -> dict:
     """What *home*'s gateway serves now (``serving``, ``starting``, ``off``, ``unavailable`` with a
     ``reason``, or ``stopped`` when none answers). It reads the config at start, so it can lag until a
     restart; a gateway older than the Webapp serves none (``off``, with the restart as the reason)."""
-    from hermes_cli.webapp_launcher import OLDER_GATEWAY, GatewayUnreachable, _control, older_gateway
+    from moor_cli.webapp_launcher import OLDER_GATEWAY, GatewayUnreachable, _control, older_gateway
 
     try:
         response = _control(home, "webapp-status")
@@ -362,7 +362,7 @@ def _gateway_state(home: Path) -> dict:
 
 def _mode(settings) -> Optional[str]:
     """Who the configured Webapp serves: ``public`` (its own URL pins the callback and Host),
-    ``lan`` (a wildcard bind), ``local`` (a loopback bind, as ``hermes webapp`` sets it up), or None
+    ``lan`` (a wildcard bind), ``local`` (a loopback bind, as ``moor webapp`` sets it up), or None
     when it is off."""
     from gateway.webapp_listener import _is_wildcard
 
@@ -388,5 +388,5 @@ def access_status() -> dict:
         "gateway": _gateway_state(home),
         "lan_address": lan_address(),
         "public_url": settings.public_url,
-        "nous_signed_in": nous_signed_in(),
+        "moor_signed_in": moor_signed_in(),
     }

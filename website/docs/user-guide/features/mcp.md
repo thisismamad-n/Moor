@@ -15,7 +15,7 @@ MCP lets Moor Agent connect to external tool servers so the agent can use tools 
 If you have ever wanted Moor to use a tool that already exists somewhere else, MCP is usually the cleanest way to do it.
 
 :::tip Coming from Claude Code?
-The `mcpServers` block in your `~/.claude.json` maps to `mcp_servers` in Hermes' `config.yaml` — and `hermes import-agent claude-code` (from the `agent-importers` plugin) migrates it, along with skills and instructions. See [Import from Other Agents](../import-from-other-agents.md).
+The `mcpServers` block in your `~/.claude.json` maps to `mcp_servers` in Moor' `config.yaml` — and `moor import-agent claude-code` (from the `agent-importers` plugin) migrates it, along with skills and instructions. See [Import from Other Agents](../import-from-other-agents.md).
 :::
 
 ## What MCP gives you
@@ -593,7 +593,7 @@ Two behaviors apply to every MCP tool result before the model sees it:
 
 ### Image results
 
-An `ImageContent` block (a screenshot, a rendered chart, a page capture) is saved to Hermes' image cache and its path is reported in the result as `MEDIA:/path/to/image.png`, so you can ask for the file on any attachment-capable surface. When the main model can see images inside tool results, the image itself is attached to the result too, so the model reads the pixels directly. MCP results follow the same rule as `vision_analyze`: `agent.image_input_mode`, an explicit `auxiliary.vision` backend and the model's vision capability all apply (see [Vision](vision.md#vision_analyze-has-the-same-dual-behavior)). Attached images are downscaled to `vision.embed_target_bytes` (up to 4 per result) because they are re-sent on every later turn. Text-only models get the path only.
+An `ImageContent` block (a screenshot, a rendered chart, a page capture) is saved to Moor' image cache and its path is reported in the result as `MEDIA:/path/to/image.png`, so you can ask for the file on any attachment-capable surface. When the main model can see images inside tool results, the image itself is attached to the result too, so the model reads the pixels directly. MCP results follow the same rule as `vision_analyze`: `agent.image_input_mode`, an explicit `auxiliary.vision` backend and the model's vision capability all apply (see [Vision](vision.md#vision_analyze-has-the-same-dual-behavior)). Attached images are downscaled to `vision.embed_target_bytes` (up to 4 per result) because they are re-sent on every later turn. Text-only models get the path only.
 
 ## MCP utility tools
 
@@ -787,7 +787,7 @@ This reloads MCP servers from config and refreshes the available tool list. It i
 
 A running messaging gateway (`moor gateway run`) also watches `config.yaml` on its own: within about a minute of you removing an `mcp_servers` entry or setting `enabled: false`, that server's connection is torn down; a newly added entry is connected. A server whose first connect failed (an unreachable host, or an OAuth server on a headless box that had no token yet) is retried automatically on its connect cooldown schedule (30 s, doubling up to 10 min) once you fix the cause. No restart or `/reload-mcp` needed for the edit to take effect.
 
-**Expired OAuth tokens in the background.** The gateway, `/reload-mcp`, and the periodic self-probe of a parked server never open a browser — nobody is there to complete the flow. When a refresh token dies, the server parks with a warning in `gateway.log` and you re-authorize once with `hermes mcp login <server>` (or the Desktop/dashboard *Authorize* button); the parked server picks the new token up on its next probe. Until the token files change, starting new sessions does not retry the rejected token: only the timed self-probe does, so a dead grant cannot hammer the provider's token endpoint.
+**Expired OAuth tokens in the background.** The gateway, `/reload-mcp`, and the periodic self-probe of a parked server never open a browser — nobody is there to complete the flow. When a refresh token dies, the server parks with a warning in `gateway.log` and you re-authorize once with `moor mcp login <server>` (or the Desktop/dashboard *Authorize* button); the parked server picks the new token up on its next probe. Until the token files change, starting new sessions does not retry the rejected token: only the timed self-probe does, so a dead grant cannot hammer the provider's token endpoint.
 
 ### Toolsets
 
@@ -914,7 +914,7 @@ endpoint. `moor logs --level debug` additionally shows the exact endpoint each c
 
 ### A server's response is too large
 
-Hermes accepts up to 10 MiB in one HTTP response, or in one SSE event of a streamed response, so a
+Moor accepts up to 10 MiB in one HTTP response, or in one SSE event of a streamed response, so a
 large `tools/list` catalog or tool result (an editor screenshot, say) fits. On the legacy SSE
 transport (`transport: sse`) the MCP SDK caps each event at 1 MiB and offers no way to raise it; if
 the server also serves Streamable HTTP, remove `transport: sse` from its entry.
@@ -1006,18 +1006,18 @@ mcp_servers:
 ```
 
 - The approval prompt names the cost: `Costs about 20 credits.` or `Costs 5-20 credits (per animation).`, plus `This chat has used about 40 credits on 'renders' (limit 100).` once the chat has spent something.
-- Hermes keeps a running total per chat and per server, counting the declared figure (the top of a range) for every costed call it approved and started. Declined or blocked calls add nothing; a call whose server dies before receiving it still counts, which errs toward asking sooner. The total lives in memory: it is a budget for one conversation, not the vendor's bill.
-- The total follows the conversation when context compression or `/branch` continues it under a new session id. Starting a new chat (`/new` in the CLI, a new Desktop chat) starts a new total; on messaging platforms the total belongs to the chat, so it survives `/new` there. Each cron run has its own total. Restarting Hermes resets every total.
-- With `spend_limit`, a costed call that would take the chat past the limit asks first, even on a `trust: full` server that otherwise never prompts, and every further costed call in that chat asks again: that prompt offers only Allow Once and Deny, and an earlier Session or Always answer for the tool does not silence it. Where nobody can answer (cron jobs, `hermes chat -q`, a gateway with no approver), the call is refused without running and the model is told not to retry.
+- Moor keeps a running total per chat and per server, counting the declared figure (the top of a range) for every costed call it approved and started. Declined or blocked calls add nothing; a call whose server dies before receiving it still counts, which errs toward asking sooner. The total lives in memory: it is a budget for one conversation, not the vendor's bill.
+- The total follows the conversation when context compression or `/branch` continues it under a new session id. Starting a new chat (`/new` in the CLI, a new Desktop chat) starts a new total; on messaging platforms the total belongs to the chat, so it survives `/new` there. Each cron run has its own total. Restarting Moor resets every total.
+- With `spend_limit`, a costed call that would take the chat past the limit asks first, even on a `trust: full` server that otherwise never prompts, and every further costed call in that chat asks again: that prompt offers only Allow Once and Deny, and an earlier Session or Always answer for the tool does not silence it. Where nobody can answer (cron jobs, `moor chat -q`, a gateway with no approver), the call is refused without running and the model is told not to retry.
 - Below the limit, a `trust: full` server still runs costed tools without asking; on a `trust: untrusted` server every write-capable call already asks and the prompt now carries the cost. Tools annotated `readOnlyHint: true` stay unprompted unless the budget requires it.
 - [YOLO](../security.md#yolo-mode) (`/yolo`, `--yolo`) and `approvals.mode: off` skip the `trust: untrusted` prompt (`/yolo` for that chat, `--yolo` for that process, `approvals.mode: off` for that profile), but not the spend limit: below the limit a costed call runs without asking, and a call that would cross it still asks (or is refused where nobody can answer, such as a cron job with `approvals.mode: off`).
-- A malformed `tool_costs`, `spend_limit` or `cost_unit` skips the server with an error naming the key, so a budget you declared is never silently dropped. A `tool_costs` key the server does not offer (a typo, or Hermes' `mcp_<server>_` display prefix copied in) is named in a warning at connect time: use the server's own tool names.
+- A malformed `tool_costs`, `spend_limit` or `cost_unit` skips the server with an error naming the key, so a budget you declared is never silently dropped. A `tool_costs` key the server does not offer (a typo, or Moor' `mcp_<server>_` display prefix copied in) is named in a warning at connect time: use the server's own tool names.
 
 A [portable plugin package](../../developer-guide/plugins/index.md#portable-agent-plugins-v1-packages) can declare the same table for its server. If you add a same-name `mcp_servers` entry (for example to set `trust: full`), the package's `tool_costs`, `spend_limit` and `cost_unit` still apply unless your entry sets those keys itself; `spend_limit: 0` turns the package's limit off and `tool_costs: {}` drops its costs.
 
 ## MCP Elicitation Support
 
-MCP servers can ask the user for structured input mid-tool-call via the `elicitation/create` protocol (mcp Python SDK ≥ 1.11.0). Hermes routes **form-mode** elicitations through its existing approval surface — an interactive prompt in the CLI/TUI, or approval buttons on gateway platforms like Telegram and Slack — so the request reaches you wherever the session lives. Each answer covers that one request, so the prompt offers only Allow Once and Deny. YOLO and `approvals.mode: off` do not answer these for you: the server is asking you a question, not asking permission. **URL-mode** elicitations (where a server points you at an external URL) are declined as unsupported.
+MCP servers can ask the user for structured input mid-tool-call via the `elicitation/create` protocol (mcp Python SDK ≥ 1.11.0). Moor routes **form-mode** elicitations through its existing approval surface — an interactive prompt in the CLI/TUI, or approval buttons on gateway platforms like Telegram and Slack — so the request reaches you wherever the session lives. Each answer covers that one request, so the prompt offers only Allow Once and Deny. YOLO and `approvals.mode: off` do not answer these for you: the server is asking you a question, not asking permission. **URL-mode** elicitations (where a server points you at an external URL) are declined as unsupported.
 
 Elicitation is **enabled by default** per server. Configure it under the `elicitation` key:
 
@@ -1037,11 +1037,11 @@ The 5-minute default timeout mirrors the gateway approval default so users on as
 Some MCP servers can notify an agent when something happens upstream (a new email, an incident, a
 new item in a feed) through the `events/*` methods of the
 [MCP events design sketch](https://github.com/modelcontextprotocol/experimental-ext-triggers-events/blob/main/docs/design-sketch-proposal.md).
-The proposal is still a working-group draft. Hermes implements its **webhook** delivery mode: the
+The proposal is still a working-group draft. Moor implements its **webhook** delivery mode: the
 server POSTs each event to the gateway's [webhook listener](../messaging/webhooks.md), and every
 event starts an agent run like any other webhook route.
 
-Turn it on per server, and tell Hermes the public HTTPS address of the webhook listener (servers
+Turn it on per server, and tell Moor the public HTTPS address of the webhook listener (servers
 reject plain-HTTP callbacks, so put a TLS-terminating reverse proxy or tunnel in front of port 8644):
 
 ```yaml
@@ -1054,7 +1054,7 @@ platforms:
   webhook:
     enabled: true
     extra:
-      public_url: "https://hermes.example.com"
+      public_url: "https://moor.example.com"
 ```
 
 The server then gets three more utility tools:
@@ -1066,10 +1066,10 @@ The server then gets three more utility tools:
   runs; the approval shows the instructions and the destination in full.
 - `unsubscribe_event`: cancel a subscription
 
-Each subscription is stored as a dynamic webhook route (`hermes webhook list` shows it) with its own
+Each subscription is stored as a dynamic webhook route (`moor webhook list` shows it) with its own
 `whsec_` signing secret; the grant and the replay cursor are kept beside it in
 `mcp_event_subscriptions.json`, so the route itself only changes when you resubscribe with different
-instructions or a different destination. Hermes answers the server's signed verification challenge, deduplicates
+instructions or a different destination. Moor answers the server's signed verification challenge, deduplicates
 events by `eventId`, and refreshes the subscription before the lifetime the server granted runs out
 while the MCP connection is up (and again whenever it reconnects). With `lazy: true` or
 `idle_timeout_seconds` the connection is not always up, so a subscription can lapse until the next
@@ -1077,8 +1077,8 @@ connection resubscribes it. A refresh the server refuses
 for good (access revoked, event type removed, arguments no longer valid) removes the route; other
 failures are retried with back-off. Turning the route off in the webhook dashboard lets the
 subscription lapse, and turning it back on resubscribes it. If the server ends a subscription,
-Hermes removes the route and tells the `deliver` target. Events only arrive while
-`hermes gateway run` is running. The event payload reaches the run whole, up to 32,000 characters
+Moor removes the route and tells the `deliver` target. Events only arrive while
+`moor gateway run` is running. The event payload reaches the run whole, up to 32,000 characters
 of JSON, with a note when it is cut. Event payloads are external data: event runs use the same
 constrained webhook toolset as other webhook routes.
 The listener's per-route rate limit (`platforms.webhook.extra.rate_limit`, 30 a minute by default)
@@ -1088,26 +1088,26 @@ rejected delivery.
 Not supported yet: the `poll` and `push` delivery modes, and subscriptions made from a secondary
 profile under `gateway.multiplex_profiles`.
 
-## Running Hermes as an MCP server
+## Running Moor as an MCP server
 
-Hermes can also **be** an MCP server, so Claude Code, Claude Desktop, Cursor, Codex or any MCP client can list and read your messaging conversations, wait for new messages and send messages across every platform Hermes is connected to, and optionally call Hermes' own web, browser, vision, image generation, skills and TTS tools. This ships as the official **mcp-serve** plugin:
+Moor can also **be** an MCP server, so Claude Code, Claude Desktop, Cursor, Codex or any MCP client can list and read your messaging conversations, wait for new messages and send messages across every platform Moor is connected to, and optionally call Moor' own web, browser, vision, image generation, skills and TTS tools. This ships as the official **mcp-serve** plugin:
 
 ```bash
-hermes plugins install mcp-serve
+moor plugins install mcp-serve
 ```
 
 ```json
 {
   "mcpServers": {
-    "hermes": {
-      "command": "hermes",
+    "moor": {
+      "command": "moor",
       "args": ["mcp-serve"]
     }
   }
 }
 ```
 
-It used to be built in as `hermes mcp serve`. An MCP client configured with `"args": ["mcp", "serve"]` changes them to `["mcp-serve"]`; the tool names and parameters are unchanged, and `hermes mcp serve` now prints the new spelling and the install line. Tools, the `--tools` mode and its safety limits are documented in the [plugin's README](https://github.com/NousResearch/hermes-official-plugins/tree/main/mcp-serve).
+It used to be built in as `moor mcp serve`. An MCP client configured with `"args": ["mcp", "serve"]` changes them to `["mcp-serve"]`; the tool names and parameters are unchanged, and `moor mcp serve` now prints the new spelling and the install line. Tools, the `--tools` mode and its safety limits are documented in the [plugin's README](https://github.com/NousResearch/hermes-official-plugins/tree/main/mcp-serve).
 
 ## Related docs
 

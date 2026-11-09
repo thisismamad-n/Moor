@@ -7,7 +7,7 @@ import { $sidebarAgentsGrouped, setSidebarAgentsGrouped } from '@/store/layout'
 import { $activeGatewayProfile, $profiles, $profileScope, ALL_PROFILES, setShowAllProfiles } from '@/store/profile'
 import { $currentCwd, $selectedStoredSessionId, $sessions, applyConfiguredDefaultProjectDir } from '@/store/session'
 import { deferred } from '@/test/deferred'
-import type { ProjectInfo } from '@/types/hermes'
+import type { ProjectInfo } from '@/types/moor'
 
 import { $projectScope, ALL_PROJECTS, exitProjectScope } from './project-scope'
 import {

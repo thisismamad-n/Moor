@@ -16,8 +16,8 @@ import type {
 
 import {
   capabilityScoped,
-  hermesApi,
-  hermesApiAs,
+  moorApi,
+  moorApiAs,
   type OwnerScope,
   ownerScoped,
   type ProfileScope,
@@ -105,7 +105,7 @@ export function getMemoryProviderOAuthStatus(
 // ---------------------------------------------------------------------------
 
 export function getMemoryStatus(profile?: null | string): Promise<MemoryStatusResponse> {
-  return hermesApi<MemoryStatusResponse>({
+  return moorApi<MemoryStatusResponse>({
     ...profileScoped(profile),
     path: '/api/memory'
   })
@@ -146,7 +146,7 @@ export function runCurator(): Promise<ActionResponse> {
 }
 
 export function restartGateway(profile?: null | string): Promise<ActionResponse> {
-  return hermesApi<ActionResponse>({
+  return moorApi<ActionResponse>({
     ...profileScoped(profile),
     path: '/api/gateway/restart',
     method: 'POST'
@@ -199,8 +199,8 @@ export function transcribeAudio(
   }
 
   return owner
-    ? hermesApiAs<AudioTranscriptionResponse>(owner, request)
-    : hermesApi<AudioTranscriptionResponse>({ ...profileScoped(), ...request })
+    ? moorApiAs<AudioTranscriptionResponse>(owner, request)
+    : moorApi<AudioTranscriptionResponse>({ ...profileScoped(), ...request })
 }
 
 // `owner` = the speaking session's (connection, profile) — a Bot's own TTS
@@ -252,7 +252,7 @@ export const AUDIO_STT_LEASE_REQUEST_TIMEOUT_MS = 180_000
  * is never re-routed by a later gateway/profile switch.
  */
 export function setSttLease(lease: string, active: boolean, owner: ResolvedOwner): Promise<AudioSttLeaseResponse> {
-  return hermesApiAs<AudioSttLeaseResponse>(owner, {
+  return moorApiAs<AudioSttLeaseResponse>(owner, {
     path: '/api/audio/stt-lease',
     method: 'POST',
     body: { active, lease },

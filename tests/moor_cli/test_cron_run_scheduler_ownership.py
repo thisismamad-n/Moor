@@ -3,7 +3,7 @@
 ``is_active`` on a run row is a 300s activity window. A live run inside a long tool call writes no
 heartbeat, so it reads inactive exactly like a zombie whose process died. ``scheduler_owned`` is
 the durable answer the desktop keys its view-only decision on; these tests drive the real
-execution ledger in a temp HERMES_HOME.
+execution ledger in a temp MOOR_HOME.
 """
 
 import sqlite3
@@ -13,36 +13,36 @@ from pathlib import Path
 
 import pytest
 
-import hermes_cli.web_routers.cron as _rt_cron
+import moor_cli.web_routers.cron as _rt_cron
 
 
 @pytest.fixture()
 def homes(tmp_path, monkeypatch):
-    from hermes_cli import profiles
+    from moor_cli import profiles
 
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".moor"
     profiles_root = default_home / "profiles"
     worker_home = profiles_root / "worker_alpha"
     for home in (default_home, worker_home):
         (home / "cron").mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("model: test-model\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setenv("MOOR_HOME", str(default_home))
+    monkeypatch.setattr(profiles, "_get_default_moor_home", lambda: default_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
     return {"default": default_home, "worker_alpha": worker_home}
 
 
 def _claim(home: Path, job_id: str) -> dict:
     """Create + start a ledger attempt owned by THIS (live) process, inside ``home``."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     from cron.executions import create_execution, mark_execution_running
 
-    token = set_hermes_home_override(str(home))
+    token = set_moor_home_override(str(home))
     try:
         record = create_execution(job_id, source="test")
         return mark_execution_running(record["id"]) or record
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
 
 
 def _claimed_epoch(execution: dict) -> float:
@@ -119,7 +119,7 @@ def test_run_whose_owner_process_died_is_not_owned(homes, monkeypatch):
 
 
 def test_finished_attempt_and_closed_run_are_not_owned(homes, monkeypatch):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from moor_constants import reset_moor_home_override, set_moor_home_override
     from cron.executions import finish_execution
 
     job_id = "done"
@@ -129,11 +129,11 @@ def test_finished_attempt_and_closed_run_are_not_owned(homes, monkeypatch):
 
     assert _runs(monkeypatch, job_id, [closed])[closed["id"]]["scheduler_owned"] is False
 
-    token = set_hermes_home_override(str(homes["default"]))
+    token = set_moor_home_override(str(homes["default"]))
     try:
         finish_execution(execution["id"], success=False, error="watchdog")
     finally:
-        reset_hermes_home_override(token)
+        reset_moor_home_override(token)
     open_row = _open_row(job_id, "20260929_120000", claimed + 1)
 
     assert _runs(monkeypatch, job_id, [open_row])[open_row["id"]]["scheduler_owned"] is False

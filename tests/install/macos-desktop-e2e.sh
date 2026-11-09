@@ -274,7 +274,7 @@ phase_install() {
   # private mock whose port nothing can reclaim.
   # shellcheck source=../install/e2e-assets/mock-provider.sh
   source "$ASSETS/mock-provider.sh"
-  PATH="$(dirname "$HERMES_E2E_NODE"):$PATH" mock_start "$WORK_ROOT"
+  PATH="$(dirname "$MOOR_E2E_NODE"):$PATH" mock_start "$WORK_ROOT"
   trap mock_stop EXIT
   desktop_checkpoint old "$OLD_SHA" desktop-installer@latest
 }
@@ -300,9 +300,9 @@ phase_update() {
   # shellcheck disable=SC1090
   . "$STATE"
   arm_redirect
-  local pin_hermes
-  pin_hermes="$(source_hermes "$INSTALL_DIR")" || fail "no installed command to record the update channel"
-  source_build_env pin_source_main_channel "$pin_hermes" || fail "could not record the main update channel"
+  local pin_moor
+  pin_moor="$(source_moor "$INSTALL_DIR")" || fail "no installed command to record the update channel"
+  source_build_env pin_source_main_channel "$pin_moor" || fail "could not record the main update channel"
   # Snapshot every plugin tree BEFORE the upgrade moves anything: fixtures
   # seeded here must survive through the verify after the update lands.
   preserve_before_upgrade

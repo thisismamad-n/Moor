@@ -11,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import type { HermesConnection } from '@/global'
-import { saveHermesConfigRecord } from '@/hermes'
+import type { MoorConnection } from '@/global'
+import { saveMoorConfigRecord } from '@/moor'
 import { useI18n } from '@/i18n'
 import { Check, Globe } from '@/lib/icons'
 import { notify, notifyError } from '@/store/notifications'
@@ -36,7 +36,7 @@ interface RealProfileConsentDialogProps {
 interface RealProfilePromptGate {
   claim: null | string
   configLoaded: boolean
-  connection: HermesConnection | null
+  connection: MoorConnection | null
   dismissed: boolean
   enabled: boolean
   muted: boolean
@@ -87,8 +87,8 @@ export function RealProfileConsentDialog({ tabId }: RealProfileConsentDialogProp
   const muted = useStore($realProfilePromptMuted)
   const claim = useStore($realProfilePromptClaim)
   const connection = useStore($connection)
-  const { data: config, writeScope } = useHermesConfigRecord()
-  const setConfig = hermesConfigCacheWriter()
+  const { data: config, writeScope } = useMoorConfigRecord()
+  const setConfig = moorConfigCacheWriter()
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {

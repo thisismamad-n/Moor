@@ -5,9 +5,9 @@ Run via ``python -m gateway.run`` or ``python cli.py --gateway``."""
 
 # moor_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
-    import hermes_bootstrap
-except ModuleNotFoundError as exc:  # a partial ``hermes update`` can leave the bootstrap unregistered
-    if exc.name != "hermes_bootstrap":
+    import moor_bootstrap
+except ModuleNotFoundError as exc:  # a partial ``moor update`` can leave the bootstrap unregistered
+    if exc.name != "moor_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import asyncio
@@ -43,9 +43,9 @@ from agent.interrupt_compat import request_hard_interrupt
 from agent.message_metadata import ABSORBED_MESSAGE_UIDS, MESSAGE_UID, copy_identity_fields, is_compaction_scaffolding, scaffolding_replay_fields
 from agent.turn_context import compression_made_progress
 from agent.session_activity import ActivityProvenance, AwakeIdleMeter
-from hermes_cli.config import _is_ssh_remote_tilde_cwd, cfg_get, config_exists
+from moor_cli.config import _is_ssh_remote_tilde_cwd, cfg_get, config_exists
 from gateway.run_common import _csv_or_list_to_set
-from hermes_cli.fallback_config import pre_agent_fallback_notice
+from moor_cli.fallback_config import pre_agent_fallback_notice
 from gateway.turn_executor import _UnboundedThreadExecutor
 
 # Per-session AIAgent cache bounds (agents are heavy); see _enforce_agent_cache_cap/_session_housekeeping_watcher.
@@ -431,7 +431,7 @@ def _ensure_windows_gateway_venv_imports() -> None:
     from pm.environments import committed_venv, venv_python_version
 
     # A PM install's store Python was already activated onto the committed generation by
-    # hermes_bootstrap; overlaying the leftover pre-PM venv loads a foreign ABI (#122183).
+    # moor_bootstrap; overlaying the leftover pre-PM venv loads a foreign ABI (#122183).
     if committed_venv(project_root) is not None:
         return
     candidates = [Path(v) for v in (os.environ.get("VIRTUAL_ENV"),) if v] + [project_root / "venv"]
@@ -969,14 +969,14 @@ def _warm_turn_machinery_sync() -> int:
     # registered tool, which dials OpenRouter/DeepInfra for profiles that never enabled them).
     enabled_toolsets = None
     try:
-        from hermes_cli.config import load_config_readonly
-        from hermes_cli.tools_config import _get_platform_tools
+        from moor_cli.config import load_config_readonly
+        from moor_cli.tools_config import _get_platform_tools
 
         enabled_toolsets = sorted(_get_platform_tools(load_config_readonly(), "cli"))
     except Exception:
         logger.debug("platform toolset resolution failed; warming the full tool surface", exc_info=True)
     tool_defs = model_tools.get_tool_definitions(enabled_toolsets=enabled_toolsets, quiet_mode=True)
-    from hermes_cli.config import load_config_readonly
+    from moor_cli.config import load_config_readonly
 
     agent_cfg = load_config_readonly().get("agent")
     if not isinstance(agent_cfg, dict) or agent_cfg.get("environment_probe", True):
@@ -1552,7 +1552,7 @@ def _restart_notification_pending() -> bool:
 
 def _planned_restart_notification_path() -> Path:
     from gateway.restart_notice import planned_restart_marker_path
-    return planned_restart_marker_path(_hermes_home)
+    return planned_restart_marker_path(_moor_home)
 
 
 def _planned_restart_notification_pending() -> bool:
@@ -1647,7 +1647,7 @@ def _multiplex_profile_homes(config: object) -> list[tuple[str, Path]]:
     reserved = getattr(config, "_runtime_profile_homes", None)
     if reserved is not None:
         return list(reserved)
-    from hermes_cli.profiles import profiles_to_serve
+    from moor_cli.profiles import profiles_to_serve
     return list(profiles_to_serve(multiplex=True))
 
 
@@ -1780,7 +1780,7 @@ def _load_profile_secret_scope(profile_home: Path) -> dict:
     """Hydrate and load one profile's secrets under its home override."""
     from moor_constants import set_moor_home_override, reset_moor_home_override
     # Caller already hydrated external sources off-loop (#99519).
-    from hermes_cli.env_loader import hydrate_profile_secret_sources
+    from moor_cli.env_loader import hydrate_profile_secret_sources
     from tui_gateway.launch_profile_policy import owner_secret_scope
 
     home_token = set_moor_home_override(str(profile_home))
@@ -1839,7 +1839,7 @@ def load_gateway_config_for_runner() -> "GatewayConfig":
     """Load gateway config for the process-level GatewayRunner. An UNSET ``multiplex_profiles`` is
     settled first by ``resolve_multiplex_mode`` (the default is on; the boot guard keeps a fleet that
     still runs per-profile gateways standalone). Multiplexed: set multiplex-active, then reload
-    under the default root's ``_profile_runtime_scope`` — not ``get_hermes_home()``, which is the
+    under the default root's ``_profile_runtime_scope`` — not ``get_moor_home()``, which is the
     named launcher when a profile-scoped process started the host. A scope miss must not fall
     through to that process's ``os.environ``. Off -> identical to ``load_gateway_config()``.
 
@@ -1848,7 +1848,7 @@ def load_gateway_config_for_runner() -> "GatewayConfig":
     The probe load above only decides whether this process is a multiplexer. The primary
     config is the scoped reload: multiplex must already be active (a scope miss must not
     fall through to the launching profile's ``os.environ``) and the home must be the
-    default root, not ``get_hermes_home()`` — a named launcher's home is not the owner
+    default root, not ``get_moor_home()`` — a named launcher's home is not the owner
     of the primary adapter map.
     """
     from moor_cli.gateway_multiplex_mode import log_multiplex_decision, resolve_multiplex_mode
@@ -1862,8 +1862,8 @@ def load_gateway_config_for_runner() -> "GatewayConfig":
     except Exception:
         logger.debug("could not set multiplex-active before primary config load", exc_info=True)
     try:
-        from hermes_constants import get_default_hermes_root
-        home = get_default_hermes_root()
+        from moor_constants import get_default_moor_root
+        home = get_default_moor_root()
     except Exception:
         return cfg
     try:
@@ -1910,9 +1910,9 @@ def _platform_has_bot_credential(platform: "Platform", platform_config: "Platfor
     ``PlatformConfig.token`` (Signal session paths, port-binding HTTP adapters) always return True."""
     from gateway.config import PLATFORM_TOKEN_ENV_NAMES, Platform
     if platform is Platform.WHATSAPP:
-        from hermes_constants import get_hermes_dir
+        from moor_constants import get_moor_dir
         session = Path(platform_config.extra.get(
-            "session_path", get_hermes_dir("platforms/whatsapp/session", "whatsapp/session")))
+            "session_path", get_moor_dir("platforms/whatsapp/session", "whatsapp/session")))
         return (session / "creds.json").exists()
     if platform not in PLATFORM_TOKEN_ENV_NAMES:
         return True
@@ -2114,7 +2114,7 @@ def _load_bridge_config(config_path: Path) -> dict:
     snapshot = worker_config_snapshot()
     if snapshot is not None:
         return snapshot
-    from hermes_cli.config_effective import load_user_config_effective
+    from moor_cli.config_effective import load_user_config_effective
     return load_user_config_effective(config_path)
 
 
@@ -2230,7 +2230,7 @@ _EXECUTOR_QUIESCE_TIMEOUT = 2.0
 def _own_policy_open_startup_violation(config) -> Optional[str]:
     """Return a startup-abort reason when open policy lacks allow-all opt-in."""
     with suppress(Exception):  # idempotent; callers may hand in a config load_gateway_config never built
-        from hermes_cli.plugins import discover_plugins
+        from moor_cli.plugins import discover_plugins
         discover_plugins()
     for platform, platform_config in getattr(config, "platforms", {}).items():
         if not getattr(platform_config, "enabled", False):
@@ -2707,7 +2707,7 @@ def _abandon_timed_out_gateway_turn(
             request_hard_interrupt(agent, _INTERRUPT_REASON_TIMEOUT, tool_reason=_INTERRUPT_TOOL_REASON_TIMEOUT)
         except Exception:
             logger.debug("Timed-out agent interrupt failed", exc_info=True)
-        from hermes_cli.observability.shared_metrics_process import record_watchdog_turn_abort
+        from moor_cli.observability.shared_metrics_process import record_watchdog_turn_abort
         record_watchdog_turn_abort(agent)
 
     try:
@@ -2890,7 +2890,7 @@ def _resolve_gateway_model(config: dict | None = None) -> str:
     """The profile's model when nothing else names one: config.yaml (single source of truth), else the
     claimed welcome trial's. Temporary AIAgents (e.g. /compress) otherwise use the hardcoded default,
     which fails under openai-codex."""
-    from hermes_cli.anon_auth import trial_model
+    from moor_cli.anon_auth import trial_model
     model_cfg = (config if config is not None else _load_gateway_config()).get("model", {})
     if isinstance(model_cfg, dict):
         model_cfg = model_cfg.get("default") or model_cfg.get("model")
@@ -3700,7 +3700,7 @@ class GatewayRunner(
     def _update_runtime_status(self, gateway_state: Optional[str] = None, exit_reason: Optional[str] = None) -> None:
         if getattr(self, "_startup_cleanup_only", False):
             return  # cleanup of a start that never ran keeps its startup verdict (startup_failed)
-        # ``active_work`` names each unit only while draining — that is when an observer (``hermes
+        # ``active_work`` names each unit only while draining — that is when an observer (``moor
         # update``) needs to know WHAT holds the gateway open; a per-turn write would be wasted I/O.
         active_work = self._describe_active_work() if gateway_state == "draining" else None
         _write_runtime_status_quiet(
@@ -3980,7 +3980,7 @@ class GatewayRunner(
             scope_id=str(getattr(source, "scope_id", "") or ""),
             parent_chat_id=str(getattr(source, "parent_chat_id", "") or ""),
             session_key=context.session_key,
-            # A cached agent binds HERMES_SESSION_ID only on the turn that built it; every later turn
+            # A cached agent binds MOOR_SESSION_ID only on the turn that built it; every later turn
             # (and a command it yields to the background) must still see its own session.
             session_id=context.session_id or "",
             message_id=str(source.message_id) if source.message_id else "",
@@ -4050,14 +4050,14 @@ class GatewayRunner(
         unset by default.
         """
         return GatewayRunner._get_or_create_pool(
-            self, "_executor", lambda: _UnboundedThreadExecutor(thread_name_prefix="hermes-gateway"))
+            self, "_executor", lambda: _UnboundedThreadExecutor(thread_name_prefix="moor-gateway"))
 
     def _get_housekeeping_executor(self) -> concurrent.futures.Executor:
         """Return the gateway-owned executor for best-effort session housekeeping."""
         return GatewayRunner._get_or_create_pool(
             self, "_housekeeping_executor",
             lambda: concurrent.futures.ThreadPoolExecutor(
-                max_workers=_HOUSEKEEPING_MAX_WORKERS, thread_name_prefix="hermes-gateway-hk"))
+                max_workers=_HOUSEKEEPING_MAX_WORKERS, thread_name_prefix="moor-gateway-hk"))
 
     @staticmethod
     def _stop_pool(executor) -> list:
@@ -4195,7 +4195,7 @@ class GatewayRunner(
         return None
 
     def _resolve_profile_home_for_source(self, source: SessionSource) -> Path:
-        """Resolve which profile's HERMES_HOME serves this source: the pinned identity's runtime
+        """Resolve which profile's MOOR_HOME serves this source: the pinned identity's runtime
         home, else ``source.profile``, then ``_profile_name_for_source`` (sources bypassing
         ``build_source``), then the active profile."""
         from gateway.profile_routing import ProfileRouteRejected
@@ -4441,7 +4441,7 @@ def _housekeeping_deferred_fts_retry() -> None:
 
 def _housekeeping_memory_trim() -> None:
     """Messaging-gateway counterpart to the TUI idle reaper; timer lane: full GC only once idle (#139763)."""
-    from hermes_cli.mem_trim import trim_memory_when_idle
+    from moor_cli.mem_trim import trim_memory_when_idle
     trim_memory_when_idle(reason="messaging gateway housekeeping")
 
 
@@ -4468,7 +4468,7 @@ def _drain_restart_safe_cron_deliveries(adapters, loop, runner=None) -> None:
                             else getattr(runner, "_profile_adapters", {}).get(profile_name))
         if profile_adapters is None:
             continue
-        with _profile_runtime_scope(profile_home or get_hermes_home()):
+        with _profile_runtime_scope(profile_home or get_moor_home()):
             owned = (getattr(runner, "_profile_bot_platforms", None) or {}).get(profile_name)
             if (profile_name is not None and adapters
                     and not sched_preflight.has_credential_platform(profile_adapters, owned)):
@@ -4896,22 +4896,22 @@ def _claim_host_gateway_role(force: bool = False) -> None:
     from gateway.host_attach import (
         ATTACH_CHANNEL_WAIT_S, START, host_gateway, launched_by_other_tenant, standalone_attach_decision,
     )
-    from hermes_cli.profiles import profile_is_standalone
-    if owner is not None and launched_by_other_tenant(owner.home, get_hermes_home()):
+    from moor_cli.profiles import profile_is_standalone
+    if owner is not None and launched_by_other_tenant(owner.home, get_moor_home()):
         # The lock is per OS user, so a second tenant root can never win it against the first:
         # refusing 75 here would retry forever and its gateway would never start (#121352).
         logger.warning(
-            "Another Hermes home's gateway owns this host (%s); starting this home's gateway beside it.",
+            "Another Moor home's gateway owns this host (%s); starting this home's gateway beside it.",
             hr.describe(owner))
         return
-    if profile_is_standalone(get_hermes_home()):
+    if profile_is_standalone(get_moor_home()):
         # Recheck after losing the atomic lock: the pre-lock served set may be stale.
         live_owner = host_gateway(wait_for_channel=ATTACH_CHANNEL_WAIT_S)
         # The rendezvous record proves lock ownership, but the owner's control channel may
         # still be unavailable. Standalone discovery also checks each profile's liveness
         # channel, so it can prove that this profile is unserved even when the host probe
         # cannot construct a HostGateway yet.
-        decision = standalone_attach_decision(get_hermes_home(), live_owner)
+        decision = standalone_attach_decision(get_moor_home(), live_owner)
         if decision is not None:
             if decision.outcome == START:
                 return
@@ -5093,7 +5093,7 @@ def main():
     """CLI entry point for the gateway."""
     # Before any config-dependent startup (watchdog, DB opens, provider resolution).
     _guard_corrupt_user_config()
-    from hermes_cli.resource_limits import apply_malloc_arena_max  # runs before any thread (glibc latches)
+    from moor_cli.resource_limits import apply_malloc_arena_max  # runs before any thread (glibc latches)
 
     # Advertise the harness to children (mirrors _advertise_agent_env in moor_cli/main.py, inlined to
     # avoid its startup side effects). Value must equal registry id ``moor-agent`` exactly.
@@ -5123,7 +5123,7 @@ def main():
         _best_effort(_step)
 
     # pm startup contract (PATH provisioning for the store's tools), then the post-update bootstrap: the
-    # same one-pass record-gated maintenance registry the CLI dispatch path runs (hermes_cli/main.py) —
+    # same one-pass record-gated maintenance registry the CLI dispatch path runs (moor_cli/main.py) —
     # this entrypoint bypasses that dispatch, so run it here too. Never raises.
     try:
         from moor_cli.venv_sync import check_runtime
@@ -5202,13 +5202,13 @@ def _exit_after_graceful_shutdown(exit_code: int) -> None:
     def _mark_exited() -> None:
         # Single funnel every graceful exit passes through, so the next boot's unclean-death detector
         # fires only for genuine SIGKILL/OOM/VM deaths. Ownership-guarded against an old --replace life.
-        from hermes_cli.observability.shared_metrics_process import stamp_exit
+        from moor_cli.observability.shared_metrics_process import stamp_exit
         stamp_exit("clean")  # the exit-metrics marker too: os._exit skips its atexit stamp (never raises)
         from gateway.lifecycle_ledger import mark_exited
         mark_exited(exit_code, reason="graceful_shutdown")
 
     def _flush_metrics() -> None:  # after the clean stamp: a supervisor kill mid-flush is no unclean death
-        from hermes_cli.observability.shared_metrics_process import flush_before_hard_exit
+        from moor_cli.observability.shared_metrics_process import flush_before_hard_exit
         flush_before_hard_exit()  # the runtimes' atexit flush: open sessions + queued opt-in rows (bounded)
 
     def _drain_logs() -> None:

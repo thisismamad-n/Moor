@@ -1041,8 +1041,8 @@ class TestBackgroundOwnershipPolicyConsistency:
 
     def test_repeated_identical_delete_gets_the_same_answer(self, tmp_path, monkeypatch):
         """No stubbing of load_usage: telemetry side effects are live. Both attempts agree."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        (tmp_path / ".hermes" / "skills").mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
+        (tmp_path / ".moor" / "skills").mkdir(parents=True, exist_ok=True)
         with _skill_dir(tmp_path):
             _create_skill("flip-skill", VALID_SKILL_CONTENT)
             first = self._bg_delete("flip-skill")
@@ -1067,7 +1067,7 @@ class TestBackgroundOwnershipPolicyConsistency:
 
     def test_adoption_lifts_the_autonomous_delete_refusal(self, tmp_path, monkeypatch):
         """Adoption is the documented path from refused to allowed for archival."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("MOOR_HOME", str(tmp_path / ".moor"))
         with _skill_dir(tmp_path):
             _create_skill("adopt-me", VALID_SKILL_CONTENT)
             with patch("tools.skill_usage.load_usage", return_value={}):
@@ -1370,7 +1370,7 @@ class TestCuratorConsolidationDeleteGuard:
 
 
 # ---------------------------------------------------------------------------
-# Content lock (#25083, #140332) — `hermes curator lock <name>` makes skill_manage refuse
+# Content lock (#25083, #140332) — `moor curator lock <name>` makes skill_manage refuse
 # AUTONOMOUS mutations (review fork / curator pass) of that one skill: whole directory,
 # single-op and batch paths. Foreground user-directed writes are not gated; unlocked
 # siblings keep learning; an unreadable sidecar fails closed for autonomous writes only.
@@ -1403,11 +1403,11 @@ class TestLockedGuard:
 
     @staticmethod
     def _profile(tmp_path, monkeypatch, name="default"):
-        """Isolated HERMES_HOME whose skills/ dir doubles as the patched SKILLS_DIR, so the lock
+        """Isolated MOOR_HOME whose skills/ dir doubles as the patched SKILLS_DIR, so the lock
         sidecar (<home>/skills/.usage.json) and the skill files share one profile root."""
-        skills = tmp_path / name / ".hermes" / "skills"
+        skills = tmp_path / name / ".moor" / "skills"
         skills.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(skills.parent))
+        monkeypatch.setenv("MOOR_HOME", str(skills.parent))
         return skills
 
     @staticmethod
@@ -1445,7 +1445,7 @@ class TestLockedGuard:
         for op, res in zip(self._MUTATIONS, results):
             assert res["success"] is False, (op, res)
             assert "locked" in res["error"], (op, res)
-            assert "hermes curator unlock locked-skill" in res["error"], (op, res)
+            assert "moor curator unlock locked-skill" in res["error"], (op, res)
         assert after == before
 
     def test_unlocked_sibling_keeps_learning_and_unlock_lifts_refusal(self, tmp_path, monkeypatch):
@@ -1476,7 +1476,7 @@ class TestLockedGuard:
             results = [json.loads(skill_manage(name="locked-skill", **op)) for op in self._MUTATIONS]
             after = self._tree(d)
         for op, res in zip(self._MUTATIONS, results):
-            assert res["success"] is False and "hermes curator unlock locked-skill" in res["error"], (op, res)
+            assert res["success"] is False and "moor curator unlock locked-skill" in res["error"], (op, res)
         assert after == before
 
     def test_batch_refuses_before_any_sibling_op_is_applied(self, tmp_path, monkeypatch):

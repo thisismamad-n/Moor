@@ -45,7 +45,7 @@ def _builtin_gateway_liveness() -> Optional[bool]:
 
     A gateway launched from this home proves itself by process liveness. Any other scheduler that
     ticks this home — the host multiplexer for a served profile, or the in-process ticker inside
-    ``hermes serve`` / the Desktop backend (#121881) — proves itself only by the fresh heartbeat it
+    ``moor serve`` / the Desktop backend (#121881) — proves itself only by the fresh heartbeat it
     writes into this home's store. External providers use their own machinery and are exempt.
     """
     try:
@@ -58,7 +58,7 @@ def _builtin_gateway_liveness() -> Optional[bool]:
             from gateway.status import is_gateway_runtime_lock_active
             if is_gateway_runtime_lock_active():
                 return True
-        from hermes_cli.gateway import find_gateway_pids, named_profile_served_by_running_multiplexer
+        from moor_cli.gateway import find_gateway_pids, named_profile_served_by_running_multiplexer
         if find_gateway_pids():
             return True
         from cron.jobs import get_ticker_heartbeat_age, ticker_heartbeat_writer_alive
@@ -77,14 +77,14 @@ def _warn_if_gateway_not_running() -> None:
     """Warn at create/list time when the scheduler is not ready; stay silent on an unknown probe result."""
     if _builtin_gateway_liveness() is not False:
         return
-    from hermes_cli.profiles import get_active_profile_name
+    from moor_cli.profiles import get_active_profile_name
     # Name the inspected profile: the shared gateway may well be running and ticking ANOTHER
     # profile's jobs, so a bare "not running" reads as a system claim it cannot make (#99579).
     print(color(f"  ⚠  Scheduler is not ready for profile '{get_active_profile_name()}': "
                 "no gateway serves it and no fresh ticker heartbeat.", Colors.YELLOW))
-    print(color("     If no gateway is running: hermes gateway install\n"
-                "                    sudo hermes gateway install --system  # Linux servers\n"
-                "     Check status:  hermes cron status", Colors.DIM))
+    print(color("     If no gateway is running: moor gateway install\n"
+                "                    sudo moor gateway install --system  # Linux servers\n"
+                "     Check status:  moor cron status", Colors.DIM))
 
 
 def _format_lateness(seconds: float) -> str:
@@ -186,10 +186,10 @@ def cron_list(show_all: bool = False):
             if job.get("enabled", True) or effective_job_state(job) == "paused"
         ]
 
-    from hermes_cli.profiles import get_active_profile_name
+    from moor_cli.profiles import get_active_profile_name
     if not jobs:
         print(color(f"No scheduled jobs in profile '{get_active_profile_name()}'.\n"
-                    "Create one with 'hermes cron create ...' or the /cron command in chat.", Colors.DIM))
+                    "Create one with 'moor cron create ...' or the /cron command in chat.", Colors.DIM))
         return
 
     _print_banner(f"Scheduled Jobs (profile: {get_active_profile_name()})")
@@ -272,8 +272,8 @@ def _short_reason(text: Any, limit: int = 120) -> str:
 
 
 def _delivery_fix_hint(job: dict[str, Any]) -> str:
-    return (f"Check the target with `hermes cron status` or change it with "
-            f"`hermes cron edit {job.get('id', '<id>')} --deliver <target>`.")
+    return (f"Check the target with `moor cron status` or change it with "
+            f"`moor cron edit {job.get('id', '<id>')} --deliver <target>`.")
 
 
 def _missed_fire_issue(job: dict[str, Any], fire_err: dict[str, Any]) -> str:
@@ -318,7 +318,7 @@ def cron_tick():
     No gateway runs here by definition, and none is started: agent jobs are skipped with a logged
     reason until the gateway is up (headless surfaces refuse rather than spawn)."""
     from cron.scheduler import CronTickYielded, tick
-    from hermes_cli.observability.shared_metrics_process import begin_process
+    from moor_cli.observability.shared_metrics_process import begin_process
 
     begin_process("cron")
     try:
@@ -444,14 +444,14 @@ def _probe_then_list_jobs(*, include_disabled: bool, brief: bool = False):
 def _print_store_unwritable(report: dict, *, brief: bool = False) -> None:
     if brief:  # `cron list`: one line
         print(color(f"⚠ Cron store {report['store']} is NOT writable ({report['error']}) — scheduled jobs "
-                    f"are being skipped; {report['fix']}. See `hermes cron status`.", Colors.RED))
+                    f"are being skipped; {report['fix']}. See `moor cron status`.", Colors.RED))
         return
     print(color("⚠ Cron store is NOT writable — scheduled jobs are being skipped", Colors.RED))
     print(color(f"  {report['store']}: {report['error']} (last successful write {report['since']})", Colors.RED))
     print(color(f"  Fix: {report['fix']}. Each due job then fires once on the next tick.", Colors.YELLOW))
 
 
-def _print_ticker_health(pids: list, restart_command: str = "hermes gateway restart") -> None:
+def _print_ticker_health(pids: list, restart_command: str = "moor gateway restart") -> None:
     """Report builtin-ticker liveness for a gateway process known to be alive.
 
     The ticker THREAD can die silently or stay alive while every tick fails, so check both
@@ -516,8 +516,8 @@ def _print_ticker_health(pids: list, restart_command: str = "hermes gateway rest
 
 def cron_status():
     """Show cron execution status."""
-    from hermes_cli.gateway import find_gateway_pids, named_profile_served_by_running_multiplexer
-    from hermes_cli.profiles import get_active_profile_name
+    from moor_cli.gateway import find_gateway_pids, named_profile_served_by_running_multiplexer
+    from moor_cli.profiles import get_active_profile_name
     print()
 
     store_report, active_jobs = _probe_then_list_jobs(include_disabled=False)
@@ -564,7 +564,7 @@ def cron_status():
             if not gateway_alive_via_lock:
                 served_by_multiplexer = named_profile_served_by_running_multiplexer()
             if not gateway_alive_via_lock and not served_by_multiplexer:
-                # `hermes serve` / the Desktop backend ticks every local profile in-process: no
+                # `moor serve` / the Desktop backend ticks every local profile in-process: no
                 # gateway argv, lock or host record — only the heartbeat it writes here (#121881).
                 with contextlib.suppress(Exception):
                     from cron.jobs import get_ticker_heartbeat_age, ticker_heartbeat_writer_alive
@@ -572,22 +572,22 @@ def cron_status():
                                          and ticker_heartbeat_writer_alive())
         if host is not None:
             print(f"  Scheduler host: {host.describe()}")
-            # `hermes gateway restart` exits 78 for a served NAMED profile
+            # `moor gateway restart` exits 78 for a served NAMED profile
             # (_guard_named_profile_under_multiplexer): name the profile that LAUNCHED the host
             # process. On a standalone fleet that is this profile itself, not default (#120871).
             owner = None
             with contextlib.suppress(Exception):
-                from hermes_cli.gateway import host_multiplexer_serving
+                from moor_cli.gateway import host_multiplexer_serving
                 owner = host_multiplexer_serving(active)
             host_profile = owner.profile_label if owner is not None else "default"
-            _print_ticker_health([host.pid], restart_command=f"hermes --profile {host_profile} gateway restart")
+            _print_ticker_health([host.pid], restart_command=f"moor --profile {host_profile} gateway restart")
         elif pids or gateway_alive_via_lock or served_by_multiplexer or in_process_ticker:
             if served_by_multiplexer:
                 print("  Scheduler host: the host gateway (multiplexing this profile)")
-                _print_ticker_health([], restart_command="hermes --profile default gateway restart")
+                _print_ticker_health([], restart_command="moor --profile default gateway restart")
             elif in_process_ticker:
-                print(f"  Scheduler host: an in-process ticker (hermes serve / Desktop backend) ticking profile '{active}'")
-                _print_ticker_health([], restart_command="restart the Hermes Desktop app (or its serve backend)")
+                print(f"  Scheduler host: an in-process ticker (moor serve / Desktop backend) ticking profile '{active}'")
+                _print_ticker_health([], restart_command="restart the Moor Desktop app (or its serve backend)")
             else:
                 _print_ticker_health(pids)
         else:
@@ -1041,5 +1041,5 @@ def cron_command(args):
     if handler is not None:
         return handler(args)
     print(f"Unknown cron command: {subcmd}\n"
-          "Usage: hermes cron [list|create|edit|pause|resume|run|cancel|remove|status|runs|doctor|tick]")
+          "Usage: moor cron [list|create|edit|pause|resume|run|cancel|remove|status|runs|doctor|tick]")
     sys.exit(1)

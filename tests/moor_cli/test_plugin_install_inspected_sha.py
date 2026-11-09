@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-import hermes_yaml as yaml
-from tests.hermes_cli.plugin_worker_support import (
+import moor_yaml as yaml
+from tests.moor_cli.plugin_worker_support import (
     isolated_python as isolated_python,  # noqa: PLC0414 -- the self-alias is load-bearing: it suppresses F811 for the pytest fixture parameter shadowing this import
     plugin_world as plugin_world,  # noqa: PLC0414 -- the self-alias is load-bearing: it suppresses F811 for the pytest fixture parameter shadowing this import
 )
@@ -47,7 +47,7 @@ def _install(**params):
 @pytest.fixture
 def moved_repo(tmp_path, monkeypatch):
     """``(home, reviewed_sha, tip_sha, repo)``: a repo the dialog inspected at ``reviewed`` whose branch then moved."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     repo = tmp_path / "demo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
@@ -58,8 +58,8 @@ def moved_repo(tmp_path, monkeypatch):
     real = plugins_cmd._clone_plugin_repo
     monkeypatch.setattr(plugins_cmd, "_clone_plugin_repo",
                         lambda dest, _url, revision, subdir=None: real(dest, repo.as_uri(), revision, subdir))
-    from hermes_constants import get_hermes_home
-    return get_hermes_home(), reviewed, tip, repo
+    from moor_constants import get_moor_home
+    return get_moor_home(), reviewed, tip, repo
 
 
 def test_install_refuses_a_branch_that_moved_since_the_dialog_inspected_it(moved_repo):
@@ -77,7 +77,7 @@ def test_install_refuses_a_branch_that_moved_since_the_dialog_inspected_it(moved
 def test_a_clone_failure_echoing_the_refusal_text_carries_no_marker(moved_repo, monkeypatch):
     """A git server controls its clone error's text, so that text can say anything; only the backend's
     own comparison of commits tags the refusal."""
-    from hermes_cli import plugins_cmd
+    from moor_cli import plugins_cmd
     _home, reviewed, _tip, _repo = moved_repo
 
     def hostile(*_args, **_kwargs):

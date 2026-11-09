@@ -5,7 +5,7 @@ import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const request = vi.hoisted(() => vi.fn())
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@moor/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   const gateway = createGroupGateway()
   const { en } = await import('@/i18n/en')
@@ -20,16 +20,16 @@ vi.mock('@hermes/plugin-sdk', async () => {
     RowButton: (p: ComponentProps<'button'>) => <button type="button" {...p} />,
     host: { ...gateway.host, requestProfile: request } }
 })
-import { host } from '@hermes/plugin-sdk'
+import { host } from '@moor/plugin-sdk'
 
 import { $canonicalGroupBindings, CanonicalGroupList, registerCanonicalGroup } from './canonical-group-registry'
 import { prepareCanonicalGroupSend, readCanonicalGroupSend } from './canonical-group-send'
 import { CanonicalGroupWorkspace } from './canonical-group-workspace'
 import { $groupChatWorkspace } from './group-chat'
 import { GroupChatWorkspace } from './group-chat-view'
-const originalDesktop = window.hermesDesktop
-beforeEach(() => { Object.defineProperty(window, 'hermesDesktop', { configurable: true, writable: true, value: undefined }) })
-afterEach(() => { cleanup(); request.mockReset(); localStorage.clear(); window.hermesDesktop = originalDesktop; vi.unstubAllGlobals() })
+const originalDesktop = window.moorDesktop
+beforeEach(() => { Object.defineProperty(window, 'moorDesktop', { configurable: true, writable: true, value: undefined }) })
+afterEach(() => { cleanup(); request.mockReset(); localStorage.clear(); window.moorDesktop = originalDesktop; vi.unstubAllGlobals() })
 
 it('preserves the unsent draft when only the room display name changes', async () => {
   request.mockImplementation(async (_route, method) => method === 'groups.state'
@@ -100,7 +100,7 @@ it('blocks Send until journal restore and durable preparation complete', async (
     })
   }
 
-  window.hermesDesktop = { preparedSubmissions: native } as unknown as typeof window.hermesDesktop
+  window.moorDesktop = { preparedSubmissions: native } as unknown as typeof window.moorDesktop
   request.mockImplementation(async (_route, method) => method === 'groups.state'
     ? { room: { name: 'Room' }, driver_status: {} } : method === 'groups.log' ? { events: [] } : {})
   render(<CanonicalGroupWorkspace binding={{ connectionId: 'remote', profile: 'team', roomId: 'new' }} />)

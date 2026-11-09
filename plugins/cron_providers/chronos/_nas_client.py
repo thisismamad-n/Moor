@@ -42,9 +42,9 @@ class NasCronClient:
         self.timeout_seconds = timeout_seconds
 
     def _headers(self) -> dict[str, str]:
-        """Bearer auth with the agent's existing Nous Portal access token (refresh-aware)."""
-        from hermes_cli.auth import resolve_nous_access_token
-        return {"Authorization": f"Bearer {resolve_nous_access_token()}",
+        """Bearer auth with the agent's existing Moor Portal access token (refresh-aware)."""
+        from moor_cli.auth import resolve_moor_access_token
+        return {"Authorization": f"Bearer {resolve_moor_access_token()}",
                 "Content-Type": "application/json"}
 
     def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
