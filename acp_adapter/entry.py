@@ -14,7 +14,7 @@ try:
     import moor_bootstrap
 except ModuleNotFoundError as exc:
     # Partial ``moor update`` (git-reset landed, ``uv pip install -e .`` did not).
-    if exc.name != "moor_bootstrap":
+    if exc.name != "moor_bootstrap" and not "moor_bootstrap".startswith(f"{exc.name}."):
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 else:
     # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch cwd from shadowing Moor modules.
@@ -162,6 +162,11 @@ def _warm_memory_provider_import(logger: logging.Logger) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     """Entry point: load env, configure logging, run the ACP agent."""
+    if argv is None and "moor_cli.main" not in sys.modules:
+        sys.argv = [sys.argv[0] if sys.argv else "moor-acp", "acp", *sys.argv[1:]]
+        from moor_cli.main import main as moor_main
+
+        return moor_main()
     args = _parse_args(argv)
     for flag, action in (("version", _print_version), ("check", _run_check), ("setup", _run_setup)):
         if getattr(args, flag):

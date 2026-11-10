@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from moor_constants import get_moor_home
+from moor_cli._startup_fast import project_root_str
 from tools.environments.local import moor_subprocess_env
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def append_log_record(path: str | Path, record: str) -> None:
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    return Path(project_root_str())
 
 
 def _check_output(argv: list[str], **kwargs: Any) -> str:

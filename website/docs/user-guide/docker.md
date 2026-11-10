@@ -179,7 +179,7 @@ An unauthenticated public dashboard was the entry point for the June 2026 MCP-co
 
 Running the dashboard as a separate container **is** supported when that container shares the host PID and network namespace (e.g. `network_mode: host`, as the repo's own `docker-compose.yml` does — see its `dashboard` service). Its gateway-liveness detection requires a shared PID namespace with the gateway process, so the limitation only applies to dashboards run in isolated bridge-network containers without a shared PID namespace.
 
-## Running the Webapp
+## Running the Webapp {#running-the-webapp}
 
 The image ships the [Webapp](./desktop.md) (Moor Desktop in a browser) prebuilt; the gateway serves it on its own port when the mounted `config.yaml` turns it on (see [Configuration → Webapp](./configuration.md#webapp)):
 
@@ -190,6 +190,8 @@ webapp:
   port: 9120
   public_url: "http://localhost:9120"  # the address your browser opens
 ```
+
+Keep `host: 0.0.0.0` in a container. The default, `127.0.0.1`, is the container's own loopback, which neither a published port nor a proxy in another container can reach. `moor webapp --status` inside the container still reports `Serving at http://127.0.0.1:9120`, because it is serving there.
 
 Publish the port and configure a sign-in provider, as for the dashboard:
 
@@ -205,6 +207,61 @@ docker run -d \
 ```
 
 A non-loopback `host` needs one of the [dashboard's auth providers](#running-the-dashboard), and the listener refuses to start without one. Without `public_url`, links printed by `moor webapp` inside the container use the container's own address, not the published one.
+
+### Behind a tunnel or reverse proxy {#webapp-behind-a-proxy}
+
+When Cloudflare Tunnel, Caddy, Traefik or nginx runs in another container and serves the Webapp at its own HTTPS address, set all three of these:
+
+```yaml
+webapp:
+  enabled: true
+  host: 0.0.0.0                              # reachable from the proxy's container
+  port: 9120
+  public_url: "https://moor.example.com"   # the address the browser opens
+dashboard:
+  trusted_proxies:
+    - "172.30.0.0/24"                        # a network only the proxy and Moor are on
+```
+
+- **`host: 0.0.0.0`**: with the default `127.0.0.1` the proxy's connection is refused, which Cloudflare reports as **502 Bad Gateway**.
+- **`public_url`**: the proxy ends TLS and forwards plain HTTP, so without it the Webapp builds its sign-in callback as `http://moor.example.com/auth/callback`, which does not match the `https://` callback registered with the sign-in provider.
+- **`dashboard.trusted_proxies`**: the Webapp's listener reads the same proxy list as the dashboard, and takes `X-Forwarded-*` headers only from loopback and the addresses on it. With the proxy trusted, its `X-Forwarded-Proto: https` reaches Moor and the sign-in cookies are set `Secure`. List the proxy's exact IP, or a bounded CIDR for a network only the proxy and Moor share; Moor rejects `*`, `0.0.0.0/0` and `::/0`.
+
+Cloudflare Tunnel needs no published port, because `cloudflared` dials out; it only has to share a network with Moor. A Compose sketch with a fixed subnet for `trusted_proxies`:
+
+```yaml
+services:
+  moor:
+    image: nousresearch/hermes-agent
+    command: gateway run
+    restart: unless-stopped
+    volumes:
+      - ~/.moor:/opt/data
+    networks: [tunnel]
+  cloudflared:
+    image: cloudflare/cloudflared
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    restart: unless-stopped
+    networks: [tunnel]
+networks:
+  tunnel:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+```
+
+Give the tunnel's public hostname the service `http://moor:9120`.
+
+### Next to the dashboard {#webapp-next-to-the-dashboard}
+
+The dashboard (`MOOR_DASHBOARD=1`, port 9119) and the Webapp (port 9120) can run in one container, each at its own hostname: `dashboard.public_url` is the dashboard's address and `webapp.public_url` the Webapp's, and neither reads the other's. They share their sign-in providers, so the username/password, Moor and OIDC settings above sign in to both.
+
+A username and password work on both as they are. Moor sign-in needs one more step: a Moor Portal sign-in client is registered with one callback address, and the Webapp signs in with the same `MOOR_DASHBOARD_OAUTH_CLIENT_ID` (or `dashboard.oauth.client_id`) as the dashboard. One client therefore serves one of the two hostnames.
+
+- **Moor sign-in on the Webapp only:** register the client with the Webapp's callback, `https://<webapp host>/auth/callback`, on the Portal's [Local Dashboards](https://portal.nousresearch.com/local-dashboards) page or with `moor dashboard register --redirect-uri` (see [Registering a dashboard](features/web-dashboard.md#registering-a-dashboard)). If this install already has a dashboard client, `moor dashboard register` updates that client in place, which moves the dashboard's callback, and it writes the Webapp's address to `MOOR_DASHBOARD_PUBLIC_URL`.
+- **Moor sign-in on both:** native Desktop's **Settings → Web Access** registers a client of the Webapp's own (kept in `webapp/sign-in-registration.json`) and leaves the dashboard's alone, but it works only from the Desktop app on the same machine, so a headless container has no command for it yet. Until there is one, register the Moor client for one hostname and sign in on the other with a username and password. Both login pages offer both providers; Moor sign-in fails on the hostname its client was not registered for.
 
 ## Running interactively (CLI chat)
 
@@ -275,12 +332,12 @@ Moor supports [multiple profiles](../reference/profile-commands.md) — separate
 
 Each profile created with `moor profile create <name>` gets:
 
-- A dedicated s6 service slot at `/run/service/gateway-<name>/`, registered dynamically by the runtime — no container rebuild required.
+- A dedicated s6 service slot at `/run/moor-service/gateway-<name>/`, registered dynamically by the runtime — no container rebuild required.
 - Auto-restart on crash, backoff-managed by `s6-supervise`.
 - Per-profile rotated logs at `${MOOR_HOME}/logs/gateways/<name>/current` (10 archives × 1 MB each).
 - State persistence across container restarts: the boot-time reconciler reads `gateway_state.json` from each profile directory and brings the slot back up only for profiles whose last recorded state was `running`. Only a gateway you explicitly stopped (`moor gateway stop`) stays down across a restart — a container restart, image upgrade, or unexpected exit leaves the recorded state as `running`, so the gateway auto-starts on the next boot.
 
-A profile created from the **host** against a bind-mounted `~/.moor` gets its directory but no slot (the host process cannot reach the container's `/run/service`). Inside the container, `moor -p <name> gateway start` registers the missing slot on demand and starts it — no `docker restart` needed. Only `start` does this, and only for a real profile directory (one carrying `SOUL.md`); `stop`/`restart` on an unregistered profile and a mistyped `-p` name still fail with `✗ no such gateway`.
+A profile created from the **host** against a bind-mounted `~/.moor` gets its directory but no slot (the host process cannot reach the container's `/run/moor-service`). Inside the container, `moor -p <name> gateway start` registers the missing slot on demand and starts it — no `docker restart` needed. Only `start` does this, and only for a real profile directory (one carrying `SOUL.md`); `stop`/`restart` on an unregistered profile and a mistyped `-p` name still fail with `✗ no such gateway`.
 
 The lifecycle commands you'd run on the host work the same way from inside the container:
 
@@ -300,7 +357,7 @@ docker exec moor moor -p coder gateway status
 docker exec moor moor profile delete coder
 ```
 
-Under the hood, `moor gateway start/stop/restart` inside the container is intercepted and routed to `s6-svc` against the right service directory; you don't need to learn the s6 commands directly. For raw supervisor state, use `/command/s6-svstat /run/service/gateway-<name>` (note `/command/` is on PATH only for processes spawned by the supervision tree — when calling from `docker exec`, pass the absolute path).
+Under the hood, `moor gateway start/stop/restart` inside the container is intercepted and routed to `s6-svc` against the right service directory; you don't need to learn the s6 commands directly. For raw supervisor state, use `/command/s6-svstat /run/moor-service/gateway-<name>` (note `/command/` is on PATH only for processes spawned by the supervision tree — when calling from `docker exec`, pass the absolute path).
 
 ### Reaching more than one profile from outside the container
 
@@ -594,7 +651,7 @@ The container's `ENTRYPOINT` is a small dispatcher (`docker/entrypoint-dispatch.
 
 On the PID-1 path, `/init`:
 1. Runs `/etc/cont-init.d/01-moor-setup` (= `docker/stage2-hook.sh`) as root: optional UID/GID remap, fixes volume ownership, seeds `.env` / `config.yaml` / `SOUL.md` on first boot, runs non-interactive config-schema migrations unless `MOOR_SKIP_CONFIG_MIGRATION=1`, syncs bundled skills.
-2. Runs `/etc/cont-init.d/02-reconcile-profiles` (= `moor_cli.container_boot`): walks `$MOOR_HOME/profiles/<name>/`, recreates the per-profile gateway s6 service slot under `/run/service/gateway-<profile>/`, and auto-starts only those whose last recorded state was `running` (see [Per-profile gateway supervision](#per-profile-gateway-supervision)).
+2. Runs `/etc/cont-init.d/02-reconcile-profiles` (= `moor_cli.container_boot`): walks `$MOOR_HOME/profiles/<name>/`, recreates the per-profile gateway s6 service slot under `/run/moor-service/gateway-<profile>/`, and auto-starts only those whose last recorded state was `running` (see [Per-profile gateway supervision](#per-profile-gateway-supervision)).
 3. Starts the static `main-moor` and `dashboard` s6-rc services.
 4. Exec's the container's CMD as the main program (`/opt/moor/docker/main-wrapper.sh`), which routes the arguments the user passed to `docker run`:
    - no args → `moor` (the default)
@@ -641,7 +698,7 @@ The shim accepts `1` / `true` / `yes` (case-insensitive). Anything else — incl
 
 ### Per-profile gateway supervision
 
-Each profile created with `moor profile create <name>` automatically gets an s6-supervised gateway service registered at `/run/service/gateway-<name>/`, with state-persistent auto-restart across container restarts. See [Multi-profile support](#multi-profile-support) above for the user-facing workflow and the lifecycle commands.
+Each profile created with `moor profile create <name>` automatically gets an s6-supervised gateway service registered at `/run/moor-service/gateway-<name>/`, with state-persistent auto-restart across container restarts. See [Multi-profile support](#multi-profile-support) above for the user-facing workflow and the lifecycle commands.
 
 **Supervision benefits over the pre-s6 image:**
 
@@ -650,7 +707,7 @@ Each profile created with `moor profile create <name>` automatically gets an s6-
 - `docker restart`, image upgrades (`docker compose up -d --force-recreate`), and unexpected exits preserve running gateways: the cont-init reconciler reads `$MOOR_HOME/profiles/<name>/gateway_state.json` and brings the slot back up if the last recorded state was `running`. Only an explicit `moor gateway stop` records `stopped` and keeps the gateway down across the restart; the container/s6 SIGTERM sent on a restart or upgrade is treated as "still running" and auto-starts.
 - Per-profile gateway logs persist under `$MOOR_HOME/logs/gateways/<profile>/current` (rotated by `s6-log`), and the reconciler's actions are appended to `$MOOR_HOME/logs/container-boot.log` per boot. See [Where the logs go](#where-the-logs-go) for the full routing map.
 
-`moor status --full` inside the container reports `Manager: s6 (container supervisor)`. Use `/command/s6-svstat /run/service/gateway-<name>` for the raw supervisor view (note `/command/` is on PATH for supervision-tree processes only; pass the absolute path when calling from `docker exec`).
+`moor status --full` inside the container reports `Manager: s6 (container supervisor)`. Use `/command/s6-svstat /run/moor-service/gateway-<name>` for the raw supervisor view (note `/command/` is on PATH for supervision-tree processes only; pass the absolute path when calling from `docker exec`).
 
 ## Upgrading
 

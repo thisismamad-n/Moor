@@ -1,6 +1,7 @@
+import { canonicalRequest, canonicalResult, sharedControlParams } from '@moor/shared/gateway-canonical'
 import { expect, it } from 'vitest'
 
-import { canonicalRequest, canonicalResult, localCreationOptions, sharedControlParams } from '../canonicalGateway.js'
+import { localCreationOptions } from '../launchOptions.js'
 
 it.each(['MOOR_SAFE_MODE', 'MOOR_IGNORE_USER_CONFIG'])('carries %s on the launching session policy', flag => {
   const field = flag === 'MOOR_SAFE_MODE' ? 'safe_mode' : 'ignore_user_config'

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from moor_constants import get_moor_home
 
+from moor_cli._startup_fast import project_root_str
 from moor_cli.colors import Colors, color
 
 def _logger(mark: str, col: str):
@@ -64,7 +65,7 @@ def _remove_each(candidates, remove) -> list:
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
-    return Path(__file__).parent.parent.resolve()
+    return Path(project_root_str())
 
 
 def code_removal_refusal() -> str | None:
@@ -295,12 +296,12 @@ def _remove_systemd_gateway() -> bool:
 
 
 # Both gateway LaunchAgent naming schemes: the current ``ai.moor.gateway*``
-# label and the ``io.nousresearch.moor-agent.gateway*`` label older builds  # LEGACY-REBRAND-COMPAT: legacy plist label
+# label and the ``io.nousresearch.moor-agent.gateway*`` label older builds  # LEGACY-REBRAND-COMPAT: cleanup legacy LaunchAgent plist
 # installed. An uninstall must sweep BOTH — a stale agent keeps respawning the
 # gateway after the code tree is gone (#62209).
 _LAUNCHD_GATEWAY_PLIST_PATTERNS = (
     "ai.moor.gateway*.plist",
-    "io.nousresearch.moor-agent.gateway*.plist",  # LEGACY-REBRAND-COMPAT: legacy plist pattern
+    "io.nousresearch.moor-agent.gateway*.plist",  # LEGACY-REBRAND-COMPAT: cleanup legacy LaunchAgent plist
 )
 
 

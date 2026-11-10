@@ -736,7 +736,11 @@ class TestValidateRequestedModelMoorPortalRecommendations:
             "suggested_base_url": None,
             "used_fallback": False,
         }
-        with patch("moor_cli.models.fetch_api_models", return_value=["some/other-model"]), \
+        # The OpenRouter picker catalog is pinned too: left live, the verdict followed whatever
+        # openrouter.ai listed that day (and the in-tree fallback lists this model, so offline
+        # it was accepted).
+        with patch("moor_cli.models.provider_model_ids", return_value=["some/other-model"]), \
+             patch("moor_cli.models.fetch_api_models", return_value=["some/other-model"]), \
              patch("moor_cli.models.probe_api_models", return_value=probe_payload), \
              patch("moor_cli.models.fetch_moor_recommended_models") as mock_portal, \
              patch("moor_cli.models._model_in_provider_catalog", return_value=False):

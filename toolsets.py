@@ -41,7 +41,6 @@ _FEISHU_TOOLS = [
     "feishu_doc_read", "feishu_drive_list_comments", "feishu_drive_list_comment_replies",
     "feishu_drive_reply_comment", "feishu_drive_add_comment",
 ]
-_YUANBAO_TOOLS = ["yb_query_group_info", "yb_query_group_members", "yb_send_dm", "yb_search_sticker", "yb_send_sticker"]
 
 
 def _ts(description, tools=(), includes=(), **extra):
@@ -163,7 +162,6 @@ TOOLSETS = {
     ),
     "discord": _ts("Discord read and participate tools (fetch messages, search members, create threads)", ["discord"]),
     "discord_admin": _ts("Discord server management (list channels/roles, pin messages, assign roles)", ["discord_admin"]),
-    "yuanbao": _ts("Yuanbao platform tools - group info, member queries, DM, stickers", _YUANBAO_TOOLS),
     "feishu_doc": _ts("Read Feishu/Lark document content", ["feishu_doc_read"]),
     "feishu_drive": _ts("Feishu/Lark document comment operations (list, reply, add)", _FEISHU_TOOLS[1:]),
 
@@ -219,12 +217,6 @@ TOOLSETS = {
     "moor-qqbot": _bundle("QQBot toolset - QQ messaging via Official Bot API v2 (full access)"),
     "moor-wecom": _bundle("WeCom bot toolset - enterprise WeChat messaging (full access)"),
     "moor-wecom-callback": _bundle("WeCom callback toolset - enterprise self-built app messaging (full access)"),
-    "moor-yuanbao": {
-        "description": "Yuanbao Bot 元宝消息平台工具集 - 群信息、成员查询、私聊、贴纸表情",
-        "tools": _MOOR_CORE_TOOLS + _YUANBAO_TOOLS,
-        "module": "tools.yuanbao_tools",
-        "includes": [],
-    },
     "moor-sms": _bundle("SMS bot toolset - interact with Moor via SMS (Twilio)"),
     "moor-webhook": _ts("Webhook toolset - receive and process external webhook events", _MOOR_WEBHOOK_SAFE_TOOLS),
     "moor-gateway": _ts(
@@ -235,7 +227,7 @@ TOOLSETS = {
             "moor-signal", "moor-bluebubbles", "moor-email",
             "moor-sms", "moor-mattermost", "moor-matrix", "moor-dingtalk",
             "moor-feishu", "moor-wecom", "moor-wecom-callback", "moor-weixin",
-            "moor-qqbot", "moor-webhook", "moor-yuanbao",
+            "moor-qqbot", "moor-webhook",
         ],
     ),
 }
@@ -464,6 +456,12 @@ def session_disabled_toolsets(
     gated += ONESHOT_DISABLED_TOOLSETS if oneshot else ()
     gated = [name for name in gated if name not in (disabled or ())]
     return [*(disabled or ()), *gated] if gated else disabled
+
+
+def tool_selection_key(enabled: Optional[list[str]], disabled: Optional[list[str]]) -> tuple:
+    """The toolset selection a tools[] snapshot was built from, order-free. Recorded next to the registry
+    generation: the tools[] freeze (``tools.mcp_tool_agent``) holds new tools back only while neither moved."""
+    return frozenset(enabled) if enabled is not None else None, frozenset(disabled or ())
 
 
 def agent_tool_drops(agent: Any) -> frozenset:

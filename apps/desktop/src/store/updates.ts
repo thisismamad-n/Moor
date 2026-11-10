@@ -20,6 +20,7 @@ import type {
 import { checkMoorUpdate, getActionStatus, updateMoor } from '@/moor'
 import { translateNow } from '@/i18n'
 import { persistString, storedString } from '@/lib/storage'
+import { cloudOwnsUpdates, updateTargetFor } from '@/store/cloud-updates'
 import { $connectionsRegistry, refreshConnectionsRegistry } from '@/store/connections'
 import { reconnectGateway } from '@/store/gateway-reconnect'
 import { dismissNotification, notify } from '@/store/notifications'
@@ -71,6 +72,10 @@ export const $updateOverlayTarget = atom<UpdateTarget>('client')
 export const setUpdateOverlayOpen = (open: boolean) => $updateOverlayOpen.set(open)
 
 export const openUpdateOverlayFor = (target: UpdateTarget): void => {
+  if (cloudOwnsUpdates(target)) {
+    return
+  }
+
   $updateOverlayTarget.set(target)
   $updateOverlayOpen.set(true)
   void (target === 'backend' ? checkBackendUpdates({ force: true }) : checkUpdates({ force: true }))
@@ -80,72 +85,6 @@ export const resetUpdateApplyState = () => {
   $updateApply.set(IDLE)
   $backendUpdateApply.set(IDLE)
 }
-
-export interface MoorTokenConfigState {
-  branch: string
-  repo: string
-  hasPat: boolean
-  maskedPat: string
-}
-
-export const $moorTokenConfig = atom<MoorTokenConfigState>({
-  branch: 'main',
-  repo: '',
-  hasPat: false,
-  maskedPat: ''
-})
-
-export const $moorTokenVerifying = atom<boolean>(false)
-export const $moorTokenVerifyResult = atom<{ ok: boolean; message?: string } | null>(null)
-
-export async function loadMoorTokenConfig(): Promise<MoorTokenConfigState | null> {
-  const bridge = window.moorDesktop?.updates
-  if (!bridge?.getTokenConfig) {
-    return null
-  }
-  try {
-    const config = await bridge.getTokenConfig()
-    $moorTokenConfig.set(config)
-    return config
-  } catch {
-    return null
-  }
-}
-
-export async function saveMoorTokenConfig(cfg: { pat?: string; repo?: string }): Promise<MoorTokenConfigState | null> {
-  const bridge = window.moorDesktop?.updates
-  if (!bridge?.setTokenConfig) {
-    return null
-  }
-  try {
-    const updated = await bridge.setTokenConfig(cfg)
-    $moorTokenConfig.set(updated)
-    void checkUpdates()
-    return updated
-  } catch {
-    return null
-  }
-}
-
-export async function verifyMoorToken(customPat?: string): Promise<{ ok: boolean; message?: string }> {
-  const bridge = window.moorDesktop?.updates
-  if (!bridge?.verifyToken) {
-    return { ok: false, message: 'Bridge unavailable' }
-  }
-  $moorTokenVerifying.set(true)
-  try {
-    const res = await bridge.verifyToken(customPat)
-    $moorTokenVerifyResult.set(res)
-    return res
-  } catch (err) {
-    const res = { ok: false, message: err instanceof Error ? err.message : String(err) }
-    $moorTokenVerifyResult.set(res)
-    return res
-  } finally {
-    $moorTokenVerifying.set(false)
-  }
-}
-
 
 const UPDATE_TOAST_ID = 'desktop-update-available'
 // Time-based snooze instead of per-sha dismissal: this repo lands ~100 commits
@@ -273,13 +212,16 @@ export function reportBackendContract(contract: number | undefined, protocol?: s
     }
 
     notify({
-      action: {
-        label: translateNow('notifications.updateMoor'),
-        onClick: () => {
-          snoozeSkewToast()
-          void applyBackendUpdate()
-        }
-      },
+      // Moor Cloud updates its agents itself: name the skew, offer no update.
+      action: cloudOwnsUpdates('backend')
+        ? undefined
+        : {
+            label: translateNow('notifications.updateMoor'),
+            onClick: () => {
+              snoozeSkewToast()
+              void applyBackendUpdate()
+            }
+          },
       durationMs: 0,
       id: SKEW_TOAST_ID,
       kind: 'warning',
@@ -297,13 +239,16 @@ export function reportBackendContract(contract: number | undefined, protocol?: s
     }
 
     notify({
-      action: {
-        label: translateNow('notifications.updateDesktopApp'),
-        onClick: () => {
-          snoozeGuiSkewToast()
-          openUpdateOverlayFor('client')
-        }
-      },
+      // A Webapp served by Moor Cloud: Cloud replaced the image under this tab, and a reload loads it.
+      action: cloudOwnsUpdates('client')
+        ? { label: translateNow('commandCenter.reloadWindow'), onClick: () => window.location.reload() }
+        : {
+            label: translateNow('notifications.updateDesktopApp'),
+            onClick: () => {
+              snoozeGuiSkewToast()
+              openUpdateOverlayFor('client')
+            }
+          },
       durationMs: 0,
       id: GUI_SKEW_TOAST_ID,
       kind: 'warning',
@@ -348,7 +293,7 @@ export function reportInstallMethodWarning(message: string | undefined): void {
 export function maybeNotifyUpdateAvailable(status: DesktopUpdateStatus | null, target: UpdateTarget = 'client') {
   // Either signal means "update ready": behind > 0 (git checkout) or
   // updateAvailable (shallow clone, App Installer feed).
-  if (!status || status.supported === false || status.error) {
+  if (!status || status.supported === false || status.error || cloudOwnsUpdates(target)) {
     return
   }
 
@@ -446,7 +391,7 @@ function maybeNotifyDiscontinued(retirement: NonNullable<DesktopUpdateStatus['re
  *  user is connected to. Surfaces that display one target's status must pass
  *  that target explicitly instead of inheriting this. */
 function activeUpdateTarget(): UpdateTarget {
-  return isRemoteMode() ? 'backend' : 'client'
+  return updateTargetFor($connection.get())
 }
 
 /**
@@ -478,6 +423,10 @@ export function openUpdatesWindow(target: UpdateTarget = activeUpdateTarget()): 
  * machine's status and must not fan out to the others.
  */
 export function startActiveUpdate(target?: UpdateTarget): void {
+  if (cloudOwnsUpdates(target ?? activeUpdateTarget())) {
+    return
+  }
+
   if (!target && hasMultipleUpdateTargets()) {
     $updateOverlayOpen.set(true)
     void applyEverythingUpdate()
@@ -500,9 +449,13 @@ export function startActiveUpdate(target?: UpdateTarget): void {
  * triggers the everything-flow.
  */
 export function requestActiveUpdate(): void {
+  if (cloudOwnsUpdates(activeUpdateTarget())) {
+    return
+  }
+
   if (hasMultipleUpdateTargets()) {
     const clientStatus = $updateStatus.get()
-    const backendStatus = $backendUpdateStatus.get()
+    const backendStatus = cloudOwnsUpdates('backend') ? null : $backendUpdateStatus.get()
 
     const anyBehind =
       (clientStatus?.behind ?? 0) > 0 ||
@@ -628,6 +581,10 @@ let backendCheckPendingKey: string | undefined
 export async function checkBackendUpdates({
   force = false
 }: UpdateCheckOptions = {}): Promise<DesktopUpdateStatus | null> {
+  if (cloudOwnsUpdates('backend')) {
+    return null
+  }
+
   if (!isRemoteMode()) {
     return $backendUpdateStatus.get()
   }
@@ -686,7 +643,7 @@ export async function checkBackendUpdates({
 export async function checkUpdates({ force = false }: UpdateCheckOptions = {}): Promise<DesktopUpdateStatus | null> {
   const bridge = window.moorDesktop?.updates
 
-  if (!bridge || $updateChecking.get()) {
+  if (!bridge || $updateChecking.get() || cloudOwnsUpdates('client')) {
     return $updateStatus.get()
   }
 
@@ -787,7 +744,13 @@ export async function setUpdateChannel(channel: SourceUpdateChannel): Promise<De
   }
 }
 
+const CLOUD_OWNED: DesktopUpdateApplyResult = { ok: false, error: 'cloud-managed' }
+
 export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promise<DesktopUpdateApplyResult> {
+  if (cloudOwnsUpdates('client')) {
+    return CLOUD_OWNED
+  }
+
   if ($updateStatus.get()?.retirement) {
     openUpdateOverlayFor('client')
 
@@ -905,6 +868,10 @@ const BACKEND_ACTION_POLL_MS = 1500
 const BACKEND_ACTION_MAX_MS = 6 * 60 * 1000
 const BACKEND_RETURN_MAX_MS = 4 * 60 * 1000
 
+// Updater output kept for the error box's Technical details and the report it
+// attaches; the progress view only paints the last few lines.
+const UPDATE_LOG_LINES = 300
+
 // C3: a committed update succeeds even when post-commit steps are still owed,
 // and a partial one (committed, but the user must act) still owes them. Name
 // every owed step of THIS action's committed run whatever the exit: follow-ups
@@ -989,7 +956,7 @@ function ingestBackendActionStatus(status: Awaited<ReturnType<typeof getActionSt
   const log = status.lines
     .filter(line => line.trim().length > 0)
     .map(line => ({ at: Date.now(), message: line, stage: current.stage }))
-    .slice(-50)
+    .slice(-UPDATE_LOG_LINES)
 
   const latest = log.at(-1)?.message
 
@@ -1190,6 +1157,10 @@ async function runBackendUpdate(): Promise<DesktopUpdateApplyResult> {
 }
 
 export function applyBackendUpdate(): Promise<DesktopUpdateApplyResult> {
+  if (cloudOwnsUpdates('backend')) {
+    return Promise.resolve(CLOUD_OWNED)
+  }
+
   if (backendUpdateInFlight) {
     return backendUpdateInFlight
   }
@@ -1276,6 +1247,11 @@ export function applyEverythingUpdate(): Promise<void> {
   return updateEverythingInFlight
 }
 
+/** The everything-flow's backend leg: a remote backend, unless Moor Cloud updates it itself. */
+function backendLegApplies(): boolean {
+  return isRemoteMode() && !cloudOwnsUpdates('backend')
+}
+
 async function runEverythingUpdate(): Promise<void> {
   $updateEverything.set({ running: true })
 
@@ -1290,7 +1266,7 @@ async function runEverythingUpdate(): Promise<void> {
     //    Its own finish path re-checks and nudges, but the everything-flow
     //    continues regardless of the outcome: one unreachable backend must
     //    not strand the other machines or the client.
-    if (isRemoteMode()) {
+    if (backendLegApplies()) {
       $updateOverlayTarget.set('backend')
 
       await applyBackendUpdate().catch(() => null)
@@ -1362,7 +1338,8 @@ async function runEverythingUpdate(): Promise<void> {
 
 function ingestProgress(payload: DesktopUpdateProgress): void {
   const current = $updateApply.get()
-  const log = [...current.log, { stage: payload.stage, message: payload.message, at: payload.at }].slice(-50)
+  const entry = { stage: payload.stage, message: payload.message, at: payload.at }
+  const log = [...current.log, entry].slice(-UPDATE_LOG_LINES)
 
   const terminal =
     payload.stage === 'error' ||

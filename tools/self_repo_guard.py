@@ -554,8 +554,9 @@ def detect_self_repo_git_mutation(
 
 
 def _block_message(operation: str, root: Path) -> str:
-    moor_home = os.environ.get("MOOR_HOME", "").strip()
-    scratch = (Path(moor_home).expanduser() if moor_home else Path.home() / ".moor") / "scratch"
+    from moor_constants import get_scratch_dir
+
+    scratch = get_scratch_dir()
     return (
         f"Blocked: `{operation}` would rewrite Moor's live source checkout "
         f"({root}) and can mix module versions in this running process. "

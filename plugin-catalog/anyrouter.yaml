@@ -1,12 +1,12 @@
 name: anyrouter
-repo: https://github.com/duyet/moor-provider-anyrouter
-sha: 86bc17dd61ade9baa6f2fb7d440979b55359a907
+repo: https://github.com/AnyRouterHQ/moor-provider-anyrouter
+sha: ba9fd9c05570800dcbbf6dae4605fd4106880d27
 subdir: anyrouter
-description: AnyRouter — unified model gateway (OpenAI-compatible); /model picker filtered to tool-capable routes, first-party meta-models like anyrouter/moor. Disclosure — sends your prompts and ANYROUTER_API_KEY to anyrouter.dev, a third-party relay that forwards to upstream vendors (OpenAI, Anthropic, Google, xAI, …), on some plans through a shared pool of other members' donated free-tier vendor keys; billed in prepaid AnyRouter credits. anyrouter/moor is AnyRouter's own routing meta-model, not a Moor inc. model. Opt-in ANYROUTER_APP_ATTRIBUTION=1 adds Moor attribution headers.
-maintainer: duyet
+description: AnyRouter — one API key for many models through an OpenAI-compatible gateway. The /model picker lists only tool-capable routes, and meta-models like anyrouter/moor auto-route across top models with fallback. Disclosure — sends your prompts and ANYROUTER_API_KEY to anyrouter.dev, a third-party relay that forwards to upstream vendors (OpenAI, Anthropic, Google, xAI, …), on some plans through a shared pool of other members' donated free-tier vendor keys; billed in prepaid AnyRouter credits. anyrouter/moor is AnyRouter's own routing meta-model, not a Moor inc. model. Opt-in ANYROUTER_APP_ATTRIBUTION=1 adds Moor attribution headers.
+maintainer: AnyRouterHQ
 tier: community
 category: models
-docs_url: https://github.com/duyet/moor-provider-anyrouter#readme
+docs_url: https://github.com/AnyRouterHQ/moor-provider-anyrouter#readme
 capabilities:
   provides_tools: []
   provides_hooks: []

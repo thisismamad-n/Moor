@@ -36,15 +36,17 @@ _ZIP_JOURNAL_TEMP = re.compile(r"\.moor-update-zip-swap\.[0-9a-f]{12}\.tmp")
 _ZIP_PRESERVED_TOP_LEVEL = {"venv", ".venv", "node_modules", ".git", ".env"}
 
 # Gitignored build outputs the source ZIP never ships, nested under top-level entries the swap replaces
-# (so `_ZIP_PRESERVED_TOP_LEVEL` cannot shield them): the packaged Desktop app, its renderer bundle and
-# its own node_modules (electron itself), and the dashboard assets. The dirty-tree guard admits them and
-# `_stage_entries` grafts the live copies into the staged tree so the swap keeps them (#90495).
+# (so `_ZIP_PRESERVED_TOP_LEVEL` cannot shield them): the packaged Desktop app, its renderer bundle,
+# the TUI and dashboard bundles, and the WhatsApp bridge's npm install. The dirty-tree guard admits them
+# and `_stage_entries` grafts the live copies into the staged tree so the swap keeps them (#90495).
+# Workspace node_modules are not carried: they hold only pnpm's links into the root virtual store, and
+# Windows links are junctions, which the copy turns into real directories that no longer resolve their
+# own dependencies. The next build relinks them from pnpm's store.
 _ZIP_PRESERVED_NESTED = {
-    "apps": ("desktop/release", "desktop/dist", "desktop/dist-webapp", "desktop/node_modules", "desktop/build"),
+    "apps": ("desktop/release", "desktop/dist", "desktop/dist-webapp", "desktop/build"),
     "moor_cli": ("web_dist",),
     "scripts": ("whatsapp-bridge/node_modules",),
-    "ui-tui": ("dist", "node_modules", "packages/moor-ink/dist"),
-    "web": ("node_modules",),
+    "ui-tui": ("dist", "packages/moor-ink/dist"),
 }
 
 _STASH_HINT = "  Stash or commit your changes, then rerun `moor update`."
@@ -409,7 +411,7 @@ def _require_staging_space(extracted: str, entries: list[str], project_root: str
 
 
 def _link_or_copy_artifact(source: str, destination: str) -> None:
-    """Hardlink where the filesystem allows (apps/desktop/node_modules is hundreds of MB, and a link stays
+    """Hardlink where the filesystem allows (apps/desktop/release is hundreds of MB, and a link stays
     valid after the swap unlinks the old tree; on Windows a link also succeeds on a locked Moor.exe
     where copy2 raises); byte copy otherwise."""
     try:
@@ -445,7 +447,7 @@ def _stage_entries(extracted: str, entries: list[str], project_root: str,
                 os.path.join(extracted, item), dst,
                 None if on_created is None else (lambda path, i=index: on_created(i, path))), dst))
             # The source ZIP carries only source; the built outputs (#70337/#87331 release/, then
-            # dist/, apps/desktop/node_modules and web_dist — #90495) exist only in the LIVE tree. Graft
+            # dist/ and web_dist — #90495) exist only in the LIVE tree. Graft
             # them into the staged copy BEFORE the swap so the commit preserves them atomically.
             _graft_nested_artifacts(item, dst, staged[-1][0])
     except Exception:
@@ -570,10 +572,7 @@ def _download_and_swap_zip(branch: str, zip_url: str, target_sha: str | None = N
     from moor_cli.update_cmd import _m
 
     import tempfile
-    from moor_cli.update_source import REPO, URL, download_archive, validate_source, validate_update_tree
-    validate_source(URL, branch)
-    if zip_url != f"https://api.github.com/repos/{REPO}/zipball/{branch}":
-        raise ValueError("Update rejected: archive source is not Moor.")
+    from urllib.request import urlretrieve
     print("→ Downloading latest version...")
     tmp_dir = tempfile.mkdtemp(prefix="moor-update-")
     downloaded = False
@@ -591,7 +590,6 @@ def _download_and_swap_zip(branch: str, zip_url: str, target_sha: str | None = N
                              f"{target_sha or 'a full commit SHA'}; refusing to install unidentified bytes")
         target_sha = archived
         extracted = _extracted_root(tmp_dir, branch)
-        validate_update_tree(lambda name: (Path(extracted) / name).read_text(encoding="utf-8-sig"))
         entries = [i for i in os.listdir(extracted) if i not in _ZIP_PRESERVED_TOP_LEVEL]
         project_root = str(_m().PROJECT_ROOT)
         _require_staging_space(extracted, entries, project_root)
@@ -627,15 +625,14 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False,
     from moor_cli.update_cmd import _m, _complete_source_update
     # The static archive would silently ignore --branch — the exact silent-divergence bug it exists to
     # prevent. Refuse rather than lie.
-    from moor_cli.update_source import BRANCH
     branch = _m()._resolve_update_branch(args)
-    if branch != BRANCH:
+    if branch != "main":
         print(f"✗ --branch={branch} is not supported on the Windows ZIP-fallback update path.")
         print(
             "  This path runs when git file I/O is broken on the system. "
             "Either resolve the git-side breakage (typically an antivirus "
             "or NTFS filter holding files open) and rerun `moor update "
-            f"--branch {branch}`, or update against {BRANCH} with `moor update`."
+            f"--branch {branch}`, or update against main with `moor update`."
         )
         _record_stop("branch_unsupported")
         _m().sys.exit(1)

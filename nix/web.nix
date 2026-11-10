@@ -1,6 +1,6 @@
 # Dashboard compilation consumes prepared icons; no npm lifecycle preparation.
 { moorNpmLib, generatedIcons, ... }:
-moorNpmLib.buildNpmPackage {
+moorNpmLib.buildPnpmPackage {
   dirs = [
     "web"
     "apps/shared"

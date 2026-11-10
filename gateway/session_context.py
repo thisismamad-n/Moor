@@ -36,6 +36,7 @@ _SESSION_VARS = (
     _SESSION_CHAT_NAME, _SESSION_THREAD_ID, _SESSION_USER_ID, _SESSION_USER_ID_ALT,
     _SESSION_USER_NAME, _SESSION_SCOPE_ID, _SESSION_KEY, _SESSION_ID,
     _SESSION_UI_SESSION_ID, _SESSION_MESSAGE_ID, _SESSION_PROFILE, _CRON_SESSION, _SESSION_PARENT_CHAT_ID,
+    _SESSION_ACTOR_ID, _SESSION_ACTOR_NAME,
 ) = tuple(ContextVar(name, default=_UNSET) for name in (
     "MOOR_SESSION_PLATFORM", "MOOR_SESSION_SOURCE", "MOOR_SESSION_CHAT_ID",
     "MOOR_SESSION_CHAT_TYPE", "MOOR_SESSION_CHAT_NAME", "MOOR_SESSION_THREAD_ID",
@@ -43,6 +44,9 @@ _SESSION_VARS = (
     "MOOR_SESSION_SCOPE_ID", "MOOR_SESSION_KEY", "MOOR_SESSION_ID",
     "MOOR_UI_SESSION_ID", "MOOR_SESSION_MESSAGE_ID", "MOOR_SESSION_PROFILE",
     "MOOR_CRON_SESSION", "MOOR_SESSION_PARENT_CHAT_ID",
+    # The trusted sender of THIS turn. USER_ID is the session ROUTE (kanban/cron/send_message rebuild
+    # routes from it) and is empty in a shared chat (Telegram observe mode); ACTOR is who asked.
+    "MOOR_SESSION_ACTOR_ID", "MOOR_SESSION_ACTOR_NAME",
 ))
 
 # Whether this channel can route an ASYNC completion back AFTER the turn ends (see
@@ -134,7 +138,7 @@ def set_session_vars(
     user_name: str = "", scope_id: str = "", session_key: str = "", session_id: str = "",
     message_id: str = "", profile: str = "", cwd: str = "", async_delivery: bool = True,
     ui_session_id: str = "", cron_session: Any = _UNSET, parent_chat_id: str = "",
-    session_history_delivery: str | None = None,
+    session_history_delivery: str | None = None, actor_id: str = "", actor_name: str = "",
 ) -> list:
     """Set all session context variables and return reset tokens.  Call
     ``clear_session_vars(tokens)`` in a ``finally``; not nestable, clearing resets every var
@@ -150,7 +154,7 @@ def set_session_vars(
     values = (
         platform, source, chat_id, chat_type, chat_name, thread_id, user_id, user_id_alt,
         user_name, scope_id, session_key, session_id, ui_session_id, message_id, profile,
-        cron_session, parent_chat_id,
+        cron_session, parent_chat_id, actor_id or user_id, actor_name or user_name,
     )
     tokens = [var.set(value) for var, value in zip(_SESSION_VARS, values)]
     tokens.append(_SESSION_ASYNC_DELIVERY.set(bool(async_delivery)))

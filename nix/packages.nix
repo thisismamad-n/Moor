@@ -40,7 +40,6 @@
         # `prev.extraDependencyGroups` worked before the shipped groups moved to
         # defaultDependencyGroups, and an argument default never lands in `prev`.
         extraDependencyGroups = [ ];
-        npm-lockfile-fix = inputs'.npm-lockfile-fix.packages.default;
         inherit pmPackages;
         inherit
           rev
@@ -80,7 +79,6 @@
       packages = {
         node-gyp =
           (pkgs.callPackage ./lib.nix {
-            inherit (pkgs) npm-lockfile-fix;
             inherit pmPackages;
           }).node-gyp;
         default = full;
@@ -101,7 +99,10 @@
         webapp = full.moorWebapp;
         desktop = full.moorDesktop;
 
-        update-npm-lockfile = full.moorNpmLib.updateNpmLockfile;
+        # The fixed-output pnpm store every frontend installs from; its hash
+        # lives in nix/pnpm-deps-hash (`nix run .#update-pnpm-lockfile`).
+        pnpm-deps = full.moorNpmLib.pnpmDeps;
+        update-pnpm-lockfile = full.moorNpmLib.updatePnpmLockfile;
       }
       # Every pm lockfile tool as its own installable derivation:
       # `nix build .#pm-ripgrep`, `nix build .#pm-gh`, ...

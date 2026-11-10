@@ -1,12 +1,12 @@
 import { driveChargeSettlement, type SettlementOutcome } from '@moor/shared/charge-settlement'
-
 import type {
   BillingChargeResponse,
   BillingChargeStatusResponse,
   BillingErrorPayload,
   BillingMutationResponse,
   BillingStateResponse
-} from '../../../gatewayTypes.js'
+} from '@moor/shared/gateway-types'
+
 import { t } from '../../../i18n/runtime.js'
 import { openExternalUrl } from '../../../lib/openExternalUrl.js'
 import type { BillingChargeOutcome, BillingOverlayCtx } from '../../interfaces.js'

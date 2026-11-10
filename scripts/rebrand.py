@@ -179,6 +179,9 @@ PROTECT_PATTERNS: list[str] = [
     # (e.g. the AaronWong1999/hermesclaw WeChat bridge) — external repos,
     # links stay functional.
     r"(?i:[\w.-]{0,100}hermesclaw(?:[\w.-]{0,100})?)",
+    r"(?i:[\w.-]{0,100}hermesford(?:[\w.-]{0,100})?)",
+    r"(?i:[\w.-]{0,100}hermesmade(?:[\w.-]{0,100})?)",
+    r"(?i:[\w.-]{0,100}hermesvault(?:[\w.-]{0,100})?)",
     # Legacy Portal tags backwards-compatibility aliases in agent/portal_tags.py
     r"nous_portal_tags\s*=\s*moor_portal_tags",
     r"nous_client_tag\s*=\s*moor_client_tag",

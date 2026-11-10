@@ -440,11 +440,10 @@ def harden_import_path(src_root: str | None = None) -> None:
     absolute path (venv activation, PYTHONPATH), so both are handled: relative forms are
     dropped and the Moor root is *relocated* to the front, not merely inserted when
     absent. ``src_root`` defaults to this module's directory (the repo root for every
-    shipped entry point), so no spawner env var is required.
+    shipped entry point), never an inherited ``MOOR_PYTHON_SRC_ROOT``: a checkout's dev
+    shell exports that, and an install started from it would import the checkout's code.
     """
-    root = src_root or os.environ.get("MOOR_PYTHON_SRC_ROOT") or os.path.dirname(
-        os.path.abspath(__file__)
-    )
+    root = src_root or os.path.dirname(os.path.abspath(__file__))
 
     sys.path[:] = [p for p in sys.path if p not in ("", ".")]
 

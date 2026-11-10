@@ -346,6 +346,10 @@ contextBridge.exposeInMainWorld('moorDesktop', {
     },
     get: () => ipcRenderer.invoke('moor:profile:get'),
     remember: name => ipcRenderer.invoke('moor:profile:remember', name),
+    importConnections: (record: Record<string, string>) =>
+      ipcRenderer.invoke('moor:profile:connections:import', record),
+    rememberConnection: (connectionId: string, profile: string) =>
+      ipcRenderer.invoke('moor:profile:connections:remember', connectionId, profile),
     set: name => ipcRenderer.invoke('moor:profile:set', name)
   },
   // The handler resolves an expected 404 with a sentinel instead of rejecting
@@ -398,6 +402,13 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   watchDirectory: dir => ipcRenderer.invoke('moor:watchDirectory', dir),
   stopPreviewFileWatch: id => ipcRenderer.invoke('moor:stopPreviewFileWatch', id),
   setActiveWork: payload => ipcRenderer.send('moor:active-work', payload),
+  scheduleStreamWorkWake: (token, delayMs) => ipcRenderer.send('moor:stream-work-wake', { token, delayMs }),
+  onStreamWorkWake: callback => {
+    const listener = (_event, token) => callback(token)
+    ipcRenderer.on('moor:stream-work-ready', listener)
+
+    return () => ipcRenderer.removeListener('moor:stream-work-ready', listener)
+  },
   setTitleBarTheme: payload => ipcRenderer.send('moor:titlebar-theme', payload),
   setNativeTheme: mode => ipcRenderer.send('moor:native-theme', mode),
   setTranslucency: payload => ipcRenderer.send('moor:translucency', payload),
@@ -430,6 +441,14 @@ contextBridge.exposeInMainWorld('moorDesktop', {
   setPreviewShortcutActive: active => ipcRenderer.send('moor:previewShortcutActive', Boolean(active)),
   setPreviewGuestHidden: (webContentsId, hidden) =>
     ipcRenderer.send('moor:preview-guest-hidden', { webContentsId, hidden: Boolean(hidden) }),
+  beginPreviewGuestActivity: webContentsId => ipcRenderer.invoke('moor:preview-guest-activity:begin', webContentsId),
+  endPreviewGuestActivity: token => ipcRenderer.invoke('moor:preview-guest-activity:end', token),
+  executePreviewGuestScript: (token, code) => ipcRenderer.invoke('moor:preview-guest-activity:script', token, code),
+  syncPreviewSignins: request => ipcRenderer.invoke('moor:preview-signins:sync', request),
+  migratePreviewSigninsForProfile: (request: { oldProfile: string; newProfile: string }) =>
+    ipcRenderer.invoke('moor:preview-signins:profile-renamed', request),
+  dropPreviewSigninsForProfile: (request: { profile: string }) =>
+    ipcRenderer.invoke('moor:preview-signins:profile-deleted', request),
   openExternal: url => ipcRenderer.invoke('moor:openExternal', url),
   freeTierChallenge: {
     // Load the account service's challenge page in a hidden window (revealed

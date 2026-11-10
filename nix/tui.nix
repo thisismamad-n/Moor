@@ -1,6 +1,6 @@
-# Self-contained Moor TUI, compiled by the same recipe as npm.
+# Self-contained Moor TUI, compiled by the same recipe as pnpm.
 { moorNpmLib, ... }:
-moorNpmLib.buildNpmPackage {
+moorNpmLib.buildPnpmPackage {
   dirs = [
     "ui-tui"
     "apps/shared"

@@ -264,7 +264,7 @@ async function locateMoor(ssh, remoteMoorPath) {
 
   const err: any = new Error(
     'Moor is not installed on the remote host (could not find a `moor` executable). ' +
-      'Install it on the remote with:  curl -fsSL https://raw.githubusercontent.com/thisismamad-n/Moor/master/scripts/install.sh | bash  ' +
+      'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
       '— or set the Moor path explicitly in the SSH connection settings.'
   )
 
@@ -1151,9 +1151,14 @@ function buildSpawnCommand(moorPath, profile, opts: any = {}) {
   // when its owning remote shell is dead.
   const markerAbsent = `[ ! -e ${marker} ]`
 
+  // A dev build's renderer is served from MOOR_DESKTOP_DEV_SERVER, an http origin the backend
+  // trusts only when it inherits the variable, exactly as a locally spawned backend does. A value the
+  // remote login shell exports is cleared first, so a packaged build never hands one on.
+  const devServerEnv = opts.devServer ? ` MOOR_DESKTOP_DEV_SERVER=${shq(opts.devServer)}` : ''
+
   const dashCmd =
-    `ulimit -n ${REMOTE_NOFILE_SOFT_LIMIT} 2>/dev/null || true; ` +
-    `exec env MOOR_DESKTOP=1 ${moor} ${profileArgs}${subCmd}`
+    `ulimit -n ${REMOTE_NOFILE_SOFT_LIMIT} 2>/dev/null || true; unset MOOR_DESKTOP_DEV_SERVER; ` +
+    `exec env MOOR_DESKTOP=1${devServerEnv} ${moor} ${profileArgs}${subCmd}`
 
   const detachedShell: string = `eval "exec $1>&-"; ${dashCmd} </dev/null >> ${logPath} 2>&1 & echo $!`
   // The inner shell backgrounds Moor and reports its PID; backgrounding the
@@ -1295,7 +1300,15 @@ async function scrapeReadyPort(ssh, logPath, { timeoutMs = resolveReadyTimeoutMs
 
 async function spawnRemoteDashboard(
   ssh,
-  { moorPath, profile, token, ownershipId, moorHome = '~/.moor', assertInstallClear = async () => {} }
+  {
+    moorPath,
+    profile,
+    token,
+    ownershipId,
+    moorHome = '~/.moor',
+    devServer = '',
+    assertInstallClear = async () => {}
+  }
 ) {
   if (!(await remoteSupportsSshOwnership(ssh, moorPath))) {
     const err: any = new Error(
@@ -1365,6 +1378,7 @@ async function spawnRemoteDashboard(
         tokenFilePath,
         logPath,
         moorHome,
+        devServer,
         ownershipId,
         reservationNonce: spawnNonce,
         lockMetadata: {
@@ -1377,6 +1391,7 @@ async function spawnRemoteDashboard(
           logPath,
           tokenFingerprint: fingerprintToken(token),
           protocolVersion: PROTOCOL_VERSION,
+          devServer,
           startedAt: new Date().toISOString()
         }
       })
@@ -1501,6 +1516,22 @@ async function waitForRemoteSpawnCompletion(ssh, ownershipId, timeoutMs) {
   throw error
 }
 
+// Whether a published backend record serves this connect as-is. The backend trusts a dev
+// renderer's origin only from the MOOR_DESKTOP_DEV_SERVER it was spawned with; one spawned for
+// another renderer (or none, as older records and packaged builds are) would refuse every renderer
+// socket, so it is replaced rather than reused.
+function lockServesConnect(lock, { profile, reuseToken, moorPath, moorHome, devServer }) {
+  return (
+    lock.port > 0 &&
+    lock.profile === profile &&
+    Boolean(reuseToken) &&
+    lock.tokenFingerprint === fingerprintToken(reuseToken) &&
+    lock.moorPath === moorPath &&
+    lock.moorHome === moorHome &&
+    (lock.devServer ?? '') === devServer
+  )
+}
+
 async function connect(deps) {
   const {
     ssh,
@@ -1514,6 +1545,7 @@ async function connect(deps) {
     adoptServedToken,
     rememberLog = () => {},
     readyTimeoutMs = resolveReadyTimeoutMs(),
+    devServer = '',
     signal
   } = deps
 
@@ -1578,14 +1610,7 @@ async function connect(deps) {
       ))
 
     const reusable =
-      pidAlive &&
-      owned &&
-      lock.port > 0 &&
-      lock.profile === profile &&
-      Boolean(reuseToken) &&
-      lock.tokenFingerprint === fingerprintToken(reuseToken) &&
-      lock.moorPath === moorPath &&
-      lock.moorHome === moorHome
+      pidAlive && owned && lockServesConnect(lock, { profile, reuseToken, moorPath, moorHome, devServer })
 
     if (reusable) {
       const creationTime = lock.creationTime || (await remoteProcessCreationTime(ssh, lock.pid))
@@ -1674,6 +1699,7 @@ async function connect(deps) {
     token: spawnToken,
     ownershipId,
     moorHome,
+    devServer,
     assertInstallClear: () => assertRemoteInstallUpdateClear(ssh, moorHome, moorPath)
   })
 
@@ -1711,6 +1737,7 @@ async function connect(deps) {
     logPath,
     tokenFingerprint: fingerprintToken(spawnToken),
     protocolVersion: PROTOCOL_VERSION,
+    devServer,
     startedAt: new Date().toISOString(),
     ...(creationTime ? { creationTime } : {})
   }
@@ -1815,6 +1842,7 @@ export {
   locateMoor,
   LOCKFILE_SCHEMA_VERSION,
   lockfilePath,
+  lockServesConnect,
   MIN_READY_TIMEOUT_MS,
   mintToken,
   openForward,

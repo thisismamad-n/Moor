@@ -55,16 +55,17 @@ If you're just running the Moor Agent and want to use Docker, see `website/docs/
 │   │   ├── seed .env / config.yaml / SOUL.md
 │   │   └── skills_sync.py
 │   └── 02-reconcile-profiles          ← moor_cli.container_boot
-│       ├── chown /run/service (moor-writable for runtime register)
+│       ├── mkdir+chown /run/moor-service (moor-owned gateway scandir; /run/service stays root)
 │       └── walk $MOOR_HOME/profiles/<name>/gateway_state.json
-│           → recreate /run/service/gateway-<name>/
+│           → recreate /run/moor-service/gateway-<name>/
 │           → auto-start only those with prior_state == "running"
 │
 ├── s6-rc.d (static services, in /etc/s6-overlay/s6-rc.d/)
 │   ├── main-moor/run                ← exec sleep infinity (no-op slot)
-│   └── dashboard/run                  ← if MOOR_DASHBOARD=1, runs `moor dashboard`
+│   ├── dashboard/run                  ← if MOOR_DASHBOARD=1, runs `moor dashboard`
+│   └── profile-gateways/run           ← `s6-setuidgid moor s6-svscan /run/moor-service`
 │
-├── /run/service (s6-svscan watches; tmpfs)
+├── /run/moor-service (moor s6-svscan from s6-rc `profile-gateways` watches; tmpfs)
 │   ├── gateway-coder/                 ← runtime-registered per-profile
 │   │   ├── type        ("longrun")
 │   │   ├── run         ("#!/command/with-contenv sh ... exec s6-setuidgid moor moor -p coder gateway run")
@@ -103,7 +104,7 @@ The original plan (v1–v3) called for main moor to run as a supervised s6-rc se
 
 So we use the s6-overlay-native CMD pattern via the dispatcher: `ENTRYPOINT ["/opt/moor/docker/entrypoint-dispatch.sh"]`, which under PID 1 exec's `/init /opt/moor/docker/main-wrapper.sh "$@"`. The wrapper is prepended to user args automatically — so `docker run <image> --version` becomes `/init main-wrapper.sh --version`, and `--version` doesn't get intercepted by /init's POSIX shell. The wrapper drops to moor via `s6-setuidgid`, then exec's the chosen program. The program's exit code becomes the container exit code, exactly matching the pre-s6 tini contract. When the entrypoint is NOT PID 1 (Fly Machines, `docker run --init`), the dispatcher skips `/init` entirely (it would abort with `can only run as pid 1`), restores the s6 helper PATH, runs stage2-hook.sh, and exec's main-wrapper.sh directly — no supervised services on that path (#38349).
 
-Trade-off: main moor is unsupervised under s6. That exactly matches its behavior under tini (the pre-s6 image). Dashboard supervision is the only **new** guarantee — and per-profile gateways under `/run/service/` get full supervision.
+Trade-off: main moor is unsupervised under s6. That exactly matches its behavior under tini (the pre-s6 image). Dashboard supervision is the only **new** guarantee — and per-profile gateways under `/run/moor-service/` get full supervision.
 
 ## Quick recipes
 
@@ -118,7 +119,7 @@ docker exec <c> sh -c 'cat /proc/1/comm; readlink /proc/1/exe'
 
 ```sh
 # /command/ isn't on docker-exec PATH — use absolute path
-docker exec <c> /command/s6-svstat /run/service/gateway-<name>
+docker exec <c> /command/s6-svstat /run/moor-service/gateway-<name>
 # "up (pid …) … seconds"            → running
 # "down (exitcode N) … seconds, normally up, want up, …" → s6 wants it up but the process keeps exiting (crash loop)
 # "down … normally up, ready …"     → user stopped it
@@ -127,9 +128,9 @@ docker exec <c> /command/s6-svstat /run/service/gateway-<name>
 ### Bring a service up/down manually
 
 ```sh
-docker exec <c> /command/s6-svc -u /run/service/gateway-<name>   # up
-docker exec <c> /command/s6-svc -d /run/service/gateway-<name>   # down
-docker exec <c> /command/s6-svc -t /run/service/gateway-<name>   # SIGTERM (restart)
+docker exec <c> /command/s6-svc -u /run/moor-service/gateway-<name>   # up
+docker exec <c> /command/s6-svc -d /run/moor-service/gateway-<name>   # down
+docker exec <c> /command/s6-svc -t /run/moor-service/gateway-<name>   # SIGTERM (restart)
 ```
 
 ### Watch the cont-init reconciler log
@@ -175,6 +176,10 @@ The cont-init reconciler runs as moor (`s6-setuidgid moor` in `02-reconcile-prof
 ### Files written by `docker exec` are root-owned
 
 `docker exec` defaults to root. Either pass `--user moor` or rely on the stage2 chown sweep next reboot. Don't write files under `$MOOR_HOME/profiles/<name>/` as root manually — the next reconcile pass will sweep them but in-flight operations may hit perm errors.
+
+### Root code must not work inside `/run/moor-service`
+
+The gateway scandir is moor-owned, so moor can rename anything in it and leave a symlink behind. Root writes, chmods and chowns there follow that symlink. Root registration therefore builds each slot in `/run/.moor-service.staging` (root, 0700, same tmpfs) and publishes it with one `rename`; `S6ServiceManager` runs `s6-svc`, `s6-svwait` and `s6-svscanctl` through `s6-setuidgid moor` when called as root. Keep new root-side code on those paths.
 
 ### Service slot exists but s6-svstat says "s6-supervise not running"
 

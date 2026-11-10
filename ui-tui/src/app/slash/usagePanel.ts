@@ -1,6 +1,6 @@
+import type { BillingStateResponse } from '@moor/shared/gateway-types'
 import { formatResetsIn } from '@moor/shared/plan-usage'
 
-import type { BillingStateResponse } from '../../gatewayTypes.js'
 import { t } from '../../i18n/runtime.js'
 import type { PanelSection } from '../../types.js'
 

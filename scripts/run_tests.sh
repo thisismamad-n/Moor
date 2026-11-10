@@ -138,12 +138,16 @@ fi
 # and tempfile needs TEMP/TMP. Dropping them breaks collection on native
 # Windows (issues #67385, #70813). PATHEXT is also required: without .EXE,
 # PowerShell opens a native child as a document without waiting for its exit.
+# PSModuleAnalysisCachePath: the hosted Windows images point PowerShell at a
+# shared module analysis cache, which CI warms before the tests (tests-os.yml).
+# Without it a test's powershell.exe child falls back to a cold per-user cache
+# and re-analyses every installed module (~22s per launch on arm64 runners).
 # These are location variables, not
 # credentials, so forwarding them keeps the isolation intent intact. Each is
 # only forwarded when actually set, so POSIX runs are byte-for-byte unchanged.
 WIN_ENV=()
 for _win_var in USERPROFILE HOMEDRIVE HOMEPATH LOCALAPPDATA APPDATA SYSTEMROOT TEMP TMP \
-    ComSpec PATHEXT PROGRAMFILES ProgramFiles PROGRAMDATA ProgramData; do
+    ComSpec PATHEXT PROGRAMFILES ProgramFiles PROGRAMDATA ProgramData PSModuleAnalysisCachePath; do
   if [ -n "${!_win_var:-}" ]; then
     WIN_ENV+=("$_win_var=${!_win_var}")
   fi
@@ -192,6 +196,12 @@ _pf86="$(env | sed -n 's/^ProgramFiles(x86)=//p' | head -n1)"
 #     their user profiles and the transcripts CI uploads.
 #   * MOOR_E2E_STRICT_ACCEPTANCE makes tests/e2e/core/_pending_fixes.py's
 #     known gaps hard failures in an acceptance run (workflow dispatch input).
+#   * MOOR_E2E_UPGRADE_BASE (older name MOOR_E2E_N1_REF) picks the release
+#     tests/e2e/core/upgrade starts from: a tag, a commit, or an updater
+#     generation (by-path, handoff, pre-handoff); unset, the newest release.
+#     MOOR_E2E_INSTALL_REF installs a patched commit in its place (proving a
+#     leg red), MOOR_E2E_GIT_OBJECTS names an extra object store for its
+#     smart-HTTP origin, MOOR_E2E_KEEP_ROOT keeps its sandbox roots.
 #   * MOOR_TEST_SSH_HOST / _USER / _PORT / _KEY and MOOR_TEST_DOCKER_IMAGE
 #     arm the real-backend tests (tests/tools/test_ssh_environment.py,
 #     tests/tools/test_docker_backend_real.py); remote-backends.yml points them at
@@ -208,10 +218,12 @@ _pf86="$(env | sed -n 's/^ProgramFiles(x86)=//p' | head -n1)"
 # credential can leak" property stays auditable at a glance.
 TEST_ENV=()
 for _test_var in MOOR_TEST_IMAGE MOOR_TEST_WORKERS MOOR_TEST_PATHS \
-  MOOR_TEST_FILE_TIMEOUT MOOR_TEST_FILE_RETRIES MOOR_TEST_SLICE \
+  MOOR_TEST_FILE_TIMEOUT MOOR_TEST_FILE_RETRIES MOOR_TEST_SLICE MOOR_TEST_FORKSERVER \
   SSL_CERT_FILE SSL_CERT_DIR MOOR_GATEWAY_LOCK_DIR MOOR_E2E_REQUIRE_TUI CI GITHUB_ACTIONS \
   MOOR_E2E_WINDOWS_INSTALL MOOR_E2E_MACHINE_ROOT MOOR_E2E_PROFILES_ROOT MOOR_E2E_ARTIFACTS \
-  MOOR_E2E_STRICT_ACCEPTANCE MOOR_TEST_SSH_HOST MOOR_TEST_SSH_USER MOOR_TEST_SSH_PORT \
+  MOOR_E2E_STRICT_ACCEPTANCE MOOR_E2E_UPGRADE_BASE MOOR_E2E_N1_REF \
+  MOOR_E2E_INSTALL_REF MOOR_E2E_GIT_OBJECTS MOOR_E2E_KEEP_ROOT \
+  MOOR_TEST_SSH_HOST MOOR_TEST_SSH_USER MOOR_TEST_SSH_PORT \
   MOOR_TEST_SSH_KEY MOOR_TEST_DOCKER_IMAGE; do
   if [ -n "${!_test_var:-}" ]; then
     TEST_ENV+=("$_test_var=${!_test_var}")

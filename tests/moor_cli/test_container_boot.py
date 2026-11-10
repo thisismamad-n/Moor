@@ -10,7 +10,6 @@ tests/docker/test_container_restart.py.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import pytest
@@ -50,8 +49,7 @@ def _hermetic_container_argv(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: (),
     )
     # This fixture owns real files, but does not run as the image's service user.
-    monkeypatch.setattr("moor_cli.service_manager._MOOR_UID", os.getuid())
-    monkeypatch.setattr("moor_cli.service_manager._MOOR_GID", os.getgid())
+    monkeypatch.setattr("moor_cli.service_manager._chown_moor", lambda path: None)
 
 
 def _make_profile(

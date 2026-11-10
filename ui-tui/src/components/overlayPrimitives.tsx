@@ -1,9 +1,9 @@
 import type { Key } from '@moor/ink'
 import { Text, useInput } from '@moor/ink'
 import { mix } from '@moor/shared/color'
+import type { UsageModelData } from '@moor/shared/gateway-types'
 import { type ReactNode, useState } from 'react'
 
-import type { UsageModelData } from '../gatewayTypes.js'
 import { liftForContrast } from '../lib/color.js'
 import type { Theme } from '../theme.js'
 

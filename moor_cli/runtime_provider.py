@@ -901,7 +901,9 @@ def _api_key_provider_runtime(provider, pconfig, requested_provider, model_cfg, 
     # to the first request and make a later fallback look like a silent provider switch.
     if not has_usable_secret(creds.get("api_key")):
         from moor_cli.runtime_readiness import missing_credentials_suffix
+        from moor_cli.runtime_provider_missing_key import named_profile_key_hint
         hint = (f" Set {', '.join(pconfig.api_key_env_vars)}." if pconfig.api_key_env_vars else "") + missing_credentials_suffix(provider)
+        hint += named_profile_key_hint(pconfig.api_key_env_vars)
         raise AuthError(f"No usable credentials found for provider '{provider}'.{hint}", provider=provider, code="missing_api_key")
     # Honour model.base_url when the configured provider matches (e.g. api.minimaxi.com China endpoint).
     base_url = _actual_url(provider, _config_base_url_for_provider(model_cfg, provider) or creds.get("base_url", "").rstrip("/"))
@@ -910,16 +912,6 @@ def _api_key_provider_runtime(provider, pconfig, requested_provider, model_cfg, 
     base_url = _finalize_base_url(provider, api_mode, base_url)
     api_key = _actual_local_key(provider, creds.get("api_key", ""), base_url)
     return _runtime(provider, api_mode, base_url, api_key, source=creds.get("source", "env"), requested_provider=requested_provider)
-
-
-def _opencode_free_runtime(provider, requested_provider, model_cfg, target_model) -> Optional[Dict[str, Any]]:
-    """OpenCode Zen free tier (*-free slugs) is served ANONYMOUSLY on the Zen relay only: unknown
-    bearers 401 and the Go relay rejects free models, so free slugs route through the keyless Zen
-    runtime BEFORE the pool / explicit / api_key paths."""
-    if _models.opencode_provider_family(provider) is None:
-        return None
-    model = str(target_model or model_cfg.get("default") or model_cfg.get("model") or "").strip()
-    return _tag(_models.opencode_zen_free_runtime(provider, model), requested_provider)
 
 
 # ── the resolution ladder ──────────────────────────────────────────────────────────────────
@@ -1090,6 +1082,9 @@ def resolve_runtime_provider(*, requested: Optional[str] = None, explicit_api_ke
         logger.info("model.openai_runtime=codex_app_server overrides the %s runtime (source=%s); its credential/endpoint "
                     "is not used — the app-server authenticates with its own login", runtime.get("provider"), runtime.get("source"))
     runtime["api_mode"] = api_mode
+    from moor_cli.runtime_provider_missing_key import raise_if_declared_key_missing
+    raise_if_declared_key_missing(requested_provider, runtime, _get_model_config(), _FROZEN_RUNTIME_CONFIG.get(),
+                                  explicit_api_key=explicit_api_key)
     return runtime
 
 
@@ -1126,7 +1121,6 @@ def _ladder_rungs(requested_provider, explicit_api_key, explicit_base_url, targe
         yield _local_endpoint_bypass(requested_provider, explicit_api_key, explicit_base_url)
     provider = resolve_provider(requested_provider, explicit_api_key=explicit_api_key, explicit_base_url=explicit_base_url)
     model_cfg = _get_model_config()
-    yield _opencode_free_runtime(provider, requested_provider, model_cfg, target_model)
     yield _resolve_explicit_runtime(provider=provider, requested_provider=requested_provider, model_cfg=model_cfg,
                                     explicit_api_key=explicit_api_key, explicit_base_url=explicit_base_url,
                                     target_model=target_model)

@@ -3,11 +3,11 @@ import { fuzzyRank } from '@moor/shared/fuzzy'
 import type { ModelOptionProvider, ModelOptionsResult } from '@moor/shared/gateway-events'
 import { modelSearchText } from '@moor/shared/model-search-text'
 import { hasTopTier, planBlocks, planLimitLine, sectionAt, usageLevel, usageTag } from '@moor/shared/plan-usage'
+import { providerDisplayNames } from '@moor/shared/provider-names'
 import { REASONING_EFFORTS } from '@moor/shared/reasoning-effort'
+import { TUI_SESSION_MODEL_FLAG } from '@moor/shared/slash-input'
 import { useEffect, useMemo, useState } from 'react'
 
-import { providerDisplayNames } from '../domain/providers.js'
-import { TUI_SESSION_MODEL_FLAG } from '../domain/slash.js'
 import type { GatewayClient } from '../gatewayClient.js'
 import { messages } from '../i18n/runtime.js'
 import { useT } from '../i18n/useT.js'
@@ -807,6 +807,7 @@ export function ModelPicker({
 
   // ── Model selection stage ────────────────────────────────────────────
   const filtering = !!filter.trim()
+
   const { footnote, levelled, nameWidth, sectioned, visibleModels } = planListLayout(
     provider,
     models,
@@ -814,6 +815,7 @@ export function ModelPicker({
     width,
     M
   )
+
   const { items, offset } = windowItems(models, modelIdx, visibleModels)
   const noModelMatches = filtering && models.length === 0
   let sectionLines = 0

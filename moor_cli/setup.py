@@ -30,7 +30,9 @@ from moor_cli.secret_prompt import masked_secret_prompt
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+from moor_cli._startup_fast import project_root_str
+
+PROJECT_ROOT = Path(project_root_str())
 
 _DOCS_BASE = "https://github.com/thisismamad-n/Moor/tree/master/website/docs"
 _BRACKETED_PASTE_PATTERN = re.compile(r"\x1b\[\s*200~|\x1b\[\s*201~")

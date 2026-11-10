@@ -1,3 +1,6 @@
+// Relative, not `@moor/shared`: esbuild bundles electron/ without tsconfig paths.
+import { isMoorCloudUrl } from '../../shared/src/moor-cloud'
+
 // A cold backend boot (plugin discovery + route mounting at web_server import
 // time) can take 45-60s on slower hardware. A 45s deadline makes first-boot
 // readiness a coin flip: every lost race tears down a healthy-but-slow backend
@@ -148,9 +151,10 @@ export function makeMoorCloudBackendDownError(baseUrl: string, error: unknown): 
   const err = new Error(
     `Moor Cloud agent ${hostname} is down ` +
       `(HTTP ${serverError.statusCode}: server-side fault). ` +
-      'Check Moor Cloud status or switch to Local mode in Settings → Gateway. ' +
-      'You can also reach out at https://github.com/thisismamad-n/Moor/discussions ' +
-      'for assistance. ' +
+      'Check https://portal.nousresearch.com for backend status, ' +
+      'or switch to Local mode in Settings → Gateway. ' +
+      'You can also reach out on Discord at discord.gg/NousResearch ' +
+      'for immediate assistance. ' +
       `Original detail: ${detail}`
   ) as any
 
@@ -164,18 +168,12 @@ export function makeMoorCloudBackendDownError(baseUrl: string, error: unknown): 
 
 /**
  * True when the backend URL points at a Moor-managed Moor Cloud instance
- * (e.g. ares-3009.agents.nousresearch.com). These are Fly.io-hosted machines
- * the user cannot restart themselves — a 503 from one means the server is down
- * and the recovery path is Portal/Discord/wait.
+ * (e.g. ares-3009.agents.nousresearch.com, or its staging twin). These are
+ * hosted machines the user cannot restart themselves — a 503 from one means
+ * the server is down and the recovery path is Portal/Discord/wait.
  */
 export function isMoorCloudAgentUrl(baseUrl: string): boolean {
-  try {
-    const host = new URL(baseUrl).hostname
-
-    return host.endsWith('.agents.nousresearch.com')
-  } catch {
-    return false
-  }
+  return isMoorCloudUrl(baseUrl)
 }
 
 export function isMissingHealthEndpointError(error: unknown): boolean {

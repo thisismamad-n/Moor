@@ -1,0 +1,17 @@
+name: usage-hud
+repo: https://github.com/aktogde1/moor-usage-hud
+sha: 097bbb5ef882dd6eb19d9afd9003e565130050e1
+description: Compact Codex account limits and focused-session token usage for Moor Desktop. Disclosure — uses Moor gateway session.usage and model.options; Moor may refresh provider account usage; no direct credential access or author telemetry.
+maintainer: aktogde1
+tier: community
+category: desktop
+requires_moor: ">=0.23.0"
+docs_url: https://github.com/aktogde1/moor-usage-hud#readme
+version: "0.1.0"
+platforms:
+  - windows
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []

@@ -11,7 +11,11 @@ import pytest
 
 from agent.secret_scope import current_secret_scope, set_multiplex_active
 from moor_cli import env_loader
-from moor_constants import reset_moor_home_override, set_moor_home_override
+from moor_constants import (
+    get_moor_home,
+    reset_moor_home_override,
+    set_moor_home_override,
+)
 from tools import mcp_tool_discovery as discovery
 from tools.mcp_tool_config import _build_safe_env
 
@@ -247,3 +251,24 @@ def test_reconnect_rerenders_remote_headers_under_the_owners_fresh_scope(tmp_pat
     finally:
         set_multiplex_active(False)
     assert seen == [f"Bearer ${{{TOKEN_NAME}}}", "Bearer value-b"]
+
+
+def test_stdio_child_env_pins_active_profile_home(tmp_path, monkeypatch):
+    """The stdio child env must carry the ACTIVE profile's ``MOOR_HOME``, never fall back.
+
+    Regression (#18594): ``_SAFE_ENV_KEYS`` omitted ``MOOR_HOME``, so a child spawned by a
+    multiplexed host / dashboard backend serving ``--open-profile`` inherited no home and
+    resolved to the platform default — tripping ``_warn_profile_fallback_once`` and writing
+    state to the wrong profile. The child env must name the served home.
+    """
+    monkeypatch.delenv("MOOR_HOME", raising=False)  # the failing condition: launch env has none
+    home = tmp_path / "served"
+    home.mkdir()
+    token = set_moor_home_override(str(home))
+    try:
+        assert _build_safe_env(None)["MOOR_HOME"] == str(get_moor_home())
+    finally:
+        reset_moor_home_override(token)
+
+    # An explicit server ``env.MOOR_HOME`` still wins (merged after the pin).
+    assert _build_safe_env({"MOOR_HOME": "/tmp/explicit"})["MOOR_HOME"] == "/tmp/explicit"

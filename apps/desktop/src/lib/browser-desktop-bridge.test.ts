@@ -255,7 +255,6 @@ describe('browser-hosted Desktop bridge', () => {
     expect(win.moorDesktop?.getSecretStorageEncryption).toBeUndefined()
     expect(win.moorDesktop?.setSecretStorageEncryption).toBeUndefined()
     expect(win.moorDesktop?.openSessionInTerminal).toBeUndefined()
-    expect(win.moorDesktop?.connections).toBeUndefined()
     expect(win.moorDesktop?.onOpenFindBarRequested).toBeUndefined()
     expect(win.moorDesktop?.petOverlay).toBeUndefined()
     expect(win.moorDesktop?.quickEntry).toBeUndefined()

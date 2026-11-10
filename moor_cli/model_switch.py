@@ -98,16 +98,16 @@ def _bare_custom_provider_def(current_base_url: str) -> Optional[ProviderDef]:
 # --- Non-agentic model warning
 
 _MOOR_MODEL_WARNING = (
-    "Moor Chat models (v3/v4) are NOT agentic and are not designed "
+    "Moor inc. Hermes 3 & 4 models are NOT agentic and are not designed "
     "for use with Moor Agent. They lack the tool-calling capabilities "
     "required for agent workflows. Consider using an agentic model instead "
     "(Claude, GPT, Gemini, DeepSeek, etc.).")
 
-# Match only the real Moor chat / Hermes 3 / 4 chat families; a bare substring check
+# Match only the real Moor inc. Hermes 3 / 4 chat families; a bare substring check
 # false-positived on tool-capable local Modelfiles like ``moor-brain:qwen3-14b-ctx16k``.
-#   match:    moor-4-405b, hermes-4-405b, openrouter/hermes3:70b
+#   match:    NousResearch/Hermes-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
 #   no match: moor-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
-_MOOR_MOOR_NON_AGENTIC_RE = re.compile(r"(?:^|[/:])(?:moor|moor)[-_ ]?[34](?:[-_.:]|$)", re.IGNORECASE)  # LEGACY-REBRAND-COMPAT: legacy model regex
+_MOOR_MOOR_NON_AGENTIC_RE = re.compile(r"(?:^|[/:])moor[-_ ]?[34](?:[-_.:]|$)", re.IGNORECASE)
 
 
 # Opaque proxy model IDs (Palantir Foundry: ``ri.language-model-service..language-model.<slug>``)
@@ -125,12 +125,12 @@ def format_model_for_display(model_name: str) -> str:
 
 
 def is_moor_moor_non_agentic(model_name: str) -> bool:
-    """True if *model_name* is a Moor chat model (v3/v4; single owner; cli.py uses it too)."""
+    """True if *model_name* is a real Nous Hermes 3/4 chat model (single owner; cli.py uses it too)."""
     return bool(model_name and _MOOR_MOOR_NON_AGENTIC_RE.search(model_name))
 
 
 def _check_moor_model_warning(model_name: str) -> str:
-    """Warning string if *model_name* is a Moor chat model (v3/v4), else ""."""
+    """Warning string if *model_name* is a Nous Hermes 3/4 chat model, else ""."""
     return _MOOR_MODEL_WARNING if is_moor_moor_non_agentic(model_name) else ""
 
 
@@ -891,6 +891,24 @@ def _resolve_alias_fallback(
     return next((r for r in results if r is not None), None)
 
 
+def effective_context_pin(
+    config_context_length: int | None, model: str, provider: str, base_url: str = "",
+    configured_model: str | None = None, configured_provider: str | None = None,
+    configured_base_url: str | None = None) -> int | None:
+    """The ``model.context_length`` pin that still applies to ``model`` on this route, or None when the
+    route changed from the configured one (the pin belongs to that model). Fail-closed: None on error."""
+    if config_context_length is None or not (configured_model or configured_provider or configured_base_url):
+        return config_context_length
+    try:
+        from moor_cli.route_identity import should_clear_context_pin
+        clear = should_clear_context_pin(
+            configured_model, model, configured_base_url, base_url, configured_provider, provider)
+    except Exception:  # any route-identity failure drops the pin, as resolve_display_context_length always did
+        logger.debug("context pin route check failed for %s", model, exc_info=True)
+        return None
+    return None if clear else config_context_length
+
+
 def resolve_display_context_length(
     model: str, provider: str, base_url: str = "", api_key: str = "",
     model_info: Optional[ModelInfo] = None, custom_providers: list | None = None,
@@ -908,15 +926,8 @@ def resolve_display_context_length(
     ``custom_providers[].models.<id>.context_length`` are honored — this closes #15779 where ``/model``
     switch ignored user-set overrides.
     """
-    if config_context_length is not None and (configured_model or configured_provider or configured_base_url):
-        try:
-            from moor_cli.route_identity import should_clear_context_pin
-            if should_clear_context_pin(
-                    configured_model, model, configured_base_url, base_url, configured_provider, provider):
-                config_context_length = None
-        except Exception:
-            config_context_length = None
-
+    config_context_length = effective_context_pin(
+        config_context_length, model, provider, base_url, configured_model, configured_provider, configured_base_url)
     try:
         from agent.model_metadata import get_model_context_length
         ctx = get_model_context_length(

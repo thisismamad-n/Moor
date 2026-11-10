@@ -224,9 +224,6 @@ _REGISTRY_ROWS: tuple[Any, ...] = (
     # Qwen 3.7: Anthropic Messages under /v1/messages). Keep the base at /v1; api_mode is per-model.
     ("opencode-go", "OpenCode Go", "https://opencode.ai/zen/go/v1", ("OPENCODE_GO_API_KEY",),
      "OPENCODE_GO_BASE_URL"),
-    # Keyless free tier: served anonymously on the Zen relay. No env vars — _provider_is_keyless()
-    # returns True so get_api_key_provider_status() reports logged_in without any credential.
-    ("opencode-free", "OpenCode Free", "https://opencode.ai/zen/v1", ()),
     ("kilocode", "Kilo Code", "https://api.kilo.ai/api/gateway", ("KILOCODE_API_KEY",), "KILOCODE_BASE_URL"),
     ("huggingface", "Hugging Face", "https://router.huggingface.co/v1", ("HF_TOKEN",), "HF_BASE_URL"),
     ("xiaomi", "Xiaomi MiMo", "https://api.xiaomimimo.com/v1", ("XIAOMI_API_KEY",), "XIAOMI_BASE_URL"),
@@ -2043,13 +2040,6 @@ def get_api_key_provider_status(provider_id: str) -> dict[str, Any]:
     pconfig = _registry_lookup(provider_id)
     if not pconfig or pconfig.auth_type != "api_key":
         return {"configured": False}
-    status = {
-        "configured": True, "provider": provider_id, "name": pconfig.name, "key_source": "keyless",
-        "base_url": pconfig.inference_base_url, "logged_in": True}
-    if _provider_is_keyless(provider_id):
-        # Keyless providers (opencode-free) are served anonymously: every install counts as
-        # configured.
-        return status
     api_key, key_source = _resolve_api_key_provider_secret(provider_id, pconfig)
     env_url = _provider_env_base_url(pconfig)
     if provider_id in {"kimi-coding", "kimi-coding-cn"}:
@@ -2097,11 +2087,10 @@ def _external_process_spec(
         profile = None
     command_env_vars = tuple(getattr(profile, "process_command_env_vars", ()) or ())
     args_env_var = str(getattr(profile, "process_args_env_var", "") or "")
-    command = (next((v for v in (os.getenv(var, "").strip() for var in command_env_vars) if v), "")
-               or str(getattr(profile, "process_command", "") or ""))
+    from moor_cli.auth_external_process import external_process_command, resolve_external_process_command
+    command = external_process_command(profile)
     raw_args = os.getenv(args_env_var, "").strip() if args_env_var else ""
     args = shlex.split(raw_args) if raw_args else list(getattr(profile, "process_args", ()) or [])
-    from moor_cli.auth_external_process import resolve_external_process_command
     return command, args, base_url, resolve_external_process_command(command), command_env_vars
 
 
@@ -2254,10 +2243,6 @@ def resolve_api_key_provider_credentials(provider_id: str) -> dict[str, Any]:
     if not api_key and provider_id == "actual" and is_actual_local_base_url(base_url):
         api_key = ACTUAL_LOCAL_NOAUTH_PLACEHOLDER
         key_source = key_source or "local-offline"
-    if not api_key and provider_id == "opencode-free":
-        from moor_cli.models import OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER
-        api_key = OPENCODE_ZEN_FREE_KEYLESS_PLACEHOLDER
-        key_source = key_source or "keyless"
     return {
         "provider": provider_id, "api_key": api_key, "base_url": base_url.rstrip("/"),
         "source": key_source or "default"}

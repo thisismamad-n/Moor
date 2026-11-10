@@ -4,7 +4,7 @@
 try:
     import moor_bootstrap
 except ModuleNotFoundError as exc:
-    if exc.name != "moor_bootstrap":
+    if exc.name != "moor_bootstrap" and not "moor_bootstrap".startswith(f"{exc.name}."):
         raise
 
 import asyncio
